@@ -232,25 +232,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> existingRecordsByForeignKey = Collections.emptyMap();
-      if(!sourceKeyList.isEmpty())
-      {
-         QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(destinationTableName);
-         getTransaction().ifPresent(queryInput::setTransaction);
-         QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
-         queryInput.setFilter(filter);
-
-         Collection<String> associationNamesToInclude = getAssociationNamesToInclude();
-         if(CollectionUtils.nullSafeHasContents(associationNamesToInclude))
-         {
-            queryInput.setIncludeAssociations(true);
-            queryInput.setAssociationNamesToInclude(associationNamesToInclude);
-         }
-
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-         existingRecordsByForeignKey = CollectionUtils.recordsToMap(queryOutput.getRecords(), destinationTableForeignKeyField);
-      }
+      Map<Serializable, QRecord> existingRecordsByForeignKey = getExistingRecordsByForeignKey(runBackendStepInput, destinationTableForeignKeyField, destinationTableName, sourceKeyList);
 
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
@@ -344,6 +326,35 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Map<Serializable, QRecord> getExistingRecordsByForeignKey(RunBackendStepInput runBackendStepInput, String destinationTableForeignKeyField, String destinationTableName, List<Serializable> sourceKeyList) throws QException
+   {
+      Map<Serializable, QRecord> existingRecordsByForeignKey = Collections.emptyMap();
+      if(!sourceKeyList.isEmpty())
+      {
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(destinationTableName);
+         getTransaction().ifPresent(queryInput::setTransaction);
+         QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
+         queryInput.setFilter(filter);
+
+         Collection<String> associationNamesToInclude = getAssociationNamesToInclude();
+         if(CollectionUtils.nullSafeHasContents(associationNamesToInclude))
+         {
+            queryInput.setIncludeAssociations(true);
+            queryInput.setAssociationNamesToInclude(associationNamesToInclude);
+         }
+
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         existingRecordsByForeignKey = CollectionUtils.recordsToMap(queryOutput.getRecords(), destinationTableForeignKeyField);
+      }
+      return (existingRecordsByForeignKey);
    }
 
 

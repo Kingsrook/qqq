@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAc
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
+import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
@@ -1632,6 +1633,11 @@ public class QJavalinImplementation
          if(userFacingException instanceof QNotFoundException)
          {
             statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
+            respondWithError(context, statusCode, userFacingException.getMessage());
+         }
+         else if(userFacingException instanceof QBadRequestException)
+         {
+            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.BAD_REQUEST); // 400
             respondWithError(context, statusCode, userFacingException.getMessage());
          }
          else

@@ -52,7 +52,7 @@ class FilesystemBackendMetaDataTest
       System.out.println(JsonUtils.prettyPrint(json));
       System.out.println(json);
       String expectToContain = """
-         "local-filesystem":{"basePath":"/tmp/filesystem-tests/0","backendType":"filesystem","name":"local-filesystem"}""";
+         "local-filesystem":{"basePath":"/tmp/filesystem-tests/0","backendType":"filesystem","name":"local-filesystem","usesVariants":false}""";
       assertTrue(json.contains(expectToContain));
    }
 

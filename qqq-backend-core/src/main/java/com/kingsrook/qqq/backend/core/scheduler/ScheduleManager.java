@@ -22,17 +22,25 @@
 package com.kingsrook.qqq.backend.core.scheduler;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -41,6 +49,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
@@ -131,9 +141,67 @@ public class ScheduleManager
       {
          if(process.getSchedule() != null && allowedToStart(process.getName()))
          {
-            startProcess(process);
+            QScheduleMetaData scheduleMetaData = process.getSchedule();
+            if(process.getSchedule().getBackendVariant() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+            {
+               ///////////////////////////////////////////////
+               // if no variants, or variant is serial mode //
+               ///////////////////////////////////////////////
+               startProcess(process, null);
+            }
+            else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if this a "parallel", which for example means we want to have a thread for each backend variant //
+               // running at the same time, get the variant records and schedule each separately                  //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////
+               QContext.init(qInstance, sessionSupplier.get());
+               for(QRecord qRecord : CollectionUtils.nonNullList(getBackendVariantFilteredRecords(process)))
+               {
+                  try
+                  {
+                     startProcess(process, MapBuilder.of(scheduleMetaData.getBackendVariant(), qRecord.getValue(scheduleMetaData.getVariantFieldName())));
+                  }
+                  catch(Exception e)
+                  {
+                     LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
+                  }
+               }
+            }
+            else
+            {
+               LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantFilter() + "] was provided.");
+            }
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QRecord> getBackendVariantFilteredRecords(QProcessMetaData processMetaData)
+   {
+      List<QRecord> records = null;
+      try
+      {
+         QScheduleMetaData scheduleMetaData = processMetaData.getSchedule();
+
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(scheduleMetaData.getVariantTableName());
+         queryInput.setFilter(scheduleMetaData.getVariantFilter());
+
+         QContext.init(qInstance, sessionSupplier.get());
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         records = queryOutput.getRecords();
+      }
+      catch(Exception e)
+      {
+         LOG.error("An error fetching variant data for process [" + processMetaData.getLabel() + "]", e);
+      }
+
+      return (records);
    }
 
 
@@ -249,7 +317,7 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startProcess(QProcessMetaData process)
+   private void startProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData)
    {
       Runnable runProcess = () ->
       {
@@ -257,18 +325,31 @@ public class ScheduleManager
 
          try
          {
-            QContext.init(qInstance, sessionSupplier.get());
-            Thread.currentThread().setName("ScheduledProcess>" + process.getName());
-            LOG.debug("Running Scheduled Process [" + process.getName() + "]");
-
-            RunProcessInput runProcessInput = new RunProcessInput();
-            runProcessInput.setProcessName(process.getName());
-            runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
-
-            QContext.pushAction(runProcessInput);
-
-            RunProcessAction runProcessAction = new RunProcessAction();
-            runProcessAction.execute(runProcessInput);
+            if(process.getSchedule().getBackendVariant() == null || QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+            {
+               QContext.init(qInstance, sessionSupplier.get());
+               executeSingleProcess(process, backendVariantData);
+            }
+            else if(QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // if this is "serial", which for example means we want to run each backend variant one after    //
+               // the other in the same thread so loop over these here so that they run in same lambda function //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               for(QRecord qRecord : getBackendVariantFilteredRecords(process))
+               {
+                  try
+                  {
+                     QContext.init(qInstance, sessionSupplier.get());
+                     QScheduleMetaData scheduleMetaData = process.getSchedule();
+                     executeSingleProcess(process, MapBuilder.of(scheduleMetaData.getBackendVariant(), qRecord.getValue(scheduleMetaData.getVariantFieldName())));
+                  }
+                  catch(Exception e)
+                  {
+                     LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
+                  }
+               }
+            }
          }
          catch(Exception e)
          {
@@ -290,6 +371,31 @@ public class ScheduleManager
       }
 
       executors.add(executor);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void executeSingleProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData) throws QException
+   {
+      if(backendVariantData != null)
+      {
+         QContext.getQSession().setBackendVariants(backendVariantData);
+      }
+
+      Thread.currentThread().setName("ScheduledProcess>" + process.getName());
+      LOG.debug("Running Scheduled Process [" + process.getName() + "]");
+
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(process.getName());
+      runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+
+      QContext.pushAction(runProcessInput);
+
+      RunProcessAction runProcessAction = new RunProcessAction();
+      runProcessAction.execute(runProcessInput);
    }
 
 

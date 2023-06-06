@@ -525,6 +525,25 @@ public class QFieldMetaData implements Cloneable
 
 
    /*******************************************************************************
+    ** does this field have the given addornment
+    **
+    *******************************************************************************/
+   public boolean hasAdornmentType(AdornmentType adornmentType)
+   {
+      for(FieldAdornment thisAdornment : CollectionUtils.nonNullList(this.adornments))
+      {
+         if(AdornmentType.REVEAL.equals(thisAdornment.getType()))
+         {
+            return (true);
+         }
+      }
+
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for adornments
     **
     *******************************************************************************/

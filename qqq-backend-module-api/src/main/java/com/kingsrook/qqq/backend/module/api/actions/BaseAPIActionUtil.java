@@ -75,6 +75,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -102,6 +103,11 @@ public class BaseAPIActionUtil
    protected QSession                 session; // todo not commit - delete!!
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
+
+
+
+   public enum UpdateHttpMethod
+   {PUT, POST}
 
 
 
@@ -334,8 +340,9 @@ public class BaseAPIActionUtil
          {
             try
             {
-               String  url     = buildTableUrl(table);
-               HttpPut request = new HttpPut(url);
+               String                         paramString = buildQueryStringForUpdate(table, recordList);
+               String                         url         = buildTableUrl(table) + paramString;
+               HttpEntityEnclosingRequestBase request     = getUpdateMethod().equals(UpdateHttpMethod.PUT) ? new HttpPut(url) : new HttpPost(url);
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);
@@ -561,13 +568,23 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** method to build up a query string for updates based on a given QFilter object
+    **
+    *******************************************************************************/
+   protected String buildQueryStringForUpdate(QTableMetaData table, List<QRecord> recordList) throws QException
+   {
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
     ** method to build up a query string based on a given QFilter object
     **
     *******************************************************************************/
    protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
    {
-      // todo: reasonable default action
-      return (null);
+      return ("");
    }
 
 
@@ -1224,5 +1241,15 @@ public class BaseAPIActionUtil
    protected Integer getApiStandardLimit()
    {
       return (20);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected UpdateHttpMethod getUpdateMethod()
+   {
+      return (UpdateHttpMethod.PUT);
    }
 }

@@ -94,7 +94,7 @@ class TableSyncProcessTest extends BaseTest
       // make sure the record referencing 3 has had its name updated //
       // and the one referencing 5 stayed the same                   //
       /////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> syncPersonsBySourceId = GeneralProcessUtils.loadTableToMap(runProcessInput, TABLE_NAME_PEOPLE_SYNC, "sourcePersonId");
+      Map<Serializable, QRecord> syncPersonsBySourceId = GeneralProcessUtils.loadTableToMap(TABLE_NAME_PEOPLE_SYNC, "sourcePersonId");
       assertEquals("Tyler", syncPersonsBySourceId.get(3).getValueString("firstName"));
       assertEquals("Homer", syncPersonsBySourceId.get(5).getValueString("firstName"));
    }
@@ -177,7 +177,7 @@ class TableSyncProcessTest extends BaseTest
       // make sure the record referencing 3 has had its name updated //
       // and the one referencing 5 stayed the same                   //
       /////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> syncPersonsBySourceId = GeneralProcessUtils.loadTableToMap(runProcessInput, TABLE_NAME_PEOPLE_SYNC, "sourcePersonId");
+      Map<Serializable, QRecord> syncPersonsBySourceId = GeneralProcessUtils.loadTableToMap(TABLE_NAME_PEOPLE_SYNC, "sourcePersonId");
       assertEquals("Tyler", syncPersonsBySourceId.get(3).getValueString("firstName"));
       assertEquals("Homer", syncPersonsBySourceId.get(5).getValueString("firstName"));
    }
