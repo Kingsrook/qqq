@@ -1009,7 +1009,12 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected boolean shouldBeRetryableServerErrorException(QHttpResponse qResponse)
    {
-      return (qResponse.getStatusCode() != null && qResponse.getStatusCode() >= 500);
+      if(actionInput instanceof QueryInput || actionInput instanceof GetInput)
+      {
+         return (qResponse.getStatusCode() != null && qResponse.getStatusCode() >= 500);
+      }
+
+      return (false);
    }
 
 
