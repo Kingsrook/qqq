@@ -360,6 +360,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             continue;
          }
 
+         if(!StringUtils.hasContent(table.getPrimaryKeyField()))
+         {
+            throw (new QException("Unable to generate OpenAPI spec for table " + tableName + ", because it does not have a primary key."));
+         }
+
          String               tableApiName        = StringUtils.hasContent(apiTableMetaData.getApiTableName()) ? apiTableMetaData.getApiTableName() : tableName;
          String               tableApiNameUcFirst = StringUtils.ucFirst(tableApiName);
          String               tableLabel          = table.getLabel();
