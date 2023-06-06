@@ -34,12 +34,16 @@ import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTracking;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
@@ -309,6 +313,56 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
          .as("Should have inserted Circle").anyMatch(qr -> qr.getValue("lastName").equals("Circle"))
          .as("Should have inserted Triangle").anyMatch(qr -> qr.getValue("lastName").equals("Triangle"))
          .as("Should have inserted Square").anyMatch(qr -> qr.getValue("lastName").equals("Square"));
+   }
+
+
+
+   /*******************************************************************************
+    ** Test that sub-filters in filters work correctly to limit the records that get
+    ** applied (as at one point in time, they didn't!!
+    *******************************************************************************/
+   @Test
+   void testFilterWithSubFilter() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // update the CheckAge automation to have a sub-filter that should make Tim not be found //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      TableAutomationAction checkAgeOnInsert = table.getAutomationDetails().getActions().stream()
+         .filter(a -> a.getName().equals("checkAgeOnInsert"))
+         .findFirst()
+         .orElseThrow();
+
+      QQueryFilter filter = checkAgeOnInsert.getFilter();
+      filter.addSubFilter(new QQueryFilter(new QFilterCriteria("firstName", QCriteriaOperator.NOT_EQUALS, "Tim")));
+
+      ////////////////////////////////////////////////////////////////////////
+      // insert 2 person records - but only Darin should get the automation //
+      ////////////////////////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now()),
+         new QRecord().withValue("id", 2).withValue("firstName", "Darin").withValue("birthDate", LocalDate.now())));
+      new InsertAction().execute(insertInput);
+
+      runAllTableActions(qInstance);
+
+      /////////////////////////////////
+      // make sure Darin was updated //
+      /////////////////////////////////
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .stream().filter(r -> r.getValueString("firstName").startsWith("Darin"))).first()
+         .matches(r -> r.getValueString("firstName").endsWith(TestUtils.CheckAge.SUFFIX_FOR_MINORS));
+
+      ////////////////////////////////////
+      // make sure Tim was not updated. //
+      ////////////////////////////////////
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .stream().filter(r -> r.getValueString("firstName").startsWith("Tim"))).first()
+         .matches(r -> !r.getValueString("firstName").endsWith(TestUtils.CheckAge.SUFFIX_FOR_MINORS));
    }
 
 

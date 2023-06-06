@@ -365,25 +365,28 @@ public class PollingAutomationPerTableRunner implements Runnable
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(table.getName());
 
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // set up a filter that is for the primary keys IN the list that we identified above //
+      ///////////////////////////////////////////////////////////////////////////////////////
       QQueryFilter filter = new QQueryFilter();
+      filter.addCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList()));
 
-      /////////////////////////////////////////////////////////////////////////////////////////////////////
-      // copy filter criteria from the action's filter to a new filter that we'll run here.              //
-      // Critically - don't modify the filter object on the action!  as that object has a long lifespan. //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////
       if(action.getFilter() != null)
       {
-         if(action.getFilter().getCriteria() != null)
-         {
-            action.getFilter().getCriteria().forEach(filter::addCriteria);
-         }
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the action defines a filter of its own, add that to the filter we'll run now as a sub-filter //
+         // not entirely clear if this needs to be a clone, but, it feels safe and cheap enough             //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         filter.addSubFilter(action.getFilter().clone());
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // we also want to set order-bys from the action into our filter (since they only apply at the top-level) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(action.getFilter().getOrderBys() != null)
          {
             action.getFilter().getOrderBys().forEach(filter::addOrderBy);
          }
       }
-
-      filter.addCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList()));
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       // always add order-by the primary key, to give more predictable/consistent results        //
