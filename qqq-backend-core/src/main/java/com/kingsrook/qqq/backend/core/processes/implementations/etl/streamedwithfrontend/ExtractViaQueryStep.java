@@ -109,6 +109,11 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       queryInput.setRecordPipe(getRecordPipe());
       queryInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
 
+      if(runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_FETCH_HEAVY_FIELDS))
+      {
+         queryInput.setShouldFetchHeavyFields(true);
+      }
+
       customizeInputPreQuery(queryInput);
 
       new QueryAction().execute(queryInput);

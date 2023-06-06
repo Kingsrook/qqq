@@ -85,6 +85,10 @@ public enum QFieldType
       {
          return (BOOLEAN);
       }
+      if(c.equals(byte[].class))
+      {
+         return (BLOB);
+      }
 
       throw (new QException("Unrecognized class [" + c + "]"));
    }

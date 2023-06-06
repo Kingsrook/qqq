@@ -81,6 +81,16 @@ public class QueryAction
    {
       ActionHelper.validateSession(queryInput);
 
+      if(queryInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in query input"));
+      }
+
+      if(queryInput.getTable() == null)
+      {
+         throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
+      }
+
       postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 

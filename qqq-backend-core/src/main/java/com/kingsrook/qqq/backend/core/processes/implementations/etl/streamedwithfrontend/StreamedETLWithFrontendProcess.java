@@ -81,6 +81,7 @@ public class StreamedETLWithFrontendProcess
    public static final String FIELD_DESTINATION_TABLE    = "destinationTable"; // String
    public static final String FIELD_RECORD_COUNT         = "recordCount"; // Integer
    public static final String FIELD_DEFAULT_QUERY_FILTER = "defaultQueryFilter"; // QQueryFilter or String (json, of q QQueryFilter)
+   public static final String FIELD_FETCH_HEAVY_FIELDS   = "fetchHeavyFields"; // Boolean
 
    public static final String FIELD_SUPPORTS_FULL_VALIDATION = "supportsFullValidation"; // Boolean
    public static final String FIELD_DO_FULL_VALIDATION       = "doFullValidation"; // Boolean
@@ -142,6 +143,7 @@ public class StreamedETLWithFrontendProcess
          .withCode(new QCodeReference(StreamedETLPreviewStep.class))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
+            .withField(new QFieldMetaData(FIELD_FETCH_HEAVY_FIELDS, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_FETCH_HEAVY_FIELDS, false)))
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, true)))
             .withField(new QFieldMetaData(FIELD_DO_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.get(FIELD_DO_FULL_VALIDATION)))

@@ -167,6 +167,7 @@ public class TestUtils
          .withField(new QFieldMetaData("isEmployed", QFieldType.BOOLEAN).withBackendName("is_employed"))
          .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary"))
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked"))
+         .withField(new QFieldMetaData("homeTown", QFieldType.STRING).withBackendName("home_town"))
          .withBackendDetails(new RDBMSTableBackendDetails()
             .withTableName("person"));
    }

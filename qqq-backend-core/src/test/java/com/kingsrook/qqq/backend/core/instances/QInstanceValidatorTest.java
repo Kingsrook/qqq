@@ -46,6 +46,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -1726,6 +1728,35 @@ class QInstanceValidatorTest extends BaseTest
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
       });
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldAdornments()
+   {
+      Function<QInstance, QFieldMetaData> fieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("firstName");
+
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment())), "adornment that is missing a type");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment().withType(AdornmentType.REVEAL))));
+
+      ////////////////////////////////
+      // type-specific value checks //
+      ////////////////////////////////
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.SIZE))), "missing a width value");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.SIZE).withValue("width", "foo"))), "unrecognized width value");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.SIZE).withValue("width", AdornmentType.Size.MEDIUM))));
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(AdornmentType.Size.SMALL.toAdornment())));
+
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameField", "foo"))), "unrecognized fileNameField [foo]");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameField", "lastName"))));
+
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", "foo"))), "fileNameFormatFields could not be accessed");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", new ArrayList<>(List.of("foo"))))), "unrecognized field name in fileNameFormatFields [foo]");
+      assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", new ArrayList<>(List.of("lastName"))))));
    }
 
 

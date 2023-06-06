@@ -29,8 +29,10 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -43,8 +45,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
@@ -112,9 +116,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          ////////////////////////////////////////////////////////////////////////////
          // build the list of fields that will be processed in the result-set loop //
          ////////////////////////////////////////////////////////////////////////////
-         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values().stream()
-            .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
-            .toList());
+         List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values().stream().toList());
          for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryInput.getQueryJoins()))
          {
             if(queryJoin.getSelect())
@@ -123,10 +125,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
                for(QFieldMetaData joinField : joinTable.getFields().values())
                {
-                  if(filterOutHeavyFieldsIfNeeded(joinField, queryInput.getShouldFetchHeavyFields()))
-                  {
-                     fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
-                  }
+                  fieldList.add(joinField.clone().withName(tableNameOrAlias + "." + joinField.getName()));
                }
             }
          }
@@ -153,9 +152,22 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
                   for(int i = 1; i <= metaData.getColumnCount(); i++)
                   {
-                     QFieldMetaData qFieldMetaData = fieldList.get(i - 1);
-                     Serializable   value          = getFieldValueFromResultSet(qFieldMetaData, resultSet, i);
-                     values.put(qFieldMetaData.getName(), value);
+                     QFieldMetaData field = fieldList.get(i - 1);
+
+                     if(!queryInput.getShouldFetchHeavyFields() && field.getIsHeavy())
+                     {
+                        ///////////////////////////////////////////////////////////////////////////////////
+                        // if this is a non-fetched heavy field (e.g., we just fetched its length), then //
+                        // get the value here as an INTEGER, not a BLOB or whatever the field would be   //
+                        ///////////////////////////////////////////////////////////////////////////////////
+                        Serializable fieldLength = getFieldValueFromResultSet(QFieldType.INTEGER, resultSet, i);
+                        setHeavyFieldLengthInRecordBackendDetails(record, field, fieldLength);
+                     }
+                     else
+                     {
+                        Serializable value = getFieldValueFromResultSet(field, resultSet, i);
+                        values.put(field.getName(), value);
+                     }
                   }
 
                   queryOutput.addRecord(record);
@@ -198,6 +210,27 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   private static void setHeavyFieldLengthInRecordBackendDetails(QRecord record, QFieldMetaData field, Serializable fieldLength)
+   {
+      if(record.getBackendDetails() == null)
+      {
+         record.setBackendDetails(new HashMap<>());
+      }
+
+      if(record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS) == null)
+      {
+         record.addBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS, new HashMap<>());
+      }
+
+      ((Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS)).put(field.getName(), fieldLength);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private String makeSelectClause(QueryInput queryInput) throws QException
    {
       QInstance       instance   = queryInput.getInstance();
@@ -210,8 +243,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
       List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
       String columns = fieldList.stream()
-         .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
-         .map(field -> escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field)))
+         .map(field -> Pair.of(field, escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field))))
+         .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
          .collect(Collectors.joining(", "));
       StringBuilder rs = new StringBuilder(clausePrefix).append(columns);
 
@@ -229,7 +262,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());
             String joinColumns = joinFieldList.stream()
                .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
-               .map(field -> escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field)))
+               .map(field -> Pair.of(field, escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field))))
+               .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
                .collect(Collectors.joining(", "));
             rs.append(", ").append(joinColumns);
          }
@@ -250,6 +284,24 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          return (false);
       }
       return (true);
+   }
+
+
+
+   /*******************************************************************************
+    ** if we're not fetching heavy fields, instead just get their length.  this
+    ** method wraps the field 'sql name' (e.g., column_name or table_name.column_name)
+    ** with the LENGTH() function, if needed.
+    *******************************************************************************/
+   private String wrapHeavyFieldsWithLengthFunctionIfNeeded(Pair<QFieldMetaData, String> fieldAndSqlName, boolean shouldFetchHeavyFields)
+   {
+      QFieldMetaData field   = fieldAndSqlName.getA();
+      String         sqlName = fieldAndSqlName.getB();
+      if(!shouldFetchHeavyFields && field.getIsHeavy())
+      {
+         return ("LENGTH(" + sqlName + ")");
+      }
+      return (sqlName);
    }
 
 

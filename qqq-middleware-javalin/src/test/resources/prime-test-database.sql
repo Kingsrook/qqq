@@ -31,10 +31,12 @@ CREATE TABLE person
    birth_date DATE,
    email VARCHAR(250) NOT NULL,
    partner_person_id INT,
-   test_script_id INT
+   test_script_id INT,
+   photo BLOB,
+   photo_file_name VARCHAR(50)
 );
 
-INSERT INTO person (id, first_name, last_name, birth_date, email, partner_person_id) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 6);
+INSERT INTO person (id, first_name, last_name, birth_date, email, partner_person_id, photo, photo_file_name) VALUES (1, 'Darin', 'Kelkhoff', '1980-05-31', 'darin.kelkhoff@gmail.com', 6, '12345', 'darin-photo.png');
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (2, 'James', 'Maes', '1980-05-15', 'jmaes@mmltholdings.com');
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (3, 'Tim', 'Chamberlain', '1976-05-28', 'tchamberlain@mmltholdings.com');
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (4, 'Tyler', 'Samples', '1990-01-01', 'tsamples@mmltholdings.com');

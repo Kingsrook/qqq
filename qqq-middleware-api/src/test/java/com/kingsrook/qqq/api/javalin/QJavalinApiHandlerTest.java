@@ -64,6 +64,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.api.TestUtils.insertPersonRecord;
 import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -193,7 +194,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testGet200() throws QException
    {
-      insertPersonRecord(1, "Homer", "Simpson");
+      insertPersonRecord(1, "Homer", "Simpson", qRecord -> qRecord.withValue("photo", "12345".getBytes()));
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/1").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -201,6 +202,7 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(1, jsonObject.getInt("id"));
       assertEquals("Homer", jsonObject.getString("firstName"));
       assertEquals("Simpson", jsonObject.getString("lastName"));
+      assertEquals("MTIzNDU=", jsonObject.getString("photo")); // base64 of "12345".getBytes()
       assertTrue(jsonObject.isNull("noOfShoes"));
       assertFalse(jsonObject.has("someNonField"));
    }
@@ -333,7 +335,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testFieldDifferencesBetweenApis() throws QException
    {
-      insertPersonRecord(1, "Homer", "Simpson", LocalDate.of(1970, Month.JANUARY, 1));
+      insertPersonRecord(1, "Homer", "Simpson", qRecord -> qRecord.withValue("birthDate", LocalDate.of(1970, Month.JANUARY, 1)));
 
       /////////////////////////////////////////////////////////////
       // on the main api, birthDate has been renamed to birthDay //
@@ -362,7 +364,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testQuery200SomethingFound() throws QException
    {
-      insertPersonRecord(1, "Homer", "Simpson");
+      insertPersonRecord(1, "Homer", "Simpson", qRecord -> qRecord.withValue("photo", "12345".getBytes()));
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/query").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -376,6 +378,7 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(1, jsonObject.getInt("id"));
       assertEquals("Homer", jsonObject.getString("firstName"));
       assertEquals("Simpson", jsonObject.getString("lastName"));
+      assertEquals("MTIzNDU=", jsonObject.getString("photo")); // base64 of "12345".getBytes()
       assertTrue(jsonObject.isNull("noOfShoes"));
       assertFalse(jsonObject.has("someNonField"));
    }
@@ -468,8 +471,11 @@ class QJavalinApiHandlerTest extends BaseTest
       assertPersonQueryFindsFirstNames(List.of(), "noOfShoes=!EMPTY");
       assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "id=!EMPTY&orderBy=id");
       assertPersonQueryFindsFirstNames(List.of(), "id=EMPTY");
+      assertPersonQueryFindsFirstNames(List.of("Homer", "Marge", "Bart", "Lisa", "Maggie"), "photo=EMPTY&orderBy=id");
+      assertPersonQueryFindsFirstNames(List.of(), "photo=!EMPTY");
 
       assertError("Unexpected value after operator EMPTY for field id", BASE_URL + "/api/" + VERSION + "/person/query?id=EMPTY 3");
+      assertError("Operator = may not be used for field photo (blob fields only support operators EMPTY or !EMPTY)", BASE_URL + "/api/" + VERSION + "/person/query?photo=ABCD");
    }
 
 
@@ -544,7 +550,7 @@ class QJavalinApiHandlerTest extends BaseTest
    {
       HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/")
          .body("""
-            {"firstName": "Moe"}
+            {"firstName": "Moe", "photo": "MTIzNDU="}
             """)
          .asString();
       assertEquals(HttpStatus.CREATED_201, response.getStatus());
@@ -553,6 +559,7 @@ class QJavalinApiHandlerTest extends BaseTest
 
       QRecord record = getRecord(TestUtils.TABLE_NAME_PERSON, 1);
       assertEquals("Moe", record.getValueString("firstName"));
+      assertArrayEquals("12345".getBytes(), record.getValueByteArray("photo"));
    }
 
 
@@ -1441,6 +1448,7 @@ class QJavalinApiHandlerTest extends BaseTest
       getInput.setTableName(tableName);
       getInput.setPrimaryKey(id);
       getInput.setIncludeAssociations(true);
+      getInput.setShouldFetchHeavyFields(true);
       GetOutput getOutput = new GetAction().execute(getInput);
       QRecord   record    = getOutput.getRecord();
       return record;

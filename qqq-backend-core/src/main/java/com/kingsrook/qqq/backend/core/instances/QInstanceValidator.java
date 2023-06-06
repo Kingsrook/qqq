@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -50,6 +51,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -80,6 +83,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -416,7 +420,7 @@ public class QInstanceValidator
             {
                table.getFields().forEach((fieldName, field) ->
                {
-                  validateTableField(qInstance, tableName, fieldName, field);
+                  validateTableField(qInstance, tableName, fieldName, table, field);
                });
             }
 
@@ -657,7 +661,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QFieldMetaData field)
+   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -698,6 +702,55 @@ public class QInstanceValidator
 
          assertCondition(fieldSecurityLock.getDefaultBehavior() != null, prefix + "has a fieldSecurityLock that is missing a defaultBehavior");
          assertCondition(CollectionUtils.nullSafeHasContents(fieldSecurityLock.getOverrideValues()), prefix + "has a fieldSecurityLock that is missing overrideValues");
+      }
+
+      for(FieldAdornment adornment : CollectionUtils.nonNullList(field.getAdornments()))
+      {
+         Map<String, Serializable> adornmentValues = CollectionUtils.nonNullMap(adornment.getValues());
+         if(assertCondition(adornment.getType() != null, prefix + "has an adornment that is missing a type"))
+         {
+            String adornmentPrefix = prefix.trim() + ", " + adornment.getType() + " adornment ";
+            switch(adornment.getType())
+            {
+               case SIZE ->
+               {
+                  String width = ValueUtils.getValueAsString(adornmentValues.get("width"));
+                  if(assertCondition(StringUtils.hasContent(width), adornmentPrefix + "is missing a width value"))
+                  {
+                     assertNoException(() -> AdornmentType.Size.valueOf(width.toUpperCase()), adornmentPrefix + "has an unrecognized width value [" + width + "]");
+                  }
+               }
+               case FILE_DOWNLOAD ->
+               {
+                  String fileNameField = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
+                  if(StringUtils.hasContent(fileNameField)) // file name isn't required - but if given, must be a field on the table.
+                  {
+                     assertNoException(() -> table.getField(fileNameField), adornmentPrefix + "specifies an unrecognized fileNameField [" + fileNameField + "]");
+                  }
+
+                  if(adornmentValues.containsKey(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS))
+                  {
+                     try
+                     {
+                        @SuppressWarnings("unchecked")
+                        List<String> formatFieldNames = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
+                        for(String formatFieldName : CollectionUtils.nonNullList(formatFieldNames))
+                        {
+                           assertNoException(() -> table.getField(formatFieldName), adornmentPrefix + "specifies an unrecognized field name in fileNameFormatFields [" + formatFieldName + "]");
+                        }
+                     }
+                     catch(Exception e)
+                     {
+                        errors.add(adornmentPrefix + "fileNameFormatFields could not be accessed (is it a List<String>?)");
+                     }
+                  }
+               }
+               default ->
+               {
+                  // no validations by default
+               }
+            }
+         }
       }
    }
 

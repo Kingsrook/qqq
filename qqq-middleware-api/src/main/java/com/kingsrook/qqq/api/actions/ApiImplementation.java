@@ -68,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
@@ -115,6 +116,7 @@ public class ApiImplementation
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setIncludeAssociations(true);
+      queryInput.setShouldFetchHeavyFields(true);
 
       PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -258,7 +260,7 @@ public class ApiImplementation
                {
                   try
                   {
-                     filter.addCriteria(parseQueryParamToCriteria(name, value));
+                     filter.addCriteria(parseQueryParamToCriteria(field, name, value));
                   }
                   catch(Exception e)
                   {
@@ -523,6 +525,7 @@ public class ApiImplementation
 
       getInput.setPrimaryKey(primaryKey);
       getInput.setIncludeAssociations(true);
+      getInput.setShouldFetchHeavyFields(true);
 
       GetAction getAction = new GetAction();
       GetOutput getOutput = getAction.execute(getInput);
@@ -961,7 +964,7 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QFilterCriteria parseQueryParamToCriteria(String name, String value) throws QException
+   private static QFilterCriteria parseQueryParamToCriteria(QFieldMetaData field, String name, String value) throws QException
    {
       ///////////////////////////////////
       // process & discard a leading ! //
@@ -1037,6 +1040,14 @@ public class ApiImplementation
       else
       {
          throw (new QException("Unexpected noOfValues [" + selectedOperator.noOfValues + "] in operator [" + selectedOperator + "]"));
+      }
+
+      if(field.getType().equals(QFieldType.BLOB))
+      {
+         if(!selectedOperator.equals(Operator.EMPTY))
+         {
+            throw (new QBadRequestException("Operator " + selectedOperator.prefix + " may not be used for field " + name + " (blob fields only support operators EMPTY or !EMPTY)"));
+         }
       }
 
       return (new QFilterCriteria(name, isNot ? selectedOperator.negativeOperator : selectedOperator.positiveOperator, criteriaValues));

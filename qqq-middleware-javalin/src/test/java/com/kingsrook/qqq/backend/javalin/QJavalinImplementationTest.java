@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -185,6 +187,63 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject values = jsonObject.getJSONObject("values");
       assertTrue(values.has("firstName"));
       assertTrue(values.has("id"));
+      assertTrue(values.has("photo"));
+
+      JSONObject displayValues = jsonObject.getJSONObject("displayValues");
+      assertEquals("darin-photo.png", displayValues.getString("photo"));
+
+      ////////////////////////////////////////////////////
+      // make sure person 2 doesn't have the blob value //
+      ////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/2").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("photo"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test downloading a blob file
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataDownloadRecordField()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/1/photo/darin-photo.png").asString();
+      assertEquals(200, response.getStatus());
+      assertThat(response.getHeaders().get("content-type").get(0)).contains("image");
+
+      response = Unirest.get(BASE_URL + "/data/person/1/photo/darin-photo.png?download=1").asString();
+      assertEquals(200, response.getStatus());
+      assertThat(response.getHeaders().get("content-disposition").get(0))
+         .contains("attachment")
+         .contains("darin-photo.png");
+
+      /////////////////////////
+      // bad record id = 404 //
+      /////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/-1/photo/darin-photo.png").asString();
+      assertEquals(404, response.getStatus());
+
+      //////////////////////////
+      // bad field name = 404 //
+      //////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/1/notPhoto/darin-photo.png").asString();
+      assertEquals(404, response.getStatus());
+
+      /////////////////////////////
+      // missing file name = 404 //
+      /////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/1/photo").asString();
+      assertEquals(404, response.getStatus());
+
+      //////////////////////////
+      // bad table name = 404 //
+      //////////////////////////
+      response = Unirest.get(BASE_URL + "/data/notPerson/1/photo/darin-photo.png").asString();
+      assertEquals(404, response.getStatus());
    }
 
 
@@ -431,29 +490,34 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
-   public void test_dataInsertMultipartForm()
+   public void test_dataInsertMultipartForm() throws IOException
    {
-      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
-         .header("Content-Type", "application/json")
-         .multiPartContent()
-         .field("firstName", "Bobby")
-         .field("lastName", "Hull")
-         .field("email", "bobby@hull.com")
-         .asString();
+      try(InputStream photoInputStream = getClass().getResourceAsStream("/photo.png"))
+      {
+         HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
+            .header("Content-Type", "application/json")
+            .multiPartContent()
+            .field("firstName", "Bobby")
+            .field("lastName", "Hull")
+            .field("email", "bobby@hull.com")
+            .field("photo", photoInputStream.readAllBytes(), "image")
+            .asString();
 
-      assertEquals(200, response.getStatus());
-      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
-      assertTrue(jsonObject.has("records"));
-      JSONArray records = jsonObject.getJSONArray("records");
-      assertEquals(1, records.length());
-      JSONObject record0 = records.getJSONObject(0);
-      assertTrue(record0.has("values"));
-      assertEquals("person", record0.getString("tableName"));
-      JSONObject values0 = record0.getJSONObject("values");
-      assertTrue(values0.has("firstName"));
-      assertEquals("Bobby", values0.getString("firstName"));
-      assertTrue(values0.has("id"));
-      assertEquals(7, values0.getInt("id"));
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertTrue(jsonObject.has("records"));
+         JSONArray records = jsonObject.getJSONArray("records");
+         assertEquals(1, records.length());
+         JSONObject record0 = records.getJSONObject(0);
+         assertTrue(record0.has("values"));
+         assertEquals("person", record0.getString("tableName"));
+         JSONObject values0 = record0.getJSONObject("values");
+         assertTrue(values0.has("firstName"));
+         assertEquals("Bobby", values0.getString("firstName"));
+         assertTrue(values0.has("id"));
+         assertEquals(7, values0.getInt("id"));
+         assertTrue(values0.has("photo"));
+      }
    }
 
 
@@ -474,6 +538,44 @@ class QJavalinImplementationTest extends QJavalinTestBase
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
          .header("Content-Type", "application/json")
          .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals(4, values0.getInt("id"));
+      assertEquals("Free", values0.getString("firstName"));
+
+      ///////////////////////////////////////////////////////////////////
+      // re-GET the record, and validate that birthDate was nulled out //
+      ///////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/4").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("values"));
+      JSONObject values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("birthDate"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test an update - posting the data as a multipart form
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataUpdateMultipartForm()
+   {
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
+         .multiPartContent()
+         .field("firstName", "Free")
+         .field("birthDate", "")
          .asString();
 
       assertEquals(200, response.getStatus());
@@ -716,6 +818,37 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertEquals(2, jsonObject.getJSONArray("options").length());
       assertEquals(4, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
       assertEquals(5, jsonObject.getJSONArray("options").getJSONObject(1).getInt("id"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testServerInfo()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/serverInfo").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertTrue(jsonObject.has("startTimeMillis"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuthenticationMetaData()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/metaData/authentication").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertTrue(jsonObject.has("name"));
+      assertTrue(jsonObject.has("type"));
    }
 
 }

@@ -715,7 +715,7 @@ public class QInstanceEnricher
             try
             {
                QFieldMetaData field = table.getField(fieldName);
-               if(field.getIsEditable())
+               if(field.getIsEditable() && !field.getType().equals(QFieldType.BLOB))
                {
                   editableFields.add(field);
                }
@@ -734,7 +734,7 @@ public class QInstanceEnricher
       QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
          .withName("upload")
          .withLabel("Upload File")
-         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
             .withValue("previewText", "file upload instructions")
@@ -773,6 +773,7 @@ public class QInstanceEnricher
 
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
+         .filter(f -> !f.getType().equals(QFieldType.BLOB))
          .toList();
 
       QFrontendStepMetaData editScreen = new QFrontendStepMetaData()

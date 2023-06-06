@@ -33,6 +33,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -160,10 +161,12 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
    @Override
    public RenderWidgetOutput render(RenderWidgetInput input) throws QException
    {
-      String        widgetLabel = input.getQueryParams().get("widgetLabel");
-      String        joinName    = input.getQueryParams().get("joinName");
-      QJoinMetaData join        = input.getInstance().getJoin(joinName);
-      String        id          = input.getQueryParams().get("id");
+      String         widgetLabel = input.getQueryParams().get("widgetLabel");
+      String         joinName    = input.getQueryParams().get("joinName");
+      QJoinMetaData  join        = input.getInstance().getJoin(joinName);
+      String         id          = input.getQueryParams().get("id");
+      QTableMetaData leftTable   = input.getInstance().getTable(join.getLeftTable());
+      QTableMetaData rightTable  = input.getInstance().getTable(join.getRightTable());
 
       Integer maxRows = null;
       if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
@@ -187,8 +190,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
 
       if(record == null)
       {
-         QTableMetaData table = input.getInstance().getTable(join.getLeftTable());
-         throw (new QNotFoundException("Could not find " + (table == null ? "" : table.getLabel()) + " with primary key " + id));
+         throw (new QNotFoundException("Could not find " + (leftTable == null ? "" : leftTable.getLabel()) + " with primary key " + id));
       }
 
       ////////////////////////////////////////////////////////////////////
@@ -209,6 +211,8 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       queryInput.setFilter(filter);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
+      QValueFormatter.setBlobValuesToDownloadUrls(rightTable, queryOutput.getRecords());
+
       int totalRows = queryOutput.getRecords().size();
       if(maxRows != null && (queryOutput.getRecords().size() == maxRows))
       {
@@ -222,11 +226,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          totalRows = new CountAction().execute(countInput).getCount();
       }
 
-      QTableMetaData table       = input.getInstance().getTable(join.getRightTable());
-      String         tablePath   = input.getInstance().getTablePath(table.getName());
-      String         viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
+      String tablePath   = input.getInstance().getTablePath(rightTable.getName());
+      String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
 
-      ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, table, tablePath, viewAllLink, totalRows);
+      ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, rightTable, tablePath, viewAllLink, totalRows);
 
       if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
       {

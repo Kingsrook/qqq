@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -395,8 +396,24 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, Class<T> entityClass) throws QException
    {
+      return (loadTableToMap(tableName, keyFieldName, entityClass, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - null values from the key field are NOT put in the map.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(String tableName, String keyFieldName, Class<T> entityClass, Consumer<QueryInput> queryInputCustomizer) throws QException
+   {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
+
+      if(queryInputCustomizer != null)
+      {
+         queryInputCustomizer.accept(queryInput);
+      }
+
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
 

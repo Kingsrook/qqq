@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
 import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,8 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for RenderTemplateAction
  *******************************************************************************/
-class RenderTemplateActionTest extends BaseTest
+public class RenderTemplateActionTest extends BaseTest
 {
+   private int doThrowCallCount = 0;
+
+
 
    /*******************************************************************************
     **
@@ -82,11 +86,46 @@ class RenderTemplateActionTest extends BaseTest
    @Test
    void testMissingType()
    {
-      RenderTemplateInput parentActionInput = new RenderTemplateInput();
-
-      assertThatThrownBy(() -> RenderTemplateAction.render(parentActionInput, null, Map.of("name", "Darin"), "Hello, $name"))
+      assertThatThrownBy(() -> RenderTemplateAction.render(null, Map.of("name", "Darin"), "Hello, $name"))
          .isInstanceOf(QException.class)
          .hasMessageContaining("Unsupported Template Type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExceptionInVelocity() throws QException
+   {
+      RenderTemplateInput renderTemplateInput = new RenderTemplateInput();
+      renderTemplateInput.setCode("""
+         This should throw: $this.doThrow().
+         This should throw silently: $!this.doThrow().
+         """);
+      renderTemplateInput.setContext(Map.of("this", this));
+      renderTemplateInput.setTemplateType(TemplateType.VELOCITY);
+      RenderTemplateOutput output = new RenderTemplateAction().execute(renderTemplateInput);
+      assertThat(output.getResult())
+         .contains("throw: $this.doThrow().")
+         .contains("throw silently: .");
+
+      ///////////////////////////////////////////////////////
+      // make sure our method got called twice as expected //
+      ///////////////////////////////////////////////////////
+      assertEquals(2, doThrowCallCount);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String doThrow() throws Exception
+   {
+      doThrowCallCount++;
+      throw (new Exception("You asked to throw..."));
    }
 
 }

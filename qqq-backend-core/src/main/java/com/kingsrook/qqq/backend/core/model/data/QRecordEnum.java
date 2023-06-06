@@ -167,7 +167,8 @@ public interface QRecordEnum
          || returnType.equals(BigDecimal.class)
          || returnType.equals(Instant.class)
          || returnType.equals(LocalDate.class)
-         || returnType.equals(LocalTime.class));
+         || returnType.equals(LocalTime.class)
+         || returnType.equals(byte[].class));
       /////////////////////////////////////////////
       // note - this list has implications upon: //
       // - QFieldType.fromClass                  //

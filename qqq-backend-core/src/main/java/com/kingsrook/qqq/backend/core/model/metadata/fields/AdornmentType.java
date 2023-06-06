@@ -40,6 +40,7 @@ public enum AdornmentType
    CODE_EDITOR,
    RENDER_HTML,
    REVEAL,
+   FILE_DOWNLOAD,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
@@ -54,6 +55,26 @@ public enum AdornmentType
    {
       String TARGET               = "target";
       String TO_RECORD_FROM_TABLE = "toRecordFromTable";
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public interface FileDownloadValues
+   {
+      String FILE_NAME_FIELD   = "fileNameField";
+      String DEFAULT_EXTENSION = "defaultExtension";
+      String DEFAULT_MIME_TYPE = "defaultMimeType";
+
+      ////////////////////////////////////////////////////
+      // use these two together, as in:                 //
+      // FILE_NAME_FORMAT = "Order %s Packing Slip.pdf" //
+      // FILE_NAME_FORMAT_FIELDS = "orderId"            //
+      ////////////////////////////////////////////////////
+      String FILE_NAME_FORMAT        = "fileNameFormat";
+      String FILE_NAME_FORMAT_FIELDS = "fileNameFormatFields";
    }
 
 
@@ -112,6 +133,7 @@ public enum AdornmentType
       XSMALL,
       SMALL,
       MEDIUM,
+      MEDLARGE,
       LARGE,
       XLARGE;
 
