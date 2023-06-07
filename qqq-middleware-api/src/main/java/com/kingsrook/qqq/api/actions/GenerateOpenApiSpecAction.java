@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -485,7 +486,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
-            StringBuilder description = new StringBuilder("Query on the " + tableApiField.getLabel() + " field.  ");
+            String label = tableApiField.getLabel();
+            if(!StringUtils.hasContent(label))
+            {
+               label = QInstanceEnricher.nameToLabel(tableApiField.getName());
+            }
+
+            StringBuilder description = new StringBuilder("Query on the " + label + " field.  ");
             if(tableApiField.getType().equals(QFieldType.BLOB))
             {
                description.append("Can only query for EMPTY or !EMPTY.");
@@ -932,7 +939,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
    {
-      String description = field.getLabel() + " for the " + table.getLabel() + ".";
+      String fieldLabel = field.getLabel();
+      if(!StringUtils.hasContent(fieldLabel))
+      {
+         fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+      }
+
+      String description = fieldLabel + " for the " + table.getLabel() + ".";
       if(field.getType().equals(QFieldType.BLOB))
       {
          description = "Base64 encoded " + description;
