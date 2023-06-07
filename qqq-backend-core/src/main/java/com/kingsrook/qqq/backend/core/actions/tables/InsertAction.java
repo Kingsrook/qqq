@@ -233,6 +233,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          List<QRecord> nextLevelInserts = new ArrayList<>();
          for(QRecord record : insertedRecords)
          {
+            if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+            {
+               continue;
+            }
+
             if(record.getAssociatedRecords() != null && record.getAssociatedRecords().containsKey(association.getName()))
             {
                for(QRecord associatedRecord : CollectionUtils.nonNullList(record.getAssociatedRecords().get(association.getName())))
