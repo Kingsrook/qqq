@@ -146,6 +146,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
          // Build records-to-update for passing into the validation method of the Update action //
          /////////////////////////////////////////////////////////////////////////////////////////
          List<QRecord>              recordsForValidation = new ArrayList<>();
+         List<QRecord>              originalRecords      = new ArrayList<>();
          Map<Serializable, QRecord> pkeyToFullRecordMap  = new HashMap<>();
          for(QRecord record : runBackendStepInput.getRecords())
          {
@@ -153,6 +154,11 @@ public class BulkEditTransformStep extends AbstractTransformStep
             recordToUpdate.setValue(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
             setUpdatedFieldsInRecord(runBackendStepInput, enabledFields, recordToUpdate);
             recordsForValidation.add(recordToUpdate);
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // add to list of original records - for input to validation, for looking for changes //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            originalRecords.add(new QRecord(record));
 
             /////////////////////////////////////////////////////////////
             // put the full record (with updated values) in the output //
@@ -168,7 +174,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
          updateInput.setInputSource(QInputSource.USER);
          updateInput.setTableName(table.getName());
          updateInput.setRecords(recordsForValidation);
-         new UpdateAction().performValidations(updateInput, Optional.of(runBackendStepInput.getRecords()), true);
+         new UpdateAction().performValidations(updateInput, Optional.of(originalRecords), true);
 
          /////////////////////////////////////////////////////////////
          // look at the update input to build process summary lines //
