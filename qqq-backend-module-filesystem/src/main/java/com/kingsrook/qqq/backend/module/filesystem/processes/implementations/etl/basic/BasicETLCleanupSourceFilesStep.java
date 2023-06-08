@@ -31,7 +31,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -127,8 +126,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
          .withName(STEP_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .addField(new QFieldMetaData("moveOrDelete", QFieldType.STRING))
             .addField(new QFieldMetaData("destinationForMoves", QFieldType.STRING))));

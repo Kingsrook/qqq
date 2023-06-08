@@ -61,7 +61,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.automation.PollingAutomatio
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -239,7 +238,7 @@ public class TestUtils
    {
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
-         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class)));
    }
 
 
@@ -277,12 +276,23 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   public static void insertRecords(QTableMetaData table, List<QRecord> records) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(table.getName());
       insertInput.setRecords(records);
       new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Deprecated(since = "better to call the one without qInstance param")
+   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
+   {
+      insertRecords(table, records);
    }
 
 
@@ -939,8 +949,7 @@ public class TestUtils
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -977,8 +986,7 @@ public class TestUtils
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -1018,8 +1026,7 @@ public class TestUtils
             .withName("getAgeStatistics")
             .withCode(new QCodeReference()
                .withName(GetAgeStatistics.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON)))
             .withOutputMetaData(new QFunctionOutputMetaData()
@@ -1033,8 +1040,7 @@ public class TestUtils
             .withName("addAge")
             .withCode(new QCodeReference()
                .withName(AddAge.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withFieldList(List.of(new QFieldMetaData("yearsToAdd", QFieldType.INTEGER))))
             .withOutputMetaData(new QFunctionOutputMetaData()
@@ -1064,8 +1070,7 @@ public class TestUtils
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(

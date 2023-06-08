@@ -269,7 +269,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String aHrefViewRecord(RenderWidgetInput input, String tableName, Serializable id, String linkText) throws QException
+   public static String aHrefViewRecord(String tableName, Serializable id, String linkText) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)
@@ -277,7 +277,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
          return (linkText);
       }
 
-      return ("<a href=\"" + linkRecordView(input, tableName, id) + "\">" + linkText + "</a>");
+      return ("<a href=\"" + linkRecordView(tableName, id) + "\">" + linkText + "</a>");
    }
 
 
@@ -296,7 +296,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String linkRecordView(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   public static String linkRecordView(String tableName, Serializable recordId) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
       if(tablePath == null)

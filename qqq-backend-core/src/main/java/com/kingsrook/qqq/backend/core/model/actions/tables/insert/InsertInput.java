@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -36,6 +38,7 @@ public class InsertInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
    private List<QRecord>       records;
+   private InputSource         inputSource = QInputSource.SYSTEM;
 
    private boolean skipUniqueKeyCheck = false;
 
@@ -179,6 +182,37 @@ public class InsertInput extends AbstractTableActionInput
    public InsertInput withRecords(List<QRecord> records)
    {
       this.records = records;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inputSource
+    *******************************************************************************/
+   public InputSource getInputSource()
+   {
+      return (this.inputSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputSource
+    *******************************************************************************/
+   public void setInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputSource
+    *******************************************************************************/
+   public InsertInput withInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
       return (this);
    }
 

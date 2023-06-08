@@ -41,7 +41,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticat
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
@@ -156,7 +155,7 @@ public class SampleMetaDataProvider
    {
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
-         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class)));
 
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
       String                       accountId   = interpreter.interpret("${env.QUICKSIGHT_ACCOUNT_ID}");
@@ -173,7 +172,7 @@ public class SampleMetaDataProvider
          .withRegion(Regions.US_EAST_2.getName())
          .withName(QuickSightChartRenderer.class.getSimpleName())
          .withLabel("Example Quicksight Chart")
-         .withCodeReference(new QCodeReference(QuickSightChartRenderer.class, null));
+         .withCodeReference(new QCodeReference(QuickSightChartRenderer.class));
 
       qInstance.addWidget(quickSightChartMetaData);
    }
@@ -418,8 +417,7 @@ public class SampleMetaDataProvider
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -561,8 +559,7 @@ public class SampleMetaDataProvider
             .withName(STEP_NAME_SLEEPER)
             .withCode(new QCodeReference()
                .withName(SleeperStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
@@ -619,8 +616,7 @@ public class SampleMetaDataProvider
             .withName(STEP_NAME_THROWER)
             .withCode(new QCodeReference()
                .withName(ThrowerStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }

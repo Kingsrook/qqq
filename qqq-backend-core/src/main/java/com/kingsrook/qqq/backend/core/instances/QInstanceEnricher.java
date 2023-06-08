@@ -39,7 +39,6 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
@@ -66,14 +65,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -698,7 +697,7 @@ public class QInstanceEnricher
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
             BulkInsertExtractStep.class,
             BulkInsertTransformStep.class,
-            LoadViaInsertStep.class,
+            BulkInsertLoadStep.class,
             values
          )
          .withName(processName)
@@ -706,7 +705,7 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> editableFields = new ArrayList<>();
       for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
@@ -716,7 +715,7 @@ public class QInstanceEnricher
             try
             {
                QFieldMetaData field = table.getField(fieldName);
-               if(field.getIsEditable())
+               if(field.getIsEditable() && !field.getType().equals(QFieldType.BLOB))
                {
                   editableFields.add(field);
                }
@@ -735,7 +734,7 @@ public class QInstanceEnricher
       QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
          .withName("upload")
          .withLabel("Upload File")
-         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withIsRequired(true))
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
          .withComponent(new QFrontendComponentMetaData()
             .withType(QComponentType.HELP_TEXT)
             .withValue("previewText", "file upload instructions")
@@ -762,7 +761,7 @@ public class QInstanceEnricher
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
             ExtractViaQueryStep.class,
             BulkEditTransformStep.class,
-            LoadViaUpdateStep.class,
+            BulkEditLoadStep.class,
             values
          )
          .withName(processName)
@@ -770,10 +769,11 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> editableFields = table.getFields().values().stream()
          .filter(QFieldMetaData::getIsEditable)
+         .filter(f -> !f.getType().equals(QFieldType.BLOB))
          .toList();
 
       QFrontendStepMetaData editScreen = new QFrontendStepMetaData()
@@ -809,7 +809,7 @@ public class QInstanceEnricher
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
             ExtractViaQueryStep.class,
             BulkDeleteTransformStep.class,
-            LoadViaDeleteStep.class,
+            BulkDeleteLoadStep.class,
             values
          )
          .withName(processName)
@@ -817,7 +817,7 @@ public class QInstanceEnricher
          .withTableName(table.getName())
          .withIsHidden(true)
          .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class, QCodeUsage.CUSTOMIZER)));
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
 
       List<QFieldMetaData> tableFields = table.getFields().values().stream().toList();
       process.getFrontendStep("review").setRecordListFields(tableFields);

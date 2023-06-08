@@ -22,16 +22,15 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
-import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
+import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractPostReadFileCustomizer;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.FilesystemTableCustomizers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -70,7 +69,7 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       QInstance  instance   = TestUtils.defineInstance();
 
       QTableMetaData table = instance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
-      table.withCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole(), new QCodeReference(ValueUpshifter.class, QCodeUsage.CUSTOMIZER));
+      table.withCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole(), new QCodeReference(ValueUpshifter.class));
       reInitInstanceInContext(instance);
 
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
@@ -83,10 +82,10 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
 
 
 
-   public static class ValueUpshifter implements Function<String, String>
+   public static class ValueUpshifter extends AbstractPostReadFileCustomizer
    {
       @Override
-      public String apply(String s)
+      public String customizeFileContents(String s)
       {
          return (s.replaceAll("kingsrook.com", "KINGSROOK.COM"));
       }

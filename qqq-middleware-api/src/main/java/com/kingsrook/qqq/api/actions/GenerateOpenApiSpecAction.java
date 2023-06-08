@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -360,6 +361,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             continue;
          }
 
+         if(!StringUtils.hasContent(table.getPrimaryKeyField()))
+         {
+            throw (new QException("Unable to generate OpenAPI spec for table " + tableName + ", because it does not have a primary key."));
+         }
+
          String               tableApiName        = StringUtils.hasContent(apiTableMetaData.getApiTableName()) ? apiTableMetaData.getApiTableName() : tableName;
          String               tableApiNameUcFirst = StringUtils.ucFirst(tableApiName);
          String               tableLabel          = table.getLabel();
@@ -480,9 +486,25 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
+            String label = tableApiField.getLabel();
+            if(!StringUtils.hasContent(label))
+            {
+               label = QInstanceEnricher.nameToLabel(tableApiField.getName());
+            }
+
+            StringBuilder description = new StringBuilder("Query on the " + label + " field.  ");
+            if(tableApiField.getType().equals(QFieldType.BLOB))
+            {
+               description.append("Can only query for EMPTY or !EMPTY.");
+            }
+            else
+            {
+               description.append("Can prefix value with an operator, else defaults to = (equals).");
+            }
+
             queryGet.getParameters().add(new Parameter()
                .withName(tableApiField.getName())
-               .withDescription("Query on the " + tableApiField.getLabel() + " field.  Can prefix value with an operator, else defaults to = (equals).")
+               .withDescription(description.toString())
                .withIn("query")
                .withExplode(true)
                .withSchema(new Schema()
@@ -837,6 +859,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       rs.put("criteriaStringNotLike", new ExampleWithListValue().withSummary("not starting with f").withValue(ListBuilder.of("!LIKE f%")));
       rs.put("criteriaStringMultiple", new ExampleWithListValue().withSummary("multiple criteria: between bar and foo and not equal to baz").withValue(ListBuilder.of("BETWEEN bar,foo", "!baz")));
 
+      rs.put("criteriaBlobEmpty", new ExampleWithListValue().withSummary("null value").withValue(ListBuilder.of("EMPTY")));
+      rs.put("criteriaBlobNotEmpty", new ExampleWithListValue().withSummary("non-null value").withValue(ListBuilder.of("!EMPTY")));
+
       return (rs);
    }
 
@@ -869,6 +894,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       else if(tableApiField.getType().equals(QFieldType.BOOLEAN))
       {
          componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaBoolean")).forEach(exampleRefs::add);
+      }
+      else if(tableApiField.getType().equals(QFieldType.BLOB))
+      {
+         componentExamples.keySet().stream().filter(s -> s.startsWith("criteriaBlob")).forEach(exampleRefs::add);
       }
 
       Map<String, Example> rs = new LinkedHashMap<>();
@@ -910,10 +939,22 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
    {
+      String fieldLabel = field.getLabel();
+      if(!StringUtils.hasContent(fieldLabel))
+      {
+         fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+      }
+
+      String description = fieldLabel + " for the " + table.getLabel() + ".";
+      if(field.getType().equals(QFieldType.BLOB))
+      {
+         description = "Base64 encoded " + description;
+      }
+
       Schema fieldSchema = new Schema()
          .withType(getFieldType(field))
          .withFormat(getFieldFormat(field))
-         .withDescription(field.getLabel() + " for the " + table.getLabel() + ".");
+         .withDescription(description);
 
       if(!field.getIsEditable())
       {

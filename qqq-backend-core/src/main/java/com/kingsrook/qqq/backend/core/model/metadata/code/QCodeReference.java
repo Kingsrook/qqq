@@ -23,9 +23,6 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
 import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 
 
 /*******************************************************************************
@@ -34,9 +31,8 @@ import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvide
  *******************************************************************************/
 public class QCodeReference implements Serializable
 {
-   private String     name;
-   private QCodeType  codeType;
-   private QCodeUsage codeUsage;
+   private String    name;
+   private QCodeType codeType;
 
    private String inlineCode;
 
@@ -54,11 +50,10 @@ public class QCodeReference implements Serializable
    /*******************************************************************************
     ** Constructor that takes all args
     *******************************************************************************/
-   public QCodeReference(String name, QCodeType codeType, QCodeUsage codeUsage)
+   public QCodeReference(String name, QCodeType codeType)
    {
       this.name = name;
       this.codeType = codeType;
-      this.codeUsage = codeUsage;
    }
 
 
@@ -81,35 +76,6 @@ public class QCodeReference implements Serializable
    {
       this.name = javaClass.getName();
       this.codeType = QCodeType.JAVA;
-
-      if(BackendStep.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.BACKEND_STEP;
-      }
-      else if(QCustomPossibleValueProvider.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.POSSIBLE_VALUE_PROVIDER;
-      }
-      else if(RecordAutomationHandler.class.isAssignableFrom(javaClass))
-      {
-         this.codeUsage = QCodeUsage.RECORD_AUTOMATION_HANDLER;
-      }
-      else
-      {
-         throw (new IllegalStateException("Unable to infer code usage type for class: " + javaClass.getName()));
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor that just takes a java class and code usage.
-    *******************************************************************************/
-   public QCodeReference(Class<?> javaClass, QCodeUsage codeUsage)
-   {
-      this.name = javaClass.getName();
-      this.codeType = QCodeType.JAVA;
-      this.codeUsage = codeUsage;
    }
 
 
@@ -177,40 +143,6 @@ public class QCodeReference implements Serializable
    public QCodeReference withCodeType(QCodeType codeType)
    {
       this.codeType = codeType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for codeUsage
-    **
-    *******************************************************************************/
-   public QCodeUsage getCodeUsage()
-   {
-      return codeUsage;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for codeUsage
-    **
-    *******************************************************************************/
-   public void setCodeUsage(QCodeUsage codeUsage)
-   {
-      this.codeUsage = codeUsage;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for codeUsage
-    **
-    *******************************************************************************/
-   public QCodeReference withCodeUsage(QCodeUsage codeUsage)
-   {
-      this.codeUsage = codeUsage;
       return (this);
    }
 

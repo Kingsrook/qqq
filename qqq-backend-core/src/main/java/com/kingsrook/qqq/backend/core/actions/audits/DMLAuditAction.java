@@ -79,7 +79,6 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    {
       DMLAuditOutput           output           = new DMLAuditOutput();
       AbstractTableActionInput tableActionInput = input.getTableActionInput();
-      List<QRecord>            recordList       = input.getRecordList();
       List<QRecord>            oldRecordList    = input.getOldRecordList();
       QTableMetaData           table            = tableActionInput.getTable();
       long                     start            = System.currentTimeMillis();
@@ -87,6 +86,9 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
 
       try
       {
+         List<QRecord> recordList = CollectionUtils.nonNullList(input.getRecordList()).stream()
+            .filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors())).toList();
+
          AuditLevel auditLevel = getAuditLevel(tableActionInput);
          if(auditLevel == null || auditLevel.equals(AuditLevel.NONE) || CollectionUtils.nullSafeIsEmpty(recordList))
          {
@@ -96,8 +98,13 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             return (output);
          }
 
-         String                        contextSuffix = "";
-         Optional<AbstractActionInput> actionInput   = QContext.getFirstActionInStack();
+         String contextSuffix = "";
+         if(StringUtils.hasContent(input.getAuditContext()))
+         {
+            contextSuffix = " " + input.getAuditContext();
+         }
+
+         Optional<AbstractActionInput> actionInput = QContext.getFirstActionInStack();
          if(actionInput.isPresent() && actionInput.get() instanceof RunProcessInput runProcessInput)
          {
             String           processName = runProcessInput.getProcessName();
@@ -187,32 +194,57 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                         continue;
                      }
 
-                     String formattedValue = getFormattedValueForAuditDetail(record, fieldName, field, value);
-                     detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formattedValue);
-                     detailRecord.withValue("newValue", formattedValue);
+                     if(field.getType().equals(QFieldType.BLOB))
+                     {
+                        detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
+                     }
+                     else
+                     {
+                        String formattedValue = getFormattedValueForAuditDetail(record, fieldName, field, value);
+                        detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formattedValue);
+                        detailRecord.withValue("newValue", formattedValue);
+                     }
                   }
                   else
                   {
                      if(!Objects.equals(oldValue, value))
                      {
-                        String formattedValue    = getFormattedValueForAuditDetail(record, fieldName, field, value);
-                        String formattedOldValue = getFormattedValueForAuditDetail(oldRecord, fieldName, field, oldValue);
-
-                        if(oldValue == null)
+                        if(field.getType().equals(QFieldType.BLOB))
                         {
-                           detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
-                           detailRecord.withValue("newValue", formattedValue);
-                        }
-                        else if(value == null)
-                        {
-                           detailRecord = new QRecord().withValue("message", "Removed " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " from " + field.getLabel());
-                           detailRecord.withValue("oldValue", formattedOldValue);
+                           if(oldValue == null)
+                           {
+                              detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
+                           }
+                           else if(value == null)
+                           {
+                              detailRecord = new QRecord().withValue("message", "Removed " + field.getLabel());
+                           }
+                           else
+                           {
+                              detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel());
+                           }
                         }
                         else
                         {
-                           detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel() + " from " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
-                           detailRecord.withValue("oldValue", formattedOldValue);
-                           detailRecord.withValue("newValue", formattedValue);
+                           String formattedValue    = getFormattedValueForAuditDetail(record, fieldName, field, value);
+                           String formattedOldValue = getFormattedValueForAuditDetail(oldRecord, fieldName, field, oldValue);
+
+                           if(oldValue == null)
+                           {
+                              detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
+                              detailRecord.withValue("newValue", formattedValue);
+                           }
+                           else if(value == null)
+                           {
+                              detailRecord = new QRecord().withValue("message", "Removed " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " from " + field.getLabel());
+                              detailRecord.withValue("oldValue", formattedOldValue);
+                           }
+                           else
+                           {
+                              detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel() + " from " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
+                              detailRecord.withValue("oldValue", formattedOldValue);
+                              detailRecord.withValue("newValue", formattedValue);
+                           }
                         }
                      }
                   }

@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -280,7 +281,13 @@ public class QJavalinProcessHandler
          QJavalinImplementation.setupSession(context, new AbstractActionInput());
          // todo context.contentType(reportFormat.getMimeType());
          context.header("Content-Disposition", "filename=" + context.pathParam("file"));
-         context.result(new FileInputStream(context.queryParam("filePath")));
+
+         String filePath = context.queryParam("filePath");
+         if(filePath == null)
+         {
+            throw (new QBadRequestException("A filePath was not provided."));
+         }
+         context.result(new FileInputStream(filePath));
       }
       catch(Exception e)
       {

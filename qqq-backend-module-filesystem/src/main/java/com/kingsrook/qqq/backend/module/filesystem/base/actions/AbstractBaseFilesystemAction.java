@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -41,7 +41,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -307,21 +306,15 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    private String customizeFileContentsAfterReading(QTableMetaData table, String fileContents) throws QException
    {
-      Optional<QCodeReference> optionalCustomizer = table.getCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole());
-      if(optionalCustomizer.isEmpty())
-      {
-         return (fileContents);
-      }
-      QCodeReference customizer = optionalCustomizer.get();
-
       try
       {
-         Class<?> customizerClass = Class.forName(customizer.getName());
+         Optional<AbstractPostReadFileCustomizer> tableCustomizer = QCodeLoader.getTableCustomizer(AbstractPostReadFileCustomizer.class, table, FilesystemTableCustomizers.POST_READ_FILE.getRole());
+         if(tableCustomizer.isEmpty())
+         {
+            return (fileContents);
+         }
 
-         @SuppressWarnings("unchecked")
-         Function<String, String> function = (Function<String, String>) customizerClass.getConstructor().newInstance();
-
-         return function.apply(fileContents);
+         return tableCustomizer.get().customizeFileContents(fileContents);
       }
       catch(Exception e)
       {

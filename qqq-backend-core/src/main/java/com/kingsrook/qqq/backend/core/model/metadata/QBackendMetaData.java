@@ -43,6 +43,9 @@ public class QBackendMetaData
    private String name;
    private String backendType;
 
+   private Boolean usesVariants = false;
+   private String  variantOptionsTableName;
+
    private Set<Capability> enabledCapabilities  = new HashSet<>();
    private Set<Capability> disabledCapabilities = new HashSet<>();
 
@@ -343,4 +346,67 @@ public class QBackendMetaData
       // noop in base class //
       ////////////////////////
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for usesVariants
+    *******************************************************************************/
+   public Boolean getUsesVariants()
+   {
+      return (this.usesVariants);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for usesVariants
+    *******************************************************************************/
+   public void setUsesVariants(Boolean usesVariants)
+   {
+      this.usesVariants = usesVariants;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for usesVariants
+    *******************************************************************************/
+   public QBackendMetaData withUsesVariants(Boolean usesVariants)
+   {
+      this.usesVariants = usesVariants;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantsOptionTableName
+    *******************************************************************************/
+   public String getVariantOptionsTableName()
+   {
+      return (this.variantOptionsTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantsOptionTableName
+    *******************************************************************************/
+   public void setVariantOptionsTableName(String variantOptionsTableName)
+   {
+      this.variantOptionsTableName = variantOptionsTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantsOptionTableName
+    *******************************************************************************/
+   public QBackendMetaData withVariantsOptionTableName(String variantsOptionTableName)
+   {
+      this.variantOptionsTableName = variantsOptionTableName;
+      return (this);
+   }
+
 }

@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -80,6 +81,16 @@ public class QueryAction
    public QueryOutput execute(QueryInput queryInput) throws QException
    {
       ActionHelper.validateSession(queryInput);
+
+      if(queryInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in query input"));
+      }
+
+      if(queryInput.getTable() == null)
+      {
+         throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
+      }
 
       postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
@@ -273,7 +284,7 @@ public class QueryAction
             {
                hiddenFields.add(fieldName);
             }
-            else if(field.getType() != null && field.getType().needsMasked())
+            else if(queryInput.getShouldMaskPasswords() && field.getType() != null && field.getType().needsMasked() && !field.hasAdornmentType(AdornmentType.REVEAL))
             {
                maskedFields.add(fieldName);
             }

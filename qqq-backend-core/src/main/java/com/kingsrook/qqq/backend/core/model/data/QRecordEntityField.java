@@ -165,6 +165,11 @@ public class QRecordEntityField
          {
             return (ValueUtils.getValueAsLocalTime(value));
          }
+
+         if(type.equals(byte[].class))
+         {
+            return (ValueUtils.getValueAsByteArray(value));
+         }
       }
       catch(Exception e)
       {

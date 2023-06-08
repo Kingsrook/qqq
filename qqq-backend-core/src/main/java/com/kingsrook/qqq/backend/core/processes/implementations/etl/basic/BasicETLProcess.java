@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.basic;
 
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -59,8 +58,7 @@ public class BasicETLProcess
          .withName(FUNCTION_NAME_EXTRACT)
          .withCode(new QCodeReference()
             .withName(BasicETLExtractFunction.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING)));
 
@@ -68,8 +66,7 @@ public class BasicETLProcess
          .withName(FUNCTION_NAME_TRANSFORM)
          .withCode(new QCodeReference()
             .withName(BasicETLTransformFunction.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)));
@@ -78,8 +75,7 @@ public class BasicETLProcess
          .withName(FUNCTION_NAME_LOAD)
          .withCode(new QCodeReference()
             .withName(BasicETLLoadFunction.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING)))
          .withOutputMetaData(new QFunctionOutputMetaData()

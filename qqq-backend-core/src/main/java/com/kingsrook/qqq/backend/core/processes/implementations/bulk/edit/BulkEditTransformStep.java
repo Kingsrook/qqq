@@ -24,7 +24,11 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -33,11 +37,15 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -51,6 +59,8 @@ public class BulkEditTransformStep extends AbstractTransformStep
 
    private ProcessSummaryLine       okSummary     = new ProcessSummaryLine(Status.OK);
    private List<ProcessSummaryLine> infoSummaries = new ArrayList<>();
+
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("edited");
 
    private QTableMetaData table;
    private String         tableLabel;
@@ -77,14 +87,14 @@ public class BulkEditTransformStep extends AbstractTransformStep
          tableLabel = table.getLabel();
       }
 
-      String enabledFieldsString = runBackendStepInput.getValueString(FIELD_ENABLED_FIELDS);
-      enabledFields = enabledFieldsString.split(",");
-
       isValidateStep = runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
       isExecuteStep = runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_EXECUTE);
       haveRecordCount = runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_RECORD_COUNT) != null;
 
-      buildInfoSummaryLines(runBackendStepInput, enabledFields);
+      String enabledFieldsString = runBackendStepInput.getValueString(FIELD_ENABLED_FIELDS);
+      enabledFields = enabledFieldsString.split(",");
+
+      buildInfoSummaryLines(runBackendStepInput, table, infoSummaries, isExecuteStep);
    }
 
 
@@ -132,19 +142,65 @@ public class BulkEditTransformStep extends AbstractTransformStep
       }
       else
       {
-         ////////////////////////////////////////////////////////////////////////////////////////////
-         // put the value in all the records (note, this is just for display on the review screen, //
-         // and/or if we wanted to do some validation - this is NOT what will be store, as the     //
-         // Update action only wants fields that are being changed.                                //
-         ////////////////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // Build records-to-update for passing into the validation method of the Update action //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         List<QRecord>              recordsForValidation = new ArrayList<>();
+         List<QRecord>              originalRecords      = new ArrayList<>();
+         Map<Serializable, QRecord> pkeyToFullRecordMap  = new HashMap<>();
          for(QRecord record : runBackendStepInput.getRecords())
          {
-            outputRecords.add(record);
+            QRecord recordToUpdate = new QRecord();
+            recordToUpdate.setValue(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
+            setUpdatedFieldsInRecord(runBackendStepInput, enabledFields, recordToUpdate);
+            recordsForValidation.add(recordToUpdate);
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // add to list of original records - for input to validation, for looking for changes //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            originalRecords.add(new QRecord(record));
+
+            /////////////////////////////////////////////////////////////
+            // put the full record (with updated values) in the output //
+            /////////////////////////////////////////////////////////////
             setUpdatedFieldsInRecord(runBackendStepInput, enabledFields, record);
+            pkeyToFullRecordMap.put(record.getValue(table.getPrimaryKeyField()), record);
+         }
+
+         ///////////////////////////////////////////////////////////////////////
+         // run the validation - critically - in preview mode (boolean param) //
+         ///////////////////////////////////////////////////////////////////////
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setInputSource(QInputSource.USER);
+         updateInput.setTableName(table.getName());
+         updateInput.setRecords(recordsForValidation);
+         new UpdateAction().performValidations(updateInput, Optional.of(originalRecords), true);
+
+         /////////////////////////////////////////////////////////////
+         // look at the update input to build process summary lines //
+         /////////////////////////////////////////////////////////////
+         for(QRecord record : updateInput.getRecords())
+         {
+            Serializable recordPrimaryKey = record.getValue(table.getPrimaryKeyField());
+            if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+            {
+               String message = record.getErrors().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addError(message, recordPrimaryKey);
+            }
+            else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
+            {
+               String message = record.getWarnings().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addWarning(message, recordPrimaryKey);
+               outputRecords.add(pkeyToFullRecordMap.get(recordPrimaryKey));
+            }
+            else
+            {
+               okSummary.incrementCountAndAddPrimaryKey(recordPrimaryKey);
+               outputRecords.add(pkeyToFullRecordMap.get(recordPrimaryKey));
+            }
          }
       }
       runBackendStepOutput.setRecords(outputRecords);
-      okSummary.incrementCount(runBackendStepInput.getRecords().size());
    }
 
 
@@ -152,9 +208,11 @@ public class BulkEditTransformStep extends AbstractTransformStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void buildInfoSummaryLines(RunBackendStepInput runBackendStepInput, String[] enabledFields)
+   static void buildInfoSummaryLines(RunBackendStepInput runBackendStepInput, QTableMetaData table, List<ProcessSummaryLine> infoSummaries, boolean isExecuteStep)
    {
-      QValueFormatter qValueFormatter = new QValueFormatter();
+      String   enabledFieldsString = runBackendStepInput.getValueString(FIELD_ENABLED_FIELDS);
+      String[] enabledFields       = enabledFieldsString.split(",");
+
       for(String fieldName : enabledFields)
       {
          QFieldMetaData field = table.getField(fieldName);
@@ -168,7 +226,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
          String verb = isExecuteStep ? "was" : "will be";
          if(StringUtils.hasContent(ValueUtils.getValueAsString(value)))
          {
-            String formattedValue = qValueFormatter.formatValue(field, value);
+            String formattedValue = QValueFormatter.formatValue(field, value);
 
             if(field.getPossibleValueSourceName() != null)
             {
@@ -211,15 +269,19 @@ public class BulkEditTransformStep extends AbstractTransformStep
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      okSummary.setSingularFutureMessage(tableLabel + " record will be edited.");
-      okSummary.setPluralFutureMessage(tableLabel + " records will be edited.");
-      okSummary.setSingularPastMessage(tableLabel + " record was edited.");
-      okSummary.setPluralPastMessage(tableLabel + " records were edited.");
-      okSummary.pickMessage(isForResultScreen);
-
       ArrayList<ProcessSummaryLineInterface> rs = new ArrayList<>();
-      rs.add(okSummary);
+
+      String noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
+
+      okSummary.setSingularFutureMessage(tableLabel + " record will be edited" + noWarningsSuffix + ".");
+      okSummary.setPluralFutureMessage(tableLabel + " records will be edited" + noWarningsSuffix + ".");
+      okSummary.pickMessage(isForResultScreen);
+      okSummary.addSelfToListIfAnyCount(rs);
+
+      processSummaryWarningsAndErrorsRollup.addToList(rs);
+
       rs.addAll(infoSummaries);
       return (rs);
    }
+
 }

@@ -27,12 +27,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostUpdateCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
@@ -52,13 +57,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -74,8 +81,6 @@ public class UpdateAction
 {
    private static final QLogger LOG = QLogger.getLogger(UpdateAction.class);
 
-   public static final String NOT_FOUND_ERROR_PREFIX = "No record was found to update";
-
 
 
    /*******************************************************************************
@@ -86,47 +91,146 @@ public class UpdateAction
       ActionHelper.validateSession(updateInput);
       setAutomationStatusField(updateInput);
 
-      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), updateInput.getTable(), updateInput.getRecords());
-      // todo - need to handle records with errors coming out of here...
+      QTableMetaData table = updateInput.getTable();
 
+      //////////////////////////////////////////////////////
+      // load the backend module and its update interface //
+      //////////////////////////////////////////////////////
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(updateInput.getBackend());
       UpdateInterface          updateInterface          = qModule.getUpdateInterface();
 
-      List<QRecord> oldRecordList = updateInterface.supportsPreFetchQuery() ? getOldRecordListForAuditIfNeeded(updateInput) : new ArrayList<>();
+      ////////////////////////////////////////////////////////////////////////////////
+      // fetch the old list of records (if the backend supports it), for audits,    //
+      // for "not-found detection", and for the pre-action to use (if there is one) //
+      ////////////////////////////////////////////////////////////////////////////////
+      Optional<List<QRecord>> oldRecordList = fetchOldRecords(updateInput, updateInterface);
 
-      validatePrimaryKeysAreGiven(updateInput);
+      performValidations(updateInput, oldRecordList, false);
 
-      if(updateInterface.supportsPreFetchQuery())
-      {
-         validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList);
-      }
-
-      validateRequiredFields(updateInput);
-      ValidateRecordSecurityLockHelper.validateSecurityFields(updateInput.getTable(), updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
-
-      // todo pre-customization - just get to modify the request?
+      ////////////////////////////////////
+      // have the backend do the update //
+      ////////////////////////////////////
       UpdateOutput updateOutput = updateInterface.execute(updateInput);
-      // todo post-customization - can do whatever w/ the result if you want
 
-      List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream()).toList();
+      //////////////////////////////
+      // log if there were errors //
+      //////////////////////////////
+      List<String> errors = updateOutput.getRecords().stream().flatMap(r -> r.getErrors().stream().map(Object::toString)).toList();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          LOG.info("Errors in updateAction", logPair("tableName", updateInput.getTableName()), logPair("errorCount", errors.size()), errors.size() < 10 ? logPair("errors", errors) : logPair("first10Errors", errors.subList(0, 10)));
       }
 
+      /////////////////////////////////////////////////////////////////////////////////////
+      // update (inserting and deleting as needed) any associations in the input records //
+      /////////////////////////////////////////////////////////////////////////////////////
       manageAssociations(updateInput);
 
+      //////////////////
+      // do the audit //
+      //////////////////
       if(updateInput.getOmitDmlAudit())
       {
          LOG.debug("Requested to omit DML audit");
       }
       else
       {
-         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(updateOutput.getRecords()).withOldRecordList(oldRecordList));
+         DMLAuditInput dmlAuditInput = new DMLAuditInput()
+            .withTableActionInput(updateInput)
+            .withRecordList(updateOutput.getRecords())
+            .withAuditContext(updateInput.getAuditContext());
+         oldRecordList.ifPresent(l -> dmlAuditInput.setOldRecordList(l));
+         new DMLAuditAction().execute(dmlAuditInput);
+      }
+
+      //////////////////////////////////////////////////////////////
+      // finally, run the post-update customizer, if there is one //
+      //////////////////////////////////////////////////////////////
+      Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
+      if(postUpdateCustomizer.isPresent())
+      {
+         try
+         {
+            postUpdateCustomizer.get().setUpdateInput(updateInput);
+            oldRecordList.ifPresent(l -> postUpdateCustomizer.get().setOldRecordList(l));
+            updateOutput.setRecords(postUpdateCustomizer.get().apply(updateOutput.getRecords()));
+         }
+         catch(Exception e)
+         {
+            for(QRecord record : updateOutput.getRecords())
+            {
+               record.addWarning(new QWarningMessage("An error occurred after the update: " + e.getMessage()));
+            }
+         }
       }
 
       return updateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void performValidations(UpdateInput updateInput, Optional<List<QRecord>> oldRecordList, boolean isPreview) throws QException
+   {
+      QTableMetaData table = updateInput.getTable();
+
+      /////////////////////////////
+      // run standard validators //
+      /////////////////////////////
+      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
+      validatePrimaryKeysAreGiven(updateInput);
+
+      if(oldRecordList.isPresent())
+      {
+         validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList.get());
+      }
+
+      if(updateInput.getInputSource().shouldValidateRequiredFields())
+      {
+         validateRequiredFields(updateInput);
+      }
+
+      ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+
+      ///////////////////////////////////////////////////////////////////////////
+      // after all validations, run the pre-update customizer, if there is one //
+      ///////////////////////////////////////////////////////////////////////////
+      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      if(preUpdateCustomizer.isPresent())
+      {
+         preUpdateCustomizer.get().setUpdateInput(updateInput);
+         preUpdateCustomizer.get().setIsPreview(isPreview);
+         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
+         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Optional<List<QRecord>> fetchOldRecords(UpdateInput updateInput, UpdateInterface updateInterface) throws QException
+   {
+      if(updateInterface.supportsPreFetchQuery())
+      {
+         String             primaryKeyField   = updateInput.getTable().getPrimaryKeyField();
+         List<Serializable> pkeysBeingUpdated = CollectionUtils.nonNullList(updateInput.getRecords()).stream().map(r -> r.getValue(primaryKeyField)).toList();
+
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTransaction(updateInput.getTransaction());
+         queryInput.setTableName(updateInput.getTableName());
+         queryInput.setFilter(new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, pkeysBeingUpdated)));
+         // todo - need a limit?  what if too many??
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+         return (Optional.of(queryOutput.getRecords()));
+      }
+
+      return (Optional.empty());
    }
 
 
@@ -144,7 +248,7 @@ public class UpdateAction
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(record.getValue(table.getPrimaryKeyField()) == null)
          {
-            record.addError("Missing value in primary key field");
+            record.addError(new BadInputStatusMessage("Missing value in primary key field"));
          }
       }
    }
@@ -204,7 +308,7 @@ public class UpdateAction
 
             if(!lookedUpRecords.containsKey(value))
             {
-               record.addError(NOT_FOUND_ERROR_PREFIX + " for " + primaryKeyField.getLabel() + " = " + value);
+               record.addError(new NotFoundStatusMessage("No record was found to update for " + primaryKeyField.getLabel() + " = " + value));
             }
          }
       }
@@ -233,9 +337,9 @@ public class UpdateAction
                /////////////////////////////////////////////////////////////////////////////////////////////
                if(record.getValues().containsKey(requiredField.getName()))
                {
-                  if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
+                  if(record.getValue(requiredField.getName()) == null || record.getValueString(requiredField.getName()).trim().equals(""))
                   {
-                     record.addError("Missing value in required field: " + requiredField.getLabel());
+                     record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
                   }
                }
             }
@@ -370,45 +474,6 @@ public class UpdateAction
                InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);
             }
          }
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static List<QRecord> getOldRecordListForAuditIfNeeded(UpdateInput updateInput)
-   {
-      if(updateInput.getOmitDmlAudit())
-      {
-         return (null);
-      }
-
-      try
-      {
-         AuditLevel    auditLevel    = DMLAuditAction.getAuditLevel(updateInput);
-         List<QRecord> oldRecordList = null;
-         if(AuditLevel.FIELD.equals(auditLevel))
-         {
-            String             primaryKeyField   = updateInput.getTable().getPrimaryKeyField();
-            List<Serializable> pkeysBeingUpdated = CollectionUtils.nonNullList(updateInput.getRecords()).stream().map(r -> r.getValue(primaryKeyField)).toList();
-
-            QueryInput queryInput = new QueryInput();
-            queryInput.setTransaction(updateInput.getTransaction());
-            queryInput.setTableName(updateInput.getTableName());
-            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, pkeysBeingUpdated)));
-            // todo - need a limit?  what if too many??
-            QueryOutput queryOutput = new QueryAction().execute(queryInput);
-
-            oldRecordList = queryOutput.getRecords();
-         }
-         return oldRecordList;
-      }
-      catch(Exception e)
-      {
-         LOG.warn("Error getting old record list for audit", e, logPair("table", updateInput.getTableName()));
-         return (null);
       }
    }
 

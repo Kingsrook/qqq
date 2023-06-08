@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -51,7 +51,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -66,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMeta
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
@@ -82,6 +84,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -418,7 +421,7 @@ public class QInstanceValidator
             {
                table.getFields().forEach((fieldName, field) ->
                {
-                  validateTableField(qInstance, tableName, fieldName, field);
+                  validateTableField(qInstance, tableName, fieldName, table, field);
                });
             }
 
@@ -659,7 +662,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QFieldMetaData field)
+   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -700,6 +703,55 @@ public class QInstanceValidator
 
          assertCondition(fieldSecurityLock.getDefaultBehavior() != null, prefix + "has a fieldSecurityLock that is missing a defaultBehavior");
          assertCondition(CollectionUtils.nullSafeHasContents(fieldSecurityLock.getOverrideValues()), prefix + "has a fieldSecurityLock that is missing overrideValues");
+      }
+
+      for(FieldAdornment adornment : CollectionUtils.nonNullList(field.getAdornments()))
+      {
+         Map<String, Serializable> adornmentValues = CollectionUtils.nonNullMap(adornment.getValues());
+         if(assertCondition(adornment.getType() != null, prefix + "has an adornment that is missing a type"))
+         {
+            String adornmentPrefix = prefix.trim() + ", " + adornment.getType() + " adornment ";
+            switch(adornment.getType())
+            {
+               case SIZE ->
+               {
+                  String width = ValueUtils.getValueAsString(adornmentValues.get("width"));
+                  if(assertCondition(StringUtils.hasContent(width), adornmentPrefix + "is missing a width value"))
+                  {
+                     assertNoException(() -> AdornmentType.Size.valueOf(width.toUpperCase()), adornmentPrefix + "has an unrecognized width value [" + width + "]");
+                  }
+               }
+               case FILE_DOWNLOAD ->
+               {
+                  String fileNameField = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
+                  if(StringUtils.hasContent(fileNameField)) // file name isn't required - but if given, must be a field on the table.
+                  {
+                     assertNoException(() -> table.getField(fileNameField), adornmentPrefix + "specifies an unrecognized fileNameField [" + fileNameField + "]");
+                  }
+
+                  if(adornmentValues.containsKey(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS))
+                  {
+                     try
+                     {
+                        @SuppressWarnings("unchecked")
+                        List<String> formatFieldNames = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
+                        for(String formatFieldName : CollectionUtils.nonNullList(formatFieldNames))
+                        {
+                           assertNoException(() -> table.getField(formatFieldName), adornmentPrefix + "specifies an unrecognized field name in fileNameFormatFields [" + formatFieldName + "]");
+                        }
+                     }
+                     catch(Exception e)
+                     {
+                        errors.add(adornmentPrefix + "fileNameFormatFields could not be accessed (is it a List<String>?)");
+                     }
+                  }
+               }
+               default ->
+               {
+                  // no validations by default
+               }
+            }
+         }
       }
    }
 
@@ -909,9 +961,9 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableCustomizer(String tableName, String customizerName, QCodeReference codeReference)
+   private void validateTableCustomizer(String tableName, String roleName, QCodeReference codeReference)
    {
-      String prefix = "Table " + tableName + ", customizer " + customizerName + ": ";
+      String prefix = "Table " + tableName + ", customizer " + roleName + ": ";
 
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {
@@ -934,7 +986,7 @@ public class QInstanceValidator
             //////////////////////////////////////////////////
             Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass);
 
-            TableCustomizers tableCustomizer = TableCustomizers.forRole(customizerName);
+            TableCustomizers tableCustomizer = TableCustomizers.forRole(roleName);
             if(tableCustomizer == null)
             {
                ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -947,29 +999,9 @@ public class QInstanceValidator
                ////////////////////////////////////////////////////////////////////////
                // make sure the customizer instance can be cast to the expected type //
                ////////////////////////////////////////////////////////////////////////
-               if(customizerInstance != null && tableCustomizer.getTableCustomizer().getExpectedType() != null)
+               if(customizerInstance != null && tableCustomizer.getExpectedType() != null)
                {
-                  Object castedObject = getCastedObject(prefix, tableCustomizer.getTableCustomizer().getExpectedType(), customizerInstance);
-
-                  Consumer<Object> validationFunction = tableCustomizer.getTableCustomizer().getValidationFunction();
-                  if(castedObject != null && validationFunction != null)
-                  {
-                     try
-                     {
-                        validationFunction.accept(castedObject);
-                     }
-                     catch(ClassCastException e)
-                     {
-                        errors.add(prefix + "Error validating customizer type parameters: " + e.getMessage());
-                     }
-                     catch(Exception e)
-                     {
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        // mmm, calling customizers w/ random data is expected to often throw, so, this check is iffy at best... //
-                        // if we run into more trouble here, we might consider disabling the whole "validation function" check.  //
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                     }
-                  }
+                  assertObjectCanBeCasted(prefix, tableCustomizer.getExpectedType(), customizerInstance);
                }
             }
          }
@@ -979,18 +1011,18 @@ public class QInstanceValidator
 
 
    /*******************************************************************************
-    **
+    ** Make sure that a given object can be casted to an expected type.
     *******************************************************************************/
-   private <T> T getCastedObject(String prefix, Class<T> expectedType, Object customizerInstance)
+   private <T> T assertObjectCanBeCasted(String errorPrefix, Class<T> expectedType, Object object)
    {
       T castedObject = null;
       try
       {
-         castedObject = expectedType.cast(customizerInstance);
+         castedObject = expectedType.cast(object);
       }
       catch(ClassCastException e)
       {
-         errors.add(prefix + "CodeReference is not of the expected type: " + expectedType);
+         errors.add(errorPrefix + "CodeReference is not of the expected type: " + expectedType);
       }
       return castedObject;
    }
@@ -1177,6 +1209,23 @@ public class QInstanceValidator
                   }
                }
             }
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // if the process has a schedule, make sure required schedule data populated //
+            ///////////////////////////////////////////////////////////////////////////////
+            if(process.getSchedule() != null)
+            {
+               QScheduleMetaData schedule = process.getSchedule();
+               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+
+               if(schedule.getBackendVariant() != null)
+               {
+                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant strategy was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+                  assertCondition(schedule.getVariantTableName() != null, "A variant table name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+                  assertCondition(schedule.getVariantFieldName() != null, "A variant field name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+               }
+            }
+
          });
       }
    }
@@ -1504,7 +1553,6 @@ public class QInstanceValidator
 
                      if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
                      {
-                        assertCondition(QCodeUsage.POSSIBLE_VALUE_PROVIDER.equals(possibleValueSource.getCustomCodeReference().getCodeUsage()), "customCodeReference for possibleValueSource " + pvsName + " is not a possibleValueProvider.");
                         validateSimpleCodeReference("PossibleValueSource " + pvsName + " custom code reference: ", possibleValueSource.getCustomCodeReference(), QCustomPossibleValueProvider.class);
                      }
                   }
@@ -1548,7 +1596,7 @@ public class QInstanceValidator
             ////////////////////////////////////////////////////////////////////////
             if(classInstance != null)
             {
-               getCastedObject(prefix, expectedClass, classInstance);
+               assertObjectCanBeCasted(prefix, expectedClass, classInstance);
             }
          }
       }

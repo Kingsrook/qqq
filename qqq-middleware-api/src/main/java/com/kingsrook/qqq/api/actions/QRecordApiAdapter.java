@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.actions;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -79,14 +81,23 @@ public class QRecordApiAdapter
       {
          ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
          String           apiFieldName     = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
+
+         Serializable value = null;
          if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
          {
-            outputRecord.put(apiFieldName, record.getValue(apiFieldMetaData.getReplacedByFieldName()));
+            value = record.getValue(apiFieldMetaData.getReplacedByFieldName());
          }
          else
          {
-            outputRecord.put(apiFieldName, record.getValue(field.getName()));
+            value = record.getValue(field.getName());
          }
+
+         if(field.getType().equals(QFieldType.BLOB) && value instanceof byte[] bytes)
+         {
+            value = Base64.getEncoder().encodeToString(bytes);
+         }
+
+         outputRecord.put(apiFieldName, value);
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +152,11 @@ public class QRecordApiAdapter
          {
             QFieldMetaData field = apiFieldsMap.get(jsonKey);
             Object         value = jsonObject.isNull(jsonKey) ? null : jsonObject.get(jsonKey);
+
+            if(field.getType().equals(QFieldType.BLOB) && value instanceof String s)
+            {
+               value = Base64.getDecoder().decode(s);
+            }
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////
             // generally, omit non-editable fields -                                                              //

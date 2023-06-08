@@ -47,6 +47,8 @@ public abstract class AbstractLoadStep implements BackendStep
    private   Optional<QBackendTransaction> transaction = Optional.empty();
    protected QSession                      session;
 
+   private AbstractTransformStep transformStep;
+
 
 
    /*******************************************************************************
@@ -120,6 +122,37 @@ public abstract class AbstractLoadStep implements BackendStep
    public Integer getOverrideRecordPipeCapacity(RunBackendStepInput runBackendStepInput)
    {
       return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for transformStep
+    *******************************************************************************/
+   public AbstractTransformStep getTransformStep()
+   {
+      return (this.transformStep);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for transformStep
+    *******************************************************************************/
+   public void setTransformStep(AbstractTransformStep transformStep)
+   {
+      this.transformStep = transformStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for transformStep
+    *******************************************************************************/
+   public AbstractLoadStep withTransformStep(AbstractTransformStep transformStep)
+   {
+      this.transformStep = transformStep;
+      return (this);
    }
 
 }

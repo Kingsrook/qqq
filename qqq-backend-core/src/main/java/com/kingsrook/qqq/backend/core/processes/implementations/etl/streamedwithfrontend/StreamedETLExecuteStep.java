@@ -34,6 +34,8 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -72,6 +74,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          AbstractExtractStep   extractStep   = getExtractStep(runBackendStepInput);
          AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
          AbstractLoadStep      loadStep      = getLoadStep(runBackendStepInput);
+
+         loadStep.setTransformStep(transformStep);
 
          /////////////////////////////////////////////////////////////////////////////
          // let the load step override the capacity for the record pipe.            //
@@ -140,13 +144,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // get the process summary from the load step, if it's a summary-provider -- else, use the transform step (which is always a provider) //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         ArrayList<ProcessSummaryLineInterface> processSummaryLines = null;
          if(loadStep instanceof ProcessSummaryProviderInterface provider)
          {
-            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, provider.doGetProcessSummary(runBackendStepOutput, true));
+            processSummaryLines = provider.doGetProcessSummary(runBackendStepOutput, true);
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryLines);
          }
-         else
+
+         if(CollectionUtils.nullSafeIsEmpty(processSummaryLines))
          {
-            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, transformStep.doGetProcessSummary(runBackendStepOutput, true));
+            processSummaryLines = transformStep.doGetProcessSummary(runBackendStepOutput, true);
+            runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummaryLines);
          }
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

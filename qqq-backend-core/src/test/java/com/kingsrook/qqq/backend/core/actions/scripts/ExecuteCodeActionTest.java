@@ -39,7 +39,6 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -90,7 +89,7 @@ class ExecuteCodeActionTest extends BaseTest
    private ExecuteCodeInput setupInput(QInstance qInstance, Map<String, Serializable> context, QCodeExecutionLoggerInterface executionLogger)
    {
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
-      executeCodeInput.setCodeReference(new QCodeReference(ScriptInJava.class, QCodeUsage.CUSTOMIZER));
+      executeCodeInput.setCodeReference(new QCodeReference(ScriptInJava.class));
       executeCodeInput.setContext(context);
       executeCodeInput.setExecutionLogger(executionLogger);
       return executeCodeInput;

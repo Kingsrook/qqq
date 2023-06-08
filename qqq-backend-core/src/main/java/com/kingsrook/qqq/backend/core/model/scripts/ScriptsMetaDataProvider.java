@@ -174,7 +174,7 @@ public class ScriptsMetaDataProvider
          .withLabel("Contents")
          .withIsCard(true)
          .withType(WidgetType.SCRIPT_VIEWER.getType())
-         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class, null)));
+         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class)));
    }
 
 

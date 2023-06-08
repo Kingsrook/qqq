@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
@@ -74,6 +75,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -101,6 +103,11 @@ public class BaseAPIActionUtil
    protected QSession                 session; // todo not commit - delete!!
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
+
+
+
+   public enum UpdateHttpMethod
+   {PUT, POST}
 
 
 
@@ -203,7 +210,7 @@ public class BaseAPIActionUtil
             }
             catch(Exception e)
             {
-               record.addError("Error: " + e.getMessage());
+               record.addError(new SystemErrorStatusMessage("Error: " + e.getMessage()));
                insertOutput.addRecord(record);
             }
 
@@ -226,7 +233,18 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** OK - so - we will potentially make multiple GET calls to the backend, to
+    ** fetch up to the full limit from the filter (and, if there is no limit in the
+    ** filter, then we'll keep fetching until we stop getting results).
     **
+    ** This is managed internally here by copying the limit into the originalLimit
+    ** var.  Then "limit" in this method becomes the api's "how many to fetch per page"
+    ** parameter (either the originalLimit, or the api's standard limit).
+    **
+    ** Then we break the loop (return from the method) either when:
+    ** - we've fetch a total count >= the originalLimit
+    ** - we got back less than a page full (e.g., we're at the end of the result set).
+    ** - an async job was cancelled.
     *******************************************************************************/
    public QueryOutput doQuery(QTableMetaData table, QueryInput queryInput) throws QException
    {
@@ -322,8 +340,9 @@ public class BaseAPIActionUtil
          {
             try
             {
-               String  url     = buildTableUrl(table);
-               HttpPut request = new HttpPut(url);
+               String                         paramString = buildQueryStringForUpdate(table, recordList);
+               String                         url         = buildTableUrl(table) + paramString;
+               HttpEntityEnclosingRequestBase request     = getUpdateMethod().equals(UpdateHttpMethod.PUT) ? new HttpPut(url) : new HttpPost(url);
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);
@@ -422,13 +441,13 @@ public class BaseAPIActionUtil
             JSONObject errorObject = jsonObject.getJSONObject("error");
             if(errorObject.has("message"))
             {
-               record.addError("Error: " + errorObject.getString("message"));
+               record.addError(new SystemErrorStatusMessage("Error: " + errorObject.getString("message")));
             }
          }
 
          if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
          {
-            record.addError("Unspecified error executing insert.");
+            record.addError(new SystemErrorStatusMessage("Unspecified error executing insert."));
          }
       }
 
@@ -549,13 +568,23 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** method to build up a query string for updates based on a given QFilter object
+    **
+    *******************************************************************************/
+   protected String buildQueryStringForUpdate(QTableMetaData table, List<QRecord> recordList) throws QException
+   {
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
     ** method to build up a query string based on a given QFilter object
     **
     *******************************************************************************/
    protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
    {
-      // todo: reasonable default action
-      return (null);
+      return ("");
    }
 
 
@@ -1212,5 +1241,15 @@ public class BaseAPIActionUtil
    protected Integer getApiStandardLimit()
    {
       return (20);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected UpdateHttpMethod getUpdateMethod()
+   {
+      return (UpdateHttpMethod.PUT);
    }
 }

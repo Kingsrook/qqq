@@ -23,23 +23,42 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions before an insert takes place.
  **
+ ** It's important for implementations to be aware of the isPreview field, which
+ ** is set to true when the code is running to give users advice, e.g., on a review
+ ** screen - vs. being false when the action is ACTUALLY happening.  So, if you're doing
+ ** things like storing data, you don't want to do that if isPreview is true!!
+ **
+ ** General implementation would be, to iterate over the records (the inputs to
+ ** the insert action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
+ ** - possibly manipulating values (`setValue`)
+ ** - possibly throwing an exception - if you really don't want the insert operation to continue.
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) that you want to go on to the backend implementation class.
+ **
+ ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
 public abstract class AbstractPreInsertCustomizer
 {
    protected InsertInput insertInput;
+
+   protected boolean isPreview = false;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records);
+   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
 
 
 
@@ -62,4 +81,36 @@ public abstract class AbstractPreInsertCustomizer
    {
       this.insertInput = insertInput;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isPreview
+    *******************************************************************************/
+   public boolean getIsPreview()
+   {
+      return (this.isPreview);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isPreview
+    *******************************************************************************/
+   public void setIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isPreview
+    *******************************************************************************/
+   public AbstractPreInsertCustomizer withIsPreview(boolean isPreview)
+   {
+      this.isPreview = isPreview;
+      return (this);
+   }
+
 }

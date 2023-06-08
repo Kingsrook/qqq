@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,32 +19,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.customizers;
+package com.kingsrook.qqq.backend.core.model.statusmessages;
 
 
-import java.util.function.Consumer;
+import java.io.Serializable;
 
 
 /*******************************************************************************
- ** Object used by TableCustomizers enum (and similar enums in backend modules)
- ** to assist with definition and validation of Customizers applied to tables.
+ ** Abstract Base class for status messages (errors or warnings) that can be
+ ** attached to QRecords.
+ **
+ ** They look like exceptions, but they aren't throwable, and they are meant
+ ** to just be put in a record's error or warning list.  Those lists were originally
+ ** just Strings, but we wanted to have some type information communicated with
+ ** them, e.g., for marking an error as caused by bad-data (e.g., from a user, e.g.,
+ ** for an HTTP 400) vs. a server-side error, etc.
  *******************************************************************************/
-public class TableCustomizer
+public abstract class QStatusMessage implements Serializable
 {
-   private final String           role;
-   private final Class<?>         expectedType;
-   private final Consumer<Object> validationFunction;
+   private String message;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public TableCustomizer(String role, Class<?> expectedType, Consumer<Object> validationFunction)
+   public QStatusMessage(String message)
    {
-      this.role = role;
-      this.expectedType = expectedType;
-      this.validationFunction = validationFunction;
+      this.message = message;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for message
+    **
+    *******************************************************************************/
+   public String getMessage()
+   {
+      return message;
    }
 
 
@@ -52,43 +66,9 @@ public class TableCustomizer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public TableCustomizer(String role, Class<?> expectedType)
+   @Override
+   public String toString()
    {
-      this.role = role;
-      this.expectedType = expectedType;
-      this.validationFunction = null;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for role
-    **
-    *******************************************************************************/
-   public String getRole()
-   {
-      return role;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for expectedType
-    **
-    *******************************************************************************/
-   public Class<?> getExpectedType()
-   {
-      return expectedType;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for validationFunction
-    **
-    *******************************************************************************/
-   public Consumer<Object> getValidationFunction()
-   {
-      return validationFunction;
+      return (message);
    }
 }

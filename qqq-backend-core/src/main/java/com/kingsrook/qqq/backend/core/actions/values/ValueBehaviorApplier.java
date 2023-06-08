@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -76,7 +77,7 @@ public class ValueBehaviorApplier
                {
                   case TRUNCATE -> record.setValue(fieldName, StringUtils.safeTruncate(value, field.getMaxLength()));
                   case TRUNCATE_ELLIPSIS -> record.setValue(fieldName, StringUtils.safeTruncate(value, field.getMaxLength(), "..."));
-                  case ERROR -> record.addError("The value for " + field.getLabel() + " is too long (max allowed length=" + field.getMaxLength() + ")");
+                  case ERROR -> record.addError(new BadInputStatusMessage("The value for " + field.getLabel() + " is too long (max allowed length=" + field.getMaxLength() + ")"));
                   case PASS_THROUGH ->
                   {
                   }

@@ -94,7 +94,7 @@ class ParentWidgetRendererTest extends BaseTest
          .withName(ProcessWidgetRenderer.class.getSimpleName())
          .withGridColumns(12)
          .withLabel("Test Parent Widget")
-         .withCodeReference(new QCodeReference(ParentWidgetRenderer.class, null))
+         .withCodeReference(new QCodeReference(ParentWidgetRenderer.class))
          .withIcon("local_shipping");
       qInstance.addWidget(parentWidget);
 

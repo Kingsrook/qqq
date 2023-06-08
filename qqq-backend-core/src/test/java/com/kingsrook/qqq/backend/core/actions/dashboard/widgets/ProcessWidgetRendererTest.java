@@ -78,7 +78,7 @@ class ProcessWidgetRendererTest extends BaseTest
          .withDefaultValue(ProcessWidgetRenderer.WIDGET_PROCESS_NAME, TestUtils.PROCESS_NAME_GREET_PEOPLE)
          .withLabel("Test Process Widget")
          .withGridColumns(6)
-         .withCodeReference(new QCodeReference(ProcessWidgetRenderer.class, null));
+         .withCodeReference(new QCodeReference(ProcessWidgetRenderer.class));
       qInstance.addWidget(metaData);
 
       RenderWidgetInput input = new RenderWidgetInput();

@@ -47,8 +47,9 @@ public class QSession implements Serializable
    private QUser  user;
    private String uuid;
 
-   private Map<String, List<Serializable>> securityKeyValues;
    private Set<String>                     permissions;
+   private Map<String, List<Serializable>> securityKeyValues;
+   private Map<String, Serializable>       backendVariants;
 
    // implementation-specific custom values
    private Map<String, String> values;
@@ -463,6 +464,37 @@ public class QSession implements Serializable
    public QSession withUser(QUser user)
    {
       this.user = user;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendVariants
+    *******************************************************************************/
+   public Map<String, Serializable> getBackendVariants()
+   {
+      return (this.backendVariants);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendVariants
+    *******************************************************************************/
+   public void setBackendVariants(Map<String, Serializable> backendVariants)
+   {
+      this.backendVariants = backendVariants;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backendVariants
+    *******************************************************************************/
+   public QSession withBackendVariants(Map<String, Serializable> backendVariants)
+   {
+      this.backendVariants = backendVariants;
       return (this);
    }
 

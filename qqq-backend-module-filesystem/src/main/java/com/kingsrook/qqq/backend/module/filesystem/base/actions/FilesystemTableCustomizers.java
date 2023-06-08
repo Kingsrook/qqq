@@ -22,31 +22,25 @@
 package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 
 
-import java.util.function.Function;
-import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizer;
-
-
 /*******************************************************************************
  **
  *******************************************************************************/
 public enum FilesystemTableCustomizers
 {
-   POST_READ_FILE(new TableCustomizer("postReadFile", Function.class, ((Object x) ->
-   {
-      Function<String, String> function = (Function<String, String>) x;
-      String                   output   = function.apply(new String());
-   })));
+   POST_READ_FILE("postReadFile", AbstractPostReadFileCustomizer.class);
 
-   private final TableCustomizer tableCustomizer;
+   private final String   role;
+   private final Class<?> expectedType;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   FilesystemTableCustomizers(TableCustomizer tableCustomizer)
+   FilesystemTableCustomizers(String role, Class<?> expectedType)
    {
-      this.tableCustomizer = tableCustomizer;
+      this.role = role;
+      this.expectedType = expectedType;
    }
 
 
@@ -59,7 +53,7 @@ public enum FilesystemTableCustomizers
    {
       for(FilesystemTableCustomizers value : values())
       {
-         if(value.tableCustomizer.getRole().equals(name))
+         if(value.role.equals(name))
          {
             return (value);
          }
@@ -71,23 +65,22 @@ public enum FilesystemTableCustomizers
 
 
    /*******************************************************************************
-    ** Getter for tableCustomizer
+    ** Getter for role
     **
     *******************************************************************************/
-   public TableCustomizer getTableCustomizer()
+   public String getRole()
    {
-      return tableCustomizer;
+      return role;
    }
 
 
 
    /*******************************************************************************
-    ** get the role from the tableCustomizer
+    ** Getter for expectedType
     **
     *******************************************************************************/
-   public String getRole()
+   public Class<?> getExpectedType()
    {
-      return (tableCustomizer.getRole());
+      return expectedType;
    }
-
 }

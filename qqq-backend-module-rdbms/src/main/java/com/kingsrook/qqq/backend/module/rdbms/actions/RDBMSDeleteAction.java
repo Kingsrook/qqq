@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
@@ -217,7 +218,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       catch(Exception e)
       {
          LOG.debug("Exception trying to delete [" + tableName + "][" + primaryKey + "]", e);
-         deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError("Record was not deleted: " + e.getMessage()));
+         deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError(new SystemErrorStatusMessage("Record was not deleted: " + e.getMessage())));
       }
    }
 

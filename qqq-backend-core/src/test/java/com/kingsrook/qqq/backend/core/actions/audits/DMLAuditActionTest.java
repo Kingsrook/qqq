@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -180,6 +181,19 @@ class DMLAuditActionTest extends BaseTest
       {
          qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).setAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD));
          new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput).withRecordList(recordList).withOldRecordList(recordList));
+         List<QRecord> auditList = TestUtils.queryTable("audit");
+         assertEquals(0, auditList.size());
+         MemoryRecordStore.getInstance().reset();
+      }
+
+      ////////////////////////////////////////////////////
+      // confirm we don't audit for records with errors //
+      ////////////////////////////////////////////////////
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).setAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD));
+         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(updateInput)
+            .withRecordList(List.of(new QRecord().withValue("id", 1).withValue("firstName", "B").withError(new BadInputStatusMessage("Error"))))
+            .withOldRecordList(List.of(new QRecord().withValue("id", 1).withValue("firstName", "A"))));
          List<QRecord> auditList = TestUtils.queryTable("audit");
          assertEquals(0, auditList.size());
          MemoryRecordStore.getInstance().reset();

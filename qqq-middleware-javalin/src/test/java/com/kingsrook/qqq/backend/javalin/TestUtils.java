@@ -42,8 +42,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -174,7 +175,7 @@ public class TestUtils
    {
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
-         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class, null)));
+         .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class)));
    }
 
 
@@ -229,7 +230,7 @@ public class TestUtils
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
    {
-      return new QTableMetaData()
+      QTableMetaData qTableMetaData = new QTableMetaData()
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
          .withRecordLabelFormat("%s %s")
@@ -245,10 +246,20 @@ public class TestUtils
          .withField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withBackendName("partner_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
+         .withField(new QFieldMetaData("photo", QFieldType.BLOB).withBackendName("photo"))
+         .withField(new QFieldMetaData("photoFileName", QFieldType.STRING).withBackendName("photo_file_name"))
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
             .withScriptTypeId(1)
-            .withScriptTester(new QCodeReference(TestScriptAction.class, QCodeUsage.SCRIPT_TESTER)));
+            .withScriptTester(new QCodeReference(TestScriptAction.class)));
+
+      qTableMetaData.getField("photo")
+         .withIsHeavy(true)
+         .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
+            .withValue(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE, "image")
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "photoFileName"));
+
+      return (qTableMetaData);
    }
 
 
@@ -280,8 +291,7 @@ public class TestUtils
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -319,8 +329,7 @@ public class TestUtils
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP)) // todo - needed, or implied in this context?
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
                .withFieldList(List.of(
@@ -441,8 +450,7 @@ public class TestUtils
             .withName(STEP_NAME_SLEEPER)
             .withCode(new QCodeReference()
                .withName(SleeperStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .addField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
@@ -499,8 +507,7 @@ public class TestUtils
             .withName(STEP_NAME_THROWER)
             .withCode(new QCodeReference()
                .withName(ThrowerStep.class.getName())
-               .withCodeType(QCodeType.JAVA)
-               .withCodeUsage(QCodeUsage.BACKEND_STEP))
+               .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }

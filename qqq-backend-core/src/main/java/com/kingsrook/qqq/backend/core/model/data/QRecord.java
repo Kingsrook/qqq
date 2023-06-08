@@ -35,6 +35,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.SerializationUtils;
 
@@ -54,7 +56,8 @@ import org.apache.commons.lang.SerializationUtils;
  **
  ** Errors are meant to hold information about things that went wrong when
  ** processing a record - e.g., in a list of records that may be the output of an
- ** action, like a bulk load.  TODO - redo as some status object?
+ ** action, like a bulk load.  Warnings play a similar role, but are just advice
+ ** - they don't mean that the action was failed, just something you may need to know.
  *******************************************************************************/
 public class QRecord implements Serializable
 {
@@ -64,12 +67,17 @@ public class QRecord implements Serializable
    private Map<String, Serializable> values         = new LinkedHashMap<>();
    private Map<String, String>       displayValues  = new LinkedHashMap<>();
    private Map<String, Serializable> backendDetails = new LinkedHashMap<>();
-   private List<String>              errors         = new ArrayList<>();
-   private List<String>              warnings       = new ArrayList<>();
+
+   private List<QErrorMessage>   errors   = new ArrayList<>();
+   private List<QWarningMessage> warnings = new ArrayList<>();
 
    private Map<String, List<QRecord>> associatedRecords = new HashMap<>();
 
-   public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT = "jsonSourceObject";
+   ////////////////////////////////////////////////
+   // well-known keys for the backendDetails map //
+   ////////////////////////////////////////////////
+   public static final String BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT  = "jsonSourceObject"; // String of JSON
+   public static final String BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS = "heavyFieldLengths"; // Map<fieldName, length>
 
 
 
@@ -106,6 +114,7 @@ public class QRecord implements Serializable
       this.displayValues = doDeepCopy(record.displayValues);
       this.backendDetails = doDeepCopy(record.backendDetails);
       this.errors = doDeepCopy(record.errors);
+      this.warnings = doDeepCopy(record.warnings);
       this.associatedRecords = doDeepCopy(record.associatedRecords);
    }
 
@@ -123,7 +132,7 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
-    **
+    ** todo - move to a cloning utils maybe?
     *******************************************************************************/
    @SuppressWarnings({ "unchecked" })
    private <K, V> Map<K, V> doDeepCopy(Map<K, V> map)
@@ -144,7 +153,7 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
-    **
+    ** todo - move to a cloning utils maybe?
     *******************************************************************************/
    @SuppressWarnings({ "unchecked" })
    private <T> List<T> doDeepCopy(List<T> list)
@@ -542,7 +551,7 @@ public class QRecord implements Serializable
     ** Getter for errors
     **
     *******************************************************************************/
-   public List<String> getErrors()
+   public List<QErrorMessage> getErrors()
    {
       return (errors);
    }
@@ -553,7 +562,7 @@ public class QRecord implements Serializable
     ** Setter for errors
     **
     *******************************************************************************/
-   public void setErrors(List<String> errors)
+   public void setErrors(List<QErrorMessage> errors)
    {
       this.errors = errors;
    }
@@ -564,7 +573,7 @@ public class QRecord implements Serializable
     ** Add one error to this record
     **
     *******************************************************************************/
-   public void addError(String error)
+   public void addError(QErrorMessage error)
    {
       this.errors.add(error);
    }
@@ -575,7 +584,7 @@ public class QRecord implements Serializable
     ** Fluently Add one error to this record
     **
     *******************************************************************************/
-   public QRecord withError(String error)
+   public QRecord withError(QErrorMessage error)
    {
       addError(error);
       return (this);
@@ -658,7 +667,7 @@ public class QRecord implements Serializable
    /*******************************************************************************
     ** Getter for warnings
     *******************************************************************************/
-   public List<String> getWarnings()
+   public List<QWarningMessage> getWarnings()
    {
       return (this.warnings);
    }
@@ -668,7 +677,7 @@ public class QRecord implements Serializable
    /*******************************************************************************
     ** Setter for warnings
     *******************************************************************************/
-   public void setWarnings(List<String> warnings)
+   public void setWarnings(List<QWarningMessage> warnings)
    {
       this.warnings = warnings;
    }
@@ -678,7 +687,7 @@ public class QRecord implements Serializable
    /*******************************************************************************
     ** Fluent setter for warnings
     *******************************************************************************/
-   public QRecord withWarnings(List<String> warnings)
+   public QRecord withWarnings(List<QWarningMessage> warnings)
    {
       this.warnings = warnings;
       return (this);
@@ -690,7 +699,7 @@ public class QRecord implements Serializable
     ** Add one warning to this record
     **
     *******************************************************************************/
-   public void addWarning(String warning)
+   public void addWarning(QWarningMessage warning)
    {
       this.warnings.add(warning);
    }

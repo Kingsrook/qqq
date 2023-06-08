@@ -29,7 +29,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
@@ -71,8 +70,7 @@ public class LoadInitialRecordsStep implements BackendStep
          .withName("loadInitialRecords")
          .withCode(new QCodeReference()
             .withName(LoadInitialRecordsStep.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .withRecordListMetaData(new QRecordListMetaData()
                .withTableName(tableName))));

@@ -386,13 +386,22 @@ public class ExportAction
          fieldList = new ArrayList<>(table.getFields().values());
       }
 
-      //////////////////////////////////////////
-      // add fields for possible value labels //
-      //////////////////////////////////////////
       List<QFieldMetaData> returnList = new ArrayList<>();
       for(QFieldMetaData field : fieldList)
       {
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // skip heavy fields.  they aren't fetched, and we generally think we don't want them. //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         if(field.getIsHeavy())
+         {
+            continue;
+         }
+
          returnList.add(field);
+
+         //////////////////////////////////////////
+         // add fields for possible value labels //
+         //////////////////////////////////////////
          if(StringUtils.hasContent(field.getPossibleValueSourceName()))
          {
             returnList.add(new QFieldMetaData(field.getName() + ":possibleValueLabel", QFieldType.STRING).withLabel(field.getLabel() + " Name"));

@@ -28,12 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -66,9 +66,9 @@ public class GeneralProcessUtils
     ** e.g., for a list of orders (with a clientId field), build a map of client.id => client record
     ** via getForeignRecordMap(input, orderList, "clientId", "client", "id")
     *******************************************************************************/
-   public static Map<Serializable, QRecord> getForeignRecordMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName) throws QException
+   public static Map<Serializable, QRecord> getForeignRecordMap(List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName) throws QException
    {
-      return getForeignRecordMap(parentActionInput, sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName, new QQueryFilter());
+      return getForeignRecordMap(sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName, new QQueryFilter());
    }
 
    // todo not commit - clean up all method sigs
@@ -83,7 +83,7 @@ public class GeneralProcessUtils
     ** e.g., for a list of orders (with a clientId field), build a map of client.id => client record
     ** via getForeignRecordMap(input, orderList, "clientId", "client", "id")
     *******************************************************************************/
-   public static Map<Serializable, QRecord> getForeignRecordMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName, QQueryFilter additionalFilter) throws QException
+   public static Map<Serializable, QRecord> getForeignRecordMap(List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName, QQueryFilter additionalFilter) throws QException
    {
       Map<Serializable, QRecord> foreignRecordMap = new HashMap<>();
       QueryInput                 queryInput       = new QueryInput();
@@ -111,7 +111,7 @@ public class GeneralProcessUtils
     ** e.g., for a list of orders, build a ListingHash of order.id => List(OrderLine records)
     ** via getForeignRecordListingHashMap(input, orderList, "id", "orderLine", "orderId")
     *******************************************************************************/
-   public static ListingHash<Serializable, QRecord> getForeignRecordListingHashMap(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTableForeignKeyName) throws QException
+   public static ListingHash<Serializable, QRecord> getForeignRecordListingHashMap(List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTableForeignKeyName) throws QException
    {
       ListingHash<Serializable, QRecord> foreignRecordMap = new ListingHash<>();
       QueryInput                         queryInput       = new QueryInput();
@@ -138,9 +138,9 @@ public class GeneralProcessUtils
     ** e.g., for a list of orders (with a clientId field), setValue("client", QRecord(client));
     ** via addForeignRecordsToRecordList(input, orderList, "clientId", "client", "id")
     *******************************************************************************/
-   public static void addForeignRecordsToRecordList(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName) throws QException
+   public static void addForeignRecordsToRecordList(List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTablePrimaryKeyName) throws QException
    {
-      Map<Serializable, QRecord> foreignRecordMap = getForeignRecordMap(parentActionInput, sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName);
+      Map<Serializable, QRecord> foreignRecordMap = getForeignRecordMap(sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTablePrimaryKeyName);
       for(QRecord sourceRecord : sourceRecords)
       {
          QRecord foreignRecord = foreignRecordMap.get(sourceRecord.getValue(sourceTableForeignKeyFieldName));
@@ -158,9 +158,9 @@ public class GeneralProcessUtils
     ** e.g., for a list of orders, setValue("orderLine", List(QRecord(orderLine)))
     ** via addForeignRecordsListToRecordList(input, orderList, "id", "orderLine", "orderId")
     *******************************************************************************/
-   public static void addForeignRecordsListToRecordList(AbstractActionInput parentActionInput, List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTableForeignKeyName) throws QException
+   public static void addForeignRecordsListToRecordList(List<QRecord> sourceRecords, String sourceTableForeignKeyFieldName, String foreignTableName, String foreignTableForeignKeyName) throws QException
    {
-      ListingHash<Serializable, QRecord> foreignRecordMap = getForeignRecordListingHashMap(parentActionInput, sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTableForeignKeyName);
+      ListingHash<Serializable, QRecord> foreignRecordMap = getForeignRecordListingHashMap(sourceRecords, sourceTableForeignKeyFieldName, foreignTableName, foreignTableForeignKeyName);
       for(QRecord sourceRecord : sourceRecords)
       {
          List<QRecord> foreignRecordList = foreignRecordMap.get(sourceRecord.getValue(sourceTableForeignKeyFieldName));
@@ -184,7 +184,7 @@ public class GeneralProcessUtils
     ** Run a query on tableName, for where fieldName equals fieldValue, and return
     ** the list of QRecords.
     *******************************************************************************/
-   public static List<QRecord> getRecordListByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
+   public static List<QRecord> getRecordListByField(String tableName, String fieldName, Serializable fieldValue) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -200,7 +200,7 @@ public class GeneralProcessUtils
     ** key, or any other field on the table.  Note, if multiple rows do match the value,
     ** only 1 (determined in an unspecified way) is returned.
     *******************************************************************************/
-   public static Optional<QRecord> getRecordByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
+   public static Optional<QRecord> getRecordByField(String tableName, String fieldName, Serializable fieldValue) throws QException
    {
       if(fieldValue == null)
       {
@@ -221,9 +221,9 @@ public class GeneralProcessUtils
     ** key, or any other field on the table.  Note, if multiple rows do match the value,
     ** only 1 (determined in an unspecified way) is returned.
     *******************************************************************************/
-   public static <T extends QRecordEntity> Optional<T> getEntityByField(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue, Class<T> entityClass) throws QException
+   public static <T extends QRecordEntity> Optional<T> getEntityByField(String tableName, String fieldName, Serializable fieldValue, Class<T> entityClass) throws QException
    {
-      Optional<QRecord> optionalQRecord = getRecordByField(parentActionInput, tableName, fieldName, fieldValue);
+      Optional<QRecord> optionalQRecord = getRecordByField(tableName, fieldName, fieldValue);
       if(optionalQRecord.isPresent())
       {
          return (Optional.of(QRecordEntity.fromQRecord(entityClass, optionalQRecord.get())));
@@ -236,9 +236,9 @@ public class GeneralProcessUtils
    /*******************************************************************************
     ** Query to get one record by a unique key value.
     *******************************************************************************/
-   public static QRecord getRecordByFieldOrElseThrow(AbstractActionInput parentActionInput, String tableName, String fieldName, Serializable fieldValue) throws QException
+   public static QRecord getRecordByFieldOrElseThrow(String tableName, String fieldName, Serializable fieldValue) throws QException
    {
-      return getRecordByField(parentActionInput, tableName, fieldName, fieldValue)
+      return getRecordByField(tableName, fieldName, fieldValue)
          .orElseThrow(() -> new QException(tableName + " with " + fieldName + " of " + fieldValue + " was not found."));
    }
 
@@ -247,7 +247,7 @@ public class GeneralProcessUtils
    /*******************************************************************************
     ** Query to get one record by its primary key value.
     *******************************************************************************/
-   public static Optional<QRecord> getRecordByPrimaryKey(AbstractActionInput parentActionInput, String tableName, Serializable value) throws QException
+   public static Optional<QRecord> getRecordByPrimaryKey(String tableName, Serializable value) throws QException
    {
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
@@ -261,9 +261,9 @@ public class GeneralProcessUtils
    /*******************************************************************************
     ** Query to get one record by its primary key value.
     *******************************************************************************/
-   public static QRecord getRecordByPrimaryKeyOrElseThrow(AbstractActionInput parentActionInput, String tableName, Serializable value) throws QException
+   public static QRecord getRecordByPrimaryKeyOrElseThrow(String tableName, Serializable value) throws QException
    {
-      return getRecordByPrimaryKey(parentActionInput, tableName, value)
+      return getRecordByPrimaryKey(tableName, value)
          .orElseThrow(() -> new QException(tableName + " with primary key of " + value + " was not found."));
    }
 
@@ -275,7 +275,7 @@ public class GeneralProcessUtils
     ** Note, this is inherently unsafe, if you were to call it on a table with
     ** too many rows...  Caveat emptor.
     *******************************************************************************/
-   public static List<QRecord> loadTable(AbstractActionInput parentActionInput, String tableName) throws QException
+   public static List<QRecord> loadTable(String tableName) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -291,7 +291,7 @@ public class GeneralProcessUtils
     ** Note, this is inherently unsafe, if you were to call it on a table with
     ** too many rows...  Caveat emptor.
     *******************************************************************************/
-   public static <T extends QRecordEntity> List<T> loadTable(AbstractActionInput parentActionInput, String tableName, Class<T> entityClass) throws QException
+   public static <T extends QRecordEntity> List<T> loadTable(String tableName, Class<T> entityClass) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -319,9 +319,9 @@ public class GeneralProcessUtils
     ** Also, note, this is inherently unsafe, if you were to call it on a table with
     ** too many rows...  Caveat emptor.
     *******************************************************************************/
-   public static Map<Serializable, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName) throws QException
+   public static Map<Serializable, QRecord> loadTableToMap(String tableName, String keyFieldName) throws QException
    {
-      return (loadTableToMap(parentActionInput, tableName, keyFieldName, (QQueryFilter) null));
+      return (loadTableToMap(tableName, keyFieldName, (QQueryFilter) null));
    }
 
 
@@ -334,7 +334,7 @@ public class GeneralProcessUtils
     ** If multiple values are found for the key, they'll squash each other, and only
     ** one (random) value will appear.
     *******************************************************************************/
-   public static Map<Serializable, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, QQueryFilter filter) throws QException
+   public static Map<Serializable, QRecord> loadTableToMap(String tableName, String keyFieldName, QQueryFilter filter) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -368,7 +368,7 @@ public class GeneralProcessUtils
     ** Also, note, this is inherently unsafe, if you were to call it on a table with
     ** too many rows...  Caveat emptor.
     *******************************************************************************/
-   public static <T extends Serializable> Map<T, QRecord> loadTableToMap(AbstractActionInput parentActionInput, String tableName, Class<T> keyType, String keyFieldName) throws QException
+   public static <T extends Serializable> Map<T, QRecord> loadTableToMap(String tableName, Class<T> keyType, String keyFieldName) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -393,10 +393,26 @@ public class GeneralProcessUtils
    /*******************************************************************************
     ** Note - null values from the key field are NOT put in the map.
     *******************************************************************************/
-   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(AbstractActionInput parentActionInput, String tableName, String keyFieldName, Class<T> entityClass) throws QException
+   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(String tableName, String keyFieldName, Class<T> entityClass) throws QException
+   {
+      return (loadTableToMap(tableName, keyFieldName, entityClass, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Note - null values from the key field are NOT put in the map.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(String tableName, String keyFieldName, Class<T> entityClass, Consumer<QueryInput> queryInputCustomizer) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
+
+      if(queryInputCustomizer != null)
+      {
+         queryInputCustomizer.accept(queryInput);
+      }
+
       QueryOutput   queryOutput = new QueryAction().execute(queryInput);
       List<QRecord> records     = queryOutput.getRecords();
 
@@ -424,7 +440,7 @@ public class GeneralProcessUtils
     ** Also, note, this is inherently unsafe, if you were to call it on a table with
     ** too many rows...  Caveat emptor.
     *******************************************************************************/
-   public static ListingHash<Serializable, QRecord> loadTableToListingHash(AbstractActionInput parentActionInput, String tableName, String keyFieldName) throws QException
+   public static ListingHash<Serializable, QRecord> loadTableToListingHash(String tableName, String keyFieldName) throws QException
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -497,7 +513,7 @@ public class GeneralProcessUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Integer count(AbstractActionInput input, String tableName, QQueryFilter filter) throws QException
+   public static Integer count(String tableName, QQueryFilter filter) throws QException
    {
       CountInput countInput = new CountInput();
       countInput.setTableName(tableName);

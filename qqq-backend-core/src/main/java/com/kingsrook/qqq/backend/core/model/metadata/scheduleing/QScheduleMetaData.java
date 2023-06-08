@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+
+
 /*******************************************************************************
  ** Meta-data to define scheduled actions within QQQ.
  **
@@ -33,10 +36,21 @@ package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
  *******************************************************************************/
 public class QScheduleMetaData
 {
+   public enum RunStrategy
+   {PARALLEL, SERIAL}
+
+
+
    private Integer repeatSeconds;
    private Integer repeatMillis;
    private Integer initialDelaySeconds;
    private Integer initialDelayMillis;
+
+   private RunStrategy  variantRunStrategy;
+   private String       backendVariant;
+   private String       variantTableName;
+   private QQueryFilter variantFilter;
+   private String       variantFieldName;
 
 
 
@@ -171,6 +185,161 @@ public class QScheduleMetaData
    public QScheduleMetaData withInitialDelayMillis(Integer initialDelayMillis)
    {
       this.initialDelayMillis = initialDelayMillis;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backendVariant
+    *******************************************************************************/
+   public String getBackendVariant()
+   {
+      return (this.backendVariant);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendVariant
+    *******************************************************************************/
+   public void setBackendVariant(String backendVariant)
+   {
+      this.backendVariant = backendVariant;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backendVariant
+    *******************************************************************************/
+   public QScheduleMetaData withBackendVariant(String backendVariant)
+   {
+      this.backendVariant = backendVariant;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantTableName
+    *******************************************************************************/
+   public String getVariantTableName()
+   {
+      return (this.variantTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantTableName
+    *******************************************************************************/
+   public void setVariantTableName(String variantTableName)
+   {
+      this.variantTableName = variantTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantTableName
+    *******************************************************************************/
+   public QScheduleMetaData withVariantTableName(String variantTableName)
+   {
+      this.variantTableName = variantTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantFilter
+    *******************************************************************************/
+   public QQueryFilter getVariantFilter()
+   {
+      return (this.variantFilter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantFilter
+    *******************************************************************************/
+   public void setVariantFilter(QQueryFilter variantFilter)
+   {
+      this.variantFilter = variantFilter;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantFilter
+    *******************************************************************************/
+   public QScheduleMetaData withVariantFilter(QQueryFilter variantFilter)
+   {
+      this.variantFilter = variantFilter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantFieldName
+    *******************************************************************************/
+   public String getVariantFieldName()
+   {
+      return (this.variantFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantFieldName
+    *******************************************************************************/
+   public void setVariantFieldName(String variantFieldName)
+   {
+      this.variantFieldName = variantFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantFieldName
+    *******************************************************************************/
+   public QScheduleMetaData withVariantFieldName(String variantFieldName)
+   {
+      this.variantFieldName = variantFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantRunStrategy
+    *******************************************************************************/
+   public RunStrategy getVariantRunStrategy()
+   {
+      return (this.variantRunStrategy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantRunStrategy
+    *******************************************************************************/
+   public void setVariantRunStrategy(RunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantRunStrategy
+    *******************************************************************************/
+   public QScheduleMetaData withVariantRunStrategy(RunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
       return (this);
    }
 

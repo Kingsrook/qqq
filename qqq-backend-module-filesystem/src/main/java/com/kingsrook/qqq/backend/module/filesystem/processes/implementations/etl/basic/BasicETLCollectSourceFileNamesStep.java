@@ -30,7 +30,6 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -76,8 +75,7 @@ public class BasicETLCollectSourceFileNamesStep implements BackendStep
          .withName(STEP_NAME)
          .withCode(new QCodeReference()
             .withName(this.getClass().getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_FILE_PATHS, QFieldType.STRING))));
    }

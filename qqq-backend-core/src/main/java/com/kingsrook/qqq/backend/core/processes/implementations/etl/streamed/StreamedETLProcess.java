@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed;
 
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -39,9 +38,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
  *******************************************************************************/
 public class StreamedETLProcess
 {
-   public static final String PROCESS_NAME            = "etl.streamed";
+   public static final String PROCESS_NAME = "etl.streamed";
 
-   public static final String FUNCTION_NAME_ETL       = "streamedETL";
+   public static final String FUNCTION_NAME_ETL = "streamedETL";
 
    public static final String FIELD_SOURCE_TABLE      = "sourceTable";
    public static final String FIELD_DESTINATION_TABLE = "destinationTable";
@@ -59,8 +58,7 @@ public class StreamedETLProcess
          .withName(FUNCTION_NAME_ETL)
          .withCode(new QCodeReference()
             .withName(StreamedETLBackendStep.class.getName())
-            .withCodeType(QCodeType.JAVA)
-            .withCodeUsage(QCodeUsage.BACKEND_STEP))
+            .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
             .withField(new QFieldMetaData(FIELD_MAPPING_JSON, QFieldType.STRING))

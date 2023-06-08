@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -58,7 +59,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op");
+         LOG.debug("Insert request called with 0 records.  Returning with no-op", logPair("tableName", insertInput.getTableName()));
          rs.setRecords(new ArrayList<>());
          return (rs);
       }

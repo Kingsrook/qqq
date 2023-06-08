@@ -85,7 +85,7 @@ class USMapRendererTest extends BaseTest
          .withName(USMapWidgetRenderer.class.getSimpleName())
          .withGridColumns(12)
          .withLabel("Test Parent Widget")
-         .withCodeReference(new QCodeReference(USMapWidgetRenderer.class, null))
+         .withCodeReference(new QCodeReference(USMapWidgetRenderer.class))
          .withIcon("local_shipping");
       qInstance.addWidget(parentWidget);
 

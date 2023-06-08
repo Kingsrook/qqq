@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.api;
 
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
@@ -31,7 +31,9 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -43,7 +45,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeUsage;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -53,6 +54,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -155,9 +159,9 @@ public class TestUtils
       {
          for(QRecord record : CollectionUtils.nonNullList(records))
          {
-            if(!record.getValueString("firstName").matches(".*[a-z].*"))
+            if(record.getValueString("firstName") != null && !record.getValueString("firstName").matches(".*[a-z].*"))
             {
-               record.addWarning("First name does not contain any letters...");
+               record.addWarning(new QWarningMessage("First name does not contain any letters..."));
             }
          }
 
@@ -179,6 +183,7 @@ public class TestUtils
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("email"))
+         .withCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(PersonPreDeleteCustomizer.class))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -191,9 +196,10 @@ public class TestUtils
          // .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
          .withField(new QFieldMetaData("noOfShoes", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
-         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY));
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("photo", QFieldType.BLOB));
 
-      table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(PersonPreInsertCustomizer.class, QCodeUsage.CUSTOMIZER));
+      table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(PersonPreInsertCustomizer.class));
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // make some changes to this table in the "main" api (but leave it like the backend in the ALTERNATIVE_API_NAME) //
@@ -239,6 +245,8 @@ public class TestUtils
    {
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER)
+         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(OrderPreInsertCustomizer.class))
+         .withCustomizer(TableCustomizers.PRE_UPDATE_RECORD.getRole(), new QCodeReference(OrderPreUpdateCustomizer.class))
          .withBackendName(MEMORY_BACKEND_NAME)
          .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
@@ -378,11 +386,16 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void insertPersonRecord(Integer id, String firstName, String lastName, LocalDate birthDate) throws QException
+   public static void insertPersonRecord(Integer id, String firstName, String lastName, Consumer<QRecord> recordCustomizer) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName).withValue("birthDate", birthDate)));
+      QRecord record = new QRecord().withValue("id", id).withValue("firstName", firstName).withValue("lastName", lastName);
+      if(recordCustomizer != null)
+      {
+         recordCustomizer.accept(record);
+      }
+      insertInput.setRecords(List.of(record));
       new InsertAction().execute(insertInput);
    }
 
@@ -399,4 +412,89 @@ public class TestUtils
       insertPersonRecord(4, "Lisa", "Simpson");
       insertPersonRecord(5, "Maggie", "Simpson");
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class OrderPreInsertCustomizer extends AbstractPreInsertCustomizer
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         for(QRecord record : records)
+         {
+            for(QRecord orderLine : CollectionUtils.nonNullList(record.getAssociatedRecords().get("orderLines")))
+            {
+               if(orderLine.getValueInteger("quantity") != null && orderLine.getValueInteger("quantity") <= 0)
+               {
+                  record.addError(new BadInputStatusMessage("Quantity may not be less than 0.  See SKU " + orderLine.getValueString("sku")));
+               }
+            }
+
+            if("throw".equals(record.getValueString("orderNo")))
+            {
+               record.addError(new SystemErrorStatusMessage("Throwing error, as requested..."));
+            }
+         }
+
+         return (records);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class OrderPreUpdateCustomizer extends AbstractPreUpdateCustomizer
+   {
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         /////////////////////////////////////////////
+         // use same logic as pre-insert customizer //
+         /////////////////////////////////////////////
+         return new OrderPreInsertCustomizer().apply(records);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonPreDeleteCustomizer extends AbstractPreDeleteCustomizer
+   {
+      public static final Integer DELETE_ERROR_ID = 9999;
+      public static final Integer DELETE_WARN_ID  = 9998;
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         for(QRecord record : records)
+         {
+            if(DELETE_ERROR_ID.equals(record.getValue("id")))
+            {
+               record.addError(new BadInputStatusMessage("You may not delete this person"));
+            }
+            else if(DELETE_WARN_ID.equals(record.getValue("id")))
+            {
+               record.addWarning(new QWarningMessage("It was bad that you deleted this person"));
+            }
+         }
+
+         return (records);
+      }
+   }
+
 }

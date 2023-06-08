@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
@@ -39,6 +41,7 @@ public class DeleteInput extends AbstractTableActionInput
    private QBackendTransaction transaction;
    private List<Serializable>  primaryKeys;
    private QQueryFilter        queryFilter;
+   private InputSource         inputSource = QInputSource.SYSTEM;
 
 
 
@@ -152,6 +155,37 @@ public class DeleteInput extends AbstractTableActionInput
    {
       this.queryFilter = queryFilter;
       return this;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inputSource
+    *******************************************************************************/
+   public InputSource getInputSource()
+   {
+      return (this.inputSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputSource
+    *******************************************************************************/
+   public void setInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputSource
+    *******************************************************************************/
+   public DeleteInput withInputSource(InputSource inputSource)
+   {
+      this.inputSource = inputSource;
+      return (this);
    }
 
 }

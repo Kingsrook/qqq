@@ -38,6 +38,8 @@ public class DMLAuditInput extends AbstractActionInput implements Serializable
    private List<QRecord>            oldRecordList;
    private AbstractTableActionInput tableActionInput;
 
+   private String auditContext = null;
+
 
 
    /*******************************************************************************
@@ -128,6 +130,37 @@ public class DMLAuditInput extends AbstractActionInput implements Serializable
    public DMLAuditInput withOldRecordList(List<QRecord> oldRecordList)
    {
       this.oldRecordList = oldRecordList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditContext
+    *******************************************************************************/
+   public String getAuditContext()
+   {
+      return (this.auditContext);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditContext
+    *******************************************************************************/
+   public void setAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditContext
+    *******************************************************************************/
+   public DMLAuditInput withAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
       return (this);
    }
 

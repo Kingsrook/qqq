@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -67,7 +68,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -108,6 +116,7 @@ public class ApiImplementation
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
       queryInput.setIncludeAssociations(true);
+      queryInput.setShouldFetchHeavyFields(true);
 
       PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -251,7 +260,7 @@ public class ApiImplementation
                {
                   try
                   {
-                     filter.addCriteria(parseQueryParamToCriteria(name, value));
+                     filter.addCriteria(parseQueryParamToCriteria(field, name, value));
                   }
                   catch(Exception e)
                   {
@@ -330,6 +339,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
+      insertInput.setInputSource(QInputSource.USER);
 
       insertInput.setTableName(tableName);
 
@@ -364,12 +374,12 @@ public class ApiImplementation
       InsertAction insertAction = new InsertAction();
       InsertOutput insertOutput = insertAction.execute(insertInput);
 
-      List<String> errors = insertOutput.getRecords().get(0).getErrors();
+      List<QErrorMessage> errors = insertOutput.getRecords().get(0).getErrors();
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          boolean isBadRequest = areAnyErrorsBadRequest(errors);
 
-         String message = "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors);
+         String message = "Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors);
          if(isBadRequest)
          {
             throw (new QBadRequestException(message));
@@ -383,10 +393,10 @@ public class ApiImplementation
       LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
       outputRecord.put(table.getPrimaryKeyField(), insertOutput.getRecords().get(0).getValue(table.getPrimaryKeyField()));
 
-      List<String> warnings = insertOutput.getRecords().get(0).getWarnings();
+      List<QWarningMessage> warnings = insertOutput.getRecords().get(0).getWarnings();
       if(CollectionUtils.nullSafeHasContents(warnings))
       {
-         outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
+         outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + joinErrorsWithCommasAndAnd(warnings));
       }
 
       return (outputRecord);
@@ -403,6 +413,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       InsertInput insertInput = new InsertInput();
+      insertInput.setInputSource(QInputSource.USER);
       insertInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(insertInput, TablePermissionSubType.INSERT);
@@ -463,19 +474,27 @@ public class ApiImplementation
          LinkedHashMap<String, Serializable> outputRecord = new LinkedHashMap<>();
          response.add(outputRecord);
 
-         List<String> errors   = record.getErrors();
-         List<String> warnings = record.getWarnings();
+         List<QErrorMessage>   errors   = record.getErrors();
+         List<QWarningMessage> warnings = record.getWarnings();
          if(CollectionUtils.nullSafeHasContents(errors))
          {
-            outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-            outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
-            outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            if(areAnyErrorsBadRequest(errors))
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+            }
+            else
+            {
+               outputRecord.put("statusCode", HttpStatus.Code.INTERNAL_SERVER_ERROR.getCode());
+               outputRecord.put("statusText", HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage());
+            }
+            outputRecord.put("error", "Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors));
          }
          else if(CollectionUtils.nullSafeHasContents(warnings))
          {
             outputRecord.put("statusCode", HttpStatus.Code.CREATED.getCode());
             outputRecord.put("statusText", HttpStatus.Code.CREATED.getMessage());
-            outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + StringUtils.joinWithCommasAndAnd(warnings));
+            outputRecord.put("warning", "Warning inserting " + table.getLabel() + ", some data may have been inserted: " + joinErrorsWithCommasAndAnd(warnings));
             outputRecord.put(table.getPrimaryKeyField(), record.getValue(table.getPrimaryKeyField()));
          }
          else
@@ -506,6 +525,7 @@ public class ApiImplementation
 
       getInput.setPrimaryKey(primaryKey);
       getInput.setIncludeAssociations(true);
+      getInput.setShouldFetchHeavyFields(true);
 
       GetAction getAction = new GetAction();
       GetOutput getOutput = getAction.execute(getInput);
@@ -535,6 +555,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
+      updateInput.setInputSource(QInputSource.USER);
       updateInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
@@ -570,7 +591,8 @@ public class ApiImplementation
       UpdateAction updateAction = new UpdateAction();
       UpdateOutput updateOutput = updateAction.execute(updateInput);
 
-      List<String> errors = updateOutput.getRecords().get(0).getErrors();
+      List<QErrorMessage> errors = updateOutput.getRecords().get(0).getErrors();
+      // todo - do we want, if there were warnings, to return a 200 w/ a body w/ the warnings?  maybe...
       if(CollectionUtils.nullSafeHasContents(errors))
       {
          if(areAnyErrorsNotFound(errors))
@@ -581,7 +603,7 @@ public class ApiImplementation
          {
             boolean isBadRequest = areAnyErrorsBadRequest(errors);
 
-            String message = "Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors);
+            String message = "Error updating " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors);
             if(isBadRequest)
             {
                throw (new QBadRequestException(message));
@@ -605,6 +627,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       UpdateInput updateInput = new UpdateInput();
+      updateInput.setInputSource(QInputSource.USER);
       updateInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(updateInput, TablePermissionSubType.EDIT);
@@ -679,26 +702,38 @@ public class ApiImplementation
             //////////
          }
 
-         List<String> errors = record.getErrors();
+         List<QErrorMessage> errors = record.getErrors();
+
+         HttpStatus.Code statusCode;
          if(CollectionUtils.nullSafeHasContents(errors))
          {
-            outputRecord.put("error", "Error updating " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            outputRecord.put("error", "Error updating " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors));
             if(areAnyErrorsNotFound(errors))
             {
-               outputRecord.put("statusCode", HttpStatus.Code.NOT_FOUND.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.NOT_FOUND.getMessage());
+               statusCode = HttpStatus.Code.NOT_FOUND;
+            }
+            else if(areAnyErrorsBadRequest(errors))
+            {
+               statusCode = HttpStatus.Code.BAD_REQUEST;
             }
             else
             {
-               outputRecord.put("statusCode", HttpStatus.Code.BAD_REQUEST.getCode());
-               outputRecord.put("statusText", HttpStatus.Code.BAD_REQUEST.getMessage());
+               statusCode = HttpStatus.Code.INTERNAL_SERVER_ERROR;
             }
          }
          else
          {
-            outputRecord.put("statusCode", HttpStatus.Code.NO_CONTENT.getCode());
-            outputRecord.put("statusText", HttpStatus.Code.NO_CONTENT.getMessage());
+            statusCode = HttpStatus.Code.NO_CONTENT;
+
+            List<QWarningMessage> warnings = record.getWarnings();
+            if(CollectionUtils.nullSafeHasContents(warnings))
+            {
+               outputRecord.put("warning", "Warning updating " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(warnings));
+            }
          }
+
+         outputRecord.put("statusCode", statusCode.getCode());
+         outputRecord.put("statusText", statusCode.getMessage());
 
          i++;
       }
@@ -717,6 +752,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setInputSource(QInputSource.USER);
       deleteInput.setTableName(tableName);
       deleteInput.setPrimaryKeys(List.of(primaryKey));
 
@@ -729,13 +765,19 @@ public class ApiImplementation
       DeleteOutput deleteOutput = deleteAction.execute(deleteInput);
       if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
       {
-         if(areAnyErrorsNotFound(deleteOutput.getRecordsWithErrors().get(0).getErrors()))
+         List<QErrorMessage> errors = deleteOutput.getRecordsWithErrors().get(0).getErrors();
+         if(areAnyErrorsNotFound(errors))
          {
             throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
+         else if(areAnyErrorsBadRequest(errors))
+         {
+            throw (new QBadRequestException("Error deleting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors)));
+         }
+         // todo - do we want, if there were warnings, to return a 200 w/ a body w/ the warnings?  maybe...
          else
          {
-            throw (new QException("Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(deleteOutput.getRecordsWithErrors().get(0).getErrors())));
+            throw (new QException("Error deleting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors)));
          }
       }
    }
@@ -751,6 +793,7 @@ public class ApiImplementation
       String         tableName = table.getName();
 
       DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setInputSource(QInputSource.USER);
       deleteInput.setTableName(tableName);
 
       PermissionsHelper.checkTablePermissionThrowing(deleteInput, TablePermissionSubType.DELETE);
@@ -811,8 +854,8 @@ public class ApiImplementation
       ///////////////////////////////////////
       List<Map<String, Serializable>> response = new ArrayList<>();
 
-      List<QRecord>             recordsWithErrors     = deleteOutput.getRecordsWithErrors();
-      Map<String, List<String>> primaryKeyToErrorsMap = new HashMap<>();
+      List<QRecord>                    recordsWithErrors     = deleteOutput.getRecordsWithErrors();
+      Map<String, List<QErrorMessage>> primaryKeyToErrorsMap = new HashMap<>();
       for(QRecord recordWithError : CollectionUtils.nonNullList(recordsWithErrors))
       {
          String primaryKey = recordWithError.getValueString(table.getPrimaryKeyField());
@@ -825,11 +868,11 @@ public class ApiImplementation
          response.add(outputRecord);
          outputRecord.put(table.getPrimaryKeyField(), primaryKey);
 
-         String       primaryKeyString = ValueUtils.getValueAsString(primaryKey);
-         List<String> errors           = primaryKeyToErrorsMap.get(primaryKeyString);
+         String              primaryKeyString = ValueUtils.getValueAsString(primaryKey);
+         List<QErrorMessage> errors           = primaryKeyToErrorsMap.get(primaryKeyString);
          if(CollectionUtils.nullSafeHasContents(errors))
          {
-            outputRecord.put("error", "Error deleting " + table.getLabel() + ": " + StringUtils.joinWithCommasAndAnd(errors));
+            outputRecord.put("error", "Error deleting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(errors));
             if(areAnyErrorsNotFound(errors))
             {
                outputRecord.put("statusCode", HttpStatus.Code.NOT_FOUND.getCode());
@@ -849,6 +892,16 @@ public class ApiImplementation
       }
 
       return (response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static String joinErrorsWithCommasAndAnd(List<? extends QStatusMessage> errors)
+   {
+      return StringUtils.joinWithCommasAndAnd(errors.stream().map(QStatusMessage::getMessage).toList());
    }
 
 
@@ -911,7 +964,7 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QFilterCriteria parseQueryParamToCriteria(String name, String value) throws QException
+   private static QFilterCriteria parseQueryParamToCriteria(QFieldMetaData field, String name, String value) throws QException
    {
       ///////////////////////////////////
       // process & discard a leading ! //
@@ -987,6 +1040,14 @@ public class ApiImplementation
       else
       {
          throw (new QException("Unexpected noOfValues [" + selectedOperator.noOfValues + "] in operator [" + selectedOperator + "]"));
+      }
+
+      if(field.getType().equals(QFieldType.BLOB))
+      {
+         if(!selectedOperator.equals(Operator.EMPTY))
+         {
+            throw (new QBadRequestException("Operator " + selectedOperator.prefix + " may not be used for field " + name + " (blob fields only support operators EMPTY or !EMPTY)"));
+         }
       }
 
       return (new QFilterCriteria(name, isNot ? selectedOperator.negativeOperator : selectedOperator.positiveOperator, criteriaValues));
@@ -1109,13 +1170,9 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static boolean areAnyErrorsBadRequest(List<String> errors)
+   private static boolean areAnyErrorsBadRequest(List<QErrorMessage> errors)
    {
-      boolean isBadRequest = errors.stream().anyMatch(e ->
-         e.contains("Missing value in required field")
-            || e.contains("You do not have permission")
-      );
-      return isBadRequest;
+      return errors.stream().anyMatch(e -> (e instanceof BadInputStatusMessage) || (e instanceof PermissionDeniedMessage));
    }
 
 
@@ -1123,9 +1180,9 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static boolean areAnyErrorsNotFound(List<String> errors)
+   private static boolean areAnyErrorsNotFound(List<QErrorMessage> errors)
    {
-      return errors.stream().anyMatch(e -> e.startsWith(UpdateAction.NOT_FOUND_ERROR_PREFIX) || e.startsWith(DeleteAction.NOT_FOUND_ERROR_PREFIX));
+      return errors.stream().anyMatch(e -> (e instanceof NotFoundStatusMessage));
    }
 
 }

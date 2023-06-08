@@ -23,12 +23,24 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
+ ** Abstract class that a table can specify an implementation of, to provide
+ ** custom actions after an insert takes place.
  **
+ ** General implementation would be, to iterate over the records (the outputs of
+ ** the insert action), and look at their values:
+ ** - possibly adding Errors (`addError`) or Warnings (`addWarning`) to the records
+ ** - possibly throwing an exception - though doing so won't stop the update, and instead
+ **   will just set a warning on all of the updated records...
+ ** - doing "whatever else" you may want to do.
+ ** - returning the list of records (can be the input list) that you want to go back to the caller.
+ **
+ ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
 public abstract class AbstractPostInsertCustomizer
 {
@@ -39,7 +51,7 @@ public abstract class AbstractPostInsertCustomizer
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract List<QRecord> apply(List<QRecord> records);
+   public abstract List<QRecord> apply(List<QRecord> records) throws QException;
 
 
 

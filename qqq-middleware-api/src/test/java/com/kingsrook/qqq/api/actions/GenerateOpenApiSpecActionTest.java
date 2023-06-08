@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -92,7 +93,13 @@ class GenerateOpenApiSpecActionTest extends BaseTest
                   .withTableName(table.getName())
                   .withVersion(supportedVersion.toString())
                   .withApiName(apiInstanceMetaData.getName()));
-               // System.out.println(output.getYaml());
+
+               if(table.getName().equals(TestUtils.TABLE_NAME_PERSON))
+               {
+                  assertThat(output.getYaml())
+                     .contains("Query on the First Name field.  Can prefix value with an operator")
+                     .contains("Query on the Photo field.  Can only query for EMPTY or !EMPTY");
+               }
             }
          }
       }
