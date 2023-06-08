@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
@@ -41,28 +42,20 @@ public class ConnectionManager
    {
       String jdbcURL;
 
-      switch (backend.getVendor())
+      if(StringUtils.hasContent(backend.getJdbcUrl()))
       {
-         case "aurora":
+         jdbcURL = backend.getJdbcUrl();
+      }
+      else
+      {
+         switch(backend.getVendor())
          {
             // TODO aws-mysql-jdbc driver not working when running on AWS
             // jdbcURL = "jdbc:mysql:aws://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=CONVERT_TO_NULL";
-            jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
-            break;
-         }
-         case "mysql":
-         {
-            jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
-            break;
-         }
-         case "h2":
-         {
-            jdbcURL = "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
-            break;
-         }
-         default:
-         {
-            throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
+            case "aurora" -> jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
+            case "mysql" -> jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
+            case "h2" -> jdbcURL = "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
+            default -> throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
          }
       }
 
