@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -36,9 +37,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.processes.implementations.audits.GetRecordAuditsStep;
 
 
 /*******************************************************************************
@@ -50,6 +55,10 @@ public class AuditsMetaDataProvider
    public static final String TABLE_NAME_AUDIT_USER   = "auditUser";
    public static final String TABLE_NAME_AUDIT        = "audit";
    public static final String TABLE_NAME_AUDIT_DETAIL = "auditDetail";
+   public static final String TABLE_NAME_AUDIT_TREE   = "auditTree";
+
+   public static final String AUDIT_TREE_JOIN_AUDIT_TABLE_FOR_ROOT = "auditTreeJoinAuditTableForRoot";
+   public static final String AUDIT_TREE_JOIN_AUDIT_TABLE_FOR_NODE = "auditTreeJoinAuditTableForNode";
 
 
 
@@ -61,6 +70,21 @@ public class AuditsMetaDataProvider
       defineStandardAuditTables(instance, backendName, backendDetailEnricher);
       defineStandardAuditPossibleValueSources(instance);
       defineStandardAuditJoins(instance);
+      defineProcessGetRecordAudits(instance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void defineProcessGetRecordAudits(QInstance instance)
+   {
+      instance.addProcess(new QProcessMetaData()
+         .withName("getRecordAudits")
+         .withStepList(List.of(new QBackendStepMetaData()
+            .withName("step")
+            .withCode(new QCodeReference(GetRecordAuditsStep.class)))));
    }
 
 
@@ -90,6 +114,20 @@ public class AuditsMetaDataProvider
          .withInferredName()
          .withType(JoinType.ONE_TO_MANY)
          .withJoinOn(new JoinOn("id", "auditId")));
+
+      instance.addJoin(new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_AUDIT_TREE)
+         .withRightTable(TABLE_NAME_AUDIT_TABLE)
+         .withName(AUDIT_TREE_JOIN_AUDIT_TABLE_FOR_ROOT)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("rootAuditTableId", "id")));
+
+      instance.addJoin(new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_AUDIT_TREE)
+         .withRightTable(TABLE_NAME_AUDIT_TABLE)
+         .withName(AUDIT_TREE_JOIN_AUDIT_TABLE_FOR_NODE)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("nodeAuditTableId", "id")));
 
    }
 
@@ -141,6 +179,7 @@ public class AuditsMetaDataProvider
       rs.add(enrich(backendDetailEnricher, defineAuditTableTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineAuditTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineAuditDetailTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineAuditTreeTable(backendName)));
       return (rs);
    }
 
@@ -217,6 +256,10 @@ public class AuditsMetaDataProvider
          .withRecordLabelFormat("%s %s")
          .withRecordLabelFields("auditTableId", "recordId")
          .withPrimaryKeyField("id")
+         .withAssociation(new Association()
+            .withName("auditDetails")
+            .withAssociatedTableName(TABLE_NAME_AUDIT_DETAIL)
+            .withJoinName(QJoinMetaData.makeInferredJoinName(TABLE_NAME_AUDIT, TABLE_NAME_AUDIT_DETAIL)))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("auditTableId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT_TABLE))
          .withField(new QFieldMetaData("auditUserId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT_USER))
@@ -246,6 +289,28 @@ public class AuditsMetaDataProvider
          .withField(new QFieldMetaData("fieldName", QFieldType.STRING).withMaxLength(100).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("oldValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
          .withField(new QFieldMetaData("newValue", QFieldType.STRING).withMaxLength(250).withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS))
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineAuditTreeTable(String backendName)
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_AUDIT_TREE)
+         .withBackendName(backendName)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("id")
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("rootAuditTableId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT))
+         .withField(new QFieldMetaData("rootRecordId", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("nodeAuditTableId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_AUDIT))
+         .withField(new QFieldMetaData("nodeRecordId", QFieldType.INTEGER))
          .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
    }
 

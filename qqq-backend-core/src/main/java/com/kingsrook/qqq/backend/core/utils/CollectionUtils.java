@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
@@ -550,4 +553,27 @@ public class CollectionUtils
       return (rs);
    }
 
+
+
+   /*******************************************************************************
+    ** For cases where you have a Collection (of an unknown type), and you know you
+    ** want/need it in a specific concrete type (say, ArrayList), but you don't want
+    ** to just blindly copy it (e.g., as that may be expensive), call this method.
+    **
+    ** ArrayList<String> myStrings = CollectionUtils.useOrWrap(yourStrings, new TypeToken<>() {});
+    **
+    ** Note that you may always just pass `new TypeToken() {}` as the 2nd arg - then
+    ** the compiler will infer the type (T) based on the variable you're assigning into.
+    *******************************************************************************/
+   public static <E, T extends Collection<E>> T useOrWrap(Collection<E> collection, TypeToken<T> typeToken) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException
+   {
+      Class<T> targetClass = (Class<T>) typeToken.getRawType();
+      if(targetClass.isInstance(collection))
+      {
+         return (targetClass.cast(collection));
+      }
+
+      Constructor<T> constructor = targetClass.getConstructor(Collection.class);
+      return (constructor.newInstance(collection));
+   }
 }

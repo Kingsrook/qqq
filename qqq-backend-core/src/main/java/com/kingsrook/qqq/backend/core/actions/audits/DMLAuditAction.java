@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -46,7 +47,9 @@ import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -89,7 +92,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          List<QRecord> recordList = CollectionUtils.nonNullList(input.getRecordList()).stream()
             .filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors())).toList();
 
-         AuditLevel auditLevel = getAuditLevel(tableActionInput);
+         AuditLevel auditLevel = getAuditLevel(table);
          if(auditLevel == null || auditLevel.equals(AuditLevel.NONE) || CollectionUtils.nullSafeIsEmpty(recordList))
          {
             /////////////////////////////////////////////
@@ -269,7 +272,54 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          }
 
          // new AuditAction().executeAsync(auditInput); // todo async??? maybe get that from rules???
-         new AuditAction().execute(auditInput);
+         AuditAction auditAction = new AuditAction();
+         auditAction.execute(auditInput);
+
+         if(DMLType.INSERT.equals(dmlType))
+         {
+            if(getIsAuditTreeRoot(table))
+            {
+               /* not needed? */
+               /*
+               Integer auditTableId = auditAction.getIdForName("auditTable", table.getName());
+               List<QRecord> auditTrees = recordList.stream().map(r ->
+                  new QRecord()
+                     .withValue("rootAuditTableId", auditTableId)
+                     .withValue("rootRecordId", r.getValueInteger(table.getPrimaryKeyField()))
+               ).toList();
+
+               InsertInput insertInput = new InsertInput();
+               insertInput.setTableName("audit tree"); // todo - from entity
+               insertInput.setRecords(auditTrees);
+               InsertOutput insertOutput = new InsertAction().execute(insertInput);
+               */
+            }
+
+            for(String auditTreeParentTableName : CollectionUtils.nonNullList(getAuditTreeParentTableNames(table)))
+            {
+               Integer rootAuditTableId = auditAction.getIdForName(AuditsMetaDataProvider.TABLE_NAME_AUDIT_TABLE, auditTreeParentTableName);
+               Integer nodeAuditTableId = auditAction.getIdForName(AuditsMetaDataProvider.TABLE_NAME_AUDIT_TABLE, table.getName());
+
+               List<QRecord> auditTreeNodes = new ArrayList<>();
+               for(QRecord record : recordList)
+               {
+                  Serializable rootRecordId = record.getValue("orderId"); // todo - figure this out, from joins...
+
+                  auditTreeNodes.add(new QRecord()
+                     .withValue("rootAuditTableId", rootAuditTableId)
+                     .withValue("rootRecordId", rootRecordId)
+                     .withValue("nodeAuditTableId", nodeAuditTableId)
+                     .withValue("nodeRecordId", record.getValue(table.getPrimaryKeyField()))
+                  );
+               }
+
+               InsertInput insertInput = new InsertInput();
+               insertInput.setTableName(AuditsMetaDataProvider.TABLE_NAME_AUDIT_TREE);
+               insertInput.setRecords(auditTreeNodes);
+               InsertOutput insertOutput = new InsertAction().execute(insertInput);
+            }
+         }
+
          long end = System.currentTimeMillis();
          LOG.trace("Audit performance", logPair("auditLevel", String.valueOf(auditLevel)), logPair("recordCount", recordList.size()), logPair("millis", (end - start)));
       }
@@ -390,15 +440,44 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static AuditLevel getAuditLevel(AbstractTableActionInput tableActionInput)
+   public static AuditLevel getAuditLevel(QTableMetaData table)
    {
-      QTableMetaData table = tableActionInput.getTable();
       if(table.getAuditRules() == null)
       {
          return (AuditLevel.NONE);
       }
 
       return (table.getAuditRules().getAuditLevel());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean getIsAuditTreeRoot(QTableMetaData table)
+   {
+      if(table.getAuditRules() == null)
+      {
+         return (false);
+      }
+
+      return (table.getAuditRules().getIsAuditTreeRoot());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<String> getAuditTreeParentTableNames(QTableMetaData table)
+   {
+      if(table.getAuditRules() == null)
+      {
+         return (null);
+      }
+
+      return (table.getAuditRules().getAuditTreeParentTableNames());
    }
 
 

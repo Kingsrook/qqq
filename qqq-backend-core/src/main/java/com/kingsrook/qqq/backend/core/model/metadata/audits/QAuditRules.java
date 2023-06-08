@@ -22,12 +22,18 @@
 package com.kingsrook.qqq.backend.core.model.metadata.audits;
 
 
+import java.util.List;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
 public class QAuditRules
 {
    private AuditLevel auditLevel;
+
+   private boolean      isAuditTreeRoot           = false;
+   private List<String> auditTreeParentTableNames = null;
 
 
 
@@ -68,6 +74,68 @@ public class QAuditRules
    public QAuditRules withAuditLevel(AuditLevel auditLevel)
    {
       this.auditLevel = auditLevel;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isAuditTreeRoot
+    *******************************************************************************/
+   public boolean getIsAuditTreeRoot()
+   {
+      return (this.isAuditTreeRoot);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isAuditTreeRoot
+    *******************************************************************************/
+   public void setIsAuditTreeRoot(boolean isAuditTreeRoot)
+   {
+      this.isAuditTreeRoot = isAuditTreeRoot;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isAuditTreeRoot
+    *******************************************************************************/
+   public QAuditRules withIsAuditTreeRoot(boolean isAuditTreeRoot)
+   {
+      this.isAuditTreeRoot = isAuditTreeRoot;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditTreeParentTableNames
+    *******************************************************************************/
+   public List<String> getAuditTreeParentTableNames()
+   {
+      return (this.auditTreeParentTableNames);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditTreeParentTableNames
+    *******************************************************************************/
+   public void setAuditTreeParentTableNames(List<String> auditTreeParentTableNames)
+   {
+      this.auditTreeParentTableNames = auditTreeParentTableNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditTreeParentTableNames
+    *******************************************************************************/
+   public QAuditRules withAuditTreeParentTableNames(List<String> auditTreeParentTableNames)
+   {
+      this.auditTreeParentTableNames = auditTreeParentTableNames;
       return (this);
    }
 

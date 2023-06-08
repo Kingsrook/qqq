@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -177,8 +178,8 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                ////////////////////////////////////////////////
                // map names to ids and handle default values //
                ////////////////////////////////////////////////
-               Integer auditTableId = getIdForName("auditTable", auditSingleInput.getAuditTableName());
-               Integer auditUserId  = getIdForName("auditUser", Objects.requireNonNullElse(auditSingleInput.getAuditUserName(), getSessionUserName()));
+               Integer auditTableId = getIdForName(AuditsMetaDataProvider.TABLE_NAME_AUDIT_TABLE, auditSingleInput.getAuditTableName());
+               Integer auditUserId  = getIdForName(AuditsMetaDataProvider.TABLE_NAME_AUDIT_USER, Objects.requireNonNullElse(auditSingleInput.getAuditUserName(), getSessionUserName()));
                Instant timestamp    = Objects.requireNonNullElse(auditSingleInput.getTimestamp(), Instant.now());
 
                //////////////////
@@ -267,7 +268,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Integer getIdForName(String tableName, String nameValue) throws QException
+   Integer getIdForName(String tableName, String nameValue) throws QException
    {
       Pair<String, String> key = new Pair<>(tableName, nameValue);
       if(!cachedFetches.containsKey(key))
@@ -287,7 +288,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             insertInput.setTableName(tableName);
             QRecord record = new QRecord().withValue("name", nameValue);
 
-            if(tableName.equals("auditTable"))
+            if(tableName.equals(AuditsMetaDataProvider.TABLE_NAME_AUDIT_TABLE))
             {
                QTableMetaData table = QContext.getQInstance().getTable(nameValue);
                if(table != null)

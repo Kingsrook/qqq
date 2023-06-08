@@ -22,18 +22,23 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -542,6 +547,28 @@ class CollectionUtilsTest extends BaseTest
       assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), List.of(3)));
       assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(List.of(1, 2), null, List.of(3)));
       assertEquals(List.of(1, 2, 3), CollectionUtils.mergeLists(null, List.of(1, 2, 3), null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException
+   {
+      {
+         List<String>      originalList    = new ArrayList<>(List.of("A", "B", "C"));
+         ArrayList<String> reallyArrayList = CollectionUtils.useOrWrap(originalList, new TypeToken<>() {});
+         assertSame(originalList, reallyArrayList);
+      }
+
+      {
+         List<String>      originalList    = new LinkedList<>(List.of("A", "B", "C"));
+         ArrayList<String> reallyArrayList = CollectionUtils.useOrWrap(originalList, new TypeToken<>() {});
+         assertNotSame(originalList, reallyArrayList);
+         assertEquals(ArrayList.class, reallyArrayList.getClass());
+      }
    }
 
 }
