@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -70,7 +71,8 @@ class QueryManagerTest extends BaseTest
             datetime_col DATETIME,
             char_col CHAR(1),
             date_col DATE,
-            time_col TIME
+            time_col TIME,
+            long_col LONG
          )
          """);
    }
@@ -151,6 +153,33 @@ class QueryManagerTest extends BaseTest
       QueryManager.bindParam(ps, 1, new GregorianCalendar());
       QueryManager.bindParam(ps, 1, LocalDate.now());
       QueryManager.bindParam(ps, 1, LocalDateTime.now());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // originally longs were being downgraded to int when binding, so, verify that doesn't happen //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLongBinding() throws SQLException
+   {
+      Long biggerThanMaxInteger = 2147483648L;
+
+      Connection        connection = getConnection();
+      PreparedStatement ps         = connection.prepareStatement("INSERT INTO test_table (long_col) VALUES (?)");
+      QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
+      ps.execute();
+
+      ps = connection.prepareStatement("SELECT long_col FROM test_table WHERE long_col = ?");
+      QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
+      ps.execute();
+      ResultSet rs = ps.getResultSet();
+      assertTrue(rs.next());
+      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
    }
 
 
@@ -161,9 +190,11 @@ class QueryManagerTest extends BaseTest
    @Test
    void testGetValueMethods() throws SQLException
    {
+      Long biggerThanMaxInteger = 2147483648L;
+
       Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col) VALUES (1, now(), 'A')");
-      PreparedStatement preparedStatement = connection.prepareStatement("SELECT * from test_table");
+      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col, long_col) VALUES (1, now(), 'A', " + biggerThanMaxInteger + ")");
+      PreparedStatement preparedStatement = connection.prepareStatement("SELECT int_col, datetime_col, char_col, long_col from test_table");
       preparedStatement.execute();
       ResultSet rs = preparedStatement.getResultSet();
       rs.next();
@@ -194,6 +225,8 @@ class QueryManagerTest extends BaseTest
       assertNotNull(QueryManager.getTimestamp(rs, 2));
       assertEquals("A", QueryManager.getObject(rs, "char_col"));
       assertEquals("A", QueryManager.getObject(rs, 3));
+      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
+      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, 4));
    }
 
 
