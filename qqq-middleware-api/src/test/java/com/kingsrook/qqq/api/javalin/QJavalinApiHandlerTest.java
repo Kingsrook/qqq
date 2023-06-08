@@ -98,7 +98,7 @@ class QJavalinApiHandlerTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withApiTableName("externalName")
             .withInitialVersion(TestUtils.V2022_Q4))));
 

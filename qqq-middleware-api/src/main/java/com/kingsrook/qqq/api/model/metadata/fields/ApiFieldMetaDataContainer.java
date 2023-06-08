@@ -24,15 +24,15 @@ package com.kingsrook.qqq.api.model.metadata.fields;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
+public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
 {
    private Map<String, ApiFieldMetaData> apis;
 
@@ -54,7 +54,7 @@ public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
     *******************************************************************************/
    public static ApiFieldMetaDataContainer of(QFieldMetaData field)
    {
-      return ((ApiFieldMetaDataContainer) field.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+      return ((ApiFieldMetaDataContainer) field.getSupplementalMetaData(ApiSupplementType.NAME));
    }
 
 

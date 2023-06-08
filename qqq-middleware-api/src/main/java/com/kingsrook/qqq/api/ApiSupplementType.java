@@ -25,7 +25,7 @@ package com.kingsrook.qqq.api;
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiMiddlewareType
+public interface ApiSupplementType
 {
    String NAME = "api";
 

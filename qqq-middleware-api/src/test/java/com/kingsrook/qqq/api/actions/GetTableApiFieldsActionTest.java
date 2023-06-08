@@ -74,11 +74,11 @@ class GetTableApiFieldsActionTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")))
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
-         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
-         .withField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("2"))))
-         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
+         .withField(new QFieldMetaData("b", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
+         .withField(new QFieldMetaData("c", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("2"))))
+         .withField(new QFieldMetaData("d", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
       );
       new QInstanceEnricher(qInstance).enrich();
 
@@ -98,13 +98,13 @@ class GetTableApiFieldsActionTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
          .withName(TABLE_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")
-            .withRemovedApiField(new QFieldMetaData("c", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1").withFinalVersion("2"))))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("1")
+            .withRemovedApiField(new QFieldMetaData("c", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1").withFinalVersion("2"))))
          ))
          .withField(new QFieldMetaData("a", STRING)) // inherit versionRange from the table
-         .withField(new QFieldMetaData("b", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
+         .withField(new QFieldMetaData("b", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("1"))))
          // we used to have "c" here... now it's in the removed list above!
-         .withField(new QFieldMetaData("d", STRING).withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
+         .withField(new QFieldMetaData("d", STRING).withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData().withInitialVersion("3"))))
       );
       new QInstanceEnricher(qInstance).enrich();
 

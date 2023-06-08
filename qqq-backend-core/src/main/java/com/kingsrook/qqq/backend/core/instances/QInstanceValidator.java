@@ -48,7 +48,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -158,7 +158,7 @@ public class QInstanceValidator
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
          validateSecurityKeyTypes(qInstance);
-         validateMiddlewareMetaData(qInstance);
+         validateSupplementalMetaData(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
       }
@@ -182,11 +182,11 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateMiddlewareMetaData(QInstance qInstance)
+   private void validateSupplementalMetaData(QInstance qInstance)
    {
-      for(QMiddlewareInstanceMetaData middlewareInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getMiddlewareMetaData()).values())
+      for(QSupplementalInstanceMetaData supplementalInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getSupplementalMetaData()).values())
       {
-         middlewareInstanceMetaData.validate(qInstance, this);
+         supplementalInstanceMetaData.validate(qInstance, this);
       }
    }
 
