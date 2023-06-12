@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.actions;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,12 +34,15 @@ import java.util.Set;
 import java.util.UUID;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
-import com.kingsrook.qqq.api.model.APIVersionRange;
+import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessCustomizers;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
-import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessUtils;
 import com.kingsrook.qqq.api.model.metadata.processes.PostRunApiProcessCustomizer;
 import com.kingsrook.qqq.api.model.metadata.processes.PreRunApiProcessCustomizer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
@@ -46,6 +50,7 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -89,6 +94,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessa
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.CouldNotFindQueryFilterForExtractStepException;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -100,6 +106,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IN;
 
 
 /*******************************************************************************
@@ -113,7 +120,6 @@ public class ApiImplementation
    // key:  Pair<apiName, apiVersion>, value: Map<name => metaData> //
    ///////////////////////////////////////////////////////////////////
    private static Map<Pair<String, String>, Map<String, QTableMetaData>>   tableApiNameMap   = new HashMap<>();
-   private static Map<Pair<String, String>, Map<String, QProcessMetaData>> processApiNameMap = new HashMap<>();
 
 
 
@@ -913,14 +919,15 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Map<String, Serializable> runProcess(ApiInstanceMetaData apiInstanceMetaData, String version, String processApiName, Map<String, String> paramMap) throws QException
+   public static HttpApiResponse runProcess(ApiInstanceMetaData apiInstanceMetaData, String version, String processApiName, Map<String, String> paramMap) throws QException
    {
-      QProcessMetaData   process            = validateProcessAndVersion(apiInstanceMetaData, version, processApiName);
-      String             processName        = process.getName();
-      ApiProcessMetaData apiProcessMetaData = getApiProcessMetaDataIfProcessIsInApi(apiInstanceMetaData, process);
+      Pair<ApiProcessMetaData, QProcessMetaData> pair = ApiProcessUtils.getProcessMetaDataPair(apiInstanceMetaData, version, processApiName);
 
-      List<String>              badRequestMessages = new ArrayList<>();
-      Map<String, Serializable> output             = new LinkedHashMap<>();
+      ApiProcessMetaData apiProcessMetaData = pair.getA();
+      QProcessMetaData   process            = pair.getB();
+      String             processName        = process.getName();
+
+      List<String> badRequestMessages = new ArrayList<>();
 
       String processUUID = UUID.randomUUID().toString();
 
@@ -928,27 +935,37 @@ public class ApiImplementation
       runProcessInput.setProcessName(processName);
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       runProcessInput.setProcessUUID(processUUID);
-      // todo i don't think runProcessInput.setCallback();
       // todo i don't think runProcessInput.setAsyncJobCallback();
 
       //////////////////////
       // map input values //
       //////////////////////
-      for(QFieldMetaData inputField : CollectionUtils.nonNullList(apiProcessMetaData.getInputFields()))
+      ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
+      if(apiProcessInput != null)
       {
-         String value = paramMap.get(inputField.getName());
-         if(!StringUtils.hasContent(value) && inputField.getIsRequired())
-         {
-            badRequestMessages.add("Missing value for required input field " + inputField.getName());
-            continue;
-         }
-
-         // todo - types?
-
-         runProcessInput.addValue(inputField.getName(), value);
+         processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getQueryStringParams());
+         processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getFormParams());
+         processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getObjectBodyParams());
       }
 
-      // todo! runProcessInput.setRecords(records);
+      ////////////////////////////////////////
+      // get records for process, if needed //
+      ////////////////////////////////////////
+      if(process.getMinInputRecords() != null && process.getMinInputRecords() > 0)
+      {
+         if(apiProcessInput != null && apiProcessInput.getRecordIdsParamName() != null)
+         {
+            String idParam = apiProcessInput.getRecordIdsParamName();
+            if(StringUtils.hasContent(idParam) && StringUtils.hasContent(paramMap.get(idParam)))
+            {
+               String[] ids = paramMap.get(idParam).split(",");
+
+               QTableMetaData table  = QContext.getQInstance().getTable(process.getTableName());
+               QQueryFilter   filter = new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), IN, Arrays.asList(ids)));
+               runProcessInput.setCallback(getCallback(filter));
+            }
+         }
+      }
 
       /////////////////////////////////////////
       // throw if bad inputs have been noted //
@@ -978,8 +995,17 @@ public class ApiImplementation
       /////////////////////
       // run the process //
       /////////////////////
-      RunProcessAction runProcessAction = new RunProcessAction();
-      RunProcessOutput runProcessOutput = runProcessAction.execute(runProcessInput);
+      RunProcessOutput runProcessOutput;
+
+      try
+      {
+         RunProcessAction runProcessAction = new RunProcessAction();
+         runProcessOutput = runProcessAction.execute(runProcessInput);
+      }
+      catch(CouldNotFindQueryFilterForExtractStepException e)
+      {
+         throw (new QBadRequestException("Records to run through this process were not specified."));
+      }
 
       /////////////////////////////////////////
       // run post-customizer, if there is one //
@@ -993,12 +1019,42 @@ public class ApiImplementation
       ///////////////////////
       // map output values //
       ///////////////////////
-      for(QFieldMetaData outputField : apiProcessMetaData.getOutputFields())
+      ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
+      if(output != null)
       {
-         output.put(outputField.getName(), runProcessOutput.getValues().get(outputField.getName()));
+         return (new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), output.getOutputForProcess(runProcessInput, runProcessOutput)));
+      }
+      else
+      {
+         return (new HttpApiResponse(HttpStatus.Code.NO_CONTENT, ""));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processProcessInputFields(Map<String, String> paramMap, List<String> badRequestMessages, RunProcessInput runProcessInput, ApiProcessInputFieldsContainer fieldsContainer)
+   {
+      if(fieldsContainer == null)
+      {
+         return;
       }
 
-      return (output);
+      for(QFieldMetaData inputField : CollectionUtils.nonNullList(fieldsContainer.getFields()))
+      {
+         String value = paramMap.get(inputField.getName());
+         if(!StringUtils.hasContent(value) && inputField.getIsRequired())
+         {
+            badRequestMessages.add("Missing value for required input field " + inputField.getName());
+            continue;
+         }
+
+         // todo - types?
+
+         runProcessInput.addValue(inputField.getName(), value);
+      }
    }
 
 
@@ -1236,65 +1292,6 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QProcessMetaData validateProcessAndVersion(ApiInstanceMetaData apiInstanceMetaData, String version, String processApiName) throws QNotFoundException
-   {
-      QProcessMetaData process  = getProcessByApiName(apiInstanceMetaData.getName(), version, processApiName);
-      LogPair[]        logPairs = new LogPair[] { logPair("apiName", apiInstanceMetaData.getName()), logPair("version", version), logPair("processApiName", processApiName) };
-
-      if(process == null)
-      {
-         LOG.info("404 because process is null (processApiName=" + processApiName + ")", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
-      if(BooleanUtils.isTrue(process.getIsHidden()))
-      {
-         LOG.info("404 because process isHidden", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
-      ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(process);
-      if(apiProcessMetaDataContainer == null)
-      {
-         LOG.info("404 because process apiProcessMetaDataContainer is null", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
-      ApiProcessMetaData apiProcessMetaData = apiProcessMetaDataContainer.getApiProcessMetaData(apiInstanceMetaData.getName());
-      if(apiProcessMetaData == null)
-      {
-         LOG.info("404 because process apiProcessMetaData is null", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
-      if(BooleanUtils.isTrue(apiProcessMetaData.getIsExcluded()))
-      {
-         LOG.info("404 because process is excluded", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
-      APIVersion       requestApiVersion = new APIVersion(version);
-      List<APIVersion> supportedVersions = apiInstanceMetaData.getSupportedVersions();
-      if(CollectionUtils.nullSafeIsEmpty(supportedVersions) || !supportedVersions.contains(requestApiVersion))
-      {
-         LOG.info("404 because requested version is not supported", logPairs);
-         throw (new QNotFoundException(version + " is not a supported version in this api."));
-      }
-
-      if(!apiProcessMetaData.getApiVersionRange().includes(requestApiVersion))
-      {
-         LOG.info("404 because process version range does not include requested version", logPairs);
-         throw (new QNotFoundException(version + " is not a supported version for process " + processApiName + " in this api."));
-      }
-
-      return (process);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    private static QTableMetaData getTableByApiName(String apiName, String version, String tableApiName)
    {
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1333,99 +1330,6 @@ public class ApiImplementation
 
 
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static QProcessMetaData getProcessByApiName(String apiName, String version, String processApiName)
-   {
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      // processApiNameMap is a map of (apiName,apiVersion) => Map<String, QProcessMetaData>.    //
-      // that is to say, a 2-level map.  The first level is keyed by (apiName,apiVersion) pairs. //
-      // the second level is keyed by processApiNames.                                           //
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      Pair<String, String> key = new Pair<>(apiName, version);
-      if(processApiNameMap.get(key) == null)
-      {
-         Map<String, QProcessMetaData> map = new HashMap<>();
-
-         for(QProcessMetaData process : QContext.getQInstance().getProcesses().values())
-         {
-            ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(process);
-            if(apiProcessMetaDataContainer != null)
-            {
-               ApiProcessMetaData apiProcessMetaData = apiProcessMetaDataContainer.getApiProcessMetaData(apiName);
-               if(apiProcessMetaData != null)
-               {
-                  String name = process.getName();
-                  if(StringUtils.hasContent(apiProcessMetaData.getApiProcessName()))
-                  {
-                     name = apiProcessMetaData.getApiProcessName();
-                  }
-                  map.put(name, process);
-               }
-            }
-         }
-
-         processApiNameMap.put(key, map);
-      }
-
-      return (processApiNameMap.get(key).get(processApiName));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static ApiProcessMetaData getApiProcessMetaDataIfProcessIsInApi(ApiInstanceMetaData apiInstanceMetaData, QProcessMetaData process)
-   {
-      if(BooleanUtils.isTrue(process.getIsHidden()))
-      {
-         LOG.trace("excluding process because it is hidden (process=" + process.getName() + ")");
-         return (null);
-      }
-
-      ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(process);
-      if(apiProcessMetaDataContainer == null)
-      {
-         LOG.trace("excluding process because apiProcessMetaDataContainer is null (process=" + process.getName() + ")");
-         return (null);
-      }
-
-      ApiProcessMetaData apiProcessMetaData = apiProcessMetaDataContainer.getApiProcessMetaData(apiInstanceMetaData.getName());
-      if(apiProcessMetaData == null)
-      {
-         LOG.trace("excluding process because apiProcessMetaData is null (process=" + process.getName() + ")");
-         return (null);
-      }
-
-      if(BooleanUtils.isTrue(apiProcessMetaData.getIsExcluded()))
-      {
-         LOG.trace("excluding process because is excluded (process=" + process.getName() + ")");
-         return (null);
-      }
-
-      boolean          isProcessInAnySupportedVersions = false;
-      List<APIVersion> supportedVersions               = apiInstanceMetaData.getSupportedVersions();
-      APIVersionRange  apiVersionRange                 = apiProcessMetaData.getApiVersionRange();
-      for(APIVersion supportedVersion : supportedVersions)
-      {
-         if(apiVersionRange.includes(supportedVersion))
-         {
-            isProcessInAnySupportedVersions = true;
-         }
-      }
-
-      if(!isProcessInAnySupportedVersions)
-      {
-         LOG.trace("excluding process because it is not in any supported versions (process=" + process.getName() + ")");
-         return (null);
-      }
-
-      return (apiProcessMetaData);
-   }
-
-
 
    /*******************************************************************************
     **
@@ -1443,6 +1347,31 @@ public class ApiImplementation
    private static boolean areAnyErrorsNotFound(List<QErrorMessage> errors)
    {
       return errors.stream().anyMatch(e -> (e instanceof NotFoundStatusMessage));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessCallback getCallback(QQueryFilter filter)
+   {
+      return new QProcessCallback()
+      {
+         @Override
+         public QQueryFilter getQueryFilter()
+         {
+            return (filter);
+         }
+
+
+
+         @Override
+         public Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
+         {
+            return (Collections.emptyMap());
+         }
+      };
    }
 
 }

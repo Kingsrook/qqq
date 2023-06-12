@@ -1443,12 +1443,42 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testProcess() throws QException
+   void testGetProcessForObject() throws QException
    {
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo?age=43&partnerPersonId=1&heightInches=72&weightPounds=220&homeTown=Chester").asString();
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo").asString();
+      assertErrorResponse(HttpStatus.METHOD_NOT_ALLOWED_405, "This path only supports method: GET", response);
+
+      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo?age=43&partnerPersonId=1&heightInches=72&weightPounds=220&homeTown=Chester").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
       System.out.println(jsonObject.toString(3));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPostProcessForProcessSummaryList() throws QException
+   {
+      insertSimpsons();
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/transformPeople").asString();
+      assertErrorResponse(HttpStatus.METHOD_NOT_ALLOWED_405, "This path only supports method: POST", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/transformPeople").asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Records to run through this process were not specified", response);
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/transformPeople?id=999").asString();
+      assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+      assertEquals("", response.getBody());
+
+      response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/transformPeople?id=1,2,3").asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(3, jsonArray.length());
+      System.out.println(jsonArray.toString(3));
    }
 
 

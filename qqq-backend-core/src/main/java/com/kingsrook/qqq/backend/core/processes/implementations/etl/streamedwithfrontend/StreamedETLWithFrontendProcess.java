@@ -408,6 +408,30 @@ public class StreamedETLWithFrontendProcess
 
 
       /*******************************************************************************
+       ** Fluent setter for minInputRecords
+       **
+       *******************************************************************************/
+      public Builder withMinInputRecords(Integer minInputRecords)
+      {
+         processMetaData.setMinInputRecords(minInputRecords);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for maxInputRecords
+       **
+       *******************************************************************************/
+      public Builder withMaxInputRecords(Integer maxInputRecords)
+      {
+         processMetaData.setMaxInputRecords(maxInputRecords);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
        **
        *******************************************************************************/
       public Builder withReviewStepRecordFields(List<QFieldMetaData> fieldList)

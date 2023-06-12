@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 
 
 /*******************************************************************************
@@ -69,7 +69,7 @@ public abstract class QSupplementalProcessMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void enrich(QProcessMetaData process)
+   public void enrich(QInstanceEnricher qInstanceEnricher, QProcessMetaData process)
    {
       ////////////////////////
       // noop in base class //

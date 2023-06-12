@@ -370,7 +370,7 @@ public class QInstanceEnricher
 
       for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
       {
-         supplementalProcessMetaData.enrich(process);
+         supplementalProcessMetaData.enrich(this, process);
       }
 
       enrichPermissionRules(process);

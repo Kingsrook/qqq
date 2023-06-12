@@ -223,7 +223,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
          return (new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, idStrings)));
       }
 
-      throw (new QException("Could not find query filter for Extract step."));
+      throw (new CouldNotFindQueryFilterForExtractStepException("Could not find query filter for Extract step."));
    }
 
 

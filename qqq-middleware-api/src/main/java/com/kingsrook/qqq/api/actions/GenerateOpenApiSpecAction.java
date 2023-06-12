@@ -41,6 +41,11 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessUtils;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.Components;
@@ -73,12 +78,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
@@ -192,8 +199,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    public GenerateOpenApiSpecOutput execute(GenerateOpenApiSpecInput input) throws QException
    {
-      QInstance qInstance = QContext.getQInstance();
-      String    version   = input.getVersion();
+      QInstance  qInstance  = QContext.getQInstance();
+      String     version    = input.getVersion();
+      APIVersion apiVersion = new APIVersion(version);
 
       ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
       if(apiInstanceMetaDataContainer == null)
@@ -217,7 +225,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          throw new QException("Missing required input: version");
       }
 
-      if(!apiInstanceMetaData.getSupportedVersions().contains(new APIVersion(version)))
+      if(!apiInstanceMetaData.getSupportedVersions().contains(apiVersion))
       {
          throw (new QException("[" + version + "] is not a supported API Version."));
       }
@@ -291,7 +299,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ///////////////////
       // foreach table //
       ///////////////////
-      List<QTableMetaData> tables = new ArrayList<>(qInstance.getTables().values());
+      List<QTableMetaData> tables           = new ArrayList<>(qInstance.getTables().values());
+      Set<String>          usedProcessNames = new HashSet<>();
       tables.sort(Comparator.comparing(t -> ObjectUtils.requireNonNullElse(t.getLabel(), t.getName(), "")));
       for(QTableMetaData table : tables)
       {
@@ -330,7 +339,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          }
 
          APIVersionRange apiVersionRange = apiTableMetaData.getApiVersionRange();
-         if(!apiVersionRange.includes(new APIVersion(version)))
+         if(!apiVersionRange.includes(apiVersion))
          {
             LOG.debug("Omitting table [" + tableName + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
             continue;
@@ -355,9 +364,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          boolean deleteEnabled             = ApiOperation.DELETE.isOperationEnabled(operationProviders) && deleteCapability;
          boolean deleteBulkEnabled         = ApiOperation.BULK_DELETE.isOperationEnabled(operationProviders) && deleteCapability;
 
-         if(!getEnabled && !queryByQueryStringEnabled && !insertEnabled && !insertBulkEnabled && !updateEnabled && !updateBulkEnabled && !deleteEnabled && !deleteBulkEnabled)
+         List<Pair<ApiProcessMetaData, QProcessMetaData>> apiProcessMetaDataList = getProcessesUnderTable(table, apiName, apiVersion);
+
+         if(!getEnabled && !queryByQueryStringEnabled && !insertEnabled && !insertBulkEnabled && !updateEnabled && !updateBulkEnabled && !deleteEnabled && !deleteBulkEnabled && !CollectionUtils.nullSafeHasContents(apiProcessMetaDataList))
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations");
+            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations or processes");
             continue;
          }
 
@@ -687,6 +698,35 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withPatch(updateBulkEnabled ? bulkPatch : null)
                .withDelete(deleteBulkEnabled ? bulkDelete : null));
          }
+
+         // todo - need to place these differently based on something?
+         for(Pair<ApiProcessMetaData, QProcessMetaData> pair : CollectionUtils.nonNullList(apiProcessMetaDataList))
+         {
+            ApiProcessMetaData apiProcessMetaData = pair.getA();
+            QProcessMetaData   processMetaData    = pair.getB();
+
+            String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
+            Path   path           = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tableLabel));
+            openAPI.getPaths().put(basePath + processApiPath, path);
+
+            usedProcessNames.add(processMetaData.getName());
+         }
+      }
+
+      /////////////////////////////
+      // add non-table processes //
+      /////////////////////////////
+      List<Pair<ApiProcessMetaData, QProcessMetaData>> processesNotUnderTables = getProcessesNotUnderTables(apiName, apiVersion, usedProcessNames);
+      for(Pair<ApiProcessMetaData, QProcessMetaData> pair : CollectionUtils.nonNullList(processesNotUnderTables))
+      {
+         ApiProcessMetaData apiProcessMetaData = pair.getA();
+         QProcessMetaData   processMetaData    = pair.getB();
+
+         String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
+         Path   path           = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(processMetaData.getLabel()));
+         openAPI.getPaths().put(basePath + processApiPath, path);
+
+         usedProcessNames.add(processMetaData.getName());
       }
 
       componentResponses.put("error" + HttpStatus.BAD_REQUEST.getCode(), buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
@@ -706,6 +746,140 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       output.setYaml(YamlUtils.toYaml(openAPI));
       output.setJson(JsonUtils.toPrettyJson(openAPI));
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<Pair<ApiProcessMetaData, QProcessMetaData>> getProcessesNotUnderTables(String apiName, APIVersion apiVersion, Set<String> usedProcessNames)
+   {
+      List<Pair<ApiProcessMetaData, QProcessMetaData>> apiProcessMetaDataList = new ArrayList<>();
+      for(QProcessMetaData processMetaData : CollectionUtils.nonNullMap(QContext.getQInstance().getProcesses()).values())
+      {
+         if(usedProcessNames.contains(processMetaData.getName()))
+         {
+            continue;
+         }
+
+         ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(processMetaData);
+         if(apiProcessMetaDataContainer == null)
+         {
+            continue;
+         }
+
+         ApiProcessMetaData apiProcessMetaData = apiProcessMetaDataContainer.getApis().get(apiName);
+         if(apiProcessMetaData == null)
+         {
+            continue;
+         }
+
+         if(!apiProcessMetaData.getApiVersionRange().includes(apiVersion))
+         {
+            continue;
+         }
+
+         apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
+      }
+      return (apiProcessMetaDataList);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Path generateProcessSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
+   {
+      Method methodForProcess = new Method()
+         .withOperationId(apiProcessMetaData.getApiProcessName())
+         .withTags(tags)
+         .withSummary(processMetaData.getLabel()) // todo - add optional summary to meta data
+         .withDescription("Run the process named " + processMetaData.getLabel())// todo - add optional description to meta data, .withDescription()
+         .withSecurity(getSecurity(apiInstanceMetaData, "todo - process name"));
+
+      List<Parameter> parameters      = new ArrayList<>();
+      ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
+      if(apiProcessInput != null)
+      {
+         ApiProcessInputFieldsContainer queryStringParams = apiProcessInput.getQueryStringParams();
+         if(queryStringParams != null)
+         {
+            for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
+            {
+               parameters.add(new Parameter()
+                  .withName(field.getName())
+                  // todo - add description to meta data .withDescription("Which page of results to return.  Starts at 1.")
+                  .withDescription("Value for the " + field.getLabel() + " field.")
+                  .withIn("query")
+                  .withRequired(field.getIsRequired())
+                  .withSchema(new Schema().withType(getFieldType(field))));
+            }
+         }
+      }
+
+      if(CollectionUtils.nullSafeHasContents(parameters))
+      {
+         methodForProcess.setParameters(parameters);
+      }
+
+      // todo methodForProcess.withRequestBody();
+
+      // todo methodForProcess.withResponse();
+
+      methodForProcess.withResponse(HttpStatus.OK.getCode(), new Response()
+         .withDescription("Successfully ran the process")
+         .withContent(MapBuilder.of("application/json", new Content())));
+
+      @SuppressWarnings("checkstyle:indentation")
+      Path path = switch(apiProcessMetaData.getMethod())
+      {
+         case GET -> new Path().withGet(methodForProcess);
+         case POST -> new Path().withPost(methodForProcess);
+         case PUT -> new Path().withPut(methodForProcess);
+         case PATCH -> new Path().withPatch(methodForProcess);
+         case DELETE -> new Path().withDelete(methodForProcess);
+      };
+
+      return (path);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<Pair<ApiProcessMetaData, QProcessMetaData>> getProcessesUnderTable(QTableMetaData table, String apiName, APIVersion apiVersion)
+   {
+      List<Pair<ApiProcessMetaData, QProcessMetaData>> apiProcessMetaDataList = new ArrayList<>();
+      for(QProcessMetaData processMetaData : CollectionUtils.nonNullMap(QContext.getQInstance().getProcesses()).values())
+      {
+         if(!table.getName().equals(processMetaData.getTableName()))
+         {
+            continue;
+         }
+
+         ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(processMetaData);
+         if(apiProcessMetaDataContainer == null)
+         {
+            continue;
+         }
+
+         ApiProcessMetaData apiProcessMetaData = apiProcessMetaDataContainer.getApis().get(apiName);
+         if(apiProcessMetaData == null)
+         {
+            continue;
+         }
+
+         if(!apiProcessMetaData.getApiVersionRange().includes(apiVersion))
+         {
+            continue;
+         }
+
+         apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
+      }
+      return (apiProcessMetaDataList);
    }
 
 

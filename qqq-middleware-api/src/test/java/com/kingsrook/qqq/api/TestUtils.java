@@ -29,8 +29,12 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessObjectOutput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessSummaryListOutput;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.HttpMethod;
@@ -72,8 +76,10 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 
 
 /*******************************************************************************
@@ -89,7 +95,8 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
 
-   public static final String PROCESS_NAME_GET_PERSON_INFO = "getPersonInfo";
+   public static final String PROCESS_NAME_GET_PERSON_INFO  = "getPersonInfo";
+   public static final String PROCESS_NAME_TRANSFORM_PEOPLE = "transformPeople";
 
    public static final String API_NAME             = "test-api";
    public static final String ALTERNATIVE_API_NAME = "person-api";
@@ -122,6 +129,7 @@ public class TestUtils
 
       qInstance.addPossibleValueSource(definePersonPossibleValueSource());
       qInstance.addProcess(defineProcessGetPersonInfo());
+      qInstance.addProcess(defineProcessTransformPeople());
 
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
@@ -214,13 +222,42 @@ public class TestUtils
          .withApiProcessMetaData(API_NAME, new ApiProcessMetaData()
             .withInitialVersion(CURRENT_API_VERSION)
             .withMethod(HttpMethod.GET)
-            .withInferredInputFields(process)
-            .withOutputFields(ListBuilder.of(
-               new QFieldMetaData("density", QFieldType.DECIMAL),
-               new QFieldMetaData("daysOld", QFieldType.INTEGER),
-               new QFieldMetaData("nickname", QFieldType.STRING)
-            ))
+            .withInput(new ApiProcessInput()
+               .withQueryStringParams(new ApiProcessInputFieldsContainer().withInferredInputFields(process)))
+            .withOutput(new ApiProcessObjectOutput()
+               .withOutputField(new QFieldMetaData("density", QFieldType.DECIMAL))
+               .withOutputField(new QFieldMetaData("daysOld", QFieldType.INTEGER))
+               .withOutputField(new QFieldMetaData("nickname", QFieldType.STRING)))
          ));
+
+      return (process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessTransformPeople()
+   {
+      QProcessMetaData process = StreamedETLWithFrontendProcess.processMetaDataBuilder()
+         .withName(PROCESS_NAME_TRANSFORM_PEOPLE)
+         .withTableName(TABLE_NAME_PERSON)
+         .withSourceTable(TABLE_NAME_PERSON)
+         .withDestinationTable(TABLE_NAME_PERSON)
+         .withMinInputRecords(1)
+         .withExtractStepClass(ExtractViaQueryStep.class)
+         .withTransformStepClass(TransformPersonStep.class)
+         .withLoadStepClass(LoadViaUpdateStep.class)
+         .getProcessMetaData();
+
+      process.withSupplementalMetaData(new ApiProcessMetaDataContainer()
+         .withApiProcessMetaData(API_NAME, new ApiProcessMetaData()
+            .withInitialVersion(CURRENT_API_VERSION)
+            .withMethod(HttpMethod.POST)
+            .withInput(new ApiProcessInput()
+               .withQueryStringParams(new ApiProcessInputFieldsContainer().withRecordIdsField(new QFieldMetaData("id", QFieldType.STRING))))
+            .withOutput(new ApiProcessSummaryListOutput())));
 
       return (process);
    }

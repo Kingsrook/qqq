@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.api.model.metadata.processes;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,13 +30,13 @@ import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.HttpMethod;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 
 
 /*******************************************************************************
@@ -54,48 +53,10 @@ public class ApiProcessMetaData
    private String     path;
    private HttpMethod method;
 
-   private List<QFieldMetaData> inputFields;
-   private List<QFieldMetaData> outputFields;
+   private ApiProcessInput           input;
+   private ApiProcessOutputInterface output;
 
    private Map<String, QCodeReference> customizers;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ApiProcessMetaData withInferredInputFields(QProcessMetaData processMetaData)
-   {
-      inputFields = new ArrayList<>();
-      for(QStepMetaData stepMetaData : CollectionUtils.nonNullList(processMetaData.getStepList()))
-      {
-         if(stepMetaData instanceof QFrontendStepMetaData frontendStep)
-         {
-            inputFields.addAll(frontendStep.getInputFields());
-         }
-      }
-
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public ApiProcessMetaData withInferredOutputFields(QProcessMetaData processMetaData)
-   {
-      outputFields = new ArrayList<>();
-      for(QStepMetaData stepMetaData : CollectionUtils.nonNullList(processMetaData.getStepList()))
-      {
-         if(stepMetaData instanceof QFrontendStepMetaData frontendStep)
-         {
-            outputFields.addAll(frontendStep.getOutputFields());
-         }
-      }
-
-      return (this);
-   }
 
 
 
@@ -119,8 +80,7 @@ public class ApiProcessMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public void enrich(String apiName, QProcessMetaData process)
+   public void enrich(QInstanceEnricher qInstanceEnricher, String apiName, QProcessMetaData process)
    {
       if(!StringUtils.hasContent(getApiProcessName()))
       {
@@ -129,17 +89,40 @@ public class ApiProcessMetaData
 
       if(initialVersion != null)
       {
-         ///////////////////////////////////////////////////////////////
-         // make sure all fields have at least an initial version set //
-         ///////////////////////////////////////////////////////////////
-         for(QFieldMetaData field : CollectionUtils.mergeLists(getInputFields(), getOutputFields()))
+         if(getOutput() instanceof ApiProcessObjectOutput outputObject)
          {
-            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiSupplementalMetaData(apiName, field);
-            if(apiFieldMetaData.getInitialVersion() == null)
+            enrichFieldList(qInstanceEnricher, apiName, outputObject.getOutputFields());
+         }
+
+         if(input != null)
+         {
+            for(ApiProcessInputFieldsContainer fieldsContainer : ListBuilder.of(input.getQueryStringParams(), input.getFormParams(), input.getObjectBodyParams()))
             {
-               apiFieldMetaData.setInitialVersion(initialVersion);
+               if(fieldsContainer != null)
+               {
+                  enrichFieldList(qInstanceEnricher, apiName, fieldsContainer.getFields());
+               }
             }
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void enrichFieldList(QInstanceEnricher qInstanceEnricher, String apiName, List<QFieldMetaData> fields)
+   {
+      for(QFieldMetaData field : CollectionUtils.nonNullList(fields))
+      {
+         ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiSupplementalMetaData(apiName, field);
+         if(apiFieldMetaData.getInitialVersion() == null)
+         {
+            apiFieldMetaData.setInitialVersion(initialVersion);
+         }
+
+         qInstanceEnricher.enrichField(field);
       }
    }
 
@@ -162,36 +145,6 @@ public class ApiProcessMetaData
       }
 
       return (apiFieldMetaDataContainer.getApiFieldMetaData(apiName));
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for a single outputField
-    *******************************************************************************/
-   public ApiProcessMetaData withOutputField(QFieldMetaData outputField)
-   {
-      if(this.outputFields == null)
-      {
-         this.outputFields = new ArrayList<>();
-      }
-      this.outputFields.add(outputField);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for a single inputField
-    *******************************************************************************/
-   public ApiProcessMetaData withInputField(QFieldMetaData inputField)
-   {
-      if(this.inputFields == null)
-      {
-         this.inputFields = new ArrayList<>();
-      }
-      this.inputFields.add(inputField);
-      return (this);
    }
 
 
@@ -383,68 +336,6 @@ public class ApiProcessMetaData
 
 
    /*******************************************************************************
-    ** Getter for inputFields
-    *******************************************************************************/
-   public List<QFieldMetaData> getInputFields()
-   {
-      return (this.inputFields);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputFields
-    *******************************************************************************/
-   public void setInputFields(List<QFieldMetaData> inputFields)
-   {
-      this.inputFields = inputFields;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for inputFields
-    *******************************************************************************/
-   public ApiProcessMetaData withInputFields(List<QFieldMetaData> inputFields)
-   {
-      this.inputFields = inputFields;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for outputFields
-    *******************************************************************************/
-   public List<QFieldMetaData> getOutputFields()
-   {
-      return (this.outputFields);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for outputFields
-    *******************************************************************************/
-   public void setOutputFields(List<QFieldMetaData> outputFields)
-   {
-      this.outputFields = outputFields;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for outputFields
-    *******************************************************************************/
-   public ApiProcessMetaData withOutputFields(List<QFieldMetaData> outputFields)
-   {
-      this.outputFields = outputFields;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for customizers
     *******************************************************************************/
    public Map<String, QCodeReference> getCustomizers()
@@ -490,6 +381,68 @@ public class ApiProcessMetaData
          throw (new IllegalArgumentException("Attempt to add a second customizer with role [" + role + "] to apiProcess [" + apiProcessName + "]."));
       }
       this.customizers.put(role, customizer);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for output
+    *******************************************************************************/
+   public ApiProcessOutputInterface getOutput()
+   {
+      return (this.output);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for output
+    *******************************************************************************/
+   public void setOutput(ApiProcessOutputInterface output)
+   {
+      this.output = output;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for output
+    *******************************************************************************/
+   public ApiProcessMetaData withOutput(ApiProcessOutputInterface output)
+   {
+      this.output = output;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for input
+    *******************************************************************************/
+   public ApiProcessInput getInput()
+   {
+      return (this.input);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for input
+    *******************************************************************************/
+   public void setInput(ApiProcessInput input)
+   {
+      this.input = input;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for input
+    *******************************************************************************/
+   public ApiProcessMetaData withInput(ApiProcessInput input)
+   {
+      this.input = input;
       return (this);
    }
 

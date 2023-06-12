@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,24 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
+package com.kingsrook.qqq.api.model.actions;
 
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import com.kingsrook.qqq.api.ApiSupplementType;
-import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import java.io.Serializable;
+import org.eclipse.jetty.http.HttpStatus;
 
 
 /*******************************************************************************
+ ** class to contain http api responses.
  **
  *******************************************************************************/
-public class ApiProcessMetaDataContainer extends QSupplementalProcessMetaData
+public class HttpApiResponse
 {
-   private Map<String, ApiProcessMetaData> apis;
+   private HttpStatus.Code statusCode;
+   private Serializable    responseBodyObject;
+
+
+
+   /*******************************************************************************
+    ** Default Constructor
+    **
+    *******************************************************************************/
+   public HttpApiResponse()
+   {
+   }
 
 
 
@@ -44,95 +51,71 @@ public class ApiProcessMetaDataContainer extends QSupplementalProcessMetaData
     ** Constructor
     **
     *******************************************************************************/
-   public ApiProcessMetaDataContainer()
+   public HttpApiResponse(HttpStatus.Code statusCode, Serializable responseBodyObject)
    {
-      setType("api");
+      this.statusCode = statusCode;
+      this.responseBodyObject = responseBodyObject;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for statusCode
     *******************************************************************************/
-   public static ApiProcessMetaDataContainer of(QProcessMetaData process)
+   public HttpStatus.Code getStatusCode()
    {
-      return ((ApiProcessMetaDataContainer) process.getSupplementalMetaData(ApiSupplementType.NAME));
+      return (this.statusCode);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for statusCode
     *******************************************************************************/
-   @Override
-   public void enrich(QInstanceEnricher qInstanceEnricher, QProcessMetaData process)
+   public void setStatusCode(HttpStatus.Code statusCode)
    {
-      super.enrich(qInstanceEnricher, process);
-
-      for(Map.Entry<String, ApiProcessMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
-      {
-         entry.getValue().enrich(qInstanceEnricher, entry.getKey(), process);
-      }
+      this.statusCode = statusCode;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for apis
+    ** Fluent setter for statusCode
     *******************************************************************************/
-   public Map<String, ApiProcessMetaData> getApis()
+   public HttpApiResponse withStatusCode(HttpStatus.Code statusCode)
    {
-      return (this.apis);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apis
-    *******************************************************************************/
-   public ApiProcessMetaData getApiProcessMetaData(String apiName)
-   {
-      if(this.apis == null)
-      {
-         return (null);
-      }
-
-      return (this.apis.get(apiName));
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for apis
-    *******************************************************************************/
-   public void setApis(Map<String, ApiProcessMetaData> apis)
-   {
-      this.apis = apis;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for apis
-    *******************************************************************************/
-   public ApiProcessMetaDataContainer withApis(Map<String, ApiProcessMetaData> apis)
-   {
-      this.apis = apis;
+      this.statusCode = statusCode;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for apis
+    ** Getter for responseBodyObject
     *******************************************************************************/
-   public ApiProcessMetaDataContainer withApiProcessMetaData(String apiName, ApiProcessMetaData apiProcessMetaData)
+   public Serializable getResponseBodyObject()
    {
-      if(this.apis == null)
-      {
-         this.apis = new LinkedHashMap<>();
-      }
-      this.apis.put(apiName, apiProcessMetaData);
+      return (this.responseBodyObject);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for responseBodyObject
+    *******************************************************************************/
+   public void setResponseBodyObject(Serializable responseBodyObject)
+   {
+      this.responseBodyObject = responseBodyObject;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for responseBodyObject
+    *******************************************************************************/
+   public HttpApiResponse withResponseBodyObject(Serializable responseBodyObject)
+   {
+      this.responseBodyObject = responseBodyObject;
       return (this);
    }
 
