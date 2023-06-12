@@ -29,10 +29,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -392,7 +394,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t)
    {
-      logger.warn(makeJsonString(message, t));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(message, t));
    }
 
 
@@ -402,7 +404,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t, LogPair... logPairs)
    {
-      logger.warn(makeJsonString(message, t, logPairs));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(message, t, logPairs));
    }
 
 
@@ -412,7 +414,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(Throwable t)
    {
-      logger.warn(makeJsonString(null, t));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(null, t));
    }
 
 
@@ -452,7 +454,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t)
    {
-      logger.error(makeJsonString(message, t));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(message, t));
    }
 
 
@@ -462,7 +464,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t, LogPair... logPairs)
    {
-      logger.error(makeJsonString(message, t, logPairs));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(message, t, logPairs));
    }
 
 
@@ -472,7 +474,7 @@ public class QLogger
     *******************************************************************************/
    public void error(Throwable t)
    {
-      logger.error(makeJsonString(null, t));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(null, t));
    }
 
 
@@ -532,7 +534,7 @@ public class QLogger
 
       if(t != null)
       {
-         logPairList.add(logPair("stackTrace", LogUtils.filterStackTrace(ExceptionUtils.getStackTrace(t))));
+         logPairList.add(logPair("stackTrace", LogUtils.filterStackTrace(org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(t))));
       }
 
       return (LogUtils.jsonLog(logPairList));
@@ -581,5 +583,41 @@ public class QLogger
             logPairList.add(sessionLogPair);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Level determineIfShouldDowngrade(Throwable t, Level level)
+   {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // look for QExceptions in the chain, if none found, return the log level passed in //
+      //////////////////////////////////////////////////////////////////////////////////////
+      List<QException> exceptionList = ExceptionUtils.getClassListFromRootChain(t, QException.class);
+      if(CollectionUtils.nullSafeIsEmpty(exceptionList))
+      {
+         return (level);
+      }
+
+      ////////////////////////////////////////////////////////////////////
+      // check if any QException in this chain to see if it has already //
+      // logged this level, if so, downgrade to INFO                    //
+      ////////////////////////////////////////////////////////////////////
+      for(QException qException : exceptionList)
+      {
+         if(qException.hasLoggedLevel(level))
+         {
+            log(Level.INFO, "Downgrading log message from " + level.toString() + " to " + Level.INFO, t);
+            return (Level.INFO);
+         }
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // if it has not logged at this level, set that it has in QException, and return passed in level //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      exceptionList.get(0).setHasLoggedLevel(level);
+      return (level);
    }
 }

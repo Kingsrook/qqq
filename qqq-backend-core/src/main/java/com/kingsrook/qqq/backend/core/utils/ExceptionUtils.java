@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -56,6 +58,45 @@ public class ExceptionUtils
       }
 
       return findClassInRootChain(e.getCause(), targetClass);
+   }
+
+
+
+   /*******************************************************************************
+    ** Find a list of exceptions of the given class in an exception's caused-by chain.
+    ** Returns empty list if none found.
+    **
+    *******************************************************************************/
+   public static <T extends Throwable> List<T> getClassListFromRootChain(Throwable e, Class<T> targetClass)
+   {
+      List<T> throwableList = new ArrayList<>();
+      if(targetClass.isInstance(e))
+      {
+         throwableList.add(targetClass.cast(e));
+      }
+
+      ///////////////////////////////////////////////////
+      // iterate through the chain with a limit of 100 //
+      ///////////////////////////////////////////////////
+      int counter = 0;
+      while(counter++ < 100)
+      {
+         ////////////////////////////////////////////////////////////////////////
+         // look for the same class from the last throwable found of that type //
+         ////////////////////////////////////////////////////////////////////////
+         e = findClassInRootChain(e.getCause(), targetClass);
+         if(e == null)
+         {
+            break;
+         }
+
+         ////////////////////////////////////////////////////////////////////////
+         // if we did not break, higher one must have been found, keep looking //
+         ////////////////////////////////////////////////////////////////////////
+         throwableList.add(targetClass.cast(e));
+      }
+
+      return (throwableList);
    }
 
 
