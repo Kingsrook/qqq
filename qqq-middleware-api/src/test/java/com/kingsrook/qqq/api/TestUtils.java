@@ -29,8 +29,11 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.api.model.openapi.HttpMethod;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
@@ -45,12 +48,23 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.HtmlWrapper;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.WidgetHtmlLine;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -59,6 +73,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 
 
 /*******************************************************************************
@@ -73,6 +88,8 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
+
+   public static final String PROCESS_NAME_GET_PERSON_INFO = "getPersonInfo";
 
    public static final String API_NAME             = "test-api";
    public static final String ALTERNATIVE_API_NAME = "person-api";
@@ -103,6 +120,9 @@ public class TestUtils
       qInstance.addJoin(defineJoinLineItemLineItemExtrinsic());
       qInstance.addJoin(defineJoinOrderOrderExtrinsic());
 
+      qInstance.addPossibleValueSource(definePersonPossibleValueSource());
+      qInstance.addProcess(defineProcessGetPersonInfo());
+
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
       qInstance.withSupplementalMetaData(new ApiInstanceMetaDataContainer()
@@ -129,6 +149,80 @@ public class TestUtils
       );
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource definePersonPossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(TABLE_NAME_PERSON)
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_PERSON)
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGetPersonInfo()
+   {
+      QProcessMetaData process = new QProcessMetaData()
+         .withName(PROCESS_NAME_GET_PERSON_INFO)
+         .withLabel("Get Person Info")
+         .withTableName(TABLE_NAME_PERSON)
+         .addStep(new QFrontendStepMetaData()
+            .withName("enterInputs")
+            .withLabel("Person Info Input")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
+
+            .withFormField(new QFieldMetaData("age", QFieldType.INTEGER))
+            .withFormField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_PERSON))
+            .withFormField(new QFieldMetaData("heightInches", QFieldType.DECIMAL))
+            .withFormField(new QFieldMetaData("weightPounds", QFieldType.INTEGER))
+            .withFormField(new QFieldMetaData("homeTown", QFieldType.STRING))
+
+            .withComponent(new NoCodeWidgetFrontendComponentMetaData()
+
+               .withOutput(new WidgetHtmlLine()
+                  .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_FLOAT_RIGHT, HtmlWrapper.STYLE_MEDIUM_CENTERED, HtmlWrapper.styleWidth("50%")))
+                  .withVelocityTemplate("""
+                     <b>Density:</b><br />$density<br/>
+                     """))
+
+               .withOutput(new WidgetHtmlLine()
+                  .withVelocityTemplate("""
+                     <b>Days old:</b> $daysOld<br/>
+                     <b>Nickname:</b> $nickname<br/>
+                     """))
+            ))
+
+         .addStep(new QBackendStepMetaData()
+            .withName("execute")
+            .withCode(new QCodeReference(GetPersonInfoStep.class)))
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("dummyStep")
+         );
+
+      process.withSupplementalMetaData(new ApiProcessMetaDataContainer()
+         .withApiProcessMetaData(API_NAME, new ApiProcessMetaData()
+            .withInitialVersion(CURRENT_API_VERSION)
+            .withMethod(HttpMethod.GET)
+            .withInferredInputFields(process)
+            .withOutputFields(ListBuilder.of(
+               new QFieldMetaData("density", QFieldType.DECIMAL),
+               new QFieldMetaData("daysOld", QFieldType.INTEGER),
+               new QFieldMetaData("nickname", QFieldType.STRING)
+            ))
+         ));
+
+      return (process);
    }
 
 

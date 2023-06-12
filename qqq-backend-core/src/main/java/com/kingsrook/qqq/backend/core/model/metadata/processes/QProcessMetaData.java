@@ -61,6 +61,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
    private QScheduleMetaData schedule;
 
+   private Map<String, QSupplementalProcessMetaData> supplementalMetaData;
 
 
    /*******************************************************************************
@@ -542,6 +543,66 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public void addSelfToInstance(QInstance qInstance)
    {
       qInstance.addProcess(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalMetaData
+    *******************************************************************************/
+   public Map<String, QSupplementalProcessMetaData> getSupplementalMetaData()
+   {
+      return (this.supplementalMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalMetaData
+    *******************************************************************************/
+   public QSupplementalProcessMetaData getSupplementalMetaData(String type)
+   {
+      if(this.supplementalMetaData == null)
+      {
+         return (null);
+      }
+      return this.supplementalMetaData.get(type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for supplementalMetaData
+    *******************************************************************************/
+   public void setSupplementalMetaData(Map<String, QSupplementalProcessMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QProcessMetaData withSupplementalMetaData(Map<String, QSupplementalProcessMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QProcessMetaData withSupplementalMetaData(QSupplementalProcessMetaData supplementalMetaData)
+   {
+      if(this.supplementalMetaData == null)
+      {
+         this.supplementalMetaData = new HashMap<>();
+      }
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
+      return (this);
    }
 
 }

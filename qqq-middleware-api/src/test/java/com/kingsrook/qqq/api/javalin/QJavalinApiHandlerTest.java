@@ -1442,6 +1442,20 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testProcess() throws QException
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo?age=43&partnerPersonId=1&heightInches=72&weightPounds=220&homeTown=Chester").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      JSONObject jsonObject = new JSONObject(response.getBody());
+      System.out.println(jsonObject.toString(3));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static QRecord getRecord(String tableName, Integer id) throws QException
    {
       GetInput getInput = new GetInput();
