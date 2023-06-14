@@ -68,12 +68,6 @@ public class ApiProcessUtils
          throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
       }
 
-      if(BooleanUtils.isTrue(process.getIsHidden()))
-      {
-         LOG.info("404 because process isHidden", logPairs);
-         throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
-      }
-
       ApiProcessMetaDataContainer apiProcessMetaDataContainer = ApiProcessMetaDataContainer.of(process);
       if(apiProcessMetaDataContainer == null)
       {
@@ -92,6 +86,15 @@ public class ApiProcessUtils
       {
          LOG.info("404 because process is excluded", logPairs);
          throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
+      }
+
+      if(BooleanUtils.isTrue(process.getIsHidden()))
+      {
+         if(!BooleanUtils.isTrue(apiProcessMetaData.getOverrideProcessIsHidden()))
+         {
+            LOG.info("404 because process isHidden", logPairs);
+            throw (new QNotFoundException("Could not find a process named " + processApiName + " in this api."));
+         }
       }
 
       APIVersion       requestApiVersion = new APIVersion(version);

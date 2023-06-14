@@ -52,6 +52,7 @@ public class ApiProcessMetaData
 
    private String  apiProcessName;
    private Boolean isExcluded;
+   private Boolean overrideProcessIsHidden;
 
    private String     path;
    private HttpMethod method;
@@ -574,6 +575,37 @@ public class ApiProcessMetaData
    public ApiProcessMetaData withAsyncMode(AsyncMode asyncMode)
    {
       this.asyncMode = asyncMode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideProcessIsHidden
+    *******************************************************************************/
+   public Boolean getOverrideProcessIsHidden()
+   {
+      return (this.overrideProcessIsHidden);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideProcessIsHidden
+    *******************************************************************************/
+   public void setOverrideProcessIsHidden(Boolean overrideProcessIsHidden)
+   {
+      this.overrideProcessIsHidden = overrideProcessIsHidden;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideProcessIsHidden
+    *******************************************************************************/
+   public ApiProcessMetaData withOverrideProcessIsHidden(Boolean overrideProcessIsHidden)
+   {
+      this.overrideProcessIsHidden = overrideProcessIsHidden;
       return (this);
    }
 

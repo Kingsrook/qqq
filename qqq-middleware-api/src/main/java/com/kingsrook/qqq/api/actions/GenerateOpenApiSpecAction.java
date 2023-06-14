@@ -202,8 +202,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    public GenerateOpenApiSpecOutput execute(GenerateOpenApiSpecInput input) throws QException
    {
-      QInstance  qInstance  = QContext.getQInstance();
-      String     version    = input.getVersion();
+      QInstance qInstance = QContext.getQInstance();
+      String    version   = input.getVersion();
 
       ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
       if(apiInstanceMetaDataContainer == null)
@@ -1052,7 +1052,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Parameter processFieldToParameter(ApiInstanceMetaData apiInstanceMetaData, QFieldMetaData field)
+   private Parameter processFieldToParameter(ApiInstanceMetaData apiInstanceMetaData, QFieldMetaData field)
    {
       ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
       ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
@@ -1062,16 +1062,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          description += " Default value is " + field.getDefaultValue() + ", if not given.";
       }
-      if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getDescription()))
-      {
-         description = apiFieldMetaData.getDescription();
-      }
+
+      Schema fieldSchema = getFieldSchema(field, description, apiInstanceMetaData);
 
       Parameter parameter = new Parameter()
          .withName(field.getName())
          .withDescription(description)
          .withRequired(field.getIsRequired())
-         .withSchema(new Schema().withType(getFieldType(field)));
+         .withSchema(fieldSchema);
 
       if(apiFieldMetaData != null)
       {
@@ -1183,7 +1181,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
       for(QFieldMetaData field : tableApiFields)
       {
-         Schema fieldSchema = getFieldSchema(table, field);
+         String fieldLabel = field.getLabel();
+         if(!StringUtils.hasContent(fieldLabel))
+         {
+            fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+         }
+
+         String defaultDescription = fieldLabel + " for the " + table.getLabel() + ".";
+         Schema fieldSchema        = getFieldSchema(field, defaultDescription, apiInstanceMetaData);
          tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field), fieldSchema);
       }
 
@@ -1354,18 +1359,20 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Schema getFieldSchema(QTableMetaData table, QFieldMetaData field)
+   private Schema getFieldSchema(QFieldMetaData field, String defaultDescription, ApiInstanceMetaData apiInstanceMetaData)
    {
-      String fieldLabel = field.getLabel();
-      if(!StringUtils.hasContent(fieldLabel))
-      {
-         fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
-      }
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
+      ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
 
-      String description = fieldLabel + " for the " + table.getLabel() + ".";
+      String description = defaultDescription;
       if(field.getType().equals(QFieldType.BLOB))
       {
          description = "Base64 encoded " + description;
+      }
+
+      if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getDescription()))
+      {
+         description = apiFieldMetaData.getDescription();
       }
 
       Schema fieldSchema = new Schema()
