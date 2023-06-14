@@ -34,6 +34,7 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -172,6 +173,8 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2022_Q4))));
 
+      new QInstanceEnricher(qInstance).enrich();
+
       GenerateOpenApiSpecOutput output   = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(TestUtils.CURRENT_API_VERSION).withApiName(TestUtils.API_NAME));
       Set<String>               apiPaths = output.getOpenAPI().getPaths().keySet();
       assertTrue(apiPaths.stream().anyMatch(s -> s.contains("/supportedTable/")));
@@ -201,6 +204,8 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withApiTableName("externalName")
             .withInitialVersion(TestUtils.V2022_Q4))));
+      
+      new QInstanceEnricher(qInstance).enrich();
 
       GenerateOpenApiSpecOutput output   = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(TestUtils.CURRENT_API_VERSION).withApiName(TestUtils.API_NAME));
       Set<String>               apiPaths = output.getOpenAPI().getPaths().keySet();

@@ -204,7 +204,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    {
       QInstance  qInstance  = QContext.getQInstance();
       String     version    = input.getVersion();
-      APIVersion apiVersion = new APIVersion(version);
 
       ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(qInstance);
       if(apiInstanceMetaDataContainer == null)
@@ -228,6 +227,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          throw new QException("Missing required input: version");
       }
 
+      APIVersion apiVersion = new APIVersion(version);
       if(!apiInstanceMetaData.getSupportedVersions().contains(apiVersion))
       {
          throw (new QException("[" + version + "] is not a supported API Version."));

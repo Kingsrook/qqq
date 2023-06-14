@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -1501,12 +1502,20 @@ class QJavalinApiHandlerTest extends BaseTest
       String     jobId        = acceptedJSON.getString("jobId");
       assertNotNull(jobId);
 
-      SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+      for(int i = 0; i < 10; i++)
+      {
+         SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
 
-      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/transformPeople/status/" + jobId).asString();
-      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
-      JSONArray jsonArray = new JSONArray(response.getBody());
-      assertEquals(3, jsonArray.length());
+         response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/transformPeople/status/" + jobId).asString();
+         if(response.getStatus() == HttpStatus.MULTI_STATUS_207)
+         {
+            JSONArray jsonArray = new JSONArray(response.getBody());
+            assertEquals(3, jsonArray.length());
+            return;
+         }
+      }
+
+      fail("Never got back a 207, after many sleeps");
    }
 
 
