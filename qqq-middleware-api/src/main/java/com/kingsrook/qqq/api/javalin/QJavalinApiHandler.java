@@ -111,7 +111,7 @@ public class QJavalinApiHandler
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinApiHandler.class);
 
-   private static final ApiProcessMetaDataContainer EMPTY_CONTAINER = new ApiProcessMetaDataContainer().withApis(Collections.emptyMap());
+   private static final ApiProcessMetaDataContainer EMPTY_API_PROCESS_META_DATA_CONTAINER = new ApiProcessMetaDataContainer().withApis(Collections.emptyMap());
 
    private static QInstance qInstance;
 
@@ -185,9 +185,10 @@ public class QJavalinApiHandler
                ///////////////////
                for(QProcessMetaData process : qInstance.getProcesses().values())
                {
-                  ApiProcessMetaDataContainer apiProcessMetaDataContainer = Objects.requireNonNullElse(ApiProcessMetaDataContainer.of(process), EMPTY_CONTAINER);
+                  ApiProcessMetaDataContainer apiProcessMetaDataContainer = Objects.requireNonNullElse(ApiProcessMetaDataContainer.of(process), EMPTY_API_PROCESS_META_DATA_CONTAINER);
                   ApiProcessMetaData          apiProcessMetaData          = apiProcessMetaDataContainer.getApis().get(apiInstanceMetaData.getName());
-                  if(apiProcessMetaData != null)
+
+                  if(apiProcessMetaData != null && !BooleanUtils.isTrue(apiProcessMetaData.getIsExcluded()))
                   {
                      String     path   = ApiProcessUtils.getProcessApiPath(qInstance, process, apiProcessMetaData, apiInstanceMetaData);
                      HttpMethod method = apiProcessMetaData.getMethod();
@@ -203,9 +204,9 @@ public class QJavalinApiHandler
 
                      make405sForOtherMethods(method, path);
 
-                     if(doesProcessSupportAsync(apiInstanceMetaData, process))
+                     if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
                      {
-                        ApiBuilder.get(path + "/status/{processId}", context -> getProcessStatus(context, apiInstanceMetaData));
+                        ApiBuilder.get(path + "/status/{jobId}", context -> getProcessStatus(context, process, apiProcessMetaData, apiInstanceMetaData));
                      }
                   }
                }
@@ -307,16 +308,6 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void getProcessStatus(Context context, ApiInstanceMetaData apiInstanceMetaData)
-   {
-      // todo!
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
    private void runProcess(Context context, QProcessMetaData processMetaData, ApiProcessMetaData apiProcessMetaData, ApiInstanceMetaData apiInstanceMetaData)
    {
@@ -328,9 +319,11 @@ public class QJavalinApiHandler
          setupSession(context, null, version, apiInstanceMetaData);
          QJavalinAccessLogger.logStart("apiRunProcess", logPair("process", processMetaData.getName()));
 
+         ////////////////////////////////////////////////////
+         // process inputs into map for api implementation //
+         ////////////////////////////////////////////////////
          Map<String, String> parameters = new LinkedHashMap<>();
-
-         ApiProcessInput input = apiProcessMetaData.getInput();
+         ApiProcessInput     input      = apiProcessMetaData.getInput();
          if(input != null)
          {
             processProcessInputFieldsContainer(context, parameters, input.getQueryStringParams(), Context::queryParam);
@@ -342,12 +335,62 @@ public class QJavalinApiHandler
                JSONObject jsonObject = new JSONObject(context.body());
                processProcessInputFieldsContainer(context, parameters, objectBodyParams, (ctx, name) -> jsonObject.optString(name, null));
             }
+
+            if(input.getBodyField() != null)
+            {
+               parameters.put(input.getBodyField().getName(), context.body());
+            }
          }
 
-         HttpApiResponse response = ApiImplementation.runProcess(apiInstanceMetaData, version, apiProcessMetaData.getApiProcessName(), parameters);
-         context.status(response.getStatusCode().getCode());
+         if(ApiProcessMetaData.AsyncMode.OPTIONAL.equals(apiProcessMetaData.getAsyncMode()))
+         {
+            parameters.put("async", context.queryParam("async"));
+         }
 
+         /////////////////////
+         // run the process //
+         /////////////////////
+         HttpApiResponse response = ApiImplementation.runProcess(apiInstanceMetaData, version, apiProcessMetaData.getApiProcessName(), parameters);
+
+         //////////////////
+         // log & return //
+         //////////////////
          QJavalinAccessLogger.logEndSuccess();
+         context.status(response.getStatusCode().getCode());
+         String resultString = toJson(Objects.requireNonNullElse(response.getResponseBodyObject(), ""));
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e, apiLog);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void getProcessStatus(Context context, QProcessMetaData processMetaData, ApiProcessMetaData apiProcessMetaData, ApiInstanceMetaData apiInstanceMetaData)
+   {
+      String version = context.pathParam("version");
+      APILog apiLog  = newAPILog(context);
+
+      try
+      {
+         setupSession(context, null, version, apiInstanceMetaData);
+         QJavalinAccessLogger.logStart("apiGetProcessStatus", logPair("process", processMetaData.getName()));
+
+         String          jobId    = context.pathParam("jobId");
+         HttpApiResponse response = ApiImplementation.getProcessStatus(apiInstanceMetaData, version, apiProcessMetaData.getApiProcessName(), jobId);
+
+         //////////////////
+         // log & return //
+         //////////////////
+         QJavalinAccessLogger.logEndSuccess();
+         context.status(response.getStatusCode().getCode());
          String resultString = toJson(Objects.requireNonNullElse(response.getResponseBodyObject(), ""));
          context.result(resultString);
          storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
@@ -380,17 +423,6 @@ public class QJavalinApiHandler
             }
          }
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private boolean doesProcessSupportAsync(ApiInstanceMetaData apiInstanceMetaData, QProcessMetaData process)
-   {
-      // todo - implement
-      return false;
    }
 
 
@@ -1348,7 +1380,12 @@ public class QJavalinApiHandler
          // default exception handling //
          ////////////////////////////////
          LOG.warn("Exception in javalin request", e);
-         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")", apiLog); // 500
+         String message = e.getMessage();
+         if(!StringUtils.hasContent(message))
+         {
+            message = e.getClass().getSimpleName();
+         }
+         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, message, apiLog); // 500
          return;
       }
    }

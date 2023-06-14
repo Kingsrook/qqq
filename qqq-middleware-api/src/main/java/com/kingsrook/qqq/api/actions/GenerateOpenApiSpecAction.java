@@ -41,10 +41,12 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessUtils;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
@@ -90,6 +92,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import io.javalin.http.ContentType;
 import io.javalin.http.HttpStatus;
 import org.apache.commons.lang.BooleanUtils;
 
@@ -296,13 +299,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDescription("Requested result page size")
          )));
 
+      List<Tag>   tagList          = new ArrayList<>();
+      Set<String> usedProcessNames = new HashSet<>();
+
       ///////////////////
       // foreach table //
       ///////////////////
-      List<QTableMetaData> tables           = new ArrayList<>(qInstance.getTables().values());
-      Set<String>          usedProcessNames = new HashSet<>();
-      tables.sort(Comparator.comparing(t -> ObjectUtils.requireNonNullElse(t.getLabel(), t.getName(), "")));
-      for(QTableMetaData table : tables)
+      for(QTableMetaData table : qInstance.getTables().values())
       {
          String tableName = table.getName();
 
@@ -385,6 +388,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          String               primaryKeyApiName   = ApiFieldMetaData.getEffectiveApiFieldName(apiName, primaryKeyField);
          List<QFieldMetaData> tableApiFields      = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withTableName(tableName).withVersion(version).withApiName(apiName)).getFields();
 
+         tagList.add(new Tag()
+            .withName(tableLabel)
+            .withDescription("Operations on the " + tableLabel + " table."));
+
          ///////////////////////////////
          // permissions for the table //
          ///////////////////////////////
@@ -415,13 +422,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          //////////////////////////////////////////////////////////////////////////////////////////////////
          // todo - handle non read/edit/insert/delete tables (e.g., w/ just 1 permission, or read/write) //
          //////////////////////////////////////////////////////////////////////////////////////////////////
-
-         ////////////////////////
-         // tag for this table //
-         ////////////////////////
-         openAPI.getTags().add(new Tag()
-            .withName(tableLabel)
-            .withDescription("Operations on the " + tableLabel + " table."));
 
          //////////////////////////////////////
          // build the schemas for this table //
@@ -557,6 +557,34 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName)))))
             .withSecurity(getSecurity(apiInstanceMetaData, tableReadPermissionName));
 
+         Method slashPost = new Method()
+            .withSummary("Create one " + tableLabel)
+            .withDescription(INSERT_DESCRIPTION)
+            .withOperationId("create" + tableApiNameUcFirst)
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Values for the " + tableLabel + " record to create.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
+               )))
+            .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
+            .withResponse(HttpStatus.CREATED.getCode(), new Response()
+               .withDescription("Successfully created the requested " + tableLabel)
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("object")
+                     .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
+                        .withType(getFieldType(primaryKeyField))
+                        .withExample("47")))))))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
+
+         if(insertEnabled)
+         {
+            openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
+               .withPost(slashPost));
+         }
+
          Method idPatch = new Method()
             .withSummary("Update one " + tableLabel)
             .withDescription(UPDATE_DESCRIPTION)
@@ -603,34 +631,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withPatch(updateEnabled ? idPatch : null)
                .withDelete(deleteEnabled ? idDelete : null)
             );
-         }
-
-         Method slashPost = new Method()
-            .withSummary("Create one " + tableLabel)
-            .withDescription(INSERT_DESCRIPTION)
-            .withOperationId("create" + tableApiNameUcFirst)
-            .withRequestBody(new RequestBody()
-               .withRequired(true)
-               .withDescription("Values for the " + tableLabel + " record to create.")
-               .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
-               )))
-            .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
-            .withResponse(HttpStatus.CREATED.getCode(), new Response()
-               .withDescription("Successfully created the requested " + tableLabel)
-               .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema()
-                     .withType("object")
-                     .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
-                        .withType(getFieldType(primaryKeyField))
-                        .withExample("47")))))))
-            .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
-
-         if(insertEnabled)
-         {
-            openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
-               .withPost(slashPost));
          }
 
          ////////////////
@@ -699,15 +699,27 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withDelete(deleteBulkEnabled ? bulkDelete : null));
          }
 
-         // todo - need to place these differently based on something?
+         ///////////////////////////////////////
+         // add processes under the table     //
+         // do we want a unique tag for them? //
+         ///////////////////////////////////////
+         /*
+         String tableProcessesTag = tableLabel + " Processes";
+         if(CollectionUtils.nullSafeHasContents(apiProcessMetaDataList))
+         {
+            tagList.add(new Tag()
+               .withName(tableProcessesTag)
+               .withDescription("Process on the " + tableLabel + " table."));
+         }
+         */
+         String tableProcessesTag = tableLabel;
+
          for(Pair<ApiProcessMetaData, QProcessMetaData> pair : CollectionUtils.nonNullList(apiProcessMetaDataList))
          {
             ApiProcessMetaData apiProcessMetaData = pair.getA();
             QProcessMetaData   processMetaData    = pair.getB();
 
-            String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
-            Path   path           = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tableLabel));
-            openAPI.getPaths().put(basePath + processApiPath, path);
+            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tableProcessesTag, apiProcessMetaData, processMetaData);
 
             usedProcessNames.add(processMetaData.getName());
          }
@@ -716,19 +728,35 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       /////////////////////////////
       // add non-table processes //
       /////////////////////////////
-      List<Pair<ApiProcessMetaData, QProcessMetaData>> processesNotUnderTables = getProcessesNotUnderTables(apiName, apiVersion, usedProcessNames);
-      for(Pair<ApiProcessMetaData, QProcessMetaData> pair : CollectionUtils.nonNullList(processesNotUnderTables))
+      if(input.getTableName() == null)
       {
-         ApiProcessMetaData apiProcessMetaData = pair.getA();
-         QProcessMetaData   processMetaData    = pair.getB();
+         List<Pair<ApiProcessMetaData, QProcessMetaData>> processesNotUnderTables = getProcessesNotUnderTables(apiName, apiVersion, usedProcessNames);
+         for(Pair<ApiProcessMetaData, QProcessMetaData> pair : CollectionUtils.nonNullList(processesNotUnderTables))
+         {
+            ApiProcessMetaData apiProcessMetaData = pair.getA();
+            QProcessMetaData   processMetaData    = pair.getB();
 
-         String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
-         Path   path           = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(processMetaData.getLabel()));
-         openAPI.getPaths().put(basePath + processApiPath, path);
+            String tag = processMetaData.getLabel();
+            if(doesProcessLabelNeedTheWordProcessAppended(tag))
+            {
+               tag += " process";
+            }
+            tagList.add(new Tag()
+               .withName(tag)
+               .withDescription(tag));
 
-         usedProcessNames.add(processMetaData.getName());
+            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tag, apiProcessMetaData, processMetaData);
+
+            usedProcessNames.add(processMetaData.getName());
+         }
       }
 
+      tagList.sort(Comparator.comparing(Tag::getName));
+      openAPI.setTags(tagList);
+
+      ////////////////////////////
+      // define standard errors //
+      ////////////////////////////
       componentResponses.put("error" + HttpStatus.BAD_REQUEST.getCode(), buildStandardErrorResponse("Bad Request.  Some portion of the request's content was not acceptable to the server.  See error message in body for details.", "Parameter id should be given an integer value, but received string: \"Foo\""));
       componentResponses.put("error" + HttpStatus.UNAUTHORIZED.getCode(), buildStandardErrorResponse("Unauthorized.  The required authentication credentials were missing or invalid.", "The required authentication credentials were missing or invalid."));
       componentResponses.put("error" + HttpStatus.FORBIDDEN.getCode(), buildStandardErrorResponse("Forbidden.  You do not have permission to access the requested resource.", "You do not have permission to access the requested resource."));
@@ -746,6 +774,41 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       output.setYaml(YamlUtils.toYaml(openAPI));
       output.setJson(JsonUtils.toPrettyJson(openAPI));
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean doesProcessLabelNeedTheWordProcessAppended(String tag)
+   {
+      return !tag.matches("(?i).* process$");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addProcessEndpoints(QInstance qInstance, ApiInstanceMetaData apiInstanceMetaData, String basePath, OpenAPI openAPI, String tag, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData)
+   {
+      String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
+
+      ///////////////////////////
+      // do the process itself //
+      ///////////////////////////
+      Path path = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tag));
+      openAPI.getPaths().put(basePath + processApiPath, path);
+
+      ///////////////////////////////////////////////////////////////////////
+      // if the process can run async, then do the status checkin endpoitn //
+      ///////////////////////////////////////////////////////////////////////
+      if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
+      {
+         Path statusPath = generateProcessStatusSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tag));
+         openAPI.getPaths().put(basePath + processApiPath + "/status/{jobId}", statusPath);
+      }
    }
 
 
@@ -792,13 +855,29 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    private Path generateProcessSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
    {
+      String description = apiProcessMetaData.getDescription();
+      if(!StringUtils.hasContent(description))
+      {
+         description = "Run the " + processMetaData.getLabel();
+         if(doesProcessLabelNeedTheWordProcessAppended(description))
+         {
+            description += " process";
+         }
+      }
+
+      ////////////////////////////////
+      // start defining the process //
+      ////////////////////////////////
       Method methodForProcess = new Method()
          .withOperationId(apiProcessMetaData.getApiProcessName())
          .withTags(tags)
-         .withSummary(processMetaData.getLabel()) // todo - add optional summary to meta data
-         .withDescription("Run the process named " + processMetaData.getLabel())// todo - add optional description to meta data, .withDescription()
-         .withSecurity(getSecurity(apiInstanceMetaData, "todo - process name"));
+         .withSummary(ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withDescription(description)
+         .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
+      ////////////////////////////////
+      // add inputs for the process //
+      ////////////////////////////////
       List<Parameter> parameters      = new ArrayList<>();
       ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
       if(apiProcessInput != null)
@@ -806,17 +885,67 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          ApiProcessInputFieldsContainer queryStringParams = apiProcessInput.getQueryStringParams();
          if(queryStringParams != null)
          {
+            if(queryStringParams.getRecordIdsField() != null)
+            {
+               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("query"));
+            }
+
             for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
             {
-               parameters.add(new Parameter()
-                  .withName(field.getName())
-                  // todo - add description to meta data .withDescription("Which page of results to return.  Starts at 1.")
-                  .withDescription("Value for the " + field.getLabel() + " field.")
-                  .withIn("query")
-                  .withRequired(field.getIsRequired())
-                  .withSchema(new Schema().withType(getFieldType(field))));
+               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("query"));
             }
          }
+
+         QFieldMetaData bodyField = apiProcessInput.getBodyField();
+         if(bodyField != null)
+         {
+            ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(bodyField);
+            ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
+
+            String bodyDescription = "Value for the " + bodyField.getLabel();
+            if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getDescription()))
+            {
+               bodyDescription = apiFieldMetaData.getDescription();
+            }
+
+            Content content = new Content();
+            if(apiFieldMetaData != null && apiFieldMetaData.getExample() instanceof ExampleWithSingleValue exampleWithSingleValue)
+            {
+               content.withSchema(new Schema()
+                  .withDescription(bodyDescription)
+                  .withType("string")
+                  .withExample(exampleWithSingleValue.getValue())
+               );
+            }
+
+            methodForProcess.withRequestBody(new RequestBody()
+               .withDescription(bodyDescription)
+               .withRequired(bodyField.getIsRequired())
+               .withContent(MapBuilder.of(apiProcessInput.getBodyFieldContentType(), content)));
+         }
+
+         // todo - form & record body params
+         // todo methodForProcess.withRequestBody();
+      }
+
+      ////////////////////////////////////////////////////////
+      // add the async input for optionally-async processes //
+      ////////////////////////////////////////////////////////
+      if(ApiProcessMetaData.AsyncMode.OPTIONAL.equals(apiProcessMetaData.getAsyncMode()))
+      {
+         parameters.add(new Parameter()
+            .withName("async")
+            .withIn("query")
+            .withDescription("""
+               Indicates if the job should be ran asynchronously.
+               If false, or not specified, job is ran synchronously, and returns with response status of 207 (Multi-Status) or 204 (No Content).
+               If true, request returns immediately with response status of 202 (Accepted).
+               """)
+            .withExamples(MapBuilder.of(
+               "false", new ExampleWithSingleValue().withValue(false).withSummary("Run the job synchronously."),
+               "true", new ExampleWithSingleValue().withValue(true).withSummary("Run the job asynchronously.")
+            ))
+            .withSchema(new Schema().withType("boolean")));
       }
 
       if(CollectionUtils.nullSafeHasContents(parameters))
@@ -824,13 +953,33 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          methodForProcess.setParameters(parameters);
       }
 
-      // todo methodForProcess.withRequestBody();
+      //////////////////////////////////
+      // build all possible responses //
+      //////////////////////////////////
+      Map<Integer, Response> responses = new LinkedHashMap<>();
 
-      // todo methodForProcess.withResponse();
+      ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
+      if(!ApiProcessMetaData.AsyncMode.ALWAYS.equals(apiProcessMetaData.getAsyncMode()))
+      {
+         responses.putAll(output.getSpecResponses(apiInstanceMetaData.getName()));
+      }
+      if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
+      {
+         responses.put(HttpStatus.ACCEPTED.getCode(), new Response()
+            .withDescription("The process has been started asynchronously.  You can call back later to check its status.")
+            .withContent(MapBuilder.of(ContentType.JSON, new Content()
+               .withSchema(new Schema()
+                  .withType("object")
+                  .withProperties(MapBuilder.of(
+                     "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job")
+                  ))
+               )
+            ))
+         );
+      }
 
-      methodForProcess.withResponse(HttpStatus.OK.getCode(), new Response()
-         .withDescription("Successfully ran the process")
-         .withContent(MapBuilder.of("application/json", new Content())));
+      responses.putAll(buildStandardErrorResponses(apiInstanceMetaData));
+      methodForProcess.withResponses(responses);
 
       @SuppressWarnings("checkstyle:indentation")
       Path path = switch(apiProcessMetaData.getMethod())
@@ -843,6 +992,100 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       };
 
       return (path);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Path generateProcessStatusSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
+   {
+      ////////////////////////////////
+      // start defining the process //
+      ////////////////////////////////
+      Method methodForProcess = new Method()
+         .withOperationId("getStatusFor" + StringUtils.ucFirst(apiProcessMetaData.getApiProcessName()))
+         .withTags(tags)
+         .withSummary("Get Status of Job: " + ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withDescription("Get the status for a previous asynchronous call to the process named " + processMetaData.getLabel())
+         .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
+
+      ////////////////////////////////////////////////////////
+      // add the async input for optionally-async processes //
+      ////////////////////////////////////////////////////////
+      methodForProcess.setParameters(ListBuilder.of(new Parameter()
+         .withName("jobId")
+         .withIn("path")
+         .withRequired(true)
+         .withDescription("Id of the job, as returned by the API call that started it.")
+         .withSchema(new Schema().withType("string").withFormat("uuid"))
+      ));
+
+      //////////////////////////////////
+      // build all possible responses //
+      //////////////////////////////////
+      Map<Integer, Response> responses = new LinkedHashMap<>();
+      responses.put(HttpStatus.ACCEPTED.getCode(), new Response()
+         .withDescription("The process is still running.  You can call back later to get its final status.")
+         .withContent(MapBuilder.of(ContentType.JSON, new Content()
+            .withSchema(new Schema()
+               .withType("object")
+               .withProperties(MapBuilder.of(
+                  "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job")
+                  // todo - status??
+               ))
+            )
+         ))
+      );
+
+      ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
+      responses.putAll(output.getSpecResponses(apiInstanceMetaData.getName()));
+      responses.putAll(buildStandardErrorResponses(apiInstanceMetaData));
+
+      methodForProcess.withResponses(responses);
+      return (new Path().withGet(methodForProcess));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static Parameter processFieldToParameter(ApiInstanceMetaData apiInstanceMetaData, QFieldMetaData field)
+   {
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
+      ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
+
+      String description = "Value for the " + field.getLabel() + " field.";
+      if(field.getDefaultValue() != null)
+      {
+         description += " Default value is " + field.getDefaultValue() + ", if not given.";
+      }
+      if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getDescription()))
+      {
+         description = apiFieldMetaData.getDescription();
+      }
+
+      Parameter parameter = new Parameter()
+         .withName(field.getName())
+         .withDescription(description)
+         .withRequired(field.getIsRequired())
+         .withSchema(new Schema().withType(getFieldType(field)));
+
+      if(apiFieldMetaData != null)
+      {
+         if(apiFieldMetaData.getExample() != null)
+         {
+            parameter.withExample(apiFieldMetaData.getExample());
+         }
+         else if(apiFieldMetaData.getExamples() != null)
+         {
+            parameter.withExamples(apiFieldMetaData.getExamples());
+         }
+      }
+
+      return (parameter);
    }
 
 
@@ -1337,7 +1580,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String getFieldType(QFieldMetaData field)
+   public static String getFieldType(QFieldMetaData field)
    {
       return (getFieldType(field.getType()));
    }
@@ -1348,7 +1591,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     **
     *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
-   private String getFieldType(QFieldType type)
+   private static String getFieldType(QFieldType type)
    {
       return switch(type)
       {

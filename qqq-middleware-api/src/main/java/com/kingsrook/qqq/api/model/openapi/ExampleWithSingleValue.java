@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
 public class ExampleWithSingleValue extends Example
 {
-   private String value;
+   private Serializable value;
 
 
 
@@ -46,7 +49,7 @@ public class ExampleWithSingleValue extends Example
    /*******************************************************************************
     ** Getter for value
     *******************************************************************************/
-   public String getValue()
+   public Serializable getValue()
    {
       return (this.value);
    }
@@ -56,7 +59,7 @@ public class ExampleWithSingleValue extends Example
    /*******************************************************************************
     ** Setter for value
     *******************************************************************************/
-   public void setValue(String value)
+   public void setValue(Serializable value)
    {
       this.value = value;
    }
@@ -66,7 +69,7 @@ public class ExampleWithSingleValue extends Example
    /*******************************************************************************
     ** Fluent setter for value
     *******************************************************************************/
-   public ExampleWithSingleValue withValue(String value)
+   public ExampleWithSingleValue withValue(Serializable value)
    {
       this.value = value;
       return (this);

@@ -30,8 +30,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
@@ -47,6 +49,10 @@ import com.kingsrook.qqq.api.model.metadata.processes.PostRunApiProcessCustomize
 import com.kingsrook.qqq.api.model.metadata.processes.PreRunApiProcessCustomizer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
@@ -63,6 +69,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
@@ -96,6 +103,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.CouldNotFindQueryFilterForExtractStepException;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -119,7 +127,7 @@ public class ApiImplementation
    ///////////////////////////////////////////////////////////////////
    // key:  Pair<apiName, apiVersion>, value: Map<name => metaData> //
    ///////////////////////////////////////////////////////////////////
-   private static Map<Pair<String, String>, Map<String, QTableMetaData>>   tableApiNameMap   = new HashMap<>();
+   private static Map<Pair<String, String>, Map<String, QTableMetaData>> tableApiNameMap = new HashMap<>();
 
 
 
@@ -306,7 +314,7 @@ public class ApiImplementation
          }
          else
          {
-            throw (new QBadRequestException("Request failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join(" \n", badRequestMessages)));
+            throw (new QBadRequestException("Request failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join("\n", badRequestMessages)));
          }
       }
 
@@ -946,24 +954,27 @@ public class ApiImplementation
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getQueryStringParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getFormParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getObjectBodyParams());
+
+         if(apiProcessInput.getBodyField() != null)
+         {
+            processSingleProcessInputField(apiProcessInput.getBodyField(), paramMap, badRequestMessages, runProcessInput);
+         }
       }
 
       ////////////////////////////////////////
       // get records for process, if needed //
       ////////////////////////////////////////
-      if(process.getMinInputRecords() != null && process.getMinInputRecords() > 0)
+      // if(process.getMinInputRecords() != null && process.getMinInputRecords() > 0)
+      if(apiProcessInput != null && apiProcessInput.getRecordIdsParamName() != null)
       {
-         if(apiProcessInput != null && apiProcessInput.getRecordIdsParamName() != null)
+         String idParam = apiProcessInput.getRecordIdsParamName();
+         if(StringUtils.hasContent(idParam) && StringUtils.hasContent(paramMap.get(idParam)))
          {
-            String idParam = apiProcessInput.getRecordIdsParamName();
-            if(StringUtils.hasContent(idParam) && StringUtils.hasContent(paramMap.get(idParam)))
-            {
-               String[] ids = paramMap.get(idParam).split(",");
+            String[] ids = paramMap.get(idParam).split(",");
 
-               QTableMetaData table  = QContext.getQInstance().getTable(process.getTableName());
-               QQueryFilter   filter = new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), IN, Arrays.asList(ids)));
-               runProcessInput.setCallback(getCallback(filter));
-            }
+            QTableMetaData table  = QContext.getQInstance().getTable(process.getTableName());
+            QQueryFilter   filter = new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), IN, Arrays.asList(ids)));
+            runProcessInput.setCallback(getCallback(filter));
          }
       }
 
@@ -978,7 +989,7 @@ public class ApiImplementation
          }
          else
          {
-            throw (new QBadRequestException("Request failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join(" \n", badRequestMessages)));
+            throw (new QBadRequestException("Request failed with " + badRequestMessages.size() + " reasons: " + StringUtils.join("\n", badRequestMessages)));
          }
       }
 
@@ -990,6 +1001,44 @@ public class ApiImplementation
       {
          PreRunApiProcessCustomizer preRunCustomizer = QCodeLoader.getAdHoc(PreRunApiProcessCustomizer.class, customizers.get(ApiProcessCustomizers.PRE_RUN.getRole()));
          preRunCustomizer.preApiRun(runProcessInput);
+      }
+
+      boolean async = false;
+      if(ApiProcessMetaData.AsyncMode.ALWAYS.equals(apiProcessMetaData.getAsyncMode())
+         || (ApiProcessMetaData.AsyncMode.OPTIONAL.equals(apiProcessMetaData.getAsyncMode()) && "true".equalsIgnoreCase(paramMap.get("async"))))
+      {
+         async = true;
+      }
+
+      if(async)
+      {
+         try
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // note - in other implementations, the process gets its own UUID (for process state to be stashed) //
+            // and the job gets its own (where we check in on running/complete).                                //
+            // but in this implementation, we want to just pass back one UUID to the caller, so make the job    //
+            // manager use the process's uuid as the job uuid, and all will be revealed!                        //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo?  to help w/ StreamedETLPreview "should i count?"  runProcessInput.setIsAsync(true);
+            new AsyncJobManager().withForcedJobUUID(processUUID).startJob(processName, 0, TimeUnit.MILLISECONDS, (callback) ->
+            {
+               runProcessInput.setAsyncJobCallback(callback);
+               return (new RunProcessAction().execute(runProcessInput));
+            });
+         }
+         catch(JobGoingAsyncException jgae)
+         {
+            LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+            response.put("jobId", jgae.getJobUUID());
+            return (new HttpApiResponse(HttpStatus.Code.ACCEPTED, response));
+         }
+
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // passing 0 as the timeout to startJob *should* make it always throw the JGAE.  But, //
+         // in case it didn't, we don't have a uuid to return to the caller, so that's a fail. //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         throw (new QException("Error starting asynchronous job - no job id was returned."));
       }
 
       /////////////////////
@@ -1006,10 +1055,26 @@ public class ApiImplementation
       {
          throw (new QBadRequestException("Records to run through this process were not specified."));
       }
+      catch(Exception e)
+      {
+         String concatenation = ExceptionUtils.concatenateMessagesFromChain(e);
+         throw (new QException(concatenation, e));
+      }
 
-      /////////////////////////////////////////
+      return (buildResponseAfterProcess(apiProcessMetaData, runProcessInput, runProcessOutput));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static HttpApiResponse buildResponseAfterProcess(ApiProcessMetaData apiProcessMetaData, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
+   {
+      //////////////////////////////////////////
       // run post-customizer, if there is one //
-      /////////////////////////////////////////
+      //////////////////////////////////////////
+      Map<String, QCodeReference> customizers = apiProcessMetaData.getCustomizers();
       if(customizers != null && customizers.containsKey(ApiProcessCustomizers.POST_RUN.getRole()))
       {
          PostRunApiProcessCustomizer postRunCustomizer = QCodeLoader.getAdHoc(PostRunApiProcessCustomizer.class, customizers.get(ApiProcessCustomizers.POST_RUN.getRole()));
@@ -1044,16 +1109,101 @@ public class ApiImplementation
 
       for(QFieldMetaData inputField : CollectionUtils.nonNullList(fieldsContainer.getFields()))
       {
-         String value = paramMap.get(inputField.getName());
-         if(!StringUtils.hasContent(value) && inputField.getIsRequired())
+         processSingleProcessInputField(inputField, paramMap, badRequestMessages, runProcessInput);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processSingleProcessInputField(QFieldMetaData inputField, Map<String, String> paramMap, List<String> badRequestMessages, RunProcessInput runProcessInput)
+   {
+      String value = paramMap.get(inputField.getName());
+
+      if(!StringUtils.hasContent(value) && inputField.getDefaultValue() != null)
+      {
+         value = ValueUtils.getValueAsString(inputField.getDefaultValue());
+      }
+
+      if(!StringUtils.hasContent(value) && inputField.getIsRequired())
+      {
+         badRequestMessages.add("Missing value for required input field " + inputField.getName());
+         return;
+      }
+
+      // todo - types?
+
+      runProcessInput.addValue(inputField.getName(), value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static HttpApiResponse getProcessStatus(ApiInstanceMetaData apiInstanceMetaData, String version, String apiProcessName, String jobUUID) throws QException
+   {
+      Optional<AsyncJobStatus> optionalJobStatus = new AsyncJobManager().getJobStatus(jobUUID);
+      if(optionalJobStatus.isEmpty())
+      {
+         throw (new QException("Could not find status of process job: " + jobUUID));
+      }
+
+      AsyncJobStatus jobStatus = optionalJobStatus.get();
+
+      // resultForCaller.put("jobStatus", jobStatus);
+      LOG.debug("Job status is " + jobStatus.getState() + " for " + jobUUID);
+
+      if(jobStatus.getState().equals(AsyncJobState.COMPLETE))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////
+         // if the job is complete, get the process result from state provider, and return it //
+         // this output should look like it did if the job finished synchronously!!           //
+         ///////////////////////////////////////////////////////////////////////////////////////
+         Optional<ProcessState> processState = RunProcessAction.getState(jobUUID);
+         if(processState.isPresent())
          {
-            badRequestMessages.add("Missing value for required input field " + inputField.getName());
-            continue;
+            RunProcessOutput runProcessOutput = new RunProcessOutput(processState.get());
+            RunProcessInput  runProcessInput  = new RunProcessInput();
+            runProcessInput.seedFromProcessState(processState.get());
+
+            Pair<ApiProcessMetaData, QProcessMetaData> pair = ApiProcessUtils.getProcessMetaDataPair(apiInstanceMetaData, version, apiProcessName);
+
+            ApiProcessMetaData apiProcessMetaData = pair.getA();
+            return (buildResponseAfterProcess(apiProcessMetaData, runProcessInput, runProcessOutput));
          }
-
-         // todo - types?
-
-         runProcessInput.addValue(inputField.getName(), value);
+         else
+         {
+            throw (new QException("Could not find results for completed of process job: " + jobUUID));
+         }
+      }
+      else if(jobStatus.getState().equals(AsyncJobState.ERROR))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the job had an error (e.g., a process step threw), "nicely" serialize its exception for the caller //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(jobStatus.getCaughtException() != null)
+         {
+            throw (new QException(jobStatus.getCaughtException()));
+         }
+         else
+         {
+            throw (new QException("Job failed with an unspecified error."));
+         }
+      }
+      else
+      {
+         LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+         response.put("jobId", jobUUID);
+         response.put("message", jobStatus.getMessage());
+         if(jobStatus.getCurrent() != null && jobStatus.getTotal() != null)
+         {
+            response.put("current", jobStatus.getCurrent());
+            response.put("total", jobStatus.getTotal());
+         }
+         return (new HttpApiResponse(HttpStatus.Code.ACCEPTED, response));
       }
    }
 
@@ -1327,7 +1477,6 @@ public class ApiImplementation
 
       return (tableApiNameMap.get(key).get(tableApiName));
    }
-
 
 
 

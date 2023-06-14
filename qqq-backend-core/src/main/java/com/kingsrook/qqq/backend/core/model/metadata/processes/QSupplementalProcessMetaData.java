@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
@@ -70,6 +72,18 @@ public abstract class QSupplementalProcessMetaData
     **
     *******************************************************************************/
    public void enrich(QInstanceEnricher qInstanceEnricher, QProcessMetaData process)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QProcessMetaData process, QInstanceValidator qInstanceValidator)
    {
       ////////////////////////
       // noop in base class //

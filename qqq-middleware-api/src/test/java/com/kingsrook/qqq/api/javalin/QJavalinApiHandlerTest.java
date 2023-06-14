@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.FullyAnonymousAuthenticationModule;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.apibuilder.EndpointGroup;
@@ -67,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1448,10 +1451,12 @@ class QJavalinApiHandlerTest extends BaseTest
       HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo").asString();
       assertErrorResponse(HttpStatus.METHOD_NOT_ALLOWED_405, "This path only supports method: GET", response);
 
+      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo").asString();
+      assertErrorResponse(HttpStatus.BAD_REQUEST_400, "Request failed with 4 reasons: Missing value for required input field", response);
+
       response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo?age=43&partnerPersonId=1&heightInches=72&weightPounds=220&homeTown=Chester").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
-      System.out.println(jsonObject.toString(3));
    }
 
 
@@ -1478,9 +1483,31 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
       JSONArray jsonArray = new JSONArray(response.getBody());
       assertEquals(3, jsonArray.length());
-      System.out.println(jsonArray.toString(3));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAsyncProcessAndGetStatus() throws QException
+   {
+      insertSimpsons();
+
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/" + VERSION + "/person/transformPeople?id=1,2,3&async=true").asString();
+      assertEquals(HttpStatus.ACCEPTED_202, response.getStatus());
+      JSONObject acceptedJSON = new JSONObject(response.getBody());
+      String     jobId        = acceptedJSON.getString("jobId");
+      assertNotNull(jobId);
+
+      SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+
+      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/transformPeople/status/" + jobId).asString();
+      assertEquals(HttpStatus.MULTI_STATUS_207, response.getStatus());
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(3, jsonArray.length());
+   }
 
 
    /*******************************************************************************

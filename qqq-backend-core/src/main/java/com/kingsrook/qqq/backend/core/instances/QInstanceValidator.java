@@ -63,6 +63,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
@@ -1226,6 +1227,11 @@ public class QInstanceValidator
                }
             }
 
+            for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
+            {
+               supplementalProcessMetaData.validate(qInstance, process, this);
+            }
+
          });
       }
    }
@@ -1703,7 +1709,7 @@ public class QInstanceValidator
     ** But if it throws, add the provided message to the list of errors (and return false,
     ** e.g., in case you need to stop evaluating rules to avoid exceptions).
     *******************************************************************************/
-   private boolean assertNoException(UnsafeLambda unsafeLambda, String message)
+   public boolean assertNoException(UnsafeLambda unsafeLambda, String message)
    {
       try
       {
@@ -1736,7 +1742,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void warn(String message)
+   public void warn(String message)
    {
       if(printWarnings)
       {

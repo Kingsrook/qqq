@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.Level;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -50,6 +51,7 @@ public class AsyncJobManager
 {
    private static final QLogger LOG = QLogger.getLogger(AsyncJobManager.class);
 
+   private String forcedJobUUID = null;
 
 
    /*******************************************************************************
@@ -69,7 +71,8 @@ public class AsyncJobManager
     *******************************************************************************/
    public <T extends Serializable> T startJob(String jobName, long timeout, TimeUnit timeUnit, AsyncJob<T> asyncJob) throws JobGoingAsyncException, QException
    {
-      UUIDAndTypeStateKey uuidAndTypeStateKey = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.ASYNC_JOB_STATUS);
+      UUID                jobUUID             = StringUtils.hasContent(forcedJobUUID) ? UUID.fromString(forcedJobUUID) : UUID.randomUUID();
+      UUIDAndTypeStateKey uuidAndTypeStateKey = new UUIDAndTypeStateKey(jobUUID, StateType.ASYNC_JOB_STATUS);
       AsyncJobStatus      asyncJobStatus      = new AsyncJobStatus();
       asyncJobStatus.setState(AsyncJobState.RUNNING);
       getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
@@ -203,6 +206,37 @@ public class AsyncJobManager
    {
       Optional<AsyncJobStatus> jobStatus = getJobStatus(jobUUID);
       jobStatus.ifPresent(asyncJobStatus -> asyncJobStatus.setCancelRequested(true));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for forcedJobUUID
+    *******************************************************************************/
+   public String getForcedJobUUID()
+   {
+      return (this.forcedJobUUID);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for forcedJobUUID
+    *******************************************************************************/
+   public void setForcedJobUUID(String forcedJobUUID)
+   {
+      this.forcedJobUUID = forcedJobUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for forcedJobUUID
+    *******************************************************************************/
+   public AsyncJobManager withForcedJobUUID(String forcedJobUUID)
+   {
+      this.forcedJobUUID = forcedJobUUID;
+      return (this);
    }
 
 }

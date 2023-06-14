@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -89,6 +90,33 @@ class ExceptionUtilsTest extends BaseTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testConcatenateMessagesFromChain()
+   {
+      assertNull(ExceptionUtils.concatenateMessagesFromChain(null));
+      assertEquals("QException", ExceptionUtils.concatenateMessagesFromChain(new QException((String) null)));
+      assertEquals("QException", ExceptionUtils.concatenateMessagesFromChain(new QException("")));
+      assertEquals("foo; bar", ExceptionUtils.concatenateMessagesFromChain(new QException("foo", new QException("bar"))));
+      assertEquals("foo; QException; bar", ExceptionUtils.concatenateMessagesFromChain(new QException("foo", new QException(null, new QException("bar")))));
+
+      MyException selfCaused = new MyException("selfCaused");
+      selfCaused.setCause(selfCaused);
+      assertEquals("selfCaused", ExceptionUtils.concatenateMessagesFromChain(selfCaused));
+
+      MyException cycle1 = new MyException("cycle1");
+      MyException cycle2 = new MyException("cycle2");
+      cycle1.setCause(cycle2);
+      cycle2.setCause(cycle1);
+
+      assertEquals("cycle1; cycle2", ExceptionUtils.concatenateMessagesFromChain(cycle1));
+      assertEquals("cycle2; cycle1", ExceptionUtils.concatenateMessagesFromChain(cycle2));
+   }
+
+
+
+   /*******************************************************************************
     ** Test exception class - lets you set the cause, easier to create a loop.
     *******************************************************************************/
    public class MyException extends Exception
@@ -97,6 +125,9 @@ class ExceptionUtilsTest extends BaseTest
 
 
 
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       public MyException(String message)
       {
          super(message);
@@ -104,6 +135,9 @@ class ExceptionUtilsTest extends BaseTest
 
 
 
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       public MyException(Throwable cause)
       {
          super(cause);
@@ -111,6 +145,9 @@ class ExceptionUtilsTest extends BaseTest
 
 
 
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       public void setCause(Throwable cause)
       {
          myCause = cause;

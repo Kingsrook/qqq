@@ -189,11 +189,11 @@ public class TestUtils
             .withLabel("Person Info Input")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
 
-            .withFormField(new QFieldMetaData("age", QFieldType.INTEGER))
+            .withFormField(new QFieldMetaData("age", QFieldType.INTEGER).withIsRequired(true))
             .withFormField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_PERSON))
-            .withFormField(new QFieldMetaData("heightInches", QFieldType.DECIMAL))
-            .withFormField(new QFieldMetaData("weightPounds", QFieldType.INTEGER))
-            .withFormField(new QFieldMetaData("homeTown", QFieldType.STRING))
+            .withFormField(new QFieldMetaData("heightInches", QFieldType.DECIMAL).withIsRequired(true))
+            .withFormField(new QFieldMetaData("weightPounds", QFieldType.INTEGER).withIsRequired(true))
+            .withFormField(new QFieldMetaData("homeTown", QFieldType.STRING).withIsRequired(true))
 
             .withComponent(new NoCodeWidgetFrontendComponentMetaData()
 

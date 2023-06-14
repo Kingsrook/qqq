@@ -31,12 +31,15 @@ import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.HttpMethod;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -52,11 +55,24 @@ public class ApiProcessMetaData
 
    private String     path;
    private HttpMethod method;
+   private String     summary;
+   private String     description;
+
+   private AsyncMode asyncMode = AsyncMode.OPTIONAL;
 
    private ApiProcessInput           input;
    private ApiProcessOutputInterface output;
 
    private Map<String, QCodeReference> customizers;
+
+
+
+   public enum AsyncMode
+   {
+      NEVER,
+      OPTIONAL,
+      ALWAYS
+   }
 
 
 
@@ -102,6 +118,10 @@ public class ApiProcessMetaData
                {
                   enrichFieldList(qInstanceEnricher, apiName, fieldsContainer.getFields());
                }
+            }
+            if(input.getBodyField() != null)
+            {
+               enrichFieldList(qInstanceEnricher, apiName, List.of(input.getBodyField()));
             }
          }
       }
@@ -443,6 +463,117 @@ public class ApiProcessMetaData
    public ApiProcessMetaData withInput(ApiProcessInput input)
    {
       this.input = input;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for summary
+    *******************************************************************************/
+   public String getSummary()
+   {
+      return (this.summary);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for summary
+    *******************************************************************************/
+   public void setSummary(String summary)
+   {
+      this.summary = summary;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for summary
+    *******************************************************************************/
+   public ApiProcessMetaData withSummary(String summary)
+   {
+      this.summary = summary;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public ApiProcessMetaData withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QProcessMetaData process, QInstanceValidator qInstanceValidator, String apiName)
+   {
+      if(BooleanUtils.isTrue(getIsExcluded()))
+      {
+         /////////////////////////////////////////////////
+         // no validation needed for excluded processes //
+         /////////////////////////////////////////////////
+         return;
+      }
+
+      qInstanceValidator.assertCondition(getMethod() != null, "Missing a method for api process meta data for process: " + process.getName() + ", apiName: " + apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for asyncMode
+    *******************************************************************************/
+   public AsyncMode getAsyncMode()
+   {
+      return (this.asyncMode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for asyncMode
+    *******************************************************************************/
+   public void setAsyncMode(AsyncMode asyncMode)
+   {
+      this.asyncMode = asyncMode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for asyncMode
+    *******************************************************************************/
+   public ApiProcessMetaData withAsyncMode(AsyncMode asyncMode)
+   {
+      this.asyncMode = asyncMode;
       return (this);
    }
 
