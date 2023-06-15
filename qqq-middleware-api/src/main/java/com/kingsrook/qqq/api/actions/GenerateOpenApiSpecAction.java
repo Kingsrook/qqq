@@ -302,10 +302,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       List<Tag>   tagList          = new ArrayList<>();
       Set<String> usedProcessNames = new HashSet<>();
 
-      ///////////////////
-      // foreach table //
-      ///////////////////
-      for(QTableMetaData table : qInstance.getTables().values())
+      /////////////////////////////////////
+      // foreach table (sorted by label) //
+      /////////////////////////////////////
+      List<QTableMetaData> tables = new ArrayList<>(qInstance.getTables().values());
+      tables.sort(Comparator.comparing(t -> ObjectUtils.requireNonNullElse(t.getLabel(), t.getName(), "")));
+      for(QTableMetaData table : tables)
       {
          String tableName = table.getName();
 
@@ -557,34 +559,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName)))))
             .withSecurity(getSecurity(apiInstanceMetaData, tableReadPermissionName));
 
-         Method slashPost = new Method()
-            .withSummary("Create one " + tableLabel)
-            .withDescription(INSERT_DESCRIPTION)
-            .withOperationId("create" + tableApiNameUcFirst)
-            .withRequestBody(new RequestBody()
-               .withRequired(true)
-               .withDescription("Values for the " + tableLabel + " record to create.")
-               .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
-               )))
-            .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
-            .withResponse(HttpStatus.CREATED.getCode(), new Response()
-               .withDescription("Successfully created the requested " + tableLabel)
-               .withContent(MapBuilder.of("application/json", new Content()
-                  .withSchema(new Schema()
-                     .withType("object")
-                     .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
-                        .withType(getFieldType(primaryKeyField))
-                        .withExample("47")))))))
-            .withTags(ListBuilder.of(tableLabel))
-            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
-
-         if(insertEnabled)
-         {
-            openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
-               .withPost(slashPost));
-         }
-
          Method idPatch = new Method()
             .withSummary("Update one " + tableLabel)
             .withDescription(UPDATE_DESCRIPTION)
@@ -631,6 +605,34 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withPatch(updateEnabled ? idPatch : null)
                .withDelete(deleteEnabled ? idDelete : null)
             );
+         }
+
+         Method slashPost = new Method()
+            .withSummary("Create one " + tableLabel)
+            .withDescription(INSERT_DESCRIPTION)
+            .withOperationId("create" + tableApiNameUcFirst)
+            .withRequestBody(new RequestBody()
+               .withRequired(true)
+               .withDescription("Values for the " + tableLabel + " record to create.")
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema().withRef("#/components/schemas/" + tableApiName))
+               )))
+            .withResponses(buildStandardErrorResponses(apiInstanceMetaData))
+            .withResponse(HttpStatus.CREATED.getCode(), new Response()
+               .withDescription("Successfully created the requested " + tableLabel)
+               .withContent(MapBuilder.of("application/json", new Content()
+                  .withSchema(new Schema()
+                     .withType("object")
+                     .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
+                        .withType(getFieldType(primaryKeyField))
+                        .withExample("47")))))))
+            .withTags(ListBuilder.of(tableLabel))
+            .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
+
+         if(insertEnabled)
+         {
+            openAPI.getPaths().put(basePath + tableApiName + "/", new Path()
+               .withPost(slashPost));
          }
 
          ////////////////
