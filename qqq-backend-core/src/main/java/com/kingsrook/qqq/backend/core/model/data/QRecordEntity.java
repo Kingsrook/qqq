@@ -118,6 +118,24 @@ public abstract class QRecordEntity
                qRecordEntityAssociation.getSetter().invoke(this, associatedEntityList);
             }
          }
+
+         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
+         {
+            List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(qRecordEntityAssociation.getAssociationAnnotation().name());
+            if(associatedRecords == null)
+            {
+               qRecordEntityAssociation.getSetter().invoke(this, (Object) null);
+            }
+            else
+            {
+               List<QRecordEntity> associatedEntityList = new ArrayList<>();
+               for(QRecord associatedRecord : CollectionUtils.nonNullList(associatedRecords))
+               {
+                  associatedEntityList.add(QRecordEntity.fromQRecord(qRecordEntityAssociation.getAssociatedType(), associatedRecord));
+               }
+               qRecordEntityAssociation.getSetter().invoke(this, associatedEntityList);
+            }
+         }
       }
       catch(Exception e)
       {
@@ -179,8 +197,7 @@ public abstract class QRecordEntity
       {
          QRecord qRecord = new QRecord();
 
-         List<QRecordEntityField> fieldList = getFieldList(this.getClass());
-         for(QRecordEntityField qRecordEntityField : fieldList)
+         for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
          {
             Serializable thisValue     = (Serializable) qRecordEntityField.getGetter().invoke(this);
             Serializable originalValue = null;
@@ -192,6 +209,25 @@ public abstract class QRecordEntity
             if(!Objects.equals(thisValue, originalValue))
             {
                qRecord.setValue(qRecordEntityField.getFieldName(), thisValue);
+            }
+         }
+
+         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
+         {
+            List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
+            String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
+
+            if(associatedEntities != null)
+            {
+               /////////////////////////////////////////////////////////////////////////////////
+               // do this so an empty list in the entity becomes an empty list in the QRecord //
+               /////////////////////////////////////////////////////////////////////////////////
+               qRecord.withAssociatedRecords(associationName, new ArrayList<>());
+            }
+
+            for(QRecordEntity associatedEntity : CollectionUtils.nonNullList(associatedEntities))
+            {
+               qRecord.withAssociatedRecord(associationName, associatedEntity.toQRecord());
             }
          }
 
