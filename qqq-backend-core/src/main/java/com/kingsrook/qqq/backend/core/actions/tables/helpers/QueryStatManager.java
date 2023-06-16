@@ -112,7 +112,7 @@ public class QueryStatManager
       queryStats = new ArrayList<>();
 
       executorService = Executors.newSingleThreadScheduledExecutor();
-      executorService.scheduleAtFixedRate(new QueryStatManagerInsertJob(), 6, 6, TimeUnit.SECONDS); // todo - 60s
+      executorService.scheduleAtFixedRate(new QueryStatManagerInsertJob(), 60, 60, TimeUnit.SECONDS);
    }
 
 
