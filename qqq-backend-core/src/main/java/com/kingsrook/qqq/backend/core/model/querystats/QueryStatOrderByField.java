@@ -19,21 +19,84 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats;
+package com.kingsrook.qqq.backend.core.model.querystats;
 
 
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
- **
+ ** QRecord Entity for QueryStatOrderByField table
  *******************************************************************************/
-public class QueryStatFilterCriteria extends QRecordEntity
+public class QueryStatOrderByField extends QRecordEntity
 {
+   public static final String TABLE_NAME = "queryStatOrderByField";
+
+   @QField(isEditable = false)
+   private Integer id;
+
+   @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
    private Integer queryStatId;
-   private String  fieldName;
-   private String  operator;
-   private String  values;
+
+   @QField(label = "Table", possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
+
+   @QField(maxLength = 50, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
+   private String name;
+
+
+
+   /*******************************************************************************
+    ** Default constructor
+    *******************************************************************************/
+   public QueryStatOrderByField()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor that takes a QRecord
+    *******************************************************************************/
+   public QueryStatOrderByField(QRecord record)
+   {
+      populateFromQRecord(record);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for id
+    *******************************************************************************/
+   public Integer getId()
+   {
+      return (this.id);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for id
+    *******************************************************************************/
+   public void setId(Integer id)
+   {
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    *******************************************************************************/
+   public QueryStatOrderByField withId(Integer id)
+   {
+      this.id = id;
+      return (this);
+   }
 
 
 
@@ -60,7 +123,7 @@ public class QueryStatFilterCriteria extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for queryStatId
     *******************************************************************************/
-   public QueryStatFilterCriteria withQueryStatId(Integer queryStatId)
+   public QueryStatOrderByField withQueryStatId(Integer queryStatId)
    {
       this.queryStatId = queryStatId;
       return (this);
@@ -69,93 +132,62 @@ public class QueryStatFilterCriteria extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for fieldName
+    ** Getter for qqqTableId
     *******************************************************************************/
-   public String getFieldName()
+   public Integer getQqqTableId()
    {
-      return (this.fieldName);
+      return (this.qqqTableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldName
+    ** Setter for qqqTableId
     *******************************************************************************/
-   public void setFieldName(String fieldName)
+   public void setQqqTableId(Integer qqqTableId)
    {
-      this.fieldName = fieldName;
+      this.qqqTableId = qqqTableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for fieldName
+    ** Fluent setter for qqqTableId
     *******************************************************************************/
-   public QueryStatFilterCriteria withFieldName(String fieldName)
+   public QueryStatOrderByField withQqqTableId(Integer qqqTableId)
    {
-      this.fieldName = fieldName;
+      this.qqqTableId = qqqTableId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for operator
+    ** Getter for name
     *******************************************************************************/
-   public String getOperator()
+   public String getName()
    {
-      return (this.operator);
+      return (this.name);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for operator
+    ** Setter for name
     *******************************************************************************/
-   public void setOperator(String operator)
+   public void setName(String name)
    {
-      this.operator = operator;
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for operator
+    ** Fluent setter for name
     *******************************************************************************/
-   public QueryStatFilterCriteria withOperator(String operator)
+   public QueryStatOrderByField withName(String name)
    {
-      this.operator = operator;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for values
-    *******************************************************************************/
-   public String getValues()
-   {
-      return (this.values);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for values
-    *******************************************************************************/
-   public void setValues(String values)
-   {
-      this.values = values;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for values
-    *******************************************************************************/
-   public QueryStatFilterCriteria withValues(String values)
-   {
-      this.values = values;
+      this.name = name;
       return (this);
    }
 
