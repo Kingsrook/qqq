@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -222,7 +223,15 @@ public abstract class QRecordEntity
                {
                   String           fieldName       = getFieldNameFromGetter(possibleGetter);
                   Optional<QField> fieldAnnotation = getQFieldAnnotation(c, fieldName);
-                  fieldList.add(new QRecordEntityField(fieldName, possibleGetter, setter.get(), possibleGetter.getReturnType(), fieldAnnotation.orElse(null)));
+
+                  if(fieldAnnotation.isPresent())
+                  {
+                     fieldList.add(new QRecordEntityField(fieldName, possibleGetter, setter.get(), possibleGetter.getReturnType(), fieldAnnotation.orElse(null)));
+                  }
+                  else
+                  {
+                     LOG.debug("Skipping field without @QField annotation", logPair("class", c.getSimpleName()), logPair("fieldName", fieldName));
+                  }
                }
                else
                {
