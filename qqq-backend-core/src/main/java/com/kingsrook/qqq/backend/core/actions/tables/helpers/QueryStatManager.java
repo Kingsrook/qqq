@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -47,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStatCriteriaField;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStatJoinTable;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStatOrderByField;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
@@ -286,12 +288,16 @@ public class QueryStatManager
                   if(queryStat.getQueryFilter() != null && queryStat.getQueryFilter().hasAnyCriteria())
                   {
                      List<QueryStatCriteriaField> queryStatCriteriaFieldList = new ArrayList<>();
-                     QQueryFilter                 queryFilter                = queryStat.getQueryFilter();
-                     processCriteriaFromFilter(qqqTableId, queryStatCriteriaFieldList, queryFilter);
+                     processCriteriaFromFilter(qqqTableId, queryStatCriteriaFieldList, queryStat.getQueryFilter());
                      queryStat.setQueryStatCriteriaFieldList(queryStatCriteriaFieldList);
                   }
 
-                  // todo - orderbys
+                  if(CollectionUtils.nullSafeHasContents(queryStat.getQueryFilter().getOrderBys()))
+                  {
+                     List<QueryStatOrderByField> queryStatOrderByFieldList = new ArrayList<>();
+                     processOrderByFromFilter(qqqTableId, queryStatOrderByFieldList, queryStat.getQueryFilter());
+                     queryStat.setQueryStatOrderByFieldList(queryStatOrderByFieldList);
+                  }
 
                   queryStatQRecordsToInsert.add(queryStat.toQRecord());
                }
@@ -365,6 +371,37 @@ public class QueryStatManager
          for(QQueryFilter subFilter : CollectionUtils.nonNullList(queryFilter.getSubFilters()))
          {
             processCriteriaFromFilter(qqqTableId, queryStatCriteriaFieldList, subFilter);
+         }
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      private static void processOrderByFromFilter(Integer qqqTableId, List<QueryStatOrderByField> queryStatOrderByFieldList, QQueryFilter queryFilter) throws QException
+      {
+         for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
+         {
+            String                fieldName             = orderBy.getFieldName();
+            QueryStatOrderByField queryStatOrderByField = new QueryStatOrderByField();
+
+            if(fieldName.contains("."))
+            {
+               String[] parts = fieldName.split("\\.");
+               if(parts.length > 1)
+               {
+                  queryStatOrderByField.setQqqTableId(getQQQTableId(parts[0]));
+                  queryStatOrderByField.setName(parts[1]);
+               }
+            }
+            else
+            {
+               queryStatOrderByField.setQqqTableId(qqqTableId);
+               queryStatOrderByField.setName(fieldName);
+            }
+
+            queryStatOrderByFieldList.add(queryStatOrderByField);
          }
       }
 
