@@ -24,10 +24,10 @@ package com.kingsrook.qqq.backend.core.actions.interfaces;
 
 import java.time.Instant;
 import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 
 
 /*******************************************************************************
@@ -67,7 +67,7 @@ public interface QueryInterface
       QueryStat queryStat = getQueryStat();
       if(queryStat != null)
       {
-         queryStat.setJoinTables(joinTableNames);
+         queryStat.setJoinTableNames(joinTableNames);
       }
    }
 

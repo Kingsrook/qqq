@@ -30,12 +30,13 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
-import com.kingsrook.qqq.backend.core.actions.tables.helpers.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -48,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -142,12 +144,29 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
 
+            if(queryStat != null)
+            {
+               queryStat.setQueryText(sql.toString());
+
+               if(CollectionUtils.nullSafeHasContents(joinsContext.getQueryJoins()))
+               {
+                  Set<String> joinTableNames = new HashSet<>();
+                  for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+                  {
+                     joinTableNames.add(queryJoin.getJoinTable());
+                  }
+                  setQueryStatJoinTables(joinTableNames);
+               }
+            }
+
             PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
+                  setQueryStatFirstResultTime();
+
                   QRecord record = new QRecord();
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
