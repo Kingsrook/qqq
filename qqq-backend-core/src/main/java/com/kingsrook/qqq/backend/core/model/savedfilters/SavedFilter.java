@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.automation;
+package com.kingsrook.qqq.backend.core.model.savedfilters;
 
 
 import java.time.Instant;
@@ -27,17 +27,14 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
-import com.kingsrook.qqq.backend.core.model.scripts.Script;
 
 
 /*******************************************************************************
- ** Definition of in-app/user/data-defined triggers (aka, automations).
+ ** Entity bean for the saved filter table
  *******************************************************************************/
-public class TableTrigger extends QRecordEntity
+public class SavedFilter extends QRecordEntity
 {
-   public static final String TABLE_NAME = "tableTrigger";
+   public static final String TABLE_NAME = "savedFilter";
 
    @QField(isEditable = false)
    private Integer id;
@@ -48,23 +45,17 @@ public class TableTrigger extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
+   @QField(isRequired = true)
+   private String label;
+
+   @QField(isEditable = false)
    private String tableName;
 
-   @QField(possibleValueSourceName = SavedFilter.TABLE_NAME)
-   private Integer filterId;
+   @QField(isEditable = false)
+   private String userId;
 
-   @QField(possibleValueSourceName = Script.TABLE_NAME)
-   private Integer scriptId;
-
-   @QField()
-   private Integer priority;
-
-   @QField()
-   private Boolean postInsert;
-
-   @QField()
-   private Boolean postUpdate;
+   @QField(isEditable = false)
+   private String filterJson;
 
 
 
@@ -72,7 +63,7 @@ public class TableTrigger extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public TableTrigger()
+   public SavedFilter()
    {
    }
 
@@ -82,7 +73,7 @@ public class TableTrigger extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public TableTrigger(QRecord qRecord) throws QException
+   public SavedFilter(QRecord qRecord) throws QException
    {
       populateFromQRecord(qRecord);
    }
@@ -112,18 +103,6 @@ public class TableTrigger extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Fluent setter for id
-    **
-    *******************************************************************************/
-   public TableTrigger withId(Integer id)
-   {
-      this.id = id;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for createDate
     **
     *******************************************************************************/
@@ -141,18 +120,6 @@ public class TableTrigger extends QRecordEntity
    public void setCreateDate(Instant createDate)
    {
       this.createDate = createDate;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for createDate
-    **
-    *******************************************************************************/
-   public TableTrigger withCreateDate(Instant createDate)
-   {
-      this.createDate = createDate;
-      return (this);
    }
 
 
@@ -180,12 +147,34 @@ public class TableTrigger extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Fluent setter for modifyDate
+    ** Getter for label
     **
     *******************************************************************************/
-   public TableTrigger withModifyDate(Instant modifyDate)
+   public String getLabel()
    {
-      this.modifyDate = modifyDate;
+      return label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    **
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public SavedFilter withLabel(String label)
+   {
+      this.label = label;
       return (this);
    }
 
@@ -217,7 +206,7 @@ public class TableTrigger extends QRecordEntity
     ** Fluent setter for tableName
     **
     *******************************************************************************/
-   public TableTrigger withTableName(String tableName)
+   public SavedFilter withTableName(String tableName)
    {
       this.tableName = tableName;
       return (this);
@@ -226,167 +215,68 @@ public class TableTrigger extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for filterId
+    ** Getter for userId
     **
     *******************************************************************************/
-   public Integer getFilterId()
+   public String getUserId()
    {
-      return filterId;
+      return userId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filterId
+    ** Setter for userId
     **
     *******************************************************************************/
-   public void setFilterId(Integer filterId)
+   public void setUserId(String userId)
    {
-      this.filterId = filterId;
+      this.userId = userId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for filterId
+    ** Fluent setter for userId
     **
     *******************************************************************************/
-   public TableTrigger withFilterId(Integer filterId)
+   public SavedFilter withUserId(String userId)
    {
-      this.filterId = filterId;
+      this.userId = userId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for scriptId
+    ** Getter for filterJson
     **
     *******************************************************************************/
-   public Integer getScriptId()
+   public String getFilterJson()
    {
-      return scriptId;
+      return filterJson;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for scriptId
+    ** Setter for filterJson
     **
     *******************************************************************************/
-   public void setScriptId(Integer scriptId)
+   public void setFilterJson(String filterJson)
    {
-      this.scriptId = scriptId;
+      this.filterJson = filterJson;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for scriptId
+    ** Fluent setter for filterJson
     **
     *******************************************************************************/
-   public TableTrigger withScriptId(Integer scriptId)
+   public SavedFilter withFilterJson(String filterJson)
    {
-      this.scriptId = scriptId;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for postInsert
-    **
-    *******************************************************************************/
-   public Boolean getPostInsert()
-   {
-      return postInsert;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for postInsert
-    **
-    *******************************************************************************/
-   public void setPostInsert(Boolean postInsert)
-   {
-      this.postInsert = postInsert;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for postInsert
-    **
-    *******************************************************************************/
-   public TableTrigger withPostInsert(Boolean postInsert)
-   {
-      this.postInsert = postInsert;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for postUpdate
-    **
-    *******************************************************************************/
-   public Boolean getPostUpdate()
-   {
-      return postUpdate;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for postUpdate
-    **
-    *******************************************************************************/
-   public void setPostUpdate(Boolean postUpdate)
-   {
-      this.postUpdate = postUpdate;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for postUpdate
-    **
-    *******************************************************************************/
-   public TableTrigger withPostUpdate(Boolean postUpdate)
-   {
-      this.postUpdate = postUpdate;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for priority
-    *******************************************************************************/
-   public Integer getPriority()
-   {
-      return (this.priority);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for priority
-    *******************************************************************************/
-   public void setPriority(Integer priority)
-   {
-      this.priority = priority;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for priority
-    *******************************************************************************/
-   public TableTrigger withPriority(Integer priority)
-   {
-      this.priority = priority;
+      this.filterJson = filterJson;
       return (this);
    }
 

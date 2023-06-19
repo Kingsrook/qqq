@@ -327,7 +327,12 @@ public class ScriptsMetaDataProvider
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       tableMetaData.getField("scriptId").withPossibleValueSourceFilter(new QQueryFilter(
-         new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD)
+         new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
+         new QFilterCriteria("script.tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+      ));
+
+      tableMetaData.getField("filterId").withPossibleValueSourceFilter(new QQueryFilter(
+         new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
       ));
 
       return tableMetaData;
