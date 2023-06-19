@@ -29,6 +29,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueForm
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.DeleteSavedFilterProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.QuerySavedFilterProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.StoreSavedFilterProcess;
 
 
 /*******************************************************************************
@@ -45,6 +48,9 @@ public class SavedFiltersMetaDataProvider
    {
       instance.addTable(defineSavedFilterTable(backendName, backendDetailEnricher));
       instance.addPossibleValueSource(defineSavedFilterPossibleValueSource());
+      instance.addProcess(QuerySavedFilterProcess.getProcessMetaData());
+      instance.addProcess(StoreSavedFilterProcess.getProcessMetaData());
+      instance.addProcess(DeleteSavedFilterProcess.getProcessMetaData());
    }
 
 
