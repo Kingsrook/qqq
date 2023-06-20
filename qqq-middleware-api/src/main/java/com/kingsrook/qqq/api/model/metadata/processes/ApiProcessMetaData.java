@@ -58,6 +58,7 @@ public class ApiProcessMetaData
    private HttpMethod method;
    private String     summary;
    private String     description;
+   private String     tag;
 
    private AsyncMode asyncMode = AsyncMode.OPTIONAL;
 
@@ -606,6 +607,37 @@ public class ApiProcessMetaData
    public ApiProcessMetaData withOverrideProcessIsHidden(Boolean overrideProcessIsHidden)
    {
       this.overrideProcessIsHidden = overrideProcessIsHidden;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tag
+    *******************************************************************************/
+   public String getTag()
+   {
+      return (this.tag);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tag
+    *******************************************************************************/
+   public void setTag(String tag)
+   {
+      this.tag = tag;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tag
+    *******************************************************************************/
+   public ApiProcessMetaData withTag(String tag)
+   {
+      this.tag = tag;
       return (this);
    }
 

@@ -738,11 +738,20 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             ApiProcessMetaData apiProcessMetaData = pair.getA();
             QProcessMetaData   processMetaData    = pair.getB();
 
-            String tag = processMetaData.getLabel();
-            if(doesProcessLabelNeedTheWordProcessAppended(tag))
+            String tag;
+            if(StringUtils.hasContent(apiProcessMetaData.getTag()))
             {
-               tag += " process";
+               tag = apiProcessMetaData.getTag();
             }
+            else
+            {
+               tag = processMetaData.getLabel();
+               if(doesProcessLabelNeedTheWordProcessAppended(tag))
+               {
+                  tag += " process";
+               }
+            }
+
             tagList.add(new Tag()
                .withName(tag)
                .withDescription(tag));
