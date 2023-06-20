@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,33 +22,15 @@
 package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
-import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-
-
 /*******************************************************************************
- ** Interface to be implemented by language-specific code executors, e.g., in
- ** qqq-language-support-${languageName} maven modules.
+ ** Interface for classes that can accept a QCodeExecutor object via a setter.
  *******************************************************************************/
-public interface QCodeExecutor
+public interface QCodeExecutorAware
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   Serializable execute(QCodeReference codeReference, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException;
-
-   /*******************************************************************************
-    ** Process an object from the script's language/runtime into a (more) native java object.
-    ** e.g., a Nashorn ScriptObjectMirror will end up as a "primitive", or a List or Map of such
-    **
-    *******************************************************************************/
-   default Object convertObjectToJava(Object object)
-   {
-      return (object);
-   }
+   void setQCodeExecutor(QCodeExecutor qCodeExecutor);
 
 }
