@@ -280,17 +280,19 @@ public class PollingAutomationPerTableRunner implements Runnable
 
             try
             {
-               Integer filterId = tableTrigger.getFilterId();
-
-               GetInput getInput = new GetInput();
-               getInput.setTableName(SavedFilter.TABLE_NAME);
-               getInput.setPrimaryKey(filterId);
-               GetOutput    getOutput = new GetAction().execute(getInput);
-               QQueryFilter filter    = null;
-               if(getOutput.getRecord() != null)
+               QQueryFilter filter   = null;
+               Integer      filterId = tableTrigger.getFilterId();
+               if(filterId != null)
                {
-                  SavedFilter savedFilter = new SavedFilter(getOutput.getRecord());
-                  filter = JsonUtils.toObject(savedFilter.getFilterJson(), QQueryFilter.class);
+                  GetInput getInput = new GetInput();
+                  getInput.setTableName(SavedFilter.TABLE_NAME);
+                  getInput.setPrimaryKey(filterId);
+                  GetOutput getOutput = new GetAction().execute(getInput);
+                  if(getOutput.getRecord() != null)
+                  {
+                     SavedFilter savedFilter = new SavedFilter(getOutput.getRecord());
+                     filter = JsonUtils.toObject(savedFilter.getFilterJson(), QQueryFilter.class);
+                  }
                }
 
                rs.add(new TableAutomationAction()
