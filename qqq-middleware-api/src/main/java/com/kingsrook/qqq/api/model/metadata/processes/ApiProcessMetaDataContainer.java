@@ -19,24 +19,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata;
+package com.kingsrook.qqq.api.model.metadata.processes;
 
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.api.ApiSupplementType;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
+public class ApiProcessMetaDataContainer extends QSupplementalProcessMetaData
 {
-   private Map<String, ApiInstanceMetaData> apis;
+   private Map<String, ApiProcessMetaData> apis;
 
 
 
@@ -44,7 +46,7 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
     ** Constructor
     **
     *******************************************************************************/
-   public ApiInstanceMetaDataContainer()
+   public ApiProcessMetaDataContainer()
    {
       setType(ApiSupplementType.NAME);
    }
@@ -54,9 +56,26 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static ApiInstanceMetaDataContainer of(QInstance qInstance)
+   public static ApiProcessMetaDataContainer of(QProcessMetaData process)
    {
-      return ((ApiInstanceMetaDataContainer) qInstance.getSupplementalMetaData(ApiSupplementType.NAME));
+      return ((ApiProcessMetaDataContainer) process.getSupplementalMetaData(ApiSupplementType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    ** either get the container attached to a field - or create a new one and attach
+    ** it to the field, and return that.
+    *******************************************************************************/
+   public static ApiProcessMetaDataContainer ofOrWithNew(QProcessMetaData process)
+   {
+      ApiProcessMetaDataContainer apiProcessMetaDataContainer = (ApiProcessMetaDataContainer) process.getSupplementalMetaData(ApiSupplementType.NAME);
+      if(apiProcessMetaDataContainer == null)
+      {
+         apiProcessMetaDataContainer = new ApiProcessMetaDataContainer();
+         process.withSupplementalMetaData(apiProcessMetaDataContainer);
+      }
+      return (apiProcessMetaDataContainer);
    }
 
 
@@ -65,11 +84,29 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
     **
     *******************************************************************************/
    @Override
-   public void validate(QInstance qInstance, QInstanceValidator validator)
+   public void enrich(QInstanceEnricher qInstanceEnricher, QProcessMetaData process)
    {
-      for(Map.Entry<String, ApiInstanceMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
+      super.enrich(qInstanceEnricher, process);
+
+      for(Map.Entry<String, ApiProcessMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
       {
-         entry.getValue().validate(entry.getKey(), qInstance, validator);
+         entry.getValue().enrich(qInstanceEnricher, entry.getKey(), process);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QProcessMetaData process, QInstanceValidator qInstanceValidator)
+   {
+      super.validate(qInstance, process, qInstanceValidator);
+
+      for(Map.Entry<String, ApiProcessMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
+      {
+         entry.getValue().validate(qInstance, process, qInstanceValidator, entry.getKey());
       }
    }
 
@@ -78,7 +115,7 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    /*******************************************************************************
     ** Getter for apis
     *******************************************************************************/
-   public Map<String, ApiInstanceMetaData> getApis()
+   public Map<String, ApiProcessMetaData> getApis()
    {
       return (this.apis);
    }
@@ -88,7 +125,7 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    /*******************************************************************************
     ** Getter for apis
     *******************************************************************************/
-   public ApiInstanceMetaData getApiInstanceMetaData(String apiName)
+   public ApiProcessMetaData getApiProcessMetaData(String apiName)
    {
       if(this.apis == null)
       {
@@ -101,9 +138,25 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public ApiProcessMetaData getApiProcessMetaDataOrWithNew(String apiName)
+   {
+      ApiProcessMetaData apiProcessMetaData = getApiProcessMetaData(apiName);
+      if(apiProcessMetaData == null)
+      {
+         apiProcessMetaData = new ApiProcessMetaData();
+         withApiProcessMetaData(apiName, apiProcessMetaData);
+      }
+      return (apiProcessMetaData);
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for apis
     *******************************************************************************/
-   public void setApis(Map<String, ApiInstanceMetaData> apis)
+   public void setApis(Map<String, ApiProcessMetaData> apis)
    {
       this.apis = apis;
    }
@@ -113,7 +166,7 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    /*******************************************************************************
     ** Fluent setter for apis
     *******************************************************************************/
-   public ApiInstanceMetaDataContainer withApis(Map<String, ApiInstanceMetaData> apis)
+   public ApiProcessMetaDataContainer withApis(Map<String, ApiProcessMetaData> apis)
    {
       this.apis = apis;
       return (this);
@@ -124,14 +177,13 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    /*******************************************************************************
     ** Fluent setter for apis
     *******************************************************************************/
-   public ApiInstanceMetaDataContainer withApiInstanceMetaData(ApiInstanceMetaData apiInstanceMetaData)
+   public ApiProcessMetaDataContainer withApiProcessMetaData(String apiName, ApiProcessMetaData apiProcessMetaData)
    {
       if(this.apis == null)
       {
          this.apis = new LinkedHashMap<>();
       }
-      this.apis.put(apiInstanceMetaData.getName(), apiInstanceMetaData);
+      this.apis.put(apiName, apiProcessMetaData);
       return (this);
    }
-
 }

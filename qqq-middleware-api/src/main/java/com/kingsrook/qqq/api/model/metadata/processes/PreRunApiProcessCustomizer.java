@@ -19,60 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
+package com.kingsrook.qqq.api.model.metadata.processes;
 
 
-import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public interface PreRunApiProcessCustomizer
 {
-   private Serializable value;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public ExampleWithSingleValue withSummary(String summary)
-   {
-      super.withSummary(summary);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for value
-    *******************************************************************************/
-   public Serializable getValue()
-   {
-      return (this.value);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for value
-    *******************************************************************************/
-   public void setValue(Serializable value)
-   {
-      this.value = value;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for value
-    *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
-   {
-      this.value = value;
-      return (this);
-   }
+   void preApiRun(RunProcessInput runProcessInput) throws QException;
 
 }

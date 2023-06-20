@@ -99,7 +99,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private CacheOf cacheOf;
 
-   private Map<String, QMiddlewareTableMetaData> middlewareMetaData;
+   private Map<String, QSupplementalTableMetaData> supplementalMetaData;
 
    private List<ExposedJoin> exposedJoins;
 
@@ -1189,60 +1189,60 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public Map<String, QMiddlewareTableMetaData> getMiddlewareMetaData()
+   public Map<String, QSupplementalTableMetaData> getSupplementalMetaData()
    {
-      return (this.middlewareMetaData);
+      return (this.supplementalMetaData);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public QMiddlewareTableMetaData getMiddlewareMetaData(String type)
+   public QSupplementalTableMetaData getSupplementalMetaData(String type)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
          return (null);
       }
-      return this.middlewareMetaData.get(type);
+      return this.supplementalMetaData.get(type);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for middlewareMetaData
+    ** Setter for supplementalMetaData
     *******************************************************************************/
-   public void setMiddlewareMetaData(Map<String, QMiddlewareTableMetaData> middlewareMetaData)
+   public void setSupplementalMetaData(Map<String, QSupplementalTableMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QTableMetaData withMiddlewareMetaData(Map<String, QMiddlewareTableMetaData> middlewareMetaData)
+   public QTableMetaData withSupplementalMetaData(Map<String, QSupplementalTableMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QTableMetaData withMiddlewareMetaData(QMiddlewareTableMetaData middlewareMetaData)
+   public QTableMetaData withSupplementalMetaData(QSupplementalTableMetaData supplementalMetaData)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
-         this.middlewareMetaData = new HashMap<>();
+         this.supplementalMetaData = new HashMap<>();
       }
-      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
       return (this);
    }
 

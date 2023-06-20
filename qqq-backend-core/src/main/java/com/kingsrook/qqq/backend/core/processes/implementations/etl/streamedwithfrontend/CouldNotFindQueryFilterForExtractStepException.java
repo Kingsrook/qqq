@@ -19,60 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
+package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
-import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public class CouldNotFindQueryFilterForExtractStepException extends QException
 {
-   private Serializable value;
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public ExampleWithSingleValue withSummary(String summary)
+   public CouldNotFindQueryFilterForExtractStepException(String message)
    {
-      super.withSummary(summary);
-      return (this);
+      super(message);
    }
-
-
-
-   /*******************************************************************************
-    ** Getter for value
-    *******************************************************************************/
-   public Serializable getValue()
-   {
-      return (this.value);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for value
-    *******************************************************************************/
-   public void setValue(Serializable value)
-   {
-      this.value = value;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for value
-    *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
-   {
-      this.value = value;
-      return (this);
-   }
-
 }

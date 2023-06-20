@@ -102,6 +102,8 @@ public class ScriptsMetaDataProvider
    {
       return (new QProcessMetaData()
          .withName(STORE_SCRIPT_REVISION_PROCESS_NAME)
+         .withTableName(Script.TABLE_NAME)
+         .withIsHidden(true)
          .withStepList(List.of(
             new QBackendStepMetaData()
                .withName("main")
@@ -118,6 +120,8 @@ public class ScriptsMetaDataProvider
    {
       return (new QProcessMetaData()
          .withName(TEST_SCRIPT_PROCESS_NAME)
+         .withTableName(Script.TABLE_NAME)
+         .withIsHidden(true)
          .withStepList(List.of(
             new QBackendStepMetaData()
                .withName("main")

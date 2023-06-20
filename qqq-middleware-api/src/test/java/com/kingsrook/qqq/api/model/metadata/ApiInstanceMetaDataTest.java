@@ -114,11 +114,11 @@ class ApiInstanceMetaDataTest
 
       qInstance.addTable(new QTableMetaData()
          .withName("myValidTable")
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2023.Q1"))));
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2023.Q1"))));
 
       qInstance.addTable(new QTableMetaData()
          .withName("myInvalidTable")
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("notAVersion"))));
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("notAVersion"))));
 
       assertValidationErrors(qInstance, makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))
@@ -127,7 +127,7 @@ class ApiInstanceMetaDataTest
 
       qInstance.addTable(new QTableMetaData()
          .withName("myFutureValidTable")
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2024.Q1"))));
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2024.Q1"))));
 
       assertValidationErrors(qInstance, makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))
@@ -195,7 +195,7 @@ class ApiInstanceMetaDataTest
     *******************************************************************************/
    private void assertValidationErrors(QInstance qInstance, ApiInstanceMetaData apiInstanceMetaData, List<String> expectedErrors)
    {
-      qInstance.withMiddlewareMetaData(new ApiInstanceMetaDataContainer().withApiInstanceMetaData(apiInstanceMetaData));
+      qInstance.withSupplementalMetaData(new ApiInstanceMetaDataContainer().withApiInstanceMetaData(apiInstanceMetaData));
 
       QInstanceValidator validator = new QInstanceValidator();
       apiInstanceMetaData.validate(apiInstanceMetaData.getName(), qInstance, validator);

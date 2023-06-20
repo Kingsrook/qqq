@@ -91,7 +91,7 @@ public class QInstance
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
-   private Map<String, QMiddlewareInstanceMetaData> middlewareMetaData = new LinkedHashMap<>();
+   private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
 
    private Map<String, String> environmentValues = new LinkedHashMap<>();
    private String              defaultTimeZoneId = "UTC";
@@ -1083,60 +1083,60 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public Map<String, QMiddlewareInstanceMetaData> getMiddlewareMetaData()
+   public Map<String, QSupplementalInstanceMetaData> getSupplementalMetaData()
    {
-      return (this.middlewareMetaData);
+      return (this.supplementalMetaData);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public QMiddlewareInstanceMetaData getMiddlewareMetaData(String type)
+   public QSupplementalInstanceMetaData getSupplementalMetaData(String type)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
          return (null);
       }
-      return this.middlewareMetaData.get(type);
+      return this.supplementalMetaData.get(type);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for middlewareMetaData
+    ** Setter for supplementalMetaData
     *******************************************************************************/
-   public void setMiddlewareMetaData(Map<String, QMiddlewareInstanceMetaData> middlewareMetaData)
+   public void setSupplementalMetaData(Map<String, QSupplementalInstanceMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QInstance withMiddlewareMetaData(Map<String, QMiddlewareInstanceMetaData> middlewareMetaData)
+   public QInstance withSupplementalMetaData(Map<String, QSupplementalInstanceMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QInstance withMiddlewareMetaData(QMiddlewareInstanceMetaData middlewareMetaData)
+   public QInstance withSupplementalMetaData(QSupplementalInstanceMetaData supplementalMetaData)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
-         this.middlewareMetaData = new HashMap<>();
+         this.supplementalMetaData = new HashMap<>();
       }
-      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
       return (this);
    }
 

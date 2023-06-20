@@ -19,60 +19,73 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
+package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- **
+ ** Base-class for instance-level meta-data defined by some supplemental module, etc,
+ ** outside of qqq core
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public abstract class QSupplementalInstanceMetaData
 {
-   private Serializable value;
+   protected String type;
+
+
+
+   /*******************************************************************************
+    ** Getter for type
+    *******************************************************************************/
+   public String getType()
+   {
+      return (this.type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    *******************************************************************************/
+   public void setType(String type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    *******************************************************************************/
+   public QSupplementalInstanceMetaData withType(String type)
+   {
+      this.type = type;
+      return (this);
+   }
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public ExampleWithSingleValue withSummary(String summary)
+   public void enrich(QTableMetaData table)
    {
-      super.withSummary(summary);
-      return (this);
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 
 
    /*******************************************************************************
-    ** Getter for value
+    **
     *******************************************************************************/
-   public Serializable getValue()
+   public void validate(QInstance qInstance, QInstanceValidator validator)
    {
-      return (this.value);
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
-
-
-
-   /*******************************************************************************
-    ** Setter for value
-    *******************************************************************************/
-   public void setValue(Serializable value)
-   {
-      this.value = value;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for value
-    *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
-   {
-      this.value = value;
-      return (this);
-   }
-
 }

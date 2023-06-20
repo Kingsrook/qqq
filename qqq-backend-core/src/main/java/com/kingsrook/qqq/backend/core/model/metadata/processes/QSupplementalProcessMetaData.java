@@ -19,13 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.fields;
+package com.kingsrook.qqq.backend.core.model.metadata.processes;
+
+
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Base-class for field-level meta-data defined for a specific middleware.
+ ** Base-class for process-level meta-data defined by some supplemental module, etc,
+ ** outside of qqq core
  *******************************************************************************/
-public abstract class QMiddlewareFieldMetaData
+public abstract class QSupplementalProcessMetaData
 {
    protected String type;
 
@@ -54,10 +60,33 @@ public abstract class QMiddlewareFieldMetaData
    /*******************************************************************************
     ** Fluent setter for type
     *******************************************************************************/
-   public QMiddlewareFieldMetaData withType(String type)
+   public QSupplementalProcessMetaData withType(String type)
    {
       this.type = type;
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void enrich(QInstanceEnricher qInstanceEnricher, QProcessMetaData process)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QProcessMetaData process, QInstanceValidator qInstanceValidator)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 }

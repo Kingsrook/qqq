@@ -19,60 +19,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
+package com.kingsrook.qqq.api.model.metadata.processes;
 
 
 import java.io.Serializable;
+import java.util.Map;
+import com.kingsrook.qqq.api.model.openapi.Response;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import org.eclipse.jetty.http.HttpStatus;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public interface ApiProcessOutputInterface
 {
-   private Serializable value;
-
-
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public ExampleWithSingleValue withSummary(String summary)
-   {
-      super.withSummary(summary);
-      return (this);
-   }
-
-
+   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
 
    /*******************************************************************************
-    ** Getter for value
+    **
     *******************************************************************************/
-   public Serializable getValue()
+   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
    {
-      return (this.value);
+      return (HttpStatus.Code.NO_CONTENT);
    }
-
-
 
    /*******************************************************************************
-    ** Setter for value
+    **
     *******************************************************************************/
-   public void setValue(Serializable value)
+   default Map<Integer, Response> getSpecResponses(String apiName)
    {
-      this.value = value;
+      return (MapBuilder.of(
+         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
+            .withDescription("Process has been successfully executed.")
+      ));
    }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for value
-    *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
-   {
-      this.value = value;
-      return (this);
-   }
-
 }

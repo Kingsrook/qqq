@@ -19,60 +19,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
+package com.kingsrook.qqq.api;
 
 
-import java.io.Serializable;
+import java.math.BigDecimal;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public class GetPersonInfoStep implements BackendStep
 {
-   private Serializable value;
-
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
-   public ExampleWithSingleValue withSummary(String summary)
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      super.withSummary(summary);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for value
-    *******************************************************************************/
-   public Serializable getValue()
-   {
-      return (this.value);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for value
-    *******************************************************************************/
-   public void setValue(Serializable value)
-   {
-      this.value = value;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for value
-    *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
-   {
-      this.value = value;
-      return (this);
+      runBackendStepOutput.addValue("density", new BigDecimal("3.50"));
+      runBackendStepOutput.addValue("daysOld", runBackendStepInput.getValueInteger("age") * 365);
+      runBackendStepOutput.addValue("nickname", "Guy from " + runBackendStepInput.getValueString("homeTown"));
    }
 
 }
