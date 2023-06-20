@@ -23,7 +23,12 @@ package com.kingsrook.qqq.languages.javascript;
 
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.ExecuteCodeAction;
+import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
+import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutorAware;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
@@ -31,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -244,7 +250,47 @@ class ExecuteCodeActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testConvertObjectToJava() throws QException
+   {
+      TestQCodeExecutorAware converter = new TestQCodeExecutorAware();
+      testOne(1, """
+         converter.convertObject("one", 1);
+         converter.convertObject("two", "two");
+         converter.convertObject("true", true);
+         converter.convertObject("null", null);
+         converter.convertObject("undefined", undefined);
+         converter.convertObject("flatMap", {"a": 1, "b": "c"});
+         converter.convertObject("flatList", ["a", 1, "b", "c"]);
+         converter.convertObject("mixedMap", {"a": [1, {"2": "3"}], "b": {"c": ["d"]}});
+         """, MapBuilder.of("converter", converter));
+
+      assertEquals(1, converter.getConvertedObject("one"));
+      assertEquals("two", converter.getConvertedObject("two"));
+      assertEquals(true, converter.getConvertedObject("true"));
+      assertNull(converter.getConvertedObject("null"));
+      assertNull(converter.getConvertedObject("undefined"));
+      assertEquals(Map.of("a", 1, "b", "c"), converter.getConvertedObject("flatMap"));
+      assertEquals(List.of("a", 1, "b", "c"), converter.getConvertedObject("flatList"));
+      assertEquals(Map.of("a", List.of(1, Map.of("2", "3")), "b", Map.of("c", List.of("d"))), converter.getConvertedObject("mixedMap"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private OneTestOutput testOne(Integer inputValueC, String code) throws QException
+   {
+      return (testOne(inputValueC, code, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private OneTestOutput testOne(Integer inputValueC, String code, Map<String, Serializable> additionalContext) throws QException
    {
       System.out.println();
       QInstance instance = TestUtils.defineInstance();
@@ -259,12 +305,63 @@ class ExecuteCodeActionTest extends BaseTest
       input.withContext("input", testInput);
       input.withContext("output", testOutput);
 
+      if(additionalContext != null)
+      {
+         for(Map.Entry<String, Serializable> entry : additionalContext.entrySet())
+         {
+            input.withContext(entry.getKey(), entry.getValue());
+         }
+      }
+
       ExecuteCodeOutput output = new ExecuteCodeOutput();
 
       ExecuteCodeAction executeCodeAction = new ExecuteCodeAction();
       executeCodeAction.run(input, output);
 
       return (new OneTestOutput(output, testOutput));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestQCodeExecutorAware implements QCodeExecutorAware, Serializable
+   {
+      private QCodeExecutor qCodeExecutor;
+
+      private Map<String, Object> convertedObjectMap = new HashMap<>();
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public void setQCodeExecutor(QCodeExecutor qCodeExecutor)
+      {
+         this.qCodeExecutor = qCodeExecutor;
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public void convertObject(String name, Object inputObject)
+      {
+         convertedObjectMap.put(name, qCodeExecutor.convertObjectToJava(inputObject));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Object getConvertedObject(String name)
+      {
+         return (convertedObjectMap.get(name));
+      }
    }
 
 

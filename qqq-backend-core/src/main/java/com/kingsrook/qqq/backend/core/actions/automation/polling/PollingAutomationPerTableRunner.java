@@ -39,12 +39,15 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -61,11 +64,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
+import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -270,16 +276,39 @@ public class PollingAutomationPerTableRunner implements Runnable
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
          for(QRecord record : queryOutput.getRecords())
          {
-            // todo - get filter if there is/was one
-            rs.add(new TableAutomationAction()
-               .withName("Script:" + record.getValue("scriptId"))
-               .withFilter(null)
-               .withTriggerEvent(triggerEvent)
-               .withPriority(record.getValueInteger("priority"))
-               .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
-               .withValues(MapBuilder.of("scriptId", record.getValue("scriptId")))
-               .withIncludeRecordAssociations(true)
-            );
+            TableTrigger tableTrigger = new TableTrigger(record);
+
+            try
+            {
+               QQueryFilter filter   = null;
+               Integer      filterId = tableTrigger.getFilterId();
+               if(filterId != null)
+               {
+                  GetInput getInput = new GetInput();
+                  getInput.setTableName(SavedFilter.TABLE_NAME);
+                  getInput.setPrimaryKey(filterId);
+                  GetOutput getOutput = new GetAction().execute(getInput);
+                  if(getOutput.getRecord() != null)
+                  {
+                     SavedFilter savedFilter = new SavedFilter(getOutput.getRecord());
+                     filter = JsonUtils.toObject(savedFilter.getFilterJson(), QQueryFilter.class);
+                  }
+               }
+
+               rs.add(new TableAutomationAction()
+                  .withName("Script:" + tableTrigger.getScriptId())
+                  .withFilter(filter)
+                  .withTriggerEvent(triggerEvent)
+                  .withPriority(tableTrigger.getPriority())
+                  .withCodeReference(new QCodeReference(RunRecordScriptAutomationHandler.class))
+                  .withValues(MapBuilder.of("scriptId", tableTrigger.getScriptId()))
+                  .withIncludeRecordAssociations(true)
+               );
+            }
+            catch(Exception e)
+            {
+               LOG.error("Error setting up table trigger", e, logPair("tableTriggerId", tableTrigger.getId()));
+            }
          }
       }
 

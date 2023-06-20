@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +48,10 @@ public class BaseTest
    @BeforeEach
    void baseBeforeEach()
    {
-      QContext.init(TestUtils.defineInstance(), new QSession());
+      QContext.init(TestUtils.defineInstance(), new QSession()
+         .withUser(new QUser()
+            .withIdReference("001")
+            .withFullName("Anonymous")));
       resetMemoryRecordStore();
    }
 
