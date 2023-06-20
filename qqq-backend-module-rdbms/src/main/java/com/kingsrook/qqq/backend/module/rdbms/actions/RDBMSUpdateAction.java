@@ -248,7 +248,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    private String writeUpdateSQLPrefix(QTableMetaData table, List<String> fieldsBeingUpdated)
    {
       String columns = fieldsBeingUpdated.stream()
-         .map(f -> this.getColumnName(table.getField(f)) + " = ?")
+         .map(f -> escapeIdentifier(this.getColumnName(table.getField(f))) + " = ?")
          .collect(Collectors.joining(", "));
 
       String tableName = escapeIdentifier(getTableName(table));
