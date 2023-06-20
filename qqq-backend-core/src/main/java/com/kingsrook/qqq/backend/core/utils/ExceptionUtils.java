@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -87,5 +89,40 @@ public class ExceptionUtils
       }
 
       return (root);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String concatenateMessagesFromChain(Exception exception)
+   {
+      if(exception == null)
+      {
+         return (null);
+      }
+
+      List<String>   messages = new ArrayList<>();
+      Throwable      root     = exception;
+      Set<Throwable> seen     = new HashSet<>();
+
+      do
+      {
+         if(StringUtils.hasContent(root.getMessage()))
+         {
+            messages.add(root.getMessage());
+         }
+         else
+         {
+            messages.add(root.getClass().getSimpleName());
+         }
+
+         seen.add(root);
+         root = root.getCause();
+      }
+      while(root != null && !seen.contains(root));
+
+      return (StringUtils.join("; ", messages));
    }
 }

@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -72,6 +74,35 @@ public class ProcessSummaryFilterLink implements ProcessSummaryLineInterface
       this.status = status;
       this.tableName = tableName;
       this.filter = filter;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public String getFullText()
+   {
+      StringBuilder rs = new StringBuilder();
+
+      if(StringUtils.hasContent(linkPreText))
+      {
+         rs.append(linkPreText).append(" ");
+      }
+
+      if(StringUtils.hasContent(linkText))
+      {
+         rs.append(linkText).append(" ");
+      }
+
+      if(StringUtils.hasContent(linkPostText))
+      {
+         rs.append(linkPostText).append(" ");
+      }
+
+      rs.deleteCharAt(rs.length() - 1);
+      return (rs.toString());
    }
 
 

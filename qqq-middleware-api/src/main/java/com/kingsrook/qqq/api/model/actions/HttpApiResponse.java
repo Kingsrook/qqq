@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,124 +19,104 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.utils;
+package com.kingsrook.qqq.api.model.actions;
 
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
-import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
+import java.io.Serializable;
+import org.eclipse.jetty.http.HttpStatus;
 
 
 /*******************************************************************************
+ ** class to contain http api responses.
  **
  *******************************************************************************/
-public class ObjectUtils
+public class HttpApiResponse
 {
-
-   /*******************************************************************************
-    ** A varargs version of Objects.requireNonNullElse
-    *******************************************************************************/
-   public static <T> T requireNonNullElse(T... objects)
-   {
-      if(objects == null)
-      {
-         throw (new NullPointerException("null objects array as input"));
-      }
-
-      for(T object : objects)
-      {
-         if(object != null)
-         {
-            return (object);
-         }
-      }
-
-      throw (new NullPointerException("all null objects"));
-   }
+   private HttpStatus.Code statusCode;
+   private Serializable    responseBodyObject;
 
 
 
    /*******************************************************************************
-    ** Like Objects.requireNonNullElse, only use an (unsafe) supplier as the first
-    ** arg, and only if it throws, return the 2nd arg
-    *******************************************************************************/
-   public static <T> T tryElse(UnsafeSupplier<T, ?> supplier, T defaultIfThrew)
-   {
-      try
-      {
-         return (supplier.get());
-      }
-      catch(Exception e)
-      {
-         return (defaultIfThrew);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Like Objects.requireNonNullElse, only use an (unsafe) supplier as the first
-    ** arg, and if it throws or returns null, then return the 2nd arg
-    *******************************************************************************/
-   public static <T> T tryAndRequireNonNullElse(UnsafeSupplier<T, ?> supplier, T defaultIfThrew)
-   {
-      try
-      {
-         T t = supplier.get();
-         if(t != null)
-         {
-            return (t);
-         }
-      }
-      catch(Exception e)
-      {
-         //////////
-         // noop //
-         //////////
-      }
-
-      return (defaultIfThrew);
-   }
-
-
-
-   /*******************************************************************************
+    ** Default Constructor
     **
     *******************************************************************************/
-   public static <T> void ifNotNull(T object, Consumer<T> consumer)
+   public HttpApiResponse()
    {
-      if(object != null)
-      {
-         consumer.accept(object);
-      }
    }
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public static <T, E extends Exception> void ifNotNullUnsafe(T object, UnsafeConsumer<T, E> consumer) throws E
+   public HttpApiResponse(HttpStatus.Code statusCode, Serializable responseBodyObject)
    {
-      if(object != null)
-      {
-         consumer.run(object);
-      }
+      this.statusCode = statusCode;
+      this.responseBodyObject = responseBodyObject;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for statusCode
     *******************************************************************************/
-   public static <T> T requireConditionElse(T a, Predicate<T> condition, T b)
+   public HttpStatus.Code getStatusCode()
    {
-      if(condition.test(a))
-      {
-         return (a);
-      }
-      return (b);
+      return (this.statusCode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for statusCode
+    *******************************************************************************/
+   public void setStatusCode(HttpStatus.Code statusCode)
+   {
+      this.statusCode = statusCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for statusCode
+    *******************************************************************************/
+   public HttpApiResponse withStatusCode(HttpStatus.Code statusCode)
+   {
+      this.statusCode = statusCode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for responseBodyObject
+    *******************************************************************************/
+   public Serializable getResponseBodyObject()
+   {
+      return (this.responseBodyObject);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for responseBodyObject
+    *******************************************************************************/
+   public void setResponseBodyObject(Serializable responseBodyObject)
+   {
+      this.responseBodyObject = responseBodyObject;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for responseBodyObject
+    *******************************************************************************/
+   public HttpApiResponse withResponseBodyObject(Serializable responseBodyObject)
+   {
+      this.responseBodyObject = responseBodyObject;
+      return (this);
    }
 
 }

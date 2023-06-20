@@ -681,7 +681,7 @@ public class QueryManager
       }
       else if(value instanceof Long l)
       {
-         bindParam(statement, index, l.intValue());
+         bindParam(statement, index, l.longValue());
          return (1);
       }
       else if(value instanceof Double d)
@@ -854,6 +854,23 @@ public class QueryManager
       else
       {
          statement.setInt(index, value);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   public static void bindParam(PreparedStatement statement, int index, Long value) throws SQLException
+   {
+      if(value == null)
+      {
+         statement.setNull(index, Types.INTEGER);
+      }
+      else
+      {
+         statement.setLong(index, value);
       }
    }
 

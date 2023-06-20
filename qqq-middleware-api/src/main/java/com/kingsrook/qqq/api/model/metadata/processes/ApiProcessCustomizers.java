@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2022.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,60 +19,69 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.openapi;
-
-
-import java.io.Serializable;
+package com.kingsrook.qqq.api.model.metadata.processes;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ExampleWithSingleValue extends Example
+public enum ApiProcessCustomizers
 {
-   private Serializable value;
+   PRE_RUN("preRun", PreRunApiProcessCustomizer.class),
+   POST_RUN("postRun", PreRunApiProcessCustomizer.class);
+
+   private final String   role;
+   private final Class<?> expectedType;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public ExampleWithSingleValue withSummary(String summary)
+   ApiProcessCustomizers(String role, Class<?> expectedType)
    {
-      super.withSummary(summary);
-      return (this);
+      this.role = role;
+      this.expectedType = expectedType;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for value
+    ** Get the FilesystemTableCustomer for a given role (e.g., the role used in meta-data, not
+    ** the enum-constant name).
     *******************************************************************************/
-   public Serializable getValue()
+   public static ApiProcessCustomizers forRole(String name)
    {
-      return (this.value);
+      for(ApiProcessCustomizers value : values())
+      {
+         if(value.role.equals(name))
+         {
+            return (value);
+         }
+      }
+
+      return (null);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for value
+    ** Getter for role
+    **
     *******************************************************************************/
-   public void setValue(Serializable value)
+   public String getRole()
    {
-      this.value = value;
+      return role;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for value
+    ** Getter for expectedType
+    **
     *******************************************************************************/
-   public ExampleWithSingleValue withValue(Serializable value)
+   public Class<?> getExpectedType()
    {
-      this.value = value;
-      return (this);
+      return expectedType;
    }
-
 }

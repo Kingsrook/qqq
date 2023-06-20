@@ -29,8 +29,15 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessObjectOutput;
+import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessSummaryListOutput;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.api.model.openapi.HttpMethod;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
@@ -45,12 +52,23 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.HtmlWrapper;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.WidgetHtmlLine;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -58,6 +76,9 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -73,6 +94,9 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
+
+   public static final String PROCESS_NAME_GET_PERSON_INFO  = "getPersonInfo";
+   public static final String PROCESS_NAME_TRANSFORM_PEOPLE = "transformPeople";
 
    public static final String API_NAME             = "test-api";
    public static final String ALTERNATIVE_API_NAME = "person-api";
@@ -103,9 +127,13 @@ public class TestUtils
       qInstance.addJoin(defineJoinLineItemLineItemExtrinsic());
       qInstance.addJoin(defineJoinOrderOrderExtrinsic());
 
+      qInstance.addPossibleValueSource(definePersonPossibleValueSource());
+      qInstance.addProcess(defineProcessGetPersonInfo());
+      qInstance.addProcess(defineProcessTransformPeople());
+
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
-      qInstance.withMiddlewareMetaData(new ApiInstanceMetaDataContainer()
+      qInstance.withSupplementalMetaData(new ApiInstanceMetaDataContainer()
          .withApiInstanceMetaData(new ApiInstanceMetaData()
             .withName(API_NAME)
             .withPath("/api/")
@@ -129,6 +157,109 @@ public class TestUtils
       );
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QPossibleValueSource definePersonPossibleValueSource()
+   {
+      return new QPossibleValueSource()
+         .withName(TABLE_NAME_PERSON)
+         .withType(QPossibleValueSourceType.TABLE)
+         .withTableName(TABLE_NAME_PERSON)
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessGetPersonInfo()
+   {
+      QProcessMetaData process = new QProcessMetaData()
+         .withName(PROCESS_NAME_GET_PERSON_INFO)
+         .withLabel("Get Person Info")
+         .withTableName(TABLE_NAME_PERSON)
+         .addStep(new QFrontendStepMetaData()
+            .withName("enterInputs")
+            .withLabel("Person Info Input")
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
+
+            .withFormField(new QFieldMetaData("age", QFieldType.INTEGER).withIsRequired(true))
+            .withFormField(new QFieldMetaData("partnerPersonId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_PERSON))
+            .withFormField(new QFieldMetaData("heightInches", QFieldType.DECIMAL).withIsRequired(true))
+            .withFormField(new QFieldMetaData("weightPounds", QFieldType.INTEGER).withIsRequired(true))
+            .withFormField(new QFieldMetaData("homeTown", QFieldType.STRING).withIsRequired(true))
+
+            .withComponent(new NoCodeWidgetFrontendComponentMetaData()
+
+               .withOutput(new WidgetHtmlLine()
+                  .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_FLOAT_RIGHT, HtmlWrapper.STYLE_MEDIUM_CENTERED, HtmlWrapper.styleWidth("50%")))
+                  .withVelocityTemplate("""
+                     <b>Density:</b><br />$density<br/>
+                     """))
+
+               .withOutput(new WidgetHtmlLine()
+                  .withVelocityTemplate("""
+                     <b>Days old:</b> $daysOld<br/>
+                     <b>Nickname:</b> $nickname<br/>
+                     """))
+            ))
+
+         .addStep(new QBackendStepMetaData()
+            .withName("execute")
+            .withCode(new QCodeReference(GetPersonInfoStep.class)))
+
+         .addStep(new QFrontendStepMetaData()
+            .withName("dummyStep")
+         );
+
+      process.withSupplementalMetaData(new ApiProcessMetaDataContainer()
+         .withApiProcessMetaData(API_NAME, new ApiProcessMetaData()
+            .withInitialVersion(CURRENT_API_VERSION)
+            .withMethod(HttpMethod.GET)
+            .withInput(new ApiProcessInput()
+               .withQueryStringParams(new ApiProcessInputFieldsContainer().withInferredInputFields(process)))
+            .withOutput(new ApiProcessObjectOutput()
+               .withOutputField(new QFieldMetaData("density", QFieldType.DECIMAL))
+               .withOutputField(new QFieldMetaData("daysOld", QFieldType.INTEGER))
+               .withOutputField(new QFieldMetaData("nickname", QFieldType.STRING)))
+         ));
+
+      return (process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessTransformPeople()
+   {
+      QProcessMetaData process = StreamedETLWithFrontendProcess.processMetaDataBuilder()
+         .withName(PROCESS_NAME_TRANSFORM_PEOPLE)
+         .withTableName(TABLE_NAME_PERSON)
+         .withSourceTable(TABLE_NAME_PERSON)
+         .withDestinationTable(TABLE_NAME_PERSON)
+         .withMinInputRecords(1)
+         .withExtractStepClass(ExtractViaQueryStep.class)
+         .withTransformStepClass(TransformPersonStep.class)
+         .withLoadStepClass(LoadViaUpdateStep.class)
+         .getProcessMetaData();
+
+      process.withSupplementalMetaData(new ApiProcessMetaDataContainer()
+         .withApiProcessMetaData(API_NAME, new ApiProcessMetaData()
+            .withInitialVersion(CURRENT_API_VERSION)
+            .withMethod(HttpMethod.POST)
+            .withInput(new ApiProcessInput()
+               .withQueryStringParams(new ApiProcessInputFieldsContainer().withRecordIdsField(new QFieldMetaData("id", QFieldType.STRING))))
+            .withOutput(new ApiProcessSummaryListOutput())));
+
+      return (process);
    }
 
 
@@ -204,7 +335,7 @@ public class TestUtils
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // make some changes to this table in the "main" api (but leave it like the backend in the ALTERNATIVE_API_NAME) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      table.withMiddlewareMetaData(new ApiTableMetaDataContainer()
+      table.withSupplementalMetaData(new ApiTableMetaDataContainer()
          .withApiTableMetaData(API_NAME, new ApiTableMetaData()
             .withInitialVersion(V2022_Q4)
 
@@ -212,7 +343,7 @@ public class TestUtils
             // in 2022.Q4, this table had a "shoeCount" field. but for the 2023.Q1 version, we renamed it to noOfShoes! //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////
             .withRemovedApiField(new QFieldMetaData("shoeCount", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS)
-               .withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME,
+               .withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME,
                   new ApiFieldMetaData().withFinalVersion(V2022_Q4).withReplacedByFieldName("noOfShoes"))))
          )
          .withApiTableMetaData(ALTERNATIVE_API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)));
@@ -220,18 +351,18 @@ public class TestUtils
       /////////////////////////////////////////////////////
       // change the name for this field for the main api //
       /////////////////////////////////////////////////////
-      table.getField("birthDate").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withApiFieldName("birthDay")));
+      table.getField("birthDate").withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withApiFieldName("birthDay")));
 
       ////////////////////////////////////////////////////////////////////////////////
       // See above - we renamed this field (in the backend) for the 2023_Q1 version //
       ////////////////////////////////////////////////////////////////////////////////
-      table.getField("noOfShoes").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q1)));
+      table.getField("noOfShoes").withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q1)));
 
       /////////////////////////////////////////////////////////////////////////////////////////////////
       // 2 new fields - one will appear in a future version of the API, the other is always excluded //
       /////////////////////////////////////////////////////////////////////////////////////////////////
-      table.getField("cost").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q2)));
-      table.getField("price").withMiddlewareMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withIsExcluded(true)));
+      table.getField("cost").withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withInitialVersion(V2023_Q2)));
+      table.getField("price").withSupplementalMetaData(new ApiFieldMetaDataContainer().withApiFieldMetaData(API_NAME, new ApiFieldMetaData().withIsExcluded(true)));
 
       return (table);
    }
@@ -248,7 +379,7 @@ public class TestUtils
          .withCustomizer(TableCustomizers.PRE_INSERT_RECORD.getRole(), new QCodeReference(OrderPreInsertCustomizer.class))
          .withCustomizer(TableCustomizers.PRE_UPDATE_RECORD.getRole(), new QCodeReference(OrderPreUpdateCustomizer.class))
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withAssociation(new Association().withName("orderLines").withAssociatedTableName(TABLE_NAME_LINE_ITEM).withJoinName("orderLineItem"))
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_ORDER_EXTRINSIC).withJoinName("orderOrderExtrinsic"))
@@ -271,7 +402,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_LINE_ITEM)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_LINE_ITEM_EXTRINSIC).withJoinName("lineItemLineItemExtrinsic"))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
@@ -293,7 +424,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_LINE_ITEM_EXTRINSIC)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
@@ -313,7 +444,7 @@ public class TestUtils
       return new QTableMetaData()
          .withName(TABLE_NAME_ORDER_EXTRINSIC)
          .withBackendName(MEMORY_BACKEND_NAME)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion(V2022_Q4)))
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))

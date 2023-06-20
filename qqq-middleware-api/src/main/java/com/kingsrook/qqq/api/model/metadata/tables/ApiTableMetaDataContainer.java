@@ -24,8 +24,8 @@ package com.kingsrook.qqq.api.model.metadata.tables;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
+import com.kingsrook.qqq.api.ApiSupplementType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiTableMetaDataContainer extends QMiddlewareTableMetaData
+public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
 {
    private Map<String, ApiTableMetaData> apis;
 
@@ -55,7 +55,7 @@ public class ApiTableMetaDataContainer extends QMiddlewareTableMetaData
     *******************************************************************************/
    public static ApiTableMetaDataContainer of(QTableMetaData table)
    {
-      return ((ApiTableMetaDataContainer) table.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+      return ((ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME));
    }
 
 

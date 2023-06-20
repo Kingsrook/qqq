@@ -30,11 +30,15 @@ import java.util.Map;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -221,6 +225,53 @@ public class ApiScriptUtils implements Serializable
    {
       validateApiNameAndVersion("bulkDelete(" + tableApiName + ")");
       return (ApiImplementation.bulkDelete(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(body)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable runProcess(String processApiName) throws QException
+   {
+      return (runProcess(processApiName, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable runProcess(String processApiName, Object params) throws QException
+   {
+      validateApiNameAndVersion("runProcess(" + processApiName + ")");
+
+      Map<String, String> paramMap     = new LinkedHashMap<>();
+      String              paramsString = ValueUtils.getValueAsString(params);
+      if(StringUtils.hasContent(paramsString))
+      {
+         JSONObject paramsJSON = new JSONObject(paramsString);
+         for(String fieldName : paramsJSON.keySet())
+         {
+            paramMap.put(fieldName, paramsJSON.optString(fieldName));
+         }
+      }
+
+      HttpApiResponse httpApiResponse = ApiImplementation.runProcess(getApiInstanceMetaData(), apiVersion, processApiName, paramMap);
+      return (httpApiResponse.getResponseBodyObject());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable getProcessStatus(String processApiName, String jobId) throws QException
+   {
+      validateApiNameAndVersion("getProcessStatus(" + processApiName + ")");
+
+      HttpApiResponse httpApiResponse = ApiImplementation.getProcessStatus(getApiInstanceMetaData(), apiVersion, processApiName, jobId);
+      return (httpApiResponse.getResponseBodyObject());
    }
 
 

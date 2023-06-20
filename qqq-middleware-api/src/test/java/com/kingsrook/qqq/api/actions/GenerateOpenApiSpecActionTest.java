@@ -34,6 +34,7 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -120,7 +121,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2022_Q4))));
 
       qInstance.addTable(new QTableMetaData()
@@ -129,7 +130,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withIsHidden(true)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2022_Q4))));
 
       qInstance.addTable(new QTableMetaData()
@@ -137,7 +138,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withIsExcluded(true))));
 
       qInstance.addTable(new QTableMetaData()
@@ -151,7 +152,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2023_Q2))));
 
       qInstance.addTable(new QTableMetaData()
@@ -159,7 +160,7 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2022_Q4)
             .withFinalVersion(TestUtils.V2022_Q4))));
 
@@ -169,8 +170,10 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withoutCapabilities(Capability.TABLE_QUERY, Capability.TABLE_GET, Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE)
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withInitialVersion(TestUtils.V2022_Q4))));
+
+      new QInstanceEnricher(qInstance).enrich();
 
       GenerateOpenApiSpecOutput output   = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(TestUtils.CURRENT_API_VERSION).withApiName(TestUtils.API_NAME));
       Set<String>               apiPaths = output.getOpenAPI().getPaths().keySet();
@@ -198,9 +201,11 @@ class GenerateOpenApiSpecActionTest extends BaseTest
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
-         .withMiddlewareMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData()
             .withApiTableName("externalName")
             .withInitialVersion(TestUtils.V2022_Q4))));
+      
+      new QInstanceEnricher(qInstance).enrich();
 
       GenerateOpenApiSpecOutput output   = new GenerateOpenApiSpecAction().execute(new GenerateOpenApiSpecInput().withVersion(TestUtils.CURRENT_API_VERSION).withApiName(TestUtils.API_NAME));
       Set<String>               apiPaths = output.getOpenAPI().getPaths().keySet();

@@ -39,6 +39,8 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    private String  username;
    private String  password;
 
+   private String jdbcUrl;
+
 
 
    /*******************************************************************************
@@ -279,6 +281,37 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
       username = interpreter.interpret(username);
       password = interpreter.interpret(password);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for jdbcUrl
+    *******************************************************************************/
+   public String getJdbcUrl()
+   {
+      return (this.jdbcUrl);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for jdbcUrl
+    *******************************************************************************/
+   public void setJdbcUrl(String jdbcUrl)
+   {
+      this.jdbcUrl = jdbcUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for jdbcUrl
+    *******************************************************************************/
+   public RDBMSBackendMetaData withJdbcUrl(String jdbcUrl)
+   {
+      this.jdbcUrl = jdbcUrl;
+      return (this);
    }
 
 }

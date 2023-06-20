@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.model.openapi;
 
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -187,6 +188,27 @@ public class Schema
    public void setExample(String example)
    {
       this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for example
+    *******************************************************************************/
+   public void setExample(BigDecimal example)
+   {
+      this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for example
+    *******************************************************************************/
+   public Schema withExample(Object example)
+   {
+      this.example = example;
+      return (this);
    }
 
 

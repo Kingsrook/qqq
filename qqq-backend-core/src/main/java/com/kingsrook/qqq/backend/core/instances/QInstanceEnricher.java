@@ -57,12 +57,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponen
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteLoadStep;
@@ -261,9 +262,9 @@ public class QInstanceEnricher
       {
          table.getFields().values().forEach(this::enrichField);
 
-         for(QMiddlewareTableMetaData middlewareTableMetaData : CollectionUtils.nonNullMap(table.getMiddlewareMetaData()).values())
+         for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
          {
-            middlewareTableMetaData.enrich(table);
+            supplementalTableMetaData.enrich(table);
          }
       }
 
@@ -365,6 +366,11 @@ public class QInstanceEnricher
       if(process.getStepList() != null)
       {
          process.getStepList().forEach(this::enrichStep);
+      }
+
+      for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
+      {
+         supplementalProcessMetaData.enrich(this, process);
       }
 
       enrichPermissionRules(process);

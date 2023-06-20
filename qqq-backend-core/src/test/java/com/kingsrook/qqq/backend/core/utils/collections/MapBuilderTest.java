@@ -78,7 +78,7 @@ class MapBuilderTest
    @Test
    void testTypeYouRequest()
    {
-      Map<String, Integer> myTreeMap = MapBuilder.<String, Integer>of(TreeMap::new).with("1", 1).with("2", 2).build();
+      TreeMap<String, Integer> myTreeMap = MapBuilder.of(() -> new TreeMap<String, Integer>()).with("1", 1).with("2", 2).build();
       assertTrue(myTreeMap instanceof TreeMap);
    }
 
