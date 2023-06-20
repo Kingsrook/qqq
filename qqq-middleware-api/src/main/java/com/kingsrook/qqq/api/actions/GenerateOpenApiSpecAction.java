@@ -1043,8 +1043,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withSchema(new Schema()
                .withType("object")
                .withProperties(MapBuilder.of(
-                  "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job")
-                  // todo - status??
+                  "jobId", new Schema().withType("string").withFormat("uuid").withDescription("id of the asynchronous job"),
+                  "message", new Schema().withNullable(true).withType("string").withDescription("a status message about the progress of the job").withExample("Processing records"),
+                  "current", new Schema().withNullable(true).withType("integer").withDescription("for jobs that count progress, indicator of the current number being processed").withExample(7),
+                  "total", new Schema().withNullable(true).withType("integer").withDescription("for jobs that count progress, indicator of the total number being processed").withExample(9)
                ))
             )
          ))
