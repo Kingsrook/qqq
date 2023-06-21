@@ -299,6 +299,7 @@ public class ApiScriptUtils implements QCodeExecutorAware, Serializable
       validateApiNameAndVersion("runProcess(" + processApiName + ")");
 
       Map<String, String> paramMap     = new LinkedHashMap<>();
+      params = processBodyToJsonString(params);
       String              paramsString = ValueUtils.getValueAsString(params);
       if(StringUtils.hasContent(paramsString))
       {
