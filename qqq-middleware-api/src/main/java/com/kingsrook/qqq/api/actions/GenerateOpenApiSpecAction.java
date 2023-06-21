@@ -1083,7 +1083,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       }
 
       String description = "Value for the " + fieldLabel + " field.";
-      if(apiFieldMetaData.getDescription() != null)
+      if(apiFieldMetaData != null && apiFieldMetaData.getDescription() != null)
       {
          description = apiFieldMetaData.getDescription();
       }
