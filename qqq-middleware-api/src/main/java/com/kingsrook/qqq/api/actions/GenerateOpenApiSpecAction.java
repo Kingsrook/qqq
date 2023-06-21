@@ -913,7 +913,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(bodyField);
             ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
 
-            String bodyDescription = "Value for the " + bodyField.getLabel();
+            String fieldLabel = bodyField.getLabel();
+            if(!StringUtils.hasContent(fieldLabel))
+            {
+               fieldLabel = QInstanceEnricher.nameToLabel(bodyField.getName());
+            }
+
+            String bodyDescription = "Value for the " + fieldLabel;
             if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.getDescription()))
             {
                bodyDescription = apiFieldMetaData.getDescription();
@@ -1070,7 +1076,18 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
       ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
 
-      String description = "Value for the " + field.getLabel() + " field.";
+      String fieldLabel = field.getLabel();
+      if(!StringUtils.hasContent(fieldLabel))
+      {
+         fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+      }
+
+      String description = "Value for the " + fieldLabel + " field.";
+      if(apiFieldMetaData.getDescription() != null)
+      {
+         description = apiFieldMetaData.getDescription();
+      }
+
       if(field.getDefaultValue() != null)
       {
          description += " Default value is " + field.getDefaultValue() + ", if not given.";
