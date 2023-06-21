@@ -56,4 +56,14 @@ public enum AggregateOperator
    {
       return sqlPrefix;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Aggregate of(String fieldName)
+   {
+      return (new Aggregate(fieldName, this));
+   }
 }
