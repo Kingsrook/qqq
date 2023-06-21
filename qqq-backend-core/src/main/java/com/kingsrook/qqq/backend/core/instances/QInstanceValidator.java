@@ -573,6 +573,11 @@ public class QInstanceValidator
       RECORD_SECURITY_LOCKS_LOOP:
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
       {
+         if(!assertCondition(recordSecurityLock != null, prefix + "has a null recordSecurityLock (did you mean to give it a null list of locks?)"))
+         {
+            continue;
+         }
+
          String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
          if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
          {
