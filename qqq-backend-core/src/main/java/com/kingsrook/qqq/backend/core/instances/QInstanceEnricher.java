@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -96,6 +97,13 @@ public class QInstanceEnricher
    // todo - come up w/ a way for app devs to set configs! //
    //////////////////////////////////////////////////////////
    private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+
+   //////////////////////////////////////////////////////////////////////////////////////////////////
+   // let an instance define mappings to be applied during name-to-label enrichments,              //
+   // e.g., to avoid ever incorrectly camel-casing an acronym (e.g., "Tla" shoudl always be "TLA") //
+   // or to expand abbreviations in code (e.g., "Addr" should always be "Address"                  //
+   //////////////////////////////////////////////////////////////////////////////////////////////////
+   private static final Map<String, String> labelMappings = new LinkedHashMap<>();
 
 
 
@@ -647,7 +655,17 @@ public class QInstanceEnricher
          ////////////////////////////////////////////////////////////////
          .replaceAll("([0-9])([A-Za-z])", "$1 $2");
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix);
+      String label = name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix;
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // apply any label mappings - e.g., to force app-specific acronyms/initialisms to all-caps //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      for(Map.Entry<String, String> entry : labelMappings.entrySet())
+      {
+         label = label.replaceAll(entry.getKey(), entry.getValue());
+      }
+
+      return (label);
    }
 
 
@@ -1111,4 +1129,35 @@ public class QInstanceEnricher
    {
       return (this.joinGraph);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void addLabelMapping(String from, String to)
+   {
+      labelMappings.put(from, to);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void removeLabelMapping(String from)
+   {
+      labelMappings.remove(from);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void clearLabelMappings()
+   {
+      labelMappings.clear();
+   }
+
 }

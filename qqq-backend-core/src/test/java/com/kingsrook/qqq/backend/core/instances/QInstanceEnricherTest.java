@@ -197,6 +197,16 @@ class QInstanceEnricherTest extends BaseTest
       assertEquals("Something USA", QInstanceEnricher.nameToLabel("somethingUSA"));
       assertEquals("Number 1 Dad", QInstanceEnricher.nameToLabel("number1Dad"));
       assertEquals("Number 417 Dad", QInstanceEnricher.nameToLabel("number417Dad"));
+
+      assertEquals("Default Wms System Id", QInstanceEnricher.nameToLabel("defaultWmsSystemId"));
+      QInstanceEnricher.addLabelMapping("\\bWms\\b", "WMS");
+      assertEquals("Default WMS System Id", QInstanceEnricher.nameToLabel("defaultWmsSystemId"));
+      QInstanceEnricher.clearLabelMappings();
+
+      assertEquals("Api Client Id", QInstanceEnricher.nameToLabel("apiClientId"));
+      QInstanceEnricher.addLabelMapping("\\bApi\\b", "API");
+      assertEquals("API Client Id", QInstanceEnricher.nameToLabel("apiClientId"));
+      QInstanceEnricher.clearLabelMappings();
    }
 
 
