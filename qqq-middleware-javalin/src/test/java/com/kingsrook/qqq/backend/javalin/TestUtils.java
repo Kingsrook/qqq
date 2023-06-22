@@ -66,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFiltersMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
@@ -156,6 +157,7 @@ public class TestUtils
       qInstance.addBackend(defineMemoryBackend());
       try
       {
+         new SavedFiltersMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
          new ScriptsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
       }
       catch(Exception e)
@@ -362,8 +364,7 @@ public class TestUtils
          .withType(QPossibleValueSourceType.TABLE)
          .withTableName(TABLE_NAME_PERSON)
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_PARENS_ID)
-         .withOrderByField("id")
-      );
+         .withOrderByField("id"));
    }
 
 

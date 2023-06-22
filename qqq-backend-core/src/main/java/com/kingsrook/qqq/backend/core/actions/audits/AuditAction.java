@@ -77,6 +77,21 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
 
 
    /*******************************************************************************
+    ** Execute to insert 1 audit, with a list of detail child records provided as just string messages
+    *******************************************************************************/
+   public static void executeWithStringDetails(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<String> detailMessages)
+   {
+      List<QRecord> detailRecords = null;
+      if(CollectionUtils.nullSafeHasContents(detailMessages))
+      {
+         detailRecords = detailMessages.stream().map(m -> new QRecord().withValue("message", m)).toList();
+      }
+      execute(tableName, recordId, securityKeyValues, message, detailRecords);
+   }
+
+
+
+   /*******************************************************************************
     ** Execute to insert 1 audit, with a list of detail child records
     *******************************************************************************/
    public static void execute(String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message, List<QRecord> details)

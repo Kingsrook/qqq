@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -81,7 +81,7 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
       {
          for(QFieldMetaData field : table.getFields().values())
          {
-            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(apiName, field);
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiSupplementalMetaData(apiName, field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {
                apiFieldMetaData.setInitialVersion(initialVersion);
@@ -90,7 +90,7 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
 
          for(QFieldMetaData field : CollectionUtils.nonNullList(removedApiFields))
          {
-            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiMiddlewareMetaData(apiName, field);
+            ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiSupplementalMetaData(apiName, field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {
                apiFieldMetaData.setInitialVersion(initialVersion);
@@ -104,11 +104,11 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static ApiFieldMetaData ensureFieldHasApiMiddlewareMetaData(String apiName, QFieldMetaData field)
+   private static ApiFieldMetaData ensureFieldHasApiSupplementalMetaData(String apiName, QFieldMetaData field)
    {
-      if(field.getMiddlewareMetaData(ApiMiddlewareType.NAME) == null)
+      if(field.getSupplementalMetaData(ApiSupplementType.NAME) == null)
       {
-         field.withMiddlewareMetaData(new ApiFieldMetaDataContainer());
+         field.withSupplementalMetaData(new ApiFieldMetaDataContainer());
       }
 
       ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.of(field);

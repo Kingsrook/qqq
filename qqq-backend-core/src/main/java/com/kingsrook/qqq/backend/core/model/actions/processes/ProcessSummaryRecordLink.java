@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -60,6 +62,35 @@ public class ProcessSummaryRecordLink implements ProcessSummaryLineInterface
    {
       return (logPair("ProcessSummary", logPair("status", status), logPair("tableName", tableName), logPair("recordId", recordId),
          logPair("linkPreText", linkPreText), logPair("linkText", linkText), logPair("linkPostText", linkPostText)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public String getFullText()
+   {
+      StringBuilder rs = new StringBuilder();
+
+      if(StringUtils.hasContent(linkPreText))
+      {
+         rs.append(linkPreText).append(" ");
+      }
+
+      if(StringUtils.hasContent(linkText))
+      {
+         rs.append(linkText).append(" ");
+      }
+
+      if(StringUtils.hasContent(linkPostText))
+      {
+         rs.append(linkPostText).append(" ");
+      }
+
+      rs.deleteCharAt(rs.length() - 1);
+      return (rs.toString());
    }
 
 

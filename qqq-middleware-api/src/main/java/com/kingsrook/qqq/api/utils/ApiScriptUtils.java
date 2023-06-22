@@ -30,20 +30,29 @@ import java.util.Map;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.QRecordApiAdapter;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
+import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutorAware;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
  ** Object injected into script context, for interfacing with a QQQ API.
  *******************************************************************************/
-public class ApiScriptUtils implements Serializable
+public class ApiScriptUtils implements QCodeExecutorAware, Serializable
 {
    private String apiName;
    private String apiVersion;
+
+   private QCodeExecutor qCodeExecutor;
 
 
 
@@ -165,6 +174,7 @@ public class ApiScriptUtils implements Serializable
    public Map<String, Serializable> insert(String tableApiName, Object body) throws QException
    {
       validateApiNameAndVersion("insert(" + tableApiName + ")");
+      body = processBodyToJsonString(body);
       return (ApiImplementation.insert(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(body)));
    }
 
@@ -176,6 +186,7 @@ public class ApiScriptUtils implements Serializable
    public List<Map<String, Serializable>> bulkInsert(String tableApiName, Object body) throws QException
    {
       validateApiNameAndVersion("bulkInsert(" + tableApiName + ")");
+      body = processBodyToJsonString(body);
       return (ApiImplementation.bulkInsert(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(body)));
    }
 
@@ -187,7 +198,50 @@ public class ApiScriptUtils implements Serializable
    public void update(String tableApiName, Object primaryKey, Object body) throws QException
    {
       validateApiNameAndVersion("update(" + tableApiName + "," + primaryKey + ")");
+      body = processBodyToJsonString(body);
       ApiImplementation.update(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(primaryKey), String.valueOf(body));
+   }
+
+
+
+   /*******************************************************************************
+    ** Take a "body" object, which maybe defined in the script's language/run-time,
+    ** and try to process it into a JSON String (which is what the API Implementation wants)
+    *******************************************************************************/
+   private Object processBodyToJsonString(Object body)
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the caller already supplied the object as a string, then return that string.                                             //
+      // and in case it can't be parsed as json, well, let that error come out of the api implementation, and go back to the caller. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(body instanceof String)
+      {
+         return (body);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the input body wasn't a json string, try to convert it from a language-type object (e.g., javscript) to a java-object, //
+      // then make JSON out of that for the APIImplementation                                                                      //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      Object bodyJavaObject = processInputObjectViaCodeExecutor(body);
+      return JsonUtils.toJson(bodyJavaObject);
+   }
+
+
+
+   /*******************************************************************************
+    ** Use the QCodeExecutor (if we have one) to process an input object from the
+    ** script's language into a (more) native java object.
+    ** e.g., a Nashorn ScriptObjectMirror will end up as a "primitive", or a List or Map of such
+    *******************************************************************************/
+   private Object processInputObjectViaCodeExecutor(Object body)
+   {
+      if(qCodeExecutor == null || body == null)
+      {
+         return (body);
+      }
+
+      return (qCodeExecutor.convertObjectToJava(body));
    }
 
 
@@ -198,6 +252,7 @@ public class ApiScriptUtils implements Serializable
    public List<Map<String, Serializable>> bulkUpdate(String tableApiName, Object body) throws QException
    {
       validateApiNameAndVersion("bulkUpdate(" + tableApiName + ")");
+      body = processBodyToJsonString(body);
       return (ApiImplementation.bulkUpdate(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(body)));
    }
 
@@ -220,7 +275,60 @@ public class ApiScriptUtils implements Serializable
    public List<Map<String, Serializable>> bulkDelete(String tableApiName, Object body) throws QException
    {
       validateApiNameAndVersion("bulkDelete(" + tableApiName + ")");
+      body = processBodyToJsonString(body);
       return (ApiImplementation.bulkDelete(getApiInstanceMetaData(), apiVersion, tableApiName, String.valueOf(body)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable runProcess(String processApiName) throws QException
+   {
+      return (runProcess(processApiName, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable runProcess(String processApiName, Object params) throws QException
+   {
+      validateApiNameAndVersion("runProcess(" + processApiName + ")");
+
+      Map<String, String> paramMap = new LinkedHashMap<>();
+
+      if(params != null)
+      {
+         params = processBodyToJsonString(params);
+         String paramsString = ValueUtils.getValueAsString(params);
+         if(StringUtils.hasContent(paramsString))
+         {
+            JSONObject paramsJSON = new JSONObject(paramsString);
+            for(String fieldName : paramsJSON.keySet())
+            {
+               paramMap.put(fieldName, paramsJSON.optString(fieldName));
+            }
+         }
+      }
+
+      HttpApiResponse httpApiResponse = ApiImplementation.runProcess(getApiInstanceMetaData(), apiVersion, processApiName, paramMap);
+      return (httpApiResponse.getResponseBodyObject());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Serializable getProcessStatus(String processApiName, String jobId) throws QException
+   {
+      validateApiNameAndVersion("getProcessStatus(" + processApiName + ")");
+
+      HttpApiResponse httpApiResponse = ApiImplementation.getProcessStatus(getApiInstanceMetaData(), apiVersion, processApiName, jobId);
+      return (httpApiResponse.getResponseBodyObject());
    }
 
 
@@ -256,5 +364,16 @@ public class ApiScriptUtils implements Serializable
          }
       }
       return paramMap;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setQCodeExecutor(QCodeExecutor qCodeExecutor)
+   {
+      this.qCodeExecutor = qCodeExecutor;
    }
 }
