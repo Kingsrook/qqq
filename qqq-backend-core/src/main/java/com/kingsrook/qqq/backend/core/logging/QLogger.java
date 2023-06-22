@@ -609,7 +609,7 @@ public class QLogger
       {
          if(qException.hasLoggedLevel(level))
          {
-            log(Level.INFO, "Downgrading log message from " + level.toString() + " to " + Level.INFO, t);
+            log(Level.DEBUG, "Downgrading log message from " + level.toString() + " to " + Level.INFO, t);
             return (Level.INFO);
          }
       }
