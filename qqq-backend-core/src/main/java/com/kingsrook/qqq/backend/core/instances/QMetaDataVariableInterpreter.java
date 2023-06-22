@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
@@ -266,4 +267,111 @@ public class QMetaDataVariableInterpreter
 
       valueMaps.put(name, values);
    }
+
+
+
+   /*******************************************************************************
+    ** First look for a boolean ("true" or "false") in the specified system property -
+    ** Next look for a boolean in the specified env var name -
+    ** Finally return the default.
+    *******************************************************************************/
+   public boolean getBooleanFromPropertyOrEnvironment(String systemPropertyName, String environmentVariableName, boolean defaultIfNotSet)
+   {
+      String propertyValue = System.getProperty(systemPropertyName);
+      if(StringUtils.hasContent(propertyValue))
+      {
+         if("false".equalsIgnoreCase(propertyValue))
+         {
+            LOG.info("Read system property [" + systemPropertyName + "] as boolean false.");
+            return (false);
+         }
+         else if("true".equalsIgnoreCase(propertyValue))
+         {
+            LOG.info("Read system property [" + systemPropertyName + "] as boolean true.");
+            return (true);
+         }
+         else
+         {
+            LOG.warn("Unrecognized boolean value [" + propertyValue + "] for system property [" + systemPropertyName + "].");
+         }
+      }
+
+      String envValue = interpret("${env." + environmentVariableName + "}");
+      if(StringUtils.hasContent(envValue))
+      {
+         if("false".equalsIgnoreCase(envValue))
+         {
+            LOG.info("Read env var [" + environmentVariableName + "] as boolean false.");
+            return (false);
+         }
+         else if("true".equalsIgnoreCase(envValue))
+         {
+            LOG.info("Read env var [" + environmentVariableName + "] as boolean true.");
+            return (true);
+         }
+         else
+         {
+            LOG.warn("Unrecognized boolean value [" + envValue + "] for env var [" + environmentVariableName + "].");
+         }
+      }
+
+      return defaultIfNotSet;
+   }
+
+
+
+   /*******************************************************************************
+    ** First look for an Integer in the specified system property -
+    ** Next look for an Integer in the specified env var name -
+    ** Finally return the default (null allowed as default!)
+    *******************************************************************************/
+   public Integer getIntegerFromPropertyOrEnvironment(String systemPropertyName, String environmentVariableName, Integer defaultIfNotSet)
+   {
+      String propertyValue = System.getProperty(systemPropertyName);
+      if(StringUtils.hasContent(propertyValue))
+      {
+         if(canParseAsInteger(propertyValue))
+         {
+            LOG.info("Read system property [" + systemPropertyName + "] as integer " + propertyValue);
+            return (Integer.parseInt(propertyValue));
+         }
+         else
+         {
+            LOG.warn("Unrecognized integer value [" + propertyValue + "] for system property [" + systemPropertyName + "].");
+         }
+      }
+
+      String envValue = interpret("${env." + environmentVariableName + "}");
+      if(StringUtils.hasContent(envValue))
+      {
+         if(canParseAsInteger(envValue))
+         {
+            LOG.info("Read env var [" + environmentVariableName + "] as integer " + environmentVariableName);
+            return (Integer.parseInt(propertyValue));
+         }
+         else
+         {
+            LOG.warn("Unrecognized integer value [" + envValue + "] for env var [" + environmentVariableName + "].");
+         }
+      }
+
+      return defaultIfNotSet;
+   }
+
+
+
+   /*******************************************************************************
+    ** we'd use NumberUtils.isDigits, but that doesn't allow negatives, or
+    ** numberUtils.isParseable, but that allows decimals, so...
+    *******************************************************************************/
+   private boolean canParseAsInteger(String value)
+   {
+      if(value == null)
+      {
+         return (false);
+      }
+
+      return (value.matches("^-?[0-9]+$"));
+   }
+
 }

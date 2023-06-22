@@ -110,20 +110,9 @@ public class ScheduleManager
     *******************************************************************************/
    public void start()
    {
-      String propertyName  = "qqq.scheduleManager.enabled";
-      String propertyValue = System.getProperty(propertyName);
-      if("false".equals(propertyValue))
+      if(!new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.scheduleManager.enabled", "QQQ_SCHEDULE_MANAGER_ENABLED", true))
       {
-         LOG.info("Not starting ScheduleManager (per system property] [" + propertyName + "=" + propertyValue + "]).");
-         return;
-      }
-
-      QMetaDataVariableInterpreter qMetaDataVariableInterpreter = new QMetaDataVariableInterpreter();
-      String                       envName                      = "QQQ_SCHEDULE_MANAGER_ENABLED";
-      String                       envValue                     = qMetaDataVariableInterpreter.interpret("${env." + envName + "}");
-      if("false".equals(envValue))
-      {
-         LOG.info("Not starting ScheduleManager (per environment variable] [" + envName + "=" + envValue + "]).");
+         LOG.info("Not starting ScheduleManager per settings.");
          return;
       }
 

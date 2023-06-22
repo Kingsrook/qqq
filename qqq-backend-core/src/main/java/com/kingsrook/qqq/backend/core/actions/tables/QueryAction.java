@@ -23,13 +23,11 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
@@ -57,7 +55,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -118,29 +115,16 @@ public class QueryAction
          }
       }
 
-      QueryStat queryStat = null;
-      if(table.isCapabilityEnabled(backend, Capability.QUERY_STATS))
-      {
-         queryStat = new QueryStat();
-         queryStat.setTableName(queryInput.getTableName());
-         queryStat.setQueryFilter(Objects.requireNonNullElse(queryInput.getFilter(), new QQueryFilter()));
-         queryStat.setStartTimestamp(Instant.now());
-      }
+      QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, queryInput.getFilter());
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
-      // todo pre-customization - just get to modify the request?
 
       QueryInterface queryInterface = qModule.getQueryInterface();
       queryInterface.setQueryStat(queryStat);
       QueryOutput queryOutput = queryInterface.execute(queryInput);
 
-      // todo post-customization - can do whatever w/ the result if you want?
-
-      if(queryStat != null)
-      {
-         QueryStatManager.getInstance().add(queryStat);
-      }
+      QueryStatManager.getInstance().add(queryStat);
 
       if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
       {

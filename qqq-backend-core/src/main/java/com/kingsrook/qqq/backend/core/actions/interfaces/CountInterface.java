@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
  ** Interface for the Count action.
  **
  *******************************************************************************/
-public interface CountInterface
+public interface CountInterface extends BaseQueryInterface
 {
    /*******************************************************************************
     **

@@ -23,9 +23,14 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
@@ -43,11 +48,20 @@ public class CountAction
    {
       ActionHelper.validateSession(countInput);
 
+      QTableMetaData   table   = countInput.getTable();
+      QBackendMetaData backend = countInput.getBackend();
+
+      QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, countInput.getFilter());
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(countInput.getBackend());
-      // todo pre-customization - just get to modify the request?
-      CountOutput countOutput = qModule.getCountInterface().execute(countInput);
-      // todo post-customization - can do whatever w/ the result if you want
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(countInput.getBackend());
+
+      CountInterface countInterface = qModule.getCountInterface();
+      countInterface.setQueryStat(queryStat);
+      CountOutput countOutput = countInterface.execute(countInput);
+
+      QueryStatManager.getInstance().add(queryStat);
+
       return countOutput;
    }
 }

@@ -77,6 +77,8 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          sql += " WHERE " + makeWhereClause(countInput.getInstance(), countInput.getSession(), table, joinsContext, filter, params);
          // todo sql customization - can edit sql and/or param list
 
+         setSqlAndJoinsInQueryStat(sql, joinsContext);
+
          CountOutput rs = new CountOutput();
          try(Connection connection = getConnection(countInput))
          {
@@ -86,6 +88,8 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
             {
                if(resultSet.next())
                {
+                  setQueryStatFirstResultTime();
+
                   rs.setCount(resultSet.getInt("record_count"));
 
                   if(BooleanUtils.isTrue(countInput.getIncludeDistinctCount()))

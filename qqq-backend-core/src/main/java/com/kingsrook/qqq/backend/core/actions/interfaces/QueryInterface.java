@@ -22,67 +22,20 @@
 package com.kingsrook.qqq.backend.core.actions.interfaces;
 
 
-import java.time.Instant;
-import java.util.Set;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
-import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 
 
 /*******************************************************************************
  ** Interface for the Query action.
  **
  *******************************************************************************/
-public interface QueryInterface
+public interface QueryInterface extends BaseQueryInterface
 {
    /*******************************************************************************
     **
     *******************************************************************************/
    QueryOutput execute(QueryInput queryInput) throws QException;
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
-   {
-      //////////
-      // noop //
-      //////////
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void setQueryStatJoinTables(Set<String> joinTableNames)
-   {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         queryStat.setJoinTableNames(joinTableNames);
-      }
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void setQueryStatFirstResultTime()
-   {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-      }
-   }
 }
