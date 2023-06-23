@@ -30,8 +30,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -220,6 +222,53 @@ class QMetaDataVariableInterpreterTest extends BaseTest
       // this one doesn't count as "looking like a variable" - because the "prefix" (notValid) isn't a value map... //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertEquals("${notValid.notFound}", variableInterpreter.interpretForObject("${notValid.notFound}", "--"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetBooleanFromPropertyOrEnvironment()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+
+      //////////////////////////////////////////////////////////
+      // if neither prop nor env is set, get back the default //
+      //////////////////////////////////////////////////////////
+      assertFalse(interpreter.getBooleanFromPropertyOrEnvironment("notSet", "NOT_SET", false));
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("notSet", "NOT_SET", true));
+
+      /////////////////////////////////////////////
+      // unrecognized values are same as not set //
+      /////////////////////////////////////////////
+      System.setProperty("unrecognized", "asdf");
+      interpreter.setEnvironmentOverrides(Map.of("UNRECOGNIZED", "1234"));
+      assertFalse(interpreter.getBooleanFromPropertyOrEnvironment("unrecognized", "UNRECOGNIZED", false));
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("unrecognized", "UNRECOGNIZED", true));
+
+      /////////////////////////////////
+      // if only prop is set, get it //
+      /////////////////////////////////
+      assertFalse(interpreter.getBooleanFromPropertyOrEnvironment("foo.enabled", "FOO_ENABLED", false));
+      System.setProperty("foo.enabled", "true");
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("foo.enabled", "FOO_ENABLED", false));
+
+      ////////////////////////////////
+      // if only env is set, get it //
+      ////////////////////////////////
+      assertFalse(interpreter.getBooleanFromPropertyOrEnvironment("bar.enabled", "BAR_ENABLED", false));
+      interpreter.setEnvironmentOverrides(Map.of("BAR_ENABLED", "true"));
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("bar.enabled", "BAR_ENABLED", false));
+
+      ///////////////////////////////////
+      // if both are set, get the prop //
+      ///////////////////////////////////
+      System.setProperty("baz.enabled", "true");
+      interpreter.setEnvironmentOverrides(Map.of("BAZ_ENABLED", "false"));
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("baz.enabled", "BAZ_ENABLED", true));
+      assertTrue(interpreter.getBooleanFromPropertyOrEnvironment("baz.enabled", "BAZ_ENABLED", false));
    }
 
 

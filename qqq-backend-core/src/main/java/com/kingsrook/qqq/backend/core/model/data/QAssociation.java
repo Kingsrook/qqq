@@ -19,22 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.model.data;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /*******************************************************************************
- ** Interface for the Aggregate action.
+ ** Annotation to place onto fields in a QRecordEntity, to mark them as associated
+ ** record lists
  **
  *******************************************************************************/
-public interface AggregateInterface extends BaseQueryInterface
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface QAssociation
 {
    /*******************************************************************************
     **
     *******************************************************************************/
-   AggregateOutput execute(AggregateInput aggregateInput) throws QException;
+   String name();
+
 }

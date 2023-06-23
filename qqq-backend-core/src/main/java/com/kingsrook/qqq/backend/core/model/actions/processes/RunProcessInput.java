@@ -77,6 +77,17 @@ public class RunProcessInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getActionIdentity()
+   {
+      return (getClass().getSimpleName() + ":" + getProcessName());
+   }
+
+
+
+   /*******************************************************************************
     ** e.g., for steps after the first step in a process, seed the data in a run
     ** function request from a process state.
     **

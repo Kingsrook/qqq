@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,164 +19,176 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.data.testentities;
+package com.kingsrook.qqq.backend.core.model.querystats;
 
 
-import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
- ** Sample of an entity that can be converted to & from a QRecord
+ ** QRecord Entity for QueryStatOrderByField table
  *******************************************************************************/
-public class Item extends QRecordEntity
+public class QueryStatOrderByField extends QRecordEntity
 {
-   @QField(isRequired = true, label = "SKU")
-   private String sku;
+   public static final String TABLE_NAME = "queryStatOrderByField";
 
-   @QField()
-   private String description;
+   @QField(isEditable = false)
+   private Integer id;
 
-   @QField(isEditable = false, displayFormat = DisplayFormat.COMMAS)
-   private Integer quantity;
+   @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
+   private Integer queryStatId;
 
-   @QField()
-   private BigDecimal price;
+   @QField(label = "Table", possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
 
-   @QField(backendName = "is_featured")
-   private Boolean featured;
+   @QField(maxLength = 50, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
+   private String name;
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Default constructor
     *******************************************************************************/
-   public Item()
+   public QueryStatOrderByField()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Constructor that takes a QRecord
     *******************************************************************************/
-   public Item(QRecord qRecord)
+   public QueryStatOrderByField(QRecord record)
    {
-      populateFromQRecord(qRecord);
+      populateFromQRecord(record);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for sku
-    **
+    ** Getter for id
     *******************************************************************************/
-   public String getSku()
+   public Integer getId()
    {
-      return sku;
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for sku
-    **
+    ** Setter for id
     *******************************************************************************/
-   public void setSku(String sku)
+   public void setId(Integer id)
    {
-      this.sku = sku;
+      this.id = id;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
-    **
+    ** Fluent setter for id
     *******************************************************************************/
-   public String getDescription()
+   public QueryStatOrderByField withId(Integer id)
    {
-      return description;
+      this.id = id;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
-    **
+    ** Getter for queryStatId
     *******************************************************************************/
-   public void setDescription(String description)
+   public Integer getQueryStatId()
    {
-      this.description = description;
+      return (this.queryStatId);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for quantity
-    **
+    ** Setter for queryStatId
     *******************************************************************************/
-   public Integer getQuantity()
+   public void setQueryStatId(Integer queryStatId)
    {
-      return quantity;
+      this.queryStatId = queryStatId;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for quantity
-    **
+    ** Fluent setter for queryStatId
     *******************************************************************************/
-   public void setQuantity(Integer quantity)
+   public QueryStatOrderByField withQueryStatId(Integer queryStatId)
    {
-      this.quantity = quantity;
+      this.queryStatId = queryStatId;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for price
-    **
+    ** Getter for qqqTableId
     *******************************************************************************/
-   public BigDecimal getPrice()
+   public Integer getQqqTableId()
    {
-      return price;
+      return (this.qqqTableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for price
-    **
+    ** Setter for qqqTableId
     *******************************************************************************/
-   public void setPrice(BigDecimal price)
+   public void setQqqTableId(Integer qqqTableId)
    {
-      this.price = price;
+      this.qqqTableId = qqqTableId;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for featured
-    **
+    ** Fluent setter for qqqTableId
     *******************************************************************************/
-   public Boolean getFeatured()
+   public QueryStatOrderByField withQqqTableId(Integer qqqTableId)
    {
-      return featured;
+      this.qqqTableId = qqqTableId;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for featured
-    **
+    ** Getter for name
     *******************************************************************************/
-   public void setFeatured(Boolean featured)
+   public String getName()
    {
-      this.featured = featured;
+      return (this.name);
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public QueryStatOrderByField withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
 }

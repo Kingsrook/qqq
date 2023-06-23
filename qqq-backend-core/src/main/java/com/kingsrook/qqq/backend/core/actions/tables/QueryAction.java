@@ -34,8 +34,10 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -47,12 +49,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -87,12 +91,14 @@ public class QueryAction
          throw (new QException("Table name was not specified in query input"));
       }
 
-      if(queryInput.getTable() == null)
+      QTableMetaData table = queryInput.getTable();
+      if(table == null)
       {
          throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
       }
 
-      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
+      QBackendMetaData backend = queryInput.getBackend();
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 
       if(queryInput.getRecordPipe() != null)
@@ -109,11 +115,16 @@ public class QueryAction
          }
       }
 
+      QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, queryInput.getFilter());
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(queryInput.getBackend());
-      // todo pre-customization - just get to modify the request?
-      QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
-      // todo post-customization - can do whatever w/ the result if you want
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
+
+      QueryInterface queryInterface = qModule.getQueryInterface();
+      queryInterface.setQueryStat(queryStat);
+      QueryOutput queryOutput = queryInterface.execute(queryInput);
+
+      QueryStatManager.getInstance().add(queryStat);
 
       if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
       {

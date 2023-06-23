@@ -22,70 +22,35 @@
 package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
-import java.math.BigDecimal;
 import com.kingsrook.qqq.backend.core.model.data.QField;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 
 
 /*******************************************************************************
  ** Sample of an entity that can be converted to & from a QRecord
  *******************************************************************************/
-public class Item extends QRecordEntity
+public class LineItem extends QRecordEntity
 {
-   @QField(isRequired = true, label = "SKU")
+   @QField()
    private String sku;
 
    @QField()
-   private String description;
-
-   @QField(isEditable = false, displayFormat = DisplayFormat.COMMAS)
    private Integer quantity;
-
-   @QField()
-   private BigDecimal price;
-
-   @QField(backendName = "is_featured")
-   private Boolean featured;
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public Item()
-   {
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public Item(QRecord qRecord)
-   {
-      populateFromQRecord(qRecord);
-   }
 
 
 
    /*******************************************************************************
     ** Getter for sku
-    **
     *******************************************************************************/
    public String getSku()
    {
-      return sku;
+      return (this.sku);
    }
 
 
 
    /*******************************************************************************
     ** Setter for sku
-    **
     *******************************************************************************/
    public void setSku(String sku)
    {
@@ -95,41 +60,28 @@ public class Item extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for description
-    **
+    ** Fluent setter for sku
     *******************************************************************************/
-   public String getDescription()
+   public LineItem withSku(String sku)
    {
-      return description;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for description
-    **
-    *******************************************************************************/
-   public void setDescription(String description)
-   {
-      this.description = description;
+      this.sku = sku;
+      return (this);
    }
 
 
 
    /*******************************************************************************
     ** Getter for quantity
-    **
     *******************************************************************************/
    public Integer getQuantity()
    {
-      return quantity;
+      return (this.quantity);
    }
 
 
 
    /*******************************************************************************
     ** Setter for quantity
-    **
     *******************************************************************************/
    public void setQuantity(Integer quantity)
    {
@@ -139,44 +91,12 @@ public class Item extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for price
-    **
+    ** Fluent setter for quantity
     *******************************************************************************/
-   public BigDecimal getPrice()
+   public LineItem withQuantity(Integer quantity)
    {
-      return price;
+      this.quantity = quantity;
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Setter for price
-    **
-    *******************************************************************************/
-   public void setPrice(BigDecimal price)
-   {
-      this.price = price;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for featured
-    **
-    *******************************************************************************/
-   public Boolean getFeatured()
-   {
-      return featured;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for featured
-    **
-    *******************************************************************************/
-   public void setFeatured(Boolean featured)
-   {
-      this.featured = featured;
-   }
 }

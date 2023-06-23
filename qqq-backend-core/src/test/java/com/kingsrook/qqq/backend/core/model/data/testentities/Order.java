@@ -22,7 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
-import java.math.BigDecimal;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
@@ -30,130 +31,74 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 /*******************************************************************************
  ** Sample of an entity that can be converted to & from a QRecord
  *******************************************************************************/
-public class ItemWithPrimitives extends QRecordEntity
+public class Order extends QRecordEntity
 {
    @QField()
-   private String sku;
-  
-   @QField()
-   private String description;
+   private String orderNo;
 
-   @QField()
-   private int quantity;
-
-   @QField()
-   private BigDecimal price;
-
-   @QField()
-   private boolean featured;
+   @QAssociation(name = "lineItems")
+   private List<LineItem> lineItems;
 
 
 
    /*******************************************************************************
-    ** Getter for sku
-    **
+    ** Getter for orderNo
     *******************************************************************************/
-   public String getSku()
+   public String getOrderNo()
    {
-      return sku;
+      return (this.orderNo);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for sku
-    **
+    ** Setter for orderNo
     *******************************************************************************/
-   public void setSku(String sku)
+   public void setOrderNo(String orderNo)
    {
-      this.sku = sku;
+      this.orderNo = orderNo;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
-    **
+    ** Fluent setter for orderNo
     *******************************************************************************/
-   public String getDescription()
+   public Order withOrderNo(String orderNo)
    {
-      return description;
+      this.orderNo = orderNo;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
-    **
+    ** Getter for lineItems
     *******************************************************************************/
-   public void setDescription(String description)
+   public List<LineItem> getLineItems()
    {
-      this.description = description;
+      return (this.lineItems);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for quantity
-    **
+    ** Setter for lineItems
     *******************************************************************************/
-   public int getQuantity()
+   public void setLineItems(List<LineItem> lineItems)
    {
-      return quantity;
+      this.lineItems = lineItems;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for quantity
-    **
+    ** Fluent setter for lineItems
     *******************************************************************************/
-   public void setQuantity(int quantity)
+   public Order withLineItems(List<LineItem> lineItems)
    {
-      this.quantity = quantity;
+      this.lineItems = lineItems;
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for price
-    **
-    *******************************************************************************/
-   public BigDecimal getPrice()
-   {
-      return price;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for price
-    **
-    *******************************************************************************/
-   public void setPrice(BigDecimal price)
-   {
-      this.price = price;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for featured
-    **
-    *******************************************************************************/
-   public boolean getFeatured()
-   {
-      return featured;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for featured
-    **
-    *******************************************************************************/
-   public void setFeatured(boolean featured)
-   {
-      this.featured = featured;
-   }
 }

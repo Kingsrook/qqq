@@ -69,6 +69,16 @@ class QTableMetaDataTest extends BaseTest
 
       // table:false & backend:false = false
       assertFalse(new QTableMetaData().withoutCapability(capability).isCapabilityEnabled(new QBackendMetaData().withoutCapability(capability), capability));
+
+      // backend false, but then true = true
+      assertTrue(new QTableMetaData().isCapabilityEnabled(new QBackendMetaData().withoutCapability(capability).withCapability(capability), capability));
+
+      // backend true, but then false = false
+      assertFalse(new QTableMetaData().isCapabilityEnabled(new QBackendMetaData().withCapability(capability).withoutCapability(capability), capability));
+
+      // table true, but then false = true
+      assertFalse(new QTableMetaData().withCapability(capability).withoutCapability(capability).isCapabilityEnabled(new QBackendMetaData(), capability));
+
    }
 
 }

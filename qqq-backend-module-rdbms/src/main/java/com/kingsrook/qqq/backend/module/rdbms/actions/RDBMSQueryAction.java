@@ -100,6 +100,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
+         setSqlAndJoinsInQueryStat(sql, joinsContext);
+
          Connection connection;
          boolean    needToCloseConnection = false;
          if(queryInput.getTransaction() != null && queryInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
@@ -145,6 +147,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
+                  setQueryStatFirstResultTime();
+
                   QRecord record = new QRecord();
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
