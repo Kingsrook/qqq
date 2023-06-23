@@ -64,9 +64,12 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
          Velocity.init();
          Context context = new VelocityContext();
 
-         for(Map.Entry<String, ?> entry : input.getContext().entrySet())
+         if(input.getContext() != null)
          {
-            context.put(entry.getKey(), entry.getValue());
+            for(Map.Entry<String, ?> entry : input.getContext().entrySet())
+            {
+               context.put(entry.getKey(), entry.getValue());
+            }
          }
 
          setupEventHandlers(context);
