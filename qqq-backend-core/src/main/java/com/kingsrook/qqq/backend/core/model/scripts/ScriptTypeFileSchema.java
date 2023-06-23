@@ -23,16 +23,19 @@ package com.kingsrook.qqq.backend.core.model.scripts;
 
 
 import java.time.Instant;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ScriptType extends QRecordEntity
+public class ScriptTypeFileSchema extends QRecordEntity
 {
-   public static final String TABLE_NAME = "scriptType";
+   public static final String TABLE_NAME = "scriptTypeFileSchema";
 
    @QField(isEditable = false)
    private Integer id;
@@ -43,34 +46,50 @@ public class ScriptType extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField()
+   @QField(possibleValueSourceName = "scriptType")
+   private Integer scriptTypeId;
+
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
    private String name;
 
-   @QField()
-   private String helpText;
+   @QField(maxLength = 50, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String fileType;
 
-   @QField()
-   private String sampleCode;
 
-   @QField(possibleValueSourceName = ScriptTypeFileMode.NAME)
-   private Integer fileMode;
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ScriptTypeFileSchema()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ScriptTypeFileSchema(QRecord qRecord) throws QException
+   {
+      populateFromQRecord(qRecord);
+   }
 
 
 
    /*******************************************************************************
     ** Getter for id
-    **
     *******************************************************************************/
    public Integer getId()
    {
-      return id;
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
     ** Setter for id
-    **
     *******************************************************************************/
    public void setId(Integer id)
    {
@@ -81,9 +100,8 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Fluent setter for id
-    **
     *******************************************************************************/
-   public ScriptType withId(Integer id)
+   public ScriptTypeFileSchema withId(Integer id)
    {
       this.id = id;
       return (this);
@@ -93,18 +111,16 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Getter for createDate
-    **
     *******************************************************************************/
    public Instant getCreateDate()
    {
-      return createDate;
+      return (this.createDate);
    }
 
 
 
    /*******************************************************************************
     ** Setter for createDate
-    **
     *******************************************************************************/
    public void setCreateDate(Instant createDate)
    {
@@ -115,9 +131,8 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Fluent setter for createDate
-    **
     *******************************************************************************/
-   public ScriptType withCreateDate(Instant createDate)
+   public ScriptTypeFileSchema withCreateDate(Instant createDate)
    {
       this.createDate = createDate;
       return (this);
@@ -127,18 +142,16 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Getter for modifyDate
-    **
     *******************************************************************************/
    public Instant getModifyDate()
    {
-      return modifyDate;
+      return (this.modifyDate);
    }
 
 
 
    /*******************************************************************************
     ** Setter for modifyDate
-    **
     *******************************************************************************/
    public void setModifyDate(Instant modifyDate)
    {
@@ -149,9 +162,8 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Fluent setter for modifyDate
-    **
     *******************************************************************************/
-   public ScriptType withModifyDate(Instant modifyDate)
+   public ScriptTypeFileSchema withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
       return (this);
@@ -160,19 +172,48 @@ public class ScriptType extends QRecordEntity
 
 
    /*******************************************************************************
+    ** Getter for scriptTypeId
+    *******************************************************************************/
+   public Integer getScriptTypeId()
+   {
+      return (this.scriptTypeId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptTypeId
+    *******************************************************************************/
+   public void setScriptTypeId(Integer scriptTypeId)
+   {
+      this.scriptTypeId = scriptTypeId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptTypeId
+    *******************************************************************************/
+   public ScriptTypeFileSchema withScriptTypeId(Integer scriptTypeId)
+   {
+      this.scriptTypeId = scriptTypeId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for name
-    **
     *******************************************************************************/
    public String getName()
    {
-      return name;
+      return (this.name);
    }
 
 
 
    /*******************************************************************************
     ** Setter for name
-    **
     *******************************************************************************/
    public void setName(String name)
    {
@@ -183,9 +224,8 @@ public class ScriptType extends QRecordEntity
 
    /*******************************************************************************
     ** Fluent setter for name
-    **
     *******************************************************************************/
-   public ScriptType withName(String name)
+   public ScriptTypeFileSchema withName(String name)
    {
       this.name = name;
       return (this);
@@ -194,99 +234,31 @@ public class ScriptType extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for helpText
-    **
+    ** Getter for fileType
     *******************************************************************************/
-   public String getHelpText()
+   public String getFileType()
    {
-      return helpText;
+      return (this.fileType);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for helpText
-    **
+    ** Setter for fileType
     *******************************************************************************/
-   public void setHelpText(String helpText)
+   public void setFileType(String fileType)
    {
-      this.helpText = helpText;
+      this.fileType = fileType;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for helpText
-    **
+    ** Fluent setter for fileType
     *******************************************************************************/
-   public ScriptType withHelpText(String helpText)
+   public ScriptTypeFileSchema withFileType(String fileType)
    {
-      this.helpText = helpText;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for sampleCode
-    **
-    *******************************************************************************/
-   public String getSampleCode()
-   {
-      return sampleCode;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for sampleCode
-    **
-    *******************************************************************************/
-   public void setSampleCode(String sampleCode)
-   {
-      this.sampleCode = sampleCode;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for sampleCode
-    **
-    *******************************************************************************/
-   public ScriptType withSampleCode(String sampleCode)
-   {
-      this.sampleCode = sampleCode;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for fileMode
-    *******************************************************************************/
-   public Integer getFileMode()
-   {
-      return (this.fileMode);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for fileMode
-    *******************************************************************************/
-   public void setFileMode(Integer fileMode)
-   {
-      this.fileMode = fileMode;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for fileMode
-    *******************************************************************************/
-   public ScriptType withFileMode(Integer fileMode)
-   {
-      this.fileMode = fileMode;
+      this.fileType = fileType;
       return (this);
    }
 

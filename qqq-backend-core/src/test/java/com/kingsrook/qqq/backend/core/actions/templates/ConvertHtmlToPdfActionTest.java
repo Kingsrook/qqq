@@ -30,10 +30,10 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.templates.ConvertHtmlToPdfInput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateInput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.templates.ConvertHtmlToPdfInput;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
 import org.junit.jupiter.api.Test;
 

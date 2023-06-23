@@ -123,6 +123,29 @@ class QRecordEntityTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testQRecordFromJoinToItem() throws QException
+   {
+      QRecord qRecord = new QRecord()
+         .withValue("item.sku", "WXYZ-9876")
+         .withValue("item.description", "Items are cool")
+         .withValue("item.quantity", 42)
+         .withValue("item.price", new BigDecimal("3.50"))
+         .withValue("item.featured", false);
+
+      Item item = QRecordEntity.fromQRecord(Item.class, qRecord, "item.");
+      assertEquals("WXYZ-9876", item.getSku());
+      assertEquals("Items are cool", item.getDescription());
+      assertEquals(42, item.getQuantity());
+      assertEquals(new BigDecimal("3.50"), item.getPrice());
+      assertFalse(item.getFeatured());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testItemWithPrimitivesToQRecord() throws QException
    {
       ItemWithPrimitives item = new ItemWithPrimitives();

@@ -62,10 +62,22 @@ public abstract class QRecordEntity
     *******************************************************************************/
    public static <T extends QRecordEntity> T fromQRecord(Class<T> c, QRecord qRecord) throws QException
    {
+      return (QRecordEntity.fromQRecord(c, qRecord, ""));
+   }
+
+
+
+   /*******************************************************************************
+    ** Build an entity of this QRecord type from a QRecord - where the fields for
+    ** this entity have the given prefix - e.g., if they were selected as part of a join.
+    **
+    *******************************************************************************/
+   public static <T extends QRecordEntity> T fromQRecord(Class<T> c, QRecord qRecord, String fieldNamePrefix) throws QException
+   {
       try
       {
          T entity = c.getConstructor().newInstance();
-         entity.populateFromQRecord(qRecord);
+         entity.populateFromQRecord(qRecord, fieldNamePrefix);
          return (entity);
       }
       catch(Exception e)
@@ -82,13 +94,31 @@ public abstract class QRecordEntity
     *******************************************************************************/
    protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord) throws QRuntimeException
    {
+      populateFromQRecord(qRecord, "");
+   }
+
+
+
+   /*******************************************************************************
+    ** Build an entity of this QRecord type from a QRecord - where the fields for
+    ** this entity have the given prefix - e.g., if they were selected as part of a join.
+    **
+    *******************************************************************************/
+   protected <T extends QRecordEntity> void populateFromQRecord(QRecord qRecord, String fieldNamePrefix) throws QRuntimeException
+   {
       try
       {
          List<QRecordEntityField> fieldList = getFieldList(this.getClass());
          originalRecordValues = new HashMap<>();
+
+         if(fieldNamePrefix == null)
+         {
+            fieldNamePrefix = "";
+         }
+
          for(QRecordEntityField qRecordEntityField : fieldList)
          {
-            Serializable value      = qRecord.getValue(qRecordEntityField.getFieldName());
+            Serializable value      = qRecord.getValue(fieldNamePrefix + qRecordEntityField.getFieldName());
             Object       typedValue = qRecordEntityField.convertValueType(value);
             qRecordEntityField.getSetter().invoke(this, typedValue);
             originalRecordValues.put(qRecordEntityField.getFieldName(), value);

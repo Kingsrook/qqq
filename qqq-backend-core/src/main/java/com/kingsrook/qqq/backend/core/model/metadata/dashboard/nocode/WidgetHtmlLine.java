@@ -28,8 +28,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.templates.RenderTemplateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateInput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
 
 

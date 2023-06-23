@@ -28,8 +28,8 @@ import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateInput;
-import com.kingsrook.qqq.backend.core.model.templates.RenderTemplateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateInput;
+import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.velocity.VelocityContext;
@@ -62,7 +62,12 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
       if(TemplateType.VELOCITY.equals(input.getTemplateType()))
       {
          Velocity.init();
-         Context context = new VelocityContext(input.getContext());
+         Context context = new VelocityContext();
+
+         for(Map.Entry<String, ?> entry : input.getContext().entrySet())
+         {
+            context.put(entry.getKey(), entry.getValue());
+         }
 
          setupEventHandlers(context);
 

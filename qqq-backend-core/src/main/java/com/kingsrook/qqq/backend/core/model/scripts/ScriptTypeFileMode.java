@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,51 +19,78 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.templates;
+package com.kingsrook.qqq.backend.core.model.scripts;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 
 
 /*******************************************************************************
- **
+ ** ScriptTypeFileMode - possible value enum
  *******************************************************************************/
-public class ConvertHtmlToPdfOutput extends AbstractActionOutput
+public enum ScriptTypeFileMode implements PossibleValueEnum<Integer>
 {
-   private String result;
+   SINGLE(1, "Single File"),
+   MULTI_PRE_DEFINED(2, "Multi File (Pre-defined)"),
+   MULTI_AD_HOC(3, "Multi File (ad hoc)");
+
+   private final Integer id;
+   private final String  label;
+
+   public static final String NAME = "scriptTypeFileMode";
 
 
 
    /*******************************************************************************
-    ** Getter for result
     **
     *******************************************************************************/
-   public String getResult()
+   ScriptTypeFileMode(Integer id, String label)
    {
-      return result;
+      this.id = id;
+      this.label = label;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for result
+    ** Getter for id
     **
     *******************************************************************************/
-   public void setResult(String result)
+   public Integer getId()
    {
-      this.result = result;
+      return id;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for result
+    ** Getter for label
     **
     *******************************************************************************/
-   public ConvertHtmlToPdfOutput withResult(String result)
+   public String getLabel()
    {
-      this.result = result;
-      return (this);
+      return label;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Integer getPossibleValueId()
+   {
+      return (getId());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getPossibleValueLabel()
+   {
+      return (getLabel());
+   }
 }
