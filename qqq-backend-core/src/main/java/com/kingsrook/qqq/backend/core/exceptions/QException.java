@@ -22,12 +22,19 @@
 package com.kingsrook.qqq.backend.core.exceptions;
 
 
+import org.apache.logging.log4j.Level;
+
+
 /*******************************************************************************
  * Base class for checked exceptions thrown in qqq.
  *
  *******************************************************************************/
 public class QException extends Exception
 {
+   private boolean hasLoggedWarning;
+   private boolean hasLoggedError;
+
+
 
    /*******************************************************************************
     ** Constructor of message
@@ -59,4 +66,102 @@ public class QException extends Exception
    {
       super(message, cause);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasLoggedWarning
+    *******************************************************************************/
+   public boolean getHasLoggedWarning()
+   {
+      return (this.hasLoggedWarning);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasLoggedWarning
+    *******************************************************************************/
+   public void setHasLoggedWarning(boolean hasLoggedWarning)
+   {
+      this.hasLoggedWarning = hasLoggedWarning;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hasLoggedWarning
+    *******************************************************************************/
+   public QException withHasLoggedWarning(boolean hasLoggedWarning)
+   {
+      this.hasLoggedWarning = hasLoggedWarning;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasLoggedError
+    *******************************************************************************/
+   public boolean getHasLoggedError()
+   {
+      return (this.hasLoggedError);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasLoggedError
+    *******************************************************************************/
+   public void setHasLoggedError(boolean hasLoggedError)
+   {
+      this.hasLoggedError = hasLoggedError;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hasLoggedError
+    *******************************************************************************/
+   public QException withHasLoggedError(boolean hasLoggedError)
+   {
+      this.hasLoggedError = hasLoggedError;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** helper function for getting if level logged
+    *******************************************************************************/
+   public boolean hasLoggedLevel(Level level)
+   {
+      if(Level.WARN.equals(level))
+      {
+         return (hasLoggedWarning);
+      }
+      if(Level.ERROR.equals(level))
+      {
+         return (hasLoggedError);
+      }
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
+    ** helper function for setting if level logged
+    *******************************************************************************/
+   public void setHasLoggedLevel(Level level)
+   {
+      if(Level.WARN.equals(level))
+      {
+         setHasLoggedWarning(true);
+      }
+      if(Level.ERROR.equals(level))
+      {
+         setHasLoggedError(true);
+      }
+   }
+
 }

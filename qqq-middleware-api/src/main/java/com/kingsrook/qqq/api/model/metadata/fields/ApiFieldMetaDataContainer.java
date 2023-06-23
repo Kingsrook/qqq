@@ -24,18 +24,20 @@ package com.kingsrook.qqq.api.model.metadata.fields;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
+import java.util.Objects;
+import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QMiddlewareFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
+public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
 {
    private Map<String, ApiFieldMetaData> apis;
 
+   private ApiFieldMetaData defaultApiFieldMetaData;
 
 
    /*******************************************************************************
@@ -54,7 +56,18 @@ public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
     *******************************************************************************/
    public static ApiFieldMetaDataContainer of(QFieldMetaData field)
    {
-      return ((ApiFieldMetaDataContainer) field.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+      return ((ApiFieldMetaDataContainer) field.getSupplementalMetaData(ApiSupplementType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    ** either get the container attached to a field - or a new one - note - the new
+    ** one will NOT be attached to the field!!
+    *******************************************************************************/
+   public static ApiFieldMetaDataContainer ofOrNew(QFieldMetaData field)
+   {
+      return (Objects.requireNonNullElseGet(of(field), ApiFieldMetaDataContainer::new));
    }
 
 
@@ -70,16 +83,16 @@ public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
 
 
    /*******************************************************************************
-    ** Getter for apis
+    ** Getter the apiFieldMetaData for a specific api, or the container's default
     *******************************************************************************/
    public ApiFieldMetaData getApiFieldMetaData(String apiName)
    {
       if(this.apis == null)
       {
-         return (null);
+         return (defaultApiFieldMetaData);
       }
 
-      return (this.apis.get(apiName));
+      return (this.apis.getOrDefault(apiName, defaultApiFieldMetaData));
    }
 
 
@@ -115,6 +128,37 @@ public class ApiFieldMetaDataContainer extends QMiddlewareFieldMetaData
          this.apis = new LinkedHashMap<>();
       }
       this.apis.put(apiName, apiFieldMetaData);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultApiFieldMetaData
+    *******************************************************************************/
+   public ApiFieldMetaData getDefaultApiFieldMetaData()
+   {
+      return (this.defaultApiFieldMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultApiFieldMetaData
+    *******************************************************************************/
+   public void setDefaultApiFieldMetaData(ApiFieldMetaData defaultApiFieldMetaData)
+   {
+      this.defaultApiFieldMetaData = defaultApiFieldMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultApiFieldMetaData
+    *******************************************************************************/
+   public ApiFieldMetaDataContainer withDefaultApiFieldMetaData(ApiFieldMetaData defaultApiFieldMetaData)
+   {
+      this.defaultApiFieldMetaData = defaultApiFieldMetaData;
       return (this);
    }
 

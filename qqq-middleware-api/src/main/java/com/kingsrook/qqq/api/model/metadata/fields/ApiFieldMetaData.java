@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.api.model.metadata.fields;
 
 
+import java.util.Map;
+import com.kingsrook.qqq.api.model.openapi.Example;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -35,9 +37,13 @@ public class ApiFieldMetaData
    private String finalVersion;
 
    private String apiFieldName;
+   private String description;
 
    private Boolean isExcluded;
    private String  replacedByFieldName;
+
+   private Example              example;
+   private Map<String, Example> examples;
 
 
 
@@ -211,6 +217,99 @@ public class ApiFieldMetaData
    public ApiFieldMetaData withApiFieldName(String apiFieldName)
    {
       this.apiFieldName = apiFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public ApiFieldMetaData withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for example
+    *******************************************************************************/
+   public Example getExample()
+   {
+      return (this.example);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for example
+    *******************************************************************************/
+   public void setExample(Example example)
+   {
+      this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for example
+    *******************************************************************************/
+   public ApiFieldMetaData withExample(Example example)
+   {
+      this.example = example;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for examples
+    *******************************************************************************/
+   public Map<String, Example> getExamples()
+   {
+      return (this.examples);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for examples
+    *******************************************************************************/
+   public void setExamples(Map<String, Example> examples)
+   {
+      this.examples = examples;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for examples
+    *******************************************************************************/
+   public ApiFieldMetaData withExamples(Map<String, Example> examples)
+   {
+      this.examples = examples;
       return (this);
    }
 

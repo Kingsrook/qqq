@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 
 
@@ -50,7 +51,7 @@ public class TableTrigger extends QRecordEntity
    @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
    private String tableName;
 
-   @QField(/* todo possibleValueSourceName = */)
+   @QField(possibleValueSourceName = SavedFilter.TABLE_NAME)
    private Integer filterId;
 
    @QField(possibleValueSourceName = Script.TABLE_NAME)

@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -71,11 +72,14 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      if(runBackendStepInput.getFrontendStepBehavior() != null && runBackendStepInput.getFrontendStepBehavior().equals(RunProcessInput.FrontendStepBehavior.SKIP))
-      {
-         LOG.debug("Skipping preview because frontend behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
-         return;
-      }
+      //////////////////////////////
+      // set up the extract steps //
+      //////////////////////////////
+      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      RecordPipe          recordPipe  = new RecordPipe();
+      extractStep.setLimit(limit);
+      extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       /////////////////////////////////////////////////////////////////
       // if we're running inside an automation, then skip this step. //
@@ -86,17 +90,26 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      //////////////////////////////////////////
-      // set up the extract & transform steps //
-      //////////////////////////////////////////
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      RecordPipe          recordPipe  = new RecordPipe();
-      extractStep.setLimit(limit);
-      extractStep.setRecordPipe(recordPipe);
-      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if skipping frontend steps, skip this action -                                                                 //
+      // but, if inside an (ideally, only async) API call, at least do the count, so status calls can get x of y status //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(RunProcessInput.FrontendStepBehavior.SKIP.equals(runBackendStepInput.getFrontendStepBehavior()))
+      {
+         if(QContext.getQSession().getValue("apiVersion") != null)
+         {
+            countRecords(runBackendStepInput, runBackendStepOutput, extractStep);
+         }
+
+         LOG.debug("Skipping preview because frontend behavior is [" + RunProcessInput.FrontendStepBehavior.SKIP + "].");
+         return;
+      }
 
       countRecords(runBackendStepInput, runBackendStepOutput, extractStep);
 
+      //////////////////////////////
+      // setup the transform step //
+      //////////////////////////////
       AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 

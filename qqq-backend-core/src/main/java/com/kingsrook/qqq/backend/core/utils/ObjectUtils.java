@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
@@ -94,6 +97,46 @@ public class ObjectUtils
       }
 
       return (defaultIfThrew);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> void ifNotNull(T object, Consumer<T> consumer)
+   {
+      if(object != null)
+      {
+         consumer.accept(object);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T, E extends Exception> void ifNotNullUnsafe(T object, UnsafeConsumer<T, E> consumer) throws E
+   {
+      if(object != null)
+      {
+         consumer.run(object);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T> T requireConditionElse(T a, Predicate<T> condition, T b)
+   {
+      if(condition.test(a))
+      {
+         return (a);
+      }
+      return (b);
    }
 
 }

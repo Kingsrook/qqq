@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -57,12 +58,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponen
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QMiddlewareTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteLoadStep;
@@ -95,6 +97,13 @@ public class QInstanceEnricher
    // todo - come up w/ a way for app devs to set configs! //
    //////////////////////////////////////////////////////////
    private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+
+   //////////////////////////////////////////////////////////////////////////////////////////////////
+   // let an instance define mappings to be applied during name-to-label enrichments,              //
+   // e.g., to avoid ever incorrectly camel-casing an acronym (e.g., "Tla" shoudl always be "TLA") //
+   // or to expand abbreviations in code (e.g., "Addr" should always be "Address"                  //
+   //////////////////////////////////////////////////////////////////////////////////////////////////
+   private static final Map<String, String> labelMappings = new LinkedHashMap<>();
 
 
 
@@ -261,9 +270,9 @@ public class QInstanceEnricher
       {
          table.getFields().values().forEach(this::enrichField);
 
-         for(QMiddlewareTableMetaData middlewareTableMetaData : CollectionUtils.nonNullMap(table.getMiddlewareMetaData()).values())
+         for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
          {
-            middlewareTableMetaData.enrich(table);
+            supplementalTableMetaData.enrich(table);
          }
       }
 
@@ -365,6 +374,11 @@ public class QInstanceEnricher
       if(process.getStepList() != null)
       {
          process.getStepList().forEach(this::enrichStep);
+      }
+
+      for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
+      {
+         supplementalProcessMetaData.enrich(this, process);
       }
 
       enrichPermissionRules(process);
@@ -641,7 +655,17 @@ public class QInstanceEnricher
          ////////////////////////////////////////////////////////////////
          .replaceAll("([0-9])([A-Za-z])", "$1 $2");
 
-      return (name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix);
+      String label = name.substring(0, 1).toUpperCase(Locale.ROOT) + suffix;
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // apply any label mappings - e.g., to force app-specific acronyms/initialisms to all-caps //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      for(Map.Entry<String, String> entry : labelMappings.entrySet())
+      {
+         label = label.replaceAll(entry.getKey(), entry.getValue());
+      }
+
+      return (label);
    }
 
 
@@ -1105,4 +1129,35 @@ public class QInstanceEnricher
    {
       return (this.joinGraph);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void addLabelMapping(String from, String to)
+   {
+      labelMappings.put(from, to);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void removeLabelMapping(String from)
+   {
+      labelMappings.remove(from);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void clearLabelMappings()
+   {
+      labelMappings.clear();
+   }
+
 }

@@ -19,17 +19,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
-
-
-import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 /*******************************************************************************
- ** Base-class for instance-level meta-data defined for a specific middleware.
+ ** Base-class for field-level meta-data defined by some supplemental module, etc,
+ ** outside of qqq core
  *******************************************************************************/
-public abstract class QMiddlewareInstanceMetaData
+public abstract class QSupplementalFieldMetaData
 {
    protected String type;
 
@@ -58,33 +55,10 @@ public abstract class QMiddlewareInstanceMetaData
    /*******************************************************************************
     ** Fluent setter for type
     *******************************************************************************/
-   public QMiddlewareInstanceMetaData withType(String type)
+   public QSupplementalFieldMetaData withType(String type)
    {
       this.type = type;
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void enrich(QTableMetaData table)
-   {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void validate(QInstance qInstance, QInstanceValidator validator)
-   {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
-   }
 }

@@ -24,17 +24,17 @@ package com.kingsrook.qqq.api.model.metadata;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.api.ApiMiddlewareType;
+import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiInstanceMetaDataContainer extends QMiddlewareInstanceMetaData
+public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
 {
    private Map<String, ApiInstanceMetaData> apis;
 
@@ -46,7 +46,7 @@ public class ApiInstanceMetaDataContainer extends QMiddlewareInstanceMetaData
     *******************************************************************************/
    public ApiInstanceMetaDataContainer()
    {
-      setType(ApiMiddlewareType.NAME);
+      setType(ApiSupplementType.NAME);
    }
 
 
@@ -56,7 +56,7 @@ public class ApiInstanceMetaDataContainer extends QMiddlewareInstanceMetaData
     *******************************************************************************/
    public static ApiInstanceMetaDataContainer of(QInstance qInstance)
    {
-      return ((ApiInstanceMetaDataContainer) qInstance.getMiddlewareMetaData(ApiMiddlewareType.NAME));
+      return ((ApiInstanceMetaDataContainer) qInstance.getSupplementalMetaData(ApiSupplementType.NAME));
    }
 
 

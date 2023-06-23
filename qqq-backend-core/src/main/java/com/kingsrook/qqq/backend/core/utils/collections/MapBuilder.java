@@ -35,18 +35,18 @@ import java.util.function.Supplier;
  **
  ** Can use it 2 ways:
  ** MapBuilder.of(key, value, key2, value2, ...) => Map (a HashMap)
- ** MapBuilder.<KeyType ValueType>of(SomeMap::new).with(key, value).with(key2, value2)...build() => SomeMap (the type you specify)
+ ** MapBuilder.of(() -> new SomeMap<SomeKeyType, SomeValueType>()).with(key, value).with(key2, value2)...build() => SomeMap (the type you specify)
  *******************************************************************************/
-public class MapBuilder<K, V>
+public class MapBuilder<K, V, M extends Map<K, V>>
 {
-   private Map<K, V> map;
+   private M map;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   private MapBuilder(Map<K, V> map)
+   private MapBuilder(M map)
    {
       this.map = map;
    }
@@ -56,7 +56,7 @@ public class MapBuilder<K, V>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static <K, V> MapBuilder<K, V> of(Supplier<Map<K, V>> mapSupplier)
+   public static <K, V, M extends Map<K, V>> MapBuilder<K, V, M> of(Supplier<M> mapSupplier)
    {
       return (new MapBuilder<>(mapSupplier.get()));
    }
@@ -66,7 +66,7 @@ public class MapBuilder<K, V>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public MapBuilder<K, V> with(K key, V value)
+   public MapBuilder<K, V, M> with(K key, V value)
    {
       map.put(key, value);
       return (this);
@@ -77,7 +77,7 @@ public class MapBuilder<K, V>
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Map<K, V> build()
+   public M build()
    {
       return (this.map);
    }

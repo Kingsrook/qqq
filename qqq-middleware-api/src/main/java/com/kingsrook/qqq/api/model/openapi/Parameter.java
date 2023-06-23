@@ -37,6 +37,7 @@ public class Parameter
    private Schema               schema;
    private Boolean              explode;
    private Map<String, Example> examples;
+   private Example              example;
 
 
 
@@ -252,6 +253,37 @@ public class Parameter
    public Parameter withRequired(Boolean required)
    {
       this.required = required;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for example
+    *******************************************************************************/
+   public Example getExample()
+   {
+      return (this.example);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for examplee
+    *******************************************************************************/
+   public void setExample(Example example)
+   {
+      this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for examplee
+    *******************************************************************************/
+   public Parameter withExample(Example example)
+   {
+      this.example = example;
       return (this);
    }
 

@@ -101,6 +101,17 @@ public class ExecuteCodeAction
             context.putAll(input.getInput());
          }
 
+         /////////////////////////////////////////////////////////////////////////////////
+         // set the qCodeExecutor into any context objects which are QCodeExecutorAware //
+         /////////////////////////////////////////////////////////////////////////////////
+         for(Serializable value : context.values())
+         {
+            if(value instanceof QCodeExecutorAware qCodeExecutorAware)
+            {
+               qCodeExecutorAware.setQCodeExecutor(qCodeExecutor);
+            }
+         }
+
          Serializable codeOutput = qCodeExecutor.execute(codeReference, context, executionLogger);
          output.setOutput(codeOutput);
          executionLogger.acceptExecutionEnd(codeOutput);

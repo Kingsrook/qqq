@@ -23,6 +23,10 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
@@ -31,6 +35,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -195,6 +200,17 @@ public class RunProcessInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public RunProcessInput withValue(String fieldName, Serializable value)
+   {
+      this.processState.getValues().put(fieldName, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for values
     **
     *******************************************************************************/
@@ -269,7 +285,7 @@ public class RunProcessInput extends AbstractActionInput
     *******************************************************************************/
    public String getValueString(String fieldName)
    {
-      return ((String) getValue(fieldName));
+      return (ValueUtils.getValueAsString(getValue(fieldName)));
    }
 
 
@@ -280,7 +296,67 @@ public class RunProcessInput extends AbstractActionInput
     *******************************************************************************/
    public Integer getValueInteger(String fieldName)
    {
-      return ((Integer) getValue(fieldName));
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public BigDecimal getValueBigDecimal(String fieldName)
+   {
+      return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Boolean getValueBoolean(String fieldName)
+   {
+      return (ValueUtils.getValueAsBoolean(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public LocalTime getValueLocalTime(String fieldName)
+   {
+      return (ValueUtils.getValueAsLocalTime(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public LocalDate getValueLocalDate(String fieldName)
+   {
+      return (ValueUtils.getValueAsLocalDate(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public byte[] getValueByteArray(String fieldName)
+   {
+      return (ValueUtils.getValueAsByteArray(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Instant getValueInstant(String fieldName)
+   {
+      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
    }
 
 

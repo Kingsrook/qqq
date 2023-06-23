@@ -85,7 +85,7 @@ public class QFieldMetaData implements Cloneable
 
    private List<FieldAdornment> adornments;
 
-   private Map<String, QMiddlewareFieldMetaData> middlewareMetaData;
+   private Map<String, QSupplementalFieldMetaData> supplementalMetaData;
 
 
 
@@ -840,60 +840,60 @@ public class QFieldMetaData implements Cloneable
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public Map<String, QMiddlewareFieldMetaData> getMiddlewareMetaData()
+   public Map<String, QSupplementalFieldMetaData> getSupplementalMetaData()
    {
-      return (this.middlewareMetaData);
+      return (this.supplementalMetaData);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for middlewareMetaData
+    ** Getter for supplementalMetaData
     *******************************************************************************/
-   public QMiddlewareFieldMetaData getMiddlewareMetaData(String type)
+   public QSupplementalFieldMetaData getSupplementalMetaData(String type)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
          return (null);
       }
-      return this.middlewareMetaData.get(type);
+      return this.supplementalMetaData.get(type);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for middlewareMetaData
+    ** Setter for supplementalMetaData
     *******************************************************************************/
-   public void setMiddlewareMetaData(Map<String, QMiddlewareFieldMetaData> middlewareMetaData)
+   public void setSupplementalMetaData(Map<String, QSupplementalFieldMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QFieldMetaData withMiddlewareMetaData(Map<String, QMiddlewareFieldMetaData> middlewareMetaData)
+   public QFieldMetaData withSupplementalMetaData(Map<String, QSupplementalFieldMetaData> supplementalMetaData)
    {
-      this.middlewareMetaData = middlewareMetaData;
+      this.supplementalMetaData = supplementalMetaData;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for middlewareMetaData
+    ** Fluent setter for supplementalMetaData
     *******************************************************************************/
-   public QFieldMetaData withMiddlewareMetaData(QMiddlewareFieldMetaData middlewareMetaData)
+   public QFieldMetaData withSupplementalMetaData(QSupplementalFieldMetaData supplementalMetaData)
    {
-      if(this.middlewareMetaData == null)
+      if(this.supplementalMetaData == null)
       {
-         this.middlewareMetaData = new HashMap<>();
+         this.supplementalMetaData = new HashMap<>();
       }
-      this.middlewareMetaData.put(middlewareMetaData.getType(), middlewareMetaData);
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
       return (this);
    }
 

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.utils;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
@@ -33,9 +34,12 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -258,6 +262,87 @@ class ApiScriptUtilsTest extends BaseTest
       getInput.setPrimaryKey(1);
       GetOutput getOutput = new GetAction().execute(getInput);
       assertNull(getOutput.getRecord());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetProcessForObject() throws QException
+   {
+      ApiScriptUtils apiScriptUtils = newDefaultApiScriptUtils();
+
+      assertThatThrownBy(() -> apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_GET_PERSON_INFO))
+         .isInstanceOf(QBadRequestException.class)
+         .hasMessageContaining("Request failed with 4 reasons: Missing value for required input field");
+
+      Object result = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_GET_PERSON_INFO, """
+         {"age": 43, "partnerPersonId": 1, "heightInches": 72, "weightPounds": 220, "homeTown": "Chester"}
+         """);
+
+      assertThat(result).isInstanceOf(Map.class);
+      Map<?, ?> resultMap = (Map<?, ?>) result;
+      assertEquals(15695, resultMap.get("daysOld"));
+      assertEquals("Guy from Chester", resultMap.get("nickname"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPostProcessForProcessSummaryList() throws QException
+   {
+      insertSimpsons();
+
+      ApiScriptUtils apiScriptUtils = newDefaultApiScriptUtils();
+
+      assertThatThrownBy(() -> apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, null))
+         .isInstanceOf(QBadRequestException.class)
+         .hasMessageContaining("Records to run through this process were not specified");
+
+      Serializable emptyResult = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, JsonUtils.toJson(Map.of("id", 999)));
+      assertThat(emptyResult).isInstanceOf(List.class);
+      assertEquals(0, ((List<?>) emptyResult).size());
+
+      Serializable result = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, JsonUtils.toJson(Map.of("id", "1,2,3")));
+      assertThat(result).isInstanceOf(List.class);
+      List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
+      assertEquals(3, resultList.size());
+
+      assertThat(resultList.stream().filter(m -> m.get("id").equals(2)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 200);
+      assertThat(resultList.stream().filter(m -> m.get("id").equals(3)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 500);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAsyncProcessAndGetStatus() throws QException
+   {
+      insertSimpsons();
+
+      ApiScriptUtils apiScriptUtils = newDefaultApiScriptUtils();
+
+      Serializable asyncResult = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, JsonUtils.toJson(Map.of("id", "1,2,3", "async", true)));
+      assertThat(asyncResult).isInstanceOf(Map.class);
+      String jobId = ValueUtils.getValueAsString(((Map<String, ?>) asyncResult).get("jobId"));
+      assertNotNull(jobId);
+
+      SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+
+      Serializable result = apiScriptUtils.getProcessStatus(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, jobId);
+      assertThat(result).isInstanceOf(List.class);
+      List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
+      assertEquals(3, resultList.size());
+
+      assertThat(resultList.stream().filter(m -> m.get("id").equals(2)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 200);
+      assertThat(resultList.stream().filter(m -> m.get("id").equals(3)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 500);
    }
 
 
