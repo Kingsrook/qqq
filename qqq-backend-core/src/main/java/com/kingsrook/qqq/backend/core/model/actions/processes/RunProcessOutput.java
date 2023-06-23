@@ -23,11 +23,16 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -123,12 +128,116 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
 
 
    /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Serializable getValue(String fieldName)
+   {
+      return (this.processState.getValues().get(fieldName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public String getValueString(String fieldName)
+   {
+      return (ValueUtils.getValueAsString(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Integer getValueInteger(String fieldName)
+   {
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public BigDecimal getValueBigDecimal(String fieldName)
+   {
+      return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Boolean getValueBoolean(String fieldName)
+   {
+      return (ValueUtils.getValueAsBoolean(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public LocalTime getValueLocalTime(String fieldName)
+   {
+      return (ValueUtils.getValueAsLocalTime(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public LocalDate getValueLocalDate(String fieldName)
+   {
+      return (ValueUtils.getValueAsLocalDate(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public byte[] getValueByteArray(String fieldName)
+   {
+      return (ValueUtils.getValueAsByteArray(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Instant getValueInstant(String fieldName)
+   {
+      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for values
     **
     *******************************************************************************/
    public void setValues(Map<String, Serializable> values)
    {
       this.processState.setValues(values);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public RunProcessOutput withValue(String fieldName, Serializable value)
+   {
+      this.processState.getValues().put(fieldName, value);
+      return (this);
    }
 
 

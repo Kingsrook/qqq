@@ -136,7 +136,7 @@ public class QValueFormatter
                {
                   return formatValue(displayFormat, ValueUtils.getValueAsBigDecimal(value));
                }
-               else if(e.getMessage().equals("d != java.math.BigDecimal"))
+               else if(e.getMessage().equals("d != java.math.BigDecimal") || e.getMessage().equals("d != java.lang.String"))
                {
                   return formatValue(displayFormat, ValueUtils.getValueAsInteger(value));
                }

@@ -41,4 +41,14 @@ public interface QCodeExecutor
     *******************************************************************************/
    Serializable execute(QCodeReference codeReference, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException;
 
+   /*******************************************************************************
+    ** Process an object from the script's language/runtime into a (more) native java object.
+    ** e.g., a Nashorn ScriptObjectMirror will end up as a "primitive", or a List or Map of such
+    **
+    *******************************************************************************/
+   default Object convertObjectToJava(Object object)
+   {
+      return (object);
+   }
+
 }

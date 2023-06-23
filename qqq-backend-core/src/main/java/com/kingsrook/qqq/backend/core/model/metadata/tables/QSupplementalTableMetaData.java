@@ -23,9 +23,10 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 /*******************************************************************************
- ** Base-class for table-level meta-data defined for a specific middleware.
+ ** Base-class for table-level meta-data defined by some supplemental module, etc,
+ ** outside of qqq core
  *******************************************************************************/
-public abstract class QMiddlewareTableMetaData
+public abstract class QSupplementalTableMetaData
 {
    protected String type;
 
@@ -54,7 +55,7 @@ public abstract class QMiddlewareTableMetaData
    /*******************************************************************************
     ** Fluent setter for type
     *******************************************************************************/
-   public QMiddlewareTableMetaData withType(String type)
+   public QSupplementalTableMetaData withType(String type)
    {
       this.type = type;
       return (this);

@@ -54,12 +54,17 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private BasepullConfiguration basepullConfiguration;
    private QPermissionRules      permissionRules;
 
+   private Integer minInputRecords = null;
+   private Integer maxInputRecords = null;
+
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
    private QIcon icon;
 
    private QScheduleMetaData schedule;
+
+   private Map<String, QSupplementalProcessMetaData> supplementalMetaData;
 
 
 
@@ -542,6 +547,128 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public void addSelfToInstance(QInstance qInstance)
    {
       qInstance.addProcess(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalMetaData
+    *******************************************************************************/
+   public Map<String, QSupplementalProcessMetaData> getSupplementalMetaData()
+   {
+      return (this.supplementalMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalMetaData
+    *******************************************************************************/
+   public QSupplementalProcessMetaData getSupplementalMetaData(String type)
+   {
+      if(this.supplementalMetaData == null)
+      {
+         return (null);
+      }
+      return this.supplementalMetaData.get(type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for supplementalMetaData
+    *******************************************************************************/
+   public void setSupplementalMetaData(Map<String, QSupplementalProcessMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QProcessMetaData withSupplementalMetaData(Map<String, QSupplementalProcessMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QProcessMetaData withSupplementalMetaData(QSupplementalProcessMetaData supplementalMetaData)
+   {
+      if(this.supplementalMetaData == null)
+      {
+         this.supplementalMetaData = new HashMap<>();
+      }
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for minInputRecords
+    *******************************************************************************/
+   public Integer getMinInputRecords()
+   {
+      return (this.minInputRecords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for minInputRecords
+    *******************************************************************************/
+   public void setMinInputRecords(Integer minInputRecords)
+   {
+      this.minInputRecords = minInputRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for minInputRecords
+    *******************************************************************************/
+   public QProcessMetaData withMinInputRecords(Integer minInputRecords)
+   {
+      this.minInputRecords = minInputRecords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxInputRecords
+    *******************************************************************************/
+   public Integer getMaxInputRecords()
+   {
+      return (this.maxInputRecords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxInputRecords
+    *******************************************************************************/
+   public void setMaxInputRecords(Integer maxInputRecords)
+   {
+      this.maxInputRecords = maxInputRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxInputRecords
+    *******************************************************************************/
+   public QProcessMetaData withMaxInputRecords(Integer maxInputRecords)
+   {
+      this.maxInputRecords = maxInputRecords;
+      return (this);
    }
 
 }

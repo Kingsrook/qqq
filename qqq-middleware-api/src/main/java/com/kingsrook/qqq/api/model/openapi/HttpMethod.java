@@ -19,14 +19,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api;
+package com.kingsrook.qqq.api.model.openapi;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiMiddlewareType
+public enum HttpMethod
 {
-   String NAME = "api";
-
+   GET,
+   POST,
+   PUT,
+   PATCH,
+   DELETE
 }

@@ -27,6 +27,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
@@ -36,8 +40,10 @@ import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
+import org.openjdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.openjdk.nashorn.internal.runtime.ECMAException;
 import org.openjdk.nashorn.internal.runtime.ParserException;
+import org.openjdk.nashorn.internal.runtime.Undefined;
 
 
 /*******************************************************************************
@@ -55,6 +61,59 @@ public class QJavaScriptExecutor implements QCodeExecutor
       String       code   = getCode(codeReference);
       Serializable output = runInline(code, inputContext, executionLogger);
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Object convertObjectToJava(Object object)
+   {
+      if(object == null || object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof BigDecimal)
+      {
+         return (object);
+      }
+      else if(object instanceof Float f)
+      {
+         return (new BigDecimal(f));
+      }
+      else if(object instanceof Double d)
+      {
+         return (new BigDecimal(d));
+      }
+      else if(object instanceof Undefined)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // well, we always said we wanted javascript to treat null & undefined the same way...  here's our chance //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (null);
+      }
+
+      if(object instanceof ScriptObjectMirror scriptObjectMirror)
+      {
+         if(scriptObjectMirror.isArray())
+         {
+            List<Object> result = new ArrayList<>();
+            for(String key : scriptObjectMirror.keySet())
+            {
+               result.add(Integer.parseInt(key), convertObjectToJava(scriptObjectMirror.get(key)));
+            }
+            return (result);
+         }
+         else
+         {
+            Map<String, Object> result = new HashMap<>();
+            for(String key : scriptObjectMirror.keySet())
+            {
+               result.put(key, convertObjectToJava(scriptObjectMirror.get(key)));
+            }
+            return (result);
+         }
+      }
+
+      return QCodeExecutor.super.convertObjectToJava(object);
    }
 
 

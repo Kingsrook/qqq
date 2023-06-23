@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -395,15 +396,19 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
    {
       if(count != null)
       {
+         String baseMessage;
          if(count.equals(1))
          {
-            setMessage((isPast ? getSingularPastMessage() : getSingularFutureMessage())
-               + (messageSuffix == null ? "" : messageSuffix));
+            baseMessage = isPast ? getSingularPastMessage() : getSingularFutureMessage();
          }
          else
          {
-            setMessage((isPast ? getPluralPastMessage() : getPluralFutureMessage())
-               + (messageSuffix == null ? "" : messageSuffix));
+            baseMessage = isPast ? getPluralPastMessage() : getPluralFutureMessage();
+         }
+
+         if(StringUtils.hasContent(baseMessage))
+         {
+            setMessage(baseMessage + ObjectUtils.requireConditionElse(messageSuffix, StringUtils::hasContent, ""));
          }
       }
    }

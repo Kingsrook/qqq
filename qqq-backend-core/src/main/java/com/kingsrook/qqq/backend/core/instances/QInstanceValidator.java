@@ -48,7 +48,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QMiddlewareInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -63,6 +63,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
@@ -158,7 +159,7 @@ public class QInstanceValidator
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
          validateSecurityKeyTypes(qInstance);
-         validateMiddlewareMetaData(qInstance);
+         validateSupplementalMetaData(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
       }
@@ -182,11 +183,11 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateMiddlewareMetaData(QInstance qInstance)
+   private void validateSupplementalMetaData(QInstance qInstance)
    {
-      for(QMiddlewareInstanceMetaData middlewareInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getMiddlewareMetaData()).values())
+      for(QSupplementalInstanceMetaData supplementalInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getSupplementalMetaData()).values())
       {
-         middlewareInstanceMetaData.validate(qInstance, this);
+         supplementalInstanceMetaData.validate(qInstance, this);
       }
    }
 
@@ -572,6 +573,11 @@ public class QInstanceValidator
       RECORD_SECURITY_LOCKS_LOOP:
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
       {
+         if(!assertCondition(recordSecurityLock != null, prefix + "has a null recordSecurityLock (did you mean to give it a null list of locks?)"))
+         {
+            continue;
+         }
+
          String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
          if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
          {
@@ -1226,6 +1232,11 @@ public class QInstanceValidator
                }
             }
 
+            for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
+            {
+               supplementalProcessMetaData.validate(qInstance, process, this);
+            }
+
          });
       }
    }
@@ -1703,7 +1714,7 @@ public class QInstanceValidator
     ** But if it throws, add the provided message to the list of errors (and return false,
     ** e.g., in case you need to stop evaluating rules to avoid exceptions).
     *******************************************************************************/
-   private boolean assertNoException(UnsafeLambda unsafeLambda, String message)
+   public boolean assertNoException(UnsafeLambda unsafeLambda, String message)
    {
       try
       {
@@ -1736,7 +1747,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void warn(String message)
+   public void warn(String message)
    {
       if(printWarnings)
       {
