@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -59,6 +58,10 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData()
    {
+      /////////////////////////////////////////////////////////////////////////////
+      // by default, we will turn off the query stats capability on all backends //
+      /////////////////////////////////////////////////////////////////////////////
+      withoutCapability(Capability.QUERY_STATS);
    }
 
 
@@ -199,6 +202,10 @@ public class QBackendMetaData
    public void setEnabledCapabilities(Set<Capability> enabledCapabilities)
    {
       this.enabledCapabilities = enabledCapabilities;
+      if(this.disabledCapabilities != null)
+      {
+         this.disabledCapabilities.removeAll(enabledCapabilities);
+      }
    }
 
 
@@ -209,7 +216,7 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withEnabledCapabilities(Set<Capability> enabledCapabilities)
    {
-      this.enabledCapabilities = enabledCapabilities;
+      setEnabledCapabilities(enabledCapabilities);
       return (this);
    }
 
@@ -221,7 +228,10 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withCapabilities(Set<Capability> enabledCapabilities)
    {
-      this.enabledCapabilities = enabledCapabilities;
+      for(Capability enabledCapability : enabledCapabilities)
+      {
+         withCapability(enabledCapability);
+      }
       return (this);
    }
 
@@ -238,6 +248,7 @@ public class QBackendMetaData
          this.enabledCapabilities = new HashSet<>();
       }
       this.enabledCapabilities.add(capability);
+      this.disabledCapabilities.remove(capability);
       return (this);
    }
 
@@ -249,11 +260,10 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withCapabilities(Capability... enabledCapabilities)
    {
-      if(this.enabledCapabilities == null)
+      for(Capability enabledCapability : enabledCapabilities)
       {
-         this.enabledCapabilities = new HashSet<>();
+         withCapability(enabledCapability);
       }
-      this.enabledCapabilities.addAll(Arrays.stream(enabledCapabilities).toList());
       return (this);
    }
 
@@ -277,6 +287,10 @@ public class QBackendMetaData
    public void setDisabledCapabilities(Set<Capability> disabledCapabilities)
    {
       this.disabledCapabilities = disabledCapabilities;
+      if(this.enabledCapabilities != null)
+      {
+         this.enabledCapabilities.removeAll(disabledCapabilities);
+      }
    }
 
 
@@ -287,7 +301,7 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withDisabledCapabilities(Set<Capability> disabledCapabilities)
    {
-      this.disabledCapabilities = disabledCapabilities;
+      setDisabledCapabilities(disabledCapabilities);
       return (this);
    }
 
@@ -299,11 +313,10 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withoutCapabilities(Capability... disabledCapabilities)
    {
-      if(this.disabledCapabilities == null)
+      for(Capability disabledCapability : disabledCapabilities)
       {
-         this.disabledCapabilities = new HashSet<>();
+         withoutCapability(disabledCapability);
       }
-      this.disabledCapabilities.addAll(Arrays.stream(disabledCapabilities).toList());
       return (this);
    }
 
@@ -315,7 +328,10 @@ public class QBackendMetaData
     *******************************************************************************/
    public QBackendMetaData withoutCapabilities(Set<Capability> disabledCapabilities)
    {
-      this.disabledCapabilities = disabledCapabilities;
+      for(Capability disabledCapability : disabledCapabilities)
+      {
+         withCapability(disabledCapability);
+      }
       return (this);
    }
 
@@ -332,6 +348,7 @@ public class QBackendMetaData
          this.disabledCapabilities = new HashSet<>();
       }
       this.disabledCapabilities.add(capability);
+      this.enabledCapabilities.remove(capability);
       return (this);
    }
 

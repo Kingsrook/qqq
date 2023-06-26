@@ -19,141 +19,92 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.data.testentities;
+package com.kingsrook.qqq.backend.core.model.data;
 
 
-import java.math.BigDecimal;
-import com.kingsrook.qqq.backend.core.model.data.QField;
-import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import java.lang.reflect.Method;
 
 
 /*******************************************************************************
- ** Sample of an entity that can be converted to & from a QRecord
+ ** Reflective information about an association in a QRecordEntity
  *******************************************************************************/
-public class ItemWithPrimitives extends QRecordEntity
+public class QRecordEntityAssociation
 {
-   @QField()
-   private String sku;
-  
-   @QField()
-   private String description;
+   private final String fieldName;
+   private final Method getter;
+   private final Method setter;
 
-   @QField()
-   private int quantity;
+   private final Class<? extends QRecordEntity> associatedType;
 
-   @QField()
-   private BigDecimal price;
-
-   @QField()
-   private boolean featured;
+   private final QAssociation associationAnnotation;
 
 
 
    /*******************************************************************************
-    ** Getter for sku
-    **
+    ** Constructor.
     *******************************************************************************/
-   public String getSku()
+   public QRecordEntityAssociation(String fieldName, Method getter, Method setter, Class<? extends QRecordEntity> associatedType, QAssociation associationAnnotation)
    {
-      return sku;
+      this.fieldName = fieldName;
+      this.getter = getter;
+      this.setter = setter;
+      this.associatedType = associatedType;
+      this.associationAnnotation = associationAnnotation;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for sku
+    ** Getter for fieldName
     **
     *******************************************************************************/
-   public void setSku(String sku)
+   public String getFieldName()
    {
-      this.sku = sku;
+      return fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
+    ** Getter for getter
     **
     *******************************************************************************/
-   public String getDescription()
+   public Method getGetter()
    {
-      return description;
+      return getter;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
+    ** Getter for setter
     **
     *******************************************************************************/
-   public void setDescription(String description)
+   public Method getSetter()
    {
-      this.description = description;
+      return setter;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for quantity
+    ** Getter for associatedType
     **
     *******************************************************************************/
-   public int getQuantity()
+   public Class<? extends QRecordEntity> getAssociatedType()
    {
-      return quantity;
+      return associatedType;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for quantity
+    ** Getter for associationAnnotation
     **
     *******************************************************************************/
-   public void setQuantity(int quantity)
+   public QAssociation getAssociationAnnotation()
    {
-      this.quantity = quantity;
+      return associationAnnotation;
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for price
-    **
-    *******************************************************************************/
-   public BigDecimal getPrice()
-   {
-      return price;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for price
-    **
-    *******************************************************************************/
-   public void setPrice(BigDecimal price)
-   {
-      this.price = price;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for featured
-    **
-    *******************************************************************************/
-   public boolean getFeatured()
-   {
-      return featured;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for featured
-    **
-    *******************************************************************************/
-   public void setFeatured(boolean featured)
-   {
-      this.featured = featured;
-   }
 }

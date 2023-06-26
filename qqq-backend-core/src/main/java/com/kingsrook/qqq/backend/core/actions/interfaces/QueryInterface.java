@@ -31,10 +31,11 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
  ** Interface for the Query action.
  **
  *******************************************************************************/
-public interface QueryInterface
+public interface QueryInterface extends BaseQueryInterface
 {
    /*******************************************************************************
     **
     *******************************************************************************/
    QueryOutput execute(QueryInput queryInput) throws QException;
+
 }

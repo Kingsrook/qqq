@@ -68,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -85,6 +86,8 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public abstract class AbstractRDBMSAction implements QActionInterface
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
+
+   protected QueryStat queryStat;
 
 
 
@@ -1035,6 +1038,49 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       }
 
       return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void setSqlAndJoinsInQueryStat(CharSequence sql, JoinsContext joinsContext)
+   {
+      if(queryStat != null)
+      {
+         queryStat.setQueryText(sql.toString());
+
+         if(CollectionUtils.nullSafeHasContents(joinsContext.getQueryJoins()))
+         {
+            Set<String> joinTableNames = new HashSet<>();
+            for(QueryJoin queryJoin : joinsContext.getQueryJoins())
+            {
+               joinTableNames.add(queryJoin.getJoinTable());
+            }
+            queryStat.setJoinTableNames(joinTableNames);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryStat
+    *******************************************************************************/
+   public QueryStat getQueryStat()
+   {
+      return (this.queryStat);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryStat
+    *******************************************************************************/
+   public void setQueryStat(QueryStat queryStat)
+   {
+      this.queryStat = queryStat;
    }
 
 }

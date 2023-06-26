@@ -57,6 +57,16 @@ public class AbstractActionInput
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getActionIdentity()
+   {
+      return (getClass().getSimpleName());
+   }
+
+
+
+   /*******************************************************************************
     ** performance instance validation (if not previously done).
     * // todo - verify this is happening (e.g., when context is set i guess)
     *******************************************************************************/

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,164 +19,210 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.data.testentities;
+package com.kingsrook.qqq.backend.core.model.tables;
 
 
-import java.math.BigDecimal;
+import java.time.Instant;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
 /*******************************************************************************
- ** Sample of an entity that can be converted to & from a QRecord
+ ** QRecord Entity for QQQTable table
  *******************************************************************************/
-public class Item extends QRecordEntity
+public class QQQTable extends QRecordEntity
 {
-   @QField(isRequired = true, label = "SKU")
-   private String sku;
+   public static final String TABLE_NAME = "qqqTable";
 
-   @QField()
-   private String description;
+   @QField(isEditable = false)
+   private Integer id;
 
-   @QField(isEditable = false, displayFormat = DisplayFormat.COMMAS)
-   private Integer quantity;
+   @QField(isEditable = false)
+   private Instant createDate;
 
-   @QField()
-   private BigDecimal price;
+   @QField(isEditable = false)
+   private Instant modifyDate;
 
-   @QField(backendName = "is_featured")
-   private Boolean featured;
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String name;
+
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
+   private String label;
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Default constructor
     *******************************************************************************/
-   public Item()
+   public QQQTable()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Constructor that takes a QRecord
     *******************************************************************************/
-   public Item(QRecord qRecord)
+   public QQQTable(QRecord record)
    {
-      populateFromQRecord(qRecord);
+      populateFromQRecord(record);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for sku
-    **
+    ** Getter for id
     *******************************************************************************/
-   public String getSku()
+   public Integer getId()
    {
-      return sku;
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for sku
-    **
+    ** Setter for id
     *******************************************************************************/
-   public void setSku(String sku)
+   public void setId(Integer id)
    {
-      this.sku = sku;
+      this.id = id;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for description
-    **
+    ** Fluent setter for id
     *******************************************************************************/
-   public String getDescription()
+   public QQQTable withId(Integer id)
    {
-      return description;
+      this.id = id;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for description
-    **
+    ** Getter for createDate
     *******************************************************************************/
-   public void setDescription(String description)
+   public Instant getCreateDate()
    {
-      this.description = description;
+      return (this.createDate);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for quantity
-    **
+    ** Setter for createDate
     *******************************************************************************/
-   public Integer getQuantity()
+   public void setCreateDate(Instant createDate)
    {
-      return quantity;
+      this.createDate = createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for quantity
-    **
+    ** Fluent setter for createDate
     *******************************************************************************/
-   public void setQuantity(Integer quantity)
+   public QQQTable withCreateDate(Instant createDate)
    {
-      this.quantity = quantity;
+      this.createDate = createDate;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for price
-    **
+    ** Getter for modifyDate
     *******************************************************************************/
-   public BigDecimal getPrice()
+   public Instant getModifyDate()
    {
-      return price;
+      return (this.modifyDate);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for price
-    **
+    ** Setter for modifyDate
     *******************************************************************************/
-   public void setPrice(BigDecimal price)
+   public void setModifyDate(Instant modifyDate)
    {
-      this.price = price;
+      this.modifyDate = modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for featured
-    **
+    ** Fluent setter for modifyDate
     *******************************************************************************/
-   public Boolean getFeatured()
+   public QQQTable withModifyDate(Instant modifyDate)
    {
-      return featured;
+      this.modifyDate = modifyDate;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for featured
-    **
+    ** Getter for name
     *******************************************************************************/
-   public void setFeatured(Boolean featured)
+   public String getName()
    {
-      this.featured = featured;
+      return (this.name);
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public QQQTable withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return (this.label);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for label
+    *******************************************************************************/
+   public void setLabel(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    *******************************************************************************/
+   public QQQTable withLabel(String label)
+   {
+      this.label = label;
+      return (this);
+   }
+
 }
