@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -51,6 +54,71 @@ public class InsertInput extends AbstractTableActionInput
     *******************************************************************************/
    public InsertInput()
    {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public InsertInput(String tableName)
+   {
+      setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public InsertInput withTableName(String tableName)
+   {
+      super.withTableName(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public InsertInput withRecord(QRecord record)
+   {
+      if(records == null)
+      {
+         records = new ArrayList<>();
+      }
+
+      records.add(record);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public InsertInput withRecordEntity(QRecordEntity recordEntity)
+   {
+      return (withRecord(recordEntity.toQRecord()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public InsertInput withRecordEntities(List<QRecordEntity> recordEntityList)
+   {
+      for(QRecordEntity recordEntity : CollectionUtils.nonNullList(recordEntityList))
+      {
+         withRecordEntity(recordEntity);
+      }
+
+      return (this);
    }
 
 

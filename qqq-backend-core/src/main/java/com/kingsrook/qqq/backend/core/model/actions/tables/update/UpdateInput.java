@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.update;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -58,6 +61,71 @@ public class UpdateInput extends AbstractTableActionInput
     *******************************************************************************/
    public UpdateInput()
    {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public UpdateInput(String tableName)
+   {
+      setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public UpdateInput withTableName(String tableName)
+   {
+      super.withTableName(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public UpdateInput withRecord(QRecord record)
+   {
+      if(records == null)
+      {
+         records = new ArrayList<>();
+      }
+
+      records.add(record);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public UpdateInput withRecordEntity(QRecordEntity recordEntity)
+   {
+      return (withRecord(recordEntity.toQRecord()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public UpdateInput withRecordEntities(List<QRecordEntity> recordEntityList)
+   {
+      for(QRecordEntity recordEntity : CollectionUtils.nonNullList(recordEntityList))
+      {
+         withRecordEntity(recordEntity);
+      }
+
+      return (this);
    }
 
 
