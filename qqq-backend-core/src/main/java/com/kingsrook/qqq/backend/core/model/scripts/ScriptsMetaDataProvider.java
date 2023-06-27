@@ -54,12 +54,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.LoadScriptTestDetailsProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptTransformStep;
@@ -72,9 +74,10 @@ import com.kingsrook.qqq.backend.core.processes.implementations.scripts.TestScri
  *******************************************************************************/
 public class ScriptsMetaDataProvider
 {
-   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
-   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
-   public static final String TEST_SCRIPT_PROCESS_NAME           = "testScript";
+   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME        = "runRecordScript";
+   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME    = "storeScriptRevision";
+   public static final String TEST_SCRIPT_PROCESS_NAME              = "testScript";
+   public static final String LOAD_SCRIPT_TEST_DETAILS_PROCESS_NAME = "loadScriptTestDetails";
 
    public static final String SCRIPT_TYPE_NAME_RECORD = "Record Script";
 
@@ -94,7 +97,26 @@ public class ScriptsMetaDataProvider
       instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
       instance.addProcess(defineStoreScriptRevisionProcess());
       instance.addProcess(defineTestScriptProcess());
+      instance.addProcess(defineLoadScriptTestDetailsProcess());
       instance.addProcess(defineRunRecordScriptProcess());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineLoadScriptTestDetailsProcess()
+   {
+      return (new QProcessMetaData()
+         .withName(LOAD_SCRIPT_TEST_DETAILS_PROCESS_NAME)
+         .withTableName(Script.TABLE_NAME)
+         .withIsHidden(true)
+         //? .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withStepList(List.of(
+            new QBackendStepMetaData()
+               .withName("main")
+               .withCode(new QCodeReference(LoadScriptTestDetailsProcessStep.class)))));
    }
 
 
@@ -404,7 +426,7 @@ public class ScriptsMetaDataProvider
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptType.TABLE_NAME, ScriptType.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name")))
-         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("helpText", "sampleCode", "fileMode")))
+         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("helpText", "sampleCode", "fileMode", "testScriptInterfaceName")))
          .withSection(new QFieldSection("files", new QIcon().withName("description"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptType.TABLE_NAME, ScriptTypeFileSchema.TABLE_NAME)))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
       tableMetaData.getField("sampleCode").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("javascript")));
@@ -440,12 +462,15 @@ public class ScriptsMetaDataProvider
          .withRecordLabelFormat("%s v%s")
          .withRecordLabelFields(List.of("scriptId", "sequenceNo"))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptId", "sequenceNo")))
-         .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
          .withSection(new QFieldSection("files", new QIcon().withName("description"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptRevision.TABLE_NAME, ScriptRevisionFile.TABLE_NAME)))
          .withSection(new QFieldSection("changeManagement", new QIcon().withName("history"), Tier.T2, List.of("commitMessage", "author")))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
 
-      tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("javascript")));
+         .withAssociation(new Association()
+            .withName("files")
+            .withAssociatedTableName(ScriptRevisionFile.TABLE_NAME)
+            .withJoinName(QJoinMetaData.makeInferredJoinName(ScriptRevision.TABLE_NAME, ScriptRevisionFile.TABLE_NAME)));
+
       tableMetaData.getField("scriptId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
 
       try

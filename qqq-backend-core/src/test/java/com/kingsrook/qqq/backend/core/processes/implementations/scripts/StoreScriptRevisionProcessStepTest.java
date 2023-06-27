@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -68,7 +67,8 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
 
       new StoreScriptRevisionProcessStep().run(new RunBackendStepInput().withValues(MapBuilder.of(
          "scriptId", scriptId,
-         "contents", scriptContents
+         "fileNames", "script",
+         "fileContents:script", scriptContents
       )), new RunBackendStepOutput());
 
       scripts = TestUtils.queryTable(Script.TABLE_NAME);
@@ -79,11 +79,16 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
       assertEquals(scriptId, scriptRevision.getValueInteger("scriptId"));
       assertEquals(1, scriptRevision.getValueInteger("sequenceNo"));
       assertEquals("Initial version", scriptRevision.getValueString("commitMessage"));
-      assertEquals(scriptContents, scriptRevision.getValueString("contents"));
 
+      List<QRecord> scriptRevisionFiles = TestUtils.queryTable(ScriptRevisionFile.TABLE_NAME);
+      QRecord       scriptRevisionFile  = scriptRevisionFiles.get(0);
+      assertEquals(scriptContents, scriptRevisionFile.getValueString("contents"));
+
+      String updatedScriptContents = "logger.log('Really, Hi');";
       new StoreScriptRevisionProcessStep().run(new RunBackendStepInput().withValues(MapBuilder.of(
          "scriptId", scriptId,
-         "contents", scriptContents
+         "fileNames", "script",
+         "fileContents:script", updatedScriptContents
       )), new RunBackendStepOutput());
 
       scripts = TestUtils.queryTable(Script.TABLE_NAME);
@@ -91,10 +96,14 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
 
       scriptRevisions = TestUtils.queryTable(ScriptRevision.TABLE_NAME).stream().filter(r -> r.getValueInteger("id").equals(2)).collect(Collectors.toList());
       scriptRevision = scriptRevisions.get(0);
+      Integer newScriptRevisionId = scriptRevision.getValueInteger("id");
       assertEquals(scriptId, scriptRevision.getValueInteger("scriptId"));
       assertEquals(2, scriptRevision.getValueInteger("sequenceNo"));
       assertEquals("No commit message given", scriptRevision.getValueString("commitMessage"));
-      assertEquals(scriptContents, scriptRevision.getValueString("contents"));
+
+      scriptRevisionFiles = TestUtils.queryTable(ScriptRevisionFile.TABLE_NAME);
+      scriptRevisionFile = scriptRevisionFiles.stream().filter(r -> r.getValueInteger("scriptRevisionId").equals(newScriptRevisionId)).findFirst().get();
+      assertEquals(updatedScriptContents, scriptRevisionFile.getValueString("contents"));
    }
 
 
@@ -116,13 +125,11 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
       List<QRecord> scripts = TestUtils.queryTable(Script.TABLE_NAME);
       assertNull(scripts.get(0).getValueInteger("currentScriptRevisionId"));
 
-      ArrayList<QRecord> fileContents = new ArrayList<>();
-      fileContents.add(new QRecord().withValue("fileName", "script").withValue("contents", scriptContents));
-      fileContents.add(new QRecord().withValue("fileName", "template").withValue("contents", templateContents));
-
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.addValue("scriptId", scriptId);
-      runBackendStepInput.addValue("fileContents", fileContents);
+      runBackendStepInput.addValue("fileNames", "script,template");
+      runBackendStepInput.addValue("fileContents:script", scriptContents);
+      runBackendStepInput.addValue("fileContents:template", templateContents);
       new StoreScriptRevisionProcessStep().run(runBackendStepInput, new RunBackendStepOutput());
 
       scripts = TestUtils.queryTable(Script.TABLE_NAME);
@@ -150,13 +157,11 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
       String updatedScriptContents   = "logger.log('Really, Hi');";
       String updatedTemplateContents = "<h1>Hey, what's up</h1>";
 
-      fileContents = new ArrayList<>();
-      fileContents.add(new QRecord().withValue("fileName", "script").withValue("contents", updatedScriptContents));
-      fileContents.add(new QRecord().withValue("fileName", "template").withValue("contents", updatedTemplateContents));
-
       runBackendStepInput = new RunBackendStepInput();
       runBackendStepInput.addValue("scriptId", scriptId);
-      runBackendStepInput.addValue("fileContents", fileContents);
+      runBackendStepInput.addValue("fileNames", "script,template");
+      runBackendStepInput.addValue("fileContents:script", updatedScriptContents);
+      runBackendStepInput.addValue("fileContents:template", updatedTemplateContents);
       runBackendStepInput.addValue("commitMessage", "Updated files");
       new StoreScriptRevisionProcessStep().run(runBackendStepInput, new RunBackendStepOutput());
 

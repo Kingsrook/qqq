@@ -855,6 +855,11 @@ public class QJavalinImplementation
          getInput.setShouldTranslatePossibleValues(true);
          getInput.setShouldFetchHeavyFields(true);
 
+         if("true".equals(context.queryParam("includeAssociations")))
+         {
+            getInput.setIncludeAssociations(true);
+         }
+
          PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
          // todo - validate that the primary key is of the proper type (e.g,. not a string for an id field)

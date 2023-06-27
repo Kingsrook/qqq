@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -128,11 +129,6 @@ public class StoreScriptRevisionProcessStep implements BackendStep
             .withValue("commitMessage", commitMessage)
             .withValue("sequenceNo", nextSequenceNo);
 
-         if(input.getValue("contents") != null)
-         {
-            scriptRevision.withValue("contents", input.getValueString("contents"));
-         }
-
          try
          {
             scriptRevision.setValue("author", input.getSession().getUser().getFullName());
@@ -147,22 +143,28 @@ public class StoreScriptRevisionProcessStep implements BackendStep
          scriptRevision = insertOutput.getRecords().get(0);
          Integer scriptRevisionId = scriptRevision.getValueInteger("id");
 
-         //////////////////////////////////////////////////////////////////////////////////////////
-         // if there's a list of file contents (instead of just a single string), store them all //
-         //////////////////////////////////////////////////////////////////////////////////////////
-         @SuppressWarnings("unchecked")
-         List<QRecord> fileContents = (List<QRecord>) input.getValue("fileContents");
-         if(CollectionUtils.nullSafeHasContents(fileContents))
+         //////////////////////////////////////////
+         // Store the file(s) under the revision //
+         //////////////////////////////////////////
+         List<QRecord> scriptRevisionFileRecords = null;
+         if(StringUtils.hasContent(input.getValueString("fileNames")))
          {
-            List<QRecord> scriptRevisionRecords = fileContents.stream().map(r -> new ScriptRevisionFile()
-               .withScriptRevisionId(scriptRevisionId)
-               .withFileName(r.getValueString("fileName"))
-               .withContents(r.getValueString("contents"))
-               .toQRecord()).toList();
+            scriptRevisionFileRecords = new ArrayList<>();
+            for(String fileName : input.getValueString("fileNames").split(","))
+            {
+               scriptRevisionFileRecords.add(new ScriptRevisionFile()
+                  .withScriptRevisionId(scriptRevisionId)
+                  .withFileName(fileName)
+                  .withContents(input.getValueString("fileContents:" + fileName))
+                  .toQRecord());
+            }
+         }
 
+         if(CollectionUtils.nullSafeHasContents(scriptRevisionFileRecords))
+         {
             InsertInput scriptRevisionFileInsertInput = new InsertInput();
             scriptRevisionFileInsertInput.setTableName(ScriptRevisionFile.TABLE_NAME);
-            scriptRevisionFileInsertInput.setRecords(scriptRevisionRecords);
+            scriptRevisionFileInsertInput.setRecords(scriptRevisionFileRecords);
             scriptRevisionFileInsertInput.setTransaction(transaction);
             new InsertAction().execute(scriptRevisionFileInsertInput);
          }

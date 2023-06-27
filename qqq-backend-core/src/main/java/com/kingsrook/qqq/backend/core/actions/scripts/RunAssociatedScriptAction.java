@@ -110,6 +110,7 @@ public class RunAssociatedScriptAction
       GetInput getInput = new GetInput();
       getInput.setTableName("scriptRevision");
       getInput.setPrimaryKey(scriptRevisionId);
+      getInput.setIncludeAssociations(true);
       GetOutput getOutput = new GetAction().execute(getInput);
       if(getOutput.getRecord() == null)
       {

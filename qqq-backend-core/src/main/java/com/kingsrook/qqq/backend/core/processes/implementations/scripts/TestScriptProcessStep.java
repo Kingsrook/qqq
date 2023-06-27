@@ -22,35 +22,33 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
-import com.kingsrook.qqq.backend.core.actions.scripts.RunAdHocRecordScriptAction;
+import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.BuildScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
-import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAdHocRecordScriptInput;
-import com.kingsrook.qqq.backend.core.model.actions.scripts.RunAdHocRecordScriptOutput;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptInput;
+import com.kingsrook.qqq.backend.core.model.actions.scripts.TestScriptOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptType;
-import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -77,62 +75,60 @@ public class TestScriptProcessStep implements BackendStep
 
          ScriptRevision scriptRevision = new ScriptRevision();
          scriptRevision.setScriptId(scriptId);
-         scriptRevision.setContents(input.getValueString("code"));
+
+         ArrayList<ScriptRevisionFile> files = new ArrayList<>();
+         if(StringUtils.hasContent(input.getValueString("fileNames")))
+         {
+            for(String fileName : input.getValueString("fileNames").split(","))
+            {
+               files.add(new ScriptRevisionFile()
+                  .withFileName(fileName)
+                  .withContents(input.getValueString("fileContents:" + fileName)));
+            }
+         }
+
+         scriptRevision.setFiles(files);
          scriptRevision.setApiName(input.getValueString("apiName"));
          scriptRevision.setApiVersion(input.getValueString("apiVersion"));
+         AdHocScriptCodeReference adHocScriptCodeReference = new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision.toQRecord());
+         adHocScriptCodeReference.setCodeType(QCodeType.JAVA_SCRIPT); // todo - load dynamically?
+         adHocScriptCodeReference.setInlineCode(scriptRevision.getFiles().get(0).getContents()); // todo - ugh.
 
          BuildScriptLogAndScriptLogLineExecutionLogger executionLogger = new BuildScriptLogAndScriptLogLineExecutionLogger(null, null);
 
-         /////////////////////////////////////////////////////////////////
-         // lookup the script - figure out how to proceed based on type //
-         /////////////////////////////////////////////////////////////////
-         QRecord script         = getScript(scriptId);
-         String  scriptTypeName = getScriptTypeName(script);
+         //////////////////////////////////////////////////////
+         // load the script & its type & its test interface. //
+         //////////////////////////////////////////////////////
+         QRecord  script       = getScript(scriptId);
+         Integer  scriptTypeId = script.getValueInteger("scriptTypeId");
+         GetInput getInput     = new GetInput();
+         getInput.setTableName(ScriptType.TABLE_NAME);
+         getInput.setPrimaryKey(scriptTypeId);
+         GetOutput  getOutput  = new GetAction().execute(getInput);
+         ScriptType scriptType = new ScriptType(getOutput.getRecord());
 
-         if(ScriptsMetaDataProvider.SCRIPT_TYPE_NAME_RECORD.equals(scriptTypeName))
+         TestScriptActionInterface testScriptActionInterface = QCodeLoader.getAdHoc(TestScriptActionInterface.class, new QCodeReference(scriptType.getTestScriptInterfaceName(), QCodeType.JAVA));
+
+         TestScriptInput testScriptInput = new TestScriptInput();
+         testScriptInput.setApiName(input.getValueString("apiName"));
+         testScriptInput.setApiVersion(input.getValueString("apiVersion"));
+         testScriptInput.setCodeReference(adHocScriptCodeReference);
+
+         Map<String, Serializable> inputValues = new HashMap<>();
+         testScriptInput.setInputValues(inputValues);
+
+         for(Map.Entry<String, Serializable> entry : input.getValues().entrySet())
          {
-            String         tableName = script.getValueString("tableName");
-            QTableMetaData table     = QContext.getQInstance().getTable(tableName);
-            if(table == null)
-            {
-               throw (new QException("Could not find table [" + tableName + "] for script"));
-            }
-
-            String recordPrimaryKeyList = input.getValueString("recordPrimaryKeyList");
-            if(!StringUtils.hasContent(recordPrimaryKeyList))
-            {
-               throw (new QException("Record primary key list was not given."));
-            }
-
-            QueryInput queryInput = new QueryInput();
-            queryInput.setTableName(tableName);
-            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordPrimaryKeyList.split(","))));
-            queryInput.setIncludeAssociations(true);
-            QueryOutput queryOutput = new QueryAction().execute(queryInput);
-            if(CollectionUtils.nullSafeIsEmpty(queryOutput.getRecords()))
-            {
-               throw (new QException("No records were found by the given primary keys."));
-            }
-
-            RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
-            runAdHocRecordScriptInput.setRecordList(queryOutput.getRecords());
-            runAdHocRecordScriptInput.setLogger(executionLogger);
-            runAdHocRecordScriptInput.setTableName(tableName);
-            runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision.toQRecord()));
-            RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
-            new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
-
-            /////////////////////////////////////////////
-            // if there was an exception, send it back //
-            /////////////////////////////////////////////
-            runAdHocRecordScriptOutput.getException().ifPresent(e -> output.addValue("exception", e));
+            String key   = entry.getKey();
+            String value = ValueUtils.getValueAsString(entry.getValue());
+            inputValues.put(key, value);
          }
-         else
-         {
-            throw new QException("This process does not know how to test a script of type: " + scriptTypeName);
-         }
+
+         TestScriptOutput testScriptOutput = new TestScriptOutput();
+         testScriptActionInterface.execute(testScriptInput, testScriptOutput);
 
          output.addValue("scriptLogLines", new ArrayList<>(executionLogger.getScriptLogLines()));
+         output.addValue("outputObject", testScriptOutput.getOutputObject());
       }
       catch(Exception e)
       {
