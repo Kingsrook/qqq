@@ -26,11 +26,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
-import com.kingsrook.qqq.backend.core.actions.scripts.logging.BuildScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptType;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -68,9 +69,9 @@ public class TestScriptProcessStep implements BackendStep
       {
          ActionHelper.validateSession(input);
 
-         ////////////////
-         // get inputs //
-         ////////////////
+         ///////////////////////////////////////////////////////////////////////
+         // build a script revision based on the input params & file contents //
+         ///////////////////////////////////////////////////////////////////////
          Integer scriptId = input.getValueInteger("scriptId");
 
          ScriptRevision scriptRevision = new ScriptRevision();
@@ -90,15 +91,17 @@ public class TestScriptProcessStep implements BackendStep
          scriptRevision.setFiles(files);
          scriptRevision.setApiName(input.getValueString("apiName"));
          scriptRevision.setApiVersion(input.getValueString("apiVersion"));
+
+         ///////////////////////////////////////////////////////
+         // set up a code reference using the script revision //
+         ///////////////////////////////////////////////////////
          AdHocScriptCodeReference adHocScriptCodeReference = new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision.toQRecord());
          adHocScriptCodeReference.setCodeType(QCodeType.JAVA_SCRIPT); // todo - load dynamically?
          adHocScriptCodeReference.setInlineCode(scriptRevision.getFiles().get(0).getContents()); // todo - ugh.
 
-         BuildScriptLogAndScriptLogLineExecutionLogger executionLogger = new BuildScriptLogAndScriptLogLineExecutionLogger(null, null);
-
-         //////////////////////////////////////////////////////
-         // load the script & its type & its test interface. //
-         //////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // load the script and its type, to find the TestScriptActionInterface where the script will be tested //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
          QRecord  script       = getScript(scriptId);
          Integer  scriptTypeId = script.getValueInteger("scriptTypeId");
          GetInput getInput     = new GetInput();
@@ -109,6 +112,9 @@ public class TestScriptProcessStep implements BackendStep
 
          TestScriptActionInterface testScriptActionInterface = QCodeLoader.getAdHoc(TestScriptActionInterface.class, new QCodeReference(scriptType.getTestScriptInterfaceName(), QCodeType.JAVA));
 
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // finish setting up input for the testScript action - including coyping over all input values //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
          TestScriptInput testScriptInput = new TestScriptInput();
          testScriptInput.setApiName(input.getValueString("apiName"));
          testScriptInput.setApiVersion(input.getValueString("apiVersion"));
@@ -124,10 +130,16 @@ public class TestScriptProcessStep implements BackendStep
             inputValues.put(key, value);
          }
 
+         ////////////////////////////////
+         // run the test script action //
+         ////////////////////////////////
          TestScriptOutput testScriptOutput = new TestScriptOutput();
          testScriptActionInterface.execute(testScriptInput, testScriptOutput);
 
-         output.addValue("scriptLogLines", new ArrayList<>(executionLogger.getScriptLogLines()));
+         //////////////////////////////////
+         // send script outputs back out //
+         //////////////////////////////////
+         output.addValue("scriptLogLines", CollectionUtils.useOrWrap(testScriptOutput.getScriptLogLines(), TypeToken.get(ArrayList.class)));
          output.addValue("outputObject", testScriptOutput.getOutputObject());
 
          if(testScriptOutput.getException() != null)
