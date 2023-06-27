@@ -129,6 +129,11 @@ public class TestScriptProcessStep implements BackendStep
 
          output.addValue("scriptLogLines", new ArrayList<>(executionLogger.getScriptLogLines()));
          output.addValue("outputObject", testScriptOutput.getOutputObject());
+
+         if(testScriptOutput.getException() != null)
+         {
+            output.addValue("exception", testScriptOutput.getException());
+         }
       }
       catch(Exception e)
       {
