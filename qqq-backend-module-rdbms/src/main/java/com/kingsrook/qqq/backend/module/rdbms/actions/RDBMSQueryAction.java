@@ -183,6 +183,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                   }
                }
 
+               /////////////////////////////////////////////////////////////////
+               // in case there were no results, set the firstResultTime here //
+               /////////////////////////////////////////////////////////////////
+               setQueryStatFirstResultTime();
+
             }), params);
 
             logSQL(sql, params, mark);

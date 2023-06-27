@@ -142,6 +142,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                   }
                }
 
+               /////////////////////////////////////////////////////////////////
+               // in case there were no results, set the firstResultTime here //
+               /////////////////////////////////////////////////////////////////
+               setQueryStatFirstResultTime();
+
             }), params);
          }
 

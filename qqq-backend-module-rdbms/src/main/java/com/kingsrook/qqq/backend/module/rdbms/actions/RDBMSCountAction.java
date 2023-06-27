@@ -88,8 +88,6 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
             {
                if(resultSet.next())
                {
-                  setQueryStatFirstResultTime();
-
                   rs.setCount(resultSet.getInt("record_count"));
 
                   if(BooleanUtils.isTrue(countInput.getIncludeDistinctCount()))
@@ -97,6 +95,8 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                      rs.setDistinctCount(resultSet.getInt("distinct_count"));
                   }
                }
+
+               setQueryStatFirstResultTime();
 
             }), params);
 
