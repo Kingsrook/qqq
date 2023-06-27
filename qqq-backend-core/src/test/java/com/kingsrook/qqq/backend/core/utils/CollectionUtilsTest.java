@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -558,6 +559,9 @@ class CollectionUtilsTest extends BaseTest
    @Test
    void testUseOrWrap()
    {
+      assertNull(CollectionUtils.useOrWrap((Collection<?>) null, TypeToken.get(ArrayList.class)));
+      assertNull(CollectionUtils.useOrWrap((Map<?, ?>) null, TypeToken.get(HashMap.class)));
+
       {
          List<String>      originalList    = new ArrayList<>(List.of("A", "B", "C"));
          ArrayList<String> reallyArrayList = CollectionUtils.useOrWrap(originalList, new TypeToken<>() {});

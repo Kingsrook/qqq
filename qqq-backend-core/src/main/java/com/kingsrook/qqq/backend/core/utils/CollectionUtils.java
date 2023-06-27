@@ -570,6 +570,11 @@ public class CollectionUtils
    {
       try
       {
+         if(collection == null)
+         {
+            return (null);
+         }
+
          Class<T> targetClass = (Class<T>) typeToken.getRawType();
          if(targetClass.isInstance(collection))
          {
@@ -602,6 +607,11 @@ public class CollectionUtils
    {
       try
       {
+         if(collection == null)
+         {
+            return (null);
+         }
+
          Class<T> targetClass = (Class<T>) typeToken.getRawType();
          if(targetClass.isInstance(collection))
          {
