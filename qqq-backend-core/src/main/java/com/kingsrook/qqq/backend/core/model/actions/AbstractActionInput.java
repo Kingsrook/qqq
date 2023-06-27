@@ -155,14 +155,4 @@ public class AbstractActionInput
       this.asyncJobCallback = asyncJobCallback;
    }
 
-
-
-   /*******************************************************************************
-    ** Fluent setter for instance
-    *******************************************************************************/
-   public AbstractActionInput withInstance(QInstance instance)
-   {
-      return (this);
-   }
-
 }
