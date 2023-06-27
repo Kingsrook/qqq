@@ -137,6 +137,10 @@ public class QueryStatMetaDataProvider
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(criteriaFieldsJoinName)).withName(criteriaFieldsJoinName + "Widget").withLabel("Criteria Fields").getWidgetMetaData());
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(orderByFieldsJoinName)).withName(orderByFieldsJoinName + "Widget").withLabel("Order by Fields").getWidgetMetaData());
 
+      table.withExposedJoin(new ExposedJoin().withJoinTable(QueryStatCriteriaField.TABLE_NAME));
+      table.withExposedJoin(new ExposedJoin().withJoinTable(QueryStatJoinTable.TABLE_NAME));
+      table.withExposedJoin(new ExposedJoin().withJoinTable(QueryStatOrderByField.TABLE_NAME));
+
       table.withAssociation(new Association().withName("queryStatJoinTables").withJoinName(joinTablesJoinName).withAssociatedTableName(QueryStatJoinTable.TABLE_NAME))
          .withAssociation(new Association().withName("queryStatCriteriaFields").withJoinName(criteriaFieldsJoinName).withAssociatedTableName(QueryStatCriteriaField.TABLE_NAME))
          .withAssociation(new Association().withName("queryStatOrderByFields").withJoinName(orderByFieldsJoinName).withAssociatedTableName(QueryStatOrderByField.TABLE_NAME));
