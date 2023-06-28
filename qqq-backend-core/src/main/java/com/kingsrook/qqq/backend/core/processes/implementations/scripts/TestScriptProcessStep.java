@@ -145,6 +145,7 @@ public class TestScriptProcessStep implements BackendStep
          if(testScriptOutput.getException() != null)
          {
             output.addValue("exception", testScriptOutput.getException());
+            output.setException(testScriptOutput.getException());
          }
       }
       catch(Exception e)
@@ -153,6 +154,7 @@ public class TestScriptProcessStep implements BackendStep
          // is this the kind of exception meant here?  or is it more for one thrown by the script execution?  or are those the same?? //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          output.addValue("exception", e);
+         output.setException(e);
       }
    }
 

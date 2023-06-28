@@ -71,11 +71,14 @@ class TestScriptProcessStepTest extends BaseTest
       insertInput.setRecords(List.of(new Script()
          .withName("TestScript")
          .withScriptTypeId(insertOutput.getRecords().get(0).getValueInteger("id"))
+         .withTableName(TestUtils.TABLE_NAME_SHAPE)
          .toQRecord()));
       insertOutput = new InsertAction().execute(insertInput);
 
       RunBackendStepInput input = new RunBackendStepInput();
       input.addValue("scriptId", insertOutput.getRecords().get(0).getValueInteger("id"));
+      TestUtils.insertDefaultShapes(qInstance);
+      input.addValue("recordPrimaryKeyList", "1");
       input.addValue("fileNames", new ArrayList<>(List.of("script.js")));
       input.addValue("fileContents:script.js", "logger.log('oh my.')");
 
