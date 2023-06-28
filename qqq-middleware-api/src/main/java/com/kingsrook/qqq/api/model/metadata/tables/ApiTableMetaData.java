@@ -24,8 +24,10 @@ package com.kingsrook.qqq.api.model.metadata.tables;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.api.ApiSupplementType;
 import com.kingsrook.qqq.api.model.APIVersionRange;
@@ -52,6 +54,8 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
 
    private Set<ApiOperation> enabledOperations  = new HashSet<>();
    private Set<ApiOperation> disabledOperations = new HashSet<>();
+
+   private Map<String, ApiAssociationMetaData> apiAssociationMetaData = new HashMap<>();
 
 
 
@@ -407,6 +411,52 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
       {
          Collections.addAll(this.disabledOperations, operations);
       }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiAssociationMetaData
+    *******************************************************************************/
+   public Map<String, ApiAssociationMetaData> getApiAssociationMetaData()
+   {
+      return (this.apiAssociationMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiAssociationMetaData
+    *******************************************************************************/
+   public void setApiAssociationMetaData(Map<String, ApiAssociationMetaData> apiAssociationMetaData)
+   {
+      this.apiAssociationMetaData = apiAssociationMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiAssociationMetaData
+    *******************************************************************************/
+   public ApiTableMetaData withApiAssociationMetaData(Map<String, ApiAssociationMetaData> apiAssociationMetaData)
+   {
+      this.apiAssociationMetaData = apiAssociationMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiAssociationMetaData
+    *******************************************************************************/
+   public ApiTableMetaData withApiAssociationMetaData(String associationName, ApiAssociationMetaData apiAssociationMetaData)
+   {
+      if(this.apiAssociationMetaData == null)
+      {
+         this.apiAssociationMetaData = new HashMap<>();
+      }
+      this.apiAssociationMetaData.put(associationName, apiAssociationMetaData);
       return (this);
    }
 

@@ -40,6 +40,7 @@ public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
    private ApiFieldMetaData defaultApiFieldMetaData;
 
 
+
    /*******************************************************************************
     ** Constructor
     **
@@ -57,6 +58,23 @@ public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
    public static ApiFieldMetaDataContainer of(QFieldMetaData field)
    {
       return ((ApiFieldMetaDataContainer) field.getSupplementalMetaData(ApiSupplementType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    ** either get the container attached to a field - or create a new one and attach
+    ** it to the field, and return that.
+    *******************************************************************************/
+   public static ApiFieldMetaDataContainer ofOrWithNew(QFieldMetaData field)
+   {
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = (ApiFieldMetaDataContainer) field.getSupplementalMetaData(ApiSupplementType.NAME);
+      if(apiFieldMetaDataContainer == null)
+      {
+         apiFieldMetaDataContainer = new ApiFieldMetaDataContainer();
+         field.withSupplementalMetaData(apiFieldMetaDataContainer);
+      }
+      return (apiFieldMetaDataContainer);
    }
 
 

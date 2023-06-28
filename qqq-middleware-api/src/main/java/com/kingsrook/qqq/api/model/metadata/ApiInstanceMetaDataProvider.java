@@ -123,6 +123,11 @@ public class ApiInstanceMetaDataProvider
          ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
          allVersions.addAll(apiInstanceMetaData.getPastVersions());
          allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // I think we don't want future-versions in this dropdown, I think...                                //
+         // grr, actually todo maybe we want this to be a table-backed enum, with past/present/future columns //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
          allVersions.addAll(apiInstanceMetaData.getFutureVersions());
       }
 

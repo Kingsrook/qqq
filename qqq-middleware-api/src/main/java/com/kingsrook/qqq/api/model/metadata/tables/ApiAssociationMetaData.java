@@ -22,153 +22,125 @@
 package com.kingsrook.qqq.api.model.metadata.tables;
 
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import com.kingsrook.qqq.api.ApiSupplementType;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.api.model.APIVersionRange;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
+public class ApiAssociationMetaData
 {
-   private Map<String, ApiTableMetaData> apis;
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public ApiTableMetaDataContainer()
-   {
-      setType("api");
-   }
+   private String  initialVersion;
+   private String  finalVersion;
+   private Boolean isExcluded;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static ApiTableMetaDataContainer of(QTableMetaData table)
+   public APIVersionRange getApiVersionRange()
    {
-      return ((ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME));
-   }
-
-
-
-   /*******************************************************************************
-    ** either get the container attached to a table - or create a new one and attach
-    ** it to the table, and return that.
-    *******************************************************************************/
-   public static ApiTableMetaDataContainer ofOrWithNew(QTableMetaData table)
-   {
-      ApiTableMetaDataContainer apiTableMetaDataContainer = (ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME);
-      if(apiTableMetaDataContainer == null)
+      if(getInitialVersion() == null)
       {
-         apiTableMetaDataContainer = new ApiTableMetaDataContainer();
-         table.withSupplementalMetaData(apiTableMetaDataContainer);
-      }
-      return (apiTableMetaDataContainer);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void enrich(QTableMetaData table)
-   {
-      super.enrich(table);
-
-      for(Map.Entry<String, ApiTableMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
-      {
-         entry.getValue().enrich(entry.getKey(), table);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apis
-    *******************************************************************************/
-   public Map<String, ApiTableMetaData> getApis()
-   {
-      return (this.apis);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apis
-    *******************************************************************************/
-   public ApiTableMetaData getApiTableMetaData(String apiName)
-   {
-      if(this.apis == null)
-      {
-         return (null);
+         return APIVersionRange.none();
       }
 
-      return (this.apis.get(apiName));
+      return (getFinalVersion() != null
+         ? APIVersionRange.betweenAndIncluding(getInitialVersion(), getFinalVersion())
+         : APIVersionRange.afterAndIncluding(getInitialVersion()));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for api
+    ** Getter for initialVersion
     *******************************************************************************/
-   public ApiTableMetaData getOrWithNewApiTableMetaData(String apiName)
+   public String getInitialVersion()
    {
-      if(this.apis == null)
-      {
-         this.apis = new LinkedHashMap<>();
-      }
-
-      if(!this.apis.containsKey(apiName))
-      {
-         this.apis.put(apiName, new ApiTableMetaData());
-      }
-
-      return (this.apis.get(apiName));
+      return (this.initialVersion);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for apis
+    ** Setter for initialVersion
     *******************************************************************************/
-   public void setApis(Map<String, ApiTableMetaData> apis)
+   public void setInitialVersion(String initialVersion)
    {
-      this.apis = apis;
+      this.initialVersion = initialVersion;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for apis
+    ** Fluent setter for initialVersion
     *******************************************************************************/
-   public ApiTableMetaDataContainer withApis(Map<String, ApiTableMetaData> apis)
+   public ApiAssociationMetaData withInitialVersion(String initialVersion)
    {
-      this.apis = apis;
+      this.initialVersion = initialVersion;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for apis
+    ** Getter for finalVersion
     *******************************************************************************/
-   public ApiTableMetaDataContainer withApiTableMetaData(String apiName, ApiTableMetaData apiTableMetaData)
+   public String getFinalVersion()
    {
-      if(this.apis == null)
-      {
-         this.apis = new LinkedHashMap<>();
-      }
-      this.apis.put(apiName, apiTableMetaData);
+      return (this.finalVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for finalVersion
+    *******************************************************************************/
+   public void setFinalVersion(String finalVersion)
+   {
+      this.finalVersion = finalVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for finalVersion
+    *******************************************************************************/
+   public ApiAssociationMetaData withFinalVersion(String finalVersion)
+   {
+      this.finalVersion = finalVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isExcluded
+    *******************************************************************************/
+   public Boolean getIsExcluded()
+   {
+      return (this.isExcluded);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isExcluded
+    *******************************************************************************/
+   public void setIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isExcluded
+    *******************************************************************************/
+   public ApiAssociationMetaData withIsExcluded(Boolean isExcluded)
+   {
+      this.isExcluded = isExcluded;
       return (this);
    }
 

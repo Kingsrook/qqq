@@ -48,6 +48,7 @@ import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessUtils;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiAssociationMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.api.model.openapi.Components;
@@ -428,7 +429,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          //////////////////////////////////////
          // build the schemas for this table //
          //////////////////////////////////////
-         Schema tableSchema = buildTableSchema(apiInstanceMetaData, table, tableApiFields);
+         Schema tableSchema = buildTableSchema(apiInstanceMetaData, version, table, tableApiFields);
          componentSchemas.put(tableApiName, tableSchema);
 
          //////////////////////////////////////////////////////////////////////////////
@@ -1188,7 +1189,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withVersion(version)
                   .withApiName(apiName)).getFields();
 
-               componentSchemas.put(tableApiName, buildTableSchema(apiInstanceMetaData, table, tableApiFields));
+               componentSchemas.put(tableApiName, buildTableSchema(apiInstanceMetaData, version, table, tableApiFields));
                addedAny = true;
                break;
             }
@@ -1202,7 +1203,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Schema buildTableSchema(ApiInstanceMetaData apiInstanceMetaData, QTableMetaData table, List<QFieldMetaData> tableApiFields)
+   private Schema buildTableSchema(ApiInstanceMetaData apiInstanceMetaData, String version, QTableMetaData table, List<QFieldMetaData> tableApiFields)
    {
       LinkedHashMap<String, Schema> tableFields = new LinkedHashMap<>();
       Schema tableSchema = new Schema()
@@ -1225,7 +1226,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       //////////////////////////////////
       // recursively add associations //
       //////////////////////////////////
-      addAssociations(apiInstanceMetaData.getName(), table, tableSchema);
+      addAssociations(apiInstanceMetaData.getName(), version, table, tableSchema);
 
       return (tableSchema);
    }
@@ -1367,14 +1368,33 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addAssociations(String apiName, QTableMetaData table, Schema tableSchema)
+   private void addAssociations(String apiName, String version, QTableMetaData table, Schema tableSchema)
    {
+      ApiTableMetaData thisApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(table).getApiTableMetaData(apiName), new ApiTableMetaData());
+
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
          String           associatedTableName        = association.getAssociatedTableName();
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
          ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
+
+         ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
+         if(apiAssociationMetaData != null)
+         {
+            if(BooleanUtils.isTrue(apiAssociationMetaData.getIsExcluded()))
+            {
+               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because it is marked as excluded.");
+               continue;
+            }
+
+            APIVersionRange apiVersionRange = apiAssociationMetaData.getApiVersionRange();
+            if(!apiVersionRange.includes(new APIVersion(version)))
+            {
+               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
+               continue;
+            }
+         }
 
          neededTableSchemas.add(associatedTable.getName());
 

@@ -281,6 +281,10 @@ public class ApiImplementation
 
          try
          {
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo - deal with removed fields; fields w/ custom value mappers (need new method(s) there) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+
             QFieldMetaData field = table.getField(name);
             for(String value : values)
             {

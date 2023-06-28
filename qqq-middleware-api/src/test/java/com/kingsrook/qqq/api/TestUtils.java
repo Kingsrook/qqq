@@ -549,6 +549,28 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "ORD123").withValue("storeId", 47)
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 1).withValue("sku", "BASIC1").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Discount").withValue("value", "3.50"))
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Color").withValue("value", "Red")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 2).withValue("sku", "BASIC2").withValue("quantity", 42)
+            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium")))
+         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 3).withValue("sku", "BASIC3").withValue("quantity", 42))
+         .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "shopifyOrderNo").withValue("value", "#1032"))
+      ));
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static class OrderPreInsertCustomizer extends AbstractPreInsertCustomizer
    {
       /*******************************************************************************
