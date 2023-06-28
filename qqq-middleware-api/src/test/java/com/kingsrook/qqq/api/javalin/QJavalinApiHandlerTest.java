@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -61,7 +62,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.api.TestUtils.insertPersonRecord;
 import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
@@ -110,6 +113,18 @@ class QJavalinApiHandlerTest extends BaseTest
       qJavalinImplementation.startJavalinServer(PORT);
       EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
       qJavalinImplementation.getJavalinService().routes(routes);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   @AfterEach
+   void beforeAndAfterEach()
+   {
+      ApiImplementation.clearCaches();
    }
 
 
@@ -1495,6 +1510,7 @@ class QJavalinApiHandlerTest extends BaseTest
 
       fail("Never got back a 207, after many sleeps");
    }
+
 
 
    /*******************************************************************************
