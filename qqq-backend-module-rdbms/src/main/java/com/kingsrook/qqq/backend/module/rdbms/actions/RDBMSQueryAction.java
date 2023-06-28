@@ -270,7 +270,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());
             String joinColumns = joinFieldList.stream()
-               .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
                .map(field -> Pair.of(field, escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field))))
                .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
                .collect(Collectors.joining(", "));
