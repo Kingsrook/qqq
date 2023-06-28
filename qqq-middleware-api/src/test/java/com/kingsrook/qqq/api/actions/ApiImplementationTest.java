@@ -45,6 +45,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,6 +58,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class ApiImplementationTest extends BaseTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   @AfterEach
+   void beforeAndAfterEach()
+   {
+      QRecordApiAdapter.clearCaches();
+   }
+
+
 
    /*******************************************************************************
     **

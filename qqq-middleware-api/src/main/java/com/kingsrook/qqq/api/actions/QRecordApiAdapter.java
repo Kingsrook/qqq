@@ -70,6 +70,17 @@ public class QRecordApiAdapter
 
 
    /*******************************************************************************
+    ** Allow tests (that manipulate meta-data) to clear field caches.
+    *******************************************************************************/
+   public static void clearCaches()
+   {
+      fieldListCache.clear();
+      fieldMapCache.clear();
+   }
+
+
+
+   /*******************************************************************************
     ** Convert a QRecord to a map for the API
     *******************************************************************************/
    public static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion) throws QException
@@ -327,5 +338,4 @@ public class QRecordApiAdapter
    {
 
    }
-
 }
