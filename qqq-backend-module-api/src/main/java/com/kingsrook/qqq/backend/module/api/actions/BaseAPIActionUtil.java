@@ -634,7 +634,7 @@ public class BaseAPIActionUtil
       {
          QSession session = QContext.getQSession();
          if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
-      {
+         {
             throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
          }
 
