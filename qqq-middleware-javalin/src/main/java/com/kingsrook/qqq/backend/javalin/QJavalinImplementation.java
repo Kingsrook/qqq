@@ -87,6 +87,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -98,11 +100,13 @@ import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSo
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendVariant;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -114,6 +118,7 @@ import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import io.javalin.Javalin;
@@ -348,6 +353,7 @@ public class QJavalinImplementation
             post("/", QJavalinImplementation::dataInsert);
             get("/count", QJavalinImplementation::dataCount);
             post("/count", QJavalinImplementation::dataCount);
+            get("/variants", QJavalinImplementation::variants);
             get("/export", QJavalinImplementation::dataExportWithoutFilename);
             post("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
@@ -477,6 +483,13 @@ public class QJavalinImplementation
          QContext.init(qInstance, null); // hmm...
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, input);
+
+         String tableVariant = StringUtils.hasContent(context.formParam("tableVariant")) ? context.formParam("tableVariant") : context.queryParam("tableVariant");
+         if(StringUtils.hasContent(tableVariant))
+         {
+            JSONObject variant = new JSONObject(tableVariant);
+            QContext.getQSession().setBackendVariants(MapBuilder.of(variant.getString("type"), variant.getInt("id")));
+         }
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
@@ -964,6 +977,57 @@ public class QJavalinImplementation
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    *
+    *******************************************************************************/
+   static void variants(Context context)
+   {
+      String                 table    = context.pathParam("table");
+      List<QFrontendVariant> variants = new ArrayList<>();
+
+      try
+      {
+         QueryInput queryInput = new QueryInput();
+         setupSession(context, queryInput);
+
+         ////////////////////////////////////
+         // get the backend for this table //
+         ////////////////////////////////////
+         QTableMetaData   tableMetaData = QContext.getQInstance().getTable(table);
+         QBackendMetaData backend       = QContext.getQInstance().getBackend(tableMetaData.getBackendName());
+
+         /////////////////////////////////////////////////////////////////////////////////////
+         // if the backend uses variants, query for all possible variants of the given type //
+         /////////////////////////////////////////////////////////////////////////////////////
+         if(backend != null && backend.getUsesVariants())
+         {
+            queryInput.setTableName(backend.getVariantOptionsTableName());
+            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(backend.getVariantOptionsTableTypeField(), QCriteriaOperator.EQUALS, backend.getVariantOptionsTableTypeValue())));
+            QueryOutput output = new QueryAction().execute(queryInput);
+            for(QRecord qRecord : output.getRecords())
+            {
+               variants.add(new QFrontendVariant()
+                  .withId(qRecord.getValue(backend.getVariantOptionsTableIdField()))
+                  .withType(backend.getVariantOptionsTableTypeValue())
+                  .withName(qRecord.getValueString(backend.getVariantOptionsTableNameField()));
+            }
+
+            QJavalinAccessLogger.logStartSilent("variants");
+            PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
+         }
+
+         QJavalinAccessLogger.logEndSuccessIfSlow(SLOW_LOG_THRESHOLD_MS, logPair("table", table), logPair("input", queryInput));
+         context.result(JsonUtils.toJson(variants));
+      }
+      catch(Exception e)
+      {
+         QJavalinAccessLogger.logEndFail(e, logPair("table", table));
          handleException(context, e);
       }
    }

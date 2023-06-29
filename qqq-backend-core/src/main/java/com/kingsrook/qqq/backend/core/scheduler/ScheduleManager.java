@@ -38,9 +38,13 @@ import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -142,7 +146,7 @@ public class ScheduleManager
          if(process.getSchedule() != null && allowedToStart(process.getName()))
          {
             QScheduleMetaData scheduleMetaData = process.getSchedule();
-            if(process.getSchedule().getBackendVariant() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+            if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
             {
                ///////////////////////////////////////////////
                // if no variants, or variant is serial mode //
@@ -156,11 +160,12 @@ public class ScheduleManager
                // running at the same time, get the variant records and schedule each separately                  //
                /////////////////////////////////////////////////////////////////////////////////////////////////////
                QContext.init(qInstance, sessionSupplier.get());
+               QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
                for(QRecord qRecord : CollectionUtils.nonNullList(getBackendVariantFilteredRecords(process)))
                {
                   try
                   {
-                     startProcess(process, MapBuilder.of(scheduleMetaData.getBackendVariant(), qRecord.getValue(scheduleMetaData.getVariantFieldName())));
+                     startProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
                   }
                   catch(Exception e)
                   {
@@ -170,7 +175,7 @@ public class ScheduleManager
             }
             else
             {
-               LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantFilter() + "] was provided.");
+               LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
             }
          }
       }
@@ -187,10 +192,11 @@ public class ScheduleManager
       try
       {
          QScheduleMetaData scheduleMetaData = processMetaData.getSchedule();
+         QBackendMetaData  backendMetaData  = qInstance.getBackend(scheduleMetaData.getVariantBackend());
 
          QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(scheduleMetaData.getVariantTableName());
-         queryInput.setFilter(scheduleMetaData.getVariantFilter());
+         queryInput.setTableName(backendMetaData.getVariantOptionsTableName());
+         queryInput.setFilter(new QQueryFilter(new QFilterCriteria(backendMetaData.getVariantOptionsTableTypeField(), QCriteriaOperator.EQUALS, backendMetaData.getVariantOptionsTableTypeValue())));
 
          QContext.init(qInstance, sessionSupplier.get());
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
@@ -325,7 +331,7 @@ public class ScheduleManager
 
          try
          {
-            if(process.getSchedule().getBackendVariant() == null || QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+            if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
             {
                QContext.init(qInstance, sessionSupplier.get());
                executeSingleProcess(process, backendVariantData);
@@ -342,7 +348,8 @@ public class ScheduleManager
                   {
                      QContext.init(qInstance, sessionSupplier.get());
                      QScheduleMetaData scheduleMetaData = process.getSchedule();
-                     executeSingleProcess(process, MapBuilder.of(scheduleMetaData.getBackendVariant(), qRecord.getValue(scheduleMetaData.getVariantFieldName())));
+                     QBackendMetaData  backendMetaData  = qInstance.getBackend(scheduleMetaData.getVariantBackend());
+                     executeSingleProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
                   }
                   catch(Exception e)
                   {

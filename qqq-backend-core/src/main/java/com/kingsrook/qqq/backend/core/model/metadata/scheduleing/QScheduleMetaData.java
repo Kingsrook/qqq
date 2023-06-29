@@ -22,9 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-
-
 /*******************************************************************************
  ** Meta-data to define scheduled actions within QQQ.
  **
@@ -46,11 +43,8 @@ public class QScheduleMetaData
    private Integer initialDelaySeconds;
    private Integer initialDelayMillis;
 
-   private RunStrategy  variantRunStrategy;
-   private String       backendVariant;
-   private String       variantTableName;
-   private QQueryFilter variantFilter;
-   private String       variantFieldName;
+   private RunStrategy variantRunStrategy;
+   private String      variantBackend;
 
 
 
@@ -191,124 +185,31 @@ public class QScheduleMetaData
 
 
    /*******************************************************************************
-    ** Getter for backendVariant
+    ** Getter for variantBackend
     *******************************************************************************/
-   public String getBackendVariant()
+   public String getVariantBackend()
    {
-      return (this.backendVariant);
+      return (this.variantBackend);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for backendVariant
+    ** Setter for variantBackend
     *******************************************************************************/
-   public void setBackendVariant(String backendVariant)
+   public void setVariantBackend(String variantBackend)
    {
-      this.backendVariant = backendVariant;
+      this.variantBackend = variantBackend;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for backendVariant
+    ** Fluent setter for variantBackend
     *******************************************************************************/
    public QScheduleMetaData withBackendVariant(String backendVariant)
    {
-      this.backendVariant = backendVariant;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantTableName
-    *******************************************************************************/
-   public String getVariantTableName()
-   {
-      return (this.variantTableName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for variantTableName
-    *******************************************************************************/
-   public void setVariantTableName(String variantTableName)
-   {
-      this.variantTableName = variantTableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for variantTableName
-    *******************************************************************************/
-   public QScheduleMetaData withVariantTableName(String variantTableName)
-   {
-      this.variantTableName = variantTableName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantFilter
-    *******************************************************************************/
-   public QQueryFilter getVariantFilter()
-   {
-      return (this.variantFilter);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for variantFilter
-    *******************************************************************************/
-   public void setVariantFilter(QQueryFilter variantFilter)
-   {
-      this.variantFilter = variantFilter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for variantFilter
-    *******************************************************************************/
-   public QScheduleMetaData withVariantFilter(QQueryFilter variantFilter)
-   {
-      this.variantFilter = variantFilter;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantFieldName
-    *******************************************************************************/
-   public String getVariantFieldName()
-   {
-      return (this.variantFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for variantFieldName
-    *******************************************************************************/
-   public void setVariantFieldName(String variantFieldName)
-   {
-      this.variantFieldName = variantFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for variantFieldName
-    *******************************************************************************/
-   public QScheduleMetaData withVariantFieldName(String variantFieldName)
-   {
-      this.variantFieldName = variantFieldName;
+      this.variantBackend = backendVariant;
       return (this);
    }
 

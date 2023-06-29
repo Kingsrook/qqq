@@ -1224,11 +1224,10 @@ public class QInstanceValidator
                QScheduleMetaData schedule = process.getSchedule();
                assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
 
-               if(schedule.getBackendVariant() != null)
+               if(schedule.getVariantBackend() != null)
                {
-                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant strategy was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
-                  assertCondition(schedule.getVariantTableName() != null, "A variant table name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
-                  assertCondition(schedule.getVariantFieldName() != null, "A variant field name was not set for " + schedule.getBackendVariant() + " on schedule in process " + processName);
+                  assertCondition(qInstance.getBackend(schedule.getVariantBackend()) != null, "A variant backend was not found for " + schedule.getVariantBackend());
+                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant run strategy was not set for " + schedule.getVariantBackend() + " on schedule in process " + processName);
                }
             }
 
