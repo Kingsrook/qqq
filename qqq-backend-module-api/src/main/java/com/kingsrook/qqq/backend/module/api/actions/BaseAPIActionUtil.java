@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -644,6 +646,20 @@ public class BaseAPIActionUtil
             request.setHeader("Authorization", "Bearer " + getOAuth2Token());
             break;
 
+         case API_KEY_QUERY_PARAM:
+            try
+            {
+               String uri = request.getURI().toString();
+               uri += (uri.contains("?") ? "&" : "?");
+               uri += backendMetaData.getApiKeyQueryParamName() + "=" + backendMetaData.getApiKey();
+               request.setURI(new URI(uri));
+            }
+            catch(URISyntaxException e)
+            {
+               throw (new QException("Error setting authorization query parameter", e));
+            }
+            break;
+
          default:
             throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
@@ -1051,37 +1067,53 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void logOutboundApiCall(HttpRequestBase request, QHttpResponse response)
    {
-      QTableMetaData table = QContext.getQInstance().getTable(OutboundAPILog.TABLE_NAME);
-      if(table == null)
+      try
       {
-         return;
-      }
+         QTableMetaData table = QContext.getQInstance().getTable(OutboundAPILog.TABLE_NAME);
+         if(table == null)
+         {
+            return;
+         }
 
-      String requestBody = null;
-      if(request instanceof HttpEntityEnclosingRequest entityRequest)
+         String requestBody = null;
+         if(request instanceof HttpEntityEnclosingRequest entityRequest)
+         {
+            try
+            {
+               requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
+            }
+            catch(Exception e)
+            {
+               // leave it null...
+            }
+         }
+
+         ////////////////////////////////////
+         // mask api keys in query strings //
+         ////////////////////////////////////
+         String url = request.getURI().toString();
+         if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_QUERY_PARAM))
+         {
+            url = url.replaceFirst(backendMetaData.getApiKey(), "******");
+         }
+
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(table.getName());
+         insertInput.setRecords(List.of(new OutboundAPILog()
+            .withMethod(request.getMethod())
+            .withUrl(url)
+            .withTimestamp(Instant.now())
+            .withRequestBody(requestBody)
+            .withStatusCode(response.getStatusCode())
+            .withResponseBody(response.getContent())
+            .toQRecord()
+         ));
+         new InsertAction().executeAsync(insertInput);
+      }
+      catch(Exception e)
       {
-         try
-         {
-            requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
-         }
-         catch(Exception e)
-         {
-            // leave it null...
-         }
+         LOG.warn("Error logging outbound api call", e);
       }
-
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(table.getName());
-      insertInput.setRecords(List.of(new OutboundAPILog()
-         .withMethod(request.getMethod())
-         .withUrl(request.getURI().toString()) // todo - does this have the query string?
-         .withTimestamp(Instant.now())
-         .withRequestBody(requestBody)
-         .withStatusCode(response.getStatusCode())
-         .withResponseBody(response.getContent())
-         .toQRecord()
-      ));
-      new InsertAction().executeAsync(insertInput);
    }
 
 

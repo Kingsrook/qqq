@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.api.model.metadata;
 
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.module.api.BaseTest;
+import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +40,7 @@ class APIBackendMetaDataTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void test()
+   void testMissingBaseUrl()
    {
       APIBackendMetaData apiBackendMetaData = new APIBackendMetaData()
          .withName("test");
@@ -47,6 +48,47 @@ class APIBackendMetaDataTest extends BaseTest
       apiBackendMetaData.performValidation(qInstanceValidator);
       assertEquals(1, qInstanceValidator.getErrors().size());
       assertThat(qInstanceValidator.getErrors()).anyMatch(e -> e.contains("Missing baseUrl"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuthorizationApiKeyQueryParam()
+   {
+      APIBackendMetaData apiBackendMetaData = new APIBackendMetaData()
+         .withAuthorizationType(AuthorizationType.API_KEY_QUERY_PARAM)
+         .withBaseUrl("http://localhost:8000/")
+         .withName("test");
+      QInstanceValidator qInstanceValidator = new QInstanceValidator();
+      apiBackendMetaData.performValidation(qInstanceValidator);
+      assertEquals(2, qInstanceValidator.getErrors().size());
+      assertThat(qInstanceValidator.getErrors()).anyMatch(e -> e.contains("Missing apiKey for API backend"));
+      assertThat(qInstanceValidator.getErrors()).anyMatch(e -> e.contains("Missing apiKeyQueryParamName for API backend"));
+
+      apiBackendMetaData = new APIBackendMetaData()
+         .withAuthorizationType(AuthorizationType.API_KEY_QUERY_PARAM)
+         .withApiKey("ABC-123")
+         .withApiKeyQueryParamName("key")
+         .withBaseUrl("http://localhost:8000/")
+         .withName("test");
+      qInstanceValidator = new QInstanceValidator();
+      apiBackendMetaData.performValidation(qInstanceValidator);
+      assertEquals(0, qInstanceValidator.getErrors().size());
+
+      apiBackendMetaData = new APIBackendMetaData()
+         .withAuthorizationType(AuthorizationType.API_KEY_HEADER)
+         .withApiKey("ABC-123")
+         .withApiKeyQueryParamName("key")
+         .withBaseUrl("http://localhost:8000/")
+         .withName("test");
+      qInstanceValidator = new QInstanceValidator();
+      apiBackendMetaData.performValidation(qInstanceValidator);
+      assertEquals(1, qInstanceValidator.getErrors().size());
+      assertThat(qInstanceValidator.getErrors()).anyMatch(e -> e.contains("Unexpected apiKeyQueryParamName for API backend"));
+
    }
 
 }

@@ -338,6 +338,17 @@ public class GetAction
 
 
    /*******************************************************************************
+    ** Run a GetAction by using the QueryAction instead (e.g., with a filter made
+    ** from the pkey/ukey, and returning the single record if found).
+    *******************************************************************************/
+   public GetOutput executeViaQuery(GetInput getInput) throws QException
+   {
+      return (new DefaultGetInterface().execute(getInput));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private static class DefaultGetInterface implements GetInterface

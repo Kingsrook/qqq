@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  **
  *******************************************************************************/
 @JsonDeserialize(using = QBackendMetaDataDeserializer.class)
-public class QBackendMetaData
+public class QBackendMetaData implements TopLevelMetaDataInterface
 {
    private String name;
    private String backendType;
@@ -409,4 +409,14 @@ public class QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addBackend(this);
+   }
 }
