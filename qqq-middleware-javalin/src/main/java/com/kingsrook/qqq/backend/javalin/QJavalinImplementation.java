@@ -1015,7 +1015,7 @@ public class QJavalinImplementation
                variants.add(new QFrontendVariant()
                   .withId(qRecord.getValue(backend.getVariantOptionsTableIdField()))
                   .withType(backend.getVariantOptionsTableTypeValue())
-                  .withName(qRecord.getValueString(backend.getVariantOptionsTableNameField()));
+                  .withName(qRecord.getValueString(backend.getVariantOptionsTableNameField())));
             }
 
             QJavalinAccessLogger.logStartSilent("variants");
