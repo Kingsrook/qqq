@@ -787,7 +787,7 @@ public class BaseAPIActionUtil
     ** Helper method to create a value for an Authentication header, using just a
     ** username & password - encoded as Basic + base64(username:password)
     *******************************************************************************/
-   protected String getBasicAuthenticationHeader(String username, String password)
+   public String getBasicAuthenticationHeader(String username, String password)
    {
       return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
    }

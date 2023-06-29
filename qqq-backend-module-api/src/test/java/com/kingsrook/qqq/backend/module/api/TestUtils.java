@@ -66,6 +66,8 @@ public class TestUtils
       qInstance.addBackend(defineEasypostBackend());
       qInstance.addTable(defineTableEasypostTracker());
 
+      qInstance.addTable(defineVariant());
+
       return (qInstance);
    }
 
@@ -146,6 +148,29 @@ public class TestUtils
          .withBaseUrl("https://api.easypost.com/v2/")
          .withContentType("application/json")
          .withActionUtil(new QCodeReference(EasyPostUtils.class))
+      );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QTableMetaData defineVariant()
+   {
+      return (new QTableMetaData()
+         .withName("variant")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("type", QFieldType.STRING))
+         .withField(new QFieldMetaData("apiKey", QFieldType.STRING))
+         .withField(new QFieldMetaData("username", QFieldType.STRING))
+         .withField(new QFieldMetaData("password", QFieldType.STRING))
+         .withPrimaryKeyField("id")
+         .withBackendDetails(new APITableBackendDetails()
+            .withTablePath("variant")
+            .withTableWrapperObjectName("variant")
+         )
       );
    }
 
