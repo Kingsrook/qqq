@@ -502,14 +502,22 @@ public class BaseAPIActionUtil
          {
             for(int i = 0; i < resultList.length(); i++)
             {
-               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
-               count++;
+               QRecord record = jsonObjectToRecord(resultList.getJSONObject(i), table.getFields());
+               if(record != null)
+               {
+                  queryOutput.addRecord(record);
+                  count++;
+               }
             }
          }
          else
          {
-            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
-            count++;
+            QRecord record = jsonObjectToRecord(jsonObject, table.getFields());
+            if(record != null)
+            {
+               queryOutput.addRecord(record);
+               count++;
+            }
          }
       }
 
