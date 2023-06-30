@@ -28,38 +28,32 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
  *******************************************************************************/
 public abstract class QSupplementalTableMetaData
 {
-   protected String type;
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean includeInPartialFrontendMetaData()
+   {
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean includeInFullFrontendMetaData()
+   {
+      return (false);
+   }
 
 
 
    /*******************************************************************************
     ** Getter for type
     *******************************************************************************/
-   public String getType()
-   {
-      return (this.type);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    *******************************************************************************/
-   public QSupplementalTableMetaData withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
+   public abstract String getType();
 
 
 

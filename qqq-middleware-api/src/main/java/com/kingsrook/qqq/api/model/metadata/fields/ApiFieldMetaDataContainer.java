@@ -40,13 +40,13 @@ public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
    private ApiFieldMetaData defaultApiFieldMetaData;
 
 
+
    /*******************************************************************************
     ** Constructor
     **
     *******************************************************************************/
    public ApiFieldMetaDataContainer()
    {
-      setType("api");
    }
 
 
@@ -162,4 +162,14 @@ public class ApiFieldMetaDataContainer extends QSupplementalFieldMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getType()
+   {
+      return (ApiSupplementType.NAME);
+   }
 }

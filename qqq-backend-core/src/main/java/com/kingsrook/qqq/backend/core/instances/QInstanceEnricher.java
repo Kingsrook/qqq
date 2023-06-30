@@ -100,7 +100,7 @@ public class QInstanceEnricher
 
    //////////////////////////////////////////////////////////////////////////////////////////////////
    // let an instance define mappings to be applied during name-to-label enrichments,              //
-   // e.g., to avoid ever incorrectly camel-casing an acronym (e.g., "Tla" shoudl always be "TLA") //
+   // e.g., to avoid ever incorrectly camel-casing an acronym (e.g., "Tla" should always be "TLA") //
    // or to expand abbreviations in code (e.g., "Addr" should always be "Address"                  //
    //////////////////////////////////////////////////////////////////////////////////////////////////
    private static final Map<String, String> labelMappings = new LinkedHashMap<>();
