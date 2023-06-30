@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -87,12 +88,13 @@ public class QueryAction
          throw (new QException("Table name was not specified in query input"));
       }
 
-      if(queryInput.getTable() == null)
+      QTableMetaData table = queryInput.getTable();
+      if(table == null)
       {
          throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
       }
 
-      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, queryInput.getTable(), TableCustomizers.POST_QUERY_RECORD.getRole());
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 
       if(queryInput.getRecordPipe() != null)
@@ -114,6 +116,14 @@ public class QueryAction
       // todo pre-customization - just get to modify the request?
       QueryOutput queryOutput = qModule.getQueryInterface().execute(queryInput);
       // todo post-customization - can do whatever w/ the result if you want
+
+      ////////////////////////////
+      // handle cache use-cases //
+      ////////////////////////////
+      if(table.getCacheOf() != null)
+      {
+         new QueryActionCacheHelper().handleCaching(queryInput, queryOutput);
+      }
 
       if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
       {
