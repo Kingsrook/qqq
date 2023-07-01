@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -125,11 +126,21 @@ public class QueryActionCacheHelper
 
             if(CollectionUtils.nullSafeHasContents(recordsToCache))
             {
-               InsertInput insertInput = new InsertInput();
-               insertInput.setTableName(queryInput.getTableName());
-               insertInput.setRecords(recordsToCache);
-               insertInput.setSkipUniqueKeyCheck(true);
-               InsertOutput insertOutput = new InsertAction().execute(insertInput);
+               try
+               {
+                  InsertInput insertInput = new InsertInput();
+                  insertInput.setTableName(queryInput.getTableName());
+                  insertInput.setRecords(recordsToCache);
+                  insertInput.setSkipUniqueKeyCheck(true);
+                  InsertOutput insertOutput = new InsertAction().execute(insertInput);
+               }
+               catch(Exception e)
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // don't let an exception break this query - it (probably) just indicates some data that didn't get cached - so - that's generally "ok" //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  LOG.warn("Error inserting cached records", e, logPair("cacheTable", queryInput.getTableName()));
+               }
             }
          }
       }
@@ -220,17 +231,28 @@ public class QueryActionCacheHelper
             List<QRecord> recordsToUpdate = refreshedRecordsToReturn.stream().filter(r -> CacheUtils.shouldCacheRecord(table, r)).toList();
             if(CollectionUtils.nullSafeHasContents(recordsToUpdate))
             {
-               UpdateInput updateInput = new UpdateInput();
-               updateInput.setTableName(queryInput.getTableName());
-               updateInput.setRecords(recordsToUpdate);
-               UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+               try
+               {
+                  UpdateInput updateInput = new UpdateInput();
+                  updateInput.setTableName(queryInput.getTableName());
+                  updateInput.setRecords(recordsToUpdate);
+                  UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+               }
+               catch(Exception e)
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // don't let an exception break this query - it (probably) just indicates some data that didn't get cached - so - that's generally "ok" //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  LOG.warn("Error updating cached records", e, logPair("cacheTable", queryInput.getTableName()));
+               }
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // if the records were missed in the source - OR if they shouldn't be cached now, then mark them for deleting //
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            Set<Serializable> cachedRecordIdsToDelete = new HashSet<>(missedUniqueKeyValues.stream()
-               .map(ukValues -> uniqueKeyToPrimaryKeyMap.get(ukValues)).collect(Collectors.toSet()));
+            Set<Serializable> cachedRecordIdsToDelete = missedUniqueKeyValues.stream()
+               .map(uniqueKeyToPrimaryKeyMap::get)
+               .collect(Collectors.toSet());
 
             cachedRecordIdsToDelete.addAll(refreshedRecordsToReturn.stream()
                .filter(r -> !CacheUtils.shouldCacheRecord(table, r))
@@ -242,10 +264,21 @@ public class QueryActionCacheHelper
                /////////////////////////////////////////////////////////////////////////////////
                // if the records are no longer in the source, then remove them from the cache //
                /////////////////////////////////////////////////////////////////////////////////
-               DeleteInput deleteInput = new DeleteInput();
-               deleteInput.setTableName(queryInput.getTableName());
-               deleteInput.setPrimaryKeys(new ArrayList<>(cachedRecordIdsToDelete));
-               new DeleteAction().execute(deleteInput);
+               try
+               {
+                  DeleteInput deleteInput = new DeleteInput();
+                  deleteInput.setTableName(queryInput.getTableName());
+                  deleteInput.setPrimaryKeys(new ArrayList<>(cachedRecordIdsToDelete));
+                  new DeleteAction().execute(deleteInput);
+
+               }
+               catch(Exception e)
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // don't let an exception break this query - it (probably) just indicates some data that didn't get uncached - so - that's generally "ok" //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  LOG.warn("Error deleting cached records", e, logPair("cacheTable", queryInput.getTableName()));
+               }
             }
          }
       }
