@@ -978,7 +978,10 @@ public class BaseAPIActionUtil
                   handleResponseError(table, request, qResponse);
                }
 
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // trim response body (just to keep logs smaller, or, in case someone consuming logs doesn't want such long lines) //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
                return (qResponse);
             }
          }
@@ -1291,5 +1294,18 @@ public class BaseAPIActionUtil
    protected UpdateHttpMethod getUpdateMethod()
    {
       return (UpdateHttpMethod.PUT);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int getMaxResponseMessageLengthForLog()
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // rsyslog default limit appears to be 8K - we've got some extra content, so 7 feels safe enough //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      return (7 * 1024);
    }
 }
