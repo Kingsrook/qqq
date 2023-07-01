@@ -23,6 +23,7 @@ package com.kingsrook.qqq.languages.javascript;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -263,6 +266,7 @@ class ExecuteCodeActionTest extends BaseTest
          converter.convertObject("flatMap", {"a": 1, "b": "c"});
          converter.convertObject("flatList", ["a", 1, "b", "c"]);
          converter.convertObject("mixedMap", {"a": [1, {"2": "3"}], "b": {"c": ["d"]}});
+         converter.convertObject("date", new Date());
          """, MapBuilder.of("converter", converter));
 
       assertEquals(1, converter.getConvertedObject("one"));
@@ -273,6 +277,9 @@ class ExecuteCodeActionTest extends BaseTest
       assertEquals(Map.of("a", 1, "b", "c"), converter.getConvertedObject("flatMap"));
       assertEquals(List.of("a", 1, "b", "c"), converter.getConvertedObject("flatList"));
       assertEquals(Map.of("a", List.of(1, Map.of("2", "3")), "b", Map.of("c", List.of("d"))), converter.getConvertedObject("mixedMap"));
+      assertThat(converter.getConvertedObject("date")).isInstanceOf(Instant.class);
+      assertThat(((Instant) converter.getConvertedObject("date")).toEpochMilli())
+         .isCloseTo(Instant.now().toEpochMilli(), Offset.offset(2500L));
    }
 
 

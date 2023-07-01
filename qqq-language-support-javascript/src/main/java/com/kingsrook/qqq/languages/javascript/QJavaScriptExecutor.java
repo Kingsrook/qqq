@@ -28,6 +28,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -51,6 +53,9 @@ import org.openjdk.nashorn.internal.runtime.Undefined;
  *******************************************************************************/
 public class QJavaScriptExecutor implements QCodeExecutor
 {
+   private static final QLogger LOG = QLogger.getLogger(QJavaScriptExecutor.class);
+
+
 
    /*******************************************************************************
     **
@@ -93,6 +98,24 @@ public class QJavaScriptExecutor implements QCodeExecutor
 
       if(object instanceof ScriptObjectMirror scriptObjectMirror)
       {
+         try
+         {
+            if("Date".equals(scriptObjectMirror.getClassName()))
+            {
+               ////////////////////////////////////////////////////////////////////
+               // looks like the js Date is in UTC (is that because our JVM is?) //
+               // so the instant being in UTC matches                            //
+               ////////////////////////////////////////////////////////////////////
+               Double  millis  = (Double) scriptObjectMirror.callMember("getTime");
+               Instant instant = Instant.ofEpochMilli(millis.longValue());
+               return (instant);
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.debug("Error unwrapping javascript date", e);
+         }
+
          if(scriptObjectMirror.isArray())
          {
             List<Object> result = new ArrayList<>();
@@ -104,6 +127,9 @@ public class QJavaScriptExecutor implements QCodeExecutor
          }
          else
          {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+            // last thing we know to try (though really, there's probably some check we should have around this) //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
             Map<String, Object> result = new HashMap<>();
             for(String key : scriptObjectMirror.keySet())
             {
