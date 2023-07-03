@@ -29,6 +29,7 @@ import javax.script.ScriptException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,72 +75,108 @@ public class QJavaScriptExecutor implements QCodeExecutor
     **
     *******************************************************************************/
    @Override
-   public Object convertObjectToJava(Object object)
+   public Object convertObjectToJava(Object object) throws QCodeException
    {
-      if(object == null || object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof BigDecimal)
+      try
       {
-         return (object);
-      }
-      else if(object instanceof Float f)
-      {
-         return (new BigDecimal(f));
-      }
-      else if(object instanceof Double d)
-      {
-         return (new BigDecimal(d));
-      }
-      else if(object instanceof Undefined)
-      {
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // well, we always said we wanted javascript to treat null & undefined the same way...  here's our chance //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         return (null);
-      }
-
-      if(object instanceof ScriptObjectMirror scriptObjectMirror)
-      {
-         try
+         if(object == null || object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof BigDecimal)
          {
-            if("Date".equals(scriptObjectMirror.getClassName()))
-            {
-               ////////////////////////////////////////////////////////////////////
-               // looks like the js Date is in UTC (is that because our JVM is?) //
-               // so the instant being in UTC matches                            //
-               ////////////////////////////////////////////////////////////////////
-               Double  millis  = (Double) scriptObjectMirror.callMember("getTime");
-               Instant instant = Instant.ofEpochMilli(millis.longValue());
-               return (instant);
-            }
+            return (object);
          }
-         catch(Exception e)
+         else if(object instanceof Float f)
          {
-            LOG.debug("Error unwrapping javascript date", e);
+            return (new BigDecimal(f));
+         }
+         else if(object instanceof Double d)
+         {
+            return (new BigDecimal(d));
+         }
+         else if(object instanceof Undefined)
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // well, we always said we wanted javascript to treat null & undefined the same way...  here's our chance //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            return (null);
          }
 
-         if(scriptObjectMirror.isArray())
+         if(object instanceof ScriptObjectMirror scriptObjectMirror)
          {
-            List<Object> result = new ArrayList<>();
-            for(String key : scriptObjectMirror.keySet())
+            try
             {
-               result.add(Integer.parseInt(key), convertObjectToJava(scriptObjectMirror.get(key)));
+               if("Date".equals(scriptObjectMirror.getClassName()))
+               {
+                  ////////////////////////////////////////////////////////////////////
+                  // looks like the js Date is in UTC (is that because our JVM is?) //
+                  // so the instant being in UTC matches                            //
+                  ////////////////////////////////////////////////////////////////////
+                  Double  millis  = (Double) scriptObjectMirror.callMember("getTime");
+                  Instant instant = Instant.ofEpochMilli(millis.longValue());
+                  return (instant);
+               }
             }
-            return (result);
-         }
-         else
-         {
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            // last thing we know to try (though really, there's probably some check we should have around this) //
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            Map<String, Object> result = new HashMap<>();
-            for(String key : scriptObjectMirror.keySet())
+            catch(Exception e)
             {
-               result.put(key, convertObjectToJava(scriptObjectMirror.get(key)));
+               LOG.debug("Error unwrapping javascript date", e);
             }
-            return (result);
-         }
-      }
 
-      return QCodeExecutor.super.convertObjectToJava(object);
+            if(scriptObjectMirror.isArray())
+            {
+               List<Object> result = new ArrayList<>();
+               for(String key : scriptObjectMirror.keySet())
+               {
+                  result.add(Integer.parseInt(key), convertObjectToJava(scriptObjectMirror.get(key)));
+               }
+               return (result);
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               // last thing we know to try (though really, there's probably some check we should have around this) //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               Map<String, Object> result = new HashMap<>();
+               for(String key : scriptObjectMirror.keySet())
+               {
+                  result.put(key, convertObjectToJava(scriptObjectMirror.get(key)));
+               }
+               return (result);
+            }
+         }
+
+         return QCodeExecutor.super.convertObjectToJava(object);
+      }
+      catch(Exception e)
+      {
+         throw (new QCodeException("Error converting java object", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Convert a native java object into one for the script's language/runtime.
+    ** e.g., a java Instant to a Nashorn Date
+    **
+    *******************************************************************************/
+   public Object convertJavaObject(Object object, Object requestedTypeHint) throws QCodeException
+   {
+      try
+      {
+         if("Date".equals(requestedTypeHint))
+         {
+            if(object instanceof Instant i)
+            {
+               long         millis = (i.getEpochSecond() * 1000 + i.getLong(ChronoField.MILLI_OF_SECOND));
+               ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+               return engine.eval("new Date(" + millis + ")");
+            }
+         }
+
+         return (QCodeExecutor.super.convertJavaObject(object, requestedTypeHint));
+      }
+      catch(Exception e)
+      {
+         throw (new QCodeException("Error converting java object", e));
+      }
    }
 
 

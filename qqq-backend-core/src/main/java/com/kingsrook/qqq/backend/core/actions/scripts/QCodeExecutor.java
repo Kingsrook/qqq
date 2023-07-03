@@ -46,7 +46,17 @@ public interface QCodeExecutor
     ** e.g., a Nashorn ScriptObjectMirror will end up as a "primitive", or a List or Map of such
     **
     *******************************************************************************/
-   default Object convertObjectToJava(Object object)
+   default Object convertObjectToJava(Object object) throws QCodeException
+   {
+      return (object);
+   }
+
+   /*******************************************************************************
+    ** Convert a native java object into one for the script's language/runtime.
+    ** e.g., a java Instant to a Nashorn Date
+    **
+    *******************************************************************************/
+   default Object convertJavaObject(Object object, Object requestedTypeHint) throws QCodeException
    {
       return (object);
    }

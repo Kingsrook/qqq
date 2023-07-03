@@ -36,6 +36,7 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutorAware;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -208,7 +209,7 @@ public class ApiScriptUtils implements QCodeExecutorAware, Serializable
     ** Take a "body" object, which maybe defined in the script's language/run-time,
     ** and try to process it into a JSON String (which is what the API Implementation wants)
     *******************************************************************************/
-   private Object processBodyToJsonString(Object body)
+   private Object processBodyToJsonString(Object body) throws QCodeException
    {
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the caller already supplied the object as a string, then return that string.                                             //
@@ -234,7 +235,7 @@ public class ApiScriptUtils implements QCodeExecutorAware, Serializable
     ** script's language into a (more) native java object.
     ** e.g., a Nashorn ScriptObjectMirror will end up as a "primitive", or a List or Map of such
     *******************************************************************************/
-   private Object processInputObjectViaCodeExecutor(Object body)
+   private Object processInputObjectViaCodeExecutor(Object body) throws QCodeException
    {
       if(qCodeExecutor == null || body == null)
       {

@@ -41,9 +41,11 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
+import org.openjdk.nashorn.api.scripting.ScriptObjectMirror;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -287,6 +289,27 @@ class ExecuteCodeActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testConvertJavaObject() throws QException
+   {
+      TestQCodeExecutorAware converter = new TestQCodeExecutorAware();
+
+      Instant originalInstant = Instant.parse("2023-07-03T11:42:42Z");
+      testOne(1, """
+         converter.convertJavaObject("jsDate", instant, "Date");
+         converter.convertObject("backToInstant", converter.getConvertedObject("jsDate"));
+         """, MapBuilder.of("converter", converter, "instant", originalInstant));
+
+      assertThat(converter.getConvertedObject("jsDate")).isInstanceOf(ScriptObjectMirror.class);
+      assertEquals(originalInstant, converter.getConvertedObject("backToInstant"));
+      assertNotSame(originalInstant, converter.getConvertedObject("backToInstant"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private OneTestOutput testOne(Integer inputValueC, String code) throws QException
    {
       return (testOne(inputValueC, code, null));
@@ -355,9 +378,19 @@ class ExecuteCodeActionTest extends BaseTest
       /*******************************************************************************
        **
        *******************************************************************************/
-      public void convertObject(String name, Object inputObject)
+      public void convertObject(String name, Object inputObject) throws QCodeException
       {
          convertedObjectMap.put(name, qCodeExecutor.convertObjectToJava(inputObject));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public void convertJavaObject(String name, Object inputObject, Object hint) throws QCodeException
+      {
+         convertedObjectMap.put(name, qCodeExecutor.convertJavaObject(inputObject, hint));
       }
 
 
