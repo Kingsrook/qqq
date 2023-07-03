@@ -349,32 +349,37 @@ public class MemoryRecordStore
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
       for(QRecord record : input.getRecords())
       {
-         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make a copy of the record, to be inserted, and returned. this can avoid some cases where the in-memory store acts      //
+         // differently from other backends, because of having the same record variable in the backend store and in the user-code. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QRecord recordToInsert = new QRecord(record);
+         if(CollectionUtils.nullSafeHasContents(recordToInsert.getErrors()))
          {
-            outputRecords.add(record);
+            outputRecords.add(recordToInsert);
             continue;
          }
 
          /////////////////////////////////////////////////
          // set the next serial in the record if needed //
          /////////////////////////////////////////////////
-         if(record.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
+         if(recordToInsert.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
          {
-            record.setValue(primaryKeyField.getName(), nextSerial++);
+            recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          // make sure that if the user supplied a serial, greater than the one we had, that we skip ahead //
          ///////////////////////////////////////////////////////////////////////////////////////////////////
-         if(primaryKeyField.getType().equals(QFieldType.INTEGER) && record.getValueInteger(primaryKeyField.getName()) > nextSerial)
+         if(primaryKeyField.getType().equals(QFieldType.INTEGER) && recordToInsert.getValueInteger(primaryKeyField.getName()) > nextSerial)
          {
-            nextSerial = record.getValueInteger(primaryKeyField.getName()) + 1;
+            nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
          }
 
-         tableData.put(record.getValue(primaryKeyField.getName()), record);
+         tableData.put(recordToInsert.getValue(primaryKeyField.getName()), recordToInsert);
          if(returnInsertedRecords)
          {
-            outputRecords.add(record);
+            outputRecords.add(recordToInsert);
          }
       }
 

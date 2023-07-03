@@ -133,6 +133,23 @@ public class QueryActionCacheHelper
                   insertInput.setRecords(recordsToCache);
                   insertInput.setSkipUniqueKeyCheck(true);
                   InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+                  //////////////////////////////////////////////////////////
+                  // set the (generated) ids in the records being returne //
+                  //////////////////////////////////////////////////////////
+                  Map<List<Serializable>, QRecord> insertedRecordsByUniqueKey = new HashMap<>();
+                  for(QRecord record : insertOutput.getRecords())
+                  {
+                     insertedRecordsByUniqueKey.put(getUniqueKeyValues(record), record);
+                  }
+                  for(QRecord record : recordsToReturn)
+                  {
+                     QRecord insertedRecord = insertedRecordsByUniqueKey.get(getUniqueKeyValues(record));
+                     if(insertedRecord != null)
+                     {
+                        record.setValue(table.getPrimaryKeyField(), insertedRecord.getValue(table.getPrimaryKeyField()));
+                     }
+                  }
                }
                catch(Exception e)
                {

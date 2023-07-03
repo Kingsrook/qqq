@@ -87,6 +87,7 @@ class QueryActionCacheHelperTest extends BaseTest
          assertNotEquals(0, queryOutput.getRecords().size());
          assertNotNull(queryOutput.getRecords().get(0).getValue("cachedDate"));
          assertEquals(3, queryOutput.getRecords().get(0).getValue("noOfSides"));
+         assertNotNull(queryOutput.getRecords().get(0).getValue("id"));
       }
 
       ////////////////////////////////////////////////////////////////////////////////////
