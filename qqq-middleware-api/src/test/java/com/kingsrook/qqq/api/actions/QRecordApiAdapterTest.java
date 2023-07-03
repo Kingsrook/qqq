@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -189,13 +190,13 @@ class QRecordApiAdapterTest extends BaseTest
       assertFalse(recordWithoutNonEditableFields.getValues().containsKey("createDate"));
       assertFalse(recordWithoutNonEditableFields.getValues().containsKey("id"));
 
-      /////////////////////////////////////////////////////////////////////////
-      // assert non-editable primary key fields IS included, if so requested //
-      /////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////
+      // assert non-editable fields ARE included, if so requested //
+      //////////////////////////////////////////////////////////////
       QRecord recordWithoutNonEditablePrimaryKeyFields = QRecordApiAdapter.apiJsonObjectToQRecord(new JSONObject("""
          {"firstName": "Tim", "birthDay": "1976-05-28", "createDate": "2023-03-31T11:44:28Z", "id": 256}
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true);
-      assertFalse(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
+      assertTrue(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
       assertEquals(256, recordWithoutNonEditablePrimaryKeyFields.getValues().get("id"));
 
    }

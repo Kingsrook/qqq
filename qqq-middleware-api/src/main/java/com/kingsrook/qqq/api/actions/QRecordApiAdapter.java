@@ -124,7 +124,7 @@ public class QRecordApiAdapter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiName, String apiVersion, boolean includePrimaryKey) throws QException
+   public static QRecord apiJsonObjectToQRecord(JSONObject jsonObject, String tableName, String apiName, String apiVersion, boolean includeNonEditableFields) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////
       // make map of apiFieldNames (e.g., names as api uses them) to QFieldMetaData //
@@ -164,9 +164,9 @@ public class QRecordApiAdapter
             ////////////////////////////////////////////////////////////////////////////////////////////////////////
             if(!field.getIsEditable())
             {
-               if(includePrimaryKey && field.getName().equals(table.getPrimaryKeyField()))
+               if(includeNonEditableFields)
                {
-                  LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because it's the primary key, and we've been asked to include primary keys");
+                  LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because we've been asked to include non-editable fields");
                }
                else
                {
