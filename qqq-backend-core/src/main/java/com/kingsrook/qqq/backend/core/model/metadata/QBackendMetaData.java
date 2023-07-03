@@ -42,11 +42,18 @@ public class QBackendMetaData
    private String name;
    private String backendType;
 
-   private Boolean usesVariants = false;
-   private String  variantOptionsTableName;
-
    private Set<Capability> enabledCapabilities  = new HashSet<>();
    private Set<Capability> disabledCapabilities = new HashSet<>();
+
+   private Boolean usesVariants = false;
+   private String  variantOptionsTableIdField;
+   private String  variantOptionsTableNameField;
+   private String  variantOptionsTableTypeField;
+   private String  variantOptionsTableTypeValue;
+   private String  variantOptionsTableUsernameField;
+   private String  variantOptionsTablePasswordField;
+   private String  variantOptionsTableApiKeyField;
+   private String  variantOptionsTableName;
 
    // todo - at some point, we may want to apply this to secret properties on subclasses?
    // @JsonFilter("secretsFilter")
@@ -398,7 +405,224 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    ** Getter for variantsOptionTableName
+    ** Getter for variantOptionsTableIdField
+    *******************************************************************************/
+   public String getVariantOptionsTableIdField()
+   {
+      return (this.variantOptionsTableIdField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableIdField
+    *******************************************************************************/
+   public void setVariantOptionsTableIdField(String variantOptionsTableIdField)
+   {
+      this.variantOptionsTableIdField = variantOptionsTableIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableIdField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableIdField(String variantOptionsTableIdField)
+   {
+      this.variantOptionsTableIdField = variantOptionsTableIdField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableNameField
+    *******************************************************************************/
+   public String getVariantOptionsTableNameField()
+   {
+      return (this.variantOptionsTableNameField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableNameField
+    *******************************************************************************/
+   public void setVariantOptionsTableNameField(String variantOptionsTableNameField)
+   {
+      this.variantOptionsTableNameField = variantOptionsTableNameField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableNameField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableNameField(String variantOptionsTableNameField)
+   {
+      this.variantOptionsTableNameField = variantOptionsTableNameField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableTypeField
+    *******************************************************************************/
+   public String getVariantOptionsTableTypeField()
+   {
+      return (this.variantOptionsTableTypeField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableTypeField
+    *******************************************************************************/
+   public void setVariantOptionsTableTypeField(String variantOptionsTableTypeField)
+   {
+      this.variantOptionsTableTypeField = variantOptionsTableTypeField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableTypeField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableTypeField(String variantOptionsTableTypeField)
+   {
+      this.variantOptionsTableTypeField = variantOptionsTableTypeField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableTypeValue
+    *******************************************************************************/
+   public String getVariantOptionsTableTypeValue()
+   {
+      return (this.variantOptionsTableTypeValue);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableTypeValue
+    *******************************************************************************/
+   public void setVariantOptionsTableTypeValue(String variantOptionsTableTypeValue)
+   {
+      this.variantOptionsTableTypeValue = variantOptionsTableTypeValue;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableTypeValue
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableTypeValue(String variantOptionsTableTypeValue)
+   {
+      this.variantOptionsTableTypeValue = variantOptionsTableTypeValue;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableUsernameField
+    *******************************************************************************/
+   public String getVariantOptionsTableUsernameField()
+   {
+      return (this.variantOptionsTableUsernameField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableUsernameField
+    *******************************************************************************/
+   public void setVariantOptionsTableUsernameField(String variantOptionsTableUsernameField)
+   {
+      this.variantOptionsTableUsernameField = variantOptionsTableUsernameField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableUsernameField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableUsernameField(String variantOptionsTableUsernameField)
+   {
+      this.variantOptionsTableUsernameField = variantOptionsTableUsernameField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTablePasswordField
+    *******************************************************************************/
+   public String getVariantOptionsTablePasswordField()
+   {
+      return (this.variantOptionsTablePasswordField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTablePasswordField
+    *******************************************************************************/
+   public void setVariantOptionsTablePasswordField(String variantOptionsTablePasswordField)
+   {
+      this.variantOptionsTablePasswordField = variantOptionsTablePasswordField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTablePasswordField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTablePasswordField(String variantOptionsTablePasswordField)
+   {
+      this.variantOptionsTablePasswordField = variantOptionsTablePasswordField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableApiKeyField
+    *******************************************************************************/
+   public String getVariantOptionsTableApiKeyField()
+   {
+      return (this.variantOptionsTableApiKeyField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableApiKeyField
+    *******************************************************************************/
+   public void setVariantOptionsTableApiKeyField(String variantOptionsTableApiKeyField)
+   {
+      this.variantOptionsTableApiKeyField = variantOptionsTableApiKeyField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableApiKeyField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableApiKeyField(String variantOptionsTableApiKeyField)
+   {
+      this.variantOptionsTableApiKeyField = variantOptionsTableApiKeyField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableName
     *******************************************************************************/
    public String getVariantOptionsTableName()
    {
@@ -408,7 +632,7 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    ** Setter for variantsOptionTableName
+    ** Setter for variantOptionsTableName
     *******************************************************************************/
    public void setVariantOptionsTableName(String variantOptionsTableName)
    {
@@ -418,11 +642,11 @@ public class QBackendMetaData
 
 
    /*******************************************************************************
-    ** Fluent setter for variantsOptionTableName
+    ** Fluent setter for variantOptionsTableName
     *******************************************************************************/
-   public QBackendMetaData withVariantsOptionTableName(String variantsOptionTableName)
+   public QBackendMetaData withVariantOptionsTableName(String variantOptionsTableName)
    {
-      this.variantOptionsTableName = variantsOptionTableName;
+      this.variantOptionsTableName = variantOptionsTableName;
       return (this);
    }
 

@@ -22,12 +22,14 @@
 package com.kingsrook.qqq.backend.module.api.actions;
 
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -36,6 +38,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -59,6 +62,7 @@ import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILogMetaDataProvider;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import org.apache.http.Header;
+import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,11 +85,21 @@ class BaseAPIActionUtilTest extends BaseTest
     **
     *******************************************************************************/
    @BeforeEach
-   void beforeEach()
+   void beforeEach() throws QException
    {
       mockApiUtilsHelper = new MockApiUtilsHelper();
       mockApiUtilsHelper.setUseMock(true);
       MockApiActionUtils.mockApiUtilsHelper = mockApiUtilsHelper;
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName("variant");
+      QueryOutput        output = new QueryAction().execute(queryInput);
+      List<Serializable> ids    = output.getRecords().stream().map(r -> r.getValue("id")).toList();
+
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName("variant");
+      deleteInput.setPrimaryKeys(ids);
+      new DeleteAction().execute(deleteInput);
    }
 
 
@@ -599,6 +613,72 @@ class BaseAPIActionUtilTest extends BaseTest
       });
 
       runSimpleGetAction();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBackendWithVariantsApiKey() throws QException
+   {
+      APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
+      backend.setAuthorizationType(AuthorizationType.API_KEY_HEADER);
+      backend.setUsesVariants(true);
+      backend.setVariantOptionsTableName("variant");
+      backend.setVariantOptionsTableIdField("id");
+      backend.setVariantOptionsTableApiKeyField("apiKey");
+      backend.setVariantOptionsTableTypeValue("API_KEY_TYPE");
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName("variant");
+      insertInput.setRecords(List.of(new QRecord()
+         .withValue("type", "API_KEY_TYPE")
+         .withValue("apiKey", "abcdefg1234567")));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      QContext.getQSession().setBackendVariants(Map.of("API_KEY_TYPE", insertOutput.getRecords().get(0).getValue("id")));
+      HttpGet           httpGet = new HttpGet();
+      BaseAPIActionUtil util    = new BaseAPIActionUtil();
+      util.setBackendMetaData(backend);
+      util.setupAuthorizationInRequest(httpGet);
+      Header authHeader = httpGet.getFirstHeader("API-Key");
+      assertTrue(authHeader.getValue().startsWith("abcde"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBackendWithVariantsUsernamePassword() throws QException
+   {
+      APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
+      backend.setAuthorizationType(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD);
+      backend.setUsesVariants(true);
+      backend.setVariantOptionsTableName("variant");
+      backend.setVariantOptionsTableIdField("id");
+      backend.setVariantOptionsTableUsernameField("username");
+      backend.setVariantOptionsTablePasswordField("password");
+      backend.setVariantOptionsTableTypeValue("USER_PASS");
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName("variant");
+      insertInput.setRecords(List.of(new QRecord()
+         .withValue("type", "USER_PASS")
+         .withValue("username", "user")
+         .withValue("password", "pass")));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+
+      QContext.getQSession().setBackendVariants(Map.of("USER_PASS", insertOutput.getRecords().get(0).getValue("id")));
+      HttpGet           httpGet = new HttpGet();
+      BaseAPIActionUtil util    = new BaseAPIActionUtil();
+      util.setBackendMetaData(backend);
+      util.setupAuthorizationInRequest(httpGet);
+      Header authHeader = httpGet.getFirstHeader("Authorization");
+      assertTrue(authHeader.getValue().equals(util.getBasicAuthenticationHeader("user", "pass")));
    }
 
 
