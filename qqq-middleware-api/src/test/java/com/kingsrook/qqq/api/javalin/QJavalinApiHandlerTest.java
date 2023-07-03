@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -61,7 +62,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.api.TestUtils.insertPersonRecord;
 import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
@@ -110,6 +113,18 @@ class QJavalinApiHandlerTest extends BaseTest
       qJavalinImplementation.startJavalinServer(PORT);
       EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
       qJavalinImplementation.getJavalinService().routes(routes);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   @AfterEach
+   void beforeAndAfterEach()
+   {
+      ApiImplementation.clearCaches();
    }
 
 
@@ -219,7 +234,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testGetAssociations() throws QException
    {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/1").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -529,7 +544,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testQueryAssociations() throws QException
    {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/order/query?id=1").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -959,7 +974,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testUpdateErrorsFromCustomizer() throws QException
    {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
          .body("""
@@ -1010,7 +1025,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testUpdateAssociations() throws QException
    {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       HttpResponse<String> response = Unirest.patch(BASE_URL + "/api/" + VERSION + "/order/1")
          .body("""
@@ -1331,7 +1346,7 @@ class QJavalinApiHandlerTest extends BaseTest
    @Test
    void testDeleteAssociations() throws QException
    {
-      insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
 
       assertEquals(1, queryTable(TestUtils.TABLE_NAME_ORDER).size());
       assertEquals(4, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
@@ -1346,28 +1361,6 @@ class QJavalinApiHandlerTest extends BaseTest
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC).size());
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_LINE_ITEM).size());
       assertEquals(0, queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC).size());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic() throws QException
-   {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
-      insertInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("orderNo", "ORD123").withValue("storeId", 47)
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 1).withValue("sku", "BASIC1").withValue("quantity", 42)
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium"))
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Discount").withValue("value", "3.50"))
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Color").withValue("value", "Red")))
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 2).withValue("sku", "BASIC2").withValue("quantity", 42)
-            .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "Size").withValue("value", "Medium")))
-         .withAssociatedRecord("orderLines", new QRecord().withValue("lineNumber", 3).withValue("sku", "BASIC3").withValue("quantity", 42))
-         .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "shopifyOrderNo").withValue("value", "#1032"))
-      ));
-      new InsertAction().execute(insertInput);
    }
 
 
@@ -1517,6 +1510,7 @@ class QJavalinApiHandlerTest extends BaseTest
 
       fail("Never got back a 207, after many sleeps");
    }
+
 
 
    /*******************************************************************************

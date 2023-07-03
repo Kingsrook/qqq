@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for S3BackendMetaData
  *******************************************************************************/
+@Disabled("This concept doesn't seem right any more.  We will want/need custom JSON/YAML serialization, so, let us disable this test, at least for now, and maybe permanently")
 class S3BackendMetaDataTest
 {
 

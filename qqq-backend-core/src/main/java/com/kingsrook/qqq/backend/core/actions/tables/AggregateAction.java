@@ -23,9 +23,14 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
@@ -43,11 +48,20 @@ public class AggregateAction
    {
       ActionHelper.validateSession(aggregateInput);
 
+      QTableMetaData   table   = aggregateInput.getTable();
+      QBackendMetaData backend = aggregateInput.getBackend();
+
+      QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, aggregateInput.getFilter());
+
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(aggregateInput.getBackend());
-      // todo pre-customization - just get to modify the request?
-      AggregateOutput aggregateOutput = qModule.getAggregateInterface().execute(aggregateInput);
-      // todo post-customization - can do whatever w/ the result if you want
+
+      AggregateInterface aggregateInterface = qModule.getAggregateInterface();
+      aggregateInterface.setQueryStat(queryStat);
+      AggregateOutput aggregateOutput = aggregateInterface.execute(aggregateInput);
+
+      QueryStatManager.getInstance().add(queryStat);
+
       return aggregateOutput;
    }
 }

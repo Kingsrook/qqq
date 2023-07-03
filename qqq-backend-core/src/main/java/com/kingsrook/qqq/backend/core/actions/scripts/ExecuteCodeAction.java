@@ -23,22 +23,33 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.Log4jCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.AbstractRunScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -133,7 +144,17 @@ public class ExecuteCodeAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static ExecuteCodeInput setupExecuteCodeInput(AbstractRunScriptInput<?> input, ScriptRevision scriptRevision)
+   public static ExecuteCodeInput setupExecuteCodeInput(AbstractRunScriptInput<?> input, ScriptRevision scriptRevision) throws QException
+   {
+      return setupExecuteCodeInput(input, scriptRevision, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ExecuteCodeInput setupExecuteCodeInput(AbstractRunScriptInput<?> input, ScriptRevision scriptRevision, String fileName) throws QException
    {
       ExecuteCodeInput executeCodeInput = new ExecuteCodeInput();
       executeCodeInput.setInput(new HashMap<>(Objects.requireNonNullElseGet(input.getInputValues(), HashMap::new)));
@@ -150,7 +171,49 @@ public class ExecuteCodeAction
          context.put("scriptUtils", input.getScriptUtils());
       }
 
-      executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(scriptRevision.getContents()).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+      if(CollectionUtils.nullSafeIsEmpty(scriptRevision.getFiles()))
+      {
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(ScriptRevisionFile.TABLE_NAME);
+         queryInput.setFilter(new QQueryFilter(new QFilterCriteria("scriptRevisionId", QCriteriaOperator.EQUALS, scriptRevision.getId())));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+         scriptRevision.setFiles(new ArrayList<>());
+         for(QRecord record : queryOutput.getRecords())
+         {
+            scriptRevision.getFiles().add(new ScriptRevisionFile(record));
+         }
+      }
+
+      List<ScriptRevisionFile> files = scriptRevision.getFiles();
+      if(files == null || files.isEmpty())
+      {
+         throw (new QException("Script Revision " + scriptRevision.getId() + " had more than 1 associated ScriptRevisionFile (and the name to use was not specified)."));
+      }
+      else
+      {
+         String contents = null;
+         if(fileName == null || files.size() == 1)
+         {
+            contents = files.get(0).getContents();
+         }
+         else
+         {
+            for(ScriptRevisionFile file : files)
+            {
+               if(file.getFileName().equals(fileName))
+               {
+                  contents = file.getContents();
+               }
+            }
+            if(contents == null)
+            {
+               throw (new QException("Could not find file named " + fileName + " for Script Revision " + scriptRevision.getId()));
+            }
+         }
+
+         executeCodeInput.setCodeReference(new QCodeReference().withInlineCode(contents).withCodeType(QCodeType.JAVA_SCRIPT)); // todo - code type as attribute of script!!
+      }
 
       ExecuteCodeAction.addApiUtilityToContext(context, scriptRevision);
       context.put("qqq", new QqqScriptUtils());

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.model.metadata.fields;
 
 import java.util.Map;
 import com.kingsrook.qqq.api.model.openapi.Example;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -39,8 +40,9 @@ public class ApiFieldMetaData
    private String apiFieldName;
    private String description;
 
-   private Boolean isExcluded;
-   private String  replacedByFieldName;
+   private Boolean        isExcluded;
+   private String         replacedByFieldName;
+   private QCodeReference customValueMapper;
 
    private Example              example;
    private Map<String, Example> examples;
@@ -310,6 +312,37 @@ public class ApiFieldMetaData
    public ApiFieldMetaData withExamples(Map<String, Example> examples)
    {
       this.examples = examples;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for customValueMapper
+    *******************************************************************************/
+   public QCodeReference getCustomValueMapper()
+   {
+      return (this.customValueMapper);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customValueMapper
+    *******************************************************************************/
+   public void setCustomValueMapper(QCodeReference customValueMapper)
+   {
+      this.customValueMapper = customValueMapper;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customValueMapper
+    *******************************************************************************/
+   public ApiFieldMetaData withCustomValueMapper(QCodeReference customValueMapper)
+   {
+      this.customValueMapper = customValueMapper;
       return (this);
    }
 

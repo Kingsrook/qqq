@@ -68,6 +68,29 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
 
 
    /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public GetInput(String tableName)
+   {
+      setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public AbstractTableActionInput withTableName(String tableName)
+   {
+      super.withTableName(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for primaryKey
     **
     *******************************************************************************/

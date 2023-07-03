@@ -51,6 +51,17 @@ public class RenderWidgetInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getActionIdentity()
+   {
+      return (getClass().getSimpleName() + ":" + widgetMetaData.getName());
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for widgetMetaData
     **
     *******************************************************************************/

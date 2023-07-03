@@ -10,7 +10,7 @@ The bundle contains all of the sub-jars.  It is named:
 
 ```qqq-${version}.jar```
 
-You can also use fine grained jars:
+You can also use fine-grained jars:
 - `qqq-backend-core`: The core module.  Useful if you're developing other modules.
 - `qqq-backend-module-rdbms`: Backend module for working with Relational Databases.
 - `qqq-backend-module-filesystem`: Backend module for working with Filesystems (including AWS S3).
@@ -35,4 +35,3 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-

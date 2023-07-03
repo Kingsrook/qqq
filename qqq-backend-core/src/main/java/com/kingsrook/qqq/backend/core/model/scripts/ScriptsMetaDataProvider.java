@@ -46,18 +46,22 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.LoadScriptTestDetailsProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptTransformStep;
@@ -70,11 +74,14 @@ import com.kingsrook.qqq.backend.core.processes.implementations.scripts.TestScri
  *******************************************************************************/
 public class ScriptsMetaDataProvider
 {
-   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME     = "runRecordScript";
-   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME = "storeScriptRevision";
-   public static final String TEST_SCRIPT_PROCESS_NAME           = "testScript";
+   public static final String RUN_RECORD_SCRIPT_PROCESS_NAME        = "runRecordScript";
+   public static final String STORE_SCRIPT_REVISION_PROCESS_NAME    = "storeScriptRevision";
+   public static final String TEST_SCRIPT_PROCESS_NAME              = "testScript";
+   public static final String LOAD_SCRIPT_TEST_DETAILS_PROCESS_NAME = "loadScriptTestDetails";
 
    public static final String SCRIPT_TYPE_NAME_RECORD = "Record Script";
+
+   public static final String CURRENT_SCRIPT_REVISION_JOIN_NAME = "currentScriptRevision";
 
 
 
@@ -90,7 +97,26 @@ public class ScriptsMetaDataProvider
       instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
       instance.addProcess(defineStoreScriptRevisionProcess());
       instance.addProcess(defineTestScriptProcess());
+      instance.addProcess(defineLoadScriptTestDetailsProcess());
       instance.addProcess(defineRunRecordScriptProcess());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QProcessMetaData defineLoadScriptTestDetailsProcess()
+   {
+      return (new QProcessMetaData()
+         .withName(LOAD_SCRIPT_TEST_DETAILS_PROCESS_NAME)
+         .withTableName(Script.TABLE_NAME)
+         .withIsHidden(true)
+         //? .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withStepList(List.of(
+            new QBackendStepMetaData()
+               .withName("main")
+               .withCode(new QCodeReference(LoadScriptTestDetailsProcessStep.class)))));
    }
 
 
@@ -173,6 +199,14 @@ public class ScriptsMetaDataProvider
          .withLabel("Recent Logs")
          .getWidgetMetaData());
 
+      instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(ScriptType.TABLE_NAME, ScriptTypeFileSchema.TABLE_NAME)))
+         .withLabel("File Schema")
+         .getWidgetMetaData());
+
+      instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(QJoinMetaData.makeInferredJoinName(ScriptRevision.TABLE_NAME, ScriptRevisionFile.TABLE_NAME))).withMaxRows(50)
+         .withLabel("Files")
+         .getWidgetMetaData());
+
       instance.addWidget(new QWidgetMetaData()
          .withName("scriptViewer")
          .withLabel("Contents")
@@ -209,7 +243,7 @@ public class ScriptsMetaDataProvider
          .withLeftTable(Script.TABLE_NAME)
          .withRightTable(ScriptRevision.TABLE_NAME)
          .withJoinOn(new JoinOn("currentScriptRevisionId", "id"))
-         .withName("currentScriptRevision"));
+         .withName(CURRENT_SCRIPT_REVISION_JOIN_NAME));
 
       instance.addJoin(new QJoinMetaData()
          .withType(JoinType.ONE_TO_MANY)
@@ -224,6 +258,22 @@ public class ScriptsMetaDataProvider
          .withLeftTable(Script.TABLE_NAME)
          .withRightTable(ScriptLog.TABLE_NAME)
          .withJoinOn(new JoinOn("id", "scriptId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(ScriptType.TABLE_NAME)
+         .withRightTable(ScriptTypeFileSchema.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptTypeId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withInferredName());
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(ScriptRevision.TABLE_NAME)
+         .withRightTable(ScriptRevisionFile.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "scriptRevisionId"))
          .withOrderBy(new QFilterOrderBy("id"))
          .withInferredName());
 
@@ -251,23 +301,25 @@ public class ScriptsMetaDataProvider
    {
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(Script.TABLE_NAME)
-         .withTableName(Script.TABLE_NAME)
-      );
+         .withTableName(Script.TABLE_NAME));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptRevision.TABLE_NAME)
-         .withTableName(ScriptRevision.TABLE_NAME)
-      );
+         .withTableName(ScriptRevision.TABLE_NAME));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptType.TABLE_NAME)
-         .withTableName(ScriptType.TABLE_NAME)
-      );
+         .withTableName(ScriptType.TABLE_NAME));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptLog.TABLE_NAME)
-         .withTableName(ScriptLog.TABLE_NAME)
-      );
+         .withTableName(ScriptLog.TABLE_NAME));
+
+      instance.addPossibleValueSource(new QPossibleValueSource()
+         .withName(ScriptTypeFileMode.NAME)
+         .withType(QPossibleValueSourceType.ENUM)
+         .withValuesFromEnum(ScriptTypeFileMode.values())
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
    }
 
 
@@ -279,8 +331,10 @@ public class ScriptsMetaDataProvider
    {
       List<QTableMetaData> rs = new ArrayList<>();
       rs.add(enrich(backendDetailEnricher, defineScriptTypeTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineScriptTypeFileSchemaTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptRevisionTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineScriptRevisionFileTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptLogTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineScriptLogLineTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineTableTriggerTable(backendName)));
@@ -372,10 +426,27 @@ public class ScriptsMetaDataProvider
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptType.TABLE_NAME, ScriptType.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name")))
-         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("helpText", "sampleCode")))
+         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("helpText", "sampleCode", "fileMode", "testScriptInterfaceName")))
+         .withSection(new QFieldSection("files", new QIcon().withName("description"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptType.TABLE_NAME, ScriptTypeFileSchema.TABLE_NAME)))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
       tableMetaData.getField("sampleCode").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("javascript")));
       tableMetaData.getField("helpText").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("text")));
+      return (tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineScriptTypeFileSchemaTable(String backendName) throws QException
+   {
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptTypeFileSchema.TABLE_NAME, ScriptTypeFileSchema.class)
+         .withRecordLabelFormat("%s - %s")
+         .withRecordLabelFields(List.of("scriptTypeId", "name"))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId")))
+         .withSection(new QFieldSection("details", new QIcon().withName("dataset"), Tier.T2, List.of("fileType")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
       return (tableMetaData);
    }
 
@@ -391,11 +462,15 @@ public class ScriptsMetaDataProvider
          .withRecordLabelFormat("%s v%s")
          .withRecordLabelFields(List.of("scriptId", "sequenceNo"))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptId", "sequenceNo")))
-         .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
+         .withSection(new QFieldSection("files", new QIcon().withName("description"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(ScriptRevision.TABLE_NAME, ScriptRevisionFile.TABLE_NAME)))
          .withSection(new QFieldSection("changeManagement", new QIcon().withName("history"), Tier.T2, List.of("commitMessage", "author")))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
 
-      tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("javascript")));
+         .withAssociation(new Association()
+            .withName("files")
+            .withAssociatedTableName(ScriptRevisionFile.TABLE_NAME)
+            .withJoinName(QJoinMetaData.makeInferredJoinName(ScriptRevision.TABLE_NAME, ScriptRevisionFile.TABLE_NAME)));
+
       tableMetaData.getField("scriptId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
 
       try
@@ -414,6 +489,27 @@ public class ScriptsMetaDataProvider
          tableMetaData.getFields().remove("apiName");
          tableMetaData.getFields().remove("apiVersion");
       }
+
+      return (tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineScriptRevisionFileTable(String backendName) throws QException
+   {
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ScriptRevisionFile.TABLE_NAME, ScriptRevisionFile.class)
+         .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE)
+         .withRecordLabelFormat("%s - %s")
+         .withRecordLabelFields(List.of("scriptRevisionId", "fileName"))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scriptRevisionId", "fileName")))
+         .withSection(new QFieldSection("code", new QIcon().withName("data_object"), Tier.T2, List.of("contents")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      tableMetaData.getField("contents").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("velocity"))); // todo - dynamic?!
+      tableMetaData.getField("scriptRevisionId").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
 
       return (tableMetaData);
    }

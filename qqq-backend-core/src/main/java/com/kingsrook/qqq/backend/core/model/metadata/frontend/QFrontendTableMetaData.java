@@ -72,6 +72,9 @@ public class QFrontendTableMetaData
    private boolean editPermission;
    private boolean deletePermission;
 
+   private boolean usesVariants;
+   private String  variantTableLabel;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +160,13 @@ public class QFrontendTableMetaData
       insertPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.INSERT);
       editPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.EDIT);
       deletePermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.DELETE);
+
+      QBackendMetaData backend = actionInput.getInstance().getBackend(tableMetaData.getBackendName());
+      if(backend != null && backend.getUsesVariants())
+      {
+         usesVariants = true;
+         variantTableLabel = actionInput.getInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
+      }
    }
 
 
@@ -317,6 +327,17 @@ public class QFrontendTableMetaData
 
 
    /*******************************************************************************
+    ** Getter for usesVariants
+    **
+    *******************************************************************************/
+   public boolean getUsesVariants()
+   {
+      return usesVariants;
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for exposedJoins
     **
     *******************************************************************************/
@@ -335,4 +356,15 @@ public class QFrontendTableMetaData
    {
       return supplementalTableMetaData;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantTableLabel
+    *******************************************************************************/
+   public String getVariantTableLabel()
+   {
+      return (this.variantTableLabel);
+   }
+
 }

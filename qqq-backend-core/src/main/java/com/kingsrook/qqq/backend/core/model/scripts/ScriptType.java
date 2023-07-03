@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.scripts;
 
 import java.time.Instant;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
@@ -51,6 +52,33 @@ public class ScriptType extends QRecordEntity
 
    @QField()
    private String sampleCode;
+
+   @QField(possibleValueSourceName = ScriptTypeFileMode.NAME)
+   private Integer fileMode;
+
+   @QField()
+   private String testScriptInterfaceName;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ScriptType()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public ScriptType(QRecord qRecord)
+   {
+      populateFromQRecord(qRecord);
+   }
 
 
 
@@ -253,6 +281,68 @@ public class ScriptType extends QRecordEntity
    public ScriptType withSampleCode(String sampleCode)
    {
       this.sampleCode = sampleCode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fileMode
+    *******************************************************************************/
+   public Integer getFileMode()
+   {
+      return (this.fileMode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fileMode
+    *******************************************************************************/
+   public void setFileMode(Integer fileMode)
+   {
+      this.fileMode = fileMode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fileMode
+    *******************************************************************************/
+   public ScriptType withFileMode(Integer fileMode)
+   {
+      this.fileMode = fileMode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for testScriptInterfaceName
+    *******************************************************************************/
+   public String getTestScriptInterfaceName()
+   {
+      return (this.testScriptInterfaceName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for testScriptInterfaceName
+    *******************************************************************************/
+   public void setTestScriptInterfaceName(String testScriptInterfaceName)
+   {
+      this.testScriptInterfaceName = testScriptInterfaceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for testScriptInterfaceName
+    *******************************************************************************/
+   public ScriptType withTestScriptInterfaceName(String testScriptInterfaceName)
+   {
+      this.testScriptInterfaceName = testScriptInterfaceName;
       return (this);
    }
 

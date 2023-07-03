@@ -81,6 +81,28 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
+   public QRecord executeForRecord(InsertInput insertInput) throws QException
+   {
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+      return (insertOutput.getRecords().get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecord> executeForRecords(InsertInput insertInput) throws QException
+   {
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+      return (insertOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public InsertOutput execute(InsertInput insertInput) throws QException
    {

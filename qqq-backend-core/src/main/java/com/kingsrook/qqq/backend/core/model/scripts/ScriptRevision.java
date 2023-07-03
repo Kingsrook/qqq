@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.scripts;
 
 
 import java.time.Instant;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -56,9 +58,6 @@ public class ScriptRevision extends QRecordEntity
    private String apiName;
 
    @QField()
-   private String contents;
-
-   @QField()
    private Integer sequenceNo;
 
    @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
@@ -66,6 +65,9 @@ public class ScriptRevision extends QRecordEntity
 
    @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String author;
+
+   @QAssociation(name = "files")
+   private List<ScriptRevisionFile> files;
 
 
 
@@ -221,40 +223,6 @@ public class ScriptRevision extends QRecordEntity
    public ScriptRevision withScriptId(Integer scriptId)
    {
       this.scriptId = scriptId;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for contents
-    **
-    *******************************************************************************/
-   public String getContents()
-   {
-      return contents;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for contents
-    **
-    *******************************************************************************/
-   public void setContents(String contents)
-   {
-      this.contents = contents;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for contents
-    **
-    *******************************************************************************/
-   public ScriptRevision withContents(String contents)
-   {
-      this.contents = contents;
       return (this);
    }
 
@@ -419,6 +387,37 @@ public class ScriptRevision extends QRecordEntity
    public ScriptRevision withApiName(String apiName)
    {
       this.apiName = apiName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for files
+    *******************************************************************************/
+   public List<ScriptRevisionFile> getFiles()
+   {
+      return (this.files);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for files
+    *******************************************************************************/
+   public void setFiles(List<ScriptRevisionFile> files)
+   {
+      this.files = files;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for files
+    *******************************************************************************/
+   public ScriptRevision withFiles(List<ScriptRevisionFile> files)
+   {
+      this.files = files;
       return (this);
    }
 

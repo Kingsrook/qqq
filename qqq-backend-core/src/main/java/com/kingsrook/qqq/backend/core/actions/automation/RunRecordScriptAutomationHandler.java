@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -74,7 +75,7 @@ public class RunRecordScriptAutomationHandler extends RecordAutomationHandler
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(ScriptRevision.TABLE_NAME);
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, scriptId)));
-      queryInput.withQueryJoin(new QueryJoin(Script.TABLE_NAME).withBaseTableOrAlias(ScriptRevision.TABLE_NAME).withJoinMetaData(QContext.getQInstance().getJoin("currentScriptRevision")));
+      queryInput.withQueryJoin(new QueryJoin(Script.TABLE_NAME).withBaseTableOrAlias(ScriptRevision.TABLE_NAME).withJoinMetaData(QContext.getQInstance().getJoin(ScriptsMetaDataProvider.CURRENT_SCRIPT_REVISION_JOIN_NAME)));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       if(CollectionUtils.nullSafeIsEmpty(queryOutput.getRecords()))
       {

@@ -86,6 +86,28 @@ public class UpdateAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   public QRecord executeForRecord(UpdateInput updateInput) throws QException
+   {
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      return (updateOutput.getRecords().get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static List<QRecord> executeForRecords(UpdateInput updateInput) throws QException
+   {
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      return (updateOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       ActionHelper.validateSession(updateInput);

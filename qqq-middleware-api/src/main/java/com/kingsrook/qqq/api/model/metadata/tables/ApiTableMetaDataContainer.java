@@ -60,6 +60,23 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
 
 
    /*******************************************************************************
+    ** either get the container attached to a table - or create a new one and attach
+    ** it to the table, and return that.
+    *******************************************************************************/
+   public static ApiTableMetaDataContainer ofOrWithNew(QTableMetaData table)
+   {
+      ApiTableMetaDataContainer apiTableMetaDataContainer = (ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME);
+      if(apiTableMetaDataContainer == null)
+      {
+         apiTableMetaDataContainer = new ApiTableMetaDataContainer();
+         table.withSupplementalMetaData(apiTableMetaDataContainer);
+      }
+      return (apiTableMetaDataContainer);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Override
@@ -93,6 +110,26 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
       if(this.apis == null)
       {
          return (null);
+      }
+
+      return (this.apis.get(apiName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for api
+    *******************************************************************************/
+   public ApiTableMetaData getOrWithNewApiTableMetaData(String apiName)
+   {
+      if(this.apis == null)
+      {
+         this.apis = new LinkedHashMap<>();
+      }
+
+      if(!this.apis.containsKey(apiName))
+      {
+         this.apis.put(apiName, new ApiTableMetaData());
       }
 
       return (this.apis.get(apiName));

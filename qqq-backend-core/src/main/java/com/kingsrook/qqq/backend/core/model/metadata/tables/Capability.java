@@ -33,9 +33,10 @@ public enum Capability
    TABLE_COUNT,
    TABLE_INSERT,
    TABLE_UPDATE,
-   TABLE_DELETE
+   TABLE_DELETE,
    ///////////////////////////////////////////////////////////////////////
    // keep these values in sync with Capability.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////
 
+   QUERY_STATS
 }

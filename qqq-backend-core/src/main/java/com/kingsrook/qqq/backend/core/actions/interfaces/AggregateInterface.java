@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOu
  ** Interface for the Aggregate action.
  **
  *******************************************************************************/
-public interface AggregateInterface
+public interface AggregateInterface extends BaseQueryInterface
 {
    /*******************************************************************************
     **

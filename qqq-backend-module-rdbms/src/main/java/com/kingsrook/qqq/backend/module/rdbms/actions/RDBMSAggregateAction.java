@@ -92,6 +92,8 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          // todo sql customization - can edit sql and/or param list
 
+         setSqlAndJoinsInQueryStat(sql, joinsContext);
+
          AggregateOutput       rs      = new AggregateOutput();
          List<AggregateResult> results = new ArrayList<>();
          rs.setResults(results);
@@ -104,6 +106,8 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             {
                while(resultSet.next())
                {
+                  setQueryStatFirstResultTime();
+
                   AggregateResult result = new AggregateResult();
                   results.add(result);
 
@@ -137,6 +141,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      result.withAggregateValue(aggregate, value);
                   }
                }
+
+               /////////////////////////////////////////////////////////////////
+               // in case there were no results, set the firstResultTime here //
+               /////////////////////////////////////////////////////////////////
+               setQueryStatFirstResultTime();
 
             }), params);
          }

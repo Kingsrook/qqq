@@ -49,6 +49,17 @@ public class AbstractTableActionInput extends AbstractActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
+   public String getActionIdentity()
+   {
+      return (getClass().getSimpleName() + ":" + getTableName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public QBackendMetaData getBackend()
    {
       return (QContext.getQInstance().getBackendForTable(getTableName()));

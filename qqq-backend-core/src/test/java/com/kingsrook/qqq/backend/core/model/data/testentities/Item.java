@@ -43,6 +43,7 @@ public class Item extends QRecordEntity
    @QField(isEditable = false, displayFormat = DisplayFormat.COMMAS)
    private Integer quantity;
 
+   @QField()
    private BigDecimal price;
 
    @QField(backendName = "is_featured")

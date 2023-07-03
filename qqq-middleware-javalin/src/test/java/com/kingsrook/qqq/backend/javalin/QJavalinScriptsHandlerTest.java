@@ -132,9 +132,7 @@ class QJavalinScriptsHandlerTest extends QJavalinTestBase
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName("scriptRevision");
       queryInput.setFilter(new QQueryFilter()
-         .withCriteria(new QFilterCriteria("contents", QCriteriaOperator.EQUALS, List.of("var j = 0;")))
-         .withCriteria(new QFilterCriteria("commitMessage", QCriteriaOperator.EQUALS, List.of("Javalin Commit")))
-      );
+         .withCriteria(new QFilterCriteria("commitMessage", QCriteriaOperator.EQUALS, List.of("Javalin Commit"))));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size());
    }

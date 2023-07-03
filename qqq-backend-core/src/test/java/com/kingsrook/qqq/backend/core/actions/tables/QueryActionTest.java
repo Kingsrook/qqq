@@ -28,13 +28,21 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
+import com.kingsrook.qqq.backend.core.model.querystats.QueryStatMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockQueryAction;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -386,6 +394,59 @@ class QueryActionTest extends BaseTest
       QRecord order1 = queryOutput.getRecords().get(1);
       assertEquals(1, order1.getAssociatedRecords().get("orderLine").size());
       assertTrue(CollectionUtils.nullSafeIsEmpty(CollectionUtils.nonNullCollection(order1.getAssociatedRecords().get("extrinsics"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryManager() throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // add tables for QueryStats, and turn them on in the memory backend, then start the query-stat manager //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.getBackend(TestUtils.MEMORY_BACKEND_NAME).withCapability(Capability.QUERY_STATS);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QueryStatMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      QueryStatManager.getInstance().start(QContext.getQInstance(), QSession::new);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // insert some order "trees", then query them, so some stats will get recorded //
+      /////////////////////////////////////////////////////////////////////////////////
+      insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.setIncludeAssociations(true);
+      queryInput.setFilter(new QQueryFilter().withOrderBy(new QFilterOrderBy("id")));
+      QContext.pushAction(queryInput);
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      ////////////////////////////////////////////////////////////
+      // run the stat manager (so we don't have to wait for it) //
+      ////////////////////////////////////////////////////////////
+      QueryStatManager.getInstance().storeStatsNow();
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // stat manager expects to be ran in a thread, where it needs to clear context, so reset context after it //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.init(qInstance, new QSession());
+
+      ////////////////////////////////////////////////
+      // query to see that some stats were inserted //
+      ////////////////////////////////////////////////
+      queryInput = new QueryInput();
+      queryInput.setTableName(QueryStat.TABLE_NAME);
+      QContext.pushAction(queryInput);
+      queryOutput = new QueryAction().execute(queryInput);
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // selecting all of those associations should have caused (at least?) 4 queries. //
+      // this is the most basic test here, but we'll take it.                          //
+      ///////////////////////////////////////////////////////////////////////////////////
+      assertThat(queryOutput.getRecords().size()).isGreaterThanOrEqualTo(4);
    }
 
 

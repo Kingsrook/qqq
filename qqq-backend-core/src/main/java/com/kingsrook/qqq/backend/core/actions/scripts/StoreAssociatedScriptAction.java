@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptInput;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.StoreAssociatedScriptOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -47,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -180,41 +183,19 @@ public class StoreAssociatedScriptAction
          }
       }
 
-      QRecord scriptRevision = new QRecord()
-         .withValue("scriptId", script.getValue("id"))
-         .withValue("contents", input.getCode())
-         .withValue("apiName", input.getApiName())
-         .withValue("apiVersion", input.getApiVersion())
-         .withValue("commitMessage", commitMessage)
-         .withValue("sequenceNo", nextSequenceNo);
-
-      try
-      {
-         scriptRevision.setValue("author", input.getSession().getUser().getFullName());
-      }
-      catch(Exception e)
-      {
-         scriptRevision.setValue("author", "Unknown");
-      }
-
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName("scriptRevision");
-      insertInput.setRecords(List.of(scriptRevision));
-      InsertOutput insertOutput = new InsertAction().execute(insertInput);
-      scriptRevision = insertOutput.getRecords().get(0);
-
-      ////////////////////////////////////////////////////
-      // update the script to point at the new revision //
-      ////////////////////////////////////////////////////
-      script.setValue("currentScriptRevisionId", scriptRevision.getValue("id"));
-      UpdateInput updateInput = new UpdateInput();
-      updateInput.setTableName("script");
-      updateInput.setRecords(List.of(script));
-      new UpdateAction().execute(updateInput);
+      RunBackendStepInput storeScriptRevisionInput = new RunBackendStepInput();
+      storeScriptRevisionInput.addValue("scriptId", script.getValue("id"));
+      storeScriptRevisionInput.addValue("commitMessage", commitMessage);
+      storeScriptRevisionInput.addValue("apiName", input.getApiName());
+      storeScriptRevisionInput.addValue("apiVersion", input.getApiVersion());
+      storeScriptRevisionInput.addValue("fileNames", "script");
+      storeScriptRevisionInput.addValue("fileContents:script", input.getCode());
+      RunBackendStepOutput storeScriptRevisionOutput = new RunBackendStepOutput();
+      new StoreScriptRevisionProcessStep().run(storeScriptRevisionInput, storeScriptRevisionOutput);
 
       output.setScriptId(script.getValueInteger("id"));
       output.setScriptName(script.getValueString("name"));
-      output.setScriptRevisionId(scriptRevision.getValueInteger("id"));
-      output.setScriptRevisionSequenceNo(scriptRevision.getValueInteger("sequenceNo"));
+      output.setScriptRevisionId(storeScriptRevisionOutput.getValueInteger("scriptRevisionId"));
+      output.setScriptRevisionSequenceNo(storeScriptRevisionOutput.getValueInteger("scriptRevisionSequenceNo"));
    }
 }

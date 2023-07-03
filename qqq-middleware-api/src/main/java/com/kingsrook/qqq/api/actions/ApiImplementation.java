@@ -132,6 +132,16 @@ public class ApiImplementation
 
 
    /*******************************************************************************
+    ** Allow tests (that manipulate meta-data) to clear field caches.
+    *******************************************************************************/
+   public static void clearCaches()
+   {
+      tableApiNameMap.clear();
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public static Map<String, Serializable> query(ApiInstanceMetaData apiInstanceMetaData, String version, String tableApiName, Map<String, List<String>> paramMap) throws QException
@@ -281,6 +291,10 @@ public class ApiImplementation
 
          try
          {
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo - deal with removed fields; fields w/ custom value mappers (need new method(s) there) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+
             QFieldMetaData field = table.getField(name);
             for(String value : values)
             {

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,186 +19,175 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.templates;
+package com.kingsrook.qqq.backend.core.model.querystats;
 
 
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
- **
+ ** QRecord Entity for QueryStatOrderByField table
  *******************************************************************************/
-public class ConvertHtmlToPdfInput extends AbstractActionInput
+public class QueryStatOrderByField extends QRecordEntity
 {
-   private String       html;
-   private OutputStream outputStream;
+   public static final String TABLE_NAME = "queryStatOrderByField";
 
-   private Path              basePath;
-   private Map<String, Path> customFonts = new HashMap<>();
+   @QField(isEditable = false)
+   private Integer id;
+
+   @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
+   private Integer queryStatId;
+
+   @QField(label = "Table", possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
+
+   @QField(maxLength = 50, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
+   private String name;
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Default constructor
     *******************************************************************************/
-   public ConvertHtmlToPdfInput()
+   public QueryStatOrderByField()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Getter for html
-    **
+    ** Constructor that takes a QRecord
     *******************************************************************************/
-   public String getHtml()
+   public QueryStatOrderByField(QRecord record)
    {
-      return html;
+      populateFromQRecord(record);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for html
-    **
+    ** Getter for id
     *******************************************************************************/
-   public void setHtml(String html)
+   public Integer getId()
    {
-      this.html = html;
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for html
-    **
+    ** Setter for id
     *******************************************************************************/
-   public ConvertHtmlToPdfInput withHtml(String html)
+   public void setId(Integer id)
    {
-      this.html = html;
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    *******************************************************************************/
+   public QueryStatOrderByField withId(Integer id)
+   {
+      this.id = id;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for outputStream
-    **
+    ** Getter for queryStatId
     *******************************************************************************/
-   public OutputStream getOutputStream()
+   public Integer getQueryStatId()
    {
-      return outputStream;
+      return (this.queryStatId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for outputStream
-    **
+    ** Setter for queryStatId
     *******************************************************************************/
-   public void setOutputStream(OutputStream outputStream)
+   public void setQueryStatId(Integer queryStatId)
    {
-      this.outputStream = outputStream;
+      this.queryStatId = queryStatId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for outputStream
-    **
+    ** Fluent setter for queryStatId
     *******************************************************************************/
-   public ConvertHtmlToPdfInput withOutputStream(OutputStream outputStream)
+   public QueryStatOrderByField withQueryStatId(Integer queryStatId)
    {
-      this.outputStream = outputStream;
+      this.queryStatId = queryStatId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for basePath
-    **
+    ** Getter for qqqTableId
     *******************************************************************************/
-   public Path getBasePath()
+   public Integer getQqqTableId()
    {
-      return basePath;
+      return (this.qqqTableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for basePath
-    **
+    ** Setter for qqqTableId
     *******************************************************************************/
-   public void setBasePath(Path basePath)
+   public void setQqqTableId(Integer qqqTableId)
    {
-      this.basePath = basePath;
+      this.qqqTableId = qqqTableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for basePath
-    **
+    ** Fluent setter for qqqTableId
     *******************************************************************************/
-   public ConvertHtmlToPdfInput withBasePath(Path basePath)
+   public QueryStatOrderByField withQqqTableId(Integer qqqTableId)
    {
-      this.basePath = basePath;
+      this.qqqTableId = qqqTableId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for customFonts
-    **
+    ** Getter for name
     *******************************************************************************/
-   public Map<String, Path> getCustomFonts()
+   public String getName()
    {
-      return customFonts;
+      return (this.name);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for customFonts
-    **
+    ** Setter for name
     *******************************************************************************/
-   public void setCustomFonts(Map<String, Path> customFonts)
+   public void setName(String name)
    {
-      this.customFonts = customFonts;
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for customFonts
-    **
+    ** Fluent setter for name
     *******************************************************************************/
-   public ConvertHtmlToPdfInput withCustomFonts(Map<String, Path> customFonts)
+   public QueryStatOrderByField withName(String name)
    {
-      this.customFonts = customFonts;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for customFonts
-    **
-    *******************************************************************************/
-   public ConvertHtmlToPdfInput withCustomFont(String name, Path path)
-   {
-      if(this.customFonts == null)
-      {
-         this.customFonts = new HashMap<>();
-      }
-      this.customFonts.put(name, path);
+      this.name = name;
       return (this);
    }
 

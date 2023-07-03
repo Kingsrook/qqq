@@ -38,6 +38,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -100,7 +102,8 @@ class StoreAssociatedScriptActionTest extends BaseTest
       StoreAssociatedScriptInput storeAssociatedScriptInput = new StoreAssociatedScriptInput();
       storeAssociatedScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
       storeAssociatedScriptInput.setRecordPrimaryKey(1);
-      storeAssociatedScriptInput.setCode("var i = 0;");
+      String code = "var i = 0;";
+      storeAssociatedScriptInput.setCode(code);
       storeAssociatedScriptInput.setCommitMessage("Test commit");
       storeAssociatedScriptInput.setFieldName("testScriptId");
       StoreAssociatedScriptOutput storeAssociatedScriptOutput = new StoreAssociatedScriptOutput();
@@ -110,26 +113,33 @@ class StoreAssociatedScriptActionTest extends BaseTest
       ///////////////////////////////////////////////
       new StoreAssociatedScriptAction().run(storeAssociatedScriptInput, storeAssociatedScriptOutput);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "testScriptId", 1);
-      assertValueInField(instance, "script", 1, "currentScriptRevisionId", 1);
+      assertValueInField(instance, Script.TABLE_NAME, 1, "currentScriptRevisionId", 1);
+      assertValueInField(instance, ScriptRevisionFile.TABLE_NAME, 1, "contents", code);
 
       ////////////////////////////////////////////
       // add 2nd version of script for record 1 //
       ////////////////////////////////////////////
-      storeAssociatedScriptInput.setCode("var i = 1;");
+      code = "var i = 1;";
+      storeAssociatedScriptInput.setCode(code);
       storeAssociatedScriptInput.setCommitMessage("2nd commit");
       new StoreAssociatedScriptAction().run(storeAssociatedScriptInput, storeAssociatedScriptOutput);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "testScriptId", 1);
-      assertValueInField(instance, "script", 1, "currentScriptRevisionId", 2);
+      assertValueInField(instance, Script.TABLE_NAME, 1, "currentScriptRevisionId", 2);
+      assertValueInField(instance, ScriptRevisionFile.TABLE_NAME, 2, "contents", code);
+      assertValueInField(instance, ScriptRevisionFile.TABLE_NAME, 2, "scriptRevisionId", 2);
 
       ///////////////////////////////////////////////
       // insert 1st version of script for record 3 //
       ///////////////////////////////////////////////
+      code = "var i = 2;";
       storeAssociatedScriptInput.setRecordPrimaryKey(3);
-      storeAssociatedScriptInput.setCode("var i = 2;");
+      storeAssociatedScriptInput.setCode(code);
       storeAssociatedScriptInput.setCommitMessage("First Commit here");
       new StoreAssociatedScriptAction().run(storeAssociatedScriptInput, storeAssociatedScriptOutput);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 3, "testScriptId", 2);
-      assertValueInField(instance, "script", 2, "currentScriptRevisionId", 3);
+      assertValueInField(instance, Script.TABLE_NAME, 2, "currentScriptRevisionId", 3);
+      assertValueInField(instance, ScriptRevisionFile.TABLE_NAME, 3, "contents", code);
+      assertValueInField(instance, ScriptRevisionFile.TABLE_NAME, 3, "scriptRevisionId", 3);
 
       /////////////////////////////////////
       // make sure no script on record 2 //
@@ -146,7 +156,7 @@ class StoreAssociatedScriptActionTest extends BaseTest
       new StoreAssociatedScriptAction().run(storeAssociatedScriptInput, storeAssociatedScriptOutput);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "testScriptId", 1);
       assertValueInField(instance, TestUtils.TABLE_NAME_PERSON_MEMORY, 1, "otherScriptId", 3);
-      assertValueInField(instance, "script", 3, "currentScriptRevisionId", 4);
+      assertValueInField(instance, Script.TABLE_NAME, 3, "currentScriptRevisionId", 4);
    }
 
 

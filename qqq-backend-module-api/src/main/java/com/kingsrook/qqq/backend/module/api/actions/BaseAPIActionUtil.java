@@ -34,6 +34,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -634,8 +635,50 @@ public class BaseAPIActionUtil
     **
     ** Can be overridden if an API uses an authorization type we don't natively support.
     *******************************************************************************/
-   protected void setupAuthorizationInRequest(HttpRequestBase request) throws QException
+   public void setupAuthorizationInRequest(HttpRequestBase request) throws QException
    {
+      ///////////////////////////////////////////////////////////////////////////////////
+      // if backend specifies that it uses variants, look for that data in the session //
+      ///////////////////////////////////////////////////////////////////////////////////
+      if(backendMetaData.getUsesVariants())
+      {
+         QSession session = QContext.getQSession();
+         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+         {
+            throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
+         }
+
+         Serializable variantId = session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+         GetInput     getInput  = new GetInput();
+         getInput.setShouldMaskPasswords(false);
+         getInput.setTableName(backendMetaData.getVariantOptionsTableName());
+         getInput.setPrimaryKey(variantId);
+         GetOutput getOutput = new GetAction().execute(getInput);
+
+         QRecord record = getOutput.getRecord();
+         if(record == null)
+         {
+            throw (new QException("Could not find Backend Variant in table " + backendMetaData.getVariantOptionsTableName() + " with id '" + variantId + "'"));
+         }
+
+         if(backendMetaData.getAuthorizationType().equals(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD))
+         {
+            request.addHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+         }
+         else if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_HEADER))
+         {
+            request.addHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+         }
+         else
+         {
+            throw (new IllegalArgumentException("Unexpected variant authorization type specified: " + backendMetaData.getAuthorizationType()));
+         }
+         return;
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // if not using variants, the authorization data will be in the backend meta data object //
+      ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
          case BASIC_AUTH_API_KEY:
@@ -781,7 +824,7 @@ public class BaseAPIActionUtil
     ** Helper method to create a value for an Authentication header, using just a
     ** username & password - encoded as Basic + base64(username:password)
     *******************************************************************************/
-   protected String getBasicAuthenticationHeader(String username, String password)
+   public String getBasicAuthenticationHeader(String username, String password)
    {
       return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
    }

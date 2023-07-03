@@ -23,10 +23,14 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
+import com.kingsrook.qqq.backend.core.model.data.testentities.LineItem;
+import com.kingsrook.qqq.backend.core.model.data.testentities.Order;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -34,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -110,6 +115,29 @@ class QRecordEntityTest extends BaseTest
          .withValue("featured", false);
 
       Item item = qRecord.toEntity(Item.class);
+      assertEquals("WXYZ-9876", item.getSku());
+      assertEquals("Items are cool", item.getDescription());
+      assertEquals(42, item.getQuantity());
+      assertEquals(new BigDecimal("3.50"), item.getPrice());
+      assertFalse(item.getFeatured());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordFromJoinToItem() throws QException
+   {
+      QRecord qRecord = new QRecord()
+         .withValue("item.sku", "WXYZ-9876")
+         .withValue("item.description", "Items are cool")
+         .withValue("item.quantity", 42)
+         .withValue("item.price", new BigDecimal("3.50"))
+         .withValue("item.featured", false);
+
+      Item item = QRecordEntity.fromQRecord(Item.class, qRecord, "item.");
       assertEquals("WXYZ-9876", item.getSku());
       assertEquals("Items are cool", item.getDescription());
       assertEquals(42, item.getQuantity());
@@ -281,7 +309,103 @@ class QRecordEntityTest extends BaseTest
 
       assertEquals(QFieldType.STRING, qTableMetaData.getField("sku").getType());
       assertEquals(QFieldType.INTEGER, qTableMetaData.getField("quantity").getType());
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOrderWithAssociationsToQRecord() throws QException
+   {
+      Order order = new Order();
+      order.setOrderNo("ORD001");
+      order.setLineItems(List.of(
+         new LineItem().withSku("ABC").withQuantity(1),
+         new LineItem().withSku("DEF").withQuantity(2)
+      ));
+
+      QRecord qRecord = order.toQRecord();
+      assertEquals("ORD001", qRecord.getValueString("orderNo"));
+      List<QRecord> lineItems = qRecord.getAssociatedRecords().get("lineItems");
+      assertNotNull(lineItems);
+      assertEquals(2, lineItems.size());
+      assertEquals("ABC", lineItems.get(0).getValueString("sku"));
+      assertEquals(1, lineItems.get(0).getValueInteger("quantity"));
+      assertEquals("DEF", lineItems.get(1).getValueString("sku"));
+      assertEquals(2, lineItems.get(1).getValueInteger("quantity"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOrderWithoutAssociationsToQRecord() throws QException
+   {
+      Order order = new Order();
+      order.setOrderNo("ORD001");
+      order.setLineItems(null);
+
+      QRecord qRecord = order.toQRecord();
+      assertEquals("ORD001", qRecord.getValueString("orderNo"));
+      List<QRecord> lineItems = qRecord.getAssociatedRecords().get("lineItems");
+      assertNull(lineItems);
+
+      order.setLineItems(new ArrayList<>());
+      qRecord = order.toQRecord();
+      lineItems = qRecord.getAssociatedRecords().get("lineItems");
+      assertNotNull(lineItems);
+      assertEquals(0, lineItems.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordWithAssociationsToOrder() throws QException
+   {
+      QRecord qRecord = new QRecord()
+         .withValue("orderNo", "ORD002")
+         .withAssociatedRecords("lineItems", List.of(
+            new QRecord().withValue("sku", "AB12").withValue("quantity", 42),
+            new QRecord().withValue("sku", "XY89").withValue("quantity", 47)
+         ));
+
+      Order order = qRecord.toEntity(Order.class);
+      assertEquals("ORD002", order.getOrderNo());
+      assertEquals(2, order.getLineItems().size());
+      assertEquals("AB12", order.getLineItems().get(0).getSku());
+      assertEquals(42, order.getLineItems().get(0).getQuantity());
+      assertEquals("XY89", order.getLineItems().get(1).getSku());
+      assertEquals(47, order.getLineItems().get(1).getQuantity());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQRecordWithoutAssociationsToOrder() throws QException
+   {
+      QRecord qRecord = new QRecord().withValue("orderNo", "ORD002");
+      Order   order   = qRecord.toEntity(Order.class);
+      assertEquals("ORD002", order.getOrderNo());
+      assertNull(order.getLineItems());
+
+      qRecord.withAssociatedRecords("lineItems", null);
+      order = qRecord.toEntity(Order.class);
+      assertNull(order.getLineItems());
+
+      qRecord.withAssociatedRecords("lineItems", new ArrayList<>());
+      order = qRecord.toEntity(Order.class);
+      assertNotNull(order.getLineItems());
+      assertEquals(0, order.getLineItems().size());
    }
 
 }

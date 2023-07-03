@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,51 +19,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.templates;
+package com.kingsrook.qqq.api.model.actions;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ConvertHtmlToPdfOutput extends AbstractActionOutput
+public abstract class ApiFieldCustomValueMapper
 {
-   private String result;
-
-
 
    /*******************************************************************************
-    ** Getter for result
     **
     *******************************************************************************/
-   public String getResult()
+   public Serializable produceApiValue(QRecord record)
    {
-      return result;
+      /////////////////////
+      // null by default //
+      /////////////////////
+      return (null);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for result
     **
     *******************************************************************************/
-   public void setResult(String result)
+   public void consumeApiValue(QRecord record, Object value, JSONObject fullApiJsonObject)
    {
-      this.result = result;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for result
-    **
-    *******************************************************************************/
-   public ConvertHtmlToPdfOutput withResult(String result)
-   {
-      this.result = result;
-      return (this);
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
 
 }

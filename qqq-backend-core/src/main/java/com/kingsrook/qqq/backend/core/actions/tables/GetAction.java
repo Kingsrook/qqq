@@ -67,6 +67,16 @@ public class GetAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   public QRecord executeForRecord(GetInput getInput) throws QException
+   {
+      return (execute(getInput).getRecord());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public GetOutput execute(GetInput getInput) throws QException
    {
       ActionHelper.validateSession(getInput);

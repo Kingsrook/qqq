@@ -57,6 +57,16 @@ public class AbstractActionInput
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getActionIdentity()
+   {
+      return (getClass().getSimpleName());
+   }
+
+
+
+   /*******************************************************************************
     ** performance instance validation (if not previously done).
     * // todo - verify this is happening (e.g., when context is set i guess)
     *******************************************************************************/
@@ -143,16 +153,6 @@ public class AbstractActionInput
    public void setAsyncJobCallback(AsyncJobCallback asyncJobCallback)
    {
       this.asyncJobCallback = asyncJobCallback;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for instance
-    *******************************************************************************/
-   public AbstractActionInput withInstance(QInstance instance)
-   {
-      return (this);
    }
 
 }

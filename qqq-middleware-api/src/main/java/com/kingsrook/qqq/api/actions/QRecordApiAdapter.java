@@ -31,9 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
+import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.APIVersionRange;
+import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiAssociationMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
+import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -45,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -58,6 +66,17 @@ public class QRecordApiAdapter
 
    private static Map<ApiNameVersionAndTableName, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
    private static Map<ApiNameVersionAndTableName, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
+
+
+
+   /*******************************************************************************
+    ** Allow tests (that manipulate meta-data) to clear field caches.
+    *******************************************************************************/
+   public static void clearCaches()
+   {
+      fieldListCache.clear();
+      fieldMapCache.clear();
+   }
 
 
 
@@ -87,6 +106,11 @@ public class QRecordApiAdapter
          {
             value = record.getValue(apiFieldMetaData.getReplacedByFieldName());
          }
+         else if(apiFieldMetaData.getCustomValueMapper() != null)
+         {
+            ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+            value = customValueMapper.produceApiValue(record);
+         }
          else
          {
             value = record.getValue(field.getName());
@@ -107,6 +131,11 @@ public class QRecordApiAdapter
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
+         if(isAssociationOmitted(apiName, apiVersion, table, association))
+         {
+            continue;
+         }
+
          ArrayList<Map<String, Serializable>> associationList = new ArrayList<>();
          outputRecord.put(association.getName(), associationList);
 
@@ -117,6 +146,31 @@ public class QRecordApiAdapter
       }
 
       return (outputRecord);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean isAssociationOmitted(String apiName, String apiVersion, QTableMetaData table, Association association)
+   {
+      ApiTableMetaData       thisApiTableMetaData   = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(table).getApiTableMetaData(apiName), new ApiTableMetaData());
+      ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
+      if(apiAssociationMetaData != null)
+      {
+         if(BooleanUtils.isTrue(apiAssociationMetaData.getIsExcluded()))
+         {
+            return (true);
+         }
+
+         APIVersionRange apiVersionRange = apiAssociationMetaData.getApiVersionRange();
+         if(!apiVersionRange.includes(new APIVersion(apiVersion)))
+         {
+            return true;
+         }
+      }
+      return false;
    }
 
 
@@ -137,7 +191,10 @@ public class QRecordApiAdapter
       QTableMetaData           table          = QContext.getQInstance().getTable(tableName);
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
-         associationMap.put(association.getName(), association);
+         if(!isAssociationOmitted(apiName, apiVersion, table, association))
+         {
+            associationMap.put(association.getName(), association);
+         }
       }
 
       //////////////////////////////////////////
@@ -178,6 +235,11 @@ public class QRecordApiAdapter
             if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
             {
                qRecord.setValue(apiFieldMetaData.getReplacedByFieldName(), value);
+            }
+            else if(apiFieldMetaData.getCustomValueMapper() != null)
+            {
+               ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+               customValueMapper.consumeApiValue(qRecord, value, jsonObject);
             }
             else
             {
@@ -276,5 +338,4 @@ public class QRecordApiAdapter
    {
 
    }
-
 }

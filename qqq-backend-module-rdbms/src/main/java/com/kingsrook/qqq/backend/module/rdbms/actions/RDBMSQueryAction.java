@@ -100,6 +100,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          // todo sql customization - can edit sql and/or param list
 
+         setSqlAndJoinsInQueryStat(sql, joinsContext);
+
          Connection connection;
          boolean    needToCloseConnection = false;
          if(queryInput.getTransaction() != null && queryInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
@@ -145,6 +147,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
+                  setQueryStatFirstResultTime();
+
                   QRecord record = new QRecord();
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
@@ -178,6 +182,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                      break;
                   }
                }
+
+               /////////////////////////////////////////////////////////////////
+               // in case there were no results, set the firstResultTime here //
+               /////////////////////////////////////////////////////////////////
+               setQueryStatFirstResultTime();
 
             }), params);
 
@@ -261,7 +270,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             List<QFieldMetaData> joinFieldList = new ArrayList<>(joinTable.getFields().values());
             String joinColumns = joinFieldList.stream()
-               .filter(field -> filterOutHeavyFieldsIfNeeded(field, queryInput.getShouldFetchHeavyFields()))
                .map(field -> Pair.of(field, escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field))))
                .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
                .collect(Collectors.joining(", "));

@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
 /*******************************************************************************
  ** Interface to provide logging functionality to QCodeExecution (e.g., scripts)
  *******************************************************************************/
-public interface QCodeExecutionLoggerInterface
+public interface QCodeExecutionLoggerInterface extends Serializable
 {
 
    /*******************************************************************************

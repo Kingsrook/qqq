@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,163 +19,128 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.templates;
+package com.kingsrook.qqq.api.model.metadata.tables;
 
 
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.api.model.APIVersionRange;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RenderTemplateInput extends AbstractActionInput
+public class ApiAssociationMetaData
 {
-   private String       templateIdentifier;
-   private String       code; // todo - TemplateReference, like CodeReference??
-   private TemplateType templateType;
-
-   private Map<String, Object> context;
+   private String  initialVersion;
+   private String  finalVersion;
+   private Boolean isExcluded;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public RenderTemplateInput()
+   public APIVersionRange getApiVersionRange()
    {
+      if(getInitialVersion() == null)
+      {
+         return APIVersionRange.none();
+      }
+
+      return (getFinalVersion() != null
+         ? APIVersionRange.betweenAndIncluding(getInitialVersion(), getFinalVersion())
+         : APIVersionRange.afterAndIncluding(getInitialVersion()));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for code
-    **
+    ** Getter for initialVersion
     *******************************************************************************/
-   public String getCode()
+   public String getInitialVersion()
    {
-      return code;
+      return (this.initialVersion);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for code
-    **
+    ** Setter for initialVersion
     *******************************************************************************/
-   public void setCode(String code)
+   public void setInitialVersion(String initialVersion)
    {
-      this.code = code;
+      this.initialVersion = initialVersion;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for code
-    **
+    ** Fluent setter for initialVersion
     *******************************************************************************/
-   public RenderTemplateInput withCode(String code)
+   public ApiAssociationMetaData withInitialVersion(String initialVersion)
    {
-      this.code = code;
+      this.initialVersion = initialVersion;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for templateType
-    **
+    ** Getter for finalVersion
     *******************************************************************************/
-   public TemplateType getTemplateType()
+   public String getFinalVersion()
    {
-      return templateType;
+      return (this.finalVersion);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for templateType
-    **
+    ** Setter for finalVersion
     *******************************************************************************/
-   public void setTemplateType(TemplateType templateType)
+   public void setFinalVersion(String finalVersion)
    {
-      this.templateType = templateType;
+      this.finalVersion = finalVersion;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for templateType
-    **
+    ** Fluent setter for finalVersion
     *******************************************************************************/
-   public RenderTemplateInput withTemplateType(TemplateType templateType)
+   public ApiAssociationMetaData withFinalVersion(String finalVersion)
    {
-      this.templateType = templateType;
+      this.finalVersion = finalVersion;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for context
-    **
+    ** Getter for isExcluded
     *******************************************************************************/
-   public Map<String, Object> getContext()
+   public Boolean getIsExcluded()
    {
-      return context;
+      return (this.isExcluded);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for context
-    **
+    ** Setter for isExcluded
     *******************************************************************************/
-   public void setContext(Map<String, Object> context)
+   public void setIsExcluded(Boolean isExcluded)
    {
-      this.context = context;
+      this.isExcluded = isExcluded;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for context
-    **
+    ** Fluent setter for isExcluded
     *******************************************************************************/
-   public RenderTemplateInput withContext(Map<String, Object> context)
+   public ApiAssociationMetaData withIsExcluded(Boolean isExcluded)
    {
-      this.context = context;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for templateIdentifier
-    *******************************************************************************/
-   public String getTemplateIdentifier()
-   {
-      return (this.templateIdentifier);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for templateIdentifier
-    *******************************************************************************/
-   public void setTemplateIdentifier(String templateIdentifier)
-   {
-      this.templateIdentifier = templateIdentifier;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for templateIdentifier
-    *******************************************************************************/
-   public RenderTemplateInput withTemplateIdentifier(String templateIdentifier)
-   {
-      this.templateIdentifier = templateIdentifier;
+      this.isExcluded = isExcluded;
       return (this);
    }
 
