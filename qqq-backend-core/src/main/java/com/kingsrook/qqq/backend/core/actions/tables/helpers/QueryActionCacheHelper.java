@@ -34,12 +34,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -50,6 +54,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
@@ -532,7 +538,7 @@ public class QueryActionCacheHelper
 
       if(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY.equals(activeCacheUseCase))
       {
-         recordsFromSource = getFromCachedSourceForUniqueKeyToUniqueKey(uniqueKeyValues, table.getCacheOf().getSourceTable());
+         recordsFromSource = getFromCachedSourceForUniqueKeyToUniqueKey(queryInput, uniqueKeyValues, table.getCacheOf().getSourceTable());
       }
       else
       {
@@ -548,30 +554,69 @@ public class QueryActionCacheHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QRecord> getFromCachedSourceForUniqueKeyToUniqueKey(Set<List<Serializable>> uniqueKeyValues, String sourceTableName) throws QException
+   private List<QRecord> getFromCachedSourceForUniqueKeyToUniqueKey(QueryInput cacheQueryInput, Set<List<Serializable>> uniqueKeyValues, String sourceTableName) throws QException
    {
-      ///////////////////////////////////////////////////////
-      // do a Query on the source table, by the unique key //
-      ///////////////////////////////////////////////////////
-      QueryInput sourceQueryInput = new QueryInput();
-      sourceQueryInput.setTableName(sourceTableName);
+      QTableMetaData   sourceTable   = QContext.getQInstance().getTable(sourceTableName);
+      QBackendMetaData sourceBackend = QContext.getQInstance().getBackendForTable(sourceTableName);
 
-      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
-      sourceQueryInput.setFilter(filter);
-
-      for(List<Serializable> uniqueKeyValue : uniqueKeyValues)
+      if(sourceTable.isCapabilityEnabled(sourceBackend, Capability.TABLE_QUERY))
       {
-         QQueryFilter subFilter = new QQueryFilter();
-         filter.addSubFilter(subFilter);
+         ///////////////////////////////////////////////////////
+         // do a Query on the source table, by the unique key //
+         ///////////////////////////////////////////////////////
+         QueryInput sourceQueryInput = new QueryInput();
+         sourceQueryInput.setTableName(sourceTableName);
 
-         for(int i = 0; i < cacheUniqueKey.getFieldNames().size(); i++)
+         QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
+         sourceQueryInput.setFilter(filter);
+         sourceQueryInput.setCommonParamsFrom(cacheQueryInput);
+
+         for(List<Serializable> uniqueKeyValue : uniqueKeyValues)
          {
-            subFilter.addCriteria(new QFilterCriteria(cacheUniqueKey.getFieldNames().get(i), QCriteriaOperator.EQUALS, uniqueKeyValue.get(i)));
-         }
-      }
+            QQueryFilter subFilter = new QQueryFilter();
+            filter.addSubFilter(subFilter);
 
-      QueryOutput sourceQueryOutput = new QueryAction().execute(sourceQueryInput);
-      return (sourceQueryOutput.getRecords());
+            for(int i = 0; i < cacheUniqueKey.getFieldNames().size(); i++)
+            {
+               subFilter.addCriteria(new QFilterCriteria(cacheUniqueKey.getFieldNames().get(i), QCriteriaOperator.EQUALS, uniqueKeyValue.get(i)));
+            }
+         }
+
+         QueryOutput sourceQueryOutput = new QueryAction().execute(sourceQueryInput);
+         return (sourceQueryOutput.getRecords());
+      }
+      else if(sourceTable.isCapabilityEnabled(sourceBackend, Capability.TABLE_GET))
+      {
+         ///////////////////////////////////////////////////////////////////////
+         // if the table only supports GET, then do a GET for each unique key //
+         ///////////////////////////////////////////////////////////////////////
+         List<QRecord> outputRecords = new ArrayList<>();
+         for(List<Serializable> uniqueKeyValue : uniqueKeyValues)
+         {
+            Map<String, Serializable> uniqueKey = new HashMap<>();
+            for(int i = 0; i < cacheUniqueKey.getFieldNames().size(); i++)
+            {
+               uniqueKey.put(cacheUniqueKey.getFieldNames().get(i), uniqueKeyValue.get(i));
+            }
+
+            GetInput getInput = new GetInput();
+            getInput.setTableName(sourceTableName);
+            getInput.setUniqueKey(uniqueKey);
+            getInput.setCommonParamsFrom(cacheQueryInput);
+            GetOutput getOutput = new GetAction().execute(getInput);
+
+            if(getOutput.getRecord() != null)
+            {
+               outputRecords.add(getOutput.getRecord());
+            }
+         }
+
+         return (outputRecords);
+      }
+      else
+      {
+         throw (new QException("Cache source table " + sourceTableName + " does not support Query or Get capability."));
+      }
    }
 
 }

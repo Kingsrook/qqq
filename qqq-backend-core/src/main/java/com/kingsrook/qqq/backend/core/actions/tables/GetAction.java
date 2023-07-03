@@ -196,14 +196,7 @@ public class GetAction
       }
 
       queryInput.setFilter(filter);
-      queryInput.setTransaction(getInput.getTransaction());
-      queryInput.setIncludeAssociations(getInput.getIncludeAssociations());
-      queryInput.setAssociationNamesToInclude(getInput.getAssociationNamesToInclude());
-      queryInput.setShouldTranslatePossibleValues(getInput.getShouldTranslatePossibleValues());
-      queryInput.setShouldGenerateDisplayValues(getInput.getShouldGenerateDisplayValues());
-      queryInput.setShouldFetchHeavyFields(getInput.getShouldFetchHeavyFields());
-      queryInput.setShouldMaskPasswords(getInput.getShouldMaskPasswords());
-      queryInput.setShouldOmitHiddenFields(getInput.getShouldOmitHiddenFields());
+      queryInput.setCommonParamsFrom(getInput);
       return queryInput;
    }
 
