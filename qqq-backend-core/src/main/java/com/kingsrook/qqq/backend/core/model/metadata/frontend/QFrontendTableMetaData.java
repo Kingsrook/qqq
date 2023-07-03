@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -41,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -57,15 +59,13 @@ public class QFrontendTableMetaData
    private String  label;
    private boolean isHidden;
    private String  primaryKeyField;
+   private String  iconName;
 
-   private String iconName;
-
-   private Map<String, QFrontendFieldMetaData> fields;
-   private List<QFieldSection>                 sections;
-
-   private List<QFrontendExposedJoin> exposedJoins;
-
-   private Set<String> capabilities;
+   private Map<String, QFrontendFieldMetaData>     fields;
+   private List<QFieldSection>                     sections;
+   private List<QFrontendExposedJoin>              exposedJoins;
+   private Map<String, QSupplementalTableMetaData> supplementalTableMetaData;
+   private Set<String>                             capabilities;
 
    private boolean readPermission;
    private boolean insertPermission;
@@ -84,13 +84,13 @@ public class QFrontendTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFields, boolean includeJoins)
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
       this.isHidden = tableMetaData.getIsHidden();
 
-      if(includeFields)
+      if(includeFullMetaData)
       {
          this.primaryKeyField = tableMetaData.getPrimaryKeyField();
          this.fields = new HashMap<>();
@@ -119,11 +119,33 @@ public class QFrontendTableMetaData
             QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
             frontendExposedJoin.setLabel(exposedJoin.getLabel());
             frontendExposedJoin.setIsMany(exposedJoin.getIsMany());
-            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFields, false));
+            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFullMetaData, false));
             for(String joinName : exposedJoin.getJoinPath())
             {
                frontendExposedJoin.addJoin(qInstance.getJoin(joinName));
             }
+         }
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // include supplemental meta data, based on if it's meant for full or partial frontend meta-data requests //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(tableMetaData.getSupplementalMetaData()).values())
+      {
+         boolean include;
+         if(includeFullMetaData)
+         {
+            include = supplementalTableMetaData.includeInFullFrontendMetaData();
+         }
+         else
+         {
+            include = supplementalTableMetaData.includeInPartialFrontendMetaData();
+         }
+
+         if(include)
+         {
+            this.supplementalTableMetaData = Objects.requireNonNullElseGet(this.supplementalTableMetaData, HashMap::new);
+            this.supplementalTableMetaData.put(supplementalTableMetaData.getType(), supplementalTableMetaData);
          }
       }
 
@@ -322,6 +344,17 @@ public class QFrontendTableMetaData
    public List<QFrontendExposedJoin> getExposedJoins()
    {
       return exposedJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalTableMetaData
+    **
+    *******************************************************************************/
+   public Map<String, QSupplementalTableMetaData> getSupplementalTableMetaData()
+   {
+      return supplementalTableMetaData;
    }
 
 

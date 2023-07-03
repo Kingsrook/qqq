@@ -129,6 +129,7 @@ public class TestUtils
 
    public static final String TABLE_NAME_PERSON              = "person";
    public static final String TABLE_NAME_SHAPE               = "shape";
+   public static final String TABLE_NAME_SHAPE_CACHE         = "shapeCache";
    public static final String TABLE_NAME_ORDER               = "order";
    public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
@@ -185,6 +186,7 @@ public class TestUtils
       qInstance.addTable(definePersonMemoryCacheTable());
       qInstance.addTable(defineTableIdAndNameOnly());
       qInstance.addTable(defineTableShape());
+      qInstance.addTable(defineShapeCacheTable());
       qInstance.addTable(defineTableBasepull());
       qInstance.addTable(defineTableOrder());
       qInstance.addTable(defineTableLineItem());
@@ -338,8 +340,7 @@ public class TestUtils
    private static QAutomationProviderMetaData definePollingAutomationProvider()
    {
       return (new PollingAutomationProviderMetaData()
-         .withName(POLLING_AUTOMATION)
-      );
+         .withName(POLLING_AUTOMATION));
    }
 
 
@@ -847,8 +848,43 @@ public class TestUtils
                .withCacheSourceMisses(false)
                .withExcludeRecordsMatching(List.of(
                      new QQueryFilter(
-                        new QFilterCriteria("firstName", QCriteriaOperator.CONTAINS, "503"),
-                        new QFilterCriteria("firstName", QCriteriaOperator.CONTAINS, "999")
+                        new QFilterCriteria("noOfShoes", QCriteriaOperator.EQUALS, "503"),
+                        new QFilterCriteria("noOfShoes", QCriteriaOperator.EQUALS, "999")
+                     ).withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+                  )
+               ))
+         );
+   }
+
+
+
+   /*******************************************************************************
+    ** Define another version of the 'shape' table, also in-memory, and as a
+    ** cache on the other in-memory one...
+    *******************************************************************************/
+   public static QTableMetaData defineShapeCacheTable()
+   {
+      UniqueKey uniqueKey = new UniqueKey("name");
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_SHAPE_CACHE)
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withUniqueKey(uniqueKey)
+         .withFields(TestUtils.defineTableShape().getFields()))
+         .withField(new QFieldMetaData("cachedDate", QFieldType.DATE_TIME))
+         .withCacheOf(new CacheOf()
+            .withSourceTable(TABLE_NAME_SHAPE)
+            .withCachedDateFieldName("cachedDate")
+            .withExpirationSeconds(60)
+            .withUseCase(new CacheUseCase()
+               .withType(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY)
+               .withSourceUniqueKey(uniqueKey)
+               .withCacheUniqueKey(uniqueKey)
+               .withCacheSourceMisses(false)
+               .withExcludeRecordsMatching(List.of(
+                     new QQueryFilter(
+                        new QFilterCriteria("noOfSides", QCriteriaOperator.EQUALS, 503),
+                        new QFilterCriteria("noOfSides", QCriteriaOperator.EQUALS, 999)
                      ).withBooleanOperator(QQueryFilter.BooleanOperator.OR)
                   )
                ))

@@ -32,38 +32,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  *******************************************************************************/
 public abstract class QSupplementalInstanceMetaData
 {
-   protected String type;
-
-
 
    /*******************************************************************************
     ** Getter for type
     *******************************************************************************/
-   public String getType()
-   {
-      return (this.type);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for type
-    *******************************************************************************/
-   public void setType(String type)
-   {
-      this.type = type;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for type
-    *******************************************************************************/
-   public QSupplementalInstanceMetaData withType(String type)
-   {
-      this.type = type;
-      return (this);
-   }
+   public abstract String getType();
 
 
 

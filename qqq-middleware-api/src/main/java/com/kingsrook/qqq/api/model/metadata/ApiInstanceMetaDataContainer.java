@@ -46,7 +46,6 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
     *******************************************************************************/
    public ApiInstanceMetaDataContainer()
    {
-      setType(ApiSupplementType.NAME);
    }
 
 
@@ -57,6 +56,17 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    public static ApiInstanceMetaDataContainer of(QInstance qInstance)
    {
       return ((ApiInstanceMetaDataContainer) qInstance.getSupplementalMetaData(ApiSupplementType.NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getType()
+   {
+      return (ApiSupplementType.NAME);
    }
 
 

@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipeBufferedWrapper;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -125,6 +126,14 @@ public class QueryAction
       QueryOutput queryOutput = queryInterface.execute(queryInput);
 
       QueryStatManager.getInstance().add(queryStat);
+
+      ////////////////////////////
+      // handle cache use-cases //
+      ////////////////////////////
+      if(table.getCacheOf() != null)
+      {
+         new QueryActionCacheHelper().handleCaching(queryInput, queryOutput);
+      }
 
       if(queryInput.getRecordPipe() instanceof BufferedRecordPipe bufferedRecordPipe)
       {

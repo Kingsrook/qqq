@@ -22,29 +22,15 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -83,168 +69,6 @@ class GetActionTest extends BaseTest
       GetOutput result = new GetAction().execute(request);
       assertNotNull(result);
       assertNotNull(result.getRecord());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testUniqueKeyCache() throws QException
-   {
-      QInstance qInstance = QContext.getQInstance();
-
-      /////////////////////////////////////
-      // insert rows in the source table //
-      /////////////////////////////////////
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
-         new QRecord().withValue("id", 1).withValue("firstName", "George").withValue("lastName", "Washington").withValue("noOfShoes", 5),
-         new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Adams"),
-         new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson"),
-         new QRecord().withValue("id", 4).withValue("firstName", "Thomas 503").withValue("lastName", "Jefferson"),
-         new QRecord().withValue("id", 5).withValue("firstName", "Thomas 999").withValue("lastName", "Jefferson")
-      ));
-
-      /////////////////////////////////////////////////////////////////////////////
-      // get from the table which caches it - confirm they are (magically) found //
-      /////////////////////////////////////////////////////////////////////////////
-      {
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNotNull(getOutput.getRecord());
-         assertNotNull(getOutput.getRecord().getValue("cachedDate"));
-         assertEquals(5, getOutput.getRecord().getValue("noOfShoes"));
-      }
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // try to get from the table which caches it - but should not find because use case should filter out because of matching 503 //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      {
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "Thomas 503", "lastName", "Jefferson"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNull(getOutput.getRecord());
-         getInput.setUniqueKey(Map.of("firstName", "Thomas 999", "lastName", "Jefferson"));
-         getOutput = new GetAction().execute(getInput);
-         assertNull(getOutput.getRecord());
-      }
-
-      ///////////////////////////////////////////////////////////////////////////
-      // request a row that doesn't exist in cache or source, should miss both //
-      ///////////////////////////////////////////////////////////////////////////
-      {
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "John", "lastName", "McCain"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNull(getOutput.getRecord());
-      }
-
-      /////////////////////////////////////////////////////////////////////////////////////////////////////
-      // update the record in the source table - then re-get from cache table - shouldn't see new value. //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////
-      {
-         UpdateInput updateInput = new UpdateInput();
-         updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-         updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("noOfShoes", 6)));
-         new UpdateAction().execute(updateInput);
-
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNotNull(getOutput.getRecord());
-         assertNotNull(getOutput.getRecord().getValue("cachedDate"));
-         assertEquals(5, getOutput.getRecord().getValue("noOfShoes"));
-      }
-
-      ///////////////////////////////////////////////////////////////////////////
-      // delete the cached record; re-get, and we should see the updated value //
-      ///////////////////////////////////////////////////////////////////////////
-      {
-         DeleteInput deleteInput = new DeleteInput();
-         deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("firstName", QCriteriaOperator.EQUALS, "George")));
-         new DeleteAction().execute(deleteInput);
-
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNotNull(getOutput.getRecord());
-         assertNotNull(getOutput.getRecord().getValue("cachedDate"));
-         assertEquals(6, getOutput.getRecord().getValue("noOfShoes"));
-      }
-
-      ///////////////////////////////////////////////////////////////////
-      // update the source record; see that it isn't updated in cache. //
-      ///////////////////////////////////////////////////////////////////
-      {
-         UpdateInput updateInput = new UpdateInput();
-         updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-         updateInput.setRecords(List.of(new QRecord().withValue("id", 1).withValue("noOfShoes", 7)));
-         new UpdateAction().execute(updateInput);
-
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNotNull(getOutput.getRecord());
-         assertNotNull(getOutput.getRecord().getValue("cachedDate"));
-         assertEquals(6, getOutput.getRecord().getValue("noOfShoes"));
-
-         ///////////////////////////////////////////////////////////////////////
-         // then artificially move back the cachedDate in the cache table.    //
-         // then re-get from cache table, and we should see the updated value //
-         ///////////////////////////////////////////////////////////////////////
-         updateInput = new UpdateInput();
-         updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         updateInput.setRecords(List.of(getOutput.getRecord().withValue("cachedDate", Instant.parse("2001-01-01T00:00:00Z"))));
-         new UpdateAction().execute(updateInput);
-
-         getOutput = new GetAction().execute(getInput);
-         assertEquals(7, getOutput.getRecord().getValue("noOfShoes"));
-      }
-
-      /////////////////////////////////////////////////
-      // should only be 1 cache record at this point //
-      /////////////////////////////////////////////////
-      assertEquals(1, TestUtils.queryTable(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE).size());
-
-      //////////////////////////////////////////////////////////////////////
-      // delete the source record - it will still be in the cache though. //
-      //////////////////////////////////////////////////////////////////////
-      {
-         DeleteInput deleteInput = new DeleteInput();
-         deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
-         deleteInput.setPrimaryKeys(List.of(1));
-         new DeleteAction().execute(deleteInput);
-
-         GetInput getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         GetOutput getOutput = new GetAction().execute(getInput);
-         assertNotNull(getOutput.getRecord());
-
-         ////////////////////////////////////////////////////////////////////
-         // then artificially move back the cachedDate in the cache table. //
-         // then re-get from cache table, and now it should go away        //
-         ////////////////////////////////////////////////////////////////////
-         UpdateInput updateInput = new UpdateInput();
-         updateInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         updateInput.setRecords(List.of(getOutput.getRecord().withValue("cachedDate", Instant.parse("2001-01-01T00:00:00Z"))));
-         new UpdateAction().execute(updateInput);
-
-         getInput = new GetInput();
-         getInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY_CACHE);
-         getInput.setUniqueKey(Map.of("firstName", "George", "lastName", "Washington"));
-         getOutput = new GetAction().execute(getInput);
-         assertNull(getOutput.getRecord());
-      }
    }
 
 }

@@ -40,12 +40,11 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
 
 
    /*******************************************************************************
-    ** Constructor
     **
     *******************************************************************************/
-   public ApiTableMetaDataContainer()
+   public static ApiTableMetaDataContainer of(QTableMetaData table)
    {
-      setType("api");
+      return ((ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME));
    }
 
 
@@ -53,9 +52,9 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static ApiTableMetaDataContainer of(QTableMetaData table)
+   public String getType()
    {
-      return ((ApiTableMetaDataContainer) table.getSupplementalMetaData(ApiSupplementType.NAME));
+      return (ApiSupplementType.NAME);
    }
 
 

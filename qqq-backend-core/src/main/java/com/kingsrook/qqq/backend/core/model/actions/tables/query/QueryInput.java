@@ -29,13 +29,14 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 
 
 /*******************************************************************************
  ** Input data for the Query action
  **
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput
+public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;

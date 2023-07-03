@@ -43,6 +43,7 @@ public class APIBackendMetaData extends QBackendMetaData
    private String clientSecret;
    private String username;
    private String password;
+   private String apiKeyQueryParamName;
 
    private AuthorizationType authorizationType;
    private String            contentType; // todo enum?
@@ -460,6 +461,16 @@ public class APIBackendMetaData extends QBackendMetaData
    public void performValidation(QInstanceValidator qInstanceValidator)
    {
       qInstanceValidator.assertCondition(StringUtils.hasContent(baseUrl), "Missing baseUrl for API backend: " + getName());
+
+      if(AuthorizationType.API_KEY_QUERY_PARAM.equals(authorizationType))
+      {
+         qInstanceValidator.assertCondition(StringUtils.hasContent(apiKey), "Missing apiKey for API backend: " + getName() + " (required when using AuthorizationType=API_KEY_QUERY_PARAM))");
+         qInstanceValidator.assertCondition(StringUtils.hasContent(apiKeyQueryParamName), "Missing apiKeyQueryParamName for API backend: " + getName() + " (required when using AuthorizationType=API_KEY_QUERY_PARAM))");
+      }
+      else
+      {
+         qInstanceValidator.assertCondition(!StringUtils.hasContent(apiKeyQueryParamName), "Unexpected apiKeyQueryParamName for API backend: " + getName() + " (only allowed when using AuthorizationType=API_KEY_QUERY_PARAM))");
+      }
    }
 
 
@@ -471,6 +482,37 @@ public class APIBackendMetaData extends QBackendMetaData
    public boolean requiresPrimaryKeyOnTables()
    {
       return (false);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiKeyQueryParamName
+    *******************************************************************************/
+   public String getApiKeyQueryParamName()
+   {
+      return (this.apiKeyQueryParamName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiKeyQueryParamName
+    *******************************************************************************/
+   public void setApiKeyQueryParamName(String apiKeyQueryParamName)
+   {
+      this.apiKeyQueryParamName = apiKeyQueryParamName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiKeyQueryParamName
+    *******************************************************************************/
+   public APIBackendMetaData withApiKeyQueryParamName(String apiKeyQueryParamName)
+   {
+      this.apiKeyQueryParamName = apiKeyQueryParamName;
+      return (this);
    }
 
 }

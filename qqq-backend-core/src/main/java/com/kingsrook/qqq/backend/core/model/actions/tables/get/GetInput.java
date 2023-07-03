@@ -27,13 +27,14 @@ import java.util.Collection;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 
 
 /*******************************************************************************
  ** Input data for the Get action
  **
  *******************************************************************************/
-public class GetInput extends AbstractTableActionInput
+public class GetInput extends AbstractTableActionInput implements QueryOrGetInputInterface
 {
    private QBackendTransaction transaction;
 

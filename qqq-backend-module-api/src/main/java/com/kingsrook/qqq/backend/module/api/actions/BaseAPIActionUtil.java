@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -501,14 +503,22 @@ public class BaseAPIActionUtil
          {
             for(int i = 0; i < resultList.length(); i++)
             {
-               queryOutput.addRecord(jsonObjectToRecord(resultList.getJSONObject(i), table.getFields()));
-               count++;
+               QRecord record = jsonObjectToRecord(resultList.getJSONObject(i), table.getFields());
+               if(record != null)
+               {
+                  queryOutput.addRecord(record);
+                  count++;
+               }
             }
          }
          else
          {
-            queryOutput.addRecord(jsonObjectToRecord(jsonObject, table.getFields()));
-            count++;
+            QRecord record = jsonObjectToRecord(jsonObject, table.getFields());
+            if(record != null)
+            {
+               queryOutput.addRecord(record);
+               count++;
+            }
          }
       }
 
@@ -671,11 +681,38 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
-         case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
-         default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
+         case BASIC_AUTH_API_KEY:
+            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+            break;
+
+         case BASIC_AUTH_USERNAME_PASSWORD:
+            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+            break;
+
+         case API_KEY_HEADER:
+            request.addHeader("API-Key", backendMetaData.getApiKey());
+            break;
+
+         case OAUTH2:
+            request.setHeader("Authorization", "Bearer " + getOAuth2Token());
+            break;
+
+         case API_KEY_QUERY_PARAM:
+            try
+            {
+               String uri = request.getURI().toString();
+               uri += (uri.contains("?") ? "&" : "?");
+               uri += backendMetaData.getApiKeyQueryParamName() + "=" + backendMetaData.getApiKey();
+               request.setURI(new URI(uri));
+            }
+            catch(URISyntaxException e)
+            {
+               throw (new QException("Error setting authorization query parameter", e));
+            }
+            break;
+
+         default:
+            throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
    }
 
@@ -984,7 +1021,10 @@ public class BaseAPIActionUtil
                   handleResponseError(table, request, qResponse);
                }
 
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + qResponse.getContent() + "].");
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // trim response body (just to keep logs smaller, or, in case someone consuming logs doesn't want such long lines) //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
                return (qResponse);
             }
          }
@@ -1081,37 +1121,53 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void logOutboundApiCall(HttpRequestBase request, QHttpResponse response)
    {
-      QTableMetaData table = QContext.getQInstance().getTable(OutboundAPILog.TABLE_NAME);
-      if(table == null)
+      try
       {
-         return;
-      }
+         QTableMetaData table = QContext.getQInstance().getTable(OutboundAPILog.TABLE_NAME);
+         if(table == null)
+         {
+            return;
+         }
 
-      String requestBody = null;
-      if(request instanceof HttpEntityEnclosingRequest entityRequest)
+         String requestBody = null;
+         if(request instanceof HttpEntityEnclosingRequest entityRequest)
+         {
+            try
+            {
+               requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
+            }
+            catch(Exception e)
+            {
+               // leave it null...
+            }
+         }
+
+         ////////////////////////////////////
+         // mask api keys in query strings //
+         ////////////////////////////////////
+         String url = request.getURI().toString();
+         if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_QUERY_PARAM))
+         {
+            url = url.replaceFirst(backendMetaData.getApiKey(), "******");
+         }
+
+         InsertInput insertInput = new InsertInput();
+         insertInput.setTableName(table.getName());
+         insertInput.setRecords(List.of(new OutboundAPILog()
+            .withMethod(request.getMethod())
+            .withUrl(url)
+            .withTimestamp(Instant.now())
+            .withRequestBody(requestBody)
+            .withStatusCode(response.getStatusCode())
+            .withResponseBody(response.getContent())
+            .toQRecord()
+         ));
+         new InsertAction().executeAsync(insertInput);
+      }
+      catch(Exception e)
       {
-         try
-         {
-            requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
-         }
-         catch(Exception e)
-         {
-            // leave it null...
-         }
+         LOG.warn("Error logging outbound api call", e);
       }
-
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(table.getName());
-      insertInput.setRecords(List.of(new OutboundAPILog()
-         .withMethod(request.getMethod())
-         .withUrl(request.getURI().toString()) // todo - does this have the query string?
-         .withTimestamp(Instant.now())
-         .withRequestBody(requestBody)
-         .withStatusCode(response.getStatusCode())
-         .withResponseBody(response.getContent())
-         .toQRecord()
-      ));
-      new InsertAction().executeAsync(insertInput);
    }
 
 
@@ -1281,5 +1337,18 @@ public class BaseAPIActionUtil
    protected UpdateHttpMethod getUpdateMethod()
    {
       return (UpdateHttpMethod.PUT);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected int getMaxResponseMessageLengthForLog()
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // rsyslog default limit appears to be 8K - we've got some extra content, so 7 feels safe enough //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      return (7 * 1024);
    }
 }

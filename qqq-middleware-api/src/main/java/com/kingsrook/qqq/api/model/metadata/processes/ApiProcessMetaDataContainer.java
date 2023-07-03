@@ -48,7 +48,6 @@ public class ApiProcessMetaDataContainer extends QSupplementalProcessMetaData
     *******************************************************************************/
    public ApiProcessMetaDataContainer()
    {
-      setType(ApiSupplementType.NAME);
    }
 
 
@@ -76,6 +75,17 @@ public class ApiProcessMetaDataContainer extends QSupplementalProcessMetaData
          process.withSupplementalMetaData(apiProcessMetaDataContainer);
       }
       return (apiProcessMetaDataContainer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getType()
+   {
+      return (ApiSupplementType.NAME);
    }
 
 

@@ -288,11 +288,11 @@ public class QJavalinImplementation
          }
          catch(QInstanceValidationException e)
          {
-            LOG.warn(e.getMessage());
+            LOG.error("Validation Error while hot-swapping QInstance", e);
          }
          catch(Exception e)
          {
-            LOG.error("Error swapping QInstance", e);
+            LOG.error("Error hot-swapping QInstance", e);
          }
       }
    }
