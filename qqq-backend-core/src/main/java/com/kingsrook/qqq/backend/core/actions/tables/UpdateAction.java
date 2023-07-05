@@ -396,6 +396,11 @@ public class UpdateAction
             //////////////////////////////////////////////////////
             for(QRecord record : page)
             {
+               if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+               {
+                  continue;
+               }
+
                if(record.getAssociatedRecords() != null && record.getAssociatedRecords().containsKey(association.getName()))
                {
                   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
