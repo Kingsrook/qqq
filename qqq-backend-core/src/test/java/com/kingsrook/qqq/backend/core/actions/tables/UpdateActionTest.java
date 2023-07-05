@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -302,6 +303,45 @@ class UpdateActionTest extends BaseTest
 
       List<QRecord> orderExtrinsics = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
       assertEquals(4, orderExtrinsics.size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoNotUpdateAssociationsIfErrorInMainRecord() throws QException
+   {
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER)
+         .getField("storeId").setIsRequired(true);
+
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+
+      insert2OrdersWith3Lines3LineExtrinsicsAnd4OrderExtrinsicAssociations();
+
+      //////////////////////////////////////////////////////////////////////
+      // update the order's orderNo, and the quantity on one of the lines //
+      //////////////////////////////////////////////////////////////////////
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      updateInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("storeId", null)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("id", 2))
+      ));
+      UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+      assertFalse(updateOutput.getRecords().get(0).getErrors().isEmpty());
+
+      List<QRecord> orders = TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER);
+      assertEquals(2, orders.size());
+      assertNotNull(orders.get(0).getValue("storeId"));
+
+      List<QRecord> orderLines = TestUtils.queryTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      assertEquals(3, orderLines.size());
+      assertTrue(orderLines.stream().anyMatch(r -> r.getValueInteger("id").equals(1))); // id=1 should NOT be deleted
+
+      List<QRecord> lineItemExtrinsics = TestUtils.queryTable(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
+      assertEquals(3, lineItemExtrinsics.size()); // none were was deleted (when its parent was not deleted)
    }
 
 
