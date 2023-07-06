@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.NoCodeWidgetRend
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -57,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponen
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
@@ -484,6 +487,32 @@ public class RunProcessAction
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected String determineBasepullKeyValue(QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
+   {
+      String basepullKeyValue = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if backend specifies that it uses variants, look for that data in the session and append to our basepull key //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(process.getSchedule().getVariantBackend() != null)
+      {
+         QSession         session         = QContext.getQSession();
+         QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getSchedule().getVariantBackend());
+         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+         {
+            throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
+         }
+         basepullKeyValue += "-" + session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+      }
+
+      return (basepullKeyValue);
+   }
+
+
+
+   /*******************************************************************************
     ** Insert or update the last runtime value for this basepull into the backend.
     *******************************************************************************/
    protected void storeLastRunTime(RunProcessInput runProcessInput, QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
@@ -491,7 +520,7 @@ public class RunProcessAction
       String basepullTableName            = basepullConfiguration.getTableName();
       String basepullKeyFieldName         = basepullConfiguration.getKeyField();
       String basepullLastRunTimeFieldName = basepullConfiguration.getLastRunTimeFieldName();
-      String basepullKeyValue             = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+      String basepullKeyValue             = determineBasepullKeyValue(process, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //
@@ -571,7 +600,7 @@ public class RunProcessAction
       String  basepullKeyFieldName                 = basepullConfiguration.getKeyField();
       String  basepullLastRunTimeFieldName         = basepullConfiguration.getLastRunTimeFieldName();
       Integer basepullHoursBackForInitialTimestamp = basepullConfiguration.getHoursBackForInitialTimestamp();
-      String  basepullKeyValue                     = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+      String  basepullKeyValue                     = determineBasepullKeyValue(process, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //
