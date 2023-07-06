@@ -73,7 +73,6 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       // get fields on the table which are in this version //
       ///////////////////////////////////////////////////////
       List<QFieldMetaData> fieldList = new ArrayList<>(table.getFields().values());
-      fieldList.sort(Comparator.comparing(QFieldMetaData::getLabel));
       for(QFieldMetaData field : fieldList)
       {
          if(!isExcluded(input.getApiName(), field) && getApiVersionRange(input.getApiName(), field).includes(version))
@@ -92,6 +91,8 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
             fields.add(field);
          }
       }
+
+      fieldList.sort(Comparator.comparing(QFieldMetaData::getLabel));
 
       return (new GetTableApiFieldsOutput().withFields(fields));
    }
