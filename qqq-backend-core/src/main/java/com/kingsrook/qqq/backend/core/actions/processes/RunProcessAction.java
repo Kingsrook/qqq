@@ -496,7 +496,7 @@ public class RunProcessAction
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if backend specifies that it uses variants, look for that data in the session and append to our basepull key //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(process.getSchedule().getVariantBackend() != null)
+      if(process.getSchedule() != null && process.getSchedule().getVariantBackend() != null)
       {
          QSession         session         = QContext.getQSession();
          QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getSchedule().getVariantBackend());
