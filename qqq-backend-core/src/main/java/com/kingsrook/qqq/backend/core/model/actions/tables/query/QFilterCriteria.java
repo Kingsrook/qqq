@@ -26,8 +26,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -36,6 +38,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  * A single criteria Component of a Query
  *
  *******************************************************************************/
+@JsonDeserialize(using = QFilterCriteriaDeserializer.class)
 public class QFilterCriteria implements Serializable, Cloneable
 {
    private static final QLogger LOG = QLogger.getLogger(QFilterCriteria.class);
