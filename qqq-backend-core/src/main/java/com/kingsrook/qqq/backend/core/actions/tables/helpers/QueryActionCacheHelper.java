@@ -79,9 +79,9 @@ public class QueryActionCacheHelper
 {
    private static final QLogger LOG = QLogger.getLogger(QueryActionCacheHelper.class);
 
-   private boolean                isQueryInputCacheable = false;
-   private Set<CacheUseCase.Type> cacheUseCases         = new HashSet<>();
-   private CacheUseCase.Type      activeCacheUseCase    = null;
+   private boolean                              isQueryInputCacheable = false;
+   private Map<CacheUseCase.Type, CacheUseCase> cacheUseCaseMap       = new HashMap<>();
+   private CacheUseCase                         activeCacheUseCase    = null;
 
    private UniqueKey                         cacheUniqueKey  = null;
    private ListingHash<String, Serializable> uniqueKeyValues = new ListingHash<>();
@@ -122,7 +122,7 @@ public class QueryActionCacheHelper
             QTableMetaData table = queryInput.getTable();
 
             List<QRecord> recordsToReturn = recordsFromSource.stream()
-               .map(r -> CacheUtils.mapSourceRecordToCacheRecord(table, r))
+               .map(r -> CacheUtils.mapSourceRecordToCacheRecord(table, r, activeCacheUseCase))
                .toList();
             queryOutput.addRecords(recordsToReturn);
 
@@ -220,7 +220,7 @@ public class QueryActionCacheHelper
             List<QRecord> refreshedRecordsToReturn = recordsFromSource.stream()
                .map(r ->
                {
-                  QRecord recordToCache = CacheUtils.mapSourceRecordToCacheRecord(table, r);
+                  QRecord recordToCache = CacheUtils.mapSourceRecordToCacheRecord(table, r, activeCacheUseCase);
                   recordToCache.setValue(table.getPrimaryKeyField(), uniqueKeyToPrimaryKeyMap.get(getUniqueKeyValues(recordToCache)));
                   return (recordToCache);
                })
@@ -391,10 +391,10 @@ public class QueryActionCacheHelper
 
       for(CacheUseCase cacheUseCase : CollectionUtils.nonNullList(table.getCacheOf().getUseCases()))
       {
-         cacheUseCases.add(cacheUseCase.getType());
+         cacheUseCaseMap.put(cacheUseCase.getType(), cacheUseCase);
       }
 
-      if(cacheUseCases.contains(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY))
+      if(cacheUseCaseMap.containsKey(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY))
       {
          if(queryInput.getFilter() == null)
          {
@@ -475,7 +475,7 @@ public class QueryActionCacheHelper
          return;
       }
 
-      LOG.trace("Unable to cache: No supported use case: " + cacheUseCases);
+      LOG.trace("Unable to cache: No supported use case: " + cacheUseCaseMap.keySet());
    }
 
 
@@ -491,7 +491,7 @@ public class QueryActionCacheHelper
          {
             this.cacheUniqueKey = uniqueKey;
             isQueryInputCacheable = true;
-            activeCacheUseCase = CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY;
+            activeCacheUseCase = cacheUseCaseMap.get(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY);
             return true;
          }
       }
@@ -536,14 +536,14 @@ public class QueryActionCacheHelper
       List<QRecord>  recordsFromSource = null;
       QTableMetaData table             = queryInput.getTable();
 
-      if(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY.equals(activeCacheUseCase))
+      if(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY.equals(activeCacheUseCase.getType()))
       {
          recordsFromSource = getFromCachedSourceForUniqueKeyToUniqueKey(queryInput, uniqueKeyValues, table.getCacheOf().getSourceTable());
       }
       else
       {
          // todo!!
-         throw (new NotImplementedException("Not-yet-implemented cache use case type: " + activeCacheUseCase));
+         throw (new NotImplementedException("Not-yet-implemented cache use case type: " + activeCacheUseCase.getType()));
       }
 
       return (recordsFromSource);

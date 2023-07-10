@@ -105,6 +105,7 @@ public class QQQTablesMetaDataProvider
                .withCacheSourceMisses(false)
                .withCacheUniqueKey(new UniqueKey("name"))
                .withSourceUniqueKey(new UniqueKey("name"))
+               .withDoCopySourcePrimaryKeyToCache(true)
             )
          );
 
