@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.async;
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -140,6 +141,11 @@ public class AsyncRecordPipeLoop
          }
          asyncJobStatus = optionalAsyncJobStatus.get();
          jobState = asyncJobStatus.getState();
+      }
+
+      if(recordPipe instanceof BufferedRecordPipe bufferedRecordPipe)
+      {
+         bufferedRecordPipe.finalFlush();
       }
 
       LOG.debug("Job [" + jobUUID + "][" + jobName + "] completed with status: " + asyncJobStatus);
