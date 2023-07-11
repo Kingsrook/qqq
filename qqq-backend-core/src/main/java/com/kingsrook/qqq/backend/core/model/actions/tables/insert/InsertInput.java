@@ -46,6 +46,7 @@ public class InsertInput extends AbstractTableActionInput
    private boolean skipUniqueKeyCheck = false;
 
    private boolean omitDmlAudit = false;
+   private String  auditContext = null;
 
 
 
@@ -281,6 +282,37 @@ public class InsertInput extends AbstractTableActionInput
    public InsertInput withInputSource(InputSource inputSource)
    {
       this.inputSource = inputSource;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditContext
+    *******************************************************************************/
+   public String getAuditContext()
+   {
+      return (this.auditContext);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditContext
+    *******************************************************************************/
+   public void setAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditContext
+    *******************************************************************************/
+   public InsertInput withAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
       return (this);
    }
 
