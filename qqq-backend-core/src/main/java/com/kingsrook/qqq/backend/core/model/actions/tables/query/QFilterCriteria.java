@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -47,8 +46,10 @@ public class QFilterCriteria implements Serializable, Cloneable
    private QCriteriaOperator  operator;
    private List<Serializable> values;
 
-   private String                      otherFieldName;
-   private AbstractFilterExpression<?> expression;
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // todo - probably implement this as a type of expression - though would require a little special handling i think when evaluating... //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private String otherFieldName;
 
 
 
@@ -97,23 +98,6 @@ public class QFilterCriteria implements Serializable, Cloneable
       this.fieldName = fieldName;
       this.operator = operator;
       this.values = values == null ? new ArrayList<>() : values;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QFilterCriteria(String fieldName, QCriteriaOperator operator, AbstractFilterExpression<?> expression)
-   {
-      this.fieldName = fieldName;
-      this.operator = operator;
-      this.expression = expression;
-
-      ///////////////////////////////////////
-      // this guy doesn't like to be null? //
-      ///////////////////////////////////////
-      this.values = new ArrayList<>();
    }
 
 
@@ -333,37 +317,6 @@ public class QFilterCriteria implements Serializable, Cloneable
       }
 
       return (rs.toString());
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for expression
-    *******************************************************************************/
-   public AbstractFilterExpression<?> getExpression()
-   {
-      return (this.expression);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for expression
-    *******************************************************************************/
-   public void setExpression(AbstractFilterExpression<?> expression)
-   {
-      this.expression = expression;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for expression
-    *******************************************************************************/
-   public QFilterCriteria withExpression(AbstractFilterExpression<?> expression)
-   {
-      this.expression = expression;
-      return (this);
    }
 
 }

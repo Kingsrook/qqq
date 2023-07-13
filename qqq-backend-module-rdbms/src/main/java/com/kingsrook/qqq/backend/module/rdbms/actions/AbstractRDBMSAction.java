@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -57,6 +58,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
@@ -713,13 +715,22 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                /////////////////////////////////////////////////////////////////////
                values = Collections.emptyList();
             }
-            else if(expectedNoOfParams.equals(1) && criterion.getExpression() != null)
-            {
-               values = List.of(criterion.getExpression().evaluate());
-            }
             else if(!expectedNoOfParams.equals(values.size()))
             {
                throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
+            }
+
+            //////////////////////////////////////////////////////////////
+            // replace any expression-type values with their evaluation //
+            //////////////////////////////////////////////////////////////
+            ListIterator<Serializable> valueListIterator = values.listIterator();
+            while(valueListIterator.hasNext())
+            {
+               Serializable value = valueListIterator.next();
+               if(value instanceof AbstractFilterExpression<?> expression)
+               {
+                  valueListIterator.set(expression.evaluate());
+               }
             }
          }
 

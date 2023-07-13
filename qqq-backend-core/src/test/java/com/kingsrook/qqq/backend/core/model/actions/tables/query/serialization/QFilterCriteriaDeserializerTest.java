@@ -30,13 +30,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Now;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.NowWithOffset;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.ThisOrLastPeriod;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.BETWEEN;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.GREATER_THAN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -52,6 +54,11 @@ class QFilterCriteriaDeserializerTest extends BaseTest
    @Test
    void testDeserialize() throws IOException
    {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // just put a reference to this class here, so it's a tad easier to find this class via navigation in IDE... //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new QFilterCriteriaDeserializer();
+
       {
          QFilterCriteria criteria = JsonUtils.toObject("""
             {"fieldName": "id", "operator": "EQUALS", "values": [1]}
@@ -63,14 +70,13 @@ class QFilterCriteriaDeserializerTest extends BaseTest
 
       {
          QFilterCriteria criteria = JsonUtils.toObject("""
-            {"fieldName": "createDate", "operator": "GREATER_THAN", "expression":
-               {"type": "NowWithOffset", "operator": "PLUS", "amount": 5, "timeUnit": "MINUTES"}
+            {"fieldName": "createDate", "operator": "GREATER_THAN", "values":
+               [{"type": "NowWithOffset", "operator": "PLUS", "amount": 5, "timeUnit": "MINUTES"}]
             }
             """, QFilterCriteria.class);
          assertEquals("createDate", criteria.getFieldName());
          assertEquals(GREATER_THAN, criteria.getOperator());
-         assertNull(criteria.getValues());
-         AbstractFilterExpression<?> expression = criteria.getExpression();
+         AbstractFilterExpression<?> expression = (AbstractFilterExpression<?>) criteria.getValues().get(0);
          assertThat(expression).isInstanceOf(NowWithOffset.class);
          NowWithOffset nowWithOffset = (NowWithOffset) expression;
          assertEquals(5, nowWithOffset.getAmount());
@@ -80,13 +86,30 @@ class QFilterCriteriaDeserializerTest extends BaseTest
 
       {
          QFilterCriteria criteria = JsonUtils.toObject("""
-            {"fieldName": "orderDate", "operator": "EQUALS", "expression": {"type": "Now"} }
+            {"fieldName": "orderDate", "operator": "EQUALS", "values": [{"type": "Now"}] }
             """, QFilterCriteria.class);
          assertEquals("orderDate", criteria.getFieldName());
          assertEquals(EQUALS, criteria.getOperator());
-         assertNull(criteria.getValues());
-         AbstractFilterExpression<?> expression = criteria.getExpression();
+         AbstractFilterExpression<?> expression = (AbstractFilterExpression<?>) criteria.getValues().get(0);
          assertThat(expression).isInstanceOf(Now.class);
+      }
+
+      {
+         QFilterCriteria criteria = JsonUtils.toObject("""
+            {"fieldName": "orderDate", "operator": "BETWEEN", "values": [{"type": "Now"}, {"type": "ThisOrLastPeriod"}] }
+            """, QFilterCriteria.class);
+         assertEquals("orderDate", criteria.getFieldName());
+         assertEquals(BETWEEN, criteria.getOperator());
+         AbstractFilterExpression<?> expression0 = (AbstractFilterExpression<?>) criteria.getValues().get(0);
+         assertThat(expression0).isInstanceOf(Now.class);
+         AbstractFilterExpression<?> expression1 = (AbstractFilterExpression<?>) criteria.getValues().get(1);
+         assertThat(expression1).isInstanceOf(ThisOrLastPeriod.class);
+      }
+
+      {
+         assertThatThrownBy(() -> JsonUtils.toObject("""
+            {"fieldName": "orderDate", "operator": "BETWEEN", "values": [{"type": "NotAnExpressionType"}] }
+            """, QFilterCriteria.class)).hasMessageContaining("Error deserializing criteria value which appeared to be an expression");
       }
 
    }

@@ -28,7 +28,7 @@ import java.io.Serializable;
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractFilterExpression<T extends Serializable>
+public abstract class AbstractFilterExpression<T extends Serializable> implements Serializable
 {
    /*******************************************************************************
     **

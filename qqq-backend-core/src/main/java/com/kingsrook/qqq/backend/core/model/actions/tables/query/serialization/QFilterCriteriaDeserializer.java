@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization;
 
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -33,6 +36,9 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -73,31 +79,39 @@ public class QFilterCriteriaDeserializer extends StdDeserializer<QFilterCriteria
       /////////////////////////////////
       // get values out of json node //
       /////////////////////////////////
-      List              values         = objectMapper.treeToValue(node.get("values"), List.class);
-      String            fieldName      = objectMapper.treeToValue(node.get("fieldName"), String.class);
-      QCriteriaOperator operator       = objectMapper.treeToValue(node.get("operator"), QCriteriaOperator.class);
-      String            otherFieldName = objectMapper.treeToValue(node.get("otherFieldName"), String.class);
+      List<Serializable> values         = objectMapper.treeToValue(node.get("values"), List.class);
+      String             fieldName      = objectMapper.treeToValue(node.get("fieldName"), String.class);
+      QCriteriaOperator  operator       = objectMapper.treeToValue(node.get("operator"), QCriteriaOperator.class);
+      String             otherFieldName = objectMapper.treeToValue(node.get("otherFieldName"), String.class);
 
-      AbstractFilterExpression<?> expression = null;
-      if(node.has("expression"))
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // look at all the values - if any of them are actually meant to be an Expression (instance of subclass of AbstractFilterExpression)     //
+      // they'll have deserialized as a Map, with a "type" key.  If that's the case, then re/de serialize them into the proper expression type //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ListIterator<Serializable> valuesIterator = CollectionUtils.nonNullList(values).listIterator();
+      while(valuesIterator.hasNext())
       {
-         JsonNode expressionNode = node.get("expression");
-         String   expressionType = objectMapper.treeToValue(expressionNode.get("type"), String.class);
+         Object value = valuesIterator.next();
+         if(value instanceof Map<?, ?> map && map.containsKey("type"))
+         {
+            String expressionType = ValueUtils.getValueAsString(map.get("type"));
 
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // right now, we'll assume that all expression subclasses are in the same package as AbstractFilterExpression //
-         // so, we can just do a Class.forName on that name, and treeToValue like that.                                //
-         // if we ever had to, we could instead switch(expressionType), and do like so...                              //
-         // case "NowWithOffset" -> objectMapper.treeToValue(expressionNode, NowWithOffset.class);                     //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         try
-         {
-            String className = AbstractFilterExpression.class.getName().replace(AbstractFilterExpression.class.getSimpleName(), expressionType);
-            expression = (AbstractFilterExpression<?>) objectMapper.treeToValue(expressionNode, Class.forName(className));
-         }
-         catch(Exception e)
-         {
-            throw (new IOException("Error deserializing expression of type [" + expressionType + "] inside QFilterCriteria", e));
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // right now, we'll assume that all expression subclasses are in the same package as AbstractFilterExpression //
+            // so, we can just do a Class.forName on that name, and use JsonUtils.toObject requesting that class.         //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            try
+            {
+               String assumedExpressionJSON = JsonUtils.toJson(map);
+
+               String       className        = AbstractFilterExpression.class.getName().replace(AbstractFilterExpression.class.getSimpleName(), expressionType);
+               Serializable replacementValue = (Serializable) JsonUtils.toObject(assumedExpressionJSON, Class.forName(className));
+               valuesIterator.set(replacementValue);
+            }
+            catch(Exception e)
+            {
+               throw (new IOException("Error deserializing criteria value which appeared to be an expression of type [" + expressionType + "] inside QFilterCriteria", e));
+            }
          }
       }
 
@@ -109,16 +123,7 @@ public class QFilterCriteriaDeserializer extends StdDeserializer<QFilterCriteria
       criteria.setOperator(operator);
       criteria.setValues(values);
       criteria.setOtherFieldName(otherFieldName);
-      criteria.setExpression(expression);
 
       return (criteria);
-
-      /*
-      int      id       = (Integer) (node.get("id")).numberValue();
-      String   itemName = node.get("itemName").asText();
-      int      userId   = (Integer) (node.get("createdBy")).numberValue();
-
-      return null;
-       */
    }
 }
