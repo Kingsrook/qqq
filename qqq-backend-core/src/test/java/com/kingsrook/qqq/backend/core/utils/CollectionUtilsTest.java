@@ -34,6 +34,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -592,6 +593,28 @@ class CollectionUtilsTest extends BaseTest
 
       assertEquals(TreeMap.class, CollectionUtils.useOrWrap(new Hashtable<>(), TypeToken.get(TreeMap.class)).getClass());
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSwapMultiLevelMapKeys()
+   {
+      Map<String, Map<Integer, String>> input = MapBuilder.of(
+         "A", Map.of(1, "A1", 2, "A2", 3, "A3"),
+         "B", Map.of(1, "B1", 4, "B4"),
+         "C", null);
+
+      Map<Integer, Map<String, String>> output = CollectionUtils.swapMultiLevelMapKeys(input);
+
+      assertEquals(MapBuilder.of(
+         1, Map.of("A", "A1", "B", "B1"),
+         2, Map.of("A", "A2"),
+         3, Map.of("A", "A3"),
+         4, Map.of("B", "B4")), output);
    }
 
 }
