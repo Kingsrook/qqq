@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
@@ -34,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
  ** The processName is the code that runs for messages found on the queue.
  ** The schedule may not be used by all provider types, but defines when the queue is polled.
  *******************************************************************************/
-public class QQueueMetaData
+public class QQueueMetaData implements TopLevelMetaDataInterface
 {
    private String name;
    private String providerName;
@@ -211,6 +213,17 @@ public class QQueueMetaData
    {
       this.schedule = schedule;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addQueue(this);
    }
 
 }
