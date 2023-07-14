@@ -155,7 +155,10 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       }
       else
       {
-         new DMLAuditAction().execute(new DMLAuditInput().withTableActionInput(insertInput).withRecordList(insertOutput.getRecords()));
+         new DMLAuditAction().execute(new DMLAuditInput()
+            .withTableActionInput(insertInput)
+            .withAuditContext(insertInput.getAuditContext())
+            .withRecordList(insertOutput.getRecords()));
       }
 
       //////////////////////////////////////////////////////////////

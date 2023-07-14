@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -117,12 +118,14 @@ public class DeleteAction
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if there's a query filter, but the interface doesn't support using a query filter, then do a query for the filter, to get a list of primary keys instead //
+      // or - anytime there are associations on the table we want primary keys, as that's what the manage associations method uses                                //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(deleteInput.getQueryFilter() != null && !deleteInterface.supportsQueryFilterInput())
+      if(deleteInput.getQueryFilter() != null && (!deleteInterface.supportsQueryFilterInput() || CollectionUtils.nullSafeHasContents(table.getAssociations())))
       {
-         LOG.info("Querying for primary keys, for backend module " + qModule.getBackendType() + " which does not support queryFilter input for deletes");
+         LOG.info("Querying for primary keys, for table " + table.getName() + " in backend module " + qModule.getBackendType() + " which does not support queryFilter input for deletes (or the table has associations)");
          List<Serializable> primaryKeyList = getPrimaryKeysFromQueryFilter(deleteInput);
          deleteInput.setPrimaryKeys(primaryKeyList);
+         primaryKeys = primaryKeyList;
 
          if(primaryKeyList.isEmpty())
          {
@@ -165,9 +168,21 @@ public class DeleteAction
 
          if(!primaryKeysToRemoveFromInput.isEmpty())
          {
-            primaryKeys.removeAll(primaryKeysToRemoveFromInput);
+            if(primaryKeys == null)
+            {
+               LOG.warn("There were primary keys to remove from the input, but no primary key list (filter supplied as input?)", new LogPair("primaryKeysToRemoveFromInput", primaryKeysToRemoveFromInput));
+            }
+            else
+            {
+               primaryKeys.removeAll(primaryKeysToRemoveFromInput);
+            }
          }
       }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // stash a copy of primary keys that didn't have errors (for use in manageAssociations below) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      Set<Serializable> primaryKeysWithoutErrors = new HashSet<>(CollectionUtils.nonNullList(primaryKeys));
 
       ////////////////////////////////////
       // have the backend do the delete //
@@ -187,11 +202,13 @@ public class DeleteAction
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if a record had a validation warning, but then an execution error, remove it from the warning list - so it's only in one of them. //
+      // also, always remove from
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       for(QRecord outputRecordWithError : outputRecordsWithErrors)
       {
          Serializable pkey = outputRecordWithError.getValue(primaryKeyFieldName);
          recordsWithValidationWarnings.remove(pkey);
+         primaryKeysWithoutErrors.remove(pkey);
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////
@@ -211,15 +228,23 @@ public class DeleteAction
       ////////////////////////////////////////
       // delete associations, if applicable //
       ////////////////////////////////////////
-      manageAssociations(deleteInput);
+      manageAssociations(primaryKeysWithoutErrors, deleteInput);
 
-      ///////////////////////////////////
-      // do the audit                  //
-      // todo - add input.omitDmlAudit //
-      ///////////////////////////////////
-      DMLAuditInput dmlAuditInput = new DMLAuditInput().withTableActionInput(deleteInput);
-      oldRecordList.ifPresent(l -> dmlAuditInput.setRecordList(l));
-      new DMLAuditAction().execute(dmlAuditInput);
+      //////////////////
+      // do the audit //
+      //////////////////
+      if(deleteInput.getOmitDmlAudit())
+      {
+         LOG.debug("Requested to omit DML audit");
+      }
+      else
+      {
+         DMLAuditInput dmlAuditInput = new DMLAuditInput()
+            .withTableActionInput(deleteInput)
+            .withAuditContext(deleteInput.getAuditContext());
+         oldRecordList.ifPresent(l -> dmlAuditInput.setRecordList(l));
+         new DMLAuditAction().execute(dmlAuditInput);
+      }
 
       //////////////////////////////////////////////////////////////
       // finally, run the post-delete customizer, if there is one //
@@ -340,7 +365,7 @@ public class DeleteAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(DeleteInput deleteInput) throws QException
+   private void manageAssociations(Set<Serializable> primaryKeysWithoutErrors, DeleteInput deleteInput) throws QException
    {
       QTableMetaData table = deleteInput.getTable();
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
@@ -353,7 +378,7 @@ public class DeleteAction
 
          if(join.getJoinOns().size() == 1 && join.getJoinOns().get(0).getLeftField().equals(table.getPrimaryKeyField()))
          {
-            filter.addCriteria(new QFilterCriteria(join.getJoinOns().get(0).getRightField(), QCriteriaOperator.IN, deleteInput.getPrimaryKeys()));
+            filter.addCriteria(new QFilterCriteria(join.getJoinOns().get(0).getRightField(), QCriteriaOperator.IN, new ArrayList<>(primaryKeysWithoutErrors)));
          }
          else
          {

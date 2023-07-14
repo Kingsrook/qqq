@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,41 +19,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
+package com.kingsrook.qqq.backend.core.model.actions.tables.replace;
 
 
-import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
 /*******************************************************************************
- ** Input for a Delete action.
  **
  *******************************************************************************/
-public class DeleteInput extends AbstractTableActionInput
+public class ReplaceInput extends AbstractTableActionInput
 {
    private QBackendTransaction transaction;
-   private List<Serializable>  primaryKeys;
-   private QQueryFilter        queryFilter;
-   private InputSource         inputSource = QInputSource.SYSTEM;
+   private UniqueKey           key;
+   private List<QRecord>       records;
+   private QQueryFilter        filter;
 
    private boolean omitDmlAudit = false;
-   private String  auditContext = null;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public DeleteInput()
-   {
-   }
 
 
 
@@ -61,39 +48,24 @@ public class DeleteInput extends AbstractTableActionInput
     ** Constructor
     **
     *******************************************************************************/
-   public DeleteInput(String tableName)
+   public ReplaceInput()
    {
-      setTableName(tableName);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public DeleteInput withTableName(String tableName)
-   {
-      super.withTableName(tableName);
-      return (this);
    }
 
 
 
    /*******************************************************************************
     ** Getter for transaction
-    **
     *******************************************************************************/
    public QBackendTransaction getTransaction()
    {
-      return transaction;
+      return (this.transaction);
    }
 
 
 
    /*******************************************************************************
     ** Setter for transaction
-    **
     *******************************************************************************/
    public void setTransaction(QBackendTransaction transaction)
    {
@@ -104,9 +76,8 @@ public class DeleteInput extends AbstractTableActionInput
 
    /*******************************************************************************
     ** Fluent setter for transaction
-    **
     *******************************************************************************/
-   public DeleteInput withTransaction(QBackendTransaction transaction)
+   public ReplaceInput withTransaction(QBackendTransaction transaction)
    {
       this.transaction = transaction;
       return (this);
@@ -115,102 +86,93 @@ public class DeleteInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for ids
-    **
+    ** Getter for records
     *******************************************************************************/
-   public List<Serializable> getPrimaryKeys()
+   public List<QRecord> getRecords()
    {
-      return primaryKeys;
+      return (this.records);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for ids
-    **
+    ** Setter for records
     *******************************************************************************/
-   public void setPrimaryKeys(List<Serializable> primaryKeys)
+   public void setRecords(List<QRecord> records)
    {
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      // the action may edit this list (e.g., to remove keys w/ errors), so wrap it in MutableList //
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      this.primaryKeys = new MutableList<>(primaryKeys);
+      this.records = records;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for ids
-    **
+    ** Fluent setter for records
     *******************************************************************************/
-   public DeleteInput withPrimaryKeys(List<Serializable> primaryKeys)
+   public ReplaceInput withRecords(List<QRecord> records)
    {
-      setPrimaryKeys(primaryKeys);
+      this.records = records;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queryFilter
-    **
+    ** Getter for filter
     *******************************************************************************/
-   public QQueryFilter getQueryFilter()
+   public QQueryFilter getFilter()
    {
-      return queryFilter;
+      return (this.filter);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryFilter
-    **
+    ** Setter for filter
     *******************************************************************************/
-   public void setQueryFilter(QQueryFilter queryFilter)
+   public void setFilter(QQueryFilter filter)
    {
-      this.queryFilter = queryFilter;
+      this.filter = filter;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryFilter
-    **
+    ** Fluent setter for filter
     *******************************************************************************/
-   public DeleteInput withQueryFilter(QQueryFilter queryFilter)
+   public ReplaceInput withFilter(QQueryFilter filter)
    {
-      this.queryFilter = queryFilter;
-      return this;
+      this.filter = filter;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for inputSource
+    ** Getter for key
     *******************************************************************************/
-   public InputSource getInputSource()
+   public UniqueKey getKey()
    {
-      return (this.inputSource);
+      return (this.key);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for inputSource
+    ** Setter for key
     *******************************************************************************/
-   public void setInputSource(InputSource inputSource)
+   public void setKey(UniqueKey key)
    {
-      this.inputSource = inputSource;
+      this.key = key;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for inputSource
+    ** Fluent setter for key
     *******************************************************************************/
-   public DeleteInput withInputSource(InputSource inputSource)
+   public ReplaceInput withKey(UniqueKey key)
    {
-      this.inputSource = inputSource;
+      this.key = key;
       return (this);
    }
 
@@ -239,40 +201,9 @@ public class DeleteInput extends AbstractTableActionInput
    /*******************************************************************************
     ** Fluent setter for omitDmlAudit
     *******************************************************************************/
-   public DeleteInput withOmitDmlAudit(boolean omitDmlAudit)
+   public ReplaceInput withOmitDmlAudit(boolean omitDmlAudit)
    {
       this.omitDmlAudit = omitDmlAudit;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for auditContext
-    *******************************************************************************/
-   public String getAuditContext()
-   {
-      return (this.auditContext);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for auditContext
-    *******************************************************************************/
-   public void setAuditContext(String auditContext)
-   {
-      this.auditContext = auditContext;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for auditContext
-    *******************************************************************************/
-   public DeleteInput withAuditContext(String auditContext)
-   {
-      this.auditContext = auditContext;
       return (this);
    }
 

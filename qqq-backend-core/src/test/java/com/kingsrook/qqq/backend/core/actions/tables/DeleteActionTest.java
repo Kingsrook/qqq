@@ -25,11 +25,15 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -41,6 +45,10 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
@@ -397,6 +405,89 @@ class DeleteActionTest extends BaseTest
             .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD-1").withValue("value", "YOUR-VALUE-1"))
       ));
       new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeleteWithErrorsDoesntDeleteAssociations() throws QException
+   {
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, ListBuilder.of(1)));
+
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.withCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(OrderPreDeleteCustomizer.class));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // insert 2 orders - one that will fail to delete, and one that will warn, but should delete. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_ORDER)
+         .withRecords(List.of(
+            new QRecord().withValue("id", OrderPreDeleteCustomizer.DELETE_ERROR_ID).withValue("storeId", 1).withValue("orderNo", "ORD123")
+               .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 1)
+                  .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-1.1").withValue("value", "LINE-VAL-1"))),
+
+            new QRecord().withValue("id", OrderPreDeleteCustomizer.DELETE_WARN_ID).withValue("storeId", 1).withValue("orderNo", "ORD124")
+               .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC3").withValue("quantity", 3))
+               .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "YOUR-FIELD-1").withValue("value", "YOUR-VALUE-1"))
+         )));
+
+      ///////////////////////////
+      // confirm insert counts //
+      ///////////////////////////
+      assertEquals(2, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)).getCount());
+      assertEquals(2, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_LINE_ITEM)).getCount());
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC)).getCount());
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER_EXTRINSIC)).getCount());
+
+      /////////////////////////////
+      // try to delete them both //
+      /////////////////////////////
+      new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_ORDER).withPrimaryKeys(List.of(OrderPreDeleteCustomizer.DELETE_WARN_ID, OrderPreDeleteCustomizer.DELETE_WARN_ID)));
+
+      ///////////////////////
+      // count what's left //
+      ///////////////////////
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)).getCount());
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_LINE_ITEM)).getCount());
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC)).getCount());
+      assertEquals(0, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER_EXTRINSIC)).getCount());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class OrderPreDeleteCustomizer extends AbstractPreDeleteCustomizer
+   {
+      public static final Integer DELETE_ERROR_ID = 9999;
+      public static final Integer DELETE_WARN_ID  = 9998;
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records)
+      {
+         for(QRecord record : records)
+         {
+            if(DELETE_ERROR_ID.equals(record.getValue("id")))
+            {
+               record.addError(new BadInputStatusMessage("You may not delete this order"));
+            }
+            else if(DELETE_WARN_ID.equals(record.getValue("id")))
+            {
+               record.addWarning(new QWarningMessage("It was bad that you deleted this order"));
+            }
+         }
+
+         return (records);
+      }
    }
 
 }
