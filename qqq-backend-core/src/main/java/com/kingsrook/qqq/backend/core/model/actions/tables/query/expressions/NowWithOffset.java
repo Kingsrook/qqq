@@ -23,6 +23,10 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 
@@ -31,9 +35,9 @@ import java.util.concurrent.TimeUnit;
  *******************************************************************************/
 public class NowWithOffset extends AbstractFilterExpression<Instant>
 {
-   private final Operator operator;
-   private final int      amount;
-   private final TimeUnit timeUnit;
+   private Operator   operator;
+   private int        amount;
+   private ChronoUnit timeUnit;
 
 
 
@@ -46,7 +50,17 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     ** Constructor
     **
     *******************************************************************************/
-   private NowWithOffset(Operator operator, int amount, TimeUnit timeUnit)
+   public NowWithOffset()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   private NowWithOffset(Operator operator, int amount, ChronoUnit timeUnit)
    {
       this.operator = operator;
       this.amount = amount;
@@ -59,7 +73,19 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     ** Factory
     **
     *******************************************************************************/
+   @Deprecated
    public static NowWithOffset minus(int amount, TimeUnit timeUnit)
+   {
+      return (minus(amount, timeUnit.toChronoUnit()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Factory
+    **
+    *******************************************************************************/
+   public static NowWithOffset minus(int amount, ChronoUnit timeUnit)
    {
       return (new NowWithOffset(Operator.MINUS, amount, timeUnit));
    }
@@ -70,7 +96,19 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     ** Factory
     **
     *******************************************************************************/
+   @Deprecated
    public static NowWithOffset plus(int amount, TimeUnit timeUnit)
+   {
+      return (plus(amount, timeUnit.toChronoUnit()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Factory
+    **
+    *******************************************************************************/
+   public static NowWithOffset plus(int amount, ChronoUnit timeUnit)
    {
       return (new NowWithOffset(Operator.PLUS, amount, timeUnit));
    }
@@ -83,14 +121,24 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
    @Override
    public Instant evaluate()
    {
+      /////////////////////////////////////////////////////////////////////////////
+      // Instant doesn't let us plus/minus WEEK, MONTH, or YEAR...               //
+      // but LocalDateTime does.  So, make a LDT in UTC, do the plus/minus, then //
+      // convert back to Instant @ UTC                                           //
+      /////////////////////////////////////////////////////////////////////////////
+      LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+
+      LocalDateTime then;
       if(operator.equals(Operator.PLUS))
       {
-         return (Instant.now().plus(amount, timeUnit.toChronoUnit()));
+         then = now.plus(amount, timeUnit);
       }
       else
       {
-         return (Instant.now().minus(amount, timeUnit.toChronoUnit()));
+         then = now.minus(amount, timeUnit);
       }
+
+      return (then.toInstant(ZoneOffset.UTC));
    }
 
 
@@ -121,7 +169,7 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     ** Getter for timeUnit
     **
     *******************************************************************************/
-   public TimeUnit getTimeUnit()
+   public ChronoUnit getTimeUnit()
    {
       return timeUnit;
    }

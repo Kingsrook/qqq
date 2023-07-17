@@ -152,7 +152,26 @@ public class JsonUtils
     *******************************************************************************/
    public static <T> T toObject(String json, Class<T> targetClass) throws IOException
    {
+      return (toObject(json, targetClass, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** De-serialize a json string into an object of the specified class - with
+    ** customizations on the Jackson ObjectMapper.
+    **.
+    **
+    ** Internally using jackson - so jackson annotations apply!
+    **
+    *******************************************************************************/
+   public static <T> T toObject(String json, Class<T> targetClass, Consumer<ObjectMapper> objectMapperCustomizer) throws IOException
+   {
       ObjectMapper objectMapper = newObjectMapper();
+      if(objectMapperCustomizer != null)
+      {
+         objectMapperCustomizer.accept(objectMapper);
+      }
       return objectMapper.reader().readValue(json, targetClass);
    }
 
@@ -167,6 +186,25 @@ public class JsonUtils
    public static <T> T toObject(String json, TypeReference<T> typeReference) throws IOException
    {
       ObjectMapper objectMapper = newObjectMapper();
+      return objectMapper.readValue(json, typeReference);
+   }
+
+
+
+   /*******************************************************************************
+    ** De-serialize a json string into an object of the specified class - with
+    ** customizations on the Jackson ObjectMapper.
+    **
+    ** Internally using jackson - so jackson annotations apply!
+    **
+    *******************************************************************************/
+   public static <T> T toObject(String json, TypeReference<T> typeReference, Consumer<ObjectMapper> objectMapperCustomizer) throws IOException
+   {
+      ObjectMapper objectMapper = newObjectMapper();
+      if(objectMapperCustomizer != null)
+      {
+         objectMapperCustomizer.accept(objectMapper);
+      }
       return objectMapper.readValue(json, typeReference);
    }
 
