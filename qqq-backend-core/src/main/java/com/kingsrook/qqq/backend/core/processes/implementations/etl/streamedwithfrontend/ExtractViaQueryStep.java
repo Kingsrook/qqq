@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -80,6 +81,15 @@ public class ExtractViaQueryStep extends AbstractExtractStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      /////////////////////////////////////////////////////////////////////////
+      // if records are already specified in the step input, then use those. //
+      /////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(runBackendStepInput.getRecords()))
+      {
+         getRecordPipe().addRecords(runBackendStepInput.getRecords());
+         return;
+      }
+
       //////////////////////////////////////////////////////////////////
       // clone the filter, since we're going to edit it (set a limit) //
       //////////////////////////////////////////////////////////////////
