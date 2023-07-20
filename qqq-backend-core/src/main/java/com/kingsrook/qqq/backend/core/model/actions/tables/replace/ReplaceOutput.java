@@ -19,158 +19,115 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
+package com.kingsrook.qqq.backend.core.model.actions.tables.replace;
 
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class NowWithOffset extends AbstractFilterExpression<Instant>
+public class ReplaceOutput extends AbstractActionOutput
 {
-   private Operator   operator;
-   private int        amount;
-   private ChronoUnit timeUnit;
-
-
-
-   public enum Operator
-   {PLUS, MINUS}
+   private InsertOutput insertOutput;
+   private UpdateOutput updateOutput;
+   private DeleteOutput deleteOutput;
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Getter for insertOutput
     *******************************************************************************/
-   public NowWithOffset()
+   public InsertOutput getInsertOutput()
    {
+      return (this.insertOutput);
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Setter for insertOutput
     *******************************************************************************/
-   private NowWithOffset(Operator operator, int amount, ChronoUnit timeUnit)
+   public void setInsertOutput(InsertOutput insertOutput)
    {
-      this.operator = operator;
-      this.amount = amount;
-      this.timeUnit = timeUnit;
+      this.insertOutput = insertOutput;
    }
 
 
 
    /*******************************************************************************
-    ** Factory
-    **
+    ** Fluent setter for insertOutput
     *******************************************************************************/
-   @Deprecated
-   public static NowWithOffset minus(int amount, TimeUnit timeUnit)
+   public ReplaceOutput withInsertOutput(InsertOutput insertOutput)
    {
-      return (minus(amount, timeUnit.toChronoUnit()));
+      this.insertOutput = insertOutput;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Factory
-    **
+    ** Getter for updateOutput
     *******************************************************************************/
-   public static NowWithOffset minus(int amount, ChronoUnit timeUnit)
+   public UpdateOutput getUpdateOutput()
    {
-      return (new NowWithOffset(Operator.MINUS, amount, timeUnit));
+      return (this.updateOutput);
    }
 
 
 
    /*******************************************************************************
-    ** Factory
-    **
+    ** Setter for updateOutput
     *******************************************************************************/
-   @Deprecated
-   public static NowWithOffset plus(int amount, TimeUnit timeUnit)
+   public void setUpdateOutput(UpdateOutput updateOutput)
    {
-      return (plus(amount, timeUnit.toChronoUnit()));
+      this.updateOutput = updateOutput;
    }
 
 
 
    /*******************************************************************************
-    ** Factory
-    **
+    ** Fluent setter for updateOutput
     *******************************************************************************/
-   public static NowWithOffset plus(int amount, ChronoUnit timeUnit)
+   public ReplaceOutput withUpdateOutput(UpdateOutput updateOutput)
    {
-      return (new NowWithOffset(Operator.PLUS, amount, timeUnit));
+      this.updateOutput = updateOutput;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for deleteOutput
     *******************************************************************************/
-   @Override
-   public Instant evaluate()
+   public DeleteOutput getDeleteOutput()
    {
-      /////////////////////////////////////////////////////////////////////////////
-      // Instant doesn't let us plus/minus WEEK, MONTH, or YEAR...               //
-      // but LocalDateTime does.  So, make a LDT in UTC, do the plus/minus, then //
-      // convert back to Instant @ UTC                                           //
-      /////////////////////////////////////////////////////////////////////////////
-      LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
-
-      LocalDateTime then;
-      if(operator.equals(Operator.PLUS))
-      {
-         then = now.plus(amount, timeUnit);
-      }
-      else
-      {
-         then = now.minus(amount, timeUnit);
-      }
-
-      return (then.toInstant(ZoneOffset.UTC));
+      return (this.deleteOutput);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for operator
-    **
+    ** Setter for deleteOutput
     *******************************************************************************/
-   public Operator getOperator()
+   public void setDeleteOutput(DeleteOutput deleteOutput)
    {
-      return operator;
+      this.deleteOutput = deleteOutput;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for amount
-    **
+    ** Fluent setter for deleteOutput
     *******************************************************************************/
-   public int getAmount()
+   public ReplaceOutput withDeleteOutput(DeleteOutput deleteOutput)
    {
-      return amount;
+      this.deleteOutput = deleteOutput;
+      return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for timeUnit
-    **
-    *******************************************************************************/
-   public ChronoUnit getTimeUnit()
-   {
-      return timeUnit;
-   }
 }

@@ -682,23 +682,13 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY:
-            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-            break;
-
-         case BASIC_AUTH_USERNAME_PASSWORD:
-            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-            break;
-
-         case API_KEY_HEADER:
-            request.addHeader("API-Key", backendMetaData.getApiKey());
-            break;
-
-         case OAUTH2:
-            request.setHeader("Authorization", "Bearer " + getOAuth2Token());
-            break;
-
-         case API_KEY_QUERY_PARAM:
+         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
+         case API_TOKEN -> request.addHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
+         case API_KEY_QUERY_PARAM ->
+         {
             try
             {
                String uri = request.getURI().toString();
@@ -710,10 +700,8 @@ public class BaseAPIActionUtil
             {
                throw (new QException("Error setting authorization query parameter", e));
             }
-            break;
-
-         default:
-            throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
+         }
+         default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
    }
 

@@ -28,10 +28,31 @@ import java.io.Serializable;
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractFilterExpression<T extends Serializable>
+public abstract class AbstractFilterExpression<T extends Serializable> implements Serializable
 {
    /*******************************************************************************
     **
     *******************************************************************************/
    public abstract T evaluate();
+
+
+
+   /*******************************************************************************
+    ** To help with serialization, define a "type" in all subclasses
+    *******************************************************************************/
+   public String getType()
+   {
+      return (getClass().getSimpleName());
+   }
+
+
+
+   /*******************************************************************************
+    ** noop - but here so serialization won't be upset about there being a type
+    ** in a json object.
+    *******************************************************************************/
+   public void setType(String type)
+   {
+
+   }
 }

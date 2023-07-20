@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,211 +19,192 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.queues;
+package com.kingsrook.qqq.backend.core.model.actions.tables.replace;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 
 
 /*******************************************************************************
- ** MetaData to define a message queue, which must exist within a QueueProvider.
  **
- ** The name attribute is a globally unique name within the QInstance
- ** The providerName is the connection to the queue system.
- ** The queueName uniquely identifies the queue within the context of the provider.
- ** The processName is the code that runs for messages found on the queue.
- ** The schedule may not be used by all provider types, but defines when the queue is polled.
  *******************************************************************************/
-public class QQueueMetaData implements TopLevelMetaDataInterface
+public class ReplaceInput extends AbstractTableActionInput
 {
-   private String name;
-   private String providerName;
-   private String queueName;
-   private String processName;
+   private QBackendTransaction transaction;
+   private UniqueKey           key;
+   private List<QRecord>       records;
+   private QQueryFilter        filter;
 
-   private QScheduleMetaData schedule;
+   private boolean omitDmlAudit = false;
 
 
 
    /*******************************************************************************
-    ** Getter for name
+    ** Constructor
     **
     *******************************************************************************/
-   public String getName()
+   public ReplaceInput()
    {
-      return name;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for name
-    **
+    ** Getter for transaction
     *******************************************************************************/
-   public void setName(String name)
+   public QBackendTransaction getTransaction()
    {
-      this.name = name;
+      return (this.transaction);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
-    **
+    ** Setter for transaction
     *******************************************************************************/
-   public QQueueMetaData withName(String name)
+   public void setTransaction(QBackendTransaction transaction)
    {
-      this.name = name;
+      this.transaction = transaction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for transaction
+    *******************************************************************************/
+   public ReplaceInput withTransaction(QBackendTransaction transaction)
+   {
+      this.transaction = transaction;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for providerName
-    **
+    ** Getter for records
     *******************************************************************************/
-   public String getProviderName()
+   public List<QRecord> getRecords()
    {
-      return providerName;
+      return (this.records);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for providerName
-    **
+    ** Setter for records
     *******************************************************************************/
-   public void setProviderName(String providerName)
+   public void setRecords(List<QRecord> records)
    {
-      this.providerName = providerName;
+      this.records = records;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for providerName
-    **
+    ** Fluent setter for records
     *******************************************************************************/
-   public QQueueMetaData withProviderName(String providerName)
+   public ReplaceInput withRecords(List<QRecord> records)
    {
-      this.providerName = providerName;
+      this.records = records;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queueName
-    **
+    ** Getter for filter
     *******************************************************************************/
-   public String getQueueName()
+   public QQueryFilter getFilter()
    {
-      return queueName;
+      return (this.filter);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queueName
-    **
+    ** Setter for filter
     *******************************************************************************/
-   public void setQueueName(String queueName)
+   public void setFilter(QQueryFilter filter)
    {
-      this.queueName = queueName;
+      this.filter = filter;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queueName
-    **
+    ** Fluent setter for filter
     *******************************************************************************/
-   public QQueueMetaData withQueueName(String queueName)
+   public ReplaceInput withFilter(QQueryFilter filter)
    {
-      this.queueName = queueName;
+      this.filter = filter;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for processName
-    **
+    ** Getter for key
     *******************************************************************************/
-   public String getProcessName()
+   public UniqueKey getKey()
    {
-      return processName;
+      return (this.key);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for processName
-    **
+    ** Setter for key
     *******************************************************************************/
-   public void setProcessName(String processName)
+   public void setKey(UniqueKey key)
    {
-      this.processName = processName;
+      this.key = key;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for processName
-    **
+    ** Fluent setter for key
     *******************************************************************************/
-   public QQueueMetaData withProcessName(String processName)
+   public ReplaceInput withKey(UniqueKey key)
    {
-      this.processName = processName;
+      this.key = key;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for schedule
-    **
+    ** Getter for omitDmlAudit
     *******************************************************************************/
-   public QScheduleMetaData getSchedule()
+   public boolean getOmitDmlAudit()
    {
-      return schedule;
+      return (this.omitDmlAudit);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for schedule
-    **
+    ** Setter for omitDmlAudit
     *******************************************************************************/
-   public void setSchedule(QScheduleMetaData schedule)
+   public void setOmitDmlAudit(boolean omitDmlAudit)
    {
-      this.schedule = schedule;
+      this.omitDmlAudit = omitDmlAudit;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for schedule
-    **
+    ** Fluent setter for omitDmlAudit
     *******************************************************************************/
-   public QQueueMetaData withSchedule(QScheduleMetaData schedule)
+   public ReplaceInput withOmitDmlAudit(boolean omitDmlAudit)
    {
-      this.schedule = schedule;
+      this.omitDmlAudit = omitDmlAudit;
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void addSelfToInstance(QInstance qInstance)
-   {
-      qInstance.addQueue(this);
    }
 
 }

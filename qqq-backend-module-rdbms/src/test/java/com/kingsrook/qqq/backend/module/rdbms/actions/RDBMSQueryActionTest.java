@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -559,7 +558,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          QueryInput queryInput = initQueryRequest();
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria().withFieldName("lastName").withOperator(QCriteriaOperator.EQUALS).withValues(List.of("ExpressionTest")))
-            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withExpression(new Now())));
+            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withValues(List.of(new Now()))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
          Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
@@ -569,7 +568,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          QueryInput queryInput = initQueryRequest();
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria().withFieldName("lastName").withOperator(QCriteriaOperator.EQUALS).withValues(List.of("ExpressionTest")))
-            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withExpression(NowWithOffset.plus(2, TimeUnit.DAYS))));
+            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withValues(List.of(NowWithOffset.plus(2, ChronoUnit.DAYS)))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
          Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
@@ -579,7 +578,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          QueryInput queryInput = initQueryRequest();
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria().withFieldName("lastName").withOperator(QCriteriaOperator.EQUALS).withValues(List.of("ExpressionTest")))
-            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.GREATER_THAN).withExpression(NowWithOffset.minus(5, TimeUnit.DAYS))));
+            .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.GREATER_THAN).withValues(List.of(NowWithOffset.minus(5, ChronoUnit.DAYS)))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
          Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");

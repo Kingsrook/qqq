@@ -52,6 +52,17 @@ public class CountInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public CountInput(String tableName)
+   {
+      setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for filter
     **
     *******************************************************************************/
@@ -149,6 +160,17 @@ public class CountInput extends AbstractTableActionInput
    public CountInput withIncludeDistinctCount(Boolean includeDistinctCount)
    {
       this.includeDistinctCount = includeDistinctCount;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for filter
+    *******************************************************************************/
+   public CountInput withFilter(QQueryFilter filter)
+   {
+      this.filter = filter;
       return (this);
    }
 
