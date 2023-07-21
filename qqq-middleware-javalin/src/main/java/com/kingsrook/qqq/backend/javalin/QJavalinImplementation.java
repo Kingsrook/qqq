@@ -162,6 +162,9 @@ public class QJavalinImplementation
    private static final long MILLIS_BETWEEN_HOT_SWAPS = 2500;
    public static final  long SLOW_LOG_THRESHOLD_MS    = 1000;
 
+   private static final Integer DEFAULT_COUNT_TIMEOUT_SECONDS = 60;
+   private static final Integer DEFAULT_QUERY_TIMEOUT_SECONDS = 60;
+
    private static int DEFAULT_PORT = 8001;
 
    private static Javalin service;
