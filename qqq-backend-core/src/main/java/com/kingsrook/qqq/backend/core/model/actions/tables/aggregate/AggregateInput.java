@@ -40,6 +40,8 @@ public class AggregateInput extends AbstractTableActionInput
    private List<GroupBy>   groupBys = new ArrayList<>();
    private Integer         limit;
 
+   private Integer timeoutSeconds;
+
    private List<QueryJoin> queryJoins = null;
 
 
@@ -266,6 +268,37 @@ public class AggregateInput extends AbstractTableActionInput
    public AggregateInput withLimit(Integer limit)
    {
       this.limit = limit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for timeoutSeconds
+    *******************************************************************************/
+   public Integer getTimeoutSeconds()
+   {
+      return (this.timeoutSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for timeoutSeconds
+    *******************************************************************************/
+   public void setTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for timeoutSeconds
+    *******************************************************************************/
+   public AggregateInput withTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
       return (this);
    }
 

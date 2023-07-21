@@ -1075,6 +1075,7 @@ public class QJavalinImplementation
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
+         countInput.setTimeoutSeconds(DEFAULT_COUNT_TIMEOUT_SECONDS);
          countInput.setQueryJoins(processQueryJoinsParam(context));
          countInput.setIncludeDistinctCount(QJavalinUtils.queryParamIsTrue(context, "includeDistinct"));
 
@@ -1131,6 +1132,7 @@ public class QJavalinImplementation
          queryInput.setTableName(table);
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
+         queryInput.setTimeoutSeconds(DEFAULT_QUERY_TIMEOUT_SECONDS);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 

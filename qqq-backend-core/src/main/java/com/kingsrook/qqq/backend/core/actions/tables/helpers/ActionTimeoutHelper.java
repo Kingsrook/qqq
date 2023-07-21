@@ -19,63 +19,91 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
-import java.time.Instant;
-import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 /*******************************************************************************
- ** Base class for "query" (e.g., read-operations) action interfaces (query, count, aggregate).
- ** Initially just here for the QueryStat methods - if we expand those to apply
- ** to insert/update/delete, well, then rename this maybe to BaseActionInterface?
+ ** For actions that may want to set a timeout, and cancel themselves if they run
+ ** too long - this class helps.
+ **
+ ** Construct with the timeout (delay & timeUnit), and a runnable that takes care
+ ** of doing the cancel (e.g., cancelling a JDBC statement).
+ **
+ ** Call start() to make a future get scheduled (note, if delay was null or <= 0,
+ ** then it doesn't get scheduled at all).
+ **
+ ** Call cancel() if the action got far enough/completed, to cancel the future.
+ **
+ ** You can check didTimeout (getDidTimeout()) to know if the timeout did occur.
  *******************************************************************************/
-public interface BaseQueryInterface
+public class ActionTimeoutHelper
 {
+   private final Integer            delay;
+   private final TimeUnit           timeUnit;
+   private final Runnable           runnable;
+   private       ScheduledFuture<?> future;
+
+   private boolean didTimeout = false;
+
+
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   public ActionTimeoutHelper(Integer delay, TimeUnit timeUnit, Runnable runnable)
    {
-      //////////
-      // noop //
-      //////////
+      this.delay = delay;
+      this.timeUnit = timeUnit;
+      this.runnable = runnable;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void setQueryStatFirstResultTime()
+   public void start()
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
+      if(delay == null || delay <= 0)
       {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
+         return;
+      }
+
+      future = Executors.newSingleThreadScheduledExecutor().schedule(() ->
+      {
+         didTimeout = true;
+         runnable.run();
+      }, delay, timeUnit);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void cancel()
+   {
+      if(future != null)
+      {
+         future.cancel(true);
       }
    }
 
 
+
    /*******************************************************************************
+    ** Getter for didTimeout
     **
     *******************************************************************************/
-   default void cancelAction()
+   public boolean getDidTimeout()
    {
-      //////////////////////////////////////////////
-      // initially at least, a noop in base class //
-      //////////////////////////////////////////////
+      return didTimeout;
    }
 
 }
