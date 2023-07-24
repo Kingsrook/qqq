@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -232,7 +233,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> existingRecordsByForeignKey = getExistingRecordsByForeignKey(runBackendStepInput, destinationTableForeignKeyField, destinationTableName, sourceKeyList);
+      Map<Pair<String, Serializable>, QRecord> existingRecordsByForeignKey = getExistingRecordsByForeignKey(runBackendStepInput, destinationTableForeignKeyField, destinationTableName, sourceKeyList);
 
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
@@ -267,13 +268,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             continue;
          }
 
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         // look for the existing record - note - we may need to type-convert here, the sourceKey value //
-         // from the source table to the destinationKey.  e.g., if source table had an integer, and the //
-         // destination has a string.                                                                   //
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         Serializable sourceKeyValueInTargetFieldType = ValueUtils.getValueAsFieldType(destinationForeignKeyField.getType(), sourceKeyValue);
-         QRecord      existingRecord                  = existingRecordsByForeignKey.get(sourceKeyValueInTargetFieldType);
+         //////////////////////////////////////////////////////////////
+         // look for the existing record, to determine insert/update //
+         //////////////////////////////////////////////////////////////
+         QRecord existingRecord = getExistingRecord(existingRecordsByForeignKey, destinationForeignKeyField, sourceKeyValue);
 
          QRecord recordToStore;
          if(existingRecord != null && config.performUpdates)
@@ -333,26 +331,66 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected Map<Serializable, QRecord> getExistingRecordsByForeignKey(RunBackendStepInput runBackendStepInput, String destinationTableForeignKeyField, String destinationTableName, List<Serializable> sourceKeyList) throws QException
+   protected QRecord getExistingRecord(Map<Pair<String, Serializable>, QRecord> existingRecordsByForeignKey, QFieldMetaData destinationForeignKeyField, Serializable sourceKeyValue)
    {
-      Map<Serializable, QRecord> existingRecordsByForeignKey = Collections.emptyMap();
-      if(!sourceKeyList.isEmpty())
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // note - we may need to type-convert here, the sourceKey value from the source table to        //
+      // the destinationKey.  e.g., if source table had an integer, and the destination has a string. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      Serializable sourceKeyValueInTargetFieldType = ValueUtils.getValueAsFieldType(destinationForeignKeyField.getType(), sourceKeyValue);
+      return (existingRecordsByForeignKey.get(Pair.of(destinationForeignKeyField.getName(), sourceKeyValueInTargetFieldType)));
+   }
+
+
+
+   /*******************************************************************************
+    ** Run the existingRecordQueryFilter - to look in the destinationTable for
+    ** any records that may need an update (rather than an insert).
+    **
+    ** Generally returns a Map, keyed by a Pair of the destinationTableForeignKeyField
+    ** and the value in that field.  But, for more complex use-cases, one can override
+    ** the buildExistingRecordsMap method, to make different keys (e.g., if there are
+    ** two possible destinationTableForeignKeyFields).
+    *******************************************************************************/
+   protected Map<Pair<String, Serializable>, QRecord> getExistingRecordsByForeignKey(RunBackendStepInput runBackendStepInput, String destinationTableForeignKeyField, String destinationTableName, List<Serializable> sourceKeyList) throws QException
+   {
+      if(sourceKeyList.isEmpty())
       {
-         QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(destinationTableName);
-         getTransaction().ifPresent(queryInput::setTransaction);
-         QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
-         queryInput.setFilter(filter);
+         return (Collections.emptyMap());
+      }
 
-         Collection<String> associationNamesToInclude = getAssociationNamesToInclude();
-         if(CollectionUtils.nullSafeHasContents(associationNamesToInclude))
-         {
-            queryInput.setIncludeAssociations(true);
-            queryInput.setAssociationNamesToInclude(associationNamesToInclude);
-         }
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(destinationTableName);
+      getTransaction().ifPresent(queryInput::setTransaction);
+      QQueryFilter filter = getExistingRecordQueryFilter(runBackendStepInput, sourceKeyList);
+      queryInput.setFilter(filter);
 
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-         existingRecordsByForeignKey = CollectionUtils.recordsToMap(queryOutput.getRecords(), destinationTableForeignKeyField);
+      Collection<String> associationNamesToInclude = getAssociationNamesToInclude();
+      if(CollectionUtils.nullSafeHasContents(associationNamesToInclude))
+      {
+         queryInput.setIncludeAssociations(true);
+         queryInput.setAssociationNamesToInclude(associationNamesToInclude);
+      }
+
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      return (buildExistingRecordsMap(destinationTableForeignKeyField, queryOutput.getRecords()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Overridable point where you can, for example, keys in the existingRecordsMap
+    ** with different fieldNames from the destinationTable.
+    **
+    ** Note, if you're overriding this method, you'll likely also want & need to
+    ** override getExistingRecord.
+    *******************************************************************************/
+   protected Map<Pair<String, Serializable>, QRecord> buildExistingRecordsMap(String destinationTableForeignKeyField, List<QRecord> existingRecordList)
+   {
+      Map<Pair<String, Serializable>, QRecord> existingRecordsByForeignKey = new HashMap<>();
+      for(QRecord record : existingRecordList)
+      {
+         existingRecordsByForeignKey.put(Pair.of(destinationTableForeignKeyField, record.getValue(destinationTableForeignKeyField)), record);
       }
       return (existingRecordsByForeignKey);
    }

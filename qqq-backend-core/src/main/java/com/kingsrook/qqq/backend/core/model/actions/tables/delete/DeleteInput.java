@@ -43,6 +43,9 @@ public class DeleteInput extends AbstractTableActionInput
    private QQueryFilter        queryFilter;
    private InputSource         inputSource = QInputSource.SYSTEM;
 
+   private boolean omitDmlAudit = false;
+   private String  auditContext = null;
+
 
 
    /*******************************************************************************
@@ -208,6 +211,68 @@ public class DeleteInput extends AbstractTableActionInput
    public DeleteInput withInputSource(InputSource inputSource)
    {
       this.inputSource = inputSource;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitDmlAudit
+    *******************************************************************************/
+   public boolean getOmitDmlAudit()
+   {
+      return (this.omitDmlAudit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitDmlAudit
+    *******************************************************************************/
+   public void setOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitDmlAudit
+    *******************************************************************************/
+   public DeleteInput withOmitDmlAudit(boolean omitDmlAudit)
+   {
+      this.omitDmlAudit = omitDmlAudit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for auditContext
+    *******************************************************************************/
+   public String getAuditContext()
+   {
+      return (this.auditContext);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for auditContext
+    *******************************************************************************/
+   public void setAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for auditContext
+    *******************************************************************************/
+   public DeleteInput withAuditContext(String auditContext)
+   {
+      this.auditContext = auditContext;
       return (this);
    }
 

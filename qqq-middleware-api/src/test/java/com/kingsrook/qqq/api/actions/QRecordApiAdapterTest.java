@@ -158,7 +158,8 @@ class QRecordApiAdapterTest extends BaseTest
          {"firstName": "Tim", "noOfShoes": 2}
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4, true))
          .isInstanceOf(QBadRequestException.class)
-         .hasMessageContaining("unrecognized field name: noOfShoes");
+         .hasMessageContaining("unrecognized field name: noOfShoes")
+         .hasMessageContaining("noOfShoes does not exist in version 2022.Q4, but does exist in versions: 2023.Q1");
 
       /////////////////////////////////////////////////////////////////////////
       // current version doesn't have cost field - fail if you send it to us //
@@ -167,7 +168,8 @@ class QRecordApiAdapterTest extends BaseTest
          {"firstName": "Tim", "cost": 2}
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true))
          .isInstanceOf(QBadRequestException.class)
-         .hasMessageContaining("unrecognized field name: cost");
+         .hasMessageContaining("unrecognized field name: cost")
+         .hasMessageNotContaining("cost does not exist in version 2023.Q1, but does exist in versions: 2023.Q2"); // this field only appears in a future version, not any current/supported versions.
 
       /////////////////////////////////
       // excluded field always fails //
@@ -178,7 +180,8 @@ class QRecordApiAdapterTest extends BaseTest
             {"firstName": "Tim", "price": 2}
             """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, version, true))
             .isInstanceOf(QBadRequestException.class)
-            .hasMessageContaining("unrecognized field name: price");
+            .hasMessageContaining("unrecognized field name: price")
+            .hasMessageNotContaining("price does not exist in version"); // this field never appears, so no message about when it appears.
       }
 
       ////////////////////////////////////////////

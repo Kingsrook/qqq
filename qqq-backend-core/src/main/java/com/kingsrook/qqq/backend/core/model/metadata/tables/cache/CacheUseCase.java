@@ -49,6 +49,7 @@ public class CacheUseCase
    //////////////////////////
    private UniqueKey cacheUniqueKey;
    private UniqueKey sourceUniqueKey;
+   private boolean   doCopySourcePrimaryKeyToCache = false;
 
    private List<QQueryFilter> excludeRecordsMatching;
 
@@ -219,6 +220,37 @@ public class CacheUseCase
    public CacheUseCase withExcludeRecordsMatching(List<QQueryFilter> excludeRecordsMatching)
    {
       this.excludeRecordsMatching = excludeRecordsMatching;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for doCopySourcePrimaryKeyToCache
+    *******************************************************************************/
+   public boolean getDoCopySourcePrimaryKeyToCache()
+   {
+      return (this.doCopySourcePrimaryKeyToCache);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for doCopySourcePrimaryKeyToCache
+    *******************************************************************************/
+   public void setDoCopySourcePrimaryKeyToCache(boolean doCopySourcePrimaryKeyToCache)
+   {
+      this.doCopySourcePrimaryKeyToCache = doCopySourcePrimaryKeyToCache;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for doCopySourcePrimaryKeyToCache
+    *******************************************************************************/
+   public CacheUseCase withDoCopySourcePrimaryKeyToCache(boolean doCopySourcePrimaryKeyToCache)
+   {
+      this.doCopySourcePrimaryKeyToCache = doCopySourcePrimaryKeyToCache;
       return (this);
    }
 

@@ -627,4 +627,40 @@ public class CollectionUtils
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Take a multi-level map, e.g., Map{String, Map{Integer, BigDecimal}}
+    ** and invert it - e.g., to Map{Integer, Map{String, BigDecimal}}
+    *******************************************************************************/
+   public static <K1, K2, V> Map<K2, Map<K1, V>> swapMultiLevelMapKeys(Map<K1, Map<K2, V>> input)
+   {
+      if(input == null)
+      {
+         return (null);
+      }
+
+      Map<K2, Map<K1, V>> output = new HashMap<>();
+
+      for(Map.Entry<K1, Map<K2, V>> entry : input.entrySet())
+      {
+         K1         key1 = entry.getKey();
+         Map<K2, V> map1 = entry.getValue();
+
+         if(map1 != null)
+         {
+            for(Map.Entry<K2, V> entry2 : map1.entrySet())
+            {
+               K2 key2  = entry2.getKey();
+               V  value = entry2.getValue();
+
+               output.computeIfAbsent(key2, (k) -> new HashMap<>());
+               output.get(key2).put(key1, value);
+            }
+         }
+      }
+
+      return (output);
+   }
+
 }

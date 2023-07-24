@@ -194,7 +194,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                         continue;
                      }
 
-                     if(field.getType().equals(QFieldType.BLOB))
+                     if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
                      {
                         detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
                      }
@@ -209,7 +209,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                   {
                      if(!Objects.equals(oldValue, value))
                      {
-                        if(field.getType().equals(QFieldType.BLOB))
+                        if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
                         {
                            if(oldValue == null)
                            {

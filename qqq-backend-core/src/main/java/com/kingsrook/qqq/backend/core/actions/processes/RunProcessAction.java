@@ -502,9 +502,12 @@ public class RunProcessAction
          QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getSchedule().getVariantBackend());
          if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
          {
-            throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
+            LOG.info("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
          }
-         basepullKeyValue += "-" + session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+         else
+         {
+            basepullKeyValue += "-" + session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+         }
       }
 
       return (basepullKeyValue);

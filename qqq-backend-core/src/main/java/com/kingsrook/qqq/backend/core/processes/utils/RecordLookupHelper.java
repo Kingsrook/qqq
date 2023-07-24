@@ -29,8 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -48,8 +51,11 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RecordLookupHelper
 {
-   private Map<String, Map<Serializable, QRecord>> recordMaps    = new HashMap<>();
-   private Set<String>                             preloadedKeys = new HashSet<>();
+   private Map<String, Map<Serializable, QRecord>> recordMaps = new HashMap<>();
+
+   private Map<String, Map<Map<String, Serializable>, QRecord>> uniqueKeyMaps = new HashMap<>();
+
+   private Set<String> preloadedKeys = new HashSet<>();
 
    private Set<Pair<String, String>> disallowedOneOffLookups = new HashSet<>();
 
@@ -61,6 +67,25 @@ public class RecordLookupHelper
     *******************************************************************************/
    public RecordLookupHelper()
    {
+   }
+
+
+
+   /*******************************************************************************
+    ** Fetch a record from a table by a uniqueKey from the table
+    *******************************************************************************/
+   public QRecord getRecordByUniqueKey(String tableName, Map<String, Serializable> uniqueKey) throws QException
+   {
+      String                                  mapKey    = tableName + "." + uniqueKey.keySet().stream().sorted().collect(Collectors.joining(","));
+      Map<Map<String, Serializable>, QRecord> recordMap = uniqueKeyMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
+
+      if(!recordMap.containsKey(uniqueKey))
+      {
+         QRecord record = new GetAction().executeForRecord(new GetInput(tableName).withUniqueKey(uniqueKey));
+         recordMap.put(uniqueKey, record);
+      }
+
+      return (recordMap.get(uniqueKey));
    }
 
 

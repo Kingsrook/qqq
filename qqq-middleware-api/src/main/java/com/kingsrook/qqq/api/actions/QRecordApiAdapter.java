@@ -35,6 +35,8 @@ import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiAssociationMetaData;
@@ -289,10 +291,61 @@ public class QRecordApiAdapter
 
       if(!unrecognizedFieldNames.isEmpty())
       {
-         throw (new QBadRequestException("Request body contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.joinWithCommasAndAnd(unrecognizedFieldNames)));
+         List<String> otherVersionHints = new ArrayList<>();
+         try
+         {
+            for(String unrecognizedFieldName : unrecognizedFieldNames)
+            {
+               String hint = lookForFieldInOtherVersions(unrecognizedFieldName, tableName, apiName, apiVersion);
+               if(hint != null)
+               {
+                  otherVersionHints.add(hint);
+               }
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error looking for unrecognized field names in other api versions", e);
+         }
+
+         throw (new QBadRequestException("Request body contained "
+            + (unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.joinWithCommasAndAnd(unrecognizedFieldNames) + ". ")
+            + (CollectionUtils.nullSafeIsEmpty(otherVersionHints) ? "" : StringUtils.join(" ", otherVersionHints))
+         ));
       }
 
       return (qRecord);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static String lookForFieldInOtherVersions(String unrecognizedFieldName, String tableName, String apiName, String apiVersion) throws QException
+   {
+      ApiInstanceMetaDataContainer apiInstanceMetaDataContainer = ApiInstanceMetaDataContainer.of(QContext.getQInstance());
+      ApiInstanceMetaData          apiInstanceMetaData          = apiInstanceMetaDataContainer.getApiInstanceMetaData(apiName);
+
+      List<String> versionsWithThisField = new ArrayList<>();
+      for(APIVersion supportedVersion : apiInstanceMetaData.getSupportedVersions())
+      {
+         if(!supportedVersion.toString().equals(apiVersion))
+         {
+            Map<String, QFieldMetaData> versionFields = getTableApiFieldMap(new ApiNameVersionAndTableName(apiName, supportedVersion.toString(), tableName));
+            if(versionFields.containsKey(unrecognizedFieldName))
+            {
+               versionsWithThisField.add(supportedVersion.toString());
+            }
+         }
+      }
+
+      if(CollectionUtils.nullSafeHasContents(versionsWithThisField))
+      {
+         return (unrecognizedFieldName + " does not exist in version " + apiVersion + ", but does exist in versions: " + StringUtils.joinWithCommasAndAnd(versionsWithThisField) + ". ");
+      }
+
+      return (null);
    }
 
 

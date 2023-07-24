@@ -73,6 +73,7 @@ import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
@@ -681,23 +682,13 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY:
-            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-            break;
-
-         case BASIC_AUTH_USERNAME_PASSWORD:
-            request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-            break;
-
-         case API_KEY_HEADER:
-            request.addHeader("API-Key", backendMetaData.getApiKey());
-            break;
-
-         case OAUTH2:
-            request.setHeader("Authorization", "Bearer " + getOAuth2Token());
-            break;
-
-         case API_KEY_QUERY_PARAM:
+         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
+         case API_TOKEN -> request.addHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
+         case API_KEY_QUERY_PARAM ->
+         {
             try
             {
                String uri = request.getURI().toString();
@@ -709,10 +700,8 @@ public class BaseAPIActionUtil
             {
                throw (new QException("Error setting authorization query parameter", e));
             }
-            break;
-
-         default:
-            throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
+         }
+         default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
    }
 
@@ -728,19 +717,28 @@ public class BaseAPIActionUtil
       // this is not generally meant to be put in the meta data by the app programmer - rather, we're just using    //
       // it as a "cheap & easy" way to "cache" the token within our process's memory...                             //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      String accessToken = ValueUtils.getValueAsString(backendMetaData.getCustomValue("accessToken"));
+      String  accessToken            = ValueUtils.getValueAsString(backendMetaData.getCustomValue("accessToken"));
+      Boolean setCredentialsInHeader = BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(backendMetaData.getCustomValue("setCredentialsInHeader")));
 
       if(!StringUtils.hasContent(accessToken))
       {
          String fullURL  = backendMetaData.getBaseUrl() + "oauth/token";
-         String postBody = "grant_type=client_credentials&client_id=" + backendMetaData.getClientId() + "&client_secret=" + backendMetaData.getClientSecret();
+         String postBody = "grant_type=client_credentials";
 
-         LOG.info("Fetching OAuth2 token from " + fullURL);
+         if(!setCredentialsInHeader)
+         {
+            postBody += "&client_id=" + backendMetaData.getClientId() + "&client_secret=" + backendMetaData.getClientSecret();
+         }
 
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
             HttpPost request = new HttpPost(fullURL);
             request.setEntity(new StringEntity(postBody));
+
+            if(setCredentialsInHeader)
+            {
+               request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
+            }
             request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
 
             HttpResponse response     = executeOAuthTokenRequest(client, request);

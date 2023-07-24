@@ -46,7 +46,7 @@ public class CacheUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   static QRecord mapSourceRecordToCacheRecord(QTableMetaData table, QRecord recordFromSource)
+   static QRecord mapSourceRecordToCacheRecord(QTableMetaData table, QRecord recordFromSource, CacheUseCase cacheUseCase)
    {
       QRecord cacheRecord = new QRecord(recordFromSource);
 
@@ -58,7 +58,10 @@ public class CacheUtils
       {
          if(fieldName.equals(table.getPrimaryKeyField()))
          {
-            cacheRecord.removeValue(fieldName);
+            if(!cacheUseCase.getDoCopySourcePrimaryKeyToCache())
+            {
+               cacheRecord.removeValue(fieldName);
+            }
          }
          else if(!cacheRecord.getValues().containsKey(fieldName))
          {
