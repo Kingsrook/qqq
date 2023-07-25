@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -62,7 +63,8 @@ public class ApiInstanceMetaDataProvider
     *******************************************************************************/
    public static void defineAll(QInstance qInstance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      definePossibleValueSources(qInstance);
+      definePossibleValueSourcesUsedByApiLogTable(qInstance);
+      definePossibleValueSourcesForApiNameAndVersion(qInstance);
       defineAPILogTable(qInstance, backendName, backendDetailEnricher);
       defineAPILogUserTable(qInstance, backendName, backendDetailEnricher);
    }
@@ -72,7 +74,7 @@ public class ApiInstanceMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void definePossibleValueSources(QInstance instance)
+   public static void definePossibleValueSourcesUsedByApiLogTable(QInstance instance)
    {
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(TABLE_NAME_API_LOG_USER)
@@ -104,7 +106,15 @@ public class ApiInstanceMetaDataProvider
             new QPossibleValue<>(429, "429 (Too Many Requests)"),
             new QPossibleValue<>(500, "500 (Internal Server Error)")
          )));
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void definePossibleValueSourcesForApiNameAndVersion(QInstance instance)
+   {
       ////////////////////////////////////////////////////////////////////////////
       // loop over api names and versions, building out possible values sources //
       ////////////////////////////////////////////////////////////////////////////
@@ -121,14 +131,14 @@ public class ApiInstanceMetaDataProvider
          apiNamePossibleValues.add(new QPossibleValue<>(entry.getKey(), entry.getValue().getLabel()));
 
          ApiInstanceMetaData apiInstanceMetaData = entry.getValue();
-         allVersions.addAll(apiInstanceMetaData.getPastVersions());
-         allVersions.addAll(apiInstanceMetaData.getSupportedVersions());
+         allVersions.addAll(CollectionUtils.nonNullCollection(apiInstanceMetaData.getPastVersions()));
+         allVersions.addAll(CollectionUtils.nonNullCollection(apiInstanceMetaData.getSupportedVersions()));
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
          // I think we don't want future-versions in this dropdown, I think...                                //
          // grr, actually todo maybe we want this to be a table-backed enum, with past/present/future columns //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         allVersions.addAll(apiInstanceMetaData.getFutureVersions());
+         allVersions.addAll(CollectionUtils.nonNullCollection(apiInstanceMetaData.getFutureVersions()));
       }
 
       instance.addPossibleValueSource(new QPossibleValueSource()
