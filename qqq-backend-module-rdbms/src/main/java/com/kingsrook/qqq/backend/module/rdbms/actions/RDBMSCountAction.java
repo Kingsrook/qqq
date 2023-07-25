@@ -27,8 +27,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -45,6 +48,8 @@ import org.apache.commons.lang.BooleanUtils;
 public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSCountAction.class);
+
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
 
@@ -84,8 +89,21 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          {
             long mark = System.currentTimeMillis();
 
-            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+            statement = connection.prepareStatement(sql);
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            actionTimeoutHelper = new ActionTimeoutHelper(countInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
+            actionTimeoutHelper.start();
+
+            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
+               /////////////////////////////////////////////////////////////////////////
+               // once we've started getting results, go ahead and cancel the timeout //
+               /////////////////////////////////////////////////////////////////////////
+               actionTimeoutHelper.cancel();
+
                if(resultSet.next())
                {
                   rs.setCount(resultSet.getInt("record_count"));
@@ -107,9 +125,41 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       }
       catch(Exception e)
       {
+         if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
+         {
+            setQueryStatFirstResultTime();
+            throw (new QUserFacingException("Count timed out."));
+         }
+
+         if(isCancelled)
+         {
+            throw (new QUserFacingException("Count was cancelled."));
+         }
+
          LOG.warn("Error executing count", e);
          throw new QException("Error executing count", e);
       }
+      finally
+      {
+         if(actionTimeoutHelper != null)
+         {
+            /////////////////////////////////////////
+            // make sure the timeout got cancelled //
+            /////////////////////////////////////////
+            actionTimeoutHelper.cancel();
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void cancelAction()
+   {
+      doCancelQuery();
    }
 
 }

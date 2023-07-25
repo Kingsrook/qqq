@@ -37,6 +37,8 @@ public class CountInput extends AbstractTableActionInput
 {
    private QQueryFilter filter;
 
+   private Integer timeoutSeconds;
+
    private List<QueryJoin> queryJoins           = null;
    private Boolean         includeDistinctCount = false;
 
@@ -171,6 +173,37 @@ public class CountInput extends AbstractTableActionInput
    public CountInput withFilter(QQueryFilter filter)
    {
       this.filter = filter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for timeoutSeconds
+    *******************************************************************************/
+   public Integer getTimeoutSeconds()
+   {
+      return (this.timeoutSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for timeoutSeconds
+    *******************************************************************************/
+   public void setTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for timeoutSeconds
+    *******************************************************************************/
+   public CountInput withTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
       return (this);
    }
 

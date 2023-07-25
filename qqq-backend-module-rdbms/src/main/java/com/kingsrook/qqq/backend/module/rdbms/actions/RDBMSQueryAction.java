@@ -33,9 +33,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -59,6 +62,8 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaDat
 public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSQueryAction.class);
+
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
 
@@ -136,14 +141,29 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          try
          {
+            /////////////////////////////////////
+            // create a statement from the SQL //
+            /////////////////////////////////////
+            statement = createStatement(connection, sql.toString(), queryInput);
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            actionTimeoutHelper = new ActionTimeoutHelper(queryInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
+            actionTimeoutHelper.start();
+
             //////////////////////////////////////////////
             // execute the query - iterate over results //
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
 
-            PreparedStatement statement = createStatement(connection, sql.toString(), queryInput);
             QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
+               /////////////////////////////////////////////////////////////////////////
+               // once we've started getting results, go ahead and cancel the timeout //
+               /////////////////////////////////////////////////////////////////////////
+               actionTimeoutHelper.cancel();
+
                ResultSetMetaData metaData = resultSet.getMetaData();
                while(resultSet.next())
                {
@@ -201,6 +221,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          }
          finally
          {
+            if(actionTimeoutHelper != null)
+            {
+               /////////////////////////////////////////
+               // make sure the timeout got cancelled //
+               /////////////////////////////////////////
+               actionTimeoutHelper.cancel();
+            }
+
             if(needToCloseConnection)
             {
                connection.close();
@@ -209,6 +237,17 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       }
       catch(Exception e)
       {
+         if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
+         {
+            setQueryStatFirstResultTime();
+            throw (new QUserFacingException("Query timed out."));
+         }
+
+         if(isCancelled)
+         {
+            throw (new QUserFacingException("Query was cancelled."));
+         }
+
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
@@ -283,20 +322,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   private boolean filterOutHeavyFieldsIfNeeded(QFieldMetaData field, boolean shouldFetchHeavyFields)
-   {
-      if(!shouldFetchHeavyFields && field.getIsHeavy())
-      {
-         return (false);
-      }
-      return (true);
-   }
-
-
-
-   /*******************************************************************************
     ** if we're not fetching heavy fields, instead just get their length.  this
     ** method wraps the field 'sql name' (e.g., column_name or table_name.column_name)
     ** with the LENGTH() function, if needed.
@@ -338,4 +363,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       return (statement);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void cancelAction()
+   {
+      doCancelQuery();
+   }
 }
