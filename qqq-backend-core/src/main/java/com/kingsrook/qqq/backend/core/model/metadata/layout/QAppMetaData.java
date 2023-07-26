@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -36,7 +38,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  ** MetaData definition of an App - an entity that organizes tables & processes
  ** and can be arranged hierarchically (e.g, apps can contain other apps).
  *******************************************************************************/
-public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRules
+public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
    private String name;
    private String label;
@@ -414,4 +416,14 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addApp(this);
+   }
 }

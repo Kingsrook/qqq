@@ -32,6 +32,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
  *******************************************************************************/
 public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface>
 {
+   public static final int DEFAULT_SORT_ORDER = 500;
+
+
 
    /*******************************************************************************
     ** Produce the metaData object.  Generally, you don't want to add it to the instance
@@ -43,11 +46,13 @@ public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface>
 
    /*******************************************************************************
     ** In case this producer needs to run before (or after) others, this method
-    ** can help influence that (e.g., if used by MetaDataProducerHelper).
+    ** can control influence that (e.g., if used by MetaDataProducerHelper).
+    **
+    ** Smaller values run first.
     *******************************************************************************/
    public int getSortOrder()
    {
-      return (500);
+      return (DEFAULT_SORT_ORDER);
    }
 
 }
