@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -41,6 +42,12 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class AggregateAction
 {
+   private static final QLogger LOG = QLogger.getLogger(AggregateAction.class);
+
+   private AggregateInterface aggregateInterface;
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -56,12 +63,28 @@ public class AggregateAction
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(aggregateInput.getBackend());
 
-      AggregateInterface aggregateInterface = qModule.getAggregateInterface();
+      aggregateInterface = qModule.getAggregateInterface();
       aggregateInterface.setQueryStat(queryStat);
       AggregateOutput aggregateOutput = aggregateInterface.execute(aggregateInput);
 
       QueryStatManager.getInstance().add(queryStat);
 
       return aggregateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void cancel()
+   {
+      if(aggregateInterface == null)
+      {
+         LOG.warn("aggregateInterface object was null when requested to cancel");
+         return;
+      }
+
+      aggregateInterface.cancelAction();
    }
 }

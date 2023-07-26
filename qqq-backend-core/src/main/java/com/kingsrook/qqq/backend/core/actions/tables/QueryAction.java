@@ -76,6 +76,7 @@ public class QueryAction
    private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
 
    private QueryInput               queryInput;
+   private QueryInterface           queryInterface;
    private QPossibleValueTranslator qPossibleValueTranslator;
 
 
@@ -121,7 +122,7 @@ public class QueryAction
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
 
-      QueryInterface queryInterface = qModule.getQueryInterface();
+      queryInterface = qModule.getQueryInterface();
       queryInterface.setQueryStat(queryStat);
       QueryOutput queryOutput = queryInterface.execute(queryInput);
 
@@ -338,5 +339,21 @@ public class QueryAction
             }
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void cancel()
+   {
+      if(queryInterface == null)
+      {
+         LOG.warn("queryInterface object was null when requested to cancel");
+         return;
+      }
+
+      queryInterface.cancelAction();
    }
 }

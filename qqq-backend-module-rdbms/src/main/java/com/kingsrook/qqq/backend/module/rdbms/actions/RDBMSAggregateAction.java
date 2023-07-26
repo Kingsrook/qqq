@@ -27,8 +27,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
@@ -53,6 +56,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSAggregateAction.class);
 
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
    /*******************************************************************************
@@ -102,8 +106,21 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
          try(Connection connection = getConnection(aggregateInput))
          {
-            QueryManager.executeStatement(connection, sql, ((ResultSet resultSet) ->
+            statement = connection.prepareStatement(sql);
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            actionTimeoutHelper = new ActionTimeoutHelper(aggregateInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
+            actionTimeoutHelper.start();
+
+            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
             {
+               /////////////////////////////////////////////////////////////////////////
+               // once we've started getting results, go ahead and cancel the timeout //
+               /////////////////////////////////////////////////////////////////////////
+               actionTimeoutHelper.cancel();
+
                while(resultSet.next())
                {
                   setQueryStatFirstResultTime();
@@ -156,8 +173,29 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       }
       catch(Exception e)
       {
+         if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
+         {
+            setQueryStatFirstResultTime();
+            throw (new QUserFacingException("Aggregate query timed out."));
+         }
+
+         if(isCancelled)
+         {
+            throw (new QUserFacingException("Aggregate query was cancelled."));
+         }
+
          LOG.warn("Error executing aggregate", e);
          throw new QException("Error executing aggregate", e);
+      }
+      finally
+      {
+         if(actionTimeoutHelper != null)
+         {
+            /////////////////////////////////////////
+            // make sure the timeout got cancelled //
+            /////////////////////////////////////////
+            actionTimeoutHelper.cancel();
+         }
       }
    }
 
@@ -197,6 +235,17 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       }
 
       return (StringUtils.join(",", columns));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void cancelAction()
+   {
+      doCancelQuery();
    }
 
 }

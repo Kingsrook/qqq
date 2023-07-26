@@ -19,63 +19,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
-import java.time.Instant;
-import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
+import java.sql.Statement;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Base class for "query" (e.g., read-operations) action interfaces (query, count, aggregate).
- ** Initially just here for the QueryStat methods - if we expand those to apply
- ** to insert/update/delete, well, then rename this maybe to BaseActionInterface?
+ ** Helper to cancel statements that timeout.
  *******************************************************************************/
-public interface BaseQueryInterface
+public class StatementTimeoutCanceller implements Runnable
 {
+   private static final QLogger LOG = QLogger.getLogger(StatementTimeoutCanceller.class);
+
+   private final Statement statement;
+   private final String    sql;
+
+
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   public StatementTimeoutCanceller(Statement statement, CharSequence sql)
    {
-      //////////
-      // noop //
-      //////////
+      this.statement = statement;
+      this.sql = sql.toString();
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void setQueryStatFirstResultTime()
+   @Override
+   public void run()
    {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
+      try
       {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
+         statement.cancel();
+         LOG.info("Cancelled timed out statement", logPair("sql", sql));
       }
+      catch(Exception e)
+      {
+         LOG.warn("Error trying to cancel statement after timeout", e, logPair("sql", sql));
+      }
+
+      throw (new QRuntimeException("Statement timed out and was cancelled."));
    }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void cancelAction()
-   {
-      //////////////////////////////////////////////
-      // initially at least, a noop in base class //
-      //////////////////////////////////////////////
-   }
-
 }

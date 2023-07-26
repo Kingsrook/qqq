@@ -42,6 +42,7 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    private QQueryFilter        filter;
 
    private RecordPipe recordPipe;
+   private Integer    timeoutSeconds;
 
    private boolean shouldTranslatePossibleValues = false;
    private boolean shouldGenerateDisplayValues   = false;
@@ -534,6 +535,37 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    public QueryInput withSelectDistinct(boolean selectDistinct)
    {
       this.selectDistinct = selectDistinct;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for timeoutSeconds
+    *******************************************************************************/
+   public Integer getTimeoutSeconds()
+   {
+      return (this.timeoutSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for timeoutSeconds
+    *******************************************************************************/
+   public void setTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for timeoutSeconds
+    *******************************************************************************/
+   public QueryInput withTimeoutSeconds(Integer timeoutSeconds)
+   {
+      this.timeoutSeconds = timeoutSeconds;
       return (this);
    }
 
