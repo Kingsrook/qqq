@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -303,14 +305,18 @@ public class ColumnStatsStep implements BackendStep
          /////////////////////////////////////////////////////////////////////////////////
          // just in case any of these don't fit in an integer, use decimal for them all //
          /////////////////////////////////////////////////////////////////////////////////
-         Aggregate      countNonNullAggregate  = new Aggregate(fieldName, AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
-         Aggregate      countDistinctAggregate = new Aggregate(fieldName, AggregateOperator.COUNT_DISTINCT).withFieldType(QFieldType.DECIMAL);
-         Aggregate      sumAggregate           = new Aggregate(fieldName, AggregateOperator.SUM).withFieldType(QFieldType.DECIMAL);
-         Aggregate      avgAggregate           = new Aggregate(fieldName, AggregateOperator.AVG).withFieldType(QFieldType.DECIMAL);
-         Aggregate      minAggregate           = new Aggregate(fieldName, AggregateOperator.MIN);
-         Aggregate      maxAggregate           = new Aggregate(fieldName, AggregateOperator.MAX);
-         AggregateInput statsAggregateInput    = new AggregateInput();
+         Aggregate countTotalRowsAggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
+         Aggregate countNonNullAggregate   = new Aggregate(fieldName, AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
+         Aggregate countDistinctAggregate  = new Aggregate(fieldName, AggregateOperator.COUNT_DISTINCT).withFieldType(QFieldType.DECIMAL);
+         Aggregate sumAggregate            = new Aggregate(fieldName, AggregateOperator.SUM).withFieldType(QFieldType.DECIMAL);
+         Aggregate avgAggregate            = new Aggregate(fieldName, AggregateOperator.AVG).withFieldType(QFieldType.DECIMAL);
+         Aggregate minAggregate            = new Aggregate(fieldName, AggregateOperator.MIN);
+         Aggregate maxAggregate            = new Aggregate(fieldName, AggregateOperator.MAX);
+
+         AggregateInput statsAggregateInput = new AggregateInput();
+         statsAggregateInput.withAggregate(countTotalRowsAggregate);
          statsAggregateInput.withAggregate(countNonNullAggregate);
+
          if(doCountDistinct)
          {
             statsAggregateInput.withAggregate(countDistinctAggregate);
@@ -332,6 +338,7 @@ public class ColumnStatsStep implements BackendStep
             statsAggregateInput.withAggregate(maxAggregate);
          }
 
+         BigDecimal totalRows = null;
          if(CollectionUtils.nullSafeHasContents(statsAggregateInput.getAggregates()))
          {
             statsAggregateInput.setTableName(tableName);
@@ -345,6 +352,8 @@ public class ColumnStatsStep implements BackendStep
             if(CollectionUtils.nullSafeHasContents(statsAggregateOutput.getResults()))
             {
                AggregateResult statsAggregateResult = statsAggregateOutput.getResults().get(0);
+
+               totalRows = ValueUtils.getValueAsBigDecimal(statsAggregateResult.getAggregateValue(countTotalRowsAggregate));
 
                statsRecord.setValue(countNonNullField.getName(), statsAggregateResult.getAggregateValue(countNonNullAggregate));
                if(doCountDistinct)
@@ -386,6 +395,27 @@ public class ColumnStatsStep implements BackendStep
                   }
                }
             }
+         }
+
+         /////////////////////
+         // figure count%'s //
+         /////////////////////
+         if(totalRows == null)
+         {
+            totalRows = new BigDecimal(valueCounts.stream().mapToInt(r -> r.getValueInteger("count")).sum());
+         }
+
+         if(totalRows != null && totalRows.compareTo(BigDecimal.ZERO) > 0)
+         {
+            BigDecimal oneHundred = new BigDecimal(100);
+            for(QRecord valueCount : valueCounts)
+            {
+               BigDecimal percent = new BigDecimal(Objects.requireNonNullElse(valueCount.getValueInteger("count"), 0)).divide(totalRows, 4, RoundingMode.HALF_UP).multiply(oneHundred).setScale(2, RoundingMode.HALF_UP);
+               valueCount.setValue("percent", percent);
+            }
+
+            QFieldMetaData percentField = new QFieldMetaData("percent", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.PERCENT_POINT2).withLabel("Percent");
+            QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "percent", percentField), valueCounts);
          }
 
          QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(null);
