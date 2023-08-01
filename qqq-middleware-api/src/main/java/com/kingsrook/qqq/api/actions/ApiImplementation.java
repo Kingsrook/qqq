@@ -986,9 +986,16 @@ public class ApiImplementation
          {
             String[] ids = paramMap.get(idParam).split(",");
 
-            QTableMetaData table  = QContext.getQInstance().getTable(process.getTableName());
-            QQueryFilter   filter = new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), IN, Arrays.asList(ids)));
-            runProcessInput.setCallback(getCallback(filter));
+            if(StringUtils.hasContent(process.getTableName()))
+            {
+               QTableMetaData table  = QContext.getQInstance().getTable(process.getTableName());
+               QQueryFilter   filter = new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), IN, Arrays.asList(ids)));
+               runProcessInput.setCallback(getProcessCallback(filter));
+            }
+            else
+            {
+               runProcessInput.addValue(idParam, paramMap.get(idParam));
+            }
          }
       }
 
@@ -1517,7 +1524,7 @@ public class ApiImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QProcessCallback getCallback(QQueryFilter filter)
+   public static QProcessCallback getProcessCallback(QQueryFilter filter)
    {
       return new QProcessCallback()
       {
