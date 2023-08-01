@@ -159,6 +159,15 @@ public class StoreScriptRevisionProcessStep implements BackendStep
                   .toQRecord());
             }
          }
+         else if(StringUtils.hasContent(input.getValueString("contents")))
+         {
+            scriptRevisionFileRecords = new ArrayList<>();
+            scriptRevisionFileRecords.add(new ScriptRevisionFile()
+               .withScriptRevisionId(scriptRevisionId)
+               .withFileName("Script.js")
+               .withContents(input.getValueString("contents"))
+               .toQRecord());
+         }
 
          if(CollectionUtils.nullSafeHasContents(scriptRevisionFileRecords))
          {
