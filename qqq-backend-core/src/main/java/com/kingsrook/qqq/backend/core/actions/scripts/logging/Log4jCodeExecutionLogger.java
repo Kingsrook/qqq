@@ -41,6 +41,7 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
    private QCodeReference qCodeReference;
    private String         uuid = UUID.randomUUID().toString();
 
+   private boolean includeUUID = true;
 
 
    /*******************************************************************************
@@ -52,7 +53,7 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
       this.qCodeReference = executeCodeInput.getCodeReference();
 
       String inputString = StringUtils.safeTruncate(ValueUtils.getValueAsString(executeCodeInput.getInput()), 250, "...");
-      LOG.info("Starting script execution: " + qCodeReference.getName() + ", uuid: " + uuid + ", with input: " + inputString);
+      LOG.info("Starting script execution: " + qCodeReference.getName() + (includeUUID ? ", uuid: " + uuid : "") + ", with input: " + inputString);
    }
 
 
@@ -63,7 +64,7 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
    @Override
    public void acceptLogLine(String logLine)
    {
-      LOG.info("Script log: " + uuid + ": " + logLine);
+      LOG.info("Script log: " + (includeUUID ? uuid + ": " : "") + logLine);
    }
 
 
@@ -74,7 +75,7 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
    @Override
    public void acceptException(Exception exception)
    {
-      LOG.info("Script Exception: " + uuid, exception);
+      LOG.info("Script Exception: " + (includeUUID ? uuid : ""), exception);
    }
 
 
@@ -86,7 +87,38 @@ public class Log4jCodeExecutionLogger implements QCodeExecutionLoggerInterface
    public void acceptExecutionEnd(Serializable output)
    {
       String outputString = StringUtils.safeTruncate(ValueUtils.getValueAsString(output), 250, "...");
-      LOG.info("Finished script execution: " + qCodeReference.getName() + ", uuid: " + uuid + ", with output: " + outputString);
+      LOG.info("Finished script execution: " + qCodeReference.getName() + (includeUUID ? ", uuid: " + uuid : "") + ", with output: " + outputString);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for includeUUID
+    *******************************************************************************/
+   public boolean getIncludeUUID()
+   {
+      return (this.includeUUID);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for includeUUID
+    *******************************************************************************/
+   public void setIncludeUUID(boolean includeUUID)
+   {
+      this.includeUUID = includeUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeUUID
+    *******************************************************************************/
+   public Log4jCodeExecutionLogger withIncludeUUID(boolean includeUUID)
+   {
+      this.includeUUID = includeUUID;
+      return (this);
    }
 
 }
