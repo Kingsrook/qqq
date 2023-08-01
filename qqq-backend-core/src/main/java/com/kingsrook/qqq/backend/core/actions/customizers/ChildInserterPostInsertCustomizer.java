@@ -29,6 +29,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -42,18 +43,16 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  ** Standard/re-usable post-insert customizer, for the use case where, when we
  ** do an insert into table "parent", we want a record automatically inserted into
- ** table "child", and there's a foreign key in "parent", pointed at "child"
- ** e.g., named: "parent.childId".
+ ** table "child".  Optionally (based on RelationshipType), there can be a foreign
+ ** key in "parent", pointed at "child".  e.g., named: "parent.childId".
  **
- ** A similar use-case would have the foreign key in the child table - in which case,
- ** we could add a "Type" enum, plus abstract method to get our "Type", then logic
- ** to switch behavior based on type.  See existing type enum, but w/ only 1 case :)
  *******************************************************************************/
 public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInsertCustomizer
 {
    public enum RelationshipType
    {
-      PARENT_POINTS_AT_CHILD
+      PARENT_POINTS_AT_CHILD,
+      CHILD_POINTS_AT_PARENT
    }
 
 
@@ -68,10 +67,17 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
     *******************************************************************************/
    public abstract String getChildTableName();
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract String getForeignKeyFieldName();
+   public String getForeignKeyFieldName()
+   {
+      return (null);
+   }
+
+
 
    /*******************************************************************************
     **
@@ -88,7 +94,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
    {
       try
       {
-         List<QRecord>  rs               = new ArrayList<>();
+         List<QRecord>  rs               = records;
          List<QRecord>  childrenToInsert = new ArrayList<>();
          QTableMetaData table            = getInsertInput().getTable();
          QTableMetaData childTable       = getInsertInput().getInstance().getTable(getChildTableName());
@@ -97,12 +103,37 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          // iterate over the inserted records, building a list child records to insert //
          // for ones missing a value in the foreign key field.                         //
          ////////////////////////////////////////////////////////////////////////////////
-         for(QRecord record : records)
+         switch(getRelationshipType())
          {
-            if(record.getValue(getForeignKeyFieldName()) == null)
+            case PARENT_POINTS_AT_CHILD ->
             {
-               childrenToInsert.add(buildChildForRecord(record));
+               String foreignKeyFieldName = getForeignKeyFieldName();
+               try
+               {
+                  table.getField(foreignKeyFieldName);
+               }
+               catch(Exception e)
+               {
+                  throw new QRuntimeException("For RelationshipType.PARENT_POINTS_AT_CHILD, a valid foreignKeyFieldName in the parent table must be given.  "
+                     + "[" + foreignKeyFieldName + "] is not a valid field name in table [" + table.getName() + "]");
+               }
+
+               for(QRecord record : records)
+               {
+                  if(record.getValue(foreignKeyFieldName) == null)
+                  {
+                     childrenToInsert.add(buildChildForRecord(record));
+                  }
+               }
             }
+            case CHILD_POINTS_AT_PARENT ->
+            {
+               for(QRecord record : records)
+               {
+                  childrenToInsert.add(buildChildForRecord(record));
+               }
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + getRelationshipType());
          }
 
          ///////////////////////////////////////////////////////////////////////////////////
@@ -129,50 +160,69 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          /////////////////////////////////////////////////////////////////////////////////
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////
+         // for the PARENT_POINTS_AT_CHILD relationship type:
          // iterate over the original list of records again - for any that need a child (e.g., are missing   //
          // foreign key), set their foreign key to a newly inserted child's key, and add them to be updated. //
          //////////////////////////////////////////////////////////////////////////////////////////////////////
-         List<QRecord> recordsToUpdate = new ArrayList<>();
-         for(QRecord record : records)
+         switch(getRelationshipType())
          {
-            Serializable primaryKey = record.getValue(table.getPrimaryKeyField());
-            if(record.getValue(getForeignKeyFieldName()) == null)
+            case PARENT_POINTS_AT_CHILD ->
             {
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               // get the corresponding child record, if it has any errors, set that as a warning in the parent //
-               ///////////////////////////////////////////////////////////////////////////////////////////////////
-               QRecord childRecord = insertedRecordIterator.next();
-               if(CollectionUtils.nullSafeHasContents(childRecord.getErrors()))
+               rs = new ArrayList<>();
+               List<QRecord> recordsToUpdate = new ArrayList<>();
+               for(QRecord record : records)
                {
-                  for(QStatusMessage error : childRecord.getErrors())
+                  Serializable primaryKey = record.getValue(table.getPrimaryKeyField());
+                  if(record.getValue(getForeignKeyFieldName()) == null)
                   {
-                     record.addWarning(new QWarningMessage("Error creating child " + childTable.getLabel() + " (" + error.toString() + ")"));
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////
+                     // get the corresponding child record, if it has any errors, set that as a warning in the parent //
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////
+                     QRecord childRecord = insertedRecordIterator.next();
+                     if(CollectionUtils.nullSafeHasContents(childRecord.getErrors()))
+                     {
+                        for(QStatusMessage error : childRecord.getErrors())
+                        {
+                           record.addWarning(new QWarningMessage("Error creating child " + childTable.getLabel() + " (" + error.toString() + ")"));
+                        }
+                        rs.add(record);
+                        continue;
+                     }
+
+                     Serializable foreignKey = childRecord.getValue(childTable.getPrimaryKeyField());
+                     recordsToUpdate.add(new QRecord().withValue(table.getPrimaryKeyField(), primaryKey).withValue(getForeignKeyFieldName(), foreignKey));
+                     record.setValue(getForeignKeyFieldName(), foreignKey);
+                     rs.add(record);
                   }
-                  rs.add(record);
-                  continue;
+                  else
+                  {
+                     rs.add(record);
+                  }
                }
 
-               Serializable foreignKey = childRecord.getValue(childTable.getPrimaryKeyField());
-               recordsToUpdate.add(new QRecord().withValue(table.getPrimaryKeyField(), primaryKey).withValue(getForeignKeyFieldName(), foreignKey));
-               record.setValue(getForeignKeyFieldName(), foreignKey);
-               rs.add(record);
+               ////////////////////////////////////////////////////////////////////////////
+               // update the originally inserted records to reference their new children //
+               ////////////////////////////////////////////////////////////////////////////
+               UpdateInput updateInput = new UpdateInput();
+               updateInput.setTableName(getInsertInput().getTableName());
+               updateInput.setRecords(recordsToUpdate);
+               updateInput.setTransaction(this.insertInput.getTransaction());
+               new UpdateAction().execute(updateInput);
             }
-            else
+            case CHILD_POINTS_AT_PARENT ->
             {
-               rs.add(record);
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // todo - some version of looking at the inserted children to confirm that they were inserted, and updating the parents with warnings if they weren't //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             }
+            default -> throw new IllegalStateException("Unexpected value: " + getRelationshipType());
          }
 
-         ////////////////////////////////////////////////////////////////////////////
-         // update the originally inserted records to reference their new children //
-         ////////////////////////////////////////////////////////////////////////////
-         UpdateInput updateInput = new UpdateInput();
-         updateInput.setTableName(getInsertInput().getTableName());
-         updateInput.setRecords(recordsToUpdate);
-         updateInput.setTransaction(this.insertInput.getTransaction());
-         new UpdateAction().execute(updateInput);
-
          return (rs);
+      }
+      catch(RuntimeException re)
+      {
+         throw (re);
       }
       catch(Exception e)
       {

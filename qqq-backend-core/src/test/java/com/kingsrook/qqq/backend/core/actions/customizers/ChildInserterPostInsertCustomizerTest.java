@@ -70,7 +70,7 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
    void testEmptyCases() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      addPostInsertActionToTable(qInstance);
+      addPostInsertActionToPersonTable(qInstance);
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
@@ -95,10 +95,21 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void addPostInsertActionToTable(QInstance qInstance)
+   private static void addPostInsertActionToPersonTable(QInstance qInstance)
    {
       qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withCustomizer(TableCustomizers.POST_INSERT_RECORD.getRole(), new QCodeReference(PersonPostInsertAddFavoriteShapeCustomizer.class));
+         .withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(PersonPostInsertAddFavoriteShapeCustomizer.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addPostInsertActionToShapeTable(QInstance qInstance)
+   {
+      qInstance.getTable(TestUtils.TABLE_NAME_SHAPE)
+         .withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(ShapePostInsertAddPersonCustomizer.class));
    }
 
 
@@ -107,10 +118,10 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testSimpleCase() throws QException
+   void testSimpleParentPointsAtChildCase() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      addPostInsertActionToTable(qInstance);
+      addPostInsertActionToPersonTable(qInstance);
 
       assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_SHAPE).size());
 
@@ -135,10 +146,10 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testComplexCase() throws QException
+   void testComplexParentPointsAtChildCase() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      addPostInsertActionToTable(qInstance);
+      addPostInsertActionToPersonTable(qInstance);
 
       assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_SHAPE).size());
 
@@ -168,6 +179,34 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
 
    /*******************************************************************************
     **
+    *******************************************************************************/
+   @Test
+   void testSimpleChildPointsAtParentCase() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      addPostInsertActionToShapeTable(qInstance);
+
+      assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_PERSON_MEMORY).size());
+      assertEquals(0, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_SHAPE).size());
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_SHAPE);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("name", "Circle")
+      ));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+      Integer      shapeId      = insertOutput.getRecords().get(0).getValueInteger("id");
+
+      List<QRecord> personRecords = TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_PERSON_MEMORY);
+      assertEquals(1, personRecords.size());
+      assertEquals(shapeId, personRecords.get(0).getValue("favoriteShapeId"));
+      assertEquals("loves Circle", personRecords.get(0).getValue("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** for the person table - where we do PARENT_POINTS_AT_CHILD
     *******************************************************************************/
    public static class PersonPostInsertAddFavoriteShapeCustomizer extends ChildInserterPostInsertCustomizer
    {
@@ -212,6 +251,49 @@ class ChildInserterPostInsertCustomizerTest extends BaseTest
       public RelationshipType getRelationshipType()
       {
          return (RelationshipType.PARENT_POINTS_AT_CHILD);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** for the shape table - where we do CHILD_POINTS_AT_PARENT
+    *******************************************************************************/
+   public static class ShapePostInsertAddPersonCustomizer extends ChildInserterPostInsertCustomizer
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public QRecord buildChildForRecord(QRecord parentRecord) throws QException
+      {
+         return (new QRecord()
+            .withValue("firstName", "Someone who")
+            .withValue("lastName", "loves " + parentRecord.getValue("name"))
+            .withValue("favoriteShapeId", parentRecord.getValue("id")));
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public String getChildTableName()
+      {
+         return (TestUtils.TABLE_NAME_PERSON_MEMORY);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public RelationshipType getRelationshipType()
+      {
+         return (RelationshipType.CHILD_POINTS_AT_PARENT);
       }
    }
 
