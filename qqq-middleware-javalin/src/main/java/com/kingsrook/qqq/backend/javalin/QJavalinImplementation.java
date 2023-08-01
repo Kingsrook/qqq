@@ -113,6 +113,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -148,10 +149,10 @@ public class QJavalinImplementation
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinImplementation.class);
 
-   public static final int    SESSION_COOKIE_AGE     = 60 * 60 * 24;
-   public static final String SESSION_ID_COOKIE_NAME = "sessionId";
-   public static final String BASIC_AUTH_NAME        = "basicAuthString";
-   public static final String API_KEY_NAME           = "apiKey";
+   public static final int    SESSION_COOKIE_AGE       = 60 * 60 * 24;
+   public static final String SESSION_ID_COOKIE_NAME   = "sessionId";
+   public static final String SESSION_UUID_COOKIE_NAME = "sessionUUID";
+   public static final String API_KEY_NAME             = "apiKey";
 
    static QInstance        qInstance;
    static QJavalinMetaData javalinMetaData;
@@ -329,6 +330,8 @@ public class QJavalinImplementation
    {
       return (() ->
       {
+         post("/manageSession", QJavalinImplementation::manageSession);
+
          /////////////////////
          // metadata routes //
          /////////////////////
@@ -403,6 +406,36 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static void manageSession(Context context)
+   {
+      try
+      {
+         Map<?, ?> map = context.bodyAsClass(Map.class);
+
+         QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
+         QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+
+         Map<String, String> authContext = new HashMap<>();
+         //? authContext.put("uuid", ValueUtils.getValueAsString(map.get("uuid")));
+         authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
+         authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
+
+         QSession session = authenticationModule.createSession(qInstance, authContext);
+
+         context.cookie(SESSION_UUID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
+         context.result(JsonUtils.toJson(MapBuilder.of("uuid", session.getUuid())));
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static void serverInfo(Context context)
    {
       JSONObject serverInfo = new JSONObject();
@@ -442,16 +475,23 @@ public class QJavalinImplementation
       {
          Map<String, String> authenticationContext = new HashMap<>();
 
-         String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
+         // todo delete String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
+         String sessionUuidCookieValue   = context.cookie(Auth0AuthenticationModule.SESSION_UUID_KEY);
          String authorizationHeaderValue = context.header("Authorization");
          String apiKeyHeaderValue        = context.header("x-api-key");
 
+         /* todo - change to sessionUUID.
          if(StringUtils.hasContent(sessionIdCookieValue))
          {
             ////////////////////////////////////////
             // first, look for a sessionId cookie //
             ////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
+         }
+         else*/
+         if(StringUtils.hasContent(sessionUuidCookieValue))
+         {
+            authenticationContext.put(Auth0AuthenticationModule.SESSION_UUID_KEY, sessionUuidCookieValue);
          }
          else if(apiKeyHeaderValue != null)
          {
@@ -533,12 +573,12 @@ public class QJavalinImplementation
       if(authorizationHeaderValue.startsWith(basicPrefix))
       {
          authorizationHeaderValue = authorizationHeaderValue.replaceFirst(basicPrefix, "");
-         authenticationContext.put(BASIC_AUTH_NAME, authorizationHeaderValue);
+         authenticationContext.put(Auth0AuthenticationModule.BASIC_AUTH_KEY, authorizationHeaderValue);
       }
       else if(authorizationHeaderValue.startsWith(bearerPrefix))
       {
          authorizationHeaderValue = authorizationHeaderValue.replaceFirst(bearerPrefix, "");
-         authenticationContext.put(SESSION_ID_COOKIE_NAME, authorizationHeaderValue);
+         authenticationContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, authorizationHeaderValue);
       }
       else
       {

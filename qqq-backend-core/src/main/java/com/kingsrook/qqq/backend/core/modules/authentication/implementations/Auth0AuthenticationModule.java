@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
@@ -52,6 +51,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
@@ -68,11 +68,11 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.model.UserSession;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
@@ -80,7 +80,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -93,6 +92,18 @@ import org.json.JSONObject;
 
 
 /*******************************************************************************
+ ** QQQ AuthenticationModule for working with Auth0.
+ **
+ ** createSession can be called with the following fields in its context:
+ **
+ ** System-User session use-case:
+ ** 1: Takes in an "accessToken" (but doesn't store a userSession record).
+ **
+ ** Web User session use-cases:
+ ** 2: creates a new session (userSession record) by taking an "accessToken"
+ ** 3: looks up an existing session (userSession record) by taking a "sessionUUID"
+ ** 4: takes an "apiKey" (looked up in metaData.AccessTokenTableName - refreshing accessToken with auth0 if needed).
+ ** 5: takes a "basicAuthString" (encoded username:password), which make a new accessToken in auth0
  **
  *******************************************************************************/
 public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
@@ -104,14 +115,17 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
    public static final int ID_TOKEN_VALIDATION_INTERVAL_SECONDS = 1800;
 
-   public static final String AUTH0_ACCESS_TOKEN_KEY = "sessionId";
-   public static final String API_KEY                = "apiKey";
-   public static final String BASIC_AUTH_KEY         = "basicAuthString";
+   public static final String ACCESS_TOKEN_KEY = "accessToken";
+   public static final String API_KEY          = "apiKey"; // todo - look for users of this, see if we can change to use this constant; maybe move constants up?
+   public static final String SESSION_UUID_KEY = "sessionUUID";
+   public static final String BASIC_AUTH_KEY   = "basicAuthString"; // todo - look for users of this, see if we can change to use this constant; maybe move constants up?
 
-   public static final String TOKEN_NOT_PROVIDED_ERROR = "Access Token was not provided";
-   public static final String COULD_NOT_DECODE_ERROR   = "Unable to decode access token";
-   public static final String EXPIRED_TOKEN_ERROR      = "Token has expired";
-   public static final String INVALID_TOKEN_ERROR      = "An invalid token was provided";
+   public static final String DO_STORE_USER_SESSION_KEY = "doStoreUserSession";
+
+   static final String TOKEN_NOT_PROVIDED_ERROR = "Access Token was not provided";
+   static final String COULD_NOT_DECODE_ERROR   = "Unable to decode access token";
+   static final String EXPIRED_TOKEN_ERROR      = "Token has expired";
+   static final String INVALID_TOKEN_ERROR      = "An invalid token was provided";
 
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,94 +163,105 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    @Override
    public QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException
    {
-      Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-
-      ///////////////////////////////////////////////////////////
-      // check if we are processing a Basic Auth Session first //
-      ///////////////////////////////////////////////////////////
-      if(context.containsKey(BASIC_AUTH_KEY))
-      {
-         AuthAPI auth = AuthAPI.newBuilder(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret()).build();
-         try
-         {
-            /////////////////////////////////////////////////
-            // decode the credentials from the header auth //
-            /////////////////////////////////////////////////
-            String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-            String accessToken       = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
-            context.put(AUTH0_ACCESS_TOKEN_KEY, accessToken);
-         }
-         catch(Auth0Exception e)
-         {
-            ////////////////
-            // ¯\_(ツ)_/¯ //
-            ////////////////
-            String message = "Error handling basic authentication: " + e.getMessage();
-            LOG.error(message, e);
-            throw (new QAuthenticationException(message));
-         }
-      }
-
-      ////////////////////////////////////////////////////////////////////
-      // get the jwt id or qqq translated token from the context object //
-      ////////////////////////////////////////////////////////////////////
-      String accessToken = context.get(AUTH0_ACCESS_TOKEN_KEY);
-
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // check to see if the session id is a UUID, if so, that means we need to look up the 'actual' token in the access_token table //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(accessToken != null && StringUtils.isUUID(accessToken))
-      {
-         accessToken = lookupActualAccessToken(metaData, accessToken);
-      }
-
-      ////////////////////////////////////////////////////////
-      // if access token is still null, look for an api key //
-      ////////////////////////////////////////////////////////
-      if(accessToken == null)
-      {
-         String apiKey = context.get(API_KEY);
-         if(apiKey != null)
-         {
-            accessToken = getAccessTokenFromApiKey(metaData, apiKey);
-         }
-      }
-
-      if(accessToken == null)
-      {
-         LOG.warn(TOKEN_NOT_PROVIDED_ERROR);
-         throw (new QAuthenticationException(TOKEN_NOT_PROVIDED_ERROR));
-      }
-
-      //////////////////////////////////////////////////////////////////////////////////////
-      // decode the token locally to make sure it is valid and to look at when it expires //
-      //////////////////////////////////////////////////////////////////////////////////////
       try
       {
+         Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
+
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // if the context contains an access token, then create a new session based on that token. //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         String accessToken = null;
+         if(CollectionUtils.containsKeyWithNonNullValue(context, ACCESS_TOKEN_KEY))
+         {
+            accessToken = context.get(ACCESS_TOKEN_KEY);
+            QSession qSession = buildAndValidateSession(qInstance, accessToken);
+
+            ////////////////////////////////////////////////////////////////
+            // build & store userSession db record, if requested to do so //
+            ////////////////////////////////////////////////////////////////
+            if(CollectionUtils.containsKeyWithNonNullValue(context, DO_STORE_USER_SESSION_KEY))
+            {
+               insertUserSession(qInstance, accessToken, qSession);
+            }
+
+            return (qSession);
+         }
+         else if(CollectionUtils.containsKeyWithNonNullValue(context, BASIC_AUTH_KEY))
+         {
+            //////////////////////////////////////////////////////////////////////////////////////
+            // Process a basic auth (username:password)                                         //
+            // by getting an access token from auth0 (re-using from state provider if possible) //
+            //////////////////////////////////////////////////////////////////////////////////////
+            AuthAPI auth = AuthAPI.newBuilder(metaData.getBaseUrl(), metaData.getClientId(), metaData.getClientSecret()).build();
+            try
+            {
+               /////////////////////////////////////////////////
+               // decode the credentials from the header auth //
+               /////////////////////////////////////////////////
+               String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
+               accessToken = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
+            }
+            catch(Auth0Exception e)
+            {
+               ////////////////
+               // ¯\_(ツ)_/¯ //
+               ////////////////
+               String message = "Error handling basic authentication: " + e.getMessage();
+               LOG.error(message, e);
+               throw (new QAuthenticationException(message));
+            }
+         }
+         else if(CollectionUtils.containsKeyWithNonNullValue(context, API_KEY))
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // process an api key - looks up client application token (creating token if needed) //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            String apiKey = context.get(API_KEY);
+            if(apiKey != null)
+            {
+               accessToken = getAccessTokenFromApiKey(metaData, apiKey);
+            }
+         }
+         else if(CollectionUtils.containsKeyWithNonNullValue(context, SESSION_UUID_KEY))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // process a sessionUUID - looks up userSession record - cannot create token this way. //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            String sessionUUID = context.get(SESSION_UUID_KEY);
+            if(sessionUUID != null)
+            {
+               accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
+            }
+         }
+
+         /* todo confirm this is deprecated
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // check to see if the session id is a UUID, if so, that means we need to look up the 'actual' token in the access_token table //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(accessToken != null && StringUtils.isUUID(accessToken))
+         {
+            accessToken = lookupActualAccessToken(metaData, accessToken);
+         }
+         */
+
+         ///////////////////////////////////////////
+         // if token wasn't found by now, give up //
+         ///////////////////////////////////////////
+         if(accessToken == null)
+         {
+            LOG.warn(TOKEN_NOT_PROVIDED_ERROR);
+            throw (new QAuthenticationException(TOKEN_NOT_PROVIDED_ERROR));
+         }
+
          /////////////////////////////////////////////////////
          // try to build session to see if still valid      //
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
-         QSession qSession = buildQSessionFromToken(accessToken, qInstance);
-         if(isSessionValid(qInstance, qSession))
-         {
-            return (qSession);
-         }
-
-         ///////////////////////////////////////////////////////////////////////////////////////
-         // if we make it here it means we have never validated this token or its been a long //
-         // enough duration so we need to re-verify the token                                 //
-         ///////////////////////////////////////////////////////////////////////////////////////
-         qSession = revalidateTokenAndBuildSession(qInstance, accessToken);
-
-         ////////////////////////////////////////////////////////////////////
-         // put now into state so we dont check until next interval passes //
-         ///////////////////////////////////////////////////////////////////
-         StateProviderInterface spi = getStateProvider();
-         SimpleStateKey<String> key = new SimpleStateKey<>(qSession.getIdReference());
-         spi.put(key, Instant.now());
-
-         return (qSession);
+         return buildAndValidateSession(qInstance, accessToken);
+      }
+      catch(QAuthenticationException qae)
+      {
+         throw (qae);
       }
       catch(JWTDecodeException jde)
       {
@@ -273,6 +298,61 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
 
    /*******************************************************************************
+    ** Insert a session as a new record into userSession table
+    *******************************************************************************/
+   private void insertUserSession(QInstance qInstance, String accessToken, QSession qSession) throws QException
+   {
+      CapturedContext capturedContext = QContext.capture();
+      try
+      {
+         QContext.init(qInstance, null);
+         QContext.setQSession(getChickenAndEggSession());
+
+         UserSession userSession = new UserSession()
+            .withUuid(qSession.getUuid())
+            .withUserId(qSession.getUser().getIdReference())
+            .withAccessToken(accessToken);
+
+         new InsertAction().execute(new InsertInput(UserSession.TABLE_NAME).withRecordEntity(userSession));
+      }
+      finally
+      {
+         QContext.init(capturedContext);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QSession buildAndValidateSession(QInstance qInstance, String accessToken) throws JwkException
+   {
+      QSession qSession = buildQSessionFromToken(accessToken, qInstance);
+      if(isSessionValid(qInstance, qSession))
+      {
+         return (qSession);
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // if we make it here it means we have never validated this token or it has been a long //
+      // enough duration so we need to re-verify the token                                    //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      qSession = revalidateTokenAndBuildSession(qInstance, accessToken);
+
+      /////////////////////////////////////////////////////////////////////
+      // put now into state so we don't check until next interval passes //
+      /////////////////////////////////////////////////////////////////////
+      StateProviderInterface spi = getStateProvider();
+      SimpleStateKey<String> key = new SimpleStateKey<>(qSession.getIdReference());
+      spi.put(key, Instant.now());
+
+      return (qSession);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private String getAccessTokenFromBase64BasicAuthCredentials(Auth0AuthenticationMetaData metaData, AuthAPI auth, String base64Credentials) throws Auth0Exception
@@ -299,7 +379,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
       String credentials = new String(credDecoded, StandardCharsets.UTF_8);
 
-      String accessToken = getAccessTokenFromAuth0(metaData, auth, credentials);
+      String accessToken = getAccessTokenForUsernameAndPasswordFromAuth0(metaData, auth, credentials);
       stateProvider.put(accessTokenStateKey, accessToken);
       stateProvider.put(timestampStateKey, Instant.now());
       return (accessToken);
@@ -310,7 +390,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String getAccessTokenFromAuth0(Auth0AuthenticationMetaData metaData, AuthAPI auth, String credentials) throws Auth0Exception
+   protected String getAccessTokenForUsernameAndPasswordFromAuth0(Auth0AuthenticationMetaData metaData, AuthAPI auth, String credentials) throws Auth0Exception
    {
       /////////////////////////////////////
       // call auth0 with a login request //
@@ -620,75 +700,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
 
    /*******************************************************************************
-    ** create a new auth0 access token
+    ** make http request to Auth0 for a new access token for an application - e.g.,
+    ** with a clientId and clientSecret as params
     **
     *******************************************************************************/
-   public String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
-   {
-      QSession                    sessionBefore = QContext.getQSession();
-      Auth0AuthenticationMetaData auth0MetaData = (Auth0AuthenticationMetaData) metaData;
-
-      try
-      {
-         QContext.setQSession(getChickenAndEggSession());
-
-         ///////////////////////////////////////////////////////////////////////////////////////
-         // fetch the application from database, will throw accesstokenexception if not found //
-         ///////////////////////////////////////////////////////////////////////////////////////
-         QRecord clientAuth0Application = getClientAuth0Application(auth0MetaData, clientId);
-
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         // request access token from auth0 if exception is not thrown, that means 200OK, we want to    //
-         // store the actual access token in the database, and return a unique value                    //
-         // back to the user which will be what they use on subseqeunt requests (because token too big) //
-         /////////////////////////////////////////////////////////////////////////////////////////////////
-         JSONObject accessTokenData = requestAccessTokenFromAuth0(auth0MetaData, clientId, clientSecret);
-
-         Integer expiresInSeconds = accessTokenData.getInt("expires_in");
-         String  accessToken      = accessTokenData.getString("access_token");
-         String  uuid             = UUID.randomUUID().toString();
-
-         /////////////////////////////////
-         // store the details in the db //
-         /////////////////////////////////
-         QRecord accessTokenRecord = new QRecord()
-            .withValue(auth0MetaData.getClientAuth0ApplicationIdField(), clientAuth0Application.getValue("id"))
-            .withValue(auth0MetaData.getAuth0AccessTokenField(), accessToken)
-            .withValue(auth0MetaData.getQqqAccessTokenField(), uuid)
-            .withValue(auth0MetaData.getExpiresInSecondsField(), expiresInSeconds);
-         InsertInput input = new InsertInput();
-         input.setTableName(auth0MetaData.getAccessTokenTableName());
-         input.setRecords(List.of(accessTokenRecord));
-         new InsertAction().execute(input);
-
-         //////////////////////////////////
-         // update and send the response //
-         //////////////////////////////////
-         accessTokenData.put("access_token", uuid);
-         accessTokenData.remove("scope");
-         return (accessTokenData.toString());
-      }
-      catch(AccessTokenException ate)
-      {
-         throw (ate);
-      }
-      catch(Exception e)
-      {
-         throw (new AccessTokenException(e.getMessage(), e));
-      }
-      finally
-      {
-         QContext.setQSession(sessionBefore);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** make http request to Auth0 for a new access token
-    **
-    *******************************************************************************/
-   public JSONObject requestAccessTokenFromAuth0(Auth0AuthenticationMetaData auth0MetaData, String clientId, String clientSecret) throws AccessTokenException
+   public JSONObject requestAccessTokenForClientIdAndSecretFromAuth0(Auth0AuthenticationMetaData auth0MetaData, String clientId, String clientSecret) throws AccessTokenException
    {
       ///////////////////////////////////////////////////////////////////
       // make a request to Auth0 using the client_id and client_secret //
@@ -777,6 +793,63 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
 
 
    /*******************************************************************************
+    ** Look up access_token from session UUID
+    **
+    *******************************************************************************/
+   private String getAccessTokenFromSessionUUID(Auth0AuthenticationMetaData metaData, String sessionUUID) throws QAuthenticationException
+   {
+      String   accessToken   = null;
+      QSession beforeSession = QContext.getQSession();
+
+      try
+      {
+         QContext.setQSession(getChickenAndEggSession());
+
+         ///////////////////////////////////////
+         // query for the user session record //
+         ///////////////////////////////////////
+         QRecord userSessionRecord = new GetAction().executeForRecord(new GetInput(UserSession.TABLE_NAME)
+            .withUniqueKey(Map.of("uuid", sessionUUID))
+            .withShouldMaskPasswords(false)
+            .withShouldOmitHiddenFields(false));
+
+         if(userSessionRecord != null)
+         {
+            accessToken = userSessionRecord.getValueString("accessToken");
+
+            ////////////////////////////////////////////////////////////
+            // decode the accessToken and make sure it is not expired //
+            ////////////////////////////////////////////////////////////
+            if(accessToken != null)
+            {
+               DecodedJWT jwt = JWT.decode(accessToken);
+               if(jwt.getExpiresAtAsInstant().isBefore(Instant.now()))
+               {
+                  throw (new QAuthenticationException("accessToken is expired"));
+               }
+            }
+         }
+      }
+      catch(QAuthenticationException qae)
+      {
+         throw (qae);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error looking up userSession by sessionUUID", e);
+         throw (new QAuthenticationException("Error looking up userSession by sessionUUID", e));
+      }
+      finally
+      {
+         QContext.setQSession(beforeSession);
+      }
+
+      return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
     ** Look up access_token from api key
     **
     *******************************************************************************/
@@ -841,7 +914,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                // store the actual access token in the database, and return a unique value                    //
                // back to the user which will be what they use on subsequent requests (because token too big) //
                /////////////////////////////////////////////////////////////////////////////////////////////////
-               JSONObject accessTokenData = requestAccessTokenFromAuth0(metaData, clientId, clientSecret);
+               JSONObject accessTokenData = requestAccessTokenForClientIdAndSecretFromAuth0(metaData, clientId, clientSecret);
 
                Integer expiresInSeconds = accessTokenData.getInt("expires_in");
                accessToken = accessTokenData.getString("access_token");
@@ -867,30 +940,6 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       }
 
       return (accessToken);
-   }
-
-
-
-   /*******************************************************************************
-    ** Look up client_auth0_application record, return if found.
-    **
-    *******************************************************************************/
-   QRecord getClientAuth0Application(Auth0AuthenticationMetaData metaData, String clientId) throws QException
-   {
-      //////////////////////////////////////////////////////////////////////////////////////
-      // try to look up existing auth0 application from database, insert one if not found //
-      //////////////////////////////////////////////////////////////////////////////////////
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(metaData.getClientAuth0ApplicationTableName());
-      queryInput.setFilter(new QQueryFilter(new QFilterCriteria(metaData.getAuth0ClientIdField(), QCriteriaOperator.EQUALS, clientId)));
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
-
-      if(CollectionUtils.nullSafeHasContents(queryOutput.getRecords()))
-      {
-         return (queryOutput.getRecords().get(0));
-      }
-
-      throw (new AccessTokenException("This client has not been configured to use the API.", HttpStatus.SC_UNAUTHORIZED));
    }
 
 }

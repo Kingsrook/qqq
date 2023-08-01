@@ -60,7 +60,6 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    private String       auth0ClientSecretField;
    private Serializable qqqRecordIdField;
 
-
    /////////////////////////////////////
    // fields on the accessToken table //
    /////////////////////////////////////
@@ -69,6 +68,14 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    private String qqqAccessTokenField;
    private String qqqApiKeyField;
    private String expiresInSecondsField;
+
+   /////////////////////////////////////////////////////////////////////////////////
+   // table for storing user sessions, and field names we work with on that table //
+   /////////////////////////////////////////////////////////////////////////////////
+   private String userSessionTableName;
+   private String userSessionUuidField;
+   private String userSessionUserIdField;
+   private String userSessionAccessTokenField;
 
 
 
