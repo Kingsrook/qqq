@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.api.actions.APICountAction;
+import com.kingsrook.qqq.backend.module.api.actions.APIDeleteAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIGetAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIInsertAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIQueryAction;
@@ -136,7 +137,7 @@ public class APIBackendModule implements QBackendModuleInterface
    @Override
    public DeleteInterface getDeleteInterface()
    {
-      return (null); //return (new RDBMSDeleteAction());
+      return (new APIDeleteAction());
    }
 
 }

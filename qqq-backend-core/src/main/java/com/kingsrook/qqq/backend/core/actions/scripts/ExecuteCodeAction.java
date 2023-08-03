@@ -231,7 +231,19 @@ public class ExecuteCodeAction
     *******************************************************************************/
    public static void addApiUtilityToContext(Map<String, Serializable> context, ScriptRevision scriptRevision)
    {
-      if(!StringUtils.hasContent(scriptRevision.getApiName()) || !StringUtils.hasContent(scriptRevision.getApiVersion()))
+      addApiUtilityToContext(context, scriptRevision.getApiName(), scriptRevision.getApiVersion());
+   }
+
+
+
+   /*******************************************************************************
+    ** Try to (dynamically) load the ApiScriptUtils object from the api middleware
+    ** module -- in case the runtime doesn't have that module deployed (e.g, not in
+    ** the project pom).
+    *******************************************************************************/
+   public static void addApiUtilityToContext(Map<String, Serializable> context, String apiName, String apiVersion)
+   {
+      if(!StringUtils.hasContent(apiName) || !StringUtils.hasContent(apiVersion))
       {
          return;
       }
@@ -239,7 +251,7 @@ public class ExecuteCodeAction
       try
       {
          Class<?> apiScriptUtilsClass  = Class.forName("com.kingsrook.qqq.api.utils.ApiScriptUtils");
-         Object   apiScriptUtilsObject = apiScriptUtilsClass.getConstructor(String.class, String.class).newInstance(scriptRevision.getApiName(), scriptRevision.getApiVersion());
+         Object   apiScriptUtilsObject = apiScriptUtilsClass.getConstructor(String.class, String.class).newInstance(apiName, apiVersion);
          context.put("api", (Serializable) apiScriptUtilsObject);
       }
       catch(ClassNotFoundException e)

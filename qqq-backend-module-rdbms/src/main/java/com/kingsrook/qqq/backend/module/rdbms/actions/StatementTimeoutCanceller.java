@@ -19,40 +19,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import java.sql.Statement;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- ** Abstract class that knows how to produce meta data objects.  Useful with
- ** MetaDataProducerHelper, to put point at a package full of these, and populate
- ** your whole QInstance.
+ ** Helper to cancel statements that timeout.
  *******************************************************************************/
-public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface>
+public class StatementTimeoutCanceller implements Runnable
 {
-   public static final int DEFAULT_SORT_ORDER = 500;
+   private static final QLogger LOG = QLogger.getLogger(StatementTimeoutCanceller.class);
+
+   private final Statement statement;
+   private final String    sql;
 
 
 
    /*******************************************************************************
-    ** Produce the metaData object.  Generally, you don't want to add it to the instance
-    ** yourself - but the instance is there in case you need it to get other metaData.
-    *******************************************************************************/
-   public abstract T produce(QInstance qInstance) throws QException;
-
-
-
-   /*******************************************************************************
-    ** In case this producer needs to run before (or after) others, this method
-    ** can control influence that (e.g., if used by MetaDataProducerHelper).
+    ** Constructor
     **
-    ** Smaller values run first.
     *******************************************************************************/
-   public int getSortOrder()
+   public StatementTimeoutCanceller(Statement statement, CharSequence sql)
    {
-      return (DEFAULT_SORT_ORDER);
+      this.statement = statement;
+      this.sql = sql.toString();
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void run()
+   {
+      try
+      {
+         statement.cancel();
+         LOG.info("Cancelled timed out statement", logPair("sql", sql));
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error trying to cancel statement after timeout", e, logPair("sql", sql));
+      }
+
+      throw (new QRuntimeException("Statement timed out and was cancelled."));
+   }
 }

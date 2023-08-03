@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -41,6 +42,12 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class CountAction
 {
+   private static final QLogger LOG = QLogger.getLogger(CountAction.class);
+
+   private CountInterface countInterface;
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -56,12 +63,28 @@ public class CountAction
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(countInput.getBackend());
 
-      CountInterface countInterface = qModule.getCountInterface();
+      countInterface = qModule.getCountInterface();
       countInterface.setQueryStat(queryStat);
       CountOutput countOutput = countInterface.execute(countInput);
 
       QueryStatManager.getInstance().add(queryStat);
 
       return countOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void cancel()
+   {
+      if(countInterface == null)
+      {
+         LOG.warn("countInterface object was null when requested to cancel");
+         return;
+      }
+
+      countInterface.cancelAction();
    }
 }

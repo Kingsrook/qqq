@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -90,6 +91,9 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
 
    protected QueryStat queryStat;
+
+   protected PreparedStatement statement;
+   protected boolean           isCancelled = false;
 
 
 
@@ -1092,6 +1096,30 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    public void setQueryStat(QueryStat queryStat)
    {
       this.queryStat = queryStat;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void doCancelQuery()
+   {
+      isCancelled = true;
+      if(statement == null)
+      {
+         LOG.warn("Statement was null when requested to cancel query");
+         return;
+      }
+
+      try
+      {
+         statement.cancel();
+      }
+      catch(SQLException e)
+      {
+         LOG.warn("Error trying to cancel query (statement)", e);
+      }
    }
 
 }

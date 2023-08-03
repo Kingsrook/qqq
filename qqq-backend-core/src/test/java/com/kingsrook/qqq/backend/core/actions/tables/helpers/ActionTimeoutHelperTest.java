@@ -19,63 +19,67 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
-import java.time.Instant;
-import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
+import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
- ** Base class for "query" (e.g., read-operations) action interfaces (query, count, aggregate).
- ** Initially just here for the QueryStat methods - if we expand those to apply
- ** to insert/update/delete, well, then rename this maybe to BaseActionInterface?
+ ** Unit test for ActionTimeoutHelper 
  *******************************************************************************/
-public interface BaseQueryInterface
+class ActionTimeoutHelperTest extends BaseTest
 {
+   boolean didCancel = false;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void setQueryStat(QueryStat queryStat)
+   @Test
+   void testTimesOut()
    {
-      //////////
-      // noop //
-      //////////
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default QueryStat getQueryStat()
-   {
-      return (null);
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void setQueryStatFirstResultTime()
-   {
-      QueryStat queryStat = getQueryStat();
-      if(queryStat != null)
-      {
-         if(queryStat.getFirstResultTimestamp() == null)
-         {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-      }
+      didCancel = false;
+      ActionTimeoutHelper actionTimeoutHelper = new ActionTimeoutHelper(10, TimeUnit.MILLISECONDS, () -> doCancel());
+      actionTimeoutHelper.start();
+      SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
+      assertTrue(didCancel);
+      assertTrue(actionTimeoutHelper.getDidTimeout());
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void cancelAction()
+   @Test
+   void testGetsCancelled()
    {
-      //////////////////////////////////////////////
-      // initially at least, a noop in base class //
-      //////////////////////////////////////////////
+      didCancel = false;
+      ActionTimeoutHelper actionTimeoutHelper = new ActionTimeoutHelper(100, TimeUnit.MILLISECONDS, () -> doCancel());
+      actionTimeoutHelper.start();
+      SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
+      actionTimeoutHelper.cancel();
+      assertFalse(didCancel);
+      SleepUtils.sleep(200, TimeUnit.MILLISECONDS);
+      assertFalse(didCancel);
+      assertFalse(actionTimeoutHelper.getDidTimeout());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void doCancel()
+   {
+      didCancel = true;
    }
 
 }
