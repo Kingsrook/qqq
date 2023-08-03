@@ -69,7 +69,8 @@ public class QHttpResponse
             this.statusProtocolVersion = httpResponse.getStatusLine().getProtocolVersion().toString();
          }
       }
-      if(httpResponse.getEntity() != null)
+
+      if(this.statusCode == null || this.statusCode != 204)
       {
          this.content = EntityUtils.toString(httpResponse.getEntity());
       }
