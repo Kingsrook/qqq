@@ -43,6 +43,8 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -79,6 +81,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -386,6 +389,41 @@ public class BaseAPIActionUtil
 
    /*******************************************************************************
     **
+    *
+    *******************************************************************************/
+   public DeleteOutput doDelete(QTableMetaData table, DeleteInput deleteInput) throws QException
+   {
+      try
+      {
+         DeleteOutput deleteOutput = new DeleteOutput();
+
+         String     urlSuffix = buildQueryStringForDelete(deleteInput.getQueryFilter(), deleteInput.getPrimaryKeys());
+         String     url       = buildTableUrl(table);
+         HttpDelete request   = new HttpDelete(url + urlSuffix);
+
+         QHttpResponse response = makeRequest(table, request);
+         if(response.getStatusCode() == 204)
+         {
+            deleteOutput.setDeletedRecordCount(1);
+         }
+         else
+         {
+            deleteOutput.setDeletedRecordCount(0);
+         }
+
+         return (deleteOutput);
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error in API Delete", e);
+         throw new QException("Error executing Delete: " + e.getMessage(), e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
     *******************************************************************************/
    public void validateResponse(QHttpResponse response, List<QRecord> recordList) throws QException
    {
@@ -595,6 +633,17 @@ public class BaseAPIActionUtil
     **
     *******************************************************************************/
    protected String buildQueryStringForGet(QQueryFilter filter, Integer limit, Integer skip, Map<String, QFieldMetaData> fields) throws QException
+   {
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
+    ** method to build up delete string based on a given QFilter object
+    **
+    *******************************************************************************/
+   protected String buildQueryStringForDelete(QQueryFilter filter, List<Serializable> primaryKeys) throws QException
    {
       return ("");
    }
