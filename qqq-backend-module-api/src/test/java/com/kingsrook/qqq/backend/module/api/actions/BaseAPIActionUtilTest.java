@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -416,6 +417,25 @@ class BaseAPIActionUtilTest extends BaseTest
       updateInput.setTableName(TestUtils.MOCK_TABLE_NAME);
       updateInput.setRecords(List.of(new QRecord().withValue("id", "3").withValue("name", "Bartholomew")));
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
+
+      // not sure what to assert in here...
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDelete() throws QException
+   {
+      mockApiUtilsHelper.enqueueMockResponse("");
+      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(204).withContent(null));
+
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.MOCK_TABLE_NAME);
+      deleteInput.setPrimaryKeys(List.of(1));
+      DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
 
       // not sure what to assert in here...
    }
