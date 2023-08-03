@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.scripts.logging.Log4jCodeExecution
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.NoopCodeExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
+import com.kingsrook.qqq.backend.core.actions.scripts.logging.SystemOutExecutionLogger;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -105,6 +106,21 @@ class ExecuteCodeActionTest extends BaseTest
    {
       QInstance         qInstance         = QContext.getQInstance();
       ExecuteCodeInput  executeCodeInput  = setupInput(qInstance, Map.of("x", 4), new Log4jCodeExecutionLogger());
+      ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
+      new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
+      assertEquals(16, executeCodeOutput.getOutput());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSystemOutLogger() throws QException
+   {
+      QInstance         qInstance         = QContext.getQInstance();
+      ExecuteCodeInput  executeCodeInput  = setupInput(qInstance, Map.of("x", 4), new SystemOutExecutionLogger());
       ExecuteCodeOutput executeCodeOutput = new ExecuteCodeOutput();
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
       assertEquals(16, executeCodeOutput.getOutput());

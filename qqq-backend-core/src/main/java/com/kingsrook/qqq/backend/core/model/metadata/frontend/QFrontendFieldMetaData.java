@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.io.Serializable;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -38,14 +39,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 @JsonInclude(Include.NON_NULL)
 public class QFrontendFieldMetaData
 {
-   private String     name;
-   private String     label;
-   private QFieldType type;
-   private boolean    isRequired;
-   private boolean    isEditable;
-   private boolean    isHeavy;
-   private String     possibleValueSourceName;
-   private String     displayFormat;
+   private String       name;
+   private String       label;
+   private QFieldType   type;
+   private boolean      isRequired;
+   private boolean      isEditable;
+   private boolean      isHeavy;
+   private String       possibleValueSourceName;
+   private String       displayFormat;
+   private Serializable defaultValue;
 
    private List<FieldAdornment> adornments;
 
@@ -69,6 +71,7 @@ public class QFrontendFieldMetaData
       this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
       this.displayFormat = fieldMetaData.getDisplayFormat();
       this.adornments = fieldMetaData.getAdornments();
+      this.defaultValue = fieldMetaData.getDefaultValue();
    }
 
 
@@ -170,4 +173,14 @@ public class QFrontendFieldMetaData
       return possibleValueSourceName;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for defaultValue
+    **
+    *******************************************************************************/
+   public Serializable getDefaultValue()
+   {
+      return defaultValue;
+   }
 }
