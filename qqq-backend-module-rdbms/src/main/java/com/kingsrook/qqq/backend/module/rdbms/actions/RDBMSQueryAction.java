@@ -111,7 +111,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          boolean    needToCloseConnection = false;
          if(queryInput.getTransaction() != null && queryInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            LOG.debug("Using connection from queryInput [" + rdbmsTransaction.getConnection() + "]");
             connection = rdbmsTransaction.getConnection();
          }
          else
