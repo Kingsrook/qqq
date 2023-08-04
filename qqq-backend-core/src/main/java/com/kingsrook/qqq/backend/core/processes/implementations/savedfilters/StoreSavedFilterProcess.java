@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 
 
 /*******************************************************************************
@@ -82,7 +83,7 @@ public class StoreSavedFilterProcess implements BackendStep
          QRecord qRecord = new QRecord()
             .withValue("id", runBackendStepInput.getValueInteger("id"))
             .withValue("label", runBackendStepInput.getValueString("label"))
-            .withValue("tableName", runBackendStepInput.getValueString("tableName"))
+            .withValue("qqqTableId", QQQTableAccessor.getQQQTableId(runBackendStepInput.getValueString("tableName")))
             .withValue("filterJson", runBackendStepInput.getValueString("filterJson"))
             .withValue("userId", runBackendStepInput.getSession().getUser().getIdReference());
 

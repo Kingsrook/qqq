@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -171,7 +172,7 @@ public class RecordAutomationStatusUpdater
          CountInput countInput = new CountInput();
          countInput.setTableName(TableTrigger.TABLE_NAME);
          countInput.setFilter(new QQueryFilter(
-            new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, table.getName()),
+            new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getQQQTableId(table.getName())),
             new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
          ));
          CountOutput countOutput = new CountAction().execute(countInput);

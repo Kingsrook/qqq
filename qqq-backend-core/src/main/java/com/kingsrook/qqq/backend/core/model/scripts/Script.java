@@ -27,7 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
@@ -52,8 +52,8 @@ public class Script extends QRecordEntity
    @QField(possibleValueSourceName = "scriptType")
    private Integer scriptTypeId;
 
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
-   private String tableName;
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
 
    @QField()
    private Integer maxBatchSize;
@@ -289,37 +289,6 @@ public class Script extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for tableName
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return (this.tableName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for tableName
-    *******************************************************************************/
-   public Script withTableName(String tableName)
-   {
-      this.tableName = tableName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for maxBatchSize
     *******************************************************************************/
    public Integer getMaxBatchSize()
@@ -345,6 +314,37 @@ public class Script extends QRecordEntity
    public Script withMaxBatchSize(Integer maxBatchSize)
    {
       this.maxBatchSize = maxBatchSize;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqTableId
+    *******************************************************************************/
+   public Integer getQqqTableId()
+   {
+      return (this.qqqTableId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqTableId
+    *******************************************************************************/
+   public void setQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqTableId
+    *******************************************************************************/
+   public Script withQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
       return (this);
    }
 

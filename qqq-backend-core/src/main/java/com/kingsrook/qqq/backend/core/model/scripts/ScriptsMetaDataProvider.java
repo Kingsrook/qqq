@@ -66,6 +66,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.LoadScriptTestDetailsProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptPreStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.StoreScriptRevisionProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.TestScriptProcessStep;
@@ -96,7 +97,11 @@ public class ScriptsMetaDataProvider
       defineStandardScriptsPossibleValueSources(instance);
       defineStandardScriptsJoins(instance);
       defineStandardScriptsWidgets(instance);
+
+      // todo - change this from an enum-backed PVS to use qqqTable table, exposed in-app, in API
+      //  so api docs don't always need refreshed
       instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
+
       instance.addProcess(defineStoreScriptRevisionProcess());
       instance.addProcess(defineTestScriptProcess());
       instance.addProcess(defineLoadScriptTestDetailsProcess());
@@ -174,14 +179,24 @@ public class ScriptsMetaDataProvider
          .withLoadStepClass(RunRecordScriptLoadStep.class)
          .getProcessMetaData();
 
+      ////////////////////////////////////////////////////////////////////////////
+      // add a screen before the extract step - where user selects their script //
+      ////////////////////////////////////////////////////////////////////////////
       processMetaData.addStep(0, new QFrontendStepMetaData()
          .withName("input")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
          .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME)
             .withPossibleValueSourceFilter(new QQueryFilter(
                new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
-               new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+               new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
             ))));
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // now - insert a step before the input screen, where the table name gets read //
+      /////////////////////////////////////////////////////////////////////////////////
+      processMetaData.addStep(0, new QBackendStepMetaData()
+         .withName("preStep")
+         .withCode(new QCodeReference(RunRecordScriptPreStep.class)));
 
       return (processMetaData);
    }
@@ -383,16 +398,16 @@ public class ScriptsMetaDataProvider
       QTableMetaData tableMetaData = defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
          .withRecordLabelFields("id")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
-         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("tableName", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
+         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("qqqTableId", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       tableMetaData.getField("scriptId").withPossibleValueSourceFilter(new QQueryFilter(
          new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
-         new QFilterCriteria("script.tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+         new QFilterCriteria("script.qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
       ));
 
       tableMetaData.getField("filterId").withPossibleValueSourceFilter(new QQueryFilter(
-         new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, "${input.tableName}")
+         new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
       ));
 
       return tableMetaData;
@@ -407,7 +422,7 @@ public class ScriptsMetaDataProvider
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
-         .withSection(new QFieldSection("recordScriptSettings", new QIcon().withName("table_rows"), Tier.T2, List.of("tableName", "maxBatchSize")))
+         .withSection(new QFieldSection("recordScriptSettings", new QIcon().withName("table_rows"), Tier.T2, List.of("qqqTableId", "maxBatchSize")))
          .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
          .withSection(new QFieldSection("lines", new QIcon().withName("horizontal_rule"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Script.TABLE_NAME, ScriptLog.TABLE_NAME)));

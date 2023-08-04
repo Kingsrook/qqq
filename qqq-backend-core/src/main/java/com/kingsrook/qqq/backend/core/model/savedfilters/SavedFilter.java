@@ -27,6 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
@@ -48,8 +49,8 @@ public class SavedFilter extends QRecordEntity
    @QField(isRequired = true)
    private String label;
 
-   @QField(isEditable = false)
-   private String tableName;
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
 
    @QField(isEditable = false)
    private String userId;
@@ -181,40 +182,6 @@ public class SavedFilter extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for tableName
-    **
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    **
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for tableName
-    **
-    *******************************************************************************/
-   public SavedFilter withTableName(String tableName)
-   {
-      this.tableName = tableName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for userId
     **
     *******************************************************************************/
@@ -277,6 +244,37 @@ public class SavedFilter extends QRecordEntity
    public SavedFilter withFilterJson(String filterJson)
    {
       this.filterJson = filterJson;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqTableId
+    *******************************************************************************/
+   public Integer getQqqTableId()
+   {
+      return (this.qqqTableId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqTableId
+    *******************************************************************************/
+   public void setQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqTableId
+    *******************************************************************************/
+   public SavedFilter withQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
       return (this);
    }
 

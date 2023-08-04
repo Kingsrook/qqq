@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 
 
 /*******************************************************************************
@@ -100,7 +101,7 @@ public class QuerySavedFilterProcess implements BackendStep
             QueryInput input = new QueryInput();
             input.setTableName(SavedFilter.TABLE_NAME);
             input.setFilter(new QQueryFilter()
-               .withCriteria(new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, tableName))
+               .withCriteria(new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getQQQTableId(tableName)))
                .withOrderBy(new QFilterOrderBy("label")));
 
             QueryOutput output = new QueryAction().execute(input);

@@ -127,6 +127,7 @@ public class QQQTablesMetaDataProvider
       return (new QPossibleValueSource()
          .withType(QPossibleValueSourceType.TABLE)
          .withName(QQQTable.TABLE_NAME)
+         .withOrderByField("label")
          .withTableName(QQQTable.TABLE_NAME));
    }
 

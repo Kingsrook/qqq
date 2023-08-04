@@ -31,16 +31,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -54,11 +50,9 @@ import com.kingsrook.qqq.backend.core.model.querystats.QueryStatCriteriaField;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStatJoinTable;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStatOrderByField;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
-import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -363,7 +357,7 @@ public class QueryStatManager
                   //////////////////////
                   // set the table id //
                   //////////////////////
-                  Integer qqqTableId = getQQQTableId(queryStat.getTableName());
+                  Integer qqqTableId = QQQTableAccessor.getQQQTableId(queryStat.getTableName());
                   queryStat.setQqqTableId(qqqTableId);
 
                   //////////////////////////////
@@ -374,7 +368,7 @@ public class QueryStatManager
                      List<QueryStatJoinTable> queryStatJoinTableList = new ArrayList<>();
                      for(String joinTableName : queryStat.getJoinTableNames())
                      {
-                        queryStatJoinTableList.add(new QueryStatJoinTable().withQqqTableId(getQQQTableId(joinTableName)));
+                        queryStatJoinTableList.add(new QueryStatJoinTable().withQqqTableId(QQQTableAccessor.getQQQTableId(joinTableName)));
                      }
                      queryStat.setQueryStatJoinTableList(queryStatJoinTableList);
                   }
@@ -452,7 +446,7 @@ public class QueryStatManager
                String[] parts = fieldName.split("\\.");
                if(parts.length > 1)
                {
-                  queryStatCriteriaField.setQqqTableId(getQQQTableId(parts[0]));
+                  queryStatCriteriaField.setQqqTableId(QQQTableAccessor.getQQQTableId(parts[0]));
                   queryStatCriteriaField.setName(parts[1]);
                }
             }
@@ -490,7 +484,7 @@ public class QueryStatManager
                   String[] parts = fieldName.split("\\.");
                   if(parts.length > 1)
                   {
-                     queryStatOrderByField.setQqqTableId(getQQQTableId(parts[0]));
+                     queryStatOrderByField.setQqqTableId(QQQTableAccessor.getQQQTableId(parts[0]));
                      queryStatOrderByField.setName(parts[1]);
                   }
                }
@@ -505,43 +499,6 @@ public class QueryStatManager
          }
       }
 
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      private static Integer getQQQTableId(String tableName) throws QException
-      {
-         /////////////////////////////
-         // look in the cache table //
-         /////////////////////////////
-         GetInput getInput = new GetInput();
-         getInput.setTableName(QQQTablesMetaDataProvider.QQQ_TABLE_CACHE_TABLE_NAME);
-         getInput.setUniqueKey(MapBuilder.of("name", tableName));
-         GetOutput getOutput = new GetAction().execute(getInput);
-
-         ////////////////////////
-         // upon cache miss... //
-         ////////////////////////
-         if(getOutput.getRecord() == null)
-         {
-            ///////////////////////////////////////////////////////
-            // insert the record (into the table, not the cache) //
-            ///////////////////////////////////////////////////////
-            QTableMetaData tableMetaData = getInstance().qInstance.getTable(tableName);
-            InsertInput    insertInput   = new InsertInput();
-            insertInput.setTableName(QQQTable.TABLE_NAME);
-            insertInput.setRecords(List.of(new QRecord().withValue("name", tableName).withValue("label", tableMetaData.getLabel())));
-            InsertOutput insertOutput = new InsertAction().execute(insertInput);
-
-            ///////////////////////////////////
-            // repeat the get from the cache //
-            ///////////////////////////////////
-            getOutput = new GetAction().execute(getInput);
-         }
-
-         return getOutput.getRecord().getValueInteger("id");
-      }
    }
 
 

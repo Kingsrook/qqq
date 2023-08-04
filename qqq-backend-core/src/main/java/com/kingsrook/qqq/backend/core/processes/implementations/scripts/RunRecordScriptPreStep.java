@@ -22,31 +22,27 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 
 
-import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
-import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** Extract step for the run-record process.  Exists only to deal with this being
+ ** pre-step for the run-record-script process.  Help deal with this being
  ** a generic process (e.g., no table name defined in the meta data).
  *******************************************************************************/
-public class RunRecordScriptExtractStep extends ExtractViaQueryStep
+public class RunRecordScriptPreStep implements BackendStep
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
-   public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // this is a generic (e.g., not table-specific) process - so we must be sure to set the tableName field in the expected slot. //
@@ -57,36 +53,12 @@ public class RunRecordScriptExtractStep extends ExtractViaQueryStep
          throw (new QException("Table name was not specified as input value"));
       }
 
-      runBackendStepInput.addValue(FIELD_SOURCE_TABLE, tableName);
+      runBackendStepInput.addValue(StreamedETLProcess.FIELD_SOURCE_TABLE, tableName);
 
       /////////////////////////////////////////////////////////////////
       // set this value, for the select-script possible-value filter //
       /////////////////////////////////////////////////////////////////
       runBackendStepInput.addValue("qqqTableId", QQQTableAccessor.getQQQTableId(tableName));
-
-      Integer  scriptId = runBackendStepInput.getValueInteger("scriptId");
-      GetInput getInput = new GetInput();
-      getInput.setTableName(Script.TABLE_NAME);
-      getInput.setPrimaryKey(scriptId);
-      GetOutput getOutput = new GetAction().execute(getInput);
-      if(getOutput.getRecord() != null)
-      {
-         runBackendStepOutput.addValue("scriptName", getOutput.getRecord().getValueString("name"));
-      }
-
-      super.preRun(runBackendStepInput, runBackendStepOutput);
-   }
-
-
-
-   /*******************************************************************************
-    ** Make sure associations are fetched (so api records have children!)
-    *******************************************************************************/
-   @Override
-   protected void customizeInputPreQuery(QueryInput queryInput)
-   {
-      super.customizeInputPreQuery(queryInput);
-      queryInput.setIncludeAssociations(true);
    }
 
 }

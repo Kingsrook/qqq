@@ -27,9 +27,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 
 
 /*******************************************************************************
@@ -48,8 +48,8 @@ public class TableTrigger extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
-   private String tableName;
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer qqqTableId;
 
    @QField(possibleValueSourceName = SavedFilter.TABLE_NAME)
    private Integer filterId;
@@ -186,40 +186,6 @@ public class TableTrigger extends QRecordEntity
    public TableTrigger withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for tableName
-    **
-    *******************************************************************************/
-   public String getTableName()
-   {
-      return tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for tableName
-    **
-    *******************************************************************************/
-   public void setTableName(String tableName)
-   {
-      this.tableName = tableName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for tableName
-    **
-    *******************************************************************************/
-   public TableTrigger withTableName(String tableName)
-   {
-      this.tableName = tableName;
       return (this);
    }
 
@@ -387,6 +353,37 @@ public class TableTrigger extends QRecordEntity
    public TableTrigger withPriority(Integer priority)
    {
       this.priority = priority;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qqqTableId
+    *******************************************************************************/
+   public Integer getQqqTableId()
+   {
+      return (this.qqqTableId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qqqTableId
+    *******************************************************************************/
+   public void setQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qqqTableId
+    *******************************************************************************/
+   public TableTrigger withQqqTableId(Integer qqqTableId)
+   {
+      this.qqqTableId = qqqTableId;
       return (this);
    }
 
