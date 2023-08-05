@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -52,7 +52,7 @@ class QJavalinAccessLoggerTest
     **
     *******************************************************************************/
    @Test
-   void testDefaultOn() throws QInstanceValidationException
+   void testDefaultOn() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
       new QJavalinImplementation(qInstance, new QJavalinMetaData());
@@ -74,7 +74,7 @@ class QJavalinAccessLoggerTest
     **
     *******************************************************************************/
    @Test
-   void testTurnedOffByCode() throws QInstanceValidationException
+   void testTurnedOffByCode() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
       new QJavalinImplementation(qInstance, new QJavalinMetaData()
@@ -97,7 +97,7 @@ class QJavalinAccessLoggerTest
     **
     *******************************************************************************/
    @Test
-   void testTurnedOffBySystemPropertyWithJavalinMetaData() throws QInstanceValidationException
+   void testTurnedOffBySystemPropertyWithJavalinMetaData() throws QException
    {
       System.setProperty(DISABLED_PROPERTY, "true");
       QInstance qInstance = TestUtils.defineInstance();
@@ -114,7 +114,7 @@ class QJavalinAccessLoggerTest
     **
     *******************************************************************************/
    @Test
-   void testTurnedOffBySystemPropertyWithoutJavalinMetaData() throws QInstanceValidationException
+   void testTurnedOffBySystemPropertyWithoutJavalinMetaData() throws QException
    {
       System.setProperty(DISABLED_PROPERTY, "true");
       QInstance qInstance = TestUtils.defineInstance();
@@ -131,7 +131,7 @@ class QJavalinAccessLoggerTest
     **
     *******************************************************************************/
    @Test
-   void testFilter() throws QInstanceValidationException
+   void testFilter() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
       new QJavalinImplementation(qInstance, new QJavalinMetaData()

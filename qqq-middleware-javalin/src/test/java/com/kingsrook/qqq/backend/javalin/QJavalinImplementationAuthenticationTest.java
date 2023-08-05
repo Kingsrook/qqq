@@ -27,7 +27,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAuthenticationMetaData;
@@ -61,7 +61,7 @@ public class QJavalinImplementationAuthenticationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @BeforeEach
-   public void beforeEach() throws QInstanceValidationException
+   public void beforeEach() throws QException
    {
       Unirest.config().reset().enableCookieManagement(false);
       setupTableBasedAuthenticationInstance();
@@ -188,7 +188,7 @@ public class QJavalinImplementationAuthenticationTest extends QJavalinTestBase
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void setupTableBasedAuthenticationInstance() throws QInstanceValidationException
+   static void setupTableBasedAuthenticationInstance() throws QException
    {
       QInstance                        qInstance                        = TestUtils.defineInstance();
       TableBasedAuthenticationMetaData tableBasedAuthenticationMetaData = new TableBasedAuthenticationMetaData();

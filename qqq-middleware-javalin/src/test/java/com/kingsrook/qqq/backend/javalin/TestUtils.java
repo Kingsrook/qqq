@@ -68,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFiltersMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -138,7 +139,7 @@ public class TestUtils
     ** Define the q-instance for testing (h2 rdbms and 'person' table)
     **
     *******************************************************************************/
-   public static QInstance defineInstance()
+   public static QInstance defineInstance() throws QException
    {
       QInstance qInstance = new QInstance();
       qInstance.setAuthentication(defineAuthentication());
@@ -153,6 +154,8 @@ public class TestUtils
       qInstance.addReport(definePersonsReport());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
+
+      new QQQTablesMetaDataProvider().defineAll(qInstance, BACKEND_NAME_MEMORY, BACKEND_NAME_MEMORY, null);
 
       qInstance.addBackend(defineMemoryBackend());
       try

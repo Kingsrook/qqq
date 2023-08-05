@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
@@ -60,7 +61,7 @@ public class QJavalinTestBase
     **
     *******************************************************************************/
    @BeforeAll
-   public static void beforeAll() throws QInstanceValidationException
+   public static void beforeAll() throws QException
    {
       qJavalinImplementation = new QJavalinImplementation(TestUtils.defineInstance());
       QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
