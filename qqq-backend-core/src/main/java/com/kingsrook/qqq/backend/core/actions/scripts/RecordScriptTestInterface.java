@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -83,7 +84,7 @@ public class RecordScriptTestInterface implements TestScriptActionInterface
          //////////////////////////////////////////////
          // look up the records being tested against //
          //////////////////////////////////////////////
-         String         tableName = script.getValueString("tableName");
+         String         tableName = QQQTableAccessor.getQQQTableName(script.getValueInteger("qqqTableId"));
          QTableMetaData table     = QContext.getQInstance().getTable(tableName);
          if(table == null)
          {

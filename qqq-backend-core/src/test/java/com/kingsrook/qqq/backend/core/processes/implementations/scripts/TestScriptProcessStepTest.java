@@ -37,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptType;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,6 +60,8 @@ class TestScriptProcessStepTest extends BaseTest
    {
       QInstance qInstance = QContext.getQInstance();
       new ScriptsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
+
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(ScriptType.TABLE_NAME);
       insertInput.setRecords(List.of(new ScriptType()
@@ -71,7 +75,7 @@ class TestScriptProcessStepTest extends BaseTest
       insertInput.setRecords(List.of(new Script()
          .withName("TestScript")
          .withScriptTypeId(insertOutput.getRecords().get(0).getValueInteger("id"))
-         .withQqqTableId(1)
+         .withQqqTableId(QQQTableAccessor.getQQQTableId(TestUtils.TABLE_NAME_SHAPE))
          .toQRecord()));
       insertOutput = new InsertAction().execute(insertInput);
 
@@ -89,7 +93,10 @@ class TestScriptProcessStepTest extends BaseTest
       // expect an error because the javascript module isn't available //
       //////////////////////////////////////////////////////////////////
       assertNotNull(output.getValue("exception"));
-      assertThat((Exception) output.getValue("exception")).hasRootCauseInstanceOf(ClassNotFoundException.class);
+      assertThat((Exception) output.getValue("exception"))
+         .hasRootCauseInstanceOf(ClassNotFoundException.class)
+         .rootCause()
+         .hasMessageContaining("QJavaScriptExecutor");
    }
 
 }

@@ -37,7 +37,9 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
- **
+ ** One-liner we can use to get a QQQTable record, or just its id (which we often want).
+ ** Will insert the record if it wasn't already there.
+ ** Also uses in-memory cache table, so rather cheap for normal use-case.
  *******************************************************************************/
 public class QQQTableAccessor
 {
@@ -83,9 +85,53 @@ public class QQQTableAccessor
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static QRecord getQQQTableRecord(Integer id) throws QException
+   {
+      /////////////////////////////
+      // look in the cache table //
+      /////////////////////////////
+      GetInput getInput = new GetInput();
+      getInput.setTableName(QQQTablesMetaDataProvider.QQQ_TABLE_CACHE_TABLE_NAME);
+      getInput.setPrimaryKey(id);
+      GetOutput getOutput = new GetAction().execute(getInput);
+
+      ////////////////////////
+      // upon cache miss... //
+      ////////////////////////
+      if(getOutput.getRecord() == null)
+      {
+         GetInput sourceGetInput = new GetInput();
+         sourceGetInput.setTableName(QQQTable.TABLE_NAME);
+         sourceGetInput.setPrimaryKey(id);
+         GetOutput sourceGetOutput = new GetAction().execute(sourceGetInput);
+
+         ///////////////////////////////////
+         // repeat the get from the cache //
+         ///////////////////////////////////
+         getOutput = new GetAction().execute(sourceGetInput);
+      }
+
+      return getOutput.getRecord();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static Integer getQQQTableId(String tableName) throws QException
    {
       return (getQQQTableRecord(tableName).getValueInteger("id"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getQQQTableName(Integer id) throws QException
+   {
+      return (getQQQTableRecord(id).getValueString("name"));
    }
 
 }
