@@ -157,7 +157,7 @@ public class QRecordApiAdapter
     *******************************************************************************/
    private static boolean isAssociationOmitted(String apiName, String apiVersion, QTableMetaData table, Association association)
    {
-      ApiTableMetaData       thisApiTableMetaData   = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(table).getApiTableMetaData(apiName), new ApiTableMetaData());
+      ApiTableMetaData       thisApiTableMetaData   = ObjectUtils.tryAndRequireNonNullElse(() -> ApiTableMetaDataContainer.of(table).getApiTableMetaData(apiName), new ApiTableMetaData());
       ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
       if(apiAssociationMetaData != null)
       {
