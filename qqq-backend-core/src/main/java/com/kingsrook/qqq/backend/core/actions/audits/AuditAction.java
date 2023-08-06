@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTableAccessor;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 
@@ -177,7 +178,6 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                ////////////////////////////////////////////////
                // map names to ids and handle default values //
                ////////////////////////////////////////////////
-               Integer auditTableId = getIdForName("auditTable", auditSingleInput.getAuditTableName());
                Integer auditUserId  = getIdForName("auditUser", Objects.requireNonNullElse(auditSingleInput.getAuditUserName(), getSessionUserName()));
                Instant timestamp    = Objects.requireNonNullElse(auditSingleInput.getTimestamp(), Instant.now());
 
@@ -185,7 +185,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                // build record //
                //////////////////
                QRecord record = new QRecord()
-                  .withValue("auditTableId", auditTableId)
+                  .withValue("tableId", QQQTableAccessor.getTableId(auditSingleInput.getAuditTableName()))
                   .withValue("auditUserId", auditUserId)
                   .withValue("timestamp", timestamp)
                   .withValue("message", auditSingleInput.getMessage())
@@ -286,15 +286,6 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             InsertInput insertInput = new InsertInput();
             insertInput.setTableName(tableName);
             QRecord record = new QRecord().withValue("name", nameValue);
-
-            if(tableName.equals("auditTable"))
-            {
-               QTableMetaData table = QContext.getQInstance().getTable(nameValue);
-               if(table != null)
-               {
-                  record.setValue("label", table.getLabel());
-               }
-            }
 
             insertInput.setRecords(List.of(record));
             InsertOutput insertOutput = new InsertAction().execute(insertInput);

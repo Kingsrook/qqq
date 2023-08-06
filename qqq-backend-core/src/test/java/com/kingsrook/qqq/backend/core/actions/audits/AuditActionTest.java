@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
+import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,7 @@ class AuditActionTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
@@ -69,7 +71,6 @@ class AuditActionTest extends BaseTest
       /////////////////////////////////////
       // make sure things can be fetched //
       /////////////////////////////////////
-      GeneralProcessUtils.getRecordByFieldOrElseThrow("auditTable", "name", TestUtils.TABLE_NAME_PERSON_MEMORY);
       GeneralProcessUtils.getRecordByFieldOrElseThrow("auditUser", "name", userName);
       QRecord auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId);
       assertEquals("Test Audit", auditRecord.getValueString("message"));
@@ -85,6 +86,7 @@ class AuditActionTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
@@ -123,6 +125,7 @@ class AuditActionTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
@@ -137,7 +140,6 @@ class AuditActionTest extends BaseTest
       /////////////////////////////////////
       // make sure things can be fetched //
       /////////////////////////////////////
-      GeneralProcessUtils.getRecordByFieldOrElseThrow("auditTable", "name", TestUtils.TABLE_NAME_PERSON_MEMORY);
       GeneralProcessUtils.getRecordByFieldOrElseThrow("auditUser", "name", userName);
       QRecord auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId1);
       assertEquals("Test Audit", auditRecord.getValueString("message"));
@@ -157,6 +159,7 @@ class AuditActionTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
       new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      new QQQTablesMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
@@ -173,7 +176,6 @@ class AuditActionTest extends BaseTest
       /////////////////////////////////////
       // make sure things can be fetched //
       /////////////////////////////////////
-      GeneralProcessUtils.getRecordByFieldOrElseThrow("auditTable", "name", TestUtils.TABLE_NAME_PERSON_MEMORY);
       GeneralProcessUtils.getRecordByFieldOrElseThrow("auditUser", "name", userName);
       QRecord auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId1);
       assertEquals("Test Audit", auditRecord.getValueString("message"));
