@@ -62,7 +62,7 @@ public class RunRecordScriptExtractStep extends ExtractViaQueryStep
       /////////////////////////////////////////////////////////////////
       // set this value, for the select-script possible-value filter //
       /////////////////////////////////////////////////////////////////
-      runBackendStepInput.addValue("qqqTableId", QQQTableAccessor.getQQQTableId(tableName));
+      runBackendStepInput.addValue("tableId", QQQTableAccessor.getTableId(tableName));
 
       Integer  scriptId = runBackendStepInput.getValueInteger("scriptId");
       GetInput getInput = new GetInput();

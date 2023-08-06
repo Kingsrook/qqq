@@ -75,7 +75,7 @@ class TestScriptProcessStepTest extends BaseTest
       insertInput.setRecords(List.of(new Script()
          .withName("TestScript")
          .withScriptTypeId(insertOutput.getRecords().get(0).getValueInteger("id"))
-         .withQqqTableId(QQQTableAccessor.getQQQTableId(TestUtils.TABLE_NAME_SHAPE))
+         .withTableId(QQQTableAccessor.getTableId(TestUtils.TABLE_NAME_SHAPE))
          .toQRecord()));
       insertOutput = new InsertAction().execute(insertInput);
 

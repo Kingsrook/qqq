@@ -49,7 +49,7 @@ public class TableTrigger extends QRecordEntity
    private Instant modifyDate;
 
    @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
-   private Integer qqqTableId;
+   private Integer tableId;
 
    @QField(possibleValueSourceName = SavedFilter.TABLE_NAME)
    private Integer filterId;
@@ -359,31 +359,31 @@ public class TableTrigger extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for qqqTableId
+    ** Getter for tableId
     *******************************************************************************/
-   public Integer getQqqTableId()
+   public Integer getTableId()
    {
-      return (this.qqqTableId);
+      return (this.tableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for qqqTableId
+    ** Setter for tableId
     *******************************************************************************/
-   public void setQqqTableId(Integer qqqTableId)
+   public void setTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for qqqTableId
+    ** Fluent setter for tableId
     *******************************************************************************/
-   public TableTrigger withQqqTableId(Integer qqqTableId)
+   public TableTrigger withTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
       return (this);
    }
 

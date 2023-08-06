@@ -271,7 +271,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          QueryInput queryInput = new QueryInput();
          queryInput.setTableName(TableTrigger.TABLE_NAME);
          queryInput.setFilter(new QQueryFilter(
-            new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getQQQTableId(table.getName())),
+            new QFilterCriteria("tableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getTableId(table.getName())),
             new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
          ));
          QueryOutput queryOutput = new QueryAction().execute(queryInput);

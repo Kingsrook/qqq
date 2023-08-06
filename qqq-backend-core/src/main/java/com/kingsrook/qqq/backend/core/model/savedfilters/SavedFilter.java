@@ -50,7 +50,7 @@ public class SavedFilter extends QRecordEntity
    private String label;
 
    @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
-   private Integer qqqTableId;
+   private Integer tableId;
 
    @QField(isEditable = false)
    private String userId;
@@ -250,31 +250,31 @@ public class SavedFilter extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for qqqTableId
+    ** Getter for tableId
     *******************************************************************************/
-   public Integer getQqqTableId()
+   public Integer getTableId()
    {
-      return (this.qqqTableId);
+      return (this.tableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for qqqTableId
+    ** Setter for tableId
     *******************************************************************************/
-   public void setQqqTableId(Integer qqqTableId)
+   public void setTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for qqqTableId
+    ** Fluent setter for tableId
     *******************************************************************************/
-   public SavedFilter withQqqTableId(Integer qqqTableId)
+   public SavedFilter withTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
       return (this);
    }
 

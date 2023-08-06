@@ -58,7 +58,7 @@ public class RunRecordScriptPreStep implements BackendStep
       /////////////////////////////////////////////////////////////////
       // set this value, for the select-script possible-value filter //
       /////////////////////////////////////////////////////////////////
-      runBackendStepInput.addValue("qqqTableId", QQQTableAccessor.getQQQTableId(tableName));
+      runBackendStepInput.addValue("tableId", QQQTableAccessor.getTableId(tableName));
    }
 
 }

@@ -188,7 +188,7 @@ public class ScriptsMetaDataProvider
          .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME)
             .withPossibleValueSourceFilter(new QQueryFilter(
                new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
-               new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
+               new QFilterCriteria("tableId", QCriteriaOperator.EQUALS, "${input.tableId}")
             ))));
 
       /////////////////////////////////////////////////////////////////////////////////
@@ -398,16 +398,16 @@ public class ScriptsMetaDataProvider
       QTableMetaData tableMetaData = defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
          .withRecordLabelFields("id")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id")))
-         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("qqqTableId", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
+         .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2, List.of("tableId", "filterId", "scriptId", "priority", "postInsert", "postUpdate")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       tableMetaData.getField("scriptId").withPossibleValueSourceFilter(new QQueryFilter(
          new QFilterCriteria("scriptType.name", QCriteriaOperator.EQUALS, SCRIPT_TYPE_NAME_RECORD),
-         new QFilterCriteria("script.qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
+         new QFilterCriteria("script.tableId", QCriteriaOperator.EQUALS, "${input.tableId}")
       ));
 
       tableMetaData.getField("filterId").withPossibleValueSourceFilter(new QQueryFilter(
-         new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, "${input.qqqTableId}")
+         new QFilterCriteria("tableId", QCriteriaOperator.EQUALS, "${input.tableId}")
       ));
 
       return tableMetaData;
@@ -422,7 +422,7 @@ public class ScriptsMetaDataProvider
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, Script.TABLE_NAME, Script.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "name", "scriptTypeId", "currentScriptRevisionId")))
-         .withSection(new QFieldSection("recordScriptSettings", new QIcon().withName("table_rows"), Tier.T2, List.of("qqqTableId", "maxBatchSize")))
+         .withSection(new QFieldSection("recordScriptSettings", new QIcon().withName("table_rows"), Tier.T2, List.of("tableId", "maxBatchSize")))
          .withSection(new QFieldSection("contents", new QIcon().withName("data_object"), Tier.T2).withWidgetName("scriptViewer"))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
          .withSection(new QFieldSection("lines", new QIcon().withName("horizontal_rule"), Tier.T2).withWidgetName(QJoinMetaData.makeInferredJoinName(Script.TABLE_NAME, ScriptLog.TABLE_NAME)));

@@ -172,7 +172,7 @@ public class RecordAutomationStatusUpdater
          CountInput countInput = new CountInput();
          countInput.setTableName(TableTrigger.TABLE_NAME);
          countInput.setFilter(new QQueryFilter(
-            new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getQQQTableId(table.getName())),
+            new QFilterCriteria("tableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getTableId(table.getName())),
             new QFilterCriteria(triggerEvent.equals(TriggerEvent.POST_INSERT) ? "postInsert" : "postUpdate", QCriteriaOperator.EQUALS, true)
          ));
          CountOutput countOutput = new CountAction().execute(countInput);

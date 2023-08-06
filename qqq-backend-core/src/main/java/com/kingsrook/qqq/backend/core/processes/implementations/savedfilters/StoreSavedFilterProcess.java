@@ -83,7 +83,7 @@ public class StoreSavedFilterProcess implements BackendStep
          QRecord qRecord = new QRecord()
             .withValue("id", runBackendStepInput.getValueInteger("id"))
             .withValue("label", runBackendStepInput.getValueString("label"))
-            .withValue("qqqTableId", QQQTableAccessor.getQQQTableId(runBackendStepInput.getValueString("tableName")))
+            .withValue("tableId", QQQTableAccessor.getTableId(runBackendStepInput.getValueString("tableName")))
             .withValue("filterJson", runBackendStepInput.getValueString("filterJson"))
             .withValue("userId", runBackendStepInput.getSession().getUser().getIdReference());
 

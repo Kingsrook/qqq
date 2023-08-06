@@ -119,7 +119,7 @@ public class QQQTableAccessor
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Integer getQQQTableId(String tableName) throws QException
+   public static Integer getTableId(String tableName) throws QException
    {
       return (getQQQTableRecord(tableName).getValueInteger("id"));
    }
@@ -129,7 +129,7 @@ public class QQQTableAccessor
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static String getQQQTableName(Integer id) throws QException
+   public static String getTableName(Integer id) throws QException
    {
       return (getQQQTableRecord(id).getValueString("name"));
    }

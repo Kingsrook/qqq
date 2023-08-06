@@ -42,8 +42,8 @@ public class QueryStatOrderByField extends QRecordEntity
    @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
    private Integer queryStatId;
 
-   @QField(label = "Table", possibleValueSourceName = QQQTable.TABLE_NAME)
-   private Integer qqqTableId;
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer tableId;
 
    @QField(maxLength = 50, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String name;
@@ -132,31 +132,31 @@ public class QueryStatOrderByField extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for qqqTableId
+    ** Getter for tableId
     *******************************************************************************/
-   public Integer getQqqTableId()
+   public Integer getTableId()
    {
-      return (this.qqqTableId);
+      return (this.tableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for qqqTableId
+    ** Setter for tableId
     *******************************************************************************/
-   public void setQqqTableId(Integer qqqTableId)
+   public void setTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for qqqTableId
+    ** Fluent setter for tableId
     *******************************************************************************/
-   public QueryStatOrderByField withQqqTableId(Integer qqqTableId)
+   public QueryStatOrderByField withTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
       return (this);
    }
 

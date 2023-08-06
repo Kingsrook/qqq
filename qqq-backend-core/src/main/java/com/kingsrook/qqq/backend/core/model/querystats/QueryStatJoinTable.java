@@ -42,8 +42,8 @@ public class QueryStatJoinTable extends QRecordEntity
    @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
    private Integer queryStatId;
 
-   @QField(label = "Table", possibleValueSourceName = QQQTable.TABLE_NAME)
-   private Integer qqqTableId;
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   private Integer tableId;
 
    @QField(maxLength = 10, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
    private String type;
@@ -132,31 +132,31 @@ public class QueryStatJoinTable extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for qqqTableId
+    ** Getter for tableId
     *******************************************************************************/
-   public Integer getQqqTableId()
+   public Integer getTableId()
    {
-      return (this.qqqTableId);
+      return (this.tableId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for qqqTableId
+    ** Setter for tableId
     *******************************************************************************/
-   public void setQqqTableId(Integer qqqTableId)
+   public void setTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for qqqTableId
+    ** Fluent setter for tableId
     *******************************************************************************/
-   public QueryStatJoinTable withQqqTableId(Integer qqqTableId)
+   public QueryStatJoinTable withTableId(Integer tableId)
    {
-      this.qqqTableId = qqqTableId;
+      this.tableId = tableId;
       return (this);
    }
 

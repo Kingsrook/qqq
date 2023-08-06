@@ -101,7 +101,7 @@ public class QuerySavedFilterProcess implements BackendStep
             QueryInput input = new QueryInput();
             input.setTableName(SavedFilter.TABLE_NAME);
             input.setFilter(new QQueryFilter()
-               .withCriteria(new QFilterCriteria("qqqTableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getQQQTableId(tableName)))
+               .withCriteria(new QFilterCriteria("tableId", QCriteriaOperator.EQUALS, QQQTableAccessor.getTableId(tableName)))
                .withOrderBy(new QFilterOrderBy("label")));
 
             QueryOutput output = new QueryAction().execute(input);

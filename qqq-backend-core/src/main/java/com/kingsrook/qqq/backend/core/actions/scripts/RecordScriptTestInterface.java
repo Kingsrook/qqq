@@ -84,7 +84,7 @@ public class RecordScriptTestInterface implements TestScriptActionInterface
          //////////////////////////////////////////////
          // look up the records being tested against //
          //////////////////////////////////////////////
-         String         tableName = QQQTableAccessor.getQQQTableName(script.getValueInteger("qqqTableId"));
+         String         tableName = QQQTableAccessor.getTableName(script.getValueInteger("tableId"));
          QTableMetaData table     = QContext.getQInstance().getTable(tableName);
          if(table == null)
          {

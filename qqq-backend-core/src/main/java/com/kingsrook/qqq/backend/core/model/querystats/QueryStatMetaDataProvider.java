@@ -121,7 +121,7 @@ public class QueryStatMetaDataProvider
          .withRecordLabelFields("id")
          .withPrimaryKeyField("id")
          .withFieldsFromEntity(QueryStat.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "action", "qqqTableId", "sessionId")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "action", "tableId", "sessionId")))
          .withSection(new QFieldSection("data", new QIcon().withName("dataset"), Tier.T2, List.of("queryText", "startTimestamp", "firstResultTimestamp", "firstResultMillis")))
          .withSection(new QFieldSection("joins", new QIcon().withName("merge"), Tier.T2).withWidgetName(joinTablesJoinName + "Widget"))
          .withSection(new QFieldSection("criteria", new QIcon().withName("filter_alt"), Tier.T2).withWidgetName(criteriaFieldsJoinName + "Widget"))

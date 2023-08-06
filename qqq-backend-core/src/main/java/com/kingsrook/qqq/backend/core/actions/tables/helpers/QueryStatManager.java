@@ -357,8 +357,8 @@ public class QueryStatManager
                   //////////////////////
                   // set the table id //
                   //////////////////////
-                  Integer qqqTableId = QQQTableAccessor.getQQQTableId(queryStat.getTableName());
-                  queryStat.setQqqTableId(qqqTableId);
+                  Integer tableId = QQQTableAccessor.getTableId(queryStat.getTableName());
+                  queryStat.setTableId(tableId);
 
                   //////////////////////////////
                   // build join-table records //
@@ -368,7 +368,7 @@ public class QueryStatManager
                      List<QueryStatJoinTable> queryStatJoinTableList = new ArrayList<>();
                      for(String joinTableName : queryStat.getJoinTableNames())
                      {
-                        queryStatJoinTableList.add(new QueryStatJoinTable().withQqqTableId(QQQTableAccessor.getQQQTableId(joinTableName)));
+                        queryStatJoinTableList.add(new QueryStatJoinTable().withTableId(QQQTableAccessor.getTableId(joinTableName)));
                      }
                      queryStat.setQueryStatJoinTableList(queryStatJoinTableList);
                   }
@@ -379,14 +379,14 @@ public class QueryStatManager
                   if(queryStat.getQueryFilter() != null && queryStat.getQueryFilter().hasAnyCriteria())
                   {
                      List<QueryStatCriteriaField> queryStatCriteriaFieldList = new ArrayList<>();
-                     processCriteriaFromFilter(qqqTableId, queryStatCriteriaFieldList, queryStat.getQueryFilter());
+                     processCriteriaFromFilter(tableId, queryStatCriteriaFieldList, queryStat.getQueryFilter());
                      queryStat.setQueryStatCriteriaFieldList(queryStatCriteriaFieldList);
                   }
 
                   if(CollectionUtils.nullSafeHasContents(queryStat.getQueryFilter().getOrderBys()))
                   {
                      List<QueryStatOrderByField> queryStatOrderByFieldList = new ArrayList<>();
-                     processOrderByFromFilter(qqqTableId, queryStatOrderByFieldList, queryStat.getQueryFilter());
+                     processOrderByFromFilter(tableId, queryStatOrderByFieldList, queryStat.getQueryFilter());
                      queryStat.setQueryStatOrderByFieldList(queryStatOrderByFieldList);
                   }
 
@@ -428,7 +428,7 @@ public class QueryStatManager
       /*******************************************************************************
        **
        *******************************************************************************/
-      private static void processCriteriaFromFilter(Integer qqqTableId, List<QueryStatCriteriaField> queryStatCriteriaFieldList, QQueryFilter queryFilter) throws QException
+      private static void processCriteriaFromFilter(Integer tableId, List<QueryStatCriteriaField> queryStatCriteriaFieldList, QQueryFilter queryFilter) throws QException
       {
          for(QFilterCriteria criteria : CollectionUtils.nonNullList(queryFilter.getCriteria()))
          {
@@ -446,13 +446,13 @@ public class QueryStatManager
                String[] parts = fieldName.split("\\.");
                if(parts.length > 1)
                {
-                  queryStatCriteriaField.setQqqTableId(QQQTableAccessor.getQQQTableId(parts[0]));
+                  queryStatCriteriaField.setTableId(QQQTableAccessor.getTableId(parts[0]));
                   queryStatCriteriaField.setName(parts[1]);
                }
             }
             else
             {
-               queryStatCriteriaField.setQqqTableId(qqqTableId);
+               queryStatCriteriaField.setTableId(tableId);
                queryStatCriteriaField.setName(fieldName);
             }
 
@@ -461,7 +461,7 @@ public class QueryStatManager
 
          for(QQueryFilter subFilter : CollectionUtils.nonNullList(queryFilter.getSubFilters()))
          {
-            processCriteriaFromFilter(qqqTableId, queryStatCriteriaFieldList, subFilter);
+            processCriteriaFromFilter(tableId, queryStatCriteriaFieldList, subFilter);
          }
       }
 
@@ -470,7 +470,7 @@ public class QueryStatManager
       /*******************************************************************************
        **
        *******************************************************************************/
-      private static void processOrderByFromFilter(Integer qqqTableId, List<QueryStatOrderByField> queryStatOrderByFieldList, QQueryFilter queryFilter) throws QException
+      private static void processOrderByFromFilter(Integer tableId, List<QueryStatOrderByField> queryStatOrderByFieldList, QQueryFilter queryFilter) throws QException
       {
          for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
          {
@@ -484,13 +484,13 @@ public class QueryStatManager
                   String[] parts = fieldName.split("\\.");
                   if(parts.length > 1)
                   {
-                     queryStatOrderByField.setQqqTableId(QQQTableAccessor.getQQQTableId(parts[0]));
+                     queryStatOrderByField.setTableId(QQQTableAccessor.getTableId(parts[0]));
                      queryStatOrderByField.setName(parts[1]);
                   }
                }
                else
                {
-                  queryStatOrderByField.setQqqTableId(qqqTableId);
+                  queryStatOrderByField.setTableId(tableId);
                   queryStatOrderByField.setName(fieldName);
                }
 
