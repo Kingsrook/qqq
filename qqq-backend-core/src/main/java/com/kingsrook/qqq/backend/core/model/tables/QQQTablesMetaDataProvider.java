@@ -50,9 +50,20 @@ public class QQQTablesMetaDataProvider
     *******************************************************************************/
    public void defineAll(QInstance instance, String persistentBackendName, String cacheBackendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      instance.addTable(defineQQQTable(persistentBackendName, backendDetailEnricher));
-      instance.addTable(defineQQQTableCache(cacheBackendName, backendDetailEnricher));
-      instance.addPossibleValueSource(defineQQQTablePossibleValueSource());
+      if(instance.getTable(QQQTable.TABLE_NAME) == null)
+      {
+         instance.addTable(defineQQQTable(persistentBackendName, backendDetailEnricher));
+      }
+
+      if(instance.getTable(QQQ_TABLE_CACHE_TABLE_NAME) == null)
+      {
+         instance.addTable(defineQQQTableCache(cacheBackendName, backendDetailEnricher));
+      }
+
+      if(instance.getPossibleValueSource(QQQTable.TABLE_NAME) == null)
+      {
+         instance.addPossibleValueSource(defineQQQTablePossibleValueSource());
+      }
    }
 
 
