@@ -42,7 +42,7 @@ public class QueryStatJoinTable extends QRecordEntity
    @QField(possibleValueSourceName = QueryStat.TABLE_NAME)
    private Integer queryStatId;
 
-   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME, backendName = "qqq_table_id")
    private Integer tableId;
 
    @QField(maxLength = 10, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)

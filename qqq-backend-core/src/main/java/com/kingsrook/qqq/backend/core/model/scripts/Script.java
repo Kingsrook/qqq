@@ -52,7 +52,7 @@ public class Script extends QRecordEntity
    @QField(possibleValueSourceName = "scriptType")
    private Integer scriptTypeId;
 
-   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME, backendName = "qqq_table_id")
    private Integer tableId;
 
    @QField()

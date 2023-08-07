@@ -49,7 +49,7 @@ public class SavedFilter extends QRecordEntity
    @QField(isRequired = true)
    private String label;
 
-   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME, backendName = "qqq_table_id")
    private Integer tableId;
 
    @QField(isEditable = false)

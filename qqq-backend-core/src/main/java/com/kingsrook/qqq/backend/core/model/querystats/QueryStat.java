@@ -53,7 +53,7 @@ public class QueryStat extends QRecordEntity
    @QField()
    private Integer firstResultMillis;
 
-   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME, backendName = "qqq_table_id")
    private Integer tableId;
 
    @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)

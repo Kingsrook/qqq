@@ -48,7 +48,7 @@ public class TableTrigger extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(possibleValueSourceName = QQQTable.TABLE_NAME)
+   @QField(possibleValueSourceName = QQQTable.TABLE_NAME, backendName = "qqq_table_id")
    private Integer tableId;
 
    @QField(possibleValueSourceName = SavedFilter.TABLE_NAME)
