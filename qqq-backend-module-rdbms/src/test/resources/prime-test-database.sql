@@ -84,6 +84,7 @@ DROP TABLE IF EXISTS line_item_extrinsic;
 DROP TABLE IF EXISTS order_line;
 DROP TABLE IF EXISTS item;
 DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS order_instructions;
 DROP TABLE IF EXISTS warehouse_store_int;
 DROP TABLE IF EXISTS store;
 DROP TABLE IF EXISTS warehouse;
@@ -123,7 +124,8 @@ CREATE TABLE `order`
    id INT AUTO_INCREMENT PRIMARY KEY,
    store_id INT REFERENCES store,
    bill_to_person_id INT,
-   ship_to_person_id INT
+   ship_to_person_id INT,
+   current_order_instructions_id INT -- f-key to order_instructions, which also has an f-key back here!
 );
 
 -- variable orders
@@ -135,6 +137,27 @@ INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES 
 INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (6, 3, 5, null);
 INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (7, 3, null, 5);
 INSERT INTO `order` (id, store_id, bill_to_person_id, ship_to_person_id) VALUES (8, 3, null, 5);
+
+CREATE TABLE order_instructions
+(
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   order_id INT,
+   instructions VARCHAR(250)
+);
+
+-- give orders 1 & 2 multiple versions of the instruction record
+INSERT INTO order_instructions (id, order_id, instructions) VALUES (1, 1, 'order 1 v1');
+INSERT INTO order_instructions (id, order_id, instructions) VALUES (2, 1, 'order 1 v2');
+UPDATE `order` SET current_order_instructions_id = 2 WHERE id=1;
+
+INSERT INTO order_instructions (id, order_id, instructions) VALUES (3, 2, 'order 2 v1');
+INSERT INTO order_instructions (id, order_id, instructions) VALUES (4, 2, 'order 2 v2');
+INSERT INTO order_instructions (id, order_id, instructions) VALUES (5, 2, 'order 2 v3');
+UPDATE `order` SET current_order_instructions_id = 5 WHERE id=2;
+
+-- give all other orders just 1 instruction
+INSERT INTO order_instructions (order_id, instructions) SELECT id, concat('order ', id, ' v1') FROM `order` WHERE current_order_instructions_id IS NULL;
+UPDATE `order` SET current_order_instructions_id = (SELECT MIN(id) FROM order_instructions WHERE order_id = `order`.id) WHERE current_order_instructions_id is null;
 
 CREATE TABLE order_line
 (
