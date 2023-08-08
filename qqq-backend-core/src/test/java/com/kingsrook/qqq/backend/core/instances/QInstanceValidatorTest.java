@@ -854,12 +854,15 @@ class QInstanceValidatorTest extends BaseTest
          table.getSections().get(0).getFieldNames().add(TestUtils.TABLE_NAME_ORDER + ".asdf");
       }, "order.asdf specifies a fieldName [asdf] which does not exist in that table [order].");
 
-      assertValidationFailureReasons(qInstance ->
-      {
-         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
-         putAllFieldsInASection.accept(table);
-         table.getSections().get(0).getFieldNames().add("foo.bar");
-      }, "unrecognized table name [foo]");
+      /////////////////////////////////////////////////////////////////////////////
+      // this is aactually allowed, well, just not considered as a join-field... //
+      /////////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons(qInstance ->
+      // {
+      //    QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      //    putAllFieldsInASection.accept(table);
+      //    table.getSections().get(0).getFieldNames().add("foo.bar");
+      // }, "unrecognized table name [foo]");
 
       assertValidationFailureReasons(qInstance ->
       {

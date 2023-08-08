@@ -1109,7 +1109,12 @@ public class QInstanceValidator
          {
             for(String fieldName : section.getFieldNames())
             {
-               if(fieldName.contains("."))
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // note - this was originally written as an assertion:                                                                                                                                       //
+               // if(assertCondition(qInstance.getTable(otherTableName) != null, sectionPrefix + "join-field " + fieldName + ", which is referencing an unrecognized table name [" + otherTableName + "]")) //
+               // but... then a field name with dots gives us a bad time here, so...                                                                                                                        //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(fieldName.contains(".") && qInstance.getTable(fieldName.split("\\.")[0]) != null)
                {
                   String[] parts            = fieldName.split("\\.");
                   String   otherTableName   = parts[0];
@@ -1120,7 +1125,7 @@ public class QInstanceValidator
                      List<ExposedJoin> matchedExposedJoins = CollectionUtils.nonNullList(table.getExposedJoins()).stream().filter(ej -> otherTableName.equals(ej.getJoinTable())).toList();
                      if(assertCondition(CollectionUtils.nullSafeHasContents(matchedExposedJoins), sectionPrefix + "join-field " + fieldName + ", referencing table [" + otherTableName + "] which is not an exposed join on this table."))
                      {
-                        assertCondition(!matchedExposedJoins.get(0).getIsMany(), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
+                        assertCondition(!matchedExposedJoins.get(0).getIsMany(qInstance), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
                      }
                      assertCondition(qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName), sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
                   }

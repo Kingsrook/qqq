@@ -62,7 +62,17 @@ public class ExposedJoin
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Boolean getIsMany()
+   public boolean getIsMany()
+   {
+      return (getIsMany(QContext.getQInstance()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Boolean getIsMany(QInstance qInstance)
    {
       if(isMany == null)
       {
@@ -70,8 +80,6 @@ public class ExposedJoin
          {
             try
             {
-               QInstance qInstance = QContext.getQInstance();
-
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // loop backward through the joinPath, starting at the join table (since we don't know the table that this exposedJoin is attached to!) //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,5 +212,4 @@ public class ExposedJoin
       this.joinPath = joinPath;
       return (this);
    }
-
 }
