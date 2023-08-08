@@ -29,12 +29,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
-import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -66,20 +64,6 @@ public class QRecordApiAdapter
 {
    private static final QLogger LOG = QLogger.getLogger(QRecordApiAdapter.class);
 
-   private static Map<ApiNameVersionAndTableName, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
-   private static Map<ApiNameVersionAndTableName, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
-
-
-
-   /*******************************************************************************
-    ** Allow tests (that manipulate meta-data) to clear field caches.
-    *******************************************************************************/
-   public static void clearCaches()
-   {
-      fieldListCache.clear();
-      fieldMapCache.clear();
-   }
-
 
 
    /*******************************************************************************
@@ -92,7 +76,7 @@ public class QRecordApiAdapter
          return (null);
       }
 
-      List<QFieldMetaData>                tableApiFields = getTableApiFieldList(new ApiNameVersionAndTableName(apiName, apiVersion, tableName));
+      List<QFieldMetaData>                tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
       LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
 
       /////////////////////////////////////////
@@ -111,7 +95,7 @@ public class QRecordApiAdapter
          else if(apiFieldMetaData.getCustomValueMapper() != null)
          {
             ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
-            value = customValueMapper.produceApiValue(record);
+            value = customValueMapper.produceApiValue(record, apiFieldName);
          }
          else
          {
@@ -185,7 +169,7 @@ public class QRecordApiAdapter
       ////////////////////////////////////////////////////////////////////////////////
       // make map of apiFieldNames (e.g., names as api uses them) to QFieldMetaData //
       ////////////////////////////////////////////////////////////////////////////////
-      Map<String, QFieldMetaData> apiFieldsMap           = getTableApiFieldMap(new ApiNameVersionAndTableName(apiName, apiVersion, tableName));
+      Map<String, QFieldMetaData> apiFieldsMap           = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
       List<String>                unrecognizedFieldNames = new ArrayList<>();
       QRecord                     qRecord                = new QRecord();
 
@@ -241,7 +225,7 @@ public class QRecordApiAdapter
             else if(apiFieldMetaData.getCustomValueMapper() != null)
             {
                ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
-               customValueMapper.consumeApiValue(qRecord, value, jsonObject);
+               customValueMapper.consumeApiValue(qRecord, value, jsonObject, jsonKey);
             }
             else
             {
@@ -332,7 +316,7 @@ public class QRecordApiAdapter
       {
          if(!supportedVersion.toString().equals(apiVersion))
          {
-            Map<String, QFieldMetaData> versionFields = getTableApiFieldMap(new ApiNameVersionAndTableName(apiName, supportedVersion.toString(), tableName));
+            Map<String, QFieldMetaData> versionFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, supportedVersion.toString(), tableName));
             if(versionFields.containsKey(unrecognizedFieldName))
             {
                versionsWithThisField.add(supportedVersion.toString());
@@ -348,47 +332,4 @@ public class QRecordApiAdapter
       return (null);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static Map<String, QFieldMetaData> getTableApiFieldMap(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
-   {
-      if(!fieldMapCache.containsKey(apiNameVersionAndTableName))
-      {
-         Map<String, QFieldMetaData> map = getTableApiFieldList(apiNameVersionAndTableName).stream().collect(Collectors.toMap(f -> (ApiFieldMetaData.getEffectiveApiFieldName(apiNameVersionAndTableName.apiName(), f)), f -> f));
-         fieldMapCache.put(apiNameVersionAndTableName, map);
-      }
-
-      return (fieldMapCache.get(apiNameVersionAndTableName));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static List<QFieldMetaData> getTableApiFieldList(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
-   {
-      if(!fieldListCache.containsKey(apiNameVersionAndTableName))
-      {
-         List<QFieldMetaData> value = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput()
-            .withTableName(apiNameVersionAndTableName.tableName())
-            .withVersion(apiNameVersionAndTableName.apiVersion())
-            .withApiName(apiNameVersionAndTableName.apiName())).getFields();
-         fieldListCache.put(apiNameVersionAndTableName, value);
-      }
-      return (fieldListCache.get(apiNameVersionAndTableName));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private record ApiNameVersionAndTableName(String apiName, String apiVersion, String tableName)
-   {
-
-   }
 }
