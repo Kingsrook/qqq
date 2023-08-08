@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -62,6 +63,7 @@ public class ExposedJoin
    /*******************************************************************************
     **
     *******************************************************************************/
+   @JsonIgnore
    public boolean getIsMany()
    {
       return (getIsMany(QContext.getQInstance()));
@@ -72,6 +74,7 @@ public class ExposedJoin
    /*******************************************************************************
     **
     *******************************************************************************/
+   @JsonIgnore
    public Boolean getIsMany(QInstance qInstance)
    {
       if(isMany == null)

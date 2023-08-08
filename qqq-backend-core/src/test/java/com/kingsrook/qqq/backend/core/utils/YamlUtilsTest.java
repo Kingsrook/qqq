@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ import org.junit.jupiter.api.Test;
 /*******************************************************************************
  ** Unit test for YamlUtils
  *******************************************************************************/
-class YamlUtilsTest
+class YamlUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
