@@ -475,22 +475,23 @@ public class QJavalinImplementation
       {
          Map<String, String> authenticationContext = new HashMap<>();
 
-         // todo delete String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
+         String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
          String sessionUuidCookieValue   = context.cookie(Auth0AuthenticationModule.SESSION_UUID_KEY);
          String authorizationHeaderValue = context.header("Authorization");
          String apiKeyHeaderValue        = context.header("x-api-key");
 
-         /* todo - change to sessionUUID.
          if(StringUtils.hasContent(sessionIdCookieValue))
          {
-            ////////////////////////////////////////
-            // first, look for a sessionId cookie //
-            ////////////////////////////////////////
+            ///////////////////////////////////////////////////////
+            // sessionId - maybe used by table-based auth module //
+            ///////////////////////////////////////////////////////
             authenticationContext.put(SESSION_ID_COOKIE_NAME, sessionIdCookieValue);
          }
-         else*/
-         if(StringUtils.hasContent(sessionUuidCookieValue))
+         else if(StringUtils.hasContent(sessionUuidCookieValue))
          {
+            ///////////////////////////////////////////////////////////////////////////
+            // session UUID - known to be used by auth0 module (in aug. 2023 update) //
+            ///////////////////////////////////////////////////////////////////////////
             authenticationContext.put(Auth0AuthenticationModule.SESSION_UUID_KEY, sessionUuidCookieValue);
          }
          else if(apiKeyHeaderValue != null)
