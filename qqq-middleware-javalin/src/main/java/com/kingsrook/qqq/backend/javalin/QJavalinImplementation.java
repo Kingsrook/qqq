@@ -160,8 +160,8 @@ public class QJavalinImplementation
    private static Supplier<QInstance> qInstanceHotSwapSupplier;
    private static long                lastQInstanceHotSwapMillis;
 
-   private static final long MILLIS_BETWEEN_HOT_SWAPS = 2500;
-   public static final  long SLOW_LOG_THRESHOLD_MS    = 1000;
+   private static      long MILLIS_BETWEEN_HOT_SWAPS = 2500;
+   public static final long SLOW_LOG_THRESHOLD_MS    = 1000;
 
    private static final Integer DEFAULT_COUNT_TIMEOUT_SECONDS = 60;
    private static final Integer DEFAULT_QUERY_TIMEOUT_SECONDS = 60;
@@ -1855,6 +1855,16 @@ public class QJavalinImplementation
    private static String joinErrorsWithCommasAndAnd(List<? extends QStatusMessage> errors)
    {
       return StringUtils.joinWithCommasAndAnd(errors.stream().map(QStatusMessage::getMessage).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void setMillisBetweenHotSwaps(long millisBetweenHotSwaps)
+   {
+      MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
 
 }

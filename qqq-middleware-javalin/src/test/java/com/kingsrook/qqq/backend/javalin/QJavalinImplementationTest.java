@@ -29,9 +29,17 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.eclipse.jetty.http.HttpStatus;
@@ -43,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -635,7 +644,8 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);
       assertEquals(1, jsonObject.getInt("deletedRecordCount"));
-      TestUtils.runTestSql("SELECT id FROM person", (rs -> {
+      TestUtils.runTestSql("SELECT id FROM person", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -830,6 +840,120 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertNotNull(jsonObject);
       assertTrue(jsonObject.has("name"));
       assertTrue(jsonObject.has("type"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testManageSession()
+   {
+      String body = """
+         {
+            "accessToken": "abcd",
+            "doStoreUserSession": true
+         }
+         """;
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/manageSession")
+         .header("Content-Type", "application/json")
+         .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertTrue(jsonObject.has("uuid"));
+      response.getHeaders().get("Set-Cookie").stream().anyMatch(s -> s.contains("sessionUUID"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testHotSwap()
+   {
+      Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
+      {
+         QInstance newInstance = new QInstance();
+         newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType("mock"));
+
+         if(!"invalid".equals(backendName))
+         {
+            newInstance.addTable(new QTableMetaData()
+               .withName("newTable")
+               .withBackendName(backendName)
+               .withField(new QFieldMetaData("newField", QFieldType.INTEGER))
+               .withPrimaryKeyField("newField")
+            );
+         }
+
+         return (newInstance);
+      };
+
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newBackend"));
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // make sure before a hot-swap, that the instance doesn't have our new backend //
+      /////////////////////////////////////////////////////////////////////////////////
+      assertNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
+
+      ///////////////////////////////////////////////////////
+      // do a hot-swap, make sure the new backend is there //
+      ///////////////////////////////////////////////////////
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNotNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now change to make a different backend - try to swap again - but the newer backend shouldn't be there, //
+      // because the millis-between-hot-swaps won't have passed                                                 //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // set the sleep threshold to 1 milli, sleep for 2, and then assert that we do swap again //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      QJavalinImplementation.setMillisBetweenHotSwaps(1);
+      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+      ////////////////////////////////////////////////////////////
+      // assert that an invalid instance doesn't get swapped in //
+      // e.g., "newerBackend" still exists                      //
+      ////////////////////////////////////////////////////////////
+      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("invalid"));
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+      ///////////////////////////////////////////////////////
+      // assert that if the supplier throws, we don't swap //
+      // e.g., "newerBackend" still exists                 //
+      ///////////////////////////////////////////////////////
+      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() ->
+      {
+         throw new RuntimeException("oops");
+      });
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+      /////////////////////////////////////////////////////////////
+      // assert that if the supplier returns null, we don't swap //
+      // e.g., "newerBackend" still exists                       //
+      /////////////////////////////////////////////////////////////
+      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> null);
+      QJavalinImplementation.hotSwapQInstance(null);
+      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
    }
 
 }
