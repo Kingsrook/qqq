@@ -125,7 +125,10 @@ public class ApiInstanceMetaData implements ApiOperation.EnabledOperationsProvid
             {
                if(BooleanUtils.isNotTrue(apiTableMetaData.getIsExcluded()))
                {
-                  validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version for api " + apiName);
+                  if(StringUtils.hasContent(apiTableMetaData.getInitialVersion()))
+                  {
+                     validator.assertCondition(allVersions.contains(new APIVersion(apiTableMetaData.getInitialVersion())), "Table " + table.getName() + "'s initial API version is not a recognized version for api " + apiName);
+                  }
                }
             }
          }

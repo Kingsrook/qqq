@@ -24,7 +24,10 @@ package com.kingsrook.qqq.api.actions;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
@@ -50,6 +53,65 @@ import org.apache.commons.lang.BooleanUtils;
  *******************************************************************************/
 public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApiFieldsInput, GetTableApiFieldsOutput>
 {
+   private static Map<ApiNameVersionAndTableName, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
+   private static Map<ApiNameVersionAndTableName, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
+
+
+
+   /*******************************************************************************
+    ** Allow tests (that manipulate meta-data) to clear field caches.
+    *******************************************************************************/
+   public static void clearCaches()
+   {
+      fieldListCache.clear();
+      fieldMapCache.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** convenience (and caching) wrapper
+    *******************************************************************************/
+   public static Map<String, QFieldMetaData> getTableApiFieldMap(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   {
+      if(!fieldMapCache.containsKey(apiNameVersionAndTableName))
+      {
+         Map<String, QFieldMetaData> map = getTableApiFieldList(apiNameVersionAndTableName).stream().collect(Collectors.toMap(f -> (ApiFieldMetaData.getEffectiveApiFieldName(apiNameVersionAndTableName.apiName(), f)), f -> f));
+         fieldMapCache.put(apiNameVersionAndTableName, map);
+      }
+
+      return (fieldMapCache.get(apiNameVersionAndTableName));
+   }
+
+
+
+   /*******************************************************************************
+    ** convenience (and caching) wrapper
+    *******************************************************************************/
+   public static List<QFieldMetaData> getTableApiFieldList(ApiNameVersionAndTableName apiNameVersionAndTableName) throws QException
+   {
+      if(!fieldListCache.containsKey(apiNameVersionAndTableName))
+      {
+         List<QFieldMetaData> value = new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput()
+            .withTableName(apiNameVersionAndTableName.tableName())
+            .withVersion(apiNameVersionAndTableName.apiVersion())
+            .withApiName(apiNameVersionAndTableName.apiName())).getFields();
+         fieldListCache.put(apiNameVersionAndTableName, value);
+      }
+      return (fieldListCache.get(apiNameVersionAndTableName));
+   }
+
+
+
+   /*******************************************************************************
+    ** Input-record for convenience methods
+    *******************************************************************************/
+   public record ApiNameVersionAndTableName(String apiName, String apiVersion, String tableName)
+   {
+
+   }
+
+
 
    /*******************************************************************************
     **

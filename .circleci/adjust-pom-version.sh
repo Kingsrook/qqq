@@ -5,8 +5,8 @@ if [ -z "$CIRCLE_BRANCH" ] && [ -z "$CIRCLE_TAG" ]; then
    exit 1;
 fi
 
-if [ "$CIRCLE_BRANCH" == "dev" ] || [ "$CIRCLE_BRANCH" == "staging" ] || [ "$CIRCLE_BRANCH" == "main" ]; then
-   echo "On a primary branch [$CIRCLE_BRANCH] - will not edit the pom version.";
+if [ "$CIRCLE_BRANCH" == "dev" ] || [ "$CIRCLE_BRANCH" == "staging" ] || [ "$CIRCLE_BRANCH" == "main" ] || [ \! -z $(echo "$CIRCLE_TAG" | grep "^version-") ]; then
+   echo "On a primary branch or tag [${CIRCLE_BRANCH}${CIRCLE_TAG}] - will not edit the pom version.";
    exit 0;
 fi
 

@@ -871,6 +871,8 @@ public class QJavalinImplementation
          getInput.setShouldTranslatePossibleValues(true);
          getInput.setShouldFetchHeavyFields(true);
 
+         getInput.setQueryJoins(processQueryJoinsParam(context));
+
          if("true".equals(context.queryParam("includeAssociations")))
          {
             getInput.setIncludeAssociations(true);

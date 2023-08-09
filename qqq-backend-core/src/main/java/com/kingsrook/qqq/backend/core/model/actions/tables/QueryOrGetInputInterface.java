@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.actions.tables;
 
 
 import java.util.Collection;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
 
 /*******************************************************************************
@@ -49,6 +51,7 @@ public interface QueryOrGetInputInterface
       this.setShouldMaskPasswords(source.getShouldMaskPasswords());
       this.setIncludeAssociations(source.getIncludeAssociations());
       this.setAssociationNamesToInclude(source.getAssociationNamesToInclude());
+      this.setQueryJoins(source.getQueryJoins());
    }
 
    /*******************************************************************************
@@ -145,5 +148,18 @@ public interface QueryOrGetInputInterface
     ** Setter for associationNamesToInclude
     *******************************************************************************/
    void setAssociationNamesToInclude(Collection<String> associationNamesToInclude);
+
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    *******************************************************************************/
+   List<QueryJoin> getQueryJoins();
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    **
+    *******************************************************************************/
+   void setQueryJoins(List<QueryJoin> queryJoins);
 
 }

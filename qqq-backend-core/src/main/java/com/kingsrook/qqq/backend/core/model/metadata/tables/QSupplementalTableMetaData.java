@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+
+
 /*******************************************************************************
  ** Base-class for table-level meta-data defined by some supplemental module, etc,
  ** outside of qqq core
@@ -60,7 +63,7 @@ public abstract class QSupplementalTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void enrich(QTableMetaData table)
+   public void enrich(QInstance qInstance, QTableMetaData table)
    {
       ////////////////////////
       // noop in base class //

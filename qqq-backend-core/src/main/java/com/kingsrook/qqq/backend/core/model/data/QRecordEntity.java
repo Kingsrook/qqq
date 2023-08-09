@@ -421,7 +421,7 @@ public abstract class QRecordEntity
          {
             if(!method.getName().equals("getClass"))
             {
-               LOG.info("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
+               LOG.debug("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
             }
          }
       }

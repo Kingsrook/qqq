@@ -23,11 +23,14 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.get;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
 
 /*******************************************************************************
@@ -47,6 +50,7 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
    private boolean shouldOmitHiddenFields        = true;
    private boolean shouldMaskPasswords           = true;
 
+   private List<QueryJoin> queryJoins = null;
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // if you say you want to includeAssociations, you can limit which ones by passing them in associationNamesToInclude. //
@@ -408,6 +412,53 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
    public GetInput withShouldOmitHiddenFields(boolean shouldOmitHiddenFields)
    {
       this.shouldOmitHiddenFields = shouldOmitHiddenFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryJoins
+    *******************************************************************************/
+   public List<QueryJoin> getQueryJoins()
+   {
+      return (this.queryJoins);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryJoins
+    *******************************************************************************/
+   public void setQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    *******************************************************************************/
+   public GetInput withQueryJoins(List<QueryJoin> queryJoins)
+   {
+      this.queryJoins = queryJoins;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryJoins
+    **
+    *******************************************************************************/
+   public GetInput withQueryJoin(QueryJoin queryJoin)
+   {
+      if(this.queryJoins == null)
+      {
+         this.queryJoins = new ArrayList<>();
+      }
+      this.queryJoins.add(queryJoin);
       return (this);
    }
 

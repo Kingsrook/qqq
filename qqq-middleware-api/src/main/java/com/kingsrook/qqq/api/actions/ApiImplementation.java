@@ -36,9 +36,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessCustomizers;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
@@ -104,6 +107,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.CouldNotFindQueryFilterForExtractStepException;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -150,6 +154,7 @@ public class ApiImplementation
 
       QTableMetaData table     = validateTableAndVersion(apiInstanceMetaData, version, tableApiName, ApiOperation.QUERY_BY_QUERY_STRING);
       String         tableName = table.getName();
+      String         apiName   = apiInstanceMetaData.getName();
 
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
@@ -231,6 +236,8 @@ public class ApiImplementation
          badRequestMessages.add("includeCount must be either true or false");
       }
 
+      Map<String, QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version, tableName));
+
       if(StringUtils.hasContent(orderBy))
       {
          for(String orderByPart : orderBy.split(","))
@@ -238,6 +245,7 @@ public class ApiImplementation
             orderByPart = orderByPart.trim();
             String[] orderByNameDirection = orderByPart.split(" +");
             boolean  asc                  = true;
+            String   apiFieldName         = orderByNameDirection[0];
             if(orderByNameDirection.length == 2)
             {
                if("asc".equalsIgnoreCase(orderByNameDirection[1]))
@@ -250,7 +258,7 @@ public class ApiImplementation
                }
                else
                {
-                  badRequestMessages.add("orderBy direction for field " + orderByNameDirection[0] + " must be either ASC or DESC.");
+                  badRequestMessages.add("orderBy direction for field " + apiFieldName + " must be either ASC or DESC.");
                }
             }
             else if(orderByNameDirection.length > 2)
@@ -258,14 +266,27 @@ public class ApiImplementation
                badRequestMessages.add("Unrecognized format for orderBy clause: " + orderByPart + ".  Expected:  fieldName [ASC|DESC].");
             }
 
-            try
+            QFieldMetaData field = tableApiFields.get(apiFieldName);
+            if(field == null)
             {
-               QFieldMetaData field = table.getField(orderByNameDirection[0]);
-               filter.withOrderBy(new QFilterOrderBy(field.getName(), asc));
+               badRequestMessages.add("Unrecognized orderBy field name: " + apiFieldName + ".");
             }
-            catch(Exception e)
+            else
             {
-               badRequestMessages.add("Unrecognized orderBy field name: " + orderByNameDirection[0] + ".");
+               QFilterOrderBy filterOrderBy = new QFilterOrderBy(field.getName(), asc);
+
+               ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
+               if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
+               {
+                  filterOrderBy.setFieldName(apiFieldMetaData.getReplacedByFieldName());
+               }
+               else if(apiFieldMetaData.getCustomValueMapper() != null)
+               {
+                  ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+                  customValueMapper.customizeFilterOrderBy(queryInput, filterOrderBy, apiFieldName, apiFieldMetaData);
+               }
+
+               filter.withOrderBy(filterOrderBy);
             }
          }
       }
@@ -289,20 +310,36 @@ public class ApiImplementation
             continue;
          }
 
-         try
+         QFieldMetaData field = tableApiFields.get(name);
+         if(field == null)
          {
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            // todo - deal with removed fields; fields w/ custom value mappers (need new method(s) there) //
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-
-            QFieldMetaData field = table.getField(name);
+            badRequestMessages.add("Unrecognized filter criteria field: " + name);
+         }
+         else
+         {
+            ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
             for(String value : values)
             {
                if(StringUtils.hasContent(value))
                {
                   try
                   {
-                     filter.addCriteria(parseQueryParamToCriteria(field, name, value));
+                     QFilterCriteria criteria = parseQueryParamToCriteria(field, name, value);
+
+                     /////////////////////////////////////////////
+                     // deal with replaced or customized fields //
+                     /////////////////////////////////////////////
+                     if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
+                     {
+                        criteria.setFieldName(apiFieldMetaData.getReplacedByFieldName());
+                     }
+                     else if(apiFieldMetaData.getCustomValueMapper() != null)
+                     {
+                        ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+                        customValueMapper.customizeFilterCriteria(queryInput, filter, criteria, name, apiFieldMetaData);
+                     }
+
+                     filter.addCriteria(criteria);
                   }
                   catch(Exception e)
                   {
@@ -310,10 +347,6 @@ public class ApiImplementation
                   }
                }
             }
-         }
-         catch(Exception e)
-         {
-            badRequestMessages.add("Unrecognized filter criteria field: " + name);
          }
       }
 
@@ -350,7 +383,7 @@ public class ApiImplementation
       ArrayList<Map<String, Serializable>> records = new ArrayList<>();
       for(QRecord record : queryOutput.getRecords())
       {
-         records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiInstanceMetaData.getName(), version));
+         records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, version));
       }
 
       /////////////////////////////
