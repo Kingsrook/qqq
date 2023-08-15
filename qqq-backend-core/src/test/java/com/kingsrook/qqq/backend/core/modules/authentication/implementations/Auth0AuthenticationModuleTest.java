@@ -48,9 +48,11 @@ import static com.kingsrook.qqq.backend.core.modules.authentication.implementati
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.maskForLog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -465,6 +467,28 @@ public class Auth0AuthenticationModuleTest extends BaseTest
       Base64.Encoder encoder        = Base64.getEncoder();
       String         originalString = username + ":" + password;
       return (encoder.encodeToString(originalString.getBytes()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMask()
+   {
+      assertNull(maskForLog(null));
+      assertEquals("******", maskForLog("1"));
+      assertEquals("******", maskForLog("12"));
+      assertEquals("******", maskForLog("123"));
+      assertEquals("******", maskForLog("1234"));
+      assertEquals("******", maskForLog("12345"));
+      assertEquals("******", maskForLog("12345"));
+      assertEquals("******", maskForLog("123456"));
+      assertEquals("******", maskForLog("1234567"));
+      assertEquals("123456******", maskForLog("12345678"));
+      assertEquals("123456******", maskForLog("123456789"));
+      assertEquals("123456******", maskForLog("1234567890"));
    }
 
 }

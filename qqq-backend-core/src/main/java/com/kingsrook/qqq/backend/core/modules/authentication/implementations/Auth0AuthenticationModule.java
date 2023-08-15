@@ -89,6 +89,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -98,6 +99,7 @@ import org.json.JSONObject;
  **
  ** System-User session use-case:
  ** 1: Takes in an "accessToken" (but doesn't store a userSession record).
+ ** 1b: legacy frontend use-case does the same as system-user!
  **
  ** Web User session use-cases:
  ** 2: creates a new session (userSession record) by taking an "accessToken"
@@ -167,12 +169,25 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       {
          Auth0AuthenticationMetaData metaData = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
 
-         /////////////////////////////////////////////////////////////////////////////////////////////
-         // if the context contains an access token, then create a new session based on that token. //
-         /////////////////////////////////////////////////////////////////////////////////////////////
          String accessToken = null;
-         if(CollectionUtils.containsKeyWithNonNullValue(context, ACCESS_TOKEN_KEY))
+         if(CollectionUtils.containsKeyWithNonNullValue(context, SESSION_UUID_KEY))
          {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // process a sessionUUID - looks up userSession record - cannot create token this way. //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            String sessionUUID = context.get(SESSION_UUID_KEY);
+            LOG.info("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
+            if(sessionUUID != null)
+            {
+               accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
+            }
+         }
+         else if(CollectionUtils.containsKeyWithNonNullValue(context, ACCESS_TOKEN_KEY))
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the context contains an access token, then create a new session based on that token.                          //
+            // todo#authHeader - this else/if should maybe be first, but while we have frontend passing both, we want it second //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             accessToken = context.get(ACCESS_TOKEN_KEY);
             QSession qSession = buildAndValidateSession(qInstance, accessToken);
 
@@ -182,6 +197,18 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             if(CollectionUtils.containsKeyWithNonNullValue(context, DO_STORE_USER_SESSION_KEY))
             {
                insertUserSession(qInstance, accessToken, qSession);
+               LOG.info("Creating session based on input accessToken and creating a userSession", logPair("userId", qSession.getUser().getIdReference()));
+            }
+            else
+            {
+               ///////////////////////////////////////////////
+               // todo#authHeader - remove all this logging //
+               ///////////////////////////////////////////////
+               String userName = qSession.getUser() != null ? qSession.getUser().getFullName() : null;
+               if(userName != null && !userName.contains("System User"))
+               {
+                  LOG.info("Creating session based on input accessToken but not creating a userSession", logPair("userName", qSession.getUser().getFullName()));
+               }
             }
 
             return (qSession);
@@ -199,6 +226,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                // decode the credentials from the header auth //
                /////////////////////////////////////////////////
                String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
+               LOG.info("Creating session from basicAuthentication", logPair("base64Credentials", maskForLog(base64Credentials)));
                accessToken = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
             }
             catch(Auth0Exception e)
@@ -217,20 +245,10 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process an api key - looks up client application token (creating token if needed) //
             ///////////////////////////////////////////////////////////////////////////////////////
             String apiKey = context.get(API_KEY);
+            LOG.info("Creating session from apiKey (accessTokenTable)", logPair("apiKey", maskForLog(apiKey)));
             if(apiKey != null)
             {
                accessToken = getAccessTokenFromApiKey(metaData, apiKey);
-            }
-         }
-         else if(CollectionUtils.containsKeyWithNonNullValue(context, SESSION_UUID_KEY))
-         {
-            /////////////////////////////////////////////////////////////////////////////////////////
-            // process a sessionUUID - looks up userSession record - cannot create token this way. //
-            /////////////////////////////////////////////////////////////////////////////////////////
-            String sessionUUID = context.get(SESSION_UUID_KEY);
-            if(sessionUUID != null)
-            {
-               accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
             }
          }
 
@@ -940,6 +958,28 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       }
 
       return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static String maskForLog(String input)
+   {
+      if(input == null)
+      {
+         return (null);
+      }
+
+      if(input.length() < 8)
+      {
+         return ("******");
+      }
+      else
+      {
+         return (input.substring(0, 6) + "******");
+      }
    }
 
 }
