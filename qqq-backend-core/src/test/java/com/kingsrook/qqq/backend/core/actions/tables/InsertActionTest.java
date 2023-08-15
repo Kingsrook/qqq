@@ -35,9 +35,12 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -690,6 +693,62 @@ class InsertActionTest extends BaseTest
       // all 3 should insert. //
       //////////////////////////
       assertEquals(3, TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_ORDER).size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityLockWriteScope() throws QException
+   {
+      TestUtils.updatePersonMemoryTableInContextWithWritableByWriteLockAndInsert3TestRecords();
+
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("hsimpson")));
+
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // with only hsimpson in our key, make sure we can't insert a row w/ a different value //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      {
+         InsertOutput insertOutput = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 100).withValue("firstName", "Jean-Luc").withValue("onlyWritableBy", "jkirk")
+         )));
+         List<QErrorMessage> errors = insertOutput.getRecords().get(0).getErrors();
+         assertEquals(1, errors.size());
+         assertThat(errors.get(0).getMessage())
+            .contains("You do not have permission")
+            .contains("jkirk")
+            .contains("Only Writable By");
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure we can insert w/ a null in onlyWritableBy (because key (from test utils) was set to allow null) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         InsertOutput insertOutput = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 101).withValue("firstName", "Benajamin").withValue("onlyWritableBy", null)
+         )));
+         List<QErrorMessage> errors = insertOutput.getRecords().get(0).getErrors();
+         assertEquals(0, errors.size());
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // change the null behavior to deny, and try above again, expecting an error //
+      ///////////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.DENY);
+      {
+         InsertOutput insertOutput = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 102).withValue("firstName", "Katherine").withValue("onlyWritableBy", null)
+         )));
+         List<QErrorMessage> errors = insertOutput.getRecords().get(0).getErrors();
+         assertEquals(1, errors.size());
+         assertThat(errors.get(0).getMessage())
+            .contains("You do not have permission")
+            .contains("without a value")
+            .contains("Only Writable By");
+      }
+
    }
 
 }

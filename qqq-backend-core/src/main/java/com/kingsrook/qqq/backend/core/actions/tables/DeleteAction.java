@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCusto
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
@@ -320,6 +321,8 @@ public class DeleteAction
 
       QTableMetaData table               = deleteInput.getTable();
       List<QRecord>  primaryKeysNotFound = validateRecordsExistAndCanBeAccessed(deleteInput, oldRecordList.get());
+
+      ValidateRecordSecurityLockHelper.validateSecurityFields(table, oldRecordList.get(), ValidateRecordSecurityLockHelper.Action.DELETE);
 
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-delete customizer, if there is one //

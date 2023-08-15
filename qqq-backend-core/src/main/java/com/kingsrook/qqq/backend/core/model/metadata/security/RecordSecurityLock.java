@@ -34,6 +34,10 @@ import java.util.List;
  ** - recordSecurityLock.fieldName = order.clientId
  ** - recordSecurityLock.joinNameChain = [orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic]
  ** that is - what's the chain that takes us FROM the security fieldName TO the table with the lock.
+ **
+ ** LockScope controls what the lock prevents users from doing without a valid key.
+ ** - READ_AND_WRITE means that users cannot read or write records without a valid key.
+ ** - WRITE means that users cannot write records without a valid key (but they can read them).
  *******************************************************************************/
 public class RecordSecurityLock
 {
@@ -41,6 +45,8 @@ public class RecordSecurityLock
    private String            fieldName;
    private List<String>      joinNameChain;
    private NullValueBehavior nullValueBehavior = NullValueBehavior.DENY;
+
+   private LockScope lockScope = LockScope.READ_AND_WRITE;
 
 
 
@@ -62,6 +68,17 @@ public class RecordSecurityLock
       ALLOW,
       ALLOW_WRITE_ONLY, // not common - but see Audit, where you can do a thing that inserts them into a generic table, even though you can't later read them yourself...
       DENY
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public enum LockScope
+   {
+      READ_AND_WRITE,
+      WRITE
    }
 
 
@@ -185,6 +202,37 @@ public class RecordSecurityLock
    public RecordSecurityLock withJoinNameChain(List<String> joinNameChain)
    {
       this.joinNameChain = joinNameChain;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for lockScope
+    *******************************************************************************/
+   public LockScope getLockScope()
+   {
+      return (this.lockScope);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for lockScope
+    *******************************************************************************/
+   public void setLockScope(LockScope lockScope)
+   {
+      this.lockScope = lockScope;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for lockScope
+    *******************************************************************************/
+   public RecordSecurityLock withLockScope(LockScope lockScope)
+   {
+      this.lockScope = lockScope;
       return (this);
    }
 

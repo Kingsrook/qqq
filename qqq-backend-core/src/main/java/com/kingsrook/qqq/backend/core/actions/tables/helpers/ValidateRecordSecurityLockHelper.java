@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -68,6 +69,7 @@ public class ValidateRecordSecurityLockHelper
    {
       INSERT,
       UPDATE,
+      DELETE,
       SELECT
    }
 
@@ -78,7 +80,7 @@ public class ValidateRecordSecurityLockHelper
     *******************************************************************************/
    public static void validateSecurityFields(QTableMetaData table, List<QRecord> records, Action action) throws QException
    {
-      List<RecordSecurityLock> locksToCheck = getRecordSecurityLocks(table);
+      List<RecordSecurityLock> locksToCheck = getRecordSecurityLocks(table, action);
       if(CollectionUtils.nullSafeIsEmpty(locksToCheck))
       {
          return;
@@ -98,11 +100,12 @@ public class ValidateRecordSecurityLockHelper
 
             for(QRecord record : records)
             {
-               if(action.equals(Action.UPDATE) && !record.getValues().containsKey(field.getName()))
+               if(action.equals(Action.UPDATE) && !record.getValues().containsKey(field.getName()) && RecordSecurityLock.LockScope.READ_AND_WRITE.equals(recordSecurityLock.getLockScope()))
                {
-                  /////////////////////////////////////////////////////////////////////////
-                  // if not updating the security field, then no error can come from it! //
-                  /////////////////////////////////////////////////////////////////////////
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if this is a read-write lock, then if we have the record, it means we were able to read the record. //
+                  // So if we're not updating the security field, then no error can come from it!                        //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
                   continue;
                }
 
@@ -244,10 +247,17 @@ public class ValidateRecordSecurityLockHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<RecordSecurityLock> getRecordSecurityLocks(QTableMetaData table)
+   private static List<RecordSecurityLock> getRecordSecurityLocks(QTableMetaData table, Action action)
    {
-      List<RecordSecurityLock> recordSecurityLocks = table.getRecordSecurityLocks();
+      List<RecordSecurityLock> recordSecurityLocks = CollectionUtils.nonNullList(table.getRecordSecurityLocks());
       List<RecordSecurityLock> locksToCheck        = new ArrayList<>();
+
+      recordSecurityLocks = switch(action)
+      {
+         case INSERT, UPDATE, DELETE -> RecordSecurityLockFilters.filterForWriteLocks(recordSecurityLocks);
+         case SELECT -> RecordSecurityLockFilters.filterForReadLocks(recordSecurityLocks);
+         default -> throw (new IllegalArgumentException("Unsupported action: " + action));
+      };
 
       ////////////////////////////////////////
       // if there are no locks, just return //
@@ -281,7 +291,7 @@ public class ValidateRecordSecurityLockHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void validateRecordSecurityValue(QTableMetaData table, QRecord record, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action)
+   public static void validateRecordSecurityValue(QTableMetaData table, QRecord record, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action)
    {
       if(recordSecurityValue == null)
       {

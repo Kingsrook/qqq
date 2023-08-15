@@ -586,6 +586,8 @@ public class QInstanceValidator
 
          prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
 
+         assertCondition(recordSecurityLock.getLockScope() != null, prefix + " is missing its lockScope");
+
          boolean hasAnyBadJoins = false;
          for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
          {

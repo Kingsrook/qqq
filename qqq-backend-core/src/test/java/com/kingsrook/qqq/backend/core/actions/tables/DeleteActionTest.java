@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -361,6 +362,36 @@ class DeleteActionTest extends BaseTest
       assertEquals(0, deleteOutput.getDeletedRecordCount());
       assertEquals(1, deleteOutput.getRecordsWithErrors().size());
       assertEquals("No record was found to delete for Id = 1", deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityLockWriteScope() throws QException
+   {
+      TestUtils.updatePersonMemoryTableInContextWithWritableByWriteLockAndInsert3TestRecords();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // try to delete 1, 2, and 3.  2 should be blocked, because it has a writable-By that isn't in our session //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("jdoe")));
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      deleteInput.setPrimaryKeys(List.of(1, 2, 3));
+      DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+
+      assertEquals(1, deleteOutput.getRecordsWithErrors().size());
+      assertThat(deleteOutput.getRecordsWithErrors().get(0).getErrors().get(0).getMessage())
+         .contains("You do not have permission")
+         .contains("kmarsh")
+         .contains("Only Writable By");
+
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_PERSON_MEMORY)).getCount());
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 2)))).getCount());
    }
 
 
