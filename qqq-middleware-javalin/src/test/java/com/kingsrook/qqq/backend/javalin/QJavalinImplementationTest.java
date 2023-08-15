@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -874,86 +875,98 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
-   void testHotSwap()
+   void testHotSwap() throws QInstanceValidationException
    {
-      Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
+      try
       {
-         QInstance newInstance = new QInstance();
-         newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType("mock"));
-
-         if(!"invalid".equals(backendName))
+         Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
          {
-            newInstance.addTable(new QTableMetaData()
-               .withName("newTable")
-               .withBackendName(backendName)
-               .withField(new QFieldMetaData("newField", QFieldType.INTEGER))
-               .withPrimaryKeyField("newField")
-            );
-         }
+            QInstance newInstance = new QInstance();
+            newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType("mock"));
 
-         return (newInstance);
-      };
+            if(!"invalid".equals(backendName))
+            {
+               newInstance.addTable(new QTableMetaData()
+                  .withName("newTable")
+                  .withBackendName(backendName)
+                  .withField(new QFieldMetaData("newField", QFieldType.INTEGER))
+                  .withPrimaryKeyField("newField")
+               );
+            }
 
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newBackend"));
+            return (newInstance);
+         };
 
-      /////////////////////////////////////////////////////////////////////////////////
-      // make sure before a hot-swap, that the instance doesn't have our new backend //
-      /////////////////////////////////////////////////////////////////////////////////
-      assertNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newBackend"));
 
-      ///////////////////////////////////////////////////////
-      // do a hot-swap, make sure the new backend is there //
-      ///////////////////////////////////////////////////////
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNotNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
+         /////////////////////////////////////////////////////////////////////////////////
+         // make sure before a hot-swap, that the instance doesn't have our new backend //
+         /////////////////////////////////////////////////////////////////////////////////
+         assertNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // now change to make a different backend - try to swap again - but the newer backend shouldn't be there, //
-      // because the millis-between-hot-swaps won't have passed                                                 //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+         ///////////////////////////////////////////////////////
+         // do a hot-swap, make sure the new backend is there //
+         ///////////////////////////////////////////////////////
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNotNull(QJavalinImplementation.qInstance.getBackend("newBackend"));
 
-      ////////////////////////////////////////////////////////////////////////////////////////////
-      // set the sleep threshold to 1 milli, sleep for 2, and then assert that we do swap again //
-      ////////////////////////////////////////////////////////////////////////////////////////////
-      QJavalinImplementation.setMillisBetweenHotSwaps(1);
-      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // now change to make a different backend - try to swap again - but the newer backend shouldn't be there, //
+         // because the millis-between-hot-swaps won't have passed                                                 //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
 
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // set the sleep threshold to 1 milli, sleep for 2, and then assert that we do swap again //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         QJavalinImplementation.setMillisBetweenHotSwaps(1);
+         SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
 
-      ////////////////////////////////////////////////////////////
-      // assert that an invalid instance doesn't get swapped in //
-      // e.g., "newerBackend" still exists                      //
-      ////////////////////////////////////////////////////////////
-      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("invalid"));
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("newerBackend"));
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
 
-      ///////////////////////////////////////////////////////
-      // assert that if the supplier throws, we don't swap //
-      // e.g., "newerBackend" still exists                 //
-      ///////////////////////////////////////////////////////
-      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() ->
+         ////////////////////////////////////////////////////////////
+         // assert that an invalid instance doesn't get swapped in //
+         // e.g., "newerBackend" still exists                      //
+         ////////////////////////////////////////////////////////////
+         SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() -> makeNewInstanceWithBackendName.apply("invalid"));
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+         ///////////////////////////////////////////////////////
+         // assert that if the supplier throws, we don't swap //
+         // e.g., "newerBackend" still exists                 //
+         ///////////////////////////////////////////////////////
+         SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() ->
+         {
+            throw new RuntimeException("oops");
+         });
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+
+         /////////////////////////////////////////////////////////////
+         // assert that if the supplier returns null, we don't swap //
+         // e.g., "newerBackend" still exists                       //
+         /////////////////////////////////////////////////////////////
+         SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
+         QJavalinImplementation.setQInstanceHotSwapSupplier(() -> null);
+         QJavalinImplementation.hotSwapQInstance(null);
+         assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+      }
+      finally
       {
-         throw new RuntimeException("oops");
-      });
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
-
-      /////////////////////////////////////////////////////////////
-      // assert that if the supplier returns null, we don't swap //
-      // e.g., "newerBackend" still exists                       //
-      /////////////////////////////////////////////////////////////
-      SleepUtils.sleep(2, TimeUnit.MILLISECONDS);
-      QJavalinImplementation.setQInstanceHotSwapSupplier(() -> null);
-      QJavalinImplementation.hotSwapQInstance(null);
-      assertNotNull(QJavalinImplementation.qInstance.getBackend("newerBackend"));
+         ////////////////////////////////////////////////////////////
+         // restore things to how they used to be, for other tests //
+         ////////////////////////////////////////////////////////////
+         QInstance qInstance = TestUtils.defineInstance();
+         QJavalinImplementation.setQInstanceHotSwapSupplier(null);
+         restartServerWithInstance(qInstance);
+      }
    }
 
 }
