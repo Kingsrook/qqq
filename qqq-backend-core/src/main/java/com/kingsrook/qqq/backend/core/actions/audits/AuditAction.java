@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -166,7 +167,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                ///////////////////////////////////////////////////
                // validate security keys on the table are given //
                ///////////////////////////////////////////////////
-               for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+               for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
                {
                   if(auditSingleInput.getSecurityKeyValues() == null || !auditSingleInput.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
                   {

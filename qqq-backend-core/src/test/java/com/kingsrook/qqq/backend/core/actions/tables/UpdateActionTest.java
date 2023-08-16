@@ -29,12 +29,18 @@ import java.util.Objects;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
@@ -492,7 +498,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 20).withValue("sku", "BASIC3")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("No record was found to update for Id = 20", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
+         assertTrue(updateOutput.getRecords().get(0).getErrors().stream().anyMatch(em -> em.getMessage().equals("No record was found to update for Id = 20")));
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -504,7 +510,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 10).withValue("orderId", 2).withValue("sku", "BASIC3")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("You do not have permission to update this record - the referenced Order was not found.", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
+         assertTrue(updateOutput.getRecords().get(0).getErrors().stream().anyMatch(em -> em.getMessage().equals("You do not have permission to update this record - the referenced Order was not found.")));
       }
 
       ///////////////////////////////////////////////////////////
@@ -528,7 +534,7 @@ class UpdateActionTest extends BaseTest
          updateInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          updateInput.setRecords(List.of(new QRecord().withValue("id", 200).withValue("key", "updatedKey")));
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
-         assertEquals("No record was found to update for Id = 200", updateOutput.getRecords().get(0).getErrors().get(0).getMessage());
+         assertTrue(updateOutput.getRecords().get(0).getErrors().stream().anyMatch(em -> em.getMessage().equals("No record was found to update for Id = 200")));
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -704,6 +710,81 @@ class UpdateActionTest extends BaseTest
       assertEquals(0, updateOutput.getRecords().get(1).getErrors().size());
       assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> Objects.equals(r.getValue("storeId"), 999)).count());
       assertEquals(1, TestUtils.queryTable(TestUtils.TABLE_NAME_ORDER).stream().filter(r -> r.getValue("storeId") == null).count());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityLockWriteScope() throws QException
+   {
+      TestUtils.updatePersonMemoryTableInContextWithWritableByWriteLockAndInsert3TestRecords();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // try to update them all 1, 2, and 3.  2 should be blocked, because it has a writable-By that isn't in our session //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("jdoe")));
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("lastName", "Kelkhoff"),
+            new QRecord().withValue("id", 2).withValue("lastName", "Chamberlain"),
+            new QRecord().withValue("id", 3).withValue("lastName", "Maes")
+         )));
+
+         List<QRecord> errorRecords = updateOutput.getRecords().stream().filter(r -> CollectionUtils.nullSafeHasContents(r.getErrors())).toList();
+         assertEquals(1, errorRecords.size());
+         assertEquals(2, errorRecords.get(0).getValueInteger("id"));
+         assertThat(errorRecords.get(0).getErrors().get(0).getMessage())
+            .contains("You do not have permission")
+            .contains("kmarsh")
+            .contains("Only Writable By");
+
+         assertEquals(2, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_PERSON_MEMORY)
+            .withFilter(new QQueryFilter(new QFilterCriteria("lastName", QCriteriaOperator.IS_NOT_BLANK)))).getCount());
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now try to change one of the records to have a different value in the lock-field.  Should fail (as it's not in our session) //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("onlyWritableBy", "ecartman"))));
+
+         List<QRecord> errorRecords = updateOutput.getRecords().stream().filter(r -> CollectionUtils.nullSafeHasContents(r.getErrors())).toList();
+         assertEquals(1, errorRecords.size());
+         assertThat(errorRecords.get(0).getErrors().get(0).getMessage())
+            .contains("You do not have permission")
+            .contains("ecartman")
+            .contains("Only Writable By");
+      }
+
+      ///////////////////////////////////////////////////////////////
+      // add that to our session and confirm we can do that update //
+      ///////////////////////////////////////////////////////////////
+      {
+         QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("jdoe", "ecartman")));
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("onlyWritableBy", "ecartman"))));
+         List<QRecord> errorRecords = updateOutput.getRecords().stream().filter(r -> CollectionUtils.nullSafeHasContents(r.getErrors())).toList();
+         assertEquals(0, errorRecords.size());
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // change the null behavior to deny, then try to udpate a record and remove its onlyWritableBy //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getRecordSecurityLocks().get(0).setNullValueBehavior(RecordSecurityLock.NullValueBehavior.DENY);
+      {
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+            new QRecord().withValue("id", 1).withValue("onlyWritableBy", null))));
+         List<QErrorMessage> errors = updateOutput.getRecords().get(0).getErrors();
+         assertEquals(1, errors.size());
+         assertThat(errors.get(0).getMessage())
+            .contains("You do not have permission")
+            .contains("without a value")
+            .contains("Only Writable By");
+      }
    }
 
 }

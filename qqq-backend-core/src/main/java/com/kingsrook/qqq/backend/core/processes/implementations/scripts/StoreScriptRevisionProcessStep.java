@@ -31,7 +31,10 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -46,6 +49,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.scripts.Script;
+import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -69,7 +74,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
    {
       InsertAction insertAction = new InsertAction();
       InsertInput  insertInput  = new InsertInput();
-      insertInput.setTableName("scriptRevision");
+      insertInput.setTableName(ScriptRevision.TABLE_NAME);
       QBackendTransaction transaction = insertAction.openTransaction(insertInput);
       insertInput.setTransaction(transaction);
 
@@ -87,14 +92,23 @@ public class StoreScriptRevisionProcessStep implements BackendStep
          // get the existing script, to update //
          ////////////////////////////////////////
          GetInput getInput = new GetInput();
-         getInput.setTableName("script");
+         getInput.setTableName(Script.TABLE_NAME);
          getInput.setPrimaryKey(scriptId);
          getInput.setTransaction(transaction);
          GetOutput getOutput = new GetAction().execute(getInput);
          QRecord   script    = getOutput.getRecord();
 
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // in case the app added a security field to the scripts table, make sure the user is allowed to edit the script //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         ValidateRecordSecurityLockHelper.validateSecurityFields(QContext.getQInstance().getTable(Script.TABLE_NAME), List.of(script), ValidateRecordSecurityLockHelper.Action.UPDATE);
+         if(CollectionUtils.nullSafeHasContents(script.getErrors()))
+         {
+            throw (new QPermissionDeniedException(script.getErrors().get(0).getMessage()));
+         }
+
          QueryInput queryInput = new QueryInput();
-         queryInput.setTableName("scriptRevision");
+         queryInput.setTableName(ScriptRevision.TABLE_NAME);
          queryInput.setFilter(new QQueryFilter()
             .withCriteria(new QFilterCriteria("scriptId", QCriteriaOperator.EQUALS, List.of(script.getValue("id"))))
             .withOrderBy(new QFilterOrderBy("sequenceNo", false))
@@ -183,7 +197,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
          ////////////////////////////////////////////////////
          script.setValue("currentScriptRevisionId", scriptRevision.getValue("id"));
          UpdateInput updateInput = new UpdateInput();
-         updateInput.setTableName("script");
+         updateInput.setTableName(Script.TABLE_NAME);
          updateInput.setRecords(List.of(script));
          updateInput.setTransaction(transaction);
          new UpdateAction().execute(updateInput);
@@ -198,6 +212,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
       catch(Exception e)
       {
          transaction.rollback();
+         throw (e);
       }
       finally
       {
