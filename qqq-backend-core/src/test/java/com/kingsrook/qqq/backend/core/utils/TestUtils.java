@@ -33,15 +33,18 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarCh
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -110,6 +113,9 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicE
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.reports.RunReportForRecordProcess;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -1394,4 +1400,39 @@ public class TestUtils
             ))
          );
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void updatePersonMemoryTableInContextWithWritableByWriteLockAndInsert3TestRecords() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.addSecurityKeyType(new QSecurityKeyType()
+         .withName("writableBy"));
+
+      QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.withField(new QFieldMetaData("onlyWritableBy", QFieldType.STRING).withLabel("Only Writable By"));
+      table.withRecordSecurityLock(new RecordSecurityLock()
+         .withSecurityKeyType("writableBy")
+         .withFieldName("onlyWritableBy")
+         .withNullValueBehavior(RecordSecurityLock.NullValueBehavior.ALLOW)
+         .withLockScope(RecordSecurityLock.LockScope.WRITE));
+
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("jdoe", "kmarsh")));
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
+         new QRecord().withValue("id", 2).withValue("firstName", "Tim").withValue("onlyWritableBy", "kmarsh"),
+         new QRecord().withValue("id", 3).withValue("firstName", "James").withValue("onlyWritableBy", "jdoe")
+      )));
+
+      //////////////////////////////////////////////
+      // make sure we can query for all 3 records //
+      //////////////////////////////////////////////
+      QContext.getQSession().setSecurityKeyValues(MapBuilder.of("writableBy", ListBuilder.of("jdoe")));
+      assertEquals(3, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_PERSON_MEMORY)).getCount());
+   }
+
 }

@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -378,7 +379,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    private static Map<String, Serializable> getRecordSecurityKeyValues(QTableMetaData table, QRecord record)
    {
       Map<String, Serializable> securityKeyValues = new HashMap<>();
-      for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
          securityKeyValues.put(recordSecurityLock.getSecurityKeyType(), record == null ? null : record.getValue(recordSecurityLock.getFieldName()));
       }

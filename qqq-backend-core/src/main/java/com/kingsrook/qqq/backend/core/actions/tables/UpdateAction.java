@@ -61,6 +61,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
@@ -209,13 +211,15 @@ public class UpdateAction
       {
          validateRecordsExistAndCanBeAccessed(updateInput, oldRecordList.get());
       }
+      else
+      {
+         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+      }
 
       if(updateInput.getInputSource().shouldValidateRequiredFields())
       {
          validateRequiredFields(updateInput);
       }
-
-      ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
 
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-update customizer, if there is one //
@@ -287,6 +291,8 @@ public class UpdateAction
       QTableMetaData table           = updateInput.getTable();
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
 
+      List<RecordSecurityLock> onlyWriteLocks = RecordSecurityLockFilters.filterForOnlyWriteLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks()));
+
       for(List<QRecord> page : CollectionUtils.getPages(updateInput.getRecords(), 1000))
       {
          List<Serializable> primaryKeysToLookup = new ArrayList<>();
@@ -320,6 +326,8 @@ public class UpdateAction
             }
          }
 
+         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+
          for(QRecord record : page)
          {
             Serializable value = ValueUtils.getValueAsFieldType(primaryKeyField.getType(), record.getValue(table.getPrimaryKeyField()));
@@ -331,6 +339,19 @@ public class UpdateAction
             if(!lookedUpRecords.containsKey(value))
             {
                record.addError(new NotFoundStatusMessage("No record was found to update for " + primaryKeyField.getLabel() + " = " + value));
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////
+               // if the table has any write-only locks, validate their values here, on the old-records //
+               ///////////////////////////////////////////////////////////////////////////////////////////
+               for(RecordSecurityLock lock : onlyWriteLocks)
+               {
+                  QRecord      oldRecord = lookedUpRecords.get(value);
+                  QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
+                  Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
+                  ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, record, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE);
+               }
             }
          }
       }
