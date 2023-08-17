@@ -31,6 +31,7 @@ public enum AuthorizationType
    API_TOKEN,
    BASIC_AUTH_API_KEY,
    BASIC_AUTH_USERNAME_PASSWORD,
+   CUSTOM,
    OAUTH2,
    API_KEY_QUERY_PARAM,
 }

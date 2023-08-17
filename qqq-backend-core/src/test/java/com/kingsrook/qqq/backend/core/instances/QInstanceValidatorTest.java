@@ -826,6 +826,58 @@ class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testSectionsWithJoinFields()
+   {
+      Consumer<QTableMetaData> putAllFieldsInASection = table -> table.addSection(new QFieldSection()
+         .withName("section0")
+         .withTier(Tier.T1)
+         .withFieldNames(new ArrayList<>(table.getFields().keySet())));
+
+      assertValidationFailureReasons(qInstance ->
+      {
+         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_ORDER);
+         putAllFieldsInASection.accept(table);
+         table.getSections().get(0).getFieldNames().add(TestUtils.TABLE_NAME_LINE_ITEM + ".sku");
+      }, "orderLine.sku references an is-many join, which is not supported");
+
+      assertValidationSuccess(qInstance ->
+      {
+         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+         putAllFieldsInASection.accept(table);
+         table.getSections().get(0).getFieldNames().add(TestUtils.TABLE_NAME_ORDER + ".orderNo");
+      });
+
+      assertValidationFailureReasons(qInstance ->
+      {
+         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+         putAllFieldsInASection.accept(table);
+         table.getSections().get(0).getFieldNames().add(TestUtils.TABLE_NAME_ORDER + ".asdf");
+      }, "order.asdf specifies a fieldName [asdf] which does not exist in that table [order].");
+
+      /////////////////////////////////////////////////////////////////////////////
+      // this is aactually allowed, well, just not considered as a join-field... //
+      /////////////////////////////////////////////////////////////////////////////
+      // assertValidationFailureReasons(qInstance ->
+      // {
+      //    QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+      //    putAllFieldsInASection.accept(table);
+      //    table.getSections().get(0).getFieldNames().add("foo.bar");
+      // }, "unrecognized table name [foo]");
+
+      assertValidationFailureReasons(qInstance ->
+      {
+         QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM);
+         putAllFieldsInASection.accept(table);
+         table.getSections().get(0).getFieldNames().add(TestUtils.TABLE_NAME_SHAPE + ".id");
+      }, "[shape] which is not an exposed join on this table");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testPossibleValueSourceMissingType()
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setType(null),

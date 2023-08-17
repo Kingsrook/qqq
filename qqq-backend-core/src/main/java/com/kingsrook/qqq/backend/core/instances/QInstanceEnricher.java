@@ -272,7 +272,7 @@ public class QInstanceEnricher
 
          for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
          {
-            supplementalTableMetaData.enrich(table);
+            supplementalTableMetaData.enrich(qInstance, table);
          }
       }
 

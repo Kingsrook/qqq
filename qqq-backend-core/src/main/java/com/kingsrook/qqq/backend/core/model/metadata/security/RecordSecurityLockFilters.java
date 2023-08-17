@@ -19,54 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.tables;
+package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import java.util.List;
 
 
 /*******************************************************************************
- ** Base-class for table-level meta-data defined by some supplemental module, etc,
- ** outside of qqq core
+ ** standard filtering operations for lists of record security locks.
  *******************************************************************************/
-public abstract class QSupplementalTableMetaData
+public class RecordSecurityLockFilters
 {
 
-
    /*******************************************************************************
-    **
+    ** filter a list of locks so that we only see the ones that apply to reads.
     *******************************************************************************/
-   public boolean includeInPartialFrontendMetaData()
+   public static List<RecordSecurityLock> filterForReadLocks(List<RecordSecurityLock> recordSecurityLocks)
    {
-      return (false);
+      if(recordSecurityLocks == null)
+      {
+         return (null);
+      }
+
+      return (recordSecurityLocks.stream().filter(rsl -> RecordSecurityLock.LockScope.READ_AND_WRITE.equals(rsl.getLockScope())).toList());
    }
 
 
 
    /*******************************************************************************
-    **
+    ** filter a list of locks so that we only see the ones that apply to writes.
     *******************************************************************************/
-   public boolean includeInFullFrontendMetaData()
+   public static List<RecordSecurityLock> filterForWriteLocks(List<RecordSecurityLock> recordSecurityLocks)
    {
-      return (false);
+      if(recordSecurityLocks == null)
+      {
+         return (null);
+      }
+
+      return (recordSecurityLocks.stream().filter(rsl ->
+         RecordSecurityLock.LockScope.READ_AND_WRITE.equals(rsl.getLockScope())
+            || RecordSecurityLock.LockScope.WRITE.equals(rsl.getLockScope()
+         )).toList());
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** filter a list of locks so that we only see the ones that are WRITE type only.
     *******************************************************************************/
-   public abstract String getType();
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void enrich(QInstance qInstance, QTableMetaData table)
+   public static List<RecordSecurityLock> filterForOnlyWriteLocks(List<RecordSecurityLock> recordSecurityLocks)
    {
-      ////////////////////////
-      // noop in base class //
-      ////////////////////////
+      if(recordSecurityLocks == null)
+      {
+         return (null);
+      }
+
+      return (recordSecurityLocks.stream().filter(rsl -> RecordSecurityLock.LockScope.WRITE.equals(rsl.getLockScope())).toList());
    }
+
 }

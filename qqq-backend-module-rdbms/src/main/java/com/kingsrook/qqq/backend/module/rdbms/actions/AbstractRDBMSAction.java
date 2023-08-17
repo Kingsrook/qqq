@@ -70,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -387,7 +388,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       QQueryFilter securityFilter = new QQueryFilter();
       securityFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
 
-      for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
          // todo - uh, if it's a RIGHT (or FULL) join, then, this should be isOuter = true, right?
          boolean isOuter = false;
@@ -407,7 +408,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          }
 
          QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
-         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
+         for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks())))
          {
             boolean isOuter = queryJoin.getType().equals(QueryJoin.Type.LEFT); // todo full?
             addSubFilterForRecordSecurityLock(instance, session, joinTable, securityFilter, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias(), isOuter);
@@ -1035,7 +1036,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       if(table != null)
       {
-         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
+         for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
          {
             for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
             {
