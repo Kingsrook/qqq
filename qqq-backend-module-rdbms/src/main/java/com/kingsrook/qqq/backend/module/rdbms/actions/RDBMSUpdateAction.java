@@ -131,7 +131,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          boolean    needToCloseConnection = false;
          if(updateInput.getTransaction() != null && updateInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            LOG.debug("Using connection from updateInput [" + rdbmsTransaction.getConnection() + "]");
             connection = rdbmsTransaction.getConnection();
          }
          else

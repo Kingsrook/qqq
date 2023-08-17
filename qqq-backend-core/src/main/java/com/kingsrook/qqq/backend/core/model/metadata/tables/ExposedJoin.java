@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -62,7 +63,19 @@ public class ExposedJoin
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Boolean getIsMany()
+   @JsonIgnore
+   public boolean getIsMany()
+   {
+      return (getIsMany(QContext.getQInstance()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public Boolean getIsMany(QInstance qInstance)
    {
       if(isMany == null)
       {
@@ -70,8 +83,6 @@ public class ExposedJoin
          {
             try
             {
-               QInstance qInstance = QContext.getQInstance();
-
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // loop backward through the joinPath, starting at the join table (since we don't know the table that this exposedJoin is attached to!) //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,5 +215,4 @@ public class ExposedJoin
       this.joinPath = joinPath;
       return (this);
    }
-
 }

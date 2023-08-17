@@ -25,6 +25,7 @@ package com.kingsrook.qqq.api.model.metadata.tables;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.api.ApiSupplementType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -80,13 +81,13 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
     **
     *******************************************************************************/
    @Override
-   public void enrich(QTableMetaData table)
+   public void enrich(QInstance qInstance, QTableMetaData table)
    {
-      super.enrich(table);
+      super.enrich(qInstance, table);
 
       for(Map.Entry<String, ApiTableMetaData> entry : CollectionUtils.nonNullMap(apis).entrySet())
       {
-         entry.getValue().enrich(entry.getKey(), table);
+         entry.getValue().enrich(qInstance, entry.getKey(), table);
       }
    }
 

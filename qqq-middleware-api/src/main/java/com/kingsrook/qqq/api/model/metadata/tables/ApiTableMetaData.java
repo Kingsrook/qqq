@@ -35,6 +35,7 @@ import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -80,7 +81,7 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void enrich(String apiName, QTableMetaData table)
+   public void enrich(QInstance qInstance, String apiName, QTableMetaData table)
    {
       if(initialVersion != null)
       {
@@ -95,7 +96,7 @@ public class ApiTableMetaData implements ApiOperation.EnabledOperationsProvider
 
          for(QFieldMetaData field : CollectionUtils.nonNullList(removedApiFields))
          {
-            new QInstanceEnricher(null).enrichField(field);
+            new QInstanceEnricher(qInstance).enrichField(field);
             ApiFieldMetaData apiFieldMetaData = ensureFieldHasApiSupplementalMetaData(apiName, field);
             if(apiFieldMetaData.getInitialVersion() == null)
             {

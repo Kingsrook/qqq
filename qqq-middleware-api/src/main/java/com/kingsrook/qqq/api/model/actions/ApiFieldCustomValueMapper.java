@@ -23,6 +23,11 @@ package com.kingsrook.qqq.api.model.actions;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import org.json.JSONObject;
 
@@ -34,9 +39,11 @@ public abstract class ApiFieldCustomValueMapper
 {
 
    /*******************************************************************************
-    **
+    ** When producing a JSON Object to send over the API (e.g., for a GET), this method
+    ** can run to customize the value that is produced, for the input QRecord's specified
+    ** fieldName
     *******************************************************************************/
-   public Serializable produceApiValue(QRecord record)
+   public Serializable produceApiValue(QRecord record, String apiFieldName)
    {
       /////////////////////
       // null by default //
@@ -47,9 +54,35 @@ public abstract class ApiFieldCustomValueMapper
 
 
    /*******************************************************************************
+    ** When producing a QRecord (the first parameter) from a JSON Object that was
+    ** received from the API (e.g., a POST or PATCH) - this method can run to
+    ** allow customization of the incoming value.
+    *******************************************************************************/
+   public void consumeApiValue(QRecord record, Object value, JSONObject fullApiJsonObject, String apiFieldName)
+   {
+      /////////////////////
+      // noop by default //
+      /////////////////////
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
-   public void consumeApiValue(QRecord record, Object value, JSONObject fullApiJsonObject)
+   public void customizeFilterCriteria(QueryInput queryInput, QQueryFilter filter, QFilterCriteria criteria, String apiFieldName, ApiFieldMetaData apiFieldMetaData)
+   {
+      /////////////////////
+      // noop by default //
+      /////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void customizeFilterOrderBy(QueryInput queryInput, QFilterOrderBy orderBy, String apiFieldName, ApiFieldMetaData apiFieldMetaData)
    {
       /////////////////////
       // noop by default //

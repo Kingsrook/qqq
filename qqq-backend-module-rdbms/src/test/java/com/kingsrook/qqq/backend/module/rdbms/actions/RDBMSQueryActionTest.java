@@ -32,10 +32,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -1692,6 +1694,53 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       queryInput.setShouldFetchHeavyFields(true);
       records = new QueryAction().execute(queryInput).getRecords();
       assertThat(records).describedAs("Some records should have the heavy homeTown field set when heavies are requested").anyMatch(r -> r.getValue("homeTown") != null);
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMultipleReversedDirectionJoinsBetweenSameTables() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+
+      {
+         /////////////////////////////////////////////////////////
+         // assert a failure if the join to use isn't specified //
+         /////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS));
+         assertThatThrownBy(() -> new QueryAction().execute(queryInput)).rootCause().hasMessageContaining("More than 1 join was found");
+      }
+
+      Integer noOfOrders            = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)).getCount();
+      Integer noOfOrderInstructions = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS)).getCount();
+
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure we can join on order.current_order_instruction_id = order_instruction.id -- and that we get back 1 row per order //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS).withJoinMetaData(QContext.getQInstance().getJoin("orderJoinCurrentOrderInstructions")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         assertEquals(noOfOrders, queryOutput.getRecords().size());
+      }
+
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure we can join on order.id = order_instruction.order_id -- and that we get back 1 row per order instruction //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS).withJoinMetaData(QContext.getQInstance().getJoin("orderInstructionsJoinOrder")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         assertEquals(noOfOrderInstructions, queryOutput.getRecords().size());
+      }
 
    }
 

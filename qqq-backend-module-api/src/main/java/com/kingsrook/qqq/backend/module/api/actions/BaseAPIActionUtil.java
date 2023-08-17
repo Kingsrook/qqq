@@ -519,7 +519,7 @@ public class BaseAPIActionUtil
          {
             String wrapperObjectName = getBackendDetails(table).getTableWrapperObjectName();
             jsonObject = JsonUtils.toJSONObject(resultString);
-            if(jsonObject.has(wrapperObjectName))
+            if(jsonObject.has(wrapperObjectName) && !jsonObject.isNull(wrapperObjectName))
             {
                Object o = jsonObject.get(wrapperObjectName);
                if(o instanceof JSONArray jsonArray)
@@ -749,6 +749,10 @@ public class BaseAPIActionUtil
             {
                throw (new QException("Error setting authorization query parameter", e));
             }
+         }
+         case CUSTOM ->
+         {
+            handleCustomAuthorization(request);
          }
          default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
@@ -1397,5 +1401,17 @@ public class BaseAPIActionUtil
       // rsyslog default limit appears to be 8K - we've got some extra content, so 7 feels safe enough //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       return (7 * 1024);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected void handleCustomAuthorization(HttpRequestBase request) throws QException
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // nothing to do at this layer, meant to be overridden by subclasses //
+      ///////////////////////////////////////////////////////////////////////
    }
 }

@@ -83,7 +83,6 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          boolean    needToCloseConnection = false;
          if(deleteInput.getTransaction() != null && deleteInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            LOG.debug("Using connection from updateInput [" + rdbmsTransaction.getConnection() + "]");
             connection = rdbmsTransaction.getConnection();
          }
          else

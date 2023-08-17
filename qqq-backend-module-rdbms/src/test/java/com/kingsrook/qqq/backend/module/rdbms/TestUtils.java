@@ -66,6 +66,7 @@ public class TestUtils
    public static final String TABLE_NAME_PERSONAL_ID_CARD    = "personalIdCard";
    public static final String TABLE_NAME_STORE               = "store";
    public static final String TABLE_NAME_ORDER               = "order";
+   public static final String TABLE_NAME_ORDER_INSTRUCTIONS  = "orderInstructions";
    public static final String TABLE_NAME_ITEM                = "item";
    public static final String TABLE_NAME_ORDER_LINE          = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
@@ -245,6 +246,16 @@ public class TestUtils
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
+         .withField(new QFieldMetaData("currentOrderInstructionsId", QFieldType.INTEGER).withBackendName("current_order_instructions_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
+      );
+
+      qInstance.addTable(defineBaseTable(TABLE_NAME_ORDER_INSTRUCTIONS, "order_instructions")
+         .withRecordSecurityLock(new RecordSecurityLock()
+            .withSecurityKeyType(TABLE_NAME_STORE)
+            .withFieldName("order.storeId")
+            .withJoinNameChain(List.of("orderInstructionsJoinOrder")))
+         .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
+         .withField(new QFieldMetaData("instructions", QFieldType.STRING))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
@@ -355,6 +366,22 @@ public class TestUtils
          .withRightTable(TABLE_NAME_LINE_ITEM_EXTRINSIC)
          .withType(JoinType.ONE_TO_MANY)
          .withJoinOn(new JoinOn("id", "orderLineId"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderJoinCurrentOrderInstructions")
+         .withLeftTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_ORDER_INSTRUCTIONS)
+         .withType(JoinType.ONE_TO_ONE)
+         .withJoinOn(new JoinOn("currentOrderInstructionsId", "id"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName("orderInstructionsJoinOrder")
+         .withLeftTable(TABLE_NAME_ORDER_INSTRUCTIONS)
+         .withRightTable(TABLE_NAME_ORDER)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("orderId", "id"))
       );
 
       qInstance.addPossibleValueSource(new QPossibleValueSource()

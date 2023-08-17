@@ -96,7 +96,6 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          boolean    needToCloseConnection = false;
          if(insertInput.getTransaction() != null && insertInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
-            LOG.debug("Using connection from insertInput [" + rdbmsTransaction.getConnection() + "]");
             connection = rdbmsTransaction.getConnection();
          }
          else
