@@ -23,9 +23,14 @@ package com.kingsrook.qqq.api.actions;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
+import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
@@ -35,19 +40,23 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiAssociationMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +75,7 @@ class ApiImplementationTest extends BaseTest
    @AfterEach
    void beforeAndAfterEach()
    {
-      QRecordApiAdapter.clearCaches();
+      GetTableApiFieldsAction.clearCaches();
    }
 
 
@@ -191,6 +200,43 @@ class ApiImplementationTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testQueryWithRemovedFields() throws QException
+   {
+      QInstance           qInstance           = QContext.getQInstance();
+      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaDataContainer.of(qInstance).getApiInstanceMetaData(TestUtils.API_NAME);
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecord(new QRecord()
+         .withValue("firstName", "Tim")
+         .withValue("noOfShoes", 2)
+         .withValue("birthDate", LocalDate.of(1980, Month.MAY, 31))
+         .withValue("cost", new BigDecimal("3.50"))
+         .withValue("price", new BigDecimal("9.99"))
+         .withValue("photo", "ABCD".getBytes())));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // query by a field that wasn't in an old api version, but is in the table now - should fail //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+
+      assertThatThrownBy(() ->
+         ApiImplementation.query(apiInstanceMetaData, TestUtils.V2022_Q4, TestUtils.TABLE_NAME_PERSON, MapBuilder.of("noOfShoes", List.of("2"))))
+         .isInstanceOf(QBadRequestException.class)
+         .hasMessageContaining("Unrecognized filter criteria field");
+
+      {
+         /////////////////////////////////////////////
+         // query by a removed field (was replaced) //
+         /////////////////////////////////////////////
+         Map<String, Serializable> queryResult = ApiImplementation.query(apiInstanceMetaData, TestUtils.V2022_Q4, TestUtils.TABLE_NAME_PERSON, MapBuilder.of("shoeCount", List.of("2")));
+         assertEquals(1, queryResult.get("count"));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static class PersonLastNameApiValueCustomizer extends ApiFieldCustomValueMapper
    {
 
@@ -198,7 +244,7 @@ class ApiImplementationTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public Serializable produceApiValue(QRecord record)
+      public Serializable produceApiValue(QRecord record, String apiFieldName)
       {
          return ("customValue-" + record.getValueString("lastName"));
       }
@@ -209,7 +255,7 @@ class ApiImplementationTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void consumeApiValue(QRecord record, Object value, JSONObject fullApiJsonObject)
+      public void consumeApiValue(QRecord record, Object value, JSONObject fullApiJsonObject, String apiFieldName)
       {
          String valueString = ValueUtils.getValueAsString(value);
          valueString = valueString.replaceFirst("^stripThisAway-", "");

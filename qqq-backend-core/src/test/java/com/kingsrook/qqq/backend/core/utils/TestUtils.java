@@ -596,6 +596,7 @@ public class TestUtils
             .withFieldName("order.storeId")
             .withJoinNameChain(List.of("orderLineItem")))
          .withAssociation(new Association().withName("extrinsics").withAssociatedTableName(TABLE_NAME_LINE_ITEM_EXTRINSIC).withJoinName("lineItemLineItemExtrinsic"))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))

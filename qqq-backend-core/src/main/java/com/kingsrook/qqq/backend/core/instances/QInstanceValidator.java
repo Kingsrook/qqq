@@ -438,10 +438,13 @@ public class QInstanceValidator
                for(QFieldSection section : table.getSections())
                {
                   validateTableSection(qInstance, table, section, fieldNamesInSections);
-                  if(section.getTier().equals(Tier.T1))
+                  if(assertCondition(section.getTier() != null, "Table " + tableName + " " + section.getName() + " is missing its tier"))
                   {
-                     assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
-                     tier1Section = section;
+                     if(section.getTier().equals(Tier.T1))
+                     {
+                        assertCondition(tier1Section == null, "Table " + tableName + " has more than 1 section listed as Tier 1");
+                        tier1Section = section;
+                     }
                   }
 
                   assertCondition(!usedSectionNames.contains(section.getName()), "Table " + tableName + " has more than 1 section named " + section.getName());
@@ -1101,13 +1104,39 @@ public class QInstanceValidator
       boolean hasFields = CollectionUtils.nullSafeHasContents(section.getFieldNames());
       boolean hasWidget = StringUtils.hasContent(section.getWidgetName());
 
-      if(assertCondition(hasFields || hasWidget, "Table " + table.getName() + " section " + section.getName() + " does not have any fields or a widget."))
+      String sectionPrefix = "Table " + table.getName() + " section " + section.getName() + " ";
+      if(assertCondition(hasFields || hasWidget, sectionPrefix + "does not have any fields or a widget."))
       {
          if(table.getFields() != null && hasFields)
          {
             for(String fieldName : section.getFieldNames())
             {
-               assertCondition(table.getFields().containsKey(fieldName), "Table " + table.getName() + " section " + section.getName() + " specifies fieldName " + fieldName + ", which is not a field on this table.");
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // note - this was originally written as an assertion:                                                                                                                                       //
+               // if(assertCondition(qInstance.getTable(otherTableName) != null, sectionPrefix + "join-field " + fieldName + ", which is referencing an unrecognized table name [" + otherTableName + "]")) //
+               // but... then a field name with dots gives us a bad time here, so...                                                                                                                        //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(fieldName.contains(".") && qInstance.getTable(fieldName.split("\\.")[0]) != null)
+               {
+                  String[] parts            = fieldName.split("\\.");
+                  String   otherTableName   = parts[0];
+                  String   foreignFieldName = parts[1];
+
+                  if(assertCondition(qInstance.getTable(otherTableName) != null, sectionPrefix + "join-field " + fieldName + ", which is referencing an unrecognized table name [" + otherTableName + "]"))
+                  {
+                     List<ExposedJoin> matchedExposedJoins = CollectionUtils.nonNullList(table.getExposedJoins()).stream().filter(ej -> otherTableName.equals(ej.getJoinTable())).toList();
+                     if(assertCondition(CollectionUtils.nullSafeHasContents(matchedExposedJoins), sectionPrefix + "join-field " + fieldName + ", referencing table [" + otherTableName + "] which is not an exposed join on this table."))
+                     {
+                        assertCondition(!matchedExposedJoins.get(0).getIsMany(qInstance), sectionPrefix + "join-field " + fieldName + " references an is-many join, which is not supported.");
+                     }
+                     assertCondition(qInstance.getTable(otherTableName).getFields().containsKey(foreignFieldName), sectionPrefix + "join-field " + fieldName + " specifies a fieldName [" + foreignFieldName + "] which does not exist in that table [" + otherTableName + "].");
+                  }
+               }
+               else
+               {
+                  assertCondition(table.getFields().containsKey(fieldName), sectionPrefix + "specifies fieldName " + fieldName + ", which is not a field on this table.");
+               }
+
                assertCondition(!fieldNamesInSections.contains(fieldName), "Table " + table.getName() + " has field " + fieldName + " listed more than once in its field sections.");
 
                fieldNamesInSections.add(fieldName);
@@ -1115,7 +1144,7 @@ public class QInstanceValidator
          }
          else if(hasWidget)
          {
-            assertCondition(qInstance.getWidget(section.getWidgetName()) != null, "Table " + table.getName() + " section " + section.getName() + " specifies widget " + section.getWidgetName() + ", which is not a widget in this instance.");
+            assertCondition(qInstance.getWidget(section.getWidgetName()) != null, sectionPrefix + "specifies widget " + section.getWidgetName() + ", which is not a widget in this instance.");
          }
       }
    }

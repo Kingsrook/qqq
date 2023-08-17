@@ -485,7 +485,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                   .withDescription("How the results of the query should be sorted. SQL-style, comma-separated list of field names, each optionally followed by ASC or DESC (defaults to ASC).")
                   .withIn("query")
                   .withSchema(new Schema().withType("string"))
-                  .withExamples(buildOrderByExamples(primaryKeyApiName, tableApiFields)),
+                  .withExamples(buildOrderByExamples(apiName, primaryKeyApiName, tableApiFields)),
                new Parameter()
                   .withName("booleanOperator")
                   .withDescription("Whether to combine query field as an AND or an OR.  Default is AND.")
@@ -500,10 +500,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          for(QFieldMetaData tableApiField : tableApiFields)
          {
-            String label = tableApiField.getLabel();
+            String fieldName = ApiFieldMetaData.getEffectiveApiFieldName(apiName, tableApiField);
+            String label     = tableApiField.getLabel();
+
             if(!StringUtils.hasContent(label))
             {
-               label = QInstanceEnricher.nameToLabel(tableApiField.getName());
+               label = QInstanceEnricher.nameToLabel(fieldName);
             }
 
             StringBuilder description = new StringBuilder("Query on the " + label + " field.  ");
@@ -517,7 +519,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             }
 
             queryGet.getParameters().add(new Parameter()
-               .withName(tableApiField.getName())
+               .withName(fieldName)
                .withDescription(description.toString())
                .withIn("query")
                .withExplode(true)
@@ -892,6 +894,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ////////////////////////////////
       List<Parameter> parameters      = new ArrayList<>();
       ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
+      String          apiName         = apiInstanceMetaData.getName();
       if(apiProcessInput != null)
       {
          ApiProcessInputFieldsContainer queryStringParams = apiProcessInput.getQueryStringParams();
@@ -912,12 +915,13 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          if(bodyField != null)
          {
             ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(bodyField);
-            ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
+            ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiName);
 
             String fieldLabel = bodyField.getLabel();
+            String fieldName  = ApiFieldMetaData.getEffectiveApiFieldName(apiName, bodyField);
             if(!StringUtils.hasContent(fieldLabel))
             {
-               fieldLabel = QInstanceEnricher.nameToLabel(bodyField.getName());
+               fieldLabel = QInstanceEnricher.nameToLabel(fieldName);
             }
 
             String bodyDescription = "Value for the " + fieldLabel;
@@ -979,7 +983,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
       if(!ApiProcessMetaData.AsyncMode.ALWAYS.equals(apiProcessMetaData.getAsyncMode()))
       {
-         responses.putAll(output.getSpecResponses(apiInstanceMetaData.getName()));
+         responses.putAll(output.getSpecResponses(apiName));
       }
       if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
       {
@@ -1074,13 +1078,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
     *******************************************************************************/
    private Parameter processFieldToParameter(ApiInstanceMetaData apiInstanceMetaData, QFieldMetaData field)
    {
-      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
-      ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiInstanceMetaData.getName());
+      String apiName = apiInstanceMetaData.getName();
 
+      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.ofOrNew(field);
+      ApiFieldMetaData          apiFieldMetaData          = apiFieldMetaDataContainer.getApiFieldMetaData(apiName);
+
+      String fieldName  = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
       String fieldLabel = field.getLabel();
       if(!StringUtils.hasContent(fieldLabel))
       {
-         fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+         fieldLabel = QInstanceEnricher.nameToLabel(fieldName);
       }
 
       String description = "Value for the " + fieldLabel + " field.";
@@ -1097,7 +1104,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       Schema fieldSchema = getFieldSchema(field, description, apiInstanceMetaData);
 
       Parameter parameter = new Parameter()
-         .withName(field.getName())
+         .withName(fieldName)
          .withDescription(description)
          .withRequired(field.getIsRequired())
          .withSchema(fieldSchema);
@@ -1213,14 +1220,15 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       for(QFieldMetaData field : tableApiFields)
       {
          String fieldLabel = field.getLabel();
+         String fieldName  = ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field);
          if(!StringUtils.hasContent(fieldLabel))
          {
-            fieldLabel = QInstanceEnricher.nameToLabel(field.getName());
+            fieldLabel = QInstanceEnricher.nameToLabel(fieldName);
          }
 
          String defaultDescription = fieldLabel + " for the " + table.getLabel() + ".";
          Schema fieldSchema        = getFieldSchema(field, defaultDescription, apiInstanceMetaData);
-         tableFields.put(ApiFieldMetaData.getEffectiveApiFieldName(apiInstanceMetaData.getName(), field), fieldSchema);
+         tableFields.put(fieldName, fieldSchema);
       }
 
       //////////////////////////////////
@@ -1561,7 +1569,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, Example> buildOrderByExamples(String primaryKeyApiName, List<? extends QFieldMetaData> tableApiFields)
+   private Map<String, Example> buildOrderByExamples(String apiName, String primaryKeyApiName, List<? extends QFieldMetaData> tableApiFields)
    {
       Map<String, Example> rs = new LinkedHashMap<>();
 
@@ -1569,7 +1577,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       List<String> fieldsForExample5 = new ArrayList<>();
       for(QFieldMetaData tableApiField : tableApiFields)
       {
-         String name = tableApiField.getName();
+         String name = ApiFieldMetaData.getEffectiveApiFieldName(apiName, tableApiField);
          if(primaryKeyApiName.equals(name) || fieldsForExample4.contains(name) || fieldsForExample5.contains(name))
          {
             continue;
