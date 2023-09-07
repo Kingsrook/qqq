@@ -92,6 +92,7 @@ public class StreamedETLBackendStep implements BackendStep
          ////////////////////////////////////////////////////////////////////////////////
          // rollback the work, then re-throw the error for up-stream to catch & report //
          ////////////////////////////////////////////////////////////////////////////////
+         LOG.warn("Caught top-level process exception - rolling back transaction", e);
          transaction.rollback();
          throw (e);
       }
