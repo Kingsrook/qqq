@@ -34,7 +34,6 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -77,17 +76,19 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          loadStep.setTransformStep(transformStep);
 
+         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+         transformStep.preRun(runBackendStepInput, runBackendStepOutput);
+         loadStep.preRun(runBackendStepInput, runBackendStepOutput);
+
          /////////////////////////////////////////////////////////////////////////////
          // let the load step override the capacity for the record pipe.            //
          // this is useful for slower load steps - so that the extract step doesn't //
          // fill the pipe, then timeout waiting for all the records to be consumed, //
          // before it can put more records in.                                      //
          /////////////////////////////////////////////////////////////////////////////
-         RecordPipe recordPipe;
-         Integer    overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         Integer overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
          if(overrideRecordPipeCapacity != null)
          {
-            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
             LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
          }
          else
@@ -95,20 +96,12 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
             if(overrideRecordPipeCapacity != null)
             {
-               recordPipe = new RecordPipe(overrideRecordPipeCapacity);
                LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
-            }
-            else
-            {
-               recordPipe = new RecordPipe();
             }
          }
 
+         RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, overrideRecordPipeCapacity);
          extractStep.setRecordPipe(recordPipe);
-         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-
-         transformStep.preRun(runBackendStepInput, runBackendStepOutput);
-         loadStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          /////////////////////////////////////////////////////////////////////////////
          // open a transaction for the whole process, if that's the requested level //

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,12 +38,16 @@ import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 import org.apache.logging.log4j.Level;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -60,11 +65,17 @@ public class JoinsContext
    private final String          mainTableName;
    private final List<QueryJoin> queryJoins;
 
+   private final QQueryFilter securityFilter;
+
    ////////////////////////////////////////////////////////////////
    // note - will have entries for all tables, not just aliases. //
    ////////////////////////////////////////////////////////////////
    private final Map<String, String> aliasToTableNameMap = new HashMap<>();
-   private       Level               logLevel            = Level.OFF;
+
+   /////////////////////////////////////////////////////////////////////////////
+   // we will get a TON of more output if this gets turned up, so be cautious //
+   /////////////////////////////////////////////////////////////////////////////
+   private Level logLevel = Level.OFF;
 
 
 
@@ -74,54 +85,182 @@ public class JoinsContext
     *******************************************************************************/
    public JoinsContext(QInstance instance, String tableName, List<QueryJoin> queryJoins, QQueryFilter filter) throws QException
    {
-      log("--- START ----------------------------------------------------------------------", logPair("mainTable", tableName));
       this.instance = instance;
       this.mainTableName = tableName;
       this.queryJoins = new MutableList<>(queryJoins);
+      this.securityFilter = new QQueryFilter();
+
+      // log("--- START ----------------------------------------------------------------------", logPair("mainTable", tableName));
+      dumpDebug(true, false);
 
       for(QueryJoin queryJoin : this.queryJoins)
       {
-         log("Processing input query join", logPair("joinTable", queryJoin.getJoinTable()), logPair("alias", queryJoin.getAlias()), logPair("baseTableOrAlias", queryJoin.getBaseTableOrAlias()), logPair("joinMetaDataName", () -> queryJoin.getJoinMetaData().getName()));
          processQueryJoin(queryJoin);
       }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure that all tables specified in filter columns are being brought into the query as joins //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      ensureFilterIsRepresented(filter);
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // ensure that any record locks on the main table, which require a join, are present //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks())))
+      {
+         ensureRecordSecurityLockIsRepresented(tableName, tableName, recordSecurityLock, null);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // make sure that all joins in the query have meta data specified                //
+      // e.g., a user-added join may just specify the join-table                       //
+      // or a join implicitly added from a filter may also not have its join meta data //
+      ///////////////////////////////////////////////////////////////////////////////////
+      fillInMissingJoinMetaData();
 
       ///////////////////////////////////////////////////////////////
       // ensure any joins that contribute a recordLock are present //
       ///////////////////////////////////////////////////////////////
-      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks())))
-      {
-         ensureRecordSecurityLockIsRepresented(instance, tableName, recordSecurityLock);
-      }
+      ensureAllJoinRecordSecurityLocksAreRepresented(instance);
 
-      ensureFilterIsRepresented(filter);
-
-      addJoinsFromExposedJoinPaths();
-
-      /* todo!!
-      for(QueryJoin queryJoin : queryJoins)
-      {
-         QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
-         for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
-         {
-            // addCriteriaForRecordSecurityLock(instance, session, joinTable, securityCriteria, recordSecurityLock, joinsContext, queryJoin.getJoinTableOrItsAlias());
-         }
-      }
-      */
+      ////////////////////////////////////////////////////////////////////////////////////
+      // if there were any security filters built, then put those into the input filter //
+      ////////////////////////////////////////////////////////////////////////////////////
+      addSecurityFiltersToInputFilter(filter);
 
       log("Constructed JoinsContext", logPair("mainTableName", this.mainTableName), logPair("queryJoins", this.queryJoins.stream().map(qj -> qj.getJoinTable()).collect(Collectors.joining(","))));
-      log("--- END ------------------------------------------------------------------------");
+      log("", logPair("securityFilter", securityFilter));
+      log("", logPair("fullFilter", filter));
+      dumpDebug(false, true);
+      // log("--- END ------------------------------------------------------------------------");
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Update the input filter with any security filters that were built.
     *******************************************************************************/
-   private void ensureRecordSecurityLockIsRepresented(QInstance instance, String tableName, RecordSecurityLock recordSecurityLock) throws QException
+   private void addSecurityFiltersToInputFilter(QQueryFilter filter)
    {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // if there's no security filter criteria (including sub-filters), return w/ noop //
+      ////////////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeIsEmpty(securityFilter.getSubFilters()))
+      {
+         return;
+      }
+
+      ///////////////////////////////////////////////////////////////////////
+      // if the input filter is an OR we need to replace it with a new AND //
+      ///////////////////////////////////////////////////////////////////////
+      if(filter.getBooleanOperator().equals(QQueryFilter.BooleanOperator.OR))
+      {
+         List<QFilterCriteria> originalCriteria   = filter.getCriteria();
+         List<QQueryFilter>    originalSubFilters = filter.getSubFilters();
+
+         QQueryFilter replacementFilter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
+         replacementFilter.setCriteria(originalCriteria);
+         replacementFilter.setSubFilters(originalSubFilters);
+
+         filter.setCriteria(new ArrayList<>());
+         filter.setSubFilters(new ArrayList<>());
+         filter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
+         filter.addSubFilter(replacementFilter);
+      }
+
+      for(QQueryFilter subFilter : securityFilter.getSubFilters())
+      {
+         filter.addSubFilter(subFilter);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** In case we've added any joins to the query that have security locks which
+    ** weren't previously added to the query, add them now.  basically, this is
+    ** calling ensureRecordSecurityLockIsRepresented for each queryJoin.
+    *******************************************************************************/
+   private void ensureAllJoinRecordSecurityLocksAreRepresented(QInstance instance) throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // avoid concurrent modification exceptions by doing a double-loop and breaking the inner any time anything gets added //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      Set<QueryJoin> processedQueryJoins   = new HashSet<>();
+      boolean        addedAnyThisIteration = true;
+      while(addedAnyThisIteration)
+      {
+         addedAnyThisIteration = false;
+
+         for(QueryJoin queryJoin : this.queryJoins)
+         {
+            boolean addedAnyForThisJoin = false;
+
+            /////////////////////////////////////////////////
+            // avoid double-processing the same query join //
+            /////////////////////////////////////////////////
+            if(processedQueryJoins.contains(queryJoin))
+            {
+               continue;
+            }
+            processedQueryJoins.add(queryJoin);
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // process all locks on this join's join-table.  keep track if any new joins were added //
+            //////////////////////////////////////////////////////////////////////////////////////////
+            QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
+            for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
+            {
+               List<QueryJoin> addedQueryJoins = ensureRecordSecurityLockIsRepresented(joinTable.getName(), queryJoin.getJoinTableOrItsAlias(), recordSecurityLock, queryJoin);
+
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if any joins were added by this call, add them to the set of processed ones, so they don't get re-processed. //
+               // also mark the flag that any were added for this join, to manage the double-looping                           //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(CollectionUtils.nullSafeHasContents(addedQueryJoins))
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // make all new joins added in that method be of the same type (inner/left/etc) as the query join they are connected to //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  for(QueryJoin addedQueryJoin : addedQueryJoins)
+                  {
+                     addedQueryJoin.setType(queryJoin.getType());
+                  }
+
+                  processedQueryJoins.addAll(addedQueryJoins);
+                  addedAnyForThisJoin = true;
+               }
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+            // if any new joins were added, we need to break the inner-loop, and continue the outer loop //
+            // e.g., to process the next query join (but we can't just go back to the foreach queryJoin, //
+            // because it would fail with concurrent modification)                                       //
+            ///////////////////////////////////////////////////////////////////////////////////////////////
+            if(addedAnyForThisJoin)
+            {
+               addedAnyThisIteration = true;
+               break;
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given recordSecurityLock on a given table (with a possible alias),
+    ** make sure that if any joins are needed to get to the lock, that they are in the query.
+    **
+    ** returns the list of query joins that were added, if any were added
+    *******************************************************************************/
+   private List<QueryJoin> ensureRecordSecurityLockIsRepresented(String tableName, String tableNameOrAlias, RecordSecurityLock recordSecurityLock, QueryJoin sourceQueryJoin) throws QException
+   {
+      List<QueryJoin> addedQueryJoins = new ArrayList<>();
+
       ///////////////////////////////////////////////////////////////////////////////////////////////////
-      // ok - so - the join name chain is going to be like this:                                       //
-      // for a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is): //
+      // A join name chain is going to look like this:                                                 //
+      // for a table:  orderLineItemExtrinsic (that's 2 away from order, where its security field is): //
       // - securityFieldName = order.clientId                                                          //
       // - joinNameChain = orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic             //
       // so - to navigate from the table to the security field, we need to reverse the joinNameChain,  //
@@ -129,30 +268,30 @@ public class JoinsContext
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       ArrayList<String> joinNameChain = new ArrayList<>(CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()));
       Collections.reverse(joinNameChain);
-      log("Evaluating recordSecurityLock", logPair("recordSecurityLock", recordSecurityLock.getFieldName()), logPair("joinNameChain", joinNameChain));
+      log("Evaluating recordSecurityLock.  Join name chain is of length: " + joinNameChain.size(), logPair("tableNameOrAlias", tableNameOrAlias), logPair("recordSecurityLock", recordSecurityLock.getFieldName()), logPair("joinNameChain", joinNameChain));
 
-      QTableMetaData tmpTable = instance.getTable(mainTableName);
+      QTableMetaData tmpTable                = instance.getTable(tableName);
+      String         securityFieldTableAlias = tableNameOrAlias;
+      String         baseTableOrAlias        = tableNameOrAlias;
+
+      boolean chainIsInner = true;
+      if(sourceQueryJoin != null && QueryJoin.Type.isOuter(sourceQueryJoin.getType()))
+      {
+         chainIsInner = false;
+      }
 
       for(String joinName : joinNameChain)
       {
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         // check the joins currently in the query - if any are for this table, then we don't need to add one //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         List<QueryJoin> matchingJoins = this.queryJoins.stream().filter(queryJoin ->
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         // check the joins currently in the query - if any are THIS join, then we don't need to add one //
+         //////////////////////////////////////////////////////////////////////////////////////////////////
+         List<QueryJoin> matchingQueryJoins = this.queryJoins.stream().filter(queryJoin ->
          {
-            QJoinMetaData joinMetaData = null;
-            if(queryJoin.getJoinMetaData() != null)
-            {
-               joinMetaData = queryJoin.getJoinMetaData();
-            }
-            else
-            {
-               joinMetaData = findJoinMetaData(instance, tableName, queryJoin.getJoinTable());
-            }
+            QJoinMetaData joinMetaData = queryJoin.getJoinMetaData();
             return (joinMetaData != null && Objects.equals(joinMetaData.getName(), joinName));
          }).toList();
 
-         if(CollectionUtils.nullSafeHasContents(matchingJoins))
+         if(CollectionUtils.nullSafeHasContents(matchingQueryJoins))
          {
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // note - if a user added a join as an outer type, we need to change it to be inner, for the security purpose. //
@@ -160,11 +299,40 @@ public class JoinsContext
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             log("- skipping join already in the query", logPair("joinName", joinName));
 
-            if(matchingJoins.get(0).getType().equals(QueryJoin.Type.LEFT) || matchingJoins.get(0).getType().equals(QueryJoin.Type.RIGHT))
+            QueryJoin matchedQueryJoin = matchingQueryJoins.get(0);
+
+            if(matchedQueryJoin.getType().equals(QueryJoin.Type.LEFT) || matchedQueryJoin.getType().equals(QueryJoin.Type.RIGHT))
+            {
+               chainIsInner = false;
+            }
+
+            /* ?? todo ??
+            if(matchedQueryJoin.getType().equals(QueryJoin.Type.LEFT) || matchedQueryJoin.getType().equals(QueryJoin.Type.RIGHT))
             {
                log("- - although... it was here as an outer - so switching it to INNER", logPair("joinName", joinName));
-               matchingJoins.get(0).setType(QueryJoin.Type.INNER);
+               matchedQueryJoin.setType(QueryJoin.Type.INNER);
             }
+            */
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // as we're walking from tmpTable to the table which ultimately has the security key field,         //
+            // if the queryJoin we just found is joining out to tmpTable, then we need to advance tmpTable back //
+            // to the queryJoin's base table - else, tmpTable advances to the matched queryJoin's joinTable     //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(tmpTable.getName().equals(matchedQueryJoin.getJoinTable()))
+            {
+               securityFieldTableAlias = Objects.requireNonNullElse(matchedQueryJoin.getBaseTableOrAlias(), mainTableName);
+            }
+            else
+            {
+               securityFieldTableAlias = matchedQueryJoin.getJoinTableOrItsAlias();
+            }
+            tmpTable = instance.getTable(securityFieldTableAlias);
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // set the baseTableOrAlias for the next iteration to be this join's joinTableOrAlias //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            baseTableOrAlias = securityFieldTableAlias;
 
             continue;
          }
@@ -172,20 +340,193 @@ public class JoinsContext
          QJoinMetaData join = instance.getJoin(joinName);
          if(join.getLeftTable().equals(tmpTable.getName()))
          {
-            QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock().withJoinMetaData(join).withType(QueryJoin.Type.INNER);
-            this.addQueryJoin(queryJoin, "forRecordSecurityLock (non-flipped)");
+            securityFieldTableAlias = join.getRightTable() + "_forSecurityJoin_" + join.getName();
+            QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock()
+               .withJoinMetaData(join)
+               .withType(chainIsInner ? QueryJoin.Type.INNER : QueryJoin.Type.LEFT)
+               .withBaseTableOrAlias(baseTableOrAlias)
+               .withAlias(securityFieldTableAlias);
+
+            addQueryJoin(queryJoin, "forRecordSecurityLock (non-flipped)", "- ");
+            addedQueryJoins.add(queryJoin);
             tmpTable = instance.getTable(join.getRightTable());
          }
          else if(join.getRightTable().equals(tmpTable.getName()))
          {
-            QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock().withJoinMetaData(join.flip()).withType(QueryJoin.Type.INNER);
-            this.addQueryJoin(queryJoin, "forRecordSecurityLock (flipped)");
+            securityFieldTableAlias = join.getLeftTable() + "_forSecurityJoin_" + join.getName();
+            QueryJoin queryJoin = new ImplicitQueryJoinForSecurityLock()
+               .withJoinMetaData(join.flip())
+               .withType(chainIsInner ? QueryJoin.Type.INNER : QueryJoin.Type.LEFT)
+               .withBaseTableOrAlias(baseTableOrAlias)
+               .withAlias(securityFieldTableAlias);
+
+            addQueryJoin(queryJoin, "forRecordSecurityLock (flipped)", "- ");
+            addedQueryJoins.add(queryJoin);
             tmpTable = instance.getTable(join.getLeftTable());
          }
          else
          {
+            dumpDebug(false, true);
             throw (new QException("Error adding security lock joins to query - table name [" + tmpTable.getName() + "] not found in join [" + joinName + "]"));
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // for the next iteration of the loop, set the next join's baseTableOrAlias to be the alias we just created //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         baseTableOrAlias = securityFieldTableAlias;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      // now that we know the joins/tables are in the query, add to the security filter //
+      ////////////////////////////////////////////////////////////////////////////////////
+      QueryJoin lastAddedQueryJoin = addedQueryJoins.isEmpty() ? null : addedQueryJoins.get(addedQueryJoins.size() - 1);
+      if(sourceQueryJoin != null && lastAddedQueryJoin == null)
+      {
+         lastAddedQueryJoin = sourceQueryJoin;
+      }
+      addSubFilterForRecordSecurityLock(recordSecurityLock, tmpTable, securityFieldTableAlias, !chainIsInner, lastAddedQueryJoin);
+
+      log("Finished evaluating recordSecurityLock");
+
+      return (addedQueryJoins);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void addSubFilterForRecordSecurityLock(RecordSecurityLock recordSecurityLock, QTableMetaData table, String tableNameOrAlias, boolean isOuter, QueryJoin sourceQueryJoin)
+   {
+      QSession session = QContext.getQSession();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QSecurityKeyType securityKeyType = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+      {
+         ///////////////////////////////////////////////////////////////////////////////
+         // if we have all-access on this key, then we don't need a criterion for it. //
+         ///////////////////////////////////////////////////////////////////////////////
+         if(session.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+         {
+            if(sourceQueryJoin != null)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
+               // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
+               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
+            }
+
+            return;
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // for locks w/o a join chain, the lock fieldName will simply be a field on the table. //
+      // so just prepend that with the tableNameOrAlias.                                     //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      String fieldName = tableNameOrAlias + "." + recordSecurityLock.getFieldName();
+      if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////
+         // else, expect a "table.field" in the lock fieldName - but we want to replace //
+         // the table name part with a possible alias that we took in.                  //
+         /////////////////////////////////////////////////////////////////////////////////
+         String[] parts = recordSecurityLock.getFieldName().split("\\.");
+         if(parts.length != 2)
+         {
+            dumpDebug(false, true);
+            throw new IllegalArgumentException("Mal-formatted recordSecurityLock fieldName for lock with joinNameChain in query: " + fieldName);
+         }
+         fieldName = tableNameOrAlias + "." + parts[1];
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // else - get the key values from the session and decide what kind of criterion to build //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      QQueryFilter          lockFilter   = new QQueryFilter();
+      List<QFilterCriteria> lockCriteria = new ArrayList<>();
+      lockFilter.setCriteria(lockCriteria);
+
+      QFieldType type = QFieldType.INTEGER;
+      try
+      {
+         JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = getFieldAndTableNameOrAlias(fieldName);
+         type = fieldAndTableNameOrAlias.field().getType();
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error getting field type...  Trying Integer", e);
+      }
+
+      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
+      if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         {
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // else, if no user/session values, and null-value behavior is deny, then setup a FALSE condition, to allow no rows.           //
+            // todo - make some explicit contradiction here - maybe even avoid running the whole query - as you're not allowed ANY records //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, Collections.emptyList()));
+         }
+      }
+      else
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // else, if user/session has some values, build an IN rule -                                                //
+         // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         {
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
+         }
+         else
+         {
+            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
+         }
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's a sourceQueryJoin, then set the lockCriteria on that join - so it gets written into the JOIN ... ON clause //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(sourceQueryJoin != null)
+      {
+         sourceQueryJoin.withSecurityCriteria(lockCriteria);
+      }
+      else
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // we used to add an OR IS NULL for cases of an outer-join - but instead, this is now handled by putting the lockCriteria //
+         // into the join (see above) - so this check is probably deprecated.                                                      //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         /*
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if this field is on the outer side of an outer join, then if we do a straight filter on it, then we're basically      //
+            // nullifying the outer join... so for an outer join use-case, OR the security field criteria with a primary-key IS NULL //
+            // which will make missing rows from the join be found.                                                                  //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(isOuter)
+            {
+               lockFilter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
+               lockFilter.addCriteria(new QFilterCriteria(tableNameOrAlias + "." + table.getPrimaryKeyField(), QCriteriaOperator.IS_BLANK));
+            }
+         */
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // If this filter isn't for a queryJoin, then just add it to the main list of security sub-filters //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         this.securityFilter.addSubFilter(lockFilter);
       }
    }
 
@@ -197,9 +538,9 @@ public class JoinsContext
     ** use this method to add to the list, instead of ever adding directly, as it's
     ** important do to that process step (and we've had bugs when it wasn't done).
     *******************************************************************************/
-   private void addQueryJoin(QueryJoin queryJoin, String reason) throws QException
+   private void addQueryJoin(QueryJoin queryJoin, String reason, String logPrefix) throws QException
    {
-      log("Adding query join to context",
+      log(Objects.requireNonNullElse(logPrefix, "") + "Adding query join to context",
          logPair("reason", reason),
          logPair("joinTable", queryJoin.getJoinTable()),
          logPair("joinMetaData.name", () -> queryJoin.getJoinMetaData().getName()),
@@ -208,34 +549,46 @@ public class JoinsContext
       );
       this.queryJoins.add(queryJoin);
       processQueryJoin(queryJoin);
+      dumpDebug(false, false);
    }
 
 
 
    /*******************************************************************************
     ** If there are any joins in the context that don't have a join meta data, see
-    ** if we can find the JoinMetaData to use for them by looking at the main table's
-    ** exposed joins, and using their join paths.
+    ** if we can find the JoinMetaData to use for them by looking at all joins in the
+    ** instance, or at the main table's exposed joins, and using their join paths.
     *******************************************************************************/
-   private void addJoinsFromExposedJoinPaths() throws QException
+   private void fillInMissingJoinMetaData() throws QException
    {
+      log("Begin adding missing join meta data");
+
       ////////////////////////////////////////////////////////////////////////////////
       // do a double-loop, to avoid concurrent modification on the queryJoins list. //
       // that is to say, we'll loop over that list, but possibly add things to it,  //
       // in which case we'll set this flag, and break the inner loop, to go again.  //
       ////////////////////////////////////////////////////////////////////////////////
-      boolean addedJoin;
+      Set<QueryJoin> processedQueryJoins = new HashSet<>();
+      boolean        addedJoin;
       do
       {
          addedJoin = false;
          for(QueryJoin queryJoin : queryJoins)
          {
+            if(processedQueryJoins.contains(queryJoin))
+            {
+               continue;
+            }
+            processedQueryJoins.add(queryJoin);
+
             ///////////////////////////////////////////////////////////////////////////////////////////////
             // if the join has joinMetaData, then we don't need to process it... unless it needs flipped //
             ///////////////////////////////////////////////////////////////////////////////////////////////
             QJoinMetaData joinMetaData = queryJoin.getJoinMetaData();
             if(joinMetaData != null)
             {
+               log("- QueryJoin already has joinMetaData", logPair("joinMetaDataName", joinMetaData.getName()));
+
                boolean isJoinLeftTableInQuery = false;
                String  joinMetaDataLeftTable  = joinMetaData.getLeftTable();
                if(joinMetaDataLeftTable.equals(mainTableName))
@@ -265,7 +618,7 @@ public class JoinsContext
                /////////////////////////////////////////////////////////////////////////////////
                if(!isJoinLeftTableInQuery)
                {
-                  log("Flipping queryJoin because its leftTable wasn't found in the query", logPair("joinMetaDataName", joinMetaData.getName()), logPair("leftTable", joinMetaDataLeftTable));
+                  log("- - Flipping queryJoin because its leftTable wasn't found in the query", logPair("joinMetaDataName", joinMetaData.getName()), logPair("leftTable", joinMetaDataLeftTable));
                   queryJoin.setJoinMetaData(joinMetaData.flip());
                }
             }
@@ -275,11 +628,13 @@ public class JoinsContext
                // try to find a direct join between the main table and this table. //
                // if one is found, then put it (the meta data) on the query join.  //
                //////////////////////////////////////////////////////////////////////
+               log("- QueryJoin doesn't have metaData - looking for it", logPair("joinTableOrItsAlias", queryJoin.getJoinTableOrItsAlias()));
+
                String        baseTableName = Objects.requireNonNullElse(resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias()), mainTableName);
-               QJoinMetaData found         = findJoinMetaData(instance, baseTableName, queryJoin.getJoinTable());
+               QJoinMetaData found         = findJoinMetaData(baseTableName, queryJoin.getJoinTable(), true);
                if(found != null)
                {
-                  log("Found joinMetaData - setting it in queryJoin", logPair("joinMetaDataName", found.getName()), logPair("baseTableName", baseTableName), logPair("joinTable", queryJoin.getJoinTable()));
+                  log("- - Found joinMetaData - setting it in queryJoin", logPair("joinMetaDataName", found.getName()), logPair("baseTableName", baseTableName), logPair("joinTable", queryJoin.getJoinTable()));
                   queryJoin.setJoinMetaData(found);
                }
                else
@@ -293,7 +648,7 @@ public class JoinsContext
                   {
                      if(queryJoin.getJoinTable().equals(exposedJoin.getJoinTable()))
                      {
-                        log("Found an exposed join", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()), logPair("joinPath", exposedJoin.getJoinPath()));
+                        log("- - Found an exposed join", logPair("mainTable", mainTableName), logPair("joinTable", queryJoin.getJoinTable()), logPair("joinPath", exposedJoin.getJoinPath()));
 
                         /////////////////////////////////////////////////////////////////////////////////////
                         // loop backward through the join path (from the joinTable back to the main table) //
@@ -304,6 +659,7 @@ public class JoinsContext
                         {
                            String        joinName  = exposedJoin.getJoinPath().get(i);
                            QJoinMetaData joinToAdd = instance.getJoin(joinName);
+                           log("- - - evaluating joinPath element", logPair("i", i), logPair("joinName", joinName));
 
                            /////////////////////////////////////////////////////////////////////////////
                            // get the name from the opposite side of the join (flipping it if needed) //
@@ -332,14 +688,21 @@ public class JoinsContext
                                     queryJoin.setBaseTableOrAlias(nextTable);
                                  }
                                  queryJoin.setJoinMetaData(joinToAdd);
+                                 log("- - - - this is the last element in the join path, so setting this joinMetaData on the original queryJoin");
                               }
                               else
                               {
                                  QueryJoin queryJoinToAdd = makeQueryJoinFromJoinAndTableNames(nextTable, tmpTable, joinToAdd);
                                  queryJoinToAdd.setType(queryJoin.getType());
                                  addedAnyQueryJoins = true;
-                                 this.addQueryJoin(queryJoinToAdd, "forExposedJoin");
+                                 log("- - - - this is not the last element in the join path, so adding a new query join:");
+                                 addQueryJoin(queryJoinToAdd, "forExposedJoin", "- - - - - - ");
+                                 dumpDebug(false, false);
                               }
+                           }
+                           else
+                           {
+                              log("- - - - join doesn't need added to the query");
                            }
 
                            tmpTable = nextTable;
@@ -361,6 +724,7 @@ public class JoinsContext
       }
       while(addedJoin);
 
+      log("Done adding missing join meta data");
    }
 
 
@@ -370,12 +734,12 @@ public class JoinsContext
     *******************************************************************************/
    private boolean doesJoinNeedAddedToQuery(String joinName)
    {
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // look at all queryJoins already in context - if any have this join's name, then we don't need this join... //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // look at all queryJoins already in context - if any have this join's name, and aren't implicit-security joins, then we don't need this join... //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       for(QueryJoin queryJoin : queryJoins)
       {
-         if(queryJoin.getJoinMetaData() != null && queryJoin.getJoinMetaData().getName().equals(joinName))
+         if(queryJoin.getJoinMetaData() != null && queryJoin.getJoinMetaData().getName().equals(joinName) && !(queryJoin instanceof ImplicitQueryJoinForSecurityLock))
          {
             return (false);
          }
@@ -395,6 +759,7 @@ public class JoinsContext
       String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
       if(aliasToTableNameMap.containsKey(tableNameOrAlias))
       {
+         dumpDebug(false, true);
          throw (new QException("Duplicate table name or alias: " + tableNameOrAlias));
       }
       aliasToTableNameMap.put(tableNameOrAlias, joinTable.getName());
@@ -439,6 +804,7 @@ public class JoinsContext
          String[] parts = fieldName.split("\\.");
          if(parts.length != 2)
          {
+            dumpDebug(false, true);
             throw new IllegalArgumentException("Mal-formatted field name in query: " + fieldName);
          }
 
@@ -449,6 +815,7 @@ public class JoinsContext
          QTableMetaData table = instance.getTable(tableName);
          if(table == null)
          {
+            dumpDebug(false, true);
             throw new IllegalArgumentException("Could not find table [" + tableName + "] in instance for query");
          }
          return new FieldAndTableNameOrAlias(table.getField(baseFieldName), tableOrAlias);
@@ -503,17 +870,17 @@ public class JoinsContext
 
       for(String filterTable : filterTables)
       {
-         log("Evaluating filterTable", logPair("filterTable", filterTable));
+         log("Evaluating filter", logPair("filterTable", filterTable));
          if(!aliasToTableNameMap.containsKey(filterTable) && !Objects.equals(mainTableName, filterTable))
          {
-            log("- table not in query - adding it", logPair("filterTable", filterTable));
+            log("- table not in query - adding a join for it", logPair("filterTable", filterTable));
             boolean found = false;
             for(QJoinMetaData join : CollectionUtils.nonNullMap(QContext.getQInstance().getJoins()).values())
             {
                QueryJoin queryJoin = makeQueryJoinFromJoinAndTableNames(mainTableName, filterTable, join);
                if(queryJoin != null)
                {
-                  this.addQueryJoin(queryJoin, "forFilter (join found in instance)");
+                  addQueryJoin(queryJoin, "forFilter (join found in instance)", "- - ");
                   found = true;
                   break;
                }
@@ -522,8 +889,12 @@ public class JoinsContext
             if(!found)
             {
                QueryJoin queryJoin = new QueryJoin().withJoinTable(filterTable).withType(QueryJoin.Type.INNER);
-               this.addQueryJoin(queryJoin, "forFilter (join not found in instance)");
+               addQueryJoin(queryJoin, "forFilter (join not found in instance)", "- - ");
             }
+         }
+         else
+         {
+            log("- table is already in query - not adding any joins", logPair("filterTable", filterTable));
          }
       }
    }
@@ -566,6 +937,11 @@ public class JoinsContext
             getTableNameFromFieldNameAndAddToSet(criteria.getOtherFieldName(), filterTables);
          }
 
+         for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(filter.getOrderBys()))
+         {
+            getTableNameFromFieldNameAndAddToSet(orderBy.getFieldName(), filterTables);
+         }
+
          for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
          {
             populateFilterTablesSet(subFilter, filterTables);
@@ -592,7 +968,7 @@ public class JoinsContext
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QJoinMetaData findJoinMetaData(QInstance instance, String baseTableName, String joinTableName)
+   public QJoinMetaData findJoinMetaData(String baseTableName, String joinTableName, boolean useExposedJoins)
    {
       List<QJoinMetaData> matches = new ArrayList<>();
       if(baseTableName != null)
@@ -644,7 +1020,29 @@ public class JoinsContext
       }
       else if(matches.size() > 1)
       {
-         throw (new RuntimeException("More than 1 join was found between [" + baseTableName + "] and [" + joinTableName + "].  Specify which one in your QueryJoin."));
+         ////////////////////////////////////////////////////////////////////////////////
+         // if we found more than one join, but we're allowed to useExposedJoins, then //
+         // see if we can tell which match to used based on the table's exposed joins  //
+         ////////////////////////////////////////////////////////////////////////////////
+         if(useExposedJoins)
+         {
+            QTableMetaData mainTable = QContext.getQInstance().getTable(mainTableName);
+            for(ExposedJoin exposedJoin : mainTable.getExposedJoins())
+            {
+               if(exposedJoin.getJoinTable().equals(joinTableName))
+               {
+                  // todo ... is it wrong to always use 0??
+                  return instance.getJoin(exposedJoin.getJoinPath().get(0));
+               }
+            }
+         }
+
+         ///////////////////////////////////////////////
+         // if we couldn't figure it out, then throw. //
+         ///////////////////////////////////////////////
+         dumpDebug(false, true);
+         throw (new RuntimeException("More than 1 join was found between [" + baseTableName + "] and [" + joinTableName + "] "
+            + (useExposedJoins ? "(and exposed joins didn't clarify which one to use). " : "") + "Specify which one in your QueryJoin."));
       }
 
       return (null);
@@ -669,4 +1067,63 @@ public class JoinsContext
       LOG.log(logLevel, message, null, logPairs);
    }
 
+
+
+   /*******************************************************************************
+    ** Print (to stdout, for easier reading) the object in a big table format for
+    ** debugging.  Happens any time logLevel is > OFF.  Not meant for loggly.
+    *******************************************************************************/
+   private void dumpDebug(boolean isStart, boolean isEnd)
+   {
+      if(logLevel.equals(Level.OFF))
+      {
+         return;
+      }
+
+      int sm       = 8;
+      int md       = 30;
+      int lg       = 50;
+      int overhead = 14;
+      int full     = sm + 3 * md + lg + overhead;
+
+      if(isStart)
+      {
+         System.out.println("\n" + StringUtils.safeTruncate("--- Start [main table: " + this.mainTableName + "] " + "-".repeat(full), full));
+      }
+
+      StringBuilder rs           = new StringBuilder();
+      String        formatString = "| %-" + md + "s | %-" + md + "s %-" + md + "s | %-" + lg + "s | %-" + sm + "s |\n";
+      rs.append(String.format(formatString, "Base Table", "Join Table", "(Alias)", "Join Meta Data", "Type"));
+      String dashesLg = "-".repeat(lg);
+      String dashesMd = "-".repeat(md);
+      String dashesSm = "-".repeat(sm);
+      rs.append(String.format(formatString, dashesMd, dashesMd, dashesMd, dashesLg, dashesSm));
+      if(CollectionUtils.nullSafeHasContents(queryJoins))
+      {
+         for(QueryJoin queryJoin : queryJoins)
+         {
+            rs.append(String.format(
+               formatString,
+               StringUtils.hasContent(queryJoin.getBaseTableOrAlias()) ? StringUtils.safeTruncate(queryJoin.getBaseTableOrAlias(), md) : "--",
+               StringUtils.safeTruncate(queryJoin.getJoinTable(), md),
+               (StringUtils.hasContent(queryJoin.getAlias()) ? "(" + StringUtils.safeTruncate(queryJoin.getAlias(), md - 2) + ")" : ""),
+               queryJoin.getJoinMetaData() == null ? "--" : StringUtils.safeTruncate(queryJoin.getJoinMetaData().getName(), lg),
+               queryJoin.getType()));
+         }
+      }
+      else
+      {
+         rs.append(String.format(formatString, "-empty-", "", "", "", ""));
+      }
+
+      System.out.print(rs);
+      if(isEnd)
+      {
+         System.out.println(StringUtils.safeTruncate("--- End " + "-".repeat(full), full) + "\n");
+      }
+      else
+      {
+         System.out.println(StringUtils.safeTruncate("-".repeat(full), full));
+      }
+   }
 }

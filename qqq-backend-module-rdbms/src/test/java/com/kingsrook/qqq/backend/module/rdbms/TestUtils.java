@@ -243,6 +243,7 @@ public class TestUtils
          .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withAssociation(new Association().withName("orderLine").withAssociatedTableName(TABLE_NAME_ORDER_LINE).withJoinName("orderJoinOrderLine"))
          .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ITEM).withJoinPath(List.of("orderJoinOrderLine", "orderLineJoinItem")))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER_INSTRUCTIONS).withJoinPath(List.of("orderJoinCurrentOrderInstructions")))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))

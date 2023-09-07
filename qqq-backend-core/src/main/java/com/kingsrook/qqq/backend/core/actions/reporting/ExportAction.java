@@ -189,6 +189,9 @@ public class ExportAction
       Set<String>     addedJoinNames = new HashSet<>();
       if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
       {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure that any tables being selected from are included as (LEFT) joins in the query //
+         /////////////////////////////////////////////////////////////////////////////////////////////
          for(String fieldName : exportInput.getFieldNames())
          {
             if(fieldName.contains("."))
@@ -197,27 +200,7 @@ public class ExportAction
                String   joinTableName = parts[0];
                if(!addedJoinNames.contains(joinTableName))
                {
-                  QueryJoin queryJoin = new QueryJoin(joinTableName).withType(QueryJoin.Type.LEFT).withSelect(true);
-                  queryJoins.add(queryJoin);
-
-                  /////////////////////////////////////////////////////////////////////////////////////////////
-                  // in at least some cases, we need to let the queryJoin know what join-meta-data to use... //
-                  // This code basically mirrors what QFMD is doing right now, so it's better -              //
-                  // but shouldn't all of this just be in JoinsContext?  it does some of this...             //
-                  /////////////////////////////////////////////////////////////////////////////////////////////
-                  QTableMetaData        table               = exportInput.getTable();
-                  Optional<ExposedJoin> exposedJoinOptional = CollectionUtils.nonNullList(table.getExposedJoins()).stream().filter(ej -> ej.getJoinTable().equals(joinTableName)).findFirst();
-                  if(exposedJoinOptional.isEmpty())
-                  {
-                     throw (new QException("Could not find exposed join between base table " + table.getName() + " and requested join table " + joinTableName));
-                  }
-                  ExposedJoin exposedJoin = exposedJoinOptional.get();
-
-                  if(exposedJoin.getJoinPath().size() == 1)
-                  {
-                     queryJoin.setJoinMetaData(QContext.getQInstance().getJoin(exposedJoin.getJoinPath().get(exposedJoin.getJoinPath().size() - 1)));
-                  }
-
+                  queryJoins.add(new QueryJoin(joinTableName).withType(QueryJoin.Type.LEFT).withSelect(true));
                   addedJoinNames.add(joinTableName);
                }
             }

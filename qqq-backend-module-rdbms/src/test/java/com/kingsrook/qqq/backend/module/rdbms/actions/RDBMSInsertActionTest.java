@@ -161,10 +161,10 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
       insertInput.setRecords(List.of(
          new QRecord().withValue("storeId", 1).withValue("billToPersonId", 100).withValue("shipToPersonId", 200)
 
-            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 1)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("storeId", 1).withValue("sku", "BASIC1").withValue("quantity", 1)
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-1.1").withValue("value", "LINE-VAL-1")))
 
-            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC2").withValue("quantity", 2)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("storeId", 1).withValue("sku", "BASIC2").withValue("quantity", 2)
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.1").withValue("value", "LINE-VAL-2"))
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.2").withValue("value", "LINE-VAL-3")))
       ));

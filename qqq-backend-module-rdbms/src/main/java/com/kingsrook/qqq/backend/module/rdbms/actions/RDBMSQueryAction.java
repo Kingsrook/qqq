@@ -79,13 +79,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          StringBuilder sql = new StringBuilder(makeSelectClause(queryInput));
 
-         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), queryInput.getFilter());
-         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
+         QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
+         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), filter);
 
-         QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-
-         sql.append(" WHERE ").append(makeWhereClause(queryInput.getInstance(), queryInput.getSession(), table, joinsContext, filter, params));
+         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext, params));
+         sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {

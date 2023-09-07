@@ -77,17 +77,29 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       moveReviewStepAfterValidateStep(runBackendStepOutput);
 
+      AbstractExtractStep   extractStep   = getExtractStep(runBackendStepInput);
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
+
       //////////////////////////////////////////////////////////
       // basically repeat the preview step, but with no limit //
       //////////////////////////////////////////////////////////
-      runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
-      RecordPipe          recordPipe  = new RecordPipe();
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
       extractStep.setLimit(null);
-      extractStep.setRecordPipe(recordPipe);
       extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+      //////////////////////////////////////////
+      // set up a record pipe for the process //
+      //////////////////////////////////////////
+      Integer overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+      if(overrideRecordPipeCapacity != null)
+      {
+         LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+      }
+
+      RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, null);
+      extractStep.setRecordPipe(recordPipe);
+
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();

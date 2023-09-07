@@ -136,7 +136,7 @@ public class QQueryFilter implements Serializable, Cloneable
 
 
    /*******************************************************************************
-    **
+    ** recursively look at both this filter, and any sub-filters it may have.
     *******************************************************************************/
    public boolean hasAnyCriteria()
    {

@@ -72,15 +72,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      //////////////////////////////
-      // set up the extract steps //
-      //////////////////////////////
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      RecordPipe          recordPipe  = new RecordPipe();
-      extractStep.setLimit(limit);
-      extractStep.setRecordPipe(recordPipe);
-      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-
       /////////////////////////////////////////////////////////////////
       // if we're running inside an automation, then skip this step. //
       /////////////////////////////////////////////////////////////////
@@ -89,6 +80,19 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          LOG.debug("Skipping preview step when [" + runBackendStepInput.getProcessName() + "] is running as part of an automation.");
          return;
       }
+
+      /////////////////////////////
+      // set up the extract step //
+      /////////////////////////////
+      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      extractStep.setLimit(limit);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+
+      //////////////////////////////////////////
+      // set up a record pipe for the process //
+      //////////////////////////////////////////
+      RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, null);
+      extractStep.setRecordPipe(recordPipe);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if skipping frontend steps, skip this action -                                                                 //
