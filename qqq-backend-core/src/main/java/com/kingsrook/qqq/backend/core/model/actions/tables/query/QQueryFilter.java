@@ -149,7 +149,7 @@ public class QQueryFilter implements Serializable, Cloneable
       {
          for(QQueryFilter subFilter : subFilters)
          {
-            if(subFilter.hasAnyCriteria())
+            if(subFilter != null && subFilter.hasAnyCriteria())
             {
                return (true);
             }
