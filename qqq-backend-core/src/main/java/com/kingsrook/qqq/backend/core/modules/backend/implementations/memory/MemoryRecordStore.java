@@ -171,6 +171,14 @@ public class MemoryRecordStore
 
       for(QRecord qRecord : tableData)
       {
+         if(qRecord.getTableName() == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            // internally, doesRecordMatch likes to know table names on records, so, set if missing. //
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            qRecord.setTableName(input.getTableName());
+         }
+
          boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), qRecord);
 
          if(recordMatches)
