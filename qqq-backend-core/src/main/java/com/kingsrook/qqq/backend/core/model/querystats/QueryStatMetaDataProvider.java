@@ -187,7 +187,8 @@ public class QueryStatMetaDataProvider
       return (new QPossibleValueSource()
          .withType(QPossibleValueSourceType.TABLE)
          .withName(QueryStat.TABLE_NAME)
-         .withTableName(QueryStat.TABLE_NAME));
+         .withTableName(QueryStat.TABLE_NAME))
+         .withOrderByField("id", false);
    }
 
 }

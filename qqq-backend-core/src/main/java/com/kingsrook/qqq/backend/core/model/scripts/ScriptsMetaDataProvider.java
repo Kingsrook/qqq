@@ -303,19 +303,24 @@ public class ScriptsMetaDataProvider
    {
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(Script.TABLE_NAME)
-         .withTableName(Script.TABLE_NAME));
+         .withTableName(Script.TABLE_NAME)
+         .withOrderByField("name"));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptRevision.TABLE_NAME)
-         .withTableName(ScriptRevision.TABLE_NAME));
+         .withTableName(ScriptRevision.TABLE_NAME)
+         .withOrderByField("scriptId")
+         .withOrderByField("sequenceNo", false));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptType.TABLE_NAME)
-         .withTableName(ScriptType.TABLE_NAME));
+         .withTableName(ScriptType.TABLE_NAME)
+         .withOrderByField("name"));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptLog.TABLE_NAME)
-         .withTableName(ScriptLog.TABLE_NAME));
+         .withTableName(ScriptLog.TABLE_NAME)
+         .withOrderByField("id", false));
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(ScriptTypeFileMode.NAME)

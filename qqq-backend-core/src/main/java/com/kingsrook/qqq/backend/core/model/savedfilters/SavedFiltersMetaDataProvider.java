@@ -88,7 +88,8 @@ public class SavedFiltersMetaDataProvider
          .withName(SavedFilter.TABLE_NAME)
          .withType(QPossibleValueSourceType.TABLE)
          .withTableName(SavedFilter.TABLE_NAME)
-         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
+         .withOrderByField("label");
    }
 
 }
