@@ -75,14 +75,16 @@ public class BackendQueryFilterUtils
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
-            // field names in the record are fully qualified, then just use the field-name portion...        //
+            // field names in the record are fully qualified - OR - the table name portion of the field name //
+            // matches the record's field name, then just use the field-name portion...                      //
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             if(fieldName.contains("."))
             {
+               String[]                  parts  = fieldName.split("\\.");
                Map<String, Serializable> values = qRecord.getValues();
-               if(values.keySet().stream().noneMatch(n -> n.contains(".")))
+               if(values.keySet().stream().noneMatch(n -> n.contains(".")) || parts[0].equals(qRecord.getTableName()))
                {
-                  value = qRecord.getValue(fieldName.substring(fieldName.indexOf(".") + 1));
+                  value = qRecord.getValue(parts[1]);
                }
             }
          }
@@ -190,12 +192,13 @@ public class BackendQueryFilterUtils
     ** operator, update the accumulator, and if we can then short-circuit remaining
     ** operations, return a true or false.  Returning null means to keep going.
     *******************************************************************************/
-   private static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
+   static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
    {
       boolean accumulatorValue = accumulator.getPlain();
       if(booleanOperator.equals(QQueryFilter.BooleanOperator.AND))
       {
          accumulatorValue &= newValue;
+         accumulator.set(accumulatorValue);
          if(!accumulatorValue)
          {
             return (false);
@@ -204,6 +207,7 @@ public class BackendQueryFilterUtils
       else
       {
          accumulatorValue |= newValue;
+         accumulator.set(accumulatorValue);
          if(accumulatorValue)
          {
             return (true);
