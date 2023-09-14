@@ -47,10 +47,10 @@ checkBuild()
    shortRepo="$repo"
    case $repo in
     qqq)                             shortRepo="qqq";;
-    qqq-frontend-core)               shortRepo="f'core";;
-    qqq-frontend-material-dashboard) shortRepo="m-db";;
+    qqq-frontend-core)               shortRepo="fc";;
+    qqq-frontend-material-dashboard) shortRepo="qfmd";;
     ColdTrack-Live)                  shortRepo="ctl";;
-    ColdTrack-Live-Scripts)          shortRepo="ct1-scr";;
+    ColdTrack-Live-Scripts)          shortRepo="cls";;
    esac
 
    timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$startDate" | sed 's/\....Z/+0000/') +%s)

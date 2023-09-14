@@ -30,6 +30,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.scripts.ExecuteCodeAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutor;
 import com.kingsrook.qqq.backend.core.actions.scripts.QCodeExecutorAware;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.scripts.ExecuteCodeInput;
@@ -303,6 +304,32 @@ class ExecuteCodeActionTest extends BaseTest
       assertThat(converter.getConvertedObject("jsDate")).isInstanceOf(ScriptObjectMirror.class);
       assertEquals(originalInstant, converter.getConvertedObject("backToInstant"));
       assertNotSame(originalInstant, converter.getConvertedObject("backToInstant"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDeploymentModeIsInContext() throws QException
+   {
+      String scriptSource = """
+         return (deploymentMode);
+         """;
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // first, with no deployment mode in the qInstance, make sure we can run, but get a null output //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      OneTestOutput oneTestOutput = testOne(null, scriptSource, new HashMap<>());
+      assertNull(oneTestOutput.executeCodeOutput.getOutput());
+
+      /////////////////////////////////////////////////////////////////////
+      // next, set a deploymentMode, and assert that we get it back out. //
+      /////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().setDeploymentMode("unit-test");
+      oneTestOutput = testOne(null, scriptSource, new HashMap<>());
+      assertEquals("unit-test", oneTestOutput.executeCodeOutput.getOutput());
    }
 
 

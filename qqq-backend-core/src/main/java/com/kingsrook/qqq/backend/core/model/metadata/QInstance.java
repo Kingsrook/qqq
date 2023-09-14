@@ -93,6 +93,7 @@ public class QInstance
 
    private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
 
+   private String              deploymentMode;
    private Map<String, String> environmentValues = new LinkedHashMap<>();
    private String              defaultTimeZoneId = "UTC";
 
@@ -1165,4 +1166,36 @@ public class QInstance
       }
       this.joinGraph = joinGraph;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for deploymentMode
+    *******************************************************************************/
+   public String getDeploymentMode()
+   {
+      return (this.deploymentMode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for deploymentMode
+    *******************************************************************************/
+   public void setDeploymentMode(String deploymentMode)
+   {
+      this.deploymentMode = deploymentMode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for deploymentMode
+    *******************************************************************************/
+   public QInstance withDeploymentMode(String deploymentMode)
+   {
+      this.deploymentMode = deploymentMode;
+      return (this);
+   }
+
 }

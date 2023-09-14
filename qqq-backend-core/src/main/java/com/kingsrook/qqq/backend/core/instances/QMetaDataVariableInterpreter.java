@@ -347,7 +347,7 @@ public class QMetaDataVariableInterpreter
          if(canParseAsInteger(envValue))
          {
             LOG.info("Read env var [" + environmentVariableName + "] as integer " + environmentVariableName);
-            return (Integer.parseInt(propertyValue));
+            return (Integer.parseInt(envValue));
          }
          else
          {
