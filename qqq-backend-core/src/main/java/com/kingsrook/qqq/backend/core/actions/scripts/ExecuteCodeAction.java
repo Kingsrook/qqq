@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLogg
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.ScriptExecutionLoggerInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevisionFile;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -111,6 +113,11 @@ public class ExecuteCodeAction
          {
             context.putAll(input.getInput());
          }
+
+         //////////////////////////////////////////
+         // safely always set the deploymentMode //
+         //////////////////////////////////////////
+         context.put("deploymentMode", ObjectUtils.tryAndRequireNonNullElse(() -> QContext.getQInstance().getDeploymentMode(), null));
 
          /////////////////////////////////////////////////////////////////////////////////
          // set the qCodeExecutor into any context objects which are QCodeExecutorAware //
