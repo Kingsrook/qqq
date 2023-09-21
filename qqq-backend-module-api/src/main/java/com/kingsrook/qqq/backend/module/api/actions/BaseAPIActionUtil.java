@@ -786,7 +786,7 @@ public class BaseAPIActionUtil
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
             HttpPost request = new HttpPost(fullURL);
-            request.setEntity(new StringEntity(postBody));
+            request.setEntity(new StringEntity(postBody, StandardCharsets.UTF_8));
 
             if(setCredentialsInHeader)
             {
@@ -914,7 +914,7 @@ public class BaseAPIActionUtil
          body.put(wrapperObjectName, new JSONObject(json));
          json = body.toString();
       }
-      return (new StringEntity(json));
+      return (new StringEntity(json, StandardCharsets.UTF_8));
    }
 
 
@@ -943,7 +943,7 @@ public class BaseAPIActionUtil
             body.put(wrapperObjectName, new JSONArray(json));
             json = body.toString();
          }
-         return (new StringEntity(json));
+         return (new StringEntity(json, StandardCharsets.UTF_8));
       }
       catch(Exception e)
       {
