@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -49,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -109,11 +111,25 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
 
 
    /*******************************************************************************
+    ** Simple overload that internally figures out primary key and security key values
+    **
+    ** Be aware - if the record doesn't have its security key values set (say it's a
+    ** partial record as part of an update), then those values won't be in the
+    ** security key map...  This should probably be considered a bug.
+    *******************************************************************************/
+   public static void appendToInput(AuditInput auditInput, QTableMetaData table, QRecord record, String auditMessage)
+   {
+      appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record, Optional.empty()), auditMessage);
+   }
+
+
+
+   /*******************************************************************************
     ** Add 1 auditSingleInput to an AuditInput object - with no details (child records).
     *******************************************************************************/
-   public static AuditInput appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
+   public static void appendToInput(AuditInput auditInput, String tableName, Integer recordId, Map<String, Serializable> securityKeyValues, String message)
    {
-      return (appendToInput(auditInput, tableName, recordId, securityKeyValues, message, null));
+      appendToInput(auditInput, tableName, recordId, securityKeyValues, message, null);
    }
 
 
@@ -135,6 +151,44 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
          .withMessage(message)
          .withDetails(details)
       );
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given record, from a given table, build a map of the record's security
+    ** key values.
+    **
+    ** If, in case, the record has null value(s), and the oldRecord is given (e.g.,
+    ** for the case of an update, where the record may not have all fields set, and
+    ** oldRecord should be known for doing field-diffs), then try to get the value(s)
+    ** from oldRecord.
+    **
+    ** Currently, will leave values null if they aren't found after that.
+    **
+    ** An alternative could be to re-fetch the record from its source if needed...
+    *******************************************************************************/
+   public static Map<String, Serializable> getRecordSecurityKeyValues(QTableMetaData table, QRecord record, Optional<QRecord> oldRecord)
+   {
+      Map<String, Serializable> securityKeyValues = new HashMap<>();
+      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
+      {
+         Serializable keyValue = record == null ? null : record.getValue(recordSecurityLock.getFieldName());
+
+         if(keyValue == null && oldRecord.isPresent())
+         {
+            LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()));
+            keyValue = oldRecord.get().getValue(recordSecurityLock.getFieldName());
+         }
+
+         if(keyValue == null)
+         {
+            LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()), logPair("oldRecordIsPresent", oldRecord.isPresent()));
+         }
+
+         securityKeyValues.put(recordSecurityLock.getSecurityKeyType(), keyValue);
+      }
+      return securityKeyValues;
    }
 
 
