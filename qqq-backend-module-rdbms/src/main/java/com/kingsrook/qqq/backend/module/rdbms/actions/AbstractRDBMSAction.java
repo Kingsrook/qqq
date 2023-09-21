@@ -988,6 +988,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
 
    /*******************************************************************************
+    ** Make it easy (e.g., for tests) to turn on poor-man's formatting of SQL
+    *******************************************************************************/
+   public static void setLogSQLReformat(boolean doReformat)
+   {
+      System.setProperty("qqq.rdbms.logSQL.reformat", String.valueOf(doReformat));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected void logSQL(CharSequence sql, List<?> params, Long mark)
@@ -997,6 +1007,19 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          try
          {
             params = params.size() <= 100 ? params : params.subList(0, 99);
+
+            /////////////////////////////////////////////////////////////////////////////
+            // (very very) poor man's version of sql formatting... if property is true //
+            /////////////////////////////////////////////////////////////////////////////
+            if(System.getProperty("qqq.rdbms.logSQL.reformat", "false").equalsIgnoreCase("true"))
+            {
+               sql = Objects.requireNonNullElse(sql, "").toString()
+                  .replaceAll("FROM ", "\nFROM\n   ")
+                  .replaceAll("INNER", "\n   INNER")
+                  .replaceAll("LEFT", "\n   LEFT")
+                  .replaceAll("RIGHT", "\n   RIGHT")
+                  .replaceAll("WHERE", "\nWHERE\n   ");
+            }
 
             if(System.getProperty("qqq.rdbms.logSQL.output", "logger").equalsIgnoreCase("system.out"))
             {
