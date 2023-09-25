@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -218,6 +219,67 @@ public class JsonUtils
    {
       JSONObject jsonObject = new JSONObject(json);
       return (jsonObject);
+   }
+
+
+
+   /*******************************************************************************
+    ** Sorts all fields recursively in all objects in a json object
+    **
+    *******************************************************************************/
+   private static Object _sortJSON(Object o, int depth) throws Exception
+   {
+      ///////////////////////////////////////////////////////
+      // this should only be done on json objects or array //
+      ///////////////////////////////////////////////////////
+      if(depth == 0 && !(o instanceof JSONObject) && !(o instanceof JSONArray))
+      {
+         throw (new Exception("Object must be of type JSONObject or JSONArray in order to sort"));
+      }
+
+      if(o instanceof JSONObject jsonObject)
+      {
+         ////////////////////////////////////////////////////////////////////
+         // if json object, create a new object, sort keys, and add to the //
+         // new object passing values to this sort method recursively      //
+         ////////////////////////////////////////////////////////////////////
+         JSONObject returnObject = new JSONObject();
+
+         List<String> keys = new ArrayList<>(jsonObject.keySet());
+         Collections.sort(keys);
+         for(String key : keys)
+         {
+            returnObject.put(key, _sortJSON(jsonObject.get(key), ++depth));
+         }
+
+         return (returnObject);
+      }
+      else if(o instanceof JSONArray jsonArray)
+      {
+         /////////////////////////////////////////////////////////////////////////
+         // if this is an array, same as above, but no sorting needed (i think) //
+         /////////////////////////////////////////////////////////////////////////
+         JSONArray returnObject = new JSONArray();
+         for(int i = 0; i < jsonArray.length(); i++)
+         {
+            returnObject.put(i, _sortJSON(jsonArray.get(i), ++depth));
+         }
+
+         return (returnObject);
+      }
+
+      return (o);
+   }
+
+
+
+   /*******************************************************************************
+    ** Sorts all fields recursively in all objects in a json object
+    **
+    *******************************************************************************/
+   public static Object sortJSON(Object o) throws Exception
+   {
+      return (_sortJSON(o, 0));
    }
 
 

@@ -40,6 +40,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,7 +82,7 @@ class JsonUtilsTest extends BaseTest
       {
          objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
       });
-      
+
       assertThat(json).contains("""
          "values":{"foo":"Foo","bar":3.14159,"baz":null}""");
    }
@@ -134,6 +135,86 @@ class JsonUtilsTest extends BaseTest
       QRecord qRecord = getQRecord();
       String  json    = JsonUtils.toPrettyJson(qRecord);
       // todo assertEquals("{\"tableName\":\"foo\",\"primaryKey\":1,\"values\":{\"foo\":\"Foo\",\"bar\":3.14159}}", json);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_sortJSONArray() throws Exception
+   {
+      JSONArray jsonArray1 = new JSONArray("""
+         [
+            {
+               "Foo": "Bar",
+               "Baz": [1, 2, 3]
+            }
+         ]
+         """);
+
+      JSONArray jsonArray2 = new JSONArray("""
+         [
+            {
+               "Baz": [1, 2, 3],
+               "Foo": "Bar"
+            }
+         ]
+         """);
+
+      JSONArray sortedJSONArray1 = (JSONArray) JsonUtils.sortJSON(jsonArray1);
+      JSONArray sortedJSONArray2 = (JSONArray) JsonUtils.sortJSON(jsonArray2);
+      assertEquals(sortedJSONArray1.toString(), sortedJSONArray2.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_sortJSONObject() throws Exception
+   {
+      JSONObject jsonObject1 = new JSONObject("""
+         {
+            "Foo": "Bar",
+            "Baz": [1, 2, 3]
+         }
+         """);
+      JSONObject jsonObject2 = new JSONObject("""
+         {
+            "Baz": [1, 2, 3],
+            "Foo": "Bar"
+         }
+         """);
+
+      JSONObject sortedJSONObject1 = (JSONObject) JsonUtils.sortJSON(jsonObject1);
+      JSONObject sortedJSONObject2 = (JSONObject) JsonUtils.sortJSON(jsonObject2);
+      assertEquals(sortedJSONObject1.toString(), sortedJSONObject2.toString());
+
+      JSONObject bigObject1 = new JSONObject("""
+         { "cubeiq": { "settings": { "setting": [ { "maxruntime": 60, "maxnonimproveiters": 750, "settingsid": "Box Default", "sequencemixok": true } ] }, "containerstoload": { "containertoload": [ { "containernum": 99, "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "containerid": "25_4976f3f8-1208-430f-aee4-59fc1d1f4b3f" } ] }, "loads": { "load": [ { "date": "1-1-2015", "notes": "", "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0" } ] }, "stages": { "stage": [ { "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "stage": 1 } ] }, "containers": { "container": [ { "depth": 5, "bottomtotoploading": false, "width": 5, "action": "overwrite", "partialloadonfloor": true, "settingsid": "Box Default", "containerid": "25_4976f3f8-1208-430f-aee4-59fc1d1f4b3f", "type": "Rectangular", "height": 10 } ] }, "productstoload": { "producttoload": [ { "quantity": 1, "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "productid": "DRY-ICE", "batch": 1 } ] }, "products": { "product": [ { "productid": "DRY-ICE", "color": 16760576, "length": 3, "weight": 1, "maxinlayer": 999999, "type": "Box", "sideupok": true, "endupok": true, "turnable": true, "bottomonly": false, "width": 3, "toponly": false, "flatok": true, "height": 1 } ] } } }
+         """);
+
+      JSONObject bigObject2 = new JSONObject("""
+         { "cubeiq": { "containerstoload": { "containertoload": [ { "containernum": 99, "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "containerid": "25_4976f3f8-1208-430f-aee4-59fc1d1f4b3f" } ] }, "settings": { "setting": [ { "maxruntime": 60, "maxnonimproveiters": 750, "settingsid": "Box Default", "sequencemixok": true } ] }, "loads": { "load": [ { "date": "1-1-2015", "notes": "", "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0" } ] }, "stages": { "stage": [ { "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "stage": 1 } ] }, "containers": { "container": [ { "depth": 5, "bottomtotoploading": false, "action": "overwrite", "width": 5, "partialloadonfloor": true, "settingsid": "Box Default", "containerid": "25_4976f3f8-1208-430f-aee4-59fc1d1f4b3f", "type": "Rectangular", "height": 10 } ] }, "products": { "product": [ { "productid": "DRY-ICE", "color": 16760576, "weight": 1, "length": 3, "sideupok": true, "maxinlayer": 999999, "type": "Box", "endupok": true, "toponly": false, "turnable": true, "bottomonly": false, "width": 3, "flatok": true, "height": 1 } ] }, "productstoload": { "producttoload": [ { "quantity": 1, "loadid": "4814b7a4-dc8a-43b8-8772-af86cb11d9a0", "productid": "DRY-ICE", "batch": 1 } ] } } }
+         """);
+      sortedJSONObject1 = (JSONObject) JsonUtils.sortJSON(bigObject1);
+      sortedJSONObject2 = (JSONObject) JsonUtils.sortJSON(bigObject2);
+      assertEquals(sortedJSONObject1.toString(), sortedJSONObject2.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_sortNonJSONThrows() throws Exception
+   {
+      assertThatThrownBy(() -> JsonUtils.sortJSON("derp"))
+         .hasMessageContaining("must be of type");
    }
 
 
