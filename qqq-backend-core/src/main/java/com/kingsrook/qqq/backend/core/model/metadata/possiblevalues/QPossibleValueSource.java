@@ -78,16 +78,27 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
 
 
    /*******************************************************************************
+    ** Prefer to use the overload that takes an orderByFieldName.
+    *******************************************************************************/
+   @Deprecated
+   public static QPossibleValueSource newForTable(String tableName)
+   {
+      return (newForTable(tableName, null));
+   }
+
+
+   /*******************************************************************************
     ** Create a new possible value source, for a table, with default settings.
     ** e.g., name & table name from the tableName parameter; type=TABLE; and LABEL_ONLY format
     *******************************************************************************/
-   public static QPossibleValueSource newForTable(String tableName)
+   public static QPossibleValueSource newForTable(String tableName, String orderByFieldName)
    {
       return new QPossibleValueSource()
          .withName(tableName)
          .withType(QPossibleValueSourceType.TABLE)
          .withTableName(tableName)
-         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
+         .withOrderByField(orderByFieldName);
    }
 
 
