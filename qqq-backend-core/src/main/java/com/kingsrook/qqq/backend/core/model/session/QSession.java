@@ -39,7 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
 
 
 /*******************************************************************************
- **
+ ** Reference to a running user, with ther permissions, security keys, etc.
  *******************************************************************************/
 public class QSession implements Serializable
 {

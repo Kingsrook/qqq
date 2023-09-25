@@ -34,11 +34,11 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.processes.utils.ProcessLogManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -53,6 +53,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
    private int currentRowCount = 1;
 
+   private ProcessLogManager processLogManager = new ProcessLogManager();
 
 
    /*******************************************************************************
@@ -67,6 +68,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       try
       {
          runBackendStepInput.getAsyncJobCallback().updateStatus("Executing Process");
+         processLogManager.beginProcessLog(runBackendStepInput);
 
          ///////////////////////////////////////////////////////
          // set up the extract, transform, and load functions //
@@ -183,6 +185,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          //////////////////////////////////////////////////////////////////////////////
          runBackendStepOutput.addValue(RunProcessAction.BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD, true);
 
+         processLogManager.finishProcessLog(runBackendStepInput, processSummaryLines, Optional.empty());
+
          ////////////////////////////////////////////////////////
          // commit the work at the process level if applicable //
          ////////////////////////////////////////////////////////
@@ -193,6 +197,8 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       }
       catch(Exception e)
       {
+         processLogManager.finishProcessLog(runBackendStepInput, null, Optional.of(e));
+
          ////////////////////////////////////////////////////////////////////////////////
          // rollback the work, then re-throw the error for up-stream to catch & report //
          ////////////////////////////////////////////////////////////////////////////////
@@ -250,6 +256,11 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          // get the records from the pipe //
          ///////////////////////////////////
          List<QRecord> qRecords = recordPipe.consumeAvailableRecords();
+
+         //////////////////////////////////////////////////////////////////////////////
+         // not sure if we want this - right now, getting it from summaries, but ... //
+         //////////////////////////////////////////////////////////////////////////////
+         // processLogManager.recordProcessRecords(qRecords);
 
          ///////////////////////////////////////////////////////////////////////
          // make streamed input & output objects from the run input & outputs //

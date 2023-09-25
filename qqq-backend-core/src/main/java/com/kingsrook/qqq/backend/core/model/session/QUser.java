@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.model.session;
 
 
 /*******************************************************************************
- **
+ ** Reference to a user that's stored as part of a QSession.
  *******************************************************************************/
 public class QUser
 {
