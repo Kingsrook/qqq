@@ -1731,6 +1731,7 @@ class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @SuppressWarnings("CheckStyle")
    void testExposedJoinPaths()
    {
       assertValidationFailureReasons(qInstance -> qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin())),
@@ -1772,6 +1773,18 @@ class QInstanceValidatorTest extends BaseTest
             qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
          },
          "than one join with the joinPath: [AB]");
+
+      assertValidationFailureReasons(qInstance ->
+         {
+            qInstance.addTable(newTable("A", "id")
+               .withExposedJoin(new ExposedJoin().withJoinTable("C").withLabel("C").withJoinPath(List.of("AB")))
+            );
+            qInstance.addTable(newTable("B", "id", "aId"));
+            qInstance.addTable(newTable("C", "id", "aId"));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("C").withName("AC").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         },
+         "specified a join path [[AB]] which did not lead to the expoed join table");
 
       assertValidationSuccess(qInstance ->
       {

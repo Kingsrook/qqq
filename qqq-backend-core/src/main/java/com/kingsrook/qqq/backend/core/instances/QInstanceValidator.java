@@ -515,15 +515,23 @@ public class QInstanceValidator
                {
                   joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
 
-                  boolean foundJoinConnection = false;
+                  boolean                      foundJoinConnection        = false;
+                  JoinGraph.JoinConnectionList matchingJoinConnectionList = null;
                   for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
                   {
                      if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
                      {
                         foundJoinConnection = true;
+                        matchingJoinConnectionList = joinConnectionList;
                      }
                   }
+
                   assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
+                  if(matchingJoinConnectionList != null)
+                  {
+                     String joinTableAtEndOfMatchingJoinConnection = matchingJoinConnectionList.list().get(matchingJoinConnectionList.list().size() - 1).joinTable();
+                     assertCondition(joinTableAtEndOfMatchingJoinConnection.equals(exposedJoin.getJoinTable()), joinPrefix + "specified a join path [" + exposedJoin.getJoinPath() + "] which did not lead to the expoed join table.");
+                  }
 
                   assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
                   usedJoinPaths.add(exposedJoin.getJoinPath());
