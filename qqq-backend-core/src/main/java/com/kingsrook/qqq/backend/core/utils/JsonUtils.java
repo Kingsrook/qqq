@@ -279,7 +279,7 @@ public class JsonUtils
     *******************************************************************************/
    public static Object sortJSON(Object o) throws Exception
    {
-      return (_sortJSON(o, 0));
+      return (sortJSON(o, 0));
    }
 
 
