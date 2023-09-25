@@ -90,8 +90,6 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
 import org.jline.utils.Log;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
@@ -292,18 +290,7 @@ public class QPicoCliImplementation
          }
 
          Map<String, String> authenticationContext = new HashMap<>();
-         if(sessionId == null && authenticationModule instanceof Auth0AuthenticationModule)
-         {
-            LineReader lr      = LineReaderBuilder.builder().build();
-            String     tokenId = lr.readLine("Create a .env file with the contents of the Auth0 JWT Id Token in the variable 'SESSION_ID': \nPress enter once complete...");
-            dotenv = loadDotEnv();
-            if(dotenv.isPresent())
-            {
-               sessionId = dotenv.get().get("SESSION_ID");
-            }
-         }
-
-         authenticationContext.put("sessionId", sessionId);
+         authenticationContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, sessionId);
 
          // todo - does this need some per-provider logic actually?  mmm...
          session = authenticationModule.createSession(qInstance, authenticationContext);
