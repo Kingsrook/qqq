@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
  *******************************************************************************/
 public class QueryStatJoinTable extends QRecordEntity
 {
-   public static final String TABLE_NAME = "queryStatJoinTable"; // todo - lowercase the first letter
+   public static final String TABLE_NAME = "queryStatJoinTable";
 
    @QField(isEditable = false)
    private Integer id;
