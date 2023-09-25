@@ -227,7 +227,7 @@ public class JsonUtils
     ** Sorts all fields recursively in all objects in a json object
     **
     *******************************************************************************/
-   private static Object _sortJSON(Object o, int depth) throws Exception
+   private static Object sortJSON(Object o, int depth) throws Exception
    {
       ///////////////////////////////////////////////////////
       // this should only be done on json objects or array //
@@ -249,7 +249,7 @@ public class JsonUtils
          Collections.sort(keys);
          for(String key : keys)
          {
-            returnObject.put(key, _sortJSON(jsonObject.get(key), ++depth));
+            returnObject.put(key, sortJSON(jsonObject.get(key), ++depth));
          }
 
          return (returnObject);
@@ -262,7 +262,7 @@ public class JsonUtils
          JSONArray returnObject = new JSONArray();
          for(int i = 0; i < jsonArray.length(); i++)
          {
-            returnObject.put(i, _sortJSON(jsonArray.get(i), ++depth));
+            returnObject.put(i, sortJSON(jsonArray.get(i), ++depth));
          }
 
          return (returnObject);
