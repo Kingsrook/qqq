@@ -319,8 +319,10 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
 
       if(detailRecord != null)
       {
-         LOG.debug("Returning with message: " + detailRecord.getValueString("message"));
-
+         ////////////////////////////////////////////////////////////////////
+         // useful if doing dev in here - but overkill for any other time. //
+         ////////////////////////////////////////////////////////////////////
+         // LOG.debug("Returning with message: " + detailRecord.getValueString("message"));
          detailRecord.withValue("fieldName", fieldName);
          return (Optional.of(detailRecord));
       }
