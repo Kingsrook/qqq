@@ -39,7 +39,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
@@ -67,6 +70,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       super.primeTestDatabase();
 
       AbstractRDBMSAction.setLogSQL(true);
+      AbstractRDBMSAction.setLogSQLReformat(true);
       AbstractRDBMSAction.setLogSQLOutput("system.out");
    }
 
@@ -79,6 +83,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
    void afterEach()
    {
       AbstractRDBMSAction.setLogSQL(false);
+      AbstractRDBMSAction.setLogSQLReformat(false);
    }
 
 
@@ -982,6 +987,45 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       // for order 2, as it has an item from a different store             //
       ///////////////////////////////////////////////////////////////////////
       assertThat(records).allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5));
+   }
+
+
+
+   /*******************************************************************************
+    ** Addressing a regression where a table was brought into a query for its
+    ** security field, but it was a write-scope lock, so, it shouldn't have been.
+    *******************************************************************************/
+   @Test
+   void testWriteLockOnJoinTableDoesntLimitQuery() throws Exception
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // add a security key type for "idNumber"                            //
+      // then set up the person table with a read-write lock on that field //
+      ///////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().addSecurityKeyType(new QSecurityKeyType().withName("idNumber"));
+      QTableMetaData personTable = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON);
+      personTable.withRecordSecurityLock(new RecordSecurityLock()
+         .withLockScope(RecordSecurityLock.LockScope.READ_AND_WRITE)
+         .withSecurityKeyType("idNumber")
+         .withFieldName(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber")
+         .withJoinNameChain(List.of(QJoinMetaData.makeInferredJoinName(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_PERSONAL_ID_CARD))));
+
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // first, with no idNumber security key in session, query on person should find 0 rows //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(0, new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)).getRecords().size());
+
+      ///////////////////////////////////////////////////////////////////
+      // put an idNumber in the session - query and find just that one //
+      ///////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue("idNumber", "19800531"));
+      assertEquals(1, new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)).getRecords().size());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // change the lock to be scope=WRITE - and now, we should be able to see all of the records //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      personTable.getRecordSecurityLocks().get(0).setLockScope(RecordSecurityLock.LockScope.WRITE);
+      assertEquals(5, new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)).getRecords().size());
    }
 
 }
