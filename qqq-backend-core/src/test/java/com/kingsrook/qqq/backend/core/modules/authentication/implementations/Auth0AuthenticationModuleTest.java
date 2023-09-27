@@ -42,15 +42,17 @@ import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
-import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.AUTH0_ACCESS_TOKEN_KEY;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.ACCESS_TOKEN_KEY;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.BASIC_AUTH_KEY;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.COULD_NOT_DECODE_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.EXPIRED_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.INVALID_TOKEN_ERROR;
 import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.TOKEN_NOT_PROVIDED_ERROR;
+import static com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule.maskForLog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -143,7 +145,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
    public void testInvalidToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ACCESS_TOKEN_KEY, INVALID_TOKEN);
+      context.put(ACCESS_TOKEN_KEY, INVALID_TOKEN);
 
       try
       {
@@ -167,7 +169,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
    public void testUndecodableToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ACCESS_TOKEN_KEY, UNDECODABLE_TOKEN);
+      context.put(ACCESS_TOKEN_KEY, UNDECODABLE_TOKEN);
 
       try
       {
@@ -191,7 +193,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
    public void testProperlyFormattedButExpiredToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ACCESS_TOKEN_KEY, EXPIRED_TOKEN);
+      context.put(ACCESS_TOKEN_KEY, EXPIRED_TOKEN);
 
       try
       {
@@ -236,7 +238,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
    public void testNullToken()
    {
       Map<String, String> context = new HashMap<>();
-      context.put(AUTH0_ACCESS_TOKEN_KEY, null);
+      context.put(ACCESS_TOKEN_KEY, null);
 
       try
       {
@@ -267,7 +269,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
       auth0Spy.createSession(qInstance, context);
       auth0Spy.createSession(qInstance, context);
       auth0Spy.createSession(qInstance, context);
-      verify(auth0Spy, times(1)).getAccessTokenFromAuth0(any(), any(), any());
+      verify(auth0Spy, times(1)).getAccessTokenForUsernameAndPasswordFromAuth0(any(), any(), any());
    }
 
 
@@ -465,6 +467,28 @@ public class Auth0AuthenticationModuleTest extends BaseTest
       Base64.Encoder encoder        = Base64.getEncoder();
       String         originalString = username + ":" + password;
       return (encoder.encodeToString(originalString.getBytes()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMask()
+   {
+      assertNull(maskForLog(null));
+      assertEquals("******", maskForLog("1"));
+      assertEquals("******", maskForLog("12"));
+      assertEquals("******", maskForLog("123"));
+      assertEquals("******", maskForLog("1234"));
+      assertEquals("******", maskForLog("12345"));
+      assertEquals("******", maskForLog("12345"));
+      assertEquals("******", maskForLog("123456"));
+      assertEquals("******", maskForLog("1234567"));
+      assertEquals("123456******", maskForLog("12345678"));
+      assertEquals("123456******", maskForLog("123456789"));
+      assertEquals("123456******", maskForLog("1234567890"));
    }
 
 }

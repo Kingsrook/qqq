@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.GetAgeStatistics;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
@@ -45,6 +46,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -814,6 +816,11 @@ public class TestUtils
                .withCodeReference(new QCodeReference(CheckAge.class))
             )
             .withAction(new TableAutomationAction()
+               .withName("failAutomationForSith")
+               .withTriggerEvent(TriggerEvent.POST_INSERT)
+               .withCodeReference(new QCodeReference(FailAutomationForSith.class))
+            )
+            .withAction(new TableAutomationAction()
                .withName("increaseBirthdate")
                .withTriggerEvent(TriggerEvent.POST_INSERT)
                .withFilter(new QQueryFilter().withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, List.of(increaseBirthdateLimitDate))))
@@ -918,6 +925,15 @@ public class TestUtils
          List<QRecord> recordsToUpdate = new ArrayList<>();
          for(QRecord record : recordAutomationInput.getRecordList())
          {
+            ////////////////////////////////////////////////////////////////////////
+            // get the record - its automation status should currently be RUNNING //
+            ////////////////////////////////////////////////////////////////////////
+            QRecord freshlyFetchedRecord = new GetAction().executeForRecord(new GetInput(TABLE_NAME_PERSON_MEMORY).withPrimaryKey(record.getValue("id")));
+            assertEquals(AutomationStatus.RUNNING_INSERT_AUTOMATIONS.getId(), freshlyFetchedRecord.getValueInteger(TestUtils.standardQqqAutomationStatusField().getName()));
+
+            ///////////////////////////////////////////
+            // do whatever business logic we do here //
+            ///////////////////////////////////////////
             LocalDate birthDate = record.getValueLocalDate("birthDate");
             if(birthDate != null && birthDate.isAfter(limitDate))
             {
@@ -934,6 +950,29 @@ public class TestUtils
             updateInput.setTableName(recordAutomationInput.getTableName());
             updateInput.setRecords(recordsToUpdate);
             new UpdateAction().execute(updateInput);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class FailAutomationForSith extends RecordAutomationHandler
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public void execute(RecordAutomationInput recordAutomationInput) throws QException
+      {
+         for(QRecord record : recordAutomationInput.getRecordList())
+         {
+            if("Darth".equals(record.getValue("firstName")))
+            {
+               throw new QException("Oops, you look like a Sith!");
+            }
          }
       }
    }

@@ -244,8 +244,6 @@ public class SearchPossibleValueSourceAction
          }
       }
 
-      queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
-
       // todo - skip & limit as params
       queryFilter.setLimit(250);
 
@@ -257,6 +255,9 @@ public class SearchPossibleValueSourceAction
          input.getDefaultQueryFilter().addSubFilter(queryFilter);
          queryFilter = input.getDefaultQueryFilter();
       }
+
+      queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
+
       queryInput.setFilter(queryFilter);
 
       QueryOutput             queryOutput     = new QueryAction().execute(queryInput);

@@ -663,4 +663,19 @@ public class CollectionUtils
       return (output);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <K> boolean containsKeyWithNonNullValue(Map<K, ?> map, K key)
+   {
+      if(map == null)
+      {
+         return (false);
+      }
+
+      return (map.containsKey(key) && map.get(key) != null);
+   }
+
 }

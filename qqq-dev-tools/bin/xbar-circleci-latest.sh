@@ -51,6 +51,7 @@ checkBuild()
     qqq-frontend-material-dashboard) shortRepo="qfmd";;
     ColdTrack-Live)                  shortRepo="ctl";;
     ColdTrack-Live-Scripts)          shortRepo="cls";;
+    Infoplus-Scripts)                shortRepo="ips";;
    esac
 
    timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$startDate" | sed 's/\....Z/+0000/') +%s)

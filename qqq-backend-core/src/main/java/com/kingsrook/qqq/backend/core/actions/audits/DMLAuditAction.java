@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.actions.audits;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -52,13 +54,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
-import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.actions.audits.AuditAction.getRecordSecurityKeyValues;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -69,6 +70,8 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAuditOutput>
 {
    private static final QLogger LOG = QLogger.getLogger(DMLAuditAction.class);
+
+   public static final String AUDIT_CONTEXT_FIELD_NAME = "auditContext";
 
 
 
@@ -99,34 +102,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             return (output);
          }
 
-         String contextSuffix = "";
-         if(StringUtils.hasContent(input.getAuditContext()))
-         {
-            contextSuffix = " " + input.getAuditContext();
-         }
-
-         Optional<AbstractActionInput> actionInput = QContext.getFirstActionInStack();
-         if(actionInput.isPresent() && actionInput.get() instanceof RunProcessInput runProcessInput)
-         {
-            String           processName = runProcessInput.getProcessName();
-            QProcessMetaData process     = QContext.getQInstance().getProcess(processName);
-            if(process != null)
-            {
-               contextSuffix = " during process: " + process.getLabel();
-            }
-         }
-
-         QSession qSession   = QContext.getQSession();
-         String   apiVersion = qSession.getValue("apiVersion");
-         if(apiVersion != null)
-         {
-            String apiLabel = qSession.getValue("apiLabel");
-            if(!StringUtils.hasContent(apiLabel))
-            {
-               apiLabel = "API";
-            }
-            contextSuffix += (" via " + apiLabel + " Version: " + apiVersion);
-         }
+         String contextSuffix = getContentSuffix(input);
 
          AuditInput auditInput = new AuditInput();
          if(auditLevel.equals(AuditLevel.RECORD) || (auditLevel.equals(AuditLevel.FIELD) && !dmlType.supportsFields))
@@ -137,7 +113,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
             for(QRecord record : recordList)
             {
-               AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record), "Record was " + dmlType.pastTenseVerb + contextSuffix);
+               AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record, Optional.empty()), "Record was " + dmlType.pastTenseVerb + contextSuffix);
             }
          }
          else if(auditLevel.equals(AuditLevel.FIELD))
@@ -147,7 +123,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             ///////////////////////////////////////////////////////////////////
             // do many audits, all with field level details, for FIELD level //
             ///////////////////////////////////////////////////////////////////
-            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), qSession);
+            QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
             qPossibleValueTranslator.translatePossibleValuesInRecords(table, CollectionUtils.mergeLists(recordList, oldRecordList));
 
             //////////////////////////////////////////
@@ -169,92 +145,8 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                List<QRecord> details = new ArrayList<>();
                for(String fieldName : sortedFieldNames)
                {
-                  if(!record.getValues().containsKey(fieldName))
-                  {
-                     ////////////////////////////////////////////////////////////////////////////////////////////////
-                     // if the stored record doesn't have this field name, then don't audit anything about it      //
-                     // this is to deal with our Patch style updates not looking like every field was cleared out. //
-                     ////////////////////////////////////////////////////////////////////////////////////////////////
-                     continue;
-                  }
-
-                  if(fieldName.equals("modifyDate") || fieldName.equals("createDate") || fieldName.equals("automationStatus"))
-                  {
-                     continue;
-                  }
-
-                  QFieldMetaData field        = table.getField(fieldName);
-                  Serializable   value        = ValueUtils.getValueAsFieldType(field.getType(), record.getValue(fieldName));
-                  Serializable   oldValue     = oldRecord == null ? null : ValueUtils.getValueAsFieldType(field.getType(), oldRecord.getValue(fieldName));
-                  QRecord        detailRecord = null;
-
-                  if(oldRecord == null)
-                  {
-                     if(DMLType.INSERT.equals(dmlType) && value == null)
-                     {
-                        continue;
-                     }
-
-                     if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
-                     {
-                        detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
-                     }
-                     else
-                     {
-                        String formattedValue = getFormattedValueForAuditDetail(record, fieldName, field, value);
-                        detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formattedValue);
-                        detailRecord.withValue("newValue", formattedValue);
-                     }
-                  }
-                  else
-                  {
-                     if(!Objects.equals(oldValue, value))
-                     {
-                        if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
-                        {
-                           if(oldValue == null)
-                           {
-                              detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
-                           }
-                           else if(value == null)
-                           {
-                              detailRecord = new QRecord().withValue("message", "Removed " + field.getLabel());
-                           }
-                           else
-                           {
-                              detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel());
-                           }
-                        }
-                        else
-                        {
-                           String formattedValue    = getFormattedValueForAuditDetail(record, fieldName, field, value);
-                           String formattedOldValue = getFormattedValueForAuditDetail(oldRecord, fieldName, field, oldValue);
-
-                           if(oldValue == null)
-                           {
-                              detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
-                              detailRecord.withValue("newValue", formattedValue);
-                           }
-                           else if(value == null)
-                           {
-                              detailRecord = new QRecord().withValue("message", "Removed " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " from " + field.getLabel());
-                              detailRecord.withValue("oldValue", formattedOldValue);
-                           }
-                           else
-                           {
-                              detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel() + " from " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
-                              detailRecord.withValue("oldValue", formattedOldValue);
-                              detailRecord.withValue("newValue", formattedValue);
-                           }
-                        }
-                     }
-                  }
-
-                  if(detailRecord != null)
-                  {
-                     detailRecord.withValue("fieldName", fieldName);
-                     details.add(detailRecord);
-                  }
+                  makeAuditDetailRecordForField(fieldName, table, dmlType, record, oldRecord)
+                     .ifPresent(details::add);
                }
 
                if(details.isEmpty() && DMLType.UPDATE.equals(dmlType))
@@ -264,7 +156,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
                }
                else
                {
-                  AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record), "Record was " + dmlType.pastTenseVerb + contextSuffix, details);
+                  AuditAction.appendToInput(auditInput, table.getName(), record.getValueInteger(table.getPrimaryKeyField()), getRecordSecurityKeyValues(table, record, Optional.ofNullable(oldRecord)), "Record was " + dmlType.pastTenseVerb + contextSuffix, details);
                }
             }
          }
@@ -280,6 +172,256 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       }
 
       return (output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static String getContentSuffix(DMLAuditInput input)
+   {
+      StringBuilder contextSuffix = new StringBuilder();
+
+      /////////////////////////////////////////////////////////////////////////////
+      // start with context from the input wrapper                               //
+      // note, these contexts get propagated down from Input/Update/Delete Input //
+      /////////////////////////////////////////////////////////////////////////////
+      if(StringUtils.hasContent(input.getAuditContext()))
+      {
+         contextSuffix.append(" ").append(input.getAuditContext());
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // note process label (and a possible context from the process's state) if present //
+      /////////////////////////////////////////////////////////////////////////////////////
+      Optional<AbstractActionInput> actionInput = QContext.getFirstActionInStack();
+      if(actionInput.isPresent() && actionInput.get() instanceof RunProcessInput runProcessInput)
+      {
+         String processAuditContext = ValueUtils.getValueAsString(runProcessInput.getValue(AUDIT_CONTEXT_FIELD_NAME));
+         if(StringUtils.hasContent(processAuditContext))
+         {
+            contextSuffix.append(" ").append(processAuditContext);
+         }
+
+         String           processName = runProcessInput.getProcessName();
+         QProcessMetaData process     = QContext.getQInstance().getProcess(processName);
+         if(process != null)
+         {
+            contextSuffix.append(" during process: ").append(process.getLabel());
+         }
+      }
+
+      ///////////////////////////////////////////////////
+      // use api label & version if present in session //
+      ///////////////////////////////////////////////////
+      QSession qSession   = QContext.getQSession();
+      String   apiVersion = qSession.getValue("apiVersion");
+      if(apiVersion != null)
+      {
+         String apiLabel = qSession.getValue("apiLabel");
+         if(!StringUtils.hasContent(apiLabel))
+         {
+            apiLabel = "API";
+         }
+         contextSuffix.append(" via ").append(apiLabel).append(" Version: ").append(apiVersion);
+      }
+      return (contextSuffix.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static Optional<QRecord> makeAuditDetailRecordForField(String fieldName, QTableMetaData table, DMLType dmlType, QRecord record, QRecord oldRecord)
+   {
+      if(!record.getValues().containsKey(fieldName))
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the stored record doesn't have this field name, then don't audit anything about it      //
+         // this is to deal with our Patch style updates not looking like every field was cleared out. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         return (Optional.empty());
+      }
+
+      if(fieldName.equals("modifyDate") || fieldName.equals("createDate") || fieldName.equals("automationStatus"))
+      {
+         return (Optional.empty());
+      }
+
+      QFieldMetaData field        = table.getField(fieldName);
+      Serializable   value        = ValueUtils.getValueAsFieldType(field.getType(), record.getValue(fieldName));
+      Serializable   oldValue     = oldRecord == null ? null : ValueUtils.getValueAsFieldType(field.getType(), oldRecord.getValue(fieldName));
+      QRecord        detailRecord = null;
+
+      if(oldRecord == null)
+      {
+         if(DMLType.INSERT.equals(dmlType) && value == null)
+         {
+            return (Optional.empty());
+         }
+
+         if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
+         {
+            detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
+         }
+         else
+         {
+            String formattedValue = getFormattedValueForAuditDetail(record, fieldName, field, value);
+            detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formattedValue);
+            detailRecord.withValue("newValue", formattedValue);
+         }
+      }
+      else
+      {
+         if(areValuesDifferentForAudit(field, value, oldValue))
+         {
+            if(field.getType().equals(QFieldType.BLOB) || field.getType().needsMasked())
+            {
+               if(oldValue == null)
+               {
+                  detailRecord = new QRecord().withValue("message", "Set " + field.getLabel());
+               }
+               else if(value == null)
+               {
+                  detailRecord = new QRecord().withValue("message", "Removed " + field.getLabel());
+               }
+               else
+               {
+                  detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel());
+               }
+            }
+            else
+            {
+               String formattedValue    = getFormattedValueForAuditDetail(record, fieldName, field, value);
+               String formattedOldValue = getFormattedValueForAuditDetail(oldRecord, fieldName, field, oldValue);
+
+               if(oldValue == null)
+               {
+                  detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
+                  detailRecord.withValue("newValue", formattedValue);
+               }
+               else if(value == null)
+               {
+                  detailRecord = new QRecord().withValue("message", "Removed " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " from " + field.getLabel());
+                  detailRecord.withValue("oldValue", formattedOldValue);
+               }
+               else
+               {
+                  detailRecord = new QRecord().withValue("message", "Changed " + field.getLabel() + " from " + formatFormattedValueForDetailMessage(field, formattedOldValue) + " to " + formatFormattedValueForDetailMessage(field, formattedValue));
+                  detailRecord.withValue("oldValue", formattedOldValue);
+                  detailRecord.withValue("newValue", formattedValue);
+               }
+            }
+         }
+      }
+
+      if(detailRecord != null)
+      {
+         ////////////////////////////////////////////////////////////////////
+         // useful if doing dev in here - but overkill for any other time. //
+         ////////////////////////////////////////////////////////////////////
+         // LOG.debug("Returning with message: " + detailRecord.getValueString("message"));
+         detailRecord.withValue("fieldName", fieldName);
+         return (Optional.of(detailRecord));
+      }
+
+      return (Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static boolean areValuesDifferentForAudit(QFieldMetaData field, Serializable value, Serializable oldValue)
+   {
+      try
+      {
+         ///////////////////
+         // decimal rules //
+         ///////////////////
+         if(field.getType().equals(QFieldType.DECIMAL))
+         {
+            BigDecimal newBD = ValueUtils.getValueAsBigDecimal(value);
+            BigDecimal oldBD = ValueUtils.getValueAsBigDecimal(oldValue);
+
+            if(newBD == null && oldBD == null)
+            {
+               return (false);
+            }
+
+            if(newBD == null || oldBD == null)
+            {
+               return (true);
+            }
+
+            return (newBD.compareTo(oldBD) != 0);
+         }
+
+         ////////////////////
+         // dateTime rules //
+         ////////////////////
+         if(field.getType().equals(QFieldType.DATE_TIME))
+         {
+            Instant newI = ValueUtils.getValueAsInstant(value);
+            Instant oldI = ValueUtils.getValueAsInstant(oldValue);
+
+            if(newI == null && oldI == null)
+            {
+               return (false);
+            }
+
+            if(newI == null || oldI == null)
+            {
+               return (true);
+            }
+
+            ////////////////////////////////
+            // just compare to the second //
+            ////////////////////////////////
+            return (newI.truncatedTo(ChronoUnit.SECONDS).compareTo(oldI.truncatedTo(ChronoUnit.SECONDS)) != 0);
+         }
+
+         //////////////////
+         // string rules //
+         //////////////////
+         if(field.getType().isStringLike())
+         {
+            String newString = ValueUtils.getValueAsString(value);
+            String oldString = ValueUtils.getValueAsString(oldValue);
+
+            boolean newIsNullOrEmpty = !StringUtils.hasContent(newString);
+            boolean oldIsNullOrEmpty = !StringUtils.hasContent(oldString);
+
+            if(newIsNullOrEmpty && oldIsNullOrEmpty)
+            {
+               return (false);
+            }
+
+            if(newIsNullOrEmpty || oldIsNullOrEmpty)
+            {
+               return (true);
+            }
+
+            return (newString.compareTo(oldString) != 0);
+         }
+
+         /////////////////////////////////////
+         // default just use Objects.equals //
+         /////////////////////////////////////
+         return !Objects.equals(oldValue, value);
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error checking areValuesDifferentForAudit", e, logPair("fieldName", field.getName()), logPair("value", value), logPair("oldValue", oldValue));
+      }
+
+      ////////////////////////////////////
+      // default to something simple... //
+      ////////////////////////////////////
+      return !Objects.equals(oldValue, value);
    }
 
 
@@ -376,21 +518,6 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Map<String, Serializable> getRecordSecurityKeyValues(QTableMetaData table, QRecord record)
-   {
-      Map<String, Serializable> securityKeyValues = new HashMap<>();
-      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
-      {
-         securityKeyValues.put(recordSecurityLock.getSecurityKeyType(), record == null ? null : record.getValue(recordSecurityLock.getFieldName()));
-      }
-      return securityKeyValues;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public static AuditLevel getAuditLevel(AbstractTableActionInput tableActionInput)
    {
       QTableMetaData table = tableActionInput.getTable();
@@ -407,7 +534,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    /*******************************************************************************
     **
     *******************************************************************************/
-   private enum DMLType
+   enum DMLType
    {
       INSERT("Inserted", true),
       UPDATE("Edited", true),

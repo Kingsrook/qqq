@@ -276,6 +276,52 @@ class QMetaDataVariableInterpreterTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testGetIntegerFromPropertyOrEnvironment()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+
+      //////////////////////////////////////////////////////////
+      // if neither prop nor env is set, get back the default //
+      //////////////////////////////////////////////////////////
+      assertEquals(1, interpreter.getIntegerFromPropertyOrEnvironment("notSet", "NOT_SET", 1));
+      assertEquals(2, interpreter.getIntegerFromPropertyOrEnvironment("notSet", "NOT_SET", 2));
+
+      /////////////////////////////////////////////
+      // unrecognized values are same as not set //
+      /////////////////////////////////////////////
+      System.setProperty("unrecognized", "asdf");
+      interpreter.setEnvironmentOverrides(Map.of("UNRECOGNIZED", "qwerty"));
+      assertEquals(3, interpreter.getIntegerFromPropertyOrEnvironment("unrecognized", "UNRECOGNIZED", 3));
+      assertEquals(4, interpreter.getIntegerFromPropertyOrEnvironment("unrecognized", "UNRECOGNIZED", 4));
+
+      /////////////////////////////////
+      // if only prop is set, get it //
+      /////////////////////////////////
+      assertEquals(5, interpreter.getIntegerFromPropertyOrEnvironment("foo.size", "FOO_SIZE", 5));
+      System.setProperty("foo.size", "6");
+      assertEquals(6, interpreter.getIntegerFromPropertyOrEnvironment("foo.size", "FOO_SIZE", 7));
+
+      ////////////////////////////////
+      // if only env is set, get it //
+      ////////////////////////////////
+      assertEquals(8, interpreter.getIntegerFromPropertyOrEnvironment("bar.size", "BAR_SIZE", 8));
+      interpreter.setEnvironmentOverrides(Map.of("BAR_SIZE", "9"));
+      assertEquals(9, interpreter.getIntegerFromPropertyOrEnvironment("bar.size", "BAR_SIZE", 10));
+
+      ///////////////////////////////////
+      // if both are set, get the prop //
+      ///////////////////////////////////
+      System.setProperty("baz.size", "11");
+      interpreter.setEnvironmentOverrides(Map.of("BAZ_SIZE", "12"));
+      assertEquals(11, interpreter.getIntegerFromPropertyOrEnvironment("baz.size", "BAZ_SIZE", 13));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @InterpretableFields(fieldNames = { "username", "password" })
    public static class GoodTestClass
    {

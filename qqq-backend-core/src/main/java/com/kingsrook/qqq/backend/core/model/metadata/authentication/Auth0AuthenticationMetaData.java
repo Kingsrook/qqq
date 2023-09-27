@@ -60,7 +60,6 @@ public class Auth0AuthenticationMetaData extends QAuthenticationMetaData
    private String       auth0ClientSecretField;
    private Serializable qqqRecordIdField;
 
-
    /////////////////////////////////////
    // fields on the accessToken table //
    /////////////////////////////////////
