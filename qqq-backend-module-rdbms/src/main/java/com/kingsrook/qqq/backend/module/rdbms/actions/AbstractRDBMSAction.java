@@ -261,9 +261,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
          if(CollectionUtils.nullSafeHasContents(queryJoin.getSecurityCriteria()))
          {
-            String securityOnClause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(joinsContext, queryJoin.getSecurityCriteria(), QQueryFilter.BooleanOperator.AND, params);
-            LOG.debug("Wrote securityOnClause", logPair("clause", securityOnClause));
-            joinClauseList.add(securityOnClause);
+            Optional<String> securityOnClause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(joinsContext, queryJoin.getSecurityCriteria(), QQueryFilter.BooleanOperator.AND, params);
+            if(securityOnClause.isPresent())
+            {
+               LOG.debug("Wrote securityOnClause", logPair("clause", securityOnClause));
+               joinClauseList.add(securityOnClause.get());
+            }
          }
 
          rs.append(" ON ").append(StringUtils.join(" AND ", joinClauseList));
@@ -361,23 +364,25 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          return ("1 = 1");
       }
 
-      String clause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(joinsContext, filter.getCriteria(), filter.getBooleanOperator(), params);
+      Optional<String> clause = getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(joinsContext, filter.getCriteria(), filter.getBooleanOperator(), params);
       if(!CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
       {
          ///////////////////////////////////////////////////////////////
          // if there are no sub-clauses, then just return this clause //
+         // and if there's no clause, use the default 1 = 1           //
          ///////////////////////////////////////////////////////////////
-         return (clause);
+         return (clause.orElse("1 = 1"));
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // else, build a list of clauses - recursively expanding the sub-filters into clauses, then return them joined with our operator //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<String> clauses = new ArrayList<>();
-      if(StringUtils.hasContent(clause))
+      if(clause.isPresent() && StringUtils.hasContent(clause.get()))
       {
-         clauses.add("(" + clause + ")");
+         clauses.add("(" + clause.get() + ")");
       }
+
       for(QQueryFilter subFilter : filter.getSubFilters())
       {
          String subClause = makeWhereClause(joinsContext, subFilter, params);
@@ -386,6 +391,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
             clauses.add("(" + subClause + ")");
          }
       }
+
       return (String.join(" " + filter.getBooleanOperator().toString() + " ", clauses));
    }
 
@@ -393,8 +399,9 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
    /*******************************************************************************
     **
+    ** @return optional sql where sub-clause, as in "x AND y"
     *******************************************************************************/
-   private String getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(JoinsContext joinsContext, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
+   private Optional<String> getSqlWhereStringAndPopulateParamsListFromNonNestedFilter(JoinsContext joinsContext, List<QFilterCriteria> criteria, QQueryFilter.BooleanOperator booleanOperator, List<Serializable> params) throws IllegalArgumentException
    {
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
@@ -642,15 +649,14 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
       //////////////////////////////////////////////////////////////////////////////
       // since we're skipping criteria w/o a field or operator in the loop -      //
-      // we can get to the end here without any clauses... so, return a 1=1 then, //
-      // as whoever called this is probably already written a WHERE or AND        //
+      // we can get to the end here without any clauses... so, return a null here //
       //////////////////////////////////////////////////////////////////////////////
       if(clauses.isEmpty())
       {
-         return ("1 = 1");
+         return (Optional.empty());
       }
 
-      return (String.join(" " + booleanOperator.toString() + " ", clauses));
+      return (Optional.of(String.join(" " + booleanOperator.toString() + " ", clauses)));
    }
 
 
