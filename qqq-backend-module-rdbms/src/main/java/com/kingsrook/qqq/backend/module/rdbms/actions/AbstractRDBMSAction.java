@@ -399,6 +399,18 @@ public abstract class AbstractRDBMSAction implements QActionInterface
       List<String> clauses = new ArrayList<>();
       for(QFilterCriteria criterion : criteria)
       {
+         if(criterion.getFieldName() == null)
+         {
+            LOG.info("QFilter criteria is missing a fieldName - will not be included in query.");
+            continue;
+         }
+
+         if(criterion.getOperator() == null)
+         {
+            LOG.info("QFilter criteria is missing a operator - will not be included in query.", logPair("fieldName", criterion.getFieldName()));
+            continue;
+         }
+
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
 
          List<Serializable> values             = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
@@ -626,6 +638,16 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          */
 
          params.addAll(values);
+      }
+
+      //////////////////////////////////////////////////////////////////////////////
+      // since we're skipping criteria w/o a field or operator in the loop -      //
+      // we can get to the end here without any clauses... so, return a 1=1 then, //
+      // as whoever called this is probably already written a WHERE or AND        //
+      //////////////////////////////////////////////////////////////////////////////
+      if(clauses.isEmpty())
+      {
+         return ("1 = 1");
       }
 
       return (String.join(" " + booleanOperator.toString() + " ", clauses));
