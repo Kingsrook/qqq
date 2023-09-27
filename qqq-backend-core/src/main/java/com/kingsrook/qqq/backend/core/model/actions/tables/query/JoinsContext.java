@@ -209,7 +209,7 @@ public class JoinsContext
             // process all locks on this join's join-table.  keep track if any new joins were added //
             //////////////////////////////////////////////////////////////////////////////////////////
             QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
-            for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()))
+            for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks())))
             {
                List<QueryJoin> addedQueryJoins = ensureRecordSecurityLockIsRepresented(joinTable.getName(), queryJoin.getJoinTableOrItsAlias(), recordSecurityLock, queryJoin);
 
