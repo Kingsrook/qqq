@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -92,8 +93,9 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
 
-   protected RunBackendStepInput runBackendStepInput = null;
-   protected RecordLookupHelper  recordLookupHelper  = null;
+   protected RunBackendStepInput  runBackendStepInput  = null;
+   protected RunBackendStepOutput runBackendStepOutput = null;
+   protected RecordLookupHelper   recordLookupHelper   = null;
 
    private QPossibleValueTranslator possibleValueTranslator;
 
@@ -193,6 +195,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       }
 
       this.runBackendStepInput = runBackendStepInput;
+      this.runBackendStepOutput = runBackendStepOutput;
 
       SyncProcessConfig config = getSyncProcessConfig();
 
@@ -423,6 +426,19 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          {
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Let the subclass "easily" add an audit to be inserted on the Execute step.
+    *******************************************************************************/
+   protected void addAuditForExecuteStep(AuditSingleInput auditSingleInput)
+   {
+      if(StreamedETLWithFrontendProcess.STEP_NAME_EXECUTE.equals(this.runBackendStepInput.getStepName()))
+      {
+         this.runBackendStepOutput.addAuditSingleInput(auditSingleInput);
       }
    }
 
