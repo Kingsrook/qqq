@@ -278,6 +278,11 @@ public class QFilterCriteria implements Serializable, Cloneable
    @Override
    public String toString()
    {
+      if(fieldName == null)
+      {
+         return ("<null-field-criteria>");
+      }
+
       StringBuilder rs = new StringBuilder(fieldName);
       try
       {
