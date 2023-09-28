@@ -107,15 +107,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField);
-      if(willNotInsert.getCount() > 0)
-      {
-         processSummaryLineList.add(willNotInsert);
-      }
-      if(willNotUpdate.getCount() > 0)
-      {
-         processSummaryLineList.add(willNotUpdate);
-      }
+      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField, willNotInsert, willNotUpdate);
       return (processSummaryLineList);
    }
 
@@ -280,12 +272,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          if(existingRecord != null && config.performUpdates)
          {
             recordToStore = existingRecord;
-            okToUpdate.incrementCount();
          }
          else if(existingRecord == null && config.performInserts)
          {
             recordToStore = new QRecord();
-            okToInsert.incrementCount();
          }
          else
          {
@@ -302,12 +292,21 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             continue;
          }
 
-         ////////////////////////////////////////////////////////////////
-         // if we received a record to store add to the output records //
-         ////////////////////////////////////////////////////////////////
+         //////////////////////////////////////////////////////////////////////////////////
+         // if we received a record to store add to the output records and summary lines //
+         //////////////////////////////////////////////////////////////////////////////////
          recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);
          if(recordToStore != null)
          {
+            if(existingRecord != null)
+            {
+               okToUpdate.incrementCount();
+            }
+            else
+            {
+               okToInsert.incrementCount();
+            }
+
             runBackendStepOutput.addRecord(recordToStore);
          }
       }
