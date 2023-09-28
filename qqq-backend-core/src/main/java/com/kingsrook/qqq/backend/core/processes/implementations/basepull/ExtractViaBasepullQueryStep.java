@@ -90,6 +90,34 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
 
 
    /*******************************************************************************
+    ** Let a subclass know if getQueryFilter will use the "default filter" (e.g., from
+    ** our base class, which would come from values passed in to the process), or if
+    ** the BasePull Query would be used (e.g., for a scheduled job).
+    *******************************************************************************/
+   protected boolean willTheBasePullQueryBeUsed(RunBackendStepInput runBackendStepInput)
+   {
+      try
+      {
+         super.getQueryFilter(runBackendStepInput);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if super.getQueryFilter returned - then - there's a default query to use (e.g., a user selecting rows on a screen). //
+         // this means we won't use the BasePull query, so return a false here.                                                 //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (false);
+      }
+      catch(QException qe)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we catch here, assume that is because there was no default filter - in which case - we'll use the BasePull Query //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected String getLastRunTimeString(RunBackendStepInput runBackendStepInput) throws QException

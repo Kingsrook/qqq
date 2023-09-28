@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -92,8 +93,9 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
 
-   protected RunBackendStepInput runBackendStepInput = null;
-   protected RecordLookupHelper  recordLookupHelper  = null;
+   protected RunBackendStepInput  runBackendStepInput  = null;
+   protected RunBackendStepOutput runBackendStepOutput = null;
+   protected RecordLookupHelper   recordLookupHelper   = null;
 
    private QPossibleValueTranslator possibleValueTranslator;
 
@@ -105,15 +107,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField);
-      if(willNotInsert.getCount() > 0)
-      {
-         processSummaryLineList.add(willNotInsert);
-      }
-      if(willNotUpdate.getCount() > 0)
-      {
-         processSummaryLineList.add(willNotUpdate);
-      }
+      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField, willNotInsert, willNotUpdate);
       return (processSummaryLineList);
    }
 
@@ -193,6 +187,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       }
 
       this.runBackendStepInput = runBackendStepInput;
+      this.runBackendStepOutput = runBackendStepOutput;
 
       SyncProcessConfig config = getSyncProcessConfig();
 
@@ -277,12 +272,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          if(existingRecord != null && config.performUpdates)
          {
             recordToStore = existingRecord;
-            okToUpdate.incrementCount();
          }
          else if(existingRecord == null && config.performInserts)
          {
             recordToStore = new QRecord();
-            okToInsert.incrementCount();
          }
          else
          {
@@ -299,12 +292,21 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             continue;
          }
 
-         ////////////////////////////////////////////////////////////////
-         // if we received a record to store add to the output records //
-         ////////////////////////////////////////////////////////////////
+         //////////////////////////////////////////////////////////////////////////////////
+         // if we received a record to store add to the output records and summary lines //
+         //////////////////////////////////////////////////////////////////////////////////
          recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);
          if(recordToStore != null)
          {
+            if(existingRecord != null)
+            {
+               okToUpdate.incrementCount();
+            }
+            else
+            {
+               okToInsert.incrementCount();
+            }
+
             runBackendStepOutput.addRecord(recordToStore);
          }
       }
@@ -423,6 +425,19 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          {
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Let the subclass "easily" add an audit to be inserted on the Execute step.
+    *******************************************************************************/
+   protected void addAuditForExecuteStep(AuditSingleInput auditSingleInput)
+   {
+      if(StreamedETLWithFrontendProcess.STEP_NAME_EXECUTE.equals(this.runBackendStepInput.getStepName()))
+      {
+         this.runBackendStepOutput.addAuditSingleInput(auditSingleInput);
       }
    }
 
