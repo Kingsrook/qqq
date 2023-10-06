@@ -859,6 +859,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
       }
+
+      apiProcessMetaDataList.sort(Comparator.comparing(apiProcessMetaDataQProcessMetaDataPair -> getProcessSummary(apiProcessMetaDataQProcessMetaDataPair.getA(), apiProcessMetaDataQProcessMetaDataPair.getB())));
+
       return (apiProcessMetaDataList);
    }
 
@@ -885,7 +888,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       Method methodForProcess = new Method()
          .withOperationId(apiProcessMetaData.getApiProcessName())
          .withTags(tags)
-         .withSummary(ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withSummary(getProcessSummary(apiProcessMetaData, processMetaData))
          .withDescription(description)
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
@@ -1021,6 +1024,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static String getProcessSummary(ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData)
+   {
+      return ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private Path generateProcessStatusSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
    {
       ////////////////////////////////
@@ -1029,7 +1042,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       Method methodForProcess = new Method()
          .withOperationId("getStatusFor" + StringUtils.ucFirst(apiProcessMetaData.getApiProcessName()))
          .withTags(tags)
-         .withSummary("Get Status of Job: " + ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withSummary("Get Status of Job: " + getProcessSummary(apiProcessMetaData, processMetaData))
          .withDescription("Get the status for a previous asynchronous call to the process named " + processMetaData.getLabel())
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
@@ -1158,6 +1171,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
       }
+
+      /////////////////////////////////////////////////////////////////////
+      // sort by process summary (for stability, and just to be better) //
+      /////////////////////////////////////////////////////////////////////
+      apiProcessMetaDataList.sort(Comparator.comparing(apiProcessMetaDataQProcessMetaDataPair -> getProcessSummary(apiProcessMetaDataQProcessMetaDataPair.getA(), apiProcessMetaDataQProcessMetaDataPair.getB())));
+
       return (apiProcessMetaDataList);
    }
 

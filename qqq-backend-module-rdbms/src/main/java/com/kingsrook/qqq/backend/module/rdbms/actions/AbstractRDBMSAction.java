@@ -193,8 +193,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       try
       {
-         QFieldMetaData field = table.getField(fieldName);
-         if(field != null)
+         if(table.getFields().containsKey(fieldName))
          {
             record.setValue(fieldName, value);
          }

@@ -98,6 +98,17 @@ public class ProcessSummaryRecordLink implements ProcessSummaryLineInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
+   public String getMessage()
+   {
+      return getFullText();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public ProcessSummaryRecordLink(Status status, String tableName, Serializable recordId)
    {
       this.status = status;

@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -55,7 +56,7 @@ public interface GetInterface
       {
          QTableMetaData table      = getInput.getTable();
          boolean        foundMatch = false;
-         for(UniqueKey uniqueKey : table.getUniqueKeys())
+         for(UniqueKey uniqueKey : CollectionUtils.nonNullList(table.getUniqueKeys()))
          {
             if(new HashSet<>(uniqueKey.getFieldNames()).equals(getInput.getUniqueKey().keySet()))
             {

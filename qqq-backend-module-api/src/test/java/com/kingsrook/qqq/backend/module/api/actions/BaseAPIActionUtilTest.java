@@ -63,14 +63,18 @@ import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILogMetaDataProvider;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -339,10 +343,32 @@ class BaseAPIActionUtilTest extends BaseTest
       mockApiUtilsHelper.enqueueMockResponse("""
          {"id": 6}
          """);
+      mockApiUtilsHelper.withMockRequestAsserter(httpRequestBase ->
+      {
+         HttpEntity entity      = ((HttpEntityEnclosingRequestBase) httpRequestBase).getEntity();
+         byte[]     bytes       = entity.getContent().readAllBytes();
+         String     requestBody = new String(bytes, StandardCharsets.UTF_8);
+
+         ///////////////////////////////////////
+         // default ISO-8559-1: ... a0 ...    //
+         // updated UTF-8:      ... c2 a0 ... //
+         ///////////////////////////////////////
+         byte previousByte = 0;
+         for(byte b : bytes)
+         {
+            if(b == (byte) 0xa0 && previousByte != (byte) 0xc2)
+            {
+               fail("Found byte 0xa0 (without being prefixed by 0xc2) - so this is invalid UTF-8!");
+            }
+            previousByte = b;
+         }
+
+         assertThat(requestBody).contains("van Houten");
+      });
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.MOCK_TABLE_NAME);
-      insertInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse")));
+      insertInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse van Houten")));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(6, insertOutput.getRecords().get(0).getValueInteger("id"));
    }

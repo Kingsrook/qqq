@@ -182,6 +182,7 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
     ** Getter for message
     **
     *******************************************************************************/
+   @Override
    public String getMessage()
    {
       return message;

@@ -102,14 +102,14 @@ jobs:
   mvn_test:
     executor: localstack/default
     steps:
-      - localstack/startup
+      ## - localstack/startup
       - install_java17
       - mvn_verify
 
   mvn_deploy:
     executor: localstack/default
     steps:
-      - localstack/startup
+      ## - localstack/startup
       - install_java17
       - mvn_verify
       - mvn_jar_deploy

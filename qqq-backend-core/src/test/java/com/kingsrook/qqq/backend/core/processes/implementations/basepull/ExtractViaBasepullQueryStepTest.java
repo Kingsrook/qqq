@@ -23,14 +23,17 @@ package com.kingsrook.qqq.backend.core.processes.implementations.basepull;
 
 
 import java.time.Instant;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -69,6 +72,29 @@ class ExtractViaBasepullQueryStepTest extends BaseTest
       assertEquals(1, queryFilter.getOrderBys().size());
       assertEquals("createDate", queryFilter.getOrderBys().get(0).getFieldName());
       assertTrue(queryFilter.getOrderBys().get(0).getIsAscending());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWillTheBasePullQueryBeUsed()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // only time the base-pull query will be used is if there isn't a filter or records in the process input. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(new ExtractViaBasepullQueryStep().willTheBasePullQueryBeUsed(new RunBackendStepInput()));
+
+      assertFalse(new ExtractViaBasepullQueryStep().willTheBasePullQueryBeUsed(new RunBackendStepInput()
+         .withValues(Map.of("recordIds", "1,2,3", StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE, "person"))));
+
+      assertFalse(new ExtractViaBasepullQueryStep().willTheBasePullQueryBeUsed(new RunBackendStepInput()
+         .withValues(Map.of(StreamedETLWithFrontendProcess.FIELD_DEFAULT_QUERY_FILTER, new QQueryFilter()))));
+
+      assertFalse(new ExtractViaBasepullQueryStep().willTheBasePullQueryBeUsed(new RunBackendStepInput()
+         .withValues(Map.of("queryFilterJson", "{}"))));
    }
 
 }
