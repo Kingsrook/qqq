@@ -84,7 +84,7 @@ public class QContext
          actionStackThreadLocal.get().add(actionInput);
       }
 
-      if(!qInstance.getHasBeenValidated())
+      if(qInstance != null && !qInstance.getHasBeenValidated())
       {
          try
          {

@@ -1307,7 +1307,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void throwUnsupportedCriteriaField(QFilterCriteria criteria) throws QUserFacingException
    {
-      throw new QUserFacingException("Unsupported query field [" + criteria.getFieldName() + "]");
+      throw new QUserFacingException("Unsupported query field:  " + getFieldLabelFromCriteria(criteria));
    }
 
 
@@ -1317,7 +1317,30 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void throwUnsupportedCriteriaOperator(QFilterCriteria criteria) throws QUserFacingException
    {
-      throw new QUserFacingException("Unsupported operator [" + criteria.getOperator() + "] for query field [" + criteria.getFieldName() + "]");
+      throw new QUserFacingException("Unsupported operator (" + criteria.getOperator() + ") for query field:  " + getFieldLabelFromCriteria(criteria));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFieldLabelFromCriteria(QFilterCriteria criteria)
+   {
+      String fieldLabel = criteria.getFieldName();
+      try
+      {
+         String label = actionInput.getTable().getField(criteria.getFieldName()).getLabel();
+         if(StringUtils.hasContent(label))
+         {
+            fieldLabel = label;
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error getting field label", e);
+      }
+      return fieldLabel;
    }
 
 

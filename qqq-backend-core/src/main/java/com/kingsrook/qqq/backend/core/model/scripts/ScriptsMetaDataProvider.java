@@ -383,7 +383,7 @@ public class ScriptsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QTableMetaData defineTableTriggerTable(String backendName) throws QException
+   public QTableMetaData defineTableTriggerTable(String backendName) throws QException
    {
       QTableMetaData tableMetaData = defineStandardTable(backendName, TableTrigger.TABLE_NAME, TableTrigger.class)
          .withRecordLabelFields("id")

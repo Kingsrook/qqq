@@ -22,9 +22,8 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -90,6 +89,10 @@ public class RecordAutomationStatusUpdater
          }
       }
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Avoid setting records to PENDING_INSERT or PENDING_UPDATE even if they don't have any insert or update automations or triggers //
+      // such records should go straight to OK status.                                                                                  //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(canWeSkipPendingAndGoToOkay(table, automationStatus))
       {
          automationStatus = AutomationStatus.OK;
@@ -121,9 +124,13 @@ public class RecordAutomationStatusUpdater
     ** being asked to set status to PENDING_INSERT (or PENDING_UPDATE), then just
     ** move the status straight to OK.
     *******************************************************************************/
-   private static boolean canWeSkipPendingAndGoToOkay(QTableMetaData table, AutomationStatus automationStatus)
+   static boolean canWeSkipPendingAndGoToOkay(QTableMetaData table, AutomationStatus automationStatus)
    {
-      List<TableAutomationAction> tableActions = Objects.requireNonNullElse(table.getAutomationDetails().getActions(), new ArrayList<>());
+      List<TableAutomationAction> tableActions = Collections.emptyList();
+      if(table.getAutomationDetails() != null && table.getAutomationDetails().getActions() != null)
+      {
+         tableActions = table.getAutomationDetails().getActions();
+      }
 
       if(automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS))
       {
@@ -135,6 +142,12 @@ public class RecordAutomationStatusUpdater
          {
             return (false);
          }
+
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // if we're going to pending-insert, and there are no insert automations or triggers, //
+         // then we may skip pending and go to okay.                                           //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
       }
       else if(automationStatus.equals(AutomationStatus.PENDING_UPDATE_AUTOMATIONS))
       {
@@ -146,9 +159,21 @@ public class RecordAutomationStatusUpdater
          {
             return (false);
          }
-      }
 
-      return (true);
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // if we're going to pending-update, and there are no insert automations or triggers, //
+         // then we may skip pending and go to okay.                                           //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
+      else
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're going to any other automation status - then we may never "skip pending" and go to okay - //
+         // because we weren't asked to go to pending!                                                        //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (false);
+      }
    }
 
 

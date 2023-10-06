@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -195,6 +197,33 @@ class AuditActionTest extends BaseTest
       auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValue("id"));
       assertEquals(1, auditDetails.size());
       assertThat(auditDetails).anyMatch(r -> r.getValueString("message").equals("Detail3"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppendToInputThatTakesRecordNotIdAndSecurityKeyValues()
+   {
+      AuditInput auditInput = new AuditInput();
+
+      //////////////////////////////////////////////////////////////
+      // make sure the recordId & securityKey got build correctly //
+      //////////////////////////////////////////////////////////////
+      AuditAction.appendToInput(auditInput, QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER), new QRecord().withValue("id", 47).withValue("storeId", 42), "Test");
+      AuditSingleInput auditSingleInput = auditInput.getAuditSingleInputList().get(0);
+      assertEquals(47, auditSingleInput.getRecordId());
+      assertEquals(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, 42), auditSingleInput.getSecurityKeyValues());
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // acknowledge that we might get back a null key value if the record doesn't have it set //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      AuditAction.appendToInput(auditInput, QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER), new QRecord().withValue("id", 47), "Test");
+      auditSingleInput = auditInput.getAuditSingleInputList().get(1);
+      assertEquals(47, auditSingleInput.getRecordId());
+      assertEquals(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, null), auditSingleInput.getSecurityKeyValues());
    }
 
 }

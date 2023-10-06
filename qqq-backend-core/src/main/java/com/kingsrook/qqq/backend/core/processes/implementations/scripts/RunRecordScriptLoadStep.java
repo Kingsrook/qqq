@@ -25,11 +25,15 @@ package com.kingsrook.qqq.backend.core.processes.implementations.scripts;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.audits.AuditAction;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.RunAdHocRecordScriptAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryFilterLink;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -42,7 +46,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptLog;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractLoadStep;
@@ -121,16 +127,25 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       getInput.setTableName(Script.TABLE_NAME);
       getInput.setPrimaryKey(scriptId);
       GetOutput getOutput = new GetAction().execute(getInput);
-      if(getOutput.getRecord() == null)
+      QRecord   script    = getOutput.getRecord();
+      if(script == null)
       {
          throw (new QException("Could not find script by id: " + scriptId));
       }
 
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set an "audit context" - so any DML executed during the script will include the note of what script was running. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      runBackendStepInput.addValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME, "via Script \"" + script.getValue("name") + "\"");
+
+      String tableName = script.getValueString("tableName");
+
       RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
       input.setRecordList(runBackendStepInput.getRecords());
       input.setCodeReference(new AdHocScriptCodeReference().withScriptId(scriptId));
-      input.setTableName(getOutput.getRecord().getValueString("tableName"));
+      input.setTableName(tableName);
       input.setLogger(scriptLogger);
+
       RunAdHocRecordScriptOutput output          = new RunAdHocRecordScriptOutput();
       Exception                  caughtException = null;
       try
@@ -147,11 +162,17 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
          caughtException = e;
       }
 
+      String auditMessage = "Script \"" + script.getValueString("name") + "\" (id: " + scriptId + ") was executed against this record";
+
+      //////////////////////////////////////////////////////////
+      // add the record to the appropriate processSummaryLine //
+      //////////////////////////////////////////////////////////
       if(scriptLogger.getScriptLog() != null)
       {
          Integer id = scriptLogger.getScriptLog().getValueInteger("id");
          if(id != null)
          {
+            auditMessage += ", creating script log: " + id;
             boolean hadError = BooleanUtils.isTrue(scriptLogger.getScriptLog().getValueBoolean("hadError"));
             (hadError ? errorScriptLogIds : okScriptLogIds).add(id);
          }
@@ -159,6 +180,34 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       else if(caughtException != null)
       {
          unloggedExceptionLine.incrementCount(runBackendStepInput.getRecords().size());
+      }
+
+      ////////////////////////////////////////////////////////////
+      // audit that the script was executed against the records //
+      ////////////////////////////////////////////////////////////
+      audit(runBackendStepInput, tableName, auditMessage);
+   }
+
+
+
+   /*******************************************************************************
+    ** for each input record, add an audit stating that the script was executed.
+    *******************************************************************************/
+   private static void audit(RunBackendStepInput runBackendStepInput, String tableName, String auditMessage)
+   {
+      try
+      {
+         QTableMetaData table      = QContext.getQInstance().getTable(tableName);
+         AuditInput     auditInput = new AuditInput();
+         for(QRecord record : runBackendStepInput.getRecords())
+         {
+            AuditAction.appendToInput(auditInput, table, record, auditMessage);
+         }
+         new AuditAction().execute(auditInput);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error recording audits after running record script", e, logPair("tableName", tableName), logPair("auditMessage", auditMessage));
       }
    }
 

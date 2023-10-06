@@ -22,12 +22,14 @@
 package com.kingsrook.qqq.backend.core.actions.audits;
 
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -36,10 +38,18 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction.DMLType.INSERT;
+import static com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction.DMLType.UPDATE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -198,6 +208,196 @@ class DMLAuditActionTest extends BaseTest
          assertEquals(0, auditList.size());
          MemoryRecordStore.getInstance().reset();
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMakeAuditDetailRecordForField()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withLabel("Create Date"))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withLabel("Modify Date"))
+         .withField(new QFieldMetaData("someTimestamp", QFieldType.DATE_TIME).withLabel("Some Timestamp"))
+         .withField(new QFieldMetaData("name", QFieldType.STRING).withLabel("Name"))
+         .withField(new QFieldMetaData("seqNo", QFieldType.INTEGER).withLabel("Sequence No."))
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withLabel("Price"));
+
+      ///////////////////////////////
+      // create date - never audit //
+      ///////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("createDate", table, INSERT,
+         new QRecord().withValue("createDate", Instant.now()),
+         new QRecord().withValue("createDate", Instant.now().minusSeconds(100))))
+         .isEmpty();
+
+      ///////////////////////////////
+      // modify date - never audit //
+      ///////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("modifyDate", table, UPDATE,
+         new QRecord().withValue("modifyDate", Instant.now()),
+         new QRecord().withValue("modifyDate", Instant.now().minusSeconds(100))))
+         .isEmpty();
+
+      ////////////////////////////////////////////////////////
+      // datetime different only in precision - don't audit //
+      ////////////////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("someTimestamp", table, UPDATE,
+         new QRecord().withValue("someTimestamp", ValueUtils.getValueAsInstant("2023-04-17T14:33:08.777")),
+         new QRecord().withValue("someTimestamp", Instant.parse("2023-04-17T14:33:08Z"))))
+         .isEmpty();
+
+      /////////////////////////////////////////////
+      // datetime actually different - audit it. //
+      /////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("someTimestamp", table, UPDATE,
+         new QRecord().withValue("someTimestamp", Instant.parse("2023-04-17T14:33:09Z")),
+         new QRecord().withValue("someTimestamp", Instant.parse("2023-04-17T14:33:08Z"))))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Changed Some Timestamp from 2023.* to 2023.*"));
+
+      ////////////////////////////////////////////////
+      // datetime changing null to not null - audit //
+      ////////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("someTimestamp", table, UPDATE,
+         new QRecord().withValue("someTimestamp", ValueUtils.getValueAsInstant("2023-04-17T14:33:08.777")),
+         new QRecord().withValue("someTimestamp", null)))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Set Some Timestamp to 2023.*"));
+
+      ////////////////////////////////////////////////
+      // datetime changing not null to null - audit //
+      ////////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("someTimestamp", table, UPDATE,
+         new QRecord().withValue("someTimestamp", null),
+         new QRecord().withValue("someTimestamp", Instant.parse("2023-04-17T14:33:08Z"))))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Removed 2023.*from Some Timestamp"));
+
+      ////////////////////////////////////////
+      // string that is the same - no audit //
+      ////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("name", table, UPDATE,
+         new QRecord().withValue("name", "Homer"),
+         new QRecord().withValue("name", "Homer")))
+         .isEmpty();
+
+      //////////////////////////////////////////
+      // string from null to empty - no audit //
+      //////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("name", table, UPDATE,
+         new QRecord().withValue("name", null),
+         new QRecord().withValue("name", "")))
+         .isEmpty();
+
+      //////////////////////////////////////////
+      // string from empty to null - no audit //
+      //////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("name", table, UPDATE,
+         new QRecord().withValue("name", ""),
+         new QRecord().withValue("name", null)))
+         .isEmpty();
+
+      //////////////////////////////////////////////////////////
+      // decimal that only changes in precision - don't audit //
+      //////////////////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("price", table, UPDATE,
+         new QRecord().withValue("price", "10"),
+         new QRecord().withValue("price", new BigDecimal("10.00"))))
+         .isEmpty();
+
+      //////////////////////////////////////////////////
+      // decimal that's actually different - do audit //
+      //////////////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("price", table, UPDATE,
+         new QRecord().withValue("price", "10.01"),
+         new QRecord().withValue("price", new BigDecimal("10.00"))))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Changed Price from 10.00 to 10.01"));
+
+      ///////////////////////////////////////
+      // decimal null, input "" - no audit //
+      ///////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("price", table, UPDATE,
+         new QRecord().withValue("price", ""),
+         new QRecord().withValue("price", null)))
+         .isEmpty();
+
+      /////////////////////////////////////////
+      // decimal not-null to null - do audit //
+      /////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("price", table, UPDATE,
+         new QRecord().withValue("price", BigDecimal.ONE),
+         new QRecord().withValue("price", null)))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Set Price to 1"));
+
+      /////////////////////////////////////////
+      // decimal null to not-null - do audit //
+      /////////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("price", table, UPDATE,
+         new QRecord().withValue("price", null),
+         new QRecord().withValue("price", BigDecimal.ONE)))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Removed 1 from Price"));
+
+      ///////////////////////////////////////
+      // integer null, input "" - no audit //
+      ///////////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("seqNo", table, UPDATE,
+         new QRecord().withValue("seqNo", ""),
+         new QRecord().withValue("seqNo", null)))
+         .isEmpty();
+
+      ////////////////////////////////
+      // integer changed - do audit //
+      ////////////////////////////////
+      assertThat(DMLAuditAction.makeAuditDetailRecordForField("seqNo", table, UPDATE,
+         new QRecord().withValue("seqNo", 2),
+         new QRecord().withValue("seqNo", 1)))
+         .isPresent()
+         .get().extracting(r -> r.getValueString("message"))
+         .matches(s -> s.matches("Changed Sequence No. from 1 to 2"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetContextSuffix()
+   {
+      assertEquals("", DMLAuditAction.getContentSuffix(new DMLAuditInput()));
+      assertEquals(" while shipping an order", DMLAuditAction.getContentSuffix(new DMLAuditInput().withAuditContext("while shipping an order")));
+
+      QContext.pushAction(new RunProcessInput().withValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME, "via Script \"My Script\""));
+      assertEquals(" via Script \"My Script\"", DMLAuditAction.getContentSuffix(new DMLAuditInput()));
+      QContext.popAction();
+
+      QContext.pushAction(new RunProcessInput().withProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE));
+      assertEquals(" during process: Greet", DMLAuditAction.getContentSuffix(new DMLAuditInput()));
+      QContext.popAction();
+
+      QContext.setQSession(new QSession().withValue("apiVersion", "1.0"));
+      assertEquals(" via API Version: 1.0", DMLAuditAction.getContentSuffix(new DMLAuditInput()));
+
+      QContext.setQSession(new QSession().withValue("apiVersion", "20230921").withValue("apiLabel", "Our Public API"));
+      assertEquals(" via Our Public API Version: 20230921", DMLAuditAction.getContentSuffix(new DMLAuditInput()));
+
+      QContext.pushAction(new RunProcessInput().withProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE).withValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME, "via Script \"My Script\""));
+      QContext.setQSession(new QSession().withValue("apiVersion", "20230921").withValue("apiLabel", "Our Public API"));
+      assertEquals(" while shipping an order via Script \"My Script\" during process: Greet via Our Public API Version: 20230921", DMLAuditAction.getContentSuffix(new DMLAuditInput().withAuditContext("while shipping an order")));
+      QContext.popAction();
    }
 
 }
