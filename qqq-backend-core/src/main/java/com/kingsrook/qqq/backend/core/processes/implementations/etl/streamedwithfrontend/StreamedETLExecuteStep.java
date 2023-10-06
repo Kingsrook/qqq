@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.audits.AuditAction;
@@ -123,6 +126,38 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             transformStep.setTransaction(transaction);
          }
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // we will pass a step to the processLogManager each time the extractor gets blocked (considering that the end of a 'page') //
+         // we'll know about that via blocked & un-blocked callbacks.  we'll use an atomic reference to an instant to capture the    //
+         // 'start' time of each page, as when an un-block occurs.                                                                   //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         AtomicReference<Instant> previousExtractStart             = new AtomicReference<>(Instant.now());
+         AtomicInteger            previousExtractRecordsAddedCount = new AtomicInteger(0);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // when the extractor becomes blocked, record that as the end of one instance of the extract step //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         recordPipe.setUponBlockedCallback(() ->
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // tood - something isn't coming out quite right in the number of extract records... //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            int pageSize = recordPipe.getRecordsAddedCounter() - previousExtractRecordsAddedCount.get();
+            processLogManager.addStep("extract", previousExtractStart.get(), Instant.now(), pageSize);
+            previousExtractRecordsAddedCount.set(pageSize);
+         });
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // when the extractor becomes unblocked, record that timestamp as the start of the next instance/page of extract //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         recordPipe.setUponUnblockedCallback(() ->
+         {
+            previousExtractStart.set(Instant.now());
+         });
+
+         ////////////////////////////////////////
+         // set up and run the async pipe loop //
+         ////////////////////////////////////////
          List<QRecord>       loadedRecordList    = new ArrayList<>();
          AsyncRecordPipeLoop asyncRecordPipeLoop = new AsyncRecordPipeLoop();
          if(overrideRecordPipeCapacity != null && overrideRecordPipeCapacity < asyncRecordPipeLoop.getMinRecordsToConsume())
@@ -133,6 +168,10 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          int recordCount = asyncRecordPipeLoop.run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
             {
                extractStep.run(runBackendStepInput, runBackendStepOutput);
+
+               int pageSize = recordPipe.getRecordsAddedCounter() - previousExtractRecordsAddedCount.get();
+               processLogManager.addStep("extract", previousExtractStart.get(), Instant.now(), pageSize);
+
                return (runBackendStepOutput);
             },
             () -> (consumeRecordsFromPipe(recordPipe, transformStep, loadStep, runBackendStepInput, runBackendStepOutput, loadedRecordList))
@@ -232,9 +271,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     *******************************************************************************/
    private int consumeRecordsFromPipe(RecordPipe recordPipe, AbstractTransformStep transformStep, AbstractLoadStep loadStep, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> loadedRecordList) throws QException
    {
-      /////////////////////////////////////////////////////////////////////////////
-      // open a transaction for the whole process, if that's the requested level //
-      /////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////
+      // open a transaction for the page, if that's the requested level //
+      ////////////////////////////////////////////////////////////////////
       Optional<QBackendTransaction> transaction            = Optional.empty();
       boolean                       doPageLevelTransaction = StreamedETLWithFrontendProcess.TRANSACTION_LEVEL_PAGE.equals(runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_TRANSACTION_LEVEL));
       if(doPageLevelTransaction)
@@ -271,7 +310,9 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////////////////////////////////////
          // pass the records through the transform function //
          /////////////////////////////////////////////////////
+         Instant transformStart = Instant.now();
          transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         Instant transformEnd = Instant.now();
          List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
 
          ////////////////////////////////////////////////
@@ -280,8 +321,16 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
          streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
+         Instant loadStart = Instant.now();
          loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         Instant          loadEnd                = Instant.now();
          List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
+
+         /////////////////////////////////////////////////////
+         // add the data for these steps to the process log //
+         /////////////////////////////////////////////////////
+         processLogManager.addStep("transform", transformStart, transformEnd, qRecords.size());
+         processLogManager.addStep("load", loadStart, loadEnd, qRecords.size());
 
          ///////////////////////////////////////////////////////
          // copy a small number of records to the output list //

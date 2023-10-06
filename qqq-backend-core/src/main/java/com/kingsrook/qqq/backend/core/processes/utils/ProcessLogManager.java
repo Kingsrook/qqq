@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.processlogs.ProcessLog;
 import com.kingsrook.qqq.backend.core.model.processlogs.ProcessLogRecordInt;
+import com.kingsrook.qqq.backend.core.model.processlogs.ProcessLogStep;
 import com.kingsrook.qqq.backend.core.model.processlogs.ProcessLogSummary;
 import com.kingsrook.qqq.backend.core.model.processlogs.ProcessLogValue;
 import com.kingsrook.qqq.backend.core.model.processlogs.QQQProcessAccessor;
@@ -61,6 +62,8 @@ public class ProcessLogManager
    private static final QLogger LOG = QLogger.getLogger(ProcessLogManager.class);
 
    private Integer processLogId;
+
+   private List<ProcessLogStep> processLogSteps = new ArrayList<>();
 
 
 
@@ -191,6 +194,7 @@ public class ProcessLogManager
             .withAssociatedRecords("processLogValues", processLogValues)
             .withAssociatedRecords("processLogRecordInts", processLogRecordInts)
             .withAssociatedRecords("processLogSummaries", processLogSummaries)
+            .withAssociatedRecords("processLogSteps", processLogSteps.stream().map(pls -> pls.toQRecord()).toList())
          ));
 
       }
@@ -198,6 +202,22 @@ public class ProcessLogManager
       {
          LOG.warn("Error storing process log records", e, logPair("processName", runBackendStepInput.getValue("processName")));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addStep(String name, Instant start, Instant end, Integer recordCount)
+   {
+      processLogSteps.add(new ProcessLogStep()
+         .withName(name)
+         .withStartTime(start)
+         .withEndTime(end)
+         .withRunTimeMillis(start == null || end == null ? null : (int) (end.toEpochMilli() - start.toEpochMilli()))
+         .withRecordCount(recordCount)
+      );
    }
 
    /*******************************************************************************

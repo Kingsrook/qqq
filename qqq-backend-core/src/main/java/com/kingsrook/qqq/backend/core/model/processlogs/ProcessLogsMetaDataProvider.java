@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -56,6 +57,7 @@ public class ProcessLogsMetaDataProvider
    public static final String PROCESS_LOG_JOIN_PROCESS_LOG_VALUE      = "processLogJoinProcessLogValue";
    public static final String PROCESS_LOG_JOIN_PROCESS_LOG_RECORD_INT = "processLogJoinProcessLogRecordInt";
    public static final String PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY    = "processLogJoinProcessLogSummary";
+   public static final String PROCESS_LOG_JOIN_PROCESS_LOG_STEP       = "processLogJoinProcessLogStep";
 
 
 
@@ -89,6 +91,10 @@ public class ProcessLogsMetaDataProvider
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY))
          .withLabel("Process Summary")
          .getWidgetMetaData());
+
+      instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(instance.getJoin(PROCESS_LOG_JOIN_PROCESS_LOG_STEP))
+         .withLabel("Process Steps")
+         .getWidgetMetaData());
    }
 
 
@@ -121,6 +127,14 @@ public class ProcessLogsMetaDataProvider
          .withJoinOn(new JoinOn("id", "processLogId"))
          .withOrderBy(new QFilterOrderBy("id"))
          .withName(PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY));
+
+      instance.addJoin(new QJoinMetaData()
+         .withType(JoinType.ONE_TO_MANY)
+         .withLeftTable(ProcessLog.TABLE_NAME)
+         .withRightTable(ProcessLogStep.TABLE_NAME)
+         .withJoinOn(new JoinOn("id", "processLogId"))
+         .withOrderBy(new QFilterOrderBy("id"))
+         .withName(PROCESS_LOG_JOIN_PROCESS_LOG_STEP));
 
    }
 
@@ -159,6 +173,7 @@ public class ProcessLogsMetaDataProvider
       rs.add(enrich(backendDetailEnricher, defineProcessLogValueTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineProcessLogRecordIntTable(backendName)));
       rs.add(enrich(backendDetailEnricher, defineProcessLogSummaryTable(backendName)));
+      rs.add(enrich(backendDetailEnricher, defineProcessLogStepTable(backendName)));
       return (rs);
    }
 
@@ -204,14 +219,17 @@ public class ProcessLogsMetaDataProvider
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "qqqProcessId", "qqqUserId")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("startTime", "endTime")))
          .withSection(new QFieldSection("summary", new QIcon().withName("functions"), Tier.T2).withWidgetName(PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY))
+         .withSection(new QFieldSection("steps", new QIcon().withName("stairs"), Tier.T2).withWidgetName(PROCESS_LOG_JOIN_PROCESS_LOG_STEP))
          .withSection(new QFieldSection("values", new QIcon().withName("border_color"), Tier.T2).withWidgetName(PROCESS_LOG_JOIN_PROCESS_LOG_VALUE))
          .withSection(new QFieldSection("records", new QIcon().withName("list"), Tier.T2).withWidgetName(PROCESS_LOG_JOIN_PROCESS_LOG_RECORD_INT))
 
          .withAssociation(new Association().withName("processLogValues").withJoinName(PROCESS_LOG_JOIN_PROCESS_LOG_VALUE).withAssociatedTableName(ProcessLogValue.TABLE_NAME))
          .withAssociation(new Association().withName("processLogRecordInts").withJoinName(PROCESS_LOG_JOIN_PROCESS_LOG_VALUE).withAssociatedTableName(ProcessLogRecordInt.TABLE_NAME))
          .withAssociation(new Association().withName("processLogSummaries").withJoinName(PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY).withAssociatedTableName(ProcessLogSummary.TABLE_NAME))
+         .withAssociation(new Association().withName("processLogSteps").withJoinName(PROCESS_LOG_JOIN_PROCESS_LOG_STEP).withAssociatedTableName(ProcessLogStep.TABLE_NAME))
 
          .withExposedJoin(new ExposedJoin().withJoinTable(ProcessLogSummary.TABLE_NAME).withLabel("Process Log Summary").withJoinPath(List.of(PROCESS_LOG_JOIN_PROCESS_LOG_SUMMARY)))
+         .withExposedJoin(new ExposedJoin().withJoinTable(ProcessLogStep.TABLE_NAME).withLabel("Process Log Step").withJoinPath(List.of(PROCESS_LOG_JOIN_PROCESS_LOG_STEP)))
          .withExposedJoin(new ExposedJoin().withJoinTable(ProcessLogValue.TABLE_NAME).withLabel("Process Log Value").withJoinPath(List.of(PROCESS_LOG_JOIN_PROCESS_LOG_VALUE)))
          .withExposedJoin(new ExposedJoin().withJoinTable(ProcessLogRecordInt.TABLE_NAME).withLabel("Process Log Record").withJoinPath(List.of(PROCESS_LOG_JOIN_PROCESS_LOG_RECORD_INT)))
 
@@ -277,6 +295,23 @@ public class ProcessLogsMetaDataProvider
          .withValues(iconAndColorValues(Status.INFO.name(), "inbox", AdornmentType.ChipValues.COLOR_INFO))
          .withValues(iconAndColorValues(Status.WARNING.name(), "warning", AdornmentType.ChipValues.COLOR_WARNING))
          .withValues(iconAndColorValues(Status.ERROR.name(), "error", AdornmentType.ChipValues.COLOR_ERROR)));
+
+      return tableMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineProcessLogStepTable(String backendName) throws QException
+   {
+      QTableMetaData tableMetaData = defineStandardTable(backendName, ProcessLogStep.TABLE_NAME, ProcessLogStep.class)
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("id", "name");
+
+      tableMetaData.getField("recordCount").withDisplayFormat(DisplayFormat.COMMAS);
+      tableMetaData.getField("runTimeMillis").withDisplayFormat(DisplayFormat.COMMAS);
 
       return tableMetaData;
    }

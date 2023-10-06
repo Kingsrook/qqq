@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
 
 
 /*******************************************************************************
@@ -45,10 +46,14 @@ public class RecordPipe
    private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes
 
    private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
+   private int                         recordsAddedCounter = 0;
 
    private boolean isTerminated = false;
 
    private UnsafeConsumer<List<QRecord>, QException> postRecordActions = null;
+
+   private UnsafeVoidVoidMethod uponBlockedCallback   = null;
+   private UnsafeVoidVoidMethod uponUnblockedCallback = null;
 
    /////////////////////////////////////
    // See usage below for explanation //
@@ -130,6 +135,8 @@ public class RecordPipe
       if(!offerResult && !isTerminated)
       {
          LOG.debug("Pipe is full.  Waiting.");
+         runCallbackIfSet(uponBlockedCallback, "upon blocked");
+
          long sleepLoopStartTime = System.currentTimeMillis();
          long now                = System.currentTimeMillis();
          while(!offerResult && !isTerminated)
@@ -145,6 +152,29 @@ public class RecordPipe
             now = System.currentTimeMillis();
          }
          LOG.debug("Pipe has opened up.  Resuming.");
+         runCallbackIfSet(uponUnblockedCallback, "upon unblocked");
+      }
+
+      recordsAddedCounter++;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void runCallbackIfSet(UnsafeVoidVoidMethod callback, String callbackName)
+   {
+      if(callback != null)
+      {
+         try
+         {
+            callback.run();
+         }
+         catch(Exception e)
+         {
+            LOG.info("Caught exception in " + callbackName + " callback", e);
+         }
       }
    }
 
@@ -213,4 +243,36 @@ public class RecordPipe
       this.postRecordActions = postRecordActions;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for uponBlockedCallback
+    **
+    *******************************************************************************/
+   public void setUponBlockedCallback(UnsafeVoidVoidMethod uponBlockedCallback)
+   {
+      this.uponBlockedCallback = uponBlockedCallback;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for uponUnblockedCallback
+    **
+    *******************************************************************************/
+   public void setUponUnblockedCallback(UnsafeVoidVoidMethod uponUnblockedCallback)
+   {
+      this.uponUnblockedCallback = uponUnblockedCallback;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordsAddedCounter
+    **
+    *******************************************************************************/
+   public int getRecordsAddedCounter()
+   {
+      return recordsAddedCounter;
+   }
 }
