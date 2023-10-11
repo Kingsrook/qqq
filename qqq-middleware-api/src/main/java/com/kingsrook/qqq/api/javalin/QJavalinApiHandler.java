@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -58,7 +57,6 @@ import com.kingsrook.qqq.api.model.openapi.HttpMethod;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
@@ -75,15 +73,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
-import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -137,11 +132,6 @@ public class QJavalinApiHandler
    {
       return (() ->
       {
-         /////////////////////////////
-         // authentication endpoint //
-         /////////////////////////////
-         ApiBuilder.post("/api/oauth/token", QJavalinApiHandler::handleAuthorization);
-
          ///////////////////////////////////////////////
          // static endpoints to support rapidoc pages //
          ///////////////////////////////////////////////
@@ -579,101 +569,6 @@ public class QJavalinApiHandler
       }
 
       handleException(context, new QNotFoundException("Could not find any resources at path " + context.path()), apiLog);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void handleAuthorization(Context context)
-   {
-      try
-      {
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // clientId & clientSecret may either be provided as formParams, or in an Authorization: Basic header //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-         String clientId;
-         String clientSecret;
-         String authorizationHeader = context.header("Authorization");
-         if(authorizationHeader != null && authorizationHeader.startsWith("Basic "))
-         {
-            try
-            {
-               byte[]   credDecoded = Base64.getDecoder().decode(authorizationHeader.replace("Basic ", ""));
-               String   credentials = new String(credDecoded, StandardCharsets.UTF_8);
-               String[] parts       = credentials.split(":", 2);
-               clientId = parts[0];
-               clientSecret = parts[1];
-            }
-            catch(Exception e)
-            {
-               context.status(HttpStatus.BAD_REQUEST_400);
-               context.result("Could not parse client_id and client_secret from Basic Authorization header.");
-               return;
-            }
-         }
-         else
-         {
-            clientId = context.formParam("client_id");
-            if(clientId == null)
-            {
-               context.status(HttpStatus.BAD_REQUEST_400);
-               context.result("'client_id' must be provided.");
-               return;
-            }
-            clientSecret = context.formParam("client_secret");
-            if(clientSecret == null)
-            {
-               context.status(HttpStatus.BAD_REQUEST_400);
-               context.result("'client_secret' must be provided.");
-               return;
-            }
-         }
-
-         ////////////////////////////////////////////////////////
-         // get the auth0 authentication module from qInstance //
-         ////////////////////////////////////////////////////////
-         Auth0AuthenticationMetaData     metaData                        = (Auth0AuthenticationMetaData) qInstance.getAuthentication();
-         QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-         QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
-
-         try
-         {
-            //////////////////////////////////////////////////////////////////////////////////////////
-            // make call to get access token data, if no exception thrown, assume 200 OK and return //
-            //////////////////////////////////////////////////////////////////////////////////////////
-            QContext.init(qInstance, null); // hmm...
-            String accessToken = authenticationModule.createAccessToken(metaData, clientId, clientSecret);
-            context.status(HttpStatus.Code.OK.getCode());
-            context.result(accessToken);
-            QJavalinAccessLogger.logEndSuccess();
-         }
-         catch(AccessTokenException aae)
-         {
-            LOG.info("Error getting api access token", aae, logPair("clientId", clientId));
-
-            ///////////////////////////////////////////////////////////////////////////
-            // if the exception has a status code, then return that code and message //
-            ///////////////////////////////////////////////////////////////////////////
-            if(aae.getStatusCode() != null)
-            {
-               context.status(aae.getStatusCode());
-               context.result(aae.getMessage());
-               QJavalinAccessLogger.logEndSuccess();
-            }
-
-            ////////////////////////////////////////////////////////
-            // if no code, throw and handle like other exceptions //
-            ////////////////////////////////////////////////////////
-            throw (aae);
-         }
-      }
-      catch(Exception e)
-      {
-         handleException(context, e);
-         QJavalinAccessLogger.logEndFail(e);
-      }
    }
 
 

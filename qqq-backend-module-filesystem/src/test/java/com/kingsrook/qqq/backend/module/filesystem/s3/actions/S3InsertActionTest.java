@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendD
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  **
  *******************************************************************************/
+@Disabled("Because localstack won't start")
 public class S3InsertActionTest extends BaseS3Test
 {
 

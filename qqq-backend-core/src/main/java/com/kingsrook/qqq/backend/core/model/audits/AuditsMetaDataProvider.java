@@ -116,16 +116,19 @@ public class AuditsMetaDataProvider
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(TABLE_NAME_AUDIT_TABLE)
          .withTableName(TABLE_NAME_AUDIT_TABLE)
+         .withOrderByField("name")
       );
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(TABLE_NAME_AUDIT_USER)
          .withTableName(TABLE_NAME_AUDIT_USER)
+         .withOrderByField("name")
       );
 
       instance.addPossibleValueSource(new QPossibleValueSource()
          .withName(TABLE_NAME_AUDIT)
          .withTableName(TABLE_NAME_AUDIT)
+         .withOrderByField("id", false)
       );
    }
 

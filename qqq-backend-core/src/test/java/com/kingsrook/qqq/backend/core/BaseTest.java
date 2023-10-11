@@ -48,6 +48,8 @@ public class BaseTest
    @BeforeEach
    void baseBeforeEach()
    {
+      System.setProperty("qqq.logger.logSessionId.disabled", "true");
+
       QContext.init(TestUtils.defineInstance(), new QSession()
          .withUser(new QUser()
             .withIdReference("001")

@@ -342,22 +342,9 @@ public class PollingAutomationPerTableRunner implements Runnable
       boolean anyActionsFailed = false;
       for(TableAutomationAction action : actions)
       {
-         try
+         boolean hadError = applyActionToRecords(table, records, action);
+         if(hadError)
          {
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(table, records, action);
-            LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
-            if(CollectionUtils.nullSafeHasContents(matchingQRecords))
-            {
-               LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
-               applyActionToMatchingRecords(table, matchingQRecords, action);
-            }
-         }
-         catch(Exception e)
-         {
-            LOG.warn("Caught exception processing records on " + table + " for action " + action, e);
             anyActionsFailed = true;
          }
       }
@@ -372,6 +359,37 @@ public class PollingAutomationPerTableRunner implements Runnable
       else
       {
          RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, AutomationStatus.OK);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Run one action over a list of records (if they match the action's filter).
+    **
+    ** @return hadError - true if an exception was caught; false if all OK.
+    *******************************************************************************/
+   protected boolean applyActionToRecords(QTableMetaData table, List<QRecord> records, TableAutomationAction action)
+   {
+      try
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(table, records, action);
+         LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
+         if(CollectionUtils.nullSafeHasContents(matchingQRecords))
+         {
+            LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
+            applyActionToMatchingRecords(table, matchingQRecords, action);
+         }
+
+         return (false);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Caught exception processing records on " + table + " for action " + action, e);
+         return (true);
       }
    }
 

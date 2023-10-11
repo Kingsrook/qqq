@@ -51,7 +51,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.modules.authentication.implementations.FullyAnonymousAuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
@@ -1382,56 +1381,6 @@ class QJavalinApiHandlerTest extends BaseTest
          JSONObject jsonObject = new JSONObject(response.getBody());
          assertEquals(0, jsonObject.getInt("count"));
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testAuthorizeNoParams()
-   {
-      ///////////////
-      // no params //
-      ///////////////
-      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/oauth/token").asString();
-      assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
-      assertThat(response.getBody()).contains("client_id");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testAuthorizeOneParam()
-   {
-      ///////////////
-      // no params //
-      ///////////////
-      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/oauth/token")
-         .body("client_id=XXXXXXXXXX").asString();
-      assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
-      assertThat(response.getBody()).contains("client_secret");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testAuthorizeAllParams()
-   {
-      ///////////////
-      // no params //
-      ///////////////
-      HttpResponse<String> response = Unirest.post(BASE_URL + "/api/oauth/token")
-         .body("client_id=XXXXXXXXXX&client_secret=YYYYYYYYYYYY").asString();
-      assertEquals(HttpStatus.OK_200, response.getStatus());
-      assertThat(response.getBody()).isEqualTo(FullyAnonymousAuthenticationModule.TEST_ACCESS_TOKEN);
    }
 
 

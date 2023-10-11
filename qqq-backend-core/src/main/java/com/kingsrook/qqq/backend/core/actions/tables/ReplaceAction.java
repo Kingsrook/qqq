@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -61,6 +62,9 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, ReplaceOutput>
 {
+   private static final QLogger LOG = QLogger.getLogger(ReplaceAction.class);
+
+
 
    /*******************************************************************************
     **
@@ -159,6 +163,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
       {
          if(weOwnTheTransaction)
          {
+            LOG.warn("Caught top-level ReplaceAction exception - rolling back exception", e);
             transaction.rollback();
          }
          throw (new QException("Error executing replace action", e));

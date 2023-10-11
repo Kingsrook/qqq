@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -786,7 +787,7 @@ public class BaseAPIActionUtil
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
             HttpPost request = new HttpPost(fullURL);
-            request.setEntity(new StringEntity(postBody));
+            request.setEntity(new StringEntity(postBody, getCharsetForEntity()));
 
             if(setCredentialsInHeader)
             {
@@ -825,6 +826,16 @@ public class BaseAPIActionUtil
       }
 
       return (accessToken);
+   }
+
+
+
+   /*******************************************************************************
+    ** Let a subclass change what charset to use for entities (bodies) being posted/put/etc.
+    *******************************************************************************/
+   protected static Charset getCharsetForEntity()
+   {
+      return StandardCharsets.UTF_8;
    }
 
 
@@ -914,7 +925,7 @@ public class BaseAPIActionUtil
          body.put(wrapperObjectName, new JSONObject(json));
          json = body.toString();
       }
-      return (new StringEntity(json));
+      return (new StringEntity(json, getCharsetForEntity()));
    }
 
 
@@ -943,7 +954,7 @@ public class BaseAPIActionUtil
             body.put(wrapperObjectName, new JSONArray(json));
             json = body.toString();
          }
-         return (new StringEntity(json));
+         return (new StringEntity(json, getCharsetForEntity()));
       }
       catch(Exception e)
       {
@@ -1307,7 +1318,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void throwUnsupportedCriteriaField(QFilterCriteria criteria) throws QUserFacingException
    {
-      throw new QUserFacingException("Unsupported query field [" + criteria.getFieldName() + "]");
+      throw new QUserFacingException("Unsupported query field:  " + getFieldLabelFromCriteria(criteria));
    }
 
 
@@ -1317,7 +1328,30 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void throwUnsupportedCriteriaOperator(QFilterCriteria criteria) throws QUserFacingException
    {
-      throw new QUserFacingException("Unsupported operator [" + criteria.getOperator() + "] for query field [" + criteria.getFieldName() + "]");
+      throw new QUserFacingException("Unsupported operator (" + criteria.getOperator() + ") for query field:  " + getFieldLabelFromCriteria(criteria));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFieldLabelFromCriteria(QFilterCriteria criteria)
+   {
+      String fieldLabel = criteria.getFieldName();
+      try
+      {
+         String label = actionInput.getTable().getField(criteria.getFieldName()).getLabel();
+         if(StringUtils.hasContent(label))
+         {
+            fieldLabel = label;
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error getting field label", e);
+      }
+      return fieldLabel;
    }
 
 

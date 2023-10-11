@@ -198,7 +198,12 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          ////////////////////////////////////////////////////////////////////////////////
          if(transaction.isPresent())
          {
+            LOG.warn("Caught top-level process exception - rolling back transaction", e);
             transaction.get().rollback();
+         }
+         else
+         {
+            LOG.warn("Caught top-level process exception - would roll back transaction, but none is present", e);
          }
          throw (e);
       }
@@ -302,6 +307,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
       {
          if(doPageLevelTransaction && transaction.isPresent())
          {
+            LOG.warn("Caught page-level process exception - rolling back transaction", e);
             transaction.get().rollback();
          }
          throw (e);

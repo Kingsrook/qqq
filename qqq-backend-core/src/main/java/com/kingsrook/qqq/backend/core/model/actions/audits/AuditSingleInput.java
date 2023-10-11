@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.audits.AuditAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
@@ -49,6 +52,41 @@ public class AuditSingleInput
    private Map<String, Serializable> securityKeyValues;
 
    private List<QRecord> details;
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public AuditSingleInput()
+   {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public AuditSingleInput(QTableMetaData table, QRecord record, String auditMessage)
+   {
+      setAuditTableName(table.getName());
+      setRecordId(record.getValueInteger(table.getPrimaryKeyField()));
+      setSecurityKeyValues(AuditAction.getRecordSecurityKeyValues(table, record, Optional.empty()));
+      setMessage(auditMessage);
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public AuditSingleInput(String tableName, QRecord record, String auditMessage)
+   {
+      this(QContext.getQInstance().getTable(tableName), record, auditMessage);
+   }
 
 
 

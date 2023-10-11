@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModuleSubclassFor
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for FilesystemSyncProcess using S3 backend
  *******************************************************************************/
+@Disabled("Because localstack won't start")
 class FilesystemSyncProcessS3Test extends BaseS3Test
 {
 

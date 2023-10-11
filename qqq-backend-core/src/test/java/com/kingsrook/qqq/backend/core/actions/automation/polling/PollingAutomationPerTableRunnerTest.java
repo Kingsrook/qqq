@@ -22,21 +22,27 @@
 package com.kingsrook.qqq.backend.core.actions.automation.polling;
 
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -60,7 +66,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 /*******************************************************************************
@@ -156,6 +164,40 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Test that if an automation has an error that we get error status
+    *******************************************************************************/
+   @Test
+   void testAutomationWithError() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // insert 2 person records, both updated by the insert action, and 1 logged by logger-on-update automation //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("firstName", "Han").withValue("lastName", "Solo").withValue("birthDate", LocalDate.parse("1977-05-25")),
+         new QRecord().withValue("id", 2).withValue("firstName", "Luke").withValue("lastName", "Skywalker").withValue("birthDate", LocalDate.parse("1977-05-25")),
+         new QRecord().withValue("id", 3).withValue("firstName", "Darth").withValue("lastName", "Vader").withValue("birthDate", LocalDate.parse("1977-05-25"))
+      ));
+      new InsertAction().execute(insertInput);
+      assertAllRecordsAutomationStatus(AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+
+      /////////////////////////
+      // run the automations //
+      /////////////////////////
+      runAllTableActions(qInstance);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure all records are in status ERROR (even though only 1 threw, it breaks the page that it's in) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertAllRecordsAutomationStatus(AutomationStatus.FAILED_INSERT_AUTOMATIONS);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private void runAllTableActions(QInstance qInstance) throws QException
@@ -169,7 +211,6 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
          // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
-
       }
    }
 
@@ -224,6 +265,77 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
       }
 
       assertEquals(SIZE, updatedMinorsCount, "Expected number of updated records");
+   }
+
+
+
+   /*******************************************************************************
+    ** Test a large-ish number - to demonstrate paging working - and how it deals
+    ** with intermittent errors
+    **
+    *******************************************************************************/
+   @Test
+   void testMultiPagesWithSomeFailures() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // adjust table's automations batch size - as any exceptions thrown put the whole batch into error. //
+      // so we'll make batches (pages) of 100 - run for 500 records, and make just a couple bad records   //
+      // that'll cause errors - so we should get a few failed pages, and the rest ok.                     //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      int pageSize = 100;
+      qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .getAutomationDetails()
+         .setOverrideBatchSize(pageSize);
+
+      //////////////////////////////////////////////////////////////////////////////////
+      // insert many people - half who should be updated by the AgeChecker automation //
+      //////////////////////////////////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      insertInput.setRecords(new ArrayList<>());
+      int SIZE = 500;
+      for(int i = 0; i < SIZE; i++)
+      {
+         insertInput.getRecords().add(new QRecord().withValue("firstName", "Qui Gon").withValue("lastName", "Jinn " + i).withValue("birthDate", LocalDate.now()));
+         insertInput.getRecords().add(new QRecord().withValue("firstName", "Obi Wan").withValue("lastName", "Kenobi " + i));
+
+         /////////////////////////////////
+         // throw 2 Darths into the mix //
+         /////////////////////////////////
+         if(i == 101 || i == 301)
+         {
+            insertInput.getRecords().add(new QRecord().withValue("firstName", "Darth").withValue("lastName", "Maul " + i));
+         }
+      }
+
+      InsertOutput       insertOutput = new InsertAction().execute(insertInput);
+      List<Serializable> insertedIds  = insertOutput.getRecords().stream().map(r -> r.getValue("id")).toList();
+
+      assertAllRecordsAutomationStatus(AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+
+      /////////////////////////
+      // run the automations //
+      /////////////////////////
+      runAllTableActions(qInstance);
+
+      ////////////////////////////////////////////////////////////////////
+      // make sure that some records became ok, but others became error //
+      ////////////////////////////////////////////////////////////////////
+      QueryOutput   queryOutput   = new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, insertedIds))));
+      List<QRecord> okRecords     = queryOutput.getRecords().stream().filter(r -> AutomationStatus.OK.getId().equals(r.getValueInteger(TestUtils.standardQqqAutomationStatusField().getName()))).toList();
+      List<QRecord> failedRecords = queryOutput.getRecords().stream().filter(r -> AutomationStatus.FAILED_INSERT_AUTOMATIONS.getId().equals(r.getValueInteger(TestUtils.standardQqqAutomationStatusField().getName()))).toList();
+
+      assertFalse(okRecords.isEmpty(), "Some inserted records should be automation status OK");
+      assertFalse(failedRecords.isEmpty(), "Some inserted records should be automation status Failed");
+      assertEquals(insertedIds.size(), okRecords.size() + failedRecords.size(), "All inserted records should be OK or Failed");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure that only 2 pages failed - meaning our number of failedRecords is < pageSize * 2 (as any page may be smaller than the pageSize) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(failedRecords.size()).isLessThanOrEqualTo(pageSize * 2).describedAs("No more than 2 pages should be in failed status.");
    }
 
 
@@ -370,10 +482,103 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testServerShutdownMidRunLeavesRecordsInRunningStatus() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      /////////////////////////////////////////////////////////////////////////////
+      // insert 2 person records that should have insert action ran against them //
+      /////////////////////////////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("firstName", "Tim").withValue("birthDate", LocalDate.now()),
+         new QRecord().withValue("id", 2).withValue("firstName", "Darin").withValue("birthDate", LocalDate.now())
+      ));
+      new InsertAction().execute(insertInput);
+      assertAllRecordsAutomationStatus(AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // duplicate the runAllTableActions method - but using the subclass of PollingAutomationPerTableRunner that will throw. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() ->
+      {
+         List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+         for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+         {
+            PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun(qInstance, TestUtils.POLLING_AUTOMATION, QSession::new, tableAction);
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////
+            // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////
+            pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
+         }
+      }).hasMessage(PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun.EXCEPTION_MESSAGE);
+
+      //////////////////////////////////////////////////
+      // records should be "leaked" in running status //
+      //////////////////////////////////////////////////
+      assertAllRecordsAutomationStatus(AutomationStatus.RUNNING_INSERT_AUTOMATIONS);
+
+      /////////////////////////////////////
+      // simulate another run of the job //
+      /////////////////////////////////////
+      runAllTableActions(qInstance);
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // it should NOT have updated those records - they're officially "leaked" now //
+      ////////////////////////////////////////////////////////////////////////////////
+      assertAllRecordsAutomationStatus(AutomationStatus.RUNNING_INSERT_AUTOMATIONS);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void assertAllRecordsAutomationStatus(AutomationStatus pendingInsertAutomations) throws QException
    {
       assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY))
          .isNotEmpty()
          .allMatch(r -> pendingInsertAutomations.getId().equals(r.getValue(TestUtils.standardQqqAutomationStatusField().getName())));
    }
+
+
+
+   /*******************************************************************************
+    ** this subclass of the class under test allows us to simulate:
+    **
+    ** what happens if, after records have been marked as running-updates, if,
+    ** for example, a server shuts down?
+    **
+    ** It does this by overriding a method that runs between those points in time,
+    ** and throwing a runtime exception.
+    *******************************************************************************/
+   public static class PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun extends PollingAutomationPerTableRunner
+   {
+      private static String EXCEPTION_MESSAGE = "Throwing outside of catch here, to simulate a server shutdown mid-run";
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActions tableActions)
+      {
+         super(instance, providerName, sessionSupplier, tableActions);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      protected boolean applyActionToRecords(QTableMetaData table, List<QRecord> records, TableAutomationAction action)
+      {
+         throw (new RuntimeException(EXCEPTION_MESSAGE));
+      }
+   }
+
 }
