@@ -32,11 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -74,8 +77,46 @@ public class QPossibleValueTranslator
    ///////////////////////////////////////////////////////
    private Map<String, Map<Serializable, String>> possibleValueCache = new HashMap<>();
 
+   private int maxSizePerPvsCache = 50_000;
+
+   private Map<String, QBackendTransaction> transactionsPerTable = new HashMap<>();
+
    // todo not commit - remove instance & session - use Context
 
+
+   boolean useTransactionsAsConnectionPool = false;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QBackendTransaction getTransaction(String tableName)
+   {
+      /////////////////////////////////////////////////////////////
+      // mmm, this does cut down on connections used -           //
+      // especially seems helpful in big exports.                //
+      // but, let's just start using connection pools instead... //
+      /////////////////////////////////////////////////////////////
+      if(useTransactionsAsConnectionPool)
+      {
+         try
+         {
+            if(!transactionsPerTable.containsKey(tableName))
+            {
+               transactionsPerTable.put(tableName, new InsertAction().openTransaction(new InsertInput(tableName)));
+            }
+
+            return (transactionsPerTable.get(tableName));
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error opening transaction for table", logPair("tableName", tableName));
+         }
+      }
+
+      return null;
+   }
 
 
    /*******************************************************************************
@@ -425,9 +466,10 @@ public class QPossibleValueTranslator
       for(Map.Entry<String, Map<Serializable, String>> entry : possibleValueCache.entrySet())
       {
          int size = entry.getValue().size();
-         if(size > 50_000)
+         if(size > maxSizePerPvsCache)
          {
             LOG.info("Found a big PVS cache - clearing it.", logPair("name", entry.getKey()), logPair("size", size));
+            entry.getValue().clear();
          }
       }
 
@@ -521,6 +563,7 @@ public class QPossibleValueTranslator
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
+            queryInput.setTransaction(getTransaction(tableName));
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // when querying for possible values, we do want to generate their display values, which makes record labels, which are usually used as PVS labels //
@@ -611,6 +654,26 @@ public class QPossibleValueTranslator
       }
 
       return (count < 5);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxSizePerPvsCache
+    *******************************************************************************/
+   public int getMaxSizePerPvsCache()
+   {
+      return (this.maxSizePerPvsCache);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxSizePerPvsCache
+    *******************************************************************************/
+   public void setMaxSizePerPvsCache(int maxSizePerPvsCache)
+   {
+      this.maxSizePerPvsCache = maxSizePerPvsCache;
    }
 
 }
