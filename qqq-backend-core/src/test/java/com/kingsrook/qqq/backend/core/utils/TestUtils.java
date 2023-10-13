@@ -1225,6 +1225,24 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void insertExtraShapes(QInstance qInstance) throws QException
+   {
+      List<QRecord> shapeRecords = List.of(
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 4).withValue("name", "Rectangle"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 5).withValue("name", "Pentagon"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 6).withValue("name", "Hexagon"));
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TABLE_NAME_SHAPE);
+      insertInput.setRecords(shapeRecords);
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String getPersonCsvHeader()
    {
       return ("""
