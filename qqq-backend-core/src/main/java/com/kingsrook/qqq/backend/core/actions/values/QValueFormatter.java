@@ -112,6 +112,12 @@ public class QValueFormatter
          {
             return formatLocalTime(lt);
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////
+         // else, just return the value as a string, rather than going through String.formatted  //
+         // this saves some overhead incurred by String.formatted when called millions of times. //
+         //////////////////////////////////////////////////////////////////////////////////////////
+         return (ValueUtils.getValueAsString(value));
       }
 
       ////////////////////////////////////////////////////////
@@ -119,15 +125,6 @@ public class QValueFormatter
       ////////////////////////////////////////////////////////
       if(StringUtils.hasContent(displayFormat))
       {
-         //////////////////////////////////////////////////////////////////////////////////////////
-         // if the format is %s (the default), just return value a string                        //
-         // this saves some overhead incurred by String.formatted when called millions of times. //
-         //////////////////////////////////////////////////////////////////////////////////////////
-         if(displayFormat.equals("%s"))
-         {
-            return (ValueUtils.getValueAsString(value));
-         }
-
          try
          {
             return (displayFormat.formatted(value));
