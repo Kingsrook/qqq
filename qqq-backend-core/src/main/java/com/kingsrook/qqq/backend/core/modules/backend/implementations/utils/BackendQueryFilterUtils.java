@@ -24,15 +24,18 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -127,6 +130,16 @@ public class BackendQueryFilterUtils
    @SuppressWarnings("checkstyle:indentation")
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
+      ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();
+      while(valueListIterator.hasNext())
+      {
+         Serializable criteriaValue = valueListIterator.next();
+         if(criteriaValue instanceof AbstractFilterExpression<?> expression)
+         {
+            valueListIterator.set(expression.evaluate());
+         }
+      }
+
       boolean criterionMatches = switch(criterion.getOperator())
       {
          case EQUALS -> testEquals(criterion, value);
@@ -287,26 +300,15 @@ public class BackendQueryFilterUtils
 
       if(b instanceof LocalDate || a instanceof LocalDate)
       {
-         LocalDate valueDate;
-         if(b instanceof LocalDate ld)
-         {
-            valueDate = ld;
-         }
-         else
-         {
-            valueDate = ValueUtils.getValueAsLocalDate(b);
-         }
+         LocalDate valueDate     = ValueUtils.getValueAsLocalDate(b);
+         LocalDate criterionDate = ValueUtils.getValueAsLocalDate(a);
+         return (valueDate.isAfter(criterionDate));
+      }
 
-         LocalDate criterionDate;
-         if(a instanceof LocalDate ld)
-         {
-            criterionDate = ld;
-         }
-         else
-         {
-            criterionDate = ValueUtils.getValueAsLocalDate(a);
-         }
-
+      if(b instanceof Instant || a instanceof Instant)
+      {
+         Instant valueDate     = ValueUtils.getValueAsInstant(b);
+         Instant criterionDate = ValueUtils.getValueAsInstant(a);
          return (valueDate.isAfter(criterionDate));
       }
 
