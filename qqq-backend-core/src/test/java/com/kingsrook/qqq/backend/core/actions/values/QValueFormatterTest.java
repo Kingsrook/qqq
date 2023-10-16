@@ -57,6 +57,10 @@ class QValueFormatterTest extends BaseTest
    {
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), null));
 
+      assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData(), 1));
+      assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat("%s"), 1));
+      assertEquals("Hello", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat("%s"), "Hello"));
+
       assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), 1));
       assertEquals("1,000", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), 1000));
       assertEquals("1000", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(null), 1000));
