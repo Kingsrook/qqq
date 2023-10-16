@@ -55,10 +55,35 @@ public abstract class AbstractPreInsertCustomizer
 
 
 
+   /////////////////////////////////////////////////////////////////////////////////
+   // allow the customizer to specify when it should be executed as part of the   //
+   // insert action.  default (per method in this class) is AFTER_ALL_VALIDATIONS //
+   /////////////////////////////////////////////////////////////////////////////////
+   public enum WhenToRun
+   {
+      BEFORE_ALL_VALIDATIONS,
+      BEFORE_UNIQUE_KEY_CHECKS,
+      BEFORE_REQUIRED_FIELD_CHECKS,
+      BEFORE_SECURITY_CHECKS,
+      AFTER_ALL_VALIDATIONS
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    public abstract List<QRecord> apply(List<QRecord> records) throws QException;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public WhenToRun getWhenToRun()
+   {
+      return (WhenToRun.AFTER_ALL_VALIDATIONS);
+   }
 
 
 

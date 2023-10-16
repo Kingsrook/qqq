@@ -193,25 +193,48 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    {
       QTableMetaData table = insertInput.getTable();
 
-      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
-      setErrorsIfUniqueKeyErrors(insertInput, table);
-
-      if(insertInput.getInputSource().shouldValidateRequiredFields())
-      {
-         validateRequiredFields(insertInput);
-      }
-
-      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
-
-      ///////////////////////////////////////////////////////////////////////////
-      // after all validations, run the pre-insert customizer, if there is one //
-      ///////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////
+      // load the pre-insert customizer and set it up, if there is one //
+      // then we'll run it based on its WhenToRun value                //
+      ///////////////////////////////////////////////////////////////////
       Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
          preInsertCustomizer.get().setInsertInput(insertInput);
          preInsertCustomizer.get().setIsPreview(isPreview);
-         insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+         runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
+      }
+
+      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
+
+      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
+      setErrorsIfUniqueKeyErrors(insertInput, table);
+
+      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_REQUIRED_FIELD_CHECKS);
+      if(insertInput.getInputSource().shouldValidateRequiredFields())
+      {
+         validateRequiredFields(insertInput);
+      }
+
+      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
+
+      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void runPreInsertCustomizerIfItIsTime(InsertInput insertInput, Optional<AbstractPreInsertCustomizer> preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun whenToRun) throws QException
+   {
+      if(preInsertCustomizer.isPresent())
+      {
+         if(whenToRun.equals(preInsertCustomizer.get().getWhenToRun()))
+         {
+            insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+         }
       }
    }
 
