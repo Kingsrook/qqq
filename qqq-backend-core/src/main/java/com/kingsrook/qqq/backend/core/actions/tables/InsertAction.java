@@ -205,6 +205,8 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
       }
 
+      setDefaultValuesInRecords(table, insertInput.getRecords());
+
       ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
 
       runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
@@ -220,6 +222,32 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
       runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setDefaultValuesInRecords(QTableMetaData table, List<QRecord> records)
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // for all fields in the table - if any have a default value, then look at all input records, //
+      // and if they have null value, then apply the default                                        //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         if(field.getDefaultValue() != null)
+         {
+            for(QRecord record : records)
+            {
+               if(record.getValue(field.getName()) == null)
+               {
+                  record.setValue(field.getName(), field.getDefaultValue());
+               }
+            }
+         }
+      }
    }
 
 

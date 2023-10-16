@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -749,6 +751,30 @@ class InsertActionTest extends BaseTest
             .contains("Only Writable By");
       }
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDefaultValues() throws QException
+   {
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .getField("noOfShoes").withDefaultValue(2);
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("firstName", "Darin").withValue("lastName", "Kelkhoff").withValue("noOfShoes", 4),
+         new QRecord().withValue("firstName", "Tim").withValue("lastName", "Chamberlain")
+      ));
+      new InsertAction().execute(insertInput);
+
+      List<QRecord> records = new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withFilter(new QQueryFilter())).getRecords();
+      assertEquals(4, records.get(0).getValueInteger("noOfShoes"));
+      assertEquals(2, records.get(1).getValueInteger("noOfShoes"));
    }
 
 }
