@@ -90,4 +90,15 @@ public class InMemoryStateProvider implements StateProviderInterface
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Remove a block of data, under a key, from the state store.
+    *******************************************************************************/
+   @Override
+   public void remove(AbstractStateKey key)
+   {
+      map.remove(key);
+   }
+
 }

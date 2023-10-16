@@ -52,4 +52,10 @@ public interface StateProviderInterface
     ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
    <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key);
+
+   /*******************************************************************************
+    ** Remove a block of data, under a key, from the state store.
+    *******************************************************************************/
+   void remove(AbstractStateKey key);
+
 }
