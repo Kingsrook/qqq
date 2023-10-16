@@ -214,7 +214,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          for(String fieldName : fieldsBeingUpdated)
          {
             Serializable value = record.getValue(fieldName);
-            value = scrubValue(table.getField(fieldName), value, false);
+            value = scrubValue(table.getField(fieldName), value);
             rowValues.add(value);
          }
          rowValues.add(record.getValue(table.getPrimaryKeyField()));
@@ -286,7 +286,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          for(String fieldName : fieldsBeingUpdated)
          {
             Serializable value = record0.getValue(fieldName);
-            value = scrubValue(table.getField(fieldName), value, false);
+            value = scrubValue(table.getField(fieldName), value);
             params.add(value);
          }
 
