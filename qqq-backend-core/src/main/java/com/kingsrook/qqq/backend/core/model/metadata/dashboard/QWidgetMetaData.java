@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
 
@@ -40,6 +41,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected String         name;
    protected String         icon;
    protected String         label;
+   protected String         tooltip;
    protected String         type;
    protected String         minHeight;
    protected String         footerHTML;
@@ -54,6 +56,8 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
    private boolean showReloadButton = true;
    private boolean showExportButton = true;
+
+   protected Map<String, QIcon> icons;
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
@@ -591,6 +595,83 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public QWidgetMetaData withShowExportButton(boolean showExportButton)
    {
       this.showExportButton = showExportButton;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icons
+    *******************************************************************************/
+   public Map<String, QIcon> getIcons()
+   {
+      return (this.icons);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icons
+    *******************************************************************************/
+   public void setIcons(Map<String, QIcon> icons)
+   {
+      this.icons = icons;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icons
+    *******************************************************************************/
+   public QWidgetMetaData withIcon(String role, QIcon icon)
+   {
+      if(this.icons == null)
+      {
+         this.icons = new LinkedHashMap<>();
+      }
+      this.icons.put(role, icon);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icons
+    *******************************************************************************/
+   public QWidgetMetaData withIcons(Map<String, QIcon> icons)
+   {
+      this.icons = icons;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tooltip
+    *******************************************************************************/
+   public String getTooltip()
+   {
+      return (this.tooltip);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tooltip
+    *******************************************************************************/
+   public void setTooltip(String tooltip)
+   {
+      this.tooltip = tooltip;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tooltip
+    *******************************************************************************/
+   public QWidgetMetaData withTooltip(String tooltip)
+   {
+      this.tooltip = tooltip;
       return (this);
    }
 

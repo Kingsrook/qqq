@@ -32,7 +32,7 @@ import java.util.Map;
  ** AWS Quicksite specific meta data for frontend dashboard widget
  **
  *******************************************************************************/
-public class QuickSightChartMetaData extends QWidgetMetaData implements QWidgetMetaDataInterface
+public class QuickSightChartMetaData extends QWidgetMetaData
 {
    private String             accessKey;
    private String             secretKey;

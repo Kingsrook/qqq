@@ -35,6 +35,7 @@ public class QIcon
 {
    private String name;
    private String path;
+   private String color;
 
 
 
@@ -122,5 +123,37 @@ public class QIcon
       this.path = path;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for color
+    *******************************************************************************/
+   public String getColor()
+   {
+      return (this.color);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for color
+    *******************************************************************************/
+   public void setColor(String color)
+   {
+      this.color = color;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for color
+    *******************************************************************************/
+   public QIcon withColor(String color)
+   {
+      this.color = color;
+      return (this);
+   }
+
 
 }

@@ -216,5 +216,15 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
     ** Fluent setter for dropdowns
     *******************************************************************************/
    QWidgetMetaData withDropdown(WidgetDropdownData dropdown);
+
+
+   /*******************************************************************************
+    ** Getter for tooltip
+    *******************************************************************************/
+   default String getTooltip()
+   {
+      return (null);
+   }
+
 }
 
