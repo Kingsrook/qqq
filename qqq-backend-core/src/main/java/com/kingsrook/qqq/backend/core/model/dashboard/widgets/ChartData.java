@@ -48,6 +48,7 @@ public class ChartData extends QWidgetData
    private boolean isCurrency = false;
    private int     height;
 
+   private ChartSubheaderData chartSubheaderData;
 
 
    /*******************************************************************************
@@ -559,4 +560,36 @@ public class ChartData extends QWidgetData
          }
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for chartSubheaderData
+    *******************************************************************************/
+   public ChartSubheaderData getChartSubheaderData()
+   {
+      return (this.chartSubheaderData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for chartSubheaderData
+    *******************************************************************************/
+   public void setChartSubheaderData(ChartSubheaderData chartSubheaderData)
+   {
+      this.chartSubheaderData = chartSubheaderData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for chartSubheaderData
+    *******************************************************************************/
+   public ChartData withChartSubheaderData(ChartSubheaderData chartSubheaderData)
+   {
+      this.chartSubheaderData = chartSubheaderData;
+      return (this);
+   }
+
 }
