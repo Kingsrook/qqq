@@ -271,7 +271,7 @@ public class ProcessSummaryWarningsAndErrorsRollup
             {
                if(psl.getCount() == 1)
                {
-                  return (new ProcessSummaryRecordLink().withStatus(Status.ERROR).withLinkPreText(psl.getMessageSuffix()));
+                  return (new ProcessSummaryRecordLink().withStatus(psl.getStatus()).withLinkPreText(psl.getMessageSuffix()));
                }
             }
 
