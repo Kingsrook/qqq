@@ -95,7 +95,7 @@ public class ValueUtils
       }
       else if(value instanceof String s)
       {
-         return (Boolean.parseBoolean(s));
+         return "true".equalsIgnoreCase(s) || "yes".equalsIgnoreCase(s);
       }
       else
       {
@@ -496,6 +496,9 @@ public class ValueUtils
     *******************************************************************************/
    private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e)
    {
+      //////////////////////
+      // 1999-12-31T12:59 //
+      //////////////////////
       if(s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$"))
       {
          //////////////////////////
@@ -503,11 +506,34 @@ public class ValueUtils
          //////////////////////////
          return Instant.parse(s + ":00Z");
       }
+
+      ///////////////////////////
+      // 1999-12-31 12:59:59.0 //
+      ///////////////////////////
       else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.0$"))
       {
          s = s.replaceAll(" ", "T").replaceAll("\\..*$", "Z");
          return Instant.parse(s);
       }
+
+      /////////////////////////
+      // 1999-12-31 12:59:59 //
+      /////////////////////////
+      else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"))
+      {
+         s = s.replaceAll(" ", "T") + "Z";
+         return Instant.parse(s);
+      }
+
+      //////////////////////
+      // 1999-12-31 12:59 //
+      //////////////////////
+      else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$"))
+      {
+         s = s.replaceAll(" ", "T") + ":00Z";
+         return Instant.parse(s);
+      }
+
       else
       {
          try

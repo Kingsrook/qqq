@@ -82,6 +82,7 @@ public class BulkInsertExtractStep extends AbstractExtractStep
             .withRecordPipe(getRecordPipe())
             .withLimit(getLimit())
             .withCsv(new String(bytes))
+            .withDoCorrectValueTypes(true)
             .withTable(runBackendStepInput.getInstance().getTable(tableName))
             .withMapping(mapping)
             .withRecordCustomizer((record) ->

@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,11 +76,13 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
 
    /*******************************************************************************
-    **
+    ** extension of ProcessSummaryLine for lines where a UniqueKey was violated,
+    ** where we'll collect a sample (or maybe all) of the values that broke the UK.
     *******************************************************************************/
    private static class ProcessSummaryLineWithUKSampleValues extends ProcessSummaryLine
    {
-      private List<String> sampleValues = new ArrayList<>();
+      private Set<String> sampleValues             = new LinkedHashSet<>();
+      private boolean     areThereMoreSampleValues = false;
 
 
 
@@ -116,8 +119,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      int rowsInThisPage = runBackendStepInput.getRecords().size();
-      QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      int            rowsInThisPage = runBackendStepInput.getRecords().size();
+      QTableMetaData table          = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //
@@ -278,6 +281,10 @@ public class BulkInsertTransformStep extends AbstractTransformStep
                   {
                      processSummaryLineWithUKSampleValues.sampleValues.add(keyValues.get().toString());
                   }
+                  else
+                  {
+                     processSummaryLineWithUKSampleValues.areThereMoreSampleValues = true;
+                  }
                   foundDupe = true;
                   break;
                }
@@ -325,13 +332,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          ProcessSummaryLineWithUKSampleValues ukErrorSummary = entry.getValue();
 
          ukErrorSummary
-            .withMessageSuffix(" inserted, because of duplicate values in a unique key on the fields (" + uniqueKey.getDescription(table) + "), with values such as: "
-               + StringUtils.joinWithCommasAndAnd(ukErrorSummary.sampleValues))
+            .withMessageSuffix(" inserted, because of duplicate values in a unique key on the fields (" + uniqueKey.getDescription(table) + "), with values"
+               + (ukErrorSummary.areThereMoreSampleValues ? " such as: " : ": ")
+               + StringUtils.joinWithCommasAndAnd(new ArrayList<>(ukErrorSummary.sampleValues)))
 
-            .withSingularFutureMessage(tableLabel + " record will not be")
-            .withPluralFutureMessage(tableLabel + " records will not be")
-            .withSingularPastMessage(tableLabel + " record was not")
-            .withPluralPastMessage(tableLabel + " records were not");
+            .withSingularFutureMessage(" record will not be")
+            .withPluralFutureMessage(" records will not be")
+            .withSingularPastMessage(" record was not")
+            .withPluralPastMessage(" records were not");
 
          ukErrorSummary.addSelfToListIfAnyCount(rs);
       }

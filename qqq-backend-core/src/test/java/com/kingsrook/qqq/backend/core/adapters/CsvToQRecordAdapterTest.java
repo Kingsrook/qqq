@@ -22,15 +22,19 @@
 package com.kingsrook.qqq.backend.core.adapters;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QIndexBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -393,6 +397,72 @@ class CsvToQRecordAdapterTest extends BaseTest
       assertEquals("John", records.get(0).getValueString("firstName"));
       assertEquals("Doe", records.get(0).getValueString("lastName"));
       assertEquals("john@doe.com", records.get(0).getValueString("email"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildRecordsFromCsv_doCorrectValueTypes() throws QException
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withDoCorrectValueTypes(true)
+         .withTable(TestUtils.defineTablePerson().withField(new QFieldMetaData("isEmployed", QFieldType.BOOLEAN)))
+         .withCsv("""
+            firstName,birthDate,isEmployed
+            John,1/1/1980,true
+            Paul,1970-06-15,Yes
+            George,,anything-else
+            """));
+      List<QRecord> qRecords = csvToQRecordAdapter.getRecordList();
+
+      QRecord qRecord = qRecords.get(0);
+      assertEquals("John", qRecord.getValue("firstName"));
+      assertEquals(LocalDate.parse("1980-01-01"), qRecord.getValue("birthDate"));
+      assertEquals(true, qRecord.getValue("isEmployed"));
+
+      qRecord = qRecords.get(1);
+      assertEquals("Paul", qRecord.getValue("firstName"));
+      assertEquals(LocalDate.parse("1970-06-15"), qRecord.getValue("birthDate"));
+      assertEquals(true, qRecord.getValue("isEmployed"));
+
+      qRecord = qRecords.get(2);
+      assertEquals("George", qRecord.getValue("firstName"));
+      assertNull(qRecord.getValue("birthDate"));
+      assertEquals(false, qRecord.getValue("isEmployed"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void test_buildRecordsFromCsv_doCorrectValueTypesErrorsForUnparseable() throws QException
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withDoCorrectValueTypes(true)
+         .withTable(TestUtils.defineTablePerson())
+         .withCsv("""
+            firstName,birthDate,favoriteShapeId
+            John,1980,1
+            Paul,1970-06-15,green
+            """));
+      List<QRecord> qRecords = csvToQRecordAdapter.getRecordList();
+
+      QRecord qRecord = qRecords.get(0);
+      assertEquals("John", qRecord.getValue("firstName"));
+      assertThat(qRecord.getErrors()).hasSize(1);
+      assertThat(qRecord.getErrors().get(0).toString()).isEqualTo("Error parsing line #1: Could not parse value [1980] to a local date");
+
+      qRecord = qRecords.get(1);
+      assertEquals("Paul", qRecord.getValue("firstName"));
+      assertThat(qRecord.getErrors()).hasSize(1);
+      assertThat(qRecord.getErrors().get(0).toString()).isEqualTo("Error parsing line #2: Value [green] could not be converted to an Integer.");
    }
 
 }
