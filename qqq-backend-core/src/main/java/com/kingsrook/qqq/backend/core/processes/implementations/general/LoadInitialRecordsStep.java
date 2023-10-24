@@ -56,7 +56,7 @@ public class LoadInitialRecordsStep implements BackendStep
       /////////////////////////////////////////////////////////////////////////////////////////////////
       runBackendStepInput.getAsyncJobCallback().updateStatus("Loading records");
       QQueryFilter queryFilter = runBackendStepInput.getCallback().getQueryFilter();
-      runBackendStepOutput.addValue("queryFilterJSON", JsonUtils.toJson(queryFilter));
+      runBackendStepOutput.addValue("queryFilterJson", JsonUtils.toJson(queryFilter));
    }
 
 
