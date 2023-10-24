@@ -99,7 +99,17 @@ public enum DateTimeGroupBy
    public String getSqlExpression()
    {
       ZoneId sessionOrInstanceZoneId = ValueUtils.getSessionOrInstanceZoneId();
-      String targetTimezone          = sessionOrInstanceZoneId.toString();
+      return (getSqlExpression(sessionOrInstanceZoneId));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getSqlExpression(ZoneId targetZoneId)
+   {
+      String targetTimezone = targetZoneId.toString();
 
       if("Z".equals(targetTimezone) || !StringUtils.hasContent(targetTimezone))
       {
@@ -220,20 +230,20 @@ public enum DateTimeGroupBy
    {
       ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
       return switch(this)
+      {
+         case YEAR -> zoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS).toInstant();
+         case MONTH -> zoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant();
+         case WEEK ->
          {
-            case YEAR -> zoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS).toInstant();
-            case MONTH -> zoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant();
-            case WEEK ->
+            while(zoned.get(ChronoField.DAY_OF_WEEK) != DayOfWeek.SUNDAY.getValue())
             {
-               while(zoned.get(ChronoField.DAY_OF_WEEK) != DayOfWeek.SUNDAY.getValue())
-               {
-                  zoned = zoned.minusDays(1);
-               }
-               yield (zoned.truncatedTo(ChronoUnit.DAYS).toInstant());
+               zoned = zoned.minusDays(1);
             }
-            case DAY -> zoned.truncatedTo(ChronoUnit.DAYS).toInstant();
-            case HOUR -> zoned.truncatedTo(ChronoUnit.HOURS).toInstant();
-         };
+            yield (zoned.truncatedTo(ChronoUnit.DAYS).toInstant());
+         }
+         case DAY -> zoned.truncatedTo(ChronoUnit.DAYS).toInstant();
+         case HOUR -> zoned.truncatedTo(ChronoUnit.HOURS).toInstant();
+      };
    }
 
 
