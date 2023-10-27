@@ -30,6 +30,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.io.FileUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -105,6 +106,21 @@ public class TempFileStateProvider implements StateProviderInterface
       {
          LOG.error("Error getting state from file", e);
          throw (new RuntimeException("Error retreiving state", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Remove a block of data, under a key, from the state store.
+    *******************************************************************************/
+   @Override
+   public void remove(AbstractStateKey key)
+   {
+      File file = getFile(key);
+      if(!file.delete())
+      {
+         LOG.warn("Error deleting state-providing tempFile", logPair("file", file.getAbsolutePath()));
       }
    }
 

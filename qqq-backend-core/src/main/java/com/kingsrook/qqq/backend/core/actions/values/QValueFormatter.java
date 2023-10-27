@@ -112,6 +112,12 @@ public class QValueFormatter
          {
             return formatLocalTime(lt);
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////
+         // else, just return the value as a string, rather than going through String.formatted  //
+         // this saves some overhead incurred by String.formatted when called millions of times. //
+         //////////////////////////////////////////////////////////////////////////////////////////
+         return (ValueUtils.getValueAsString(value));
       }
 
       ////////////////////////////////////////////////////////
