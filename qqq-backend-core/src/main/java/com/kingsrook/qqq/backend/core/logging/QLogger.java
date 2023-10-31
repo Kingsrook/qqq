@@ -124,7 +124,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message)
    {
-      logger.log(level, makeJsonString(message));
+      logger.log(level, () -> makeJsonString(message));
    }
 
 
@@ -134,7 +134,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message, Throwable t)
    {
-      logger.log(level, makeJsonString(message, t));
+      logger.log(level, () -> makeJsonString(message, t));
    }
 
 
@@ -144,7 +144,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, String message, Throwable t, LogPair... logPairs)
    {
-      logger.log(level, makeJsonString(message, t, logPairs));
+      logger.log(level, () -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -154,7 +154,7 @@ public class QLogger
     *******************************************************************************/
    public void log(Level level, Throwable t)
    {
-      logger.log(level, makeJsonString(null, t));
+      logger.log(level, () -> makeJsonString(null, t));
    }
 
 
@@ -164,7 +164,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message)
    {
-      logger.trace(makeJsonString(message));
+      logger.trace(() -> makeJsonString(message));
    }
 
 
@@ -174,7 +174,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, LogPair... logPairs)
    {
-      logger.trace(makeJsonString(message, null, logPairs));
+      logger.trace(() -> makeJsonString(message, null, logPairs));
    }
 
 
@@ -194,7 +194,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Throwable t)
    {
-      logger.trace(makeJsonString(message, t));
+      logger.trace(() -> makeJsonString(message, t));
    }
 
 
@@ -204,7 +204,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(String message, Throwable t, LogPair... logPairs)
    {
-      logger.trace(makeJsonString(message, t, logPairs));
+      logger.trace(() -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -214,7 +214,7 @@ public class QLogger
     *******************************************************************************/
    public void trace(Throwable t)
    {
-      logger.trace(makeJsonString(null, t));
+      logger.trace(() -> makeJsonString(null, t));
    }
 
 
@@ -224,7 +224,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message)
    {
-      logger.debug(makeJsonString(message));
+      logger.debug(() -> makeJsonString(message));
    }
 
 
@@ -234,7 +234,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, LogPair... logPairs)
    {
-      logger.debug(makeJsonString(message, null, logPairs));
+      logger.debug(() -> makeJsonString(message, null, logPairs));
    }
 
 
@@ -254,7 +254,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Throwable t)
    {
-      logger.debug(makeJsonString(message, t));
+      logger.debug(() -> makeJsonString(message, t));
    }
 
 
@@ -264,7 +264,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(String message, Throwable t, LogPair... logPairs)
    {
-      logger.debug(makeJsonString(message, t, logPairs));
+      logger.debug(() -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -274,7 +274,7 @@ public class QLogger
     *******************************************************************************/
    public void debug(Throwable t)
    {
-      logger.debug(makeJsonString(null, t));
+      logger.debug(() -> makeJsonString(null, t));
    }
 
 
@@ -284,7 +284,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message)
    {
-      logger.info(makeJsonString(message));
+      logger.info(() -> makeJsonString(message));
    }
 
 
@@ -294,7 +294,7 @@ public class QLogger
     *******************************************************************************/
    public void info(LogPair... logPairs)
    {
-      logger.info(makeJsonString(null, null, logPairs));
+      logger.info(() -> makeJsonString(null, null, logPairs));
    }
 
 
@@ -304,7 +304,7 @@ public class QLogger
     *******************************************************************************/
    public void info(List<LogPair> logPairList)
    {
-      logger.info(makeJsonString(null, null, logPairList));
+      logger.info(() -> makeJsonString(null, null, logPairList));
    }
 
 
@@ -314,7 +314,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, LogPair... logPairs)
    {
-      logger.info(makeJsonString(message, null, logPairs));
+      logger.info(() -> makeJsonString(message, null, logPairs));
    }
 
 
@@ -334,7 +334,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Throwable t)
    {
-      logger.info(makeJsonString(message, t));
+      logger.info(() -> makeJsonString(message, t));
    }
 
 
@@ -344,7 +344,7 @@ public class QLogger
     *******************************************************************************/
    public void info(String message, Throwable t, LogPair... logPairs)
    {
-      logger.info(makeJsonString(message, t, logPairs));
+      logger.info(() -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -354,7 +354,7 @@ public class QLogger
     *******************************************************************************/
    public void info(Throwable t)
    {
-      logger.info(makeJsonString(null, t));
+      logger.info(() -> makeJsonString(null, t));
    }
 
 
@@ -364,7 +364,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message)
    {
-      logger.warn(makeJsonString(message));
+      logger.warn(() -> makeJsonString(message));
    }
 
 
@@ -374,7 +374,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, LogPair... logPairs)
    {
-      logger.warn(makeJsonString(message, null, logPairs));
+      logger.warn(() -> makeJsonString(message, null, logPairs));
    }
 
 
@@ -394,7 +394,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(message, t));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), () -> makeJsonString(message, t));
    }
 
 
@@ -404,7 +404,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(String message, Throwable t, LogPair... logPairs)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(message, t, logPairs));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), () -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -414,7 +414,7 @@ public class QLogger
     *******************************************************************************/
    public void warn(Throwable t)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.WARN), makeJsonString(null, t));
+      logger.log(determineIfShouldDowngrade(t, Level.WARN), () -> makeJsonString(null, t));
    }
 
 
@@ -424,7 +424,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message)
    {
-      logger.error(makeJsonString(message));
+      logger.error(() -> makeJsonString(message));
    }
 
 
@@ -434,7 +434,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, LogPair... logPairs)
    {
-      logger.error(makeJsonString(message, null, logPairs));
+      logger.error(() -> makeJsonString(message, null, logPairs));
    }
 
 
@@ -454,7 +454,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(message, t));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), () -> makeJsonString(message, t));
    }
 
 
@@ -464,7 +464,7 @@ public class QLogger
     *******************************************************************************/
    public void error(String message, Throwable t, LogPair... logPairs)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(message, t, logPairs));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), () -> makeJsonString(message, t, logPairs));
    }
 
 
@@ -474,7 +474,7 @@ public class QLogger
     *******************************************************************************/
    public void error(Throwable t)
    {
-      logger.log(determineIfShouldDowngrade(t, Level.ERROR), makeJsonString(null, t));
+      logger.log(determineIfShouldDowngrade(t, Level.ERROR), () -> makeJsonString(null, t));
    }
 
 
