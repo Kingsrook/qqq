@@ -67,7 +67,26 @@ public class Memoization<K, V>
       {
          if(result.getTime().isAfter(Instant.now().minus(timeout)))
          {
-            return (Optional.of(result.getResult()));
+            return (Optional.ofNullable(result.getResult()));
+         }
+      }
+
+      return (Optional.empty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Optional<MemoizedResult<V>> getMemoizedResult(K key)
+   {
+      MemoizedResult<V> result = map.get(key);
+      if(result != null)
+      {
+         if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         {
+            return (Optional.ofNullable(result));
          }
       }
 
@@ -118,6 +137,16 @@ public class Memoization<K, V>
       {
          LOG.error("Error managing size of a Memoization", e);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void clear()
+   {
+      this.map.clear();
    }
 
 

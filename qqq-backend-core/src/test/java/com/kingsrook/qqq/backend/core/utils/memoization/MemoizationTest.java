@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +37,9 @@ import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -80,6 +84,40 @@ class MemoizationTest extends BaseTest
       assertThat(memoization.getResult("two")).isEmpty();
       assertThat(memoization.getResult("three")).isEmpty();
       assertThat(memoization.getResult("four")).isEmpty();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCanStoreNull()
+   {
+      Memoization<String, Integer> memoization = new Memoization<>();
+      memoization.storeResult("null", null);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // note - we can't tell a stored null apart from a non-stored value by calling getResult //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      Optional<Integer> optionalNull = memoization.getResult("null");
+      assertNotNull(optionalNull);
+      assertTrue(optionalNull.isEmpty());
+
+      ////////////////////////////////////////////
+      // instead, we must use getMemoizedResult //
+      ////////////////////////////////////////////
+      Optional<MemoizedResult<Integer>> optionalMemoizedResult = memoization.getMemoizedResult("null");
+      assertNotNull(optionalMemoizedResult);
+      assertTrue(optionalMemoizedResult.isPresent());
+      assertNull(optionalMemoizedResult.get().getResult());
+
+      /////////////////////////////////////////////////////////////////
+      // make sure getMemoizedResult returns empty for an un-set key //
+      /////////////////////////////////////////////////////////////////
+      optionalMemoizedResult = memoization.getMemoizedResult("never-stored");
+      assertNotNull(optionalMemoizedResult);
+      assertTrue(optionalMemoizedResult.isEmpty());
    }
 
 

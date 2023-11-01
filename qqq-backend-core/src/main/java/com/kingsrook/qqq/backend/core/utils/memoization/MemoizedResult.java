@@ -29,7 +29,7 @@ import java.time.Instant;
  ** Object stored in the Memoization class.  Shouldn't need to be visible outside
  ** its package.
  *******************************************************************************/
-class MemoizedResult<T>
+public class MemoizedResult<T>
 {
    private T       result;
    private Instant time;
