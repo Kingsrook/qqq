@@ -79,7 +79,7 @@ public class MetaDataProducerHelper
          }
          catch(Exception e)
          {
-            LOG.info("Error adding metaData from producer", logPair("producer", aClass.getSimpleName()), e);
+            LOG.info("Error adding metaData from producer", e, logPair("producer", aClass.getSimpleName()));
          }
       }
 
