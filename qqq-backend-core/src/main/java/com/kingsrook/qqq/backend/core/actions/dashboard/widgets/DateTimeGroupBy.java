@@ -168,7 +168,18 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public String makeSelectedString(Instant time)
    {
-      ZonedDateTime zoned = time.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (makeSelectedString(time, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make an Instant into a string that will match what came out of the database's
+    ** DATE_FORMAT() function
+    *******************************************************************************/
+   public String makeSelectedString(Instant time, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = time.atZone(zoneId);
 
       if(this == WEEK)
       {
@@ -192,7 +203,17 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public String makeHumanString(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (makeHumanString(instant, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make a string to show to a user
+    *******************************************************************************/
+   public String makeHumanString(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       if(this.equals(WEEK))
       {
          DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("M'/'d");
@@ -225,10 +246,20 @@ public enum DateTimeGroupBy
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public Instant roundDown(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return roundDown(instant, ValueUtils.getSessionOrInstanceZoneId());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public Instant roundDown(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       return switch(this)
       {
          case YEAR -> zoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS).toInstant();
@@ -253,7 +284,17 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public Instant increment(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (increment(instant, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Instant increment(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       return (zoned.plus(noOfChronoUnitsToAdd, chronoUnitToAdd).toInstant());
    }
 }
