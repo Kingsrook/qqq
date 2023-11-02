@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -153,7 +154,11 @@ public class QRecord implements Serializable
       for(Map.Entry<K, V> entry : map.entrySet())
       {
          V value = entry.getValue();
-         if(value == null || value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Temporal)
+
+         //////////////////////////////////////////////////////////////////////////
+         // not sure from where/how java.sql.Date objects are getting in here... //
+         //////////////////////////////////////////////////////////////////////////
+         if(value == null || value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Temporal || value instanceof Date)
          {
             clone.put(entry.getKey(), entry.getValue());
          }
