@@ -274,6 +274,14 @@ public class QValueFormatter
     *******************************************************************************/
    private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
    {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // if the record already has a label (say, from a query-customizer), then return it //
+      //////////////////////////////////////////////////////////////////////////////////////
+      if(record.getRecordLabel() != null)
+      {
+         return (record.getRecordLabel());
+      }
+
       ///////////////////////////////////////////////////////////////////////////////////////
       // if there's no record label format, then just return the primary key display value //
       ///////////////////////////////////////////////////////////////////////////////////////
