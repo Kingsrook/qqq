@@ -51,6 +51,7 @@ public class ChartData extends QWidgetData
    private ChartSubheaderData chartSubheaderData;
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -388,6 +389,7 @@ public class ChartData extends QWidgetData
          private String       color;
          private String       backgroundColor;
          private List<String> urls;
+         private List<String> backgroundColors;
 
 
 
@@ -425,6 +427,17 @@ public class ChartData extends QWidgetData
 
 
          /*******************************************************************************
+          ** Getter for backgroundColors
+          **
+          *******************************************************************************/
+         public List<String> getBackgroundColors()
+         {
+            return backgroundColors;
+         }
+
+
+
+         /*******************************************************************************
           ** Setter for backgroundColor
           **
           *******************************************************************************/
@@ -436,12 +449,35 @@ public class ChartData extends QWidgetData
 
 
          /*******************************************************************************
+          ** Setter for backgroundColor
+          **
+          *******************************************************************************/
+         public void setBackgroundColors(List<String> backgroundColors)
+         {
+            this.backgroundColors = backgroundColors;
+         }
+
+
+
+         /*******************************************************************************
           ** Fluent setter for backgroundColor
           **
           *******************************************************************************/
          public Dataset withBackgroundColor(String backgroundColor)
          {
             this.backgroundColor = backgroundColor;
+            return (this);
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for backgroundColor
+          **
+          *******************************************************************************/
+         public Dataset withBackgroundColors(List<String> backgroundColors)
+         {
+            this.backgroundColors = backgroundColors;
             return (this);
          }
 
