@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,365 +19,313 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 
 
 /*******************************************************************************
- ** AWS Quicksite specific meta data for frontend dashboard widget
  **
  *******************************************************************************/
-public class QuickSightChartMetaData extends QWidgetMetaData
+public class ChartSubheaderData
 {
-   private String             accessKey;
-   private String             secretKey;
-   private String             dashboardId;
-   private String             accountId;
-   private String             userArn;
-   private String             region;
-   private Collection<String> allowedDomains;
+   private Number  mainNumber;
+   private Number  vsPreviousPercent;
+   private Number  vsPreviousNumber;
+   private Boolean isUpVsPrevious;
+   private Boolean isGoodVsPrevious;
+   private String  vsDescription = "vs prev period";
 
-   protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
+   private String mainNumberUrl;
+   private String previousNumberUrl;
 
 
 
    /*******************************************************************************
-    ** Fluent setter for name
-    **
+    ** Getter for mainNumber
     *******************************************************************************/
-   public QuickSightChartMetaData withName(String name)
+   public Number getMainNumber()
    {
-      this.name = name;
+      return (this.mainNumber);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for mainNumber
+    *******************************************************************************/
+   public void setMainNumber(Number mainNumber)
+   {
+      this.mainNumber = mainNumber;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for mainNumber
+    *******************************************************************************/
+   public ChartSubheaderData withMainNumber(Number mainNumber)
+   {
+      this.mainNumber = mainNumber;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for accessKey
-    **
+    ** Getter for vsPreviousNumber
     *******************************************************************************/
-   public String getAccessKey()
+   public Number getVsPreviousNumber()
    {
-      return accessKey;
+      return (this.vsPreviousNumber);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for accessKey
-    **
+    ** Setter for vsPreviousNumber
     *******************************************************************************/
-   public void setAccessKey(String accessKey)
+   public void setVsPreviousNumber(Number vsPreviousNumber)
    {
-      this.accessKey = accessKey;
+      this.vsPreviousNumber = vsPreviousNumber;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for accessKey
-    **
+    ** Fluent setter for vsPreviousNumber
     *******************************************************************************/
-   public QuickSightChartMetaData withAccessKey(String accessKey)
+   public ChartSubheaderData withVsPreviousNumber(Number vsPreviousNumber)
    {
-      this.accessKey = accessKey;
+      this.vsPreviousNumber = vsPreviousNumber;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for label
-    **
+    ** Getter for vsDescription
     *******************************************************************************/
-   public String getLabel()
+   public String getVsDescription()
    {
-
-      return label;
+      return (this.vsDescription);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
-    **
+    ** Setter for vsDescription
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setVsDescription(String vsDescription)
    {
-      this.label = label;
+      this.vsDescription = vsDescription;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
-    **
+    ** Fluent setter for vsDescription
     *******************************************************************************/
-   public QuickSightChartMetaData withLabel(String label)
+   public ChartSubheaderData withVsDescription(String vsDescription)
    {
-      this.label = label;
+      this.vsDescription = vsDescription;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for secretKey
-    **
+    ** Getter for vsPreviousPercent
     *******************************************************************************/
-   public String getSecretKey()
+   public Number getVsPreviousPercent()
    {
-      return secretKey;
+      return (this.vsPreviousPercent);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for secretKey
-    **
+    ** Setter for vsPreviousPercent
     *******************************************************************************/
-   public void setSecretKey(String secretKey)
+   public void setVsPreviousPercent(Number vsPreviousPercent)
    {
-      this.secretKey = secretKey;
+      this.vsPreviousPercent = vsPreviousPercent;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for secretKey
-    **
+    ** Fluent setter for vsPreviousPercent
     *******************************************************************************/
-   public QuickSightChartMetaData withSecretKey(String secretKey)
+   public ChartSubheaderData withVsPreviousPercent(Number vsPreviousPercent)
    {
-      this.secretKey = secretKey;
+      this.vsPreviousPercent = vsPreviousPercent;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dashboardId
-    **
+    ** Getter for isUpVsPrevious
     *******************************************************************************/
-   public String getDashboardId()
+   public Boolean getIsUpVsPrevious()
    {
-      return dashboardId;
+      return (this.isUpVsPrevious);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dashboardId
-    **
+    ** Setter for isUpVsPrevious
     *******************************************************************************/
-   public void setDashboardId(String dashboardId)
+   public void setIsUpVsPrevious(Boolean isUpVsPrevious)
    {
-      this.dashboardId = dashboardId;
+      this.isUpVsPrevious = isUpVsPrevious;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dashboardId
-    **
+    ** Fluent setter for isUpVsPrevious
     *******************************************************************************/
-   public QuickSightChartMetaData withDashboardId(String dashboardId)
+   public ChartSubheaderData withIsUpVsPrevious(Boolean isUpVsPrevious)
    {
-      this.dashboardId = dashboardId;
+      this.isUpVsPrevious = isUpVsPrevious;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for accountId
-    **
+    ** Getter for isGoodVsPrevious
     *******************************************************************************/
-   public String getAccountId()
+   public Boolean getIsGoodVsPrevious()
    {
-      return accountId;
+      return (this.isGoodVsPrevious);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for accountId
-    **
+    ** Setter for isGoodVsPrevious
     *******************************************************************************/
-   public void setAccountId(String accountId)
+   public void setIsGoodVsPrevious(Boolean isGoodVsPrevious)
    {
-      this.accountId = accountId;
+      this.isGoodVsPrevious = isGoodVsPrevious;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for accountId
-    **
+    ** Fluent setter for isGoodVsPrevious
     *******************************************************************************/
-   public QuickSightChartMetaData withAccountId(String accountId)
+   public ChartSubheaderData withIsGoodVsPrevious(Boolean isGoodVsPrevious)
    {
-      this.accountId = accountId;
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for userArn
-    **
-    *******************************************************************************/
-   public String getUserArn()
-   {
-      return userArn;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for userArn
-    **
-    *******************************************************************************/
-   public void setUserArn(String userArn)
-   {
-      this.userArn = userArn;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for userArn
-    **
-    *******************************************************************************/
-   public QuickSightChartMetaData withUserArn(String userArn)
-   {
-      this.userArn = userArn;
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for region
-    **
-    *******************************************************************************/
-   public String getRegion()
-   {
-      return region;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for region
-    **
-    *******************************************************************************/
-   public void setRegion(String region)
-   {
-      this.region = region;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for region
-    **
-    *******************************************************************************/
-   public QuickSightChartMetaData withRegion(String region)
-   {
-      this.region = region;
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for allowedDomains
-    **
-    *******************************************************************************/
-   public Collection<String> getAllowedDomains()
-   {
-      return allowedDomains;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for allowedDomains
-    **
-    *******************************************************************************/
-   public void setAllowedDomains(Collection<String> allowedDomains)
-   {
-      this.allowedDomains = allowedDomains;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for allowedDomains
-    **
-    *******************************************************************************/
-   public QuickSightChartMetaData withAllowedDomains(Collection<String> allowedDomains)
-   {
-      this.allowedDomains = allowedDomains;
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for defaultValues
-    **
-    *******************************************************************************/
-   public Map<String, Serializable> getDefaultValues()
-   {
-      return defaultValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for defaultValues
-    **
-    *******************************************************************************/
-   public void setDefaultValues(Map<String, Serializable> defaultValues)
-   {
-      this.defaultValues = defaultValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for defaultValues
-    **
-    *******************************************************************************/
-   public QWidgetMetaData withDefaultValues(Map<String, Serializable> defaultValues)
-   {
-      this.defaultValues = defaultValues;
+      this.isGoodVsPrevious = isGoodVsPrevious;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for a single defaultValue
+    ** Getter for mainNumberUrl
+    *******************************************************************************/
+   public String getMainNumberUrl()
+   {
+      return (this.mainNumberUrl);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for mainNumberUrl
+    *******************************************************************************/
+   public void setMainNumberUrl(String mainNumberUrl)
+   {
+      this.mainNumberUrl = mainNumberUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for mainNumberUrl
+    *******************************************************************************/
+   public ChartSubheaderData withMainNumberUrl(String mainNumberUrl)
+   {
+      this.mainNumberUrl = mainNumberUrl;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for previousNumberUrl
+    *******************************************************************************/
+   public String getPreviousNumberUrl()
+   {
+      return (this.previousNumberUrl);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for previousNumberUrl
+    *******************************************************************************/
+   public void setPreviousNumberUrl(String previousNumberUrl)
+   {
+      this.previousNumberUrl = previousNumberUrl;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for previousNumberUrl
+    *******************************************************************************/
+   public ChartSubheaderData withPreviousNumberUrl(String previousNumberUrl)
+   {
+      this.previousNumberUrl = previousNumberUrl;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
-   public QWidgetMetaData withDefaultValue(String key, Serializable value)
+   public void calculatePercentsEtc(boolean isUpGood)
    {
-      if(this.defaultValues == null)
+      if(mainNumber != null && vsPreviousNumber != null && vsPreviousNumber.doubleValue() > 0)
       {
-         this.defaultValues = new LinkedHashMap<>();
+         /////////////////////////////////////////////////////////////////
+         // these are the results we're going for:                      //
+         // current: 10, previous: 20 = -50%                            //
+         // current: 15, previous: 20 = -25%                            //
+         // current: 20, previous: 10 = +100%                           //
+         // current: 15, previous: 10 = +50%                            //
+         // this formula gets us that:  (current - previous) / previous //
+         // (with a *100 in there to make it a percent-looking value)   //
+         /////////////////////////////////////////////////////////////////
+         BigDecimal current    = new BigDecimal(String.valueOf(mainNumber));
+         BigDecimal previous   = new BigDecimal(String.valueOf(vsPreviousNumber));
+         BigDecimal difference = current.subtract(previous);
+         BigDecimal ratio      = difference.divide(previous, new MathContext(2, RoundingMode.HALF_UP));
+         BigDecimal percentBD  = ratio.multiply(new BigDecimal(100));
+         Integer    percent    = Math.abs(percentBD.intValue());
+         if(mainNumber.doubleValue() < vsPreviousNumber.doubleValue())
+         {
+            setIsUpVsPrevious(false);
+            setIsGoodVsPrevious(isUpGood ? false : true);
+            setVsPreviousPercent(percent);
+         }
+         else // note - equal is being considered here in the good.
+         {
+            setIsUpVsPrevious(true);
+            setIsGoodVsPrevious(isUpGood ? true : false);
+            setVsPreviousPercent(percent);
+         }
       }
-
-      this.defaultValues.put(key, value);
-
-      return (this);
    }
 }

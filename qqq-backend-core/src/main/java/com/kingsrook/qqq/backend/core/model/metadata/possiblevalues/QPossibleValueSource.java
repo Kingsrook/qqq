@@ -93,6 +93,21 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
 
 
    /*******************************************************************************
+    ** Create a new possible value source, for an enum, with default settings.
+    ** e.g., type=ENUM; name from param values from the param; LABEL_ONLY format
+    *******************************************************************************/
+   public static <T extends PossibleValueEnum<?>> QPossibleValueSource newForEnum(String name, T[] values)
+   {
+      return new QPossibleValueSource()
+         .withName(name)
+         .withType(QPossibleValueSourceType.ENUM)
+         .withValuesFromEnum(values)
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public String getName()

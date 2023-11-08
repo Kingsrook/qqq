@@ -27,18 +27,22 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang3.SerializationUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -61,6 +65,8 @@ import org.apache.commons.lang.SerializationUtils;
  *******************************************************************************/
 public class QRecord implements Serializable
 {
+   private static final QLogger LOG = QLogger.getLogger(QRecord.class);
+
    private String tableName;
    private String recordLabel;
 
@@ -110,12 +116,14 @@ public class QRecord implements Serializable
       this.tableName = record.tableName;
       this.recordLabel = record.recordLabel;
 
-      this.values = doDeepCopy(record.values);
-      this.displayValues = doDeepCopy(record.displayValues);
-      this.backendDetails = doDeepCopy(record.backendDetails);
-      this.errors = doDeepCopy(record.errors);
-      this.warnings = doDeepCopy(record.warnings);
-      this.associatedRecords = doDeepCopy(record.associatedRecords);
+      this.values = deepCopySimpleMap(record.values);
+      this.displayValues = deepCopySimpleMap(record.displayValues);
+      this.backendDetails = deepCopySimpleMap(record.backendDetails);
+
+      this.associatedRecords = deepCopyAssociatedRecords(record.associatedRecords);
+
+      this.errors = record.errors == null ? null : new ArrayList<>(record.errors);
+      this.warnings = record.warnings == null ? null : new ArrayList<>(record.warnings);
    }
 
 
@@ -135,40 +143,57 @@ public class QRecord implements Serializable
     ** todo - move to a cloning utils maybe?
     *******************************************************************************/
    @SuppressWarnings({ "unchecked" })
-   private <K, V> Map<K, V> doDeepCopy(Map<K, V> map)
+   private <K, V> Map<K, V> deepCopySimpleMap(Map<K, V> map)
    {
       if(map == null)
       {
          return (null);
       }
 
-      if(map instanceof Serializable serializableMap)
+      Map<K, V> clone = new LinkedHashMap<>();
+      for(Map.Entry<K, V> entry : map.entrySet())
       {
-         return (Map<K, V>) SerializationUtils.clone(serializableMap);
-      }
+         V value = entry.getValue();
 
-      return (new LinkedHashMap<>(map));
+         //////////////////////////////////////////////////////////////////////////
+         // not sure from where/how java.sql.Date objects are getting in here... //
+         //////////////////////////////////////////////////////////////////////////
+         if(value == null || value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Temporal || value instanceof Date)
+         {
+            clone.put(entry.getKey(), entry.getValue());
+         }
+         else if(entry.getValue() instanceof Serializable serializableValue)
+         {
+            LOG.info("Non-primitive serializable value in QRecord - calling SerializationUtils.clone...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
+            clone.put(entry.getKey(), (V) SerializationUtils.clone(serializableValue));
+         }
+         else
+         {
+            LOG.warn("Non-serializable value in QRecord...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
+            clone.put(entry.getKey(), entry.getValue());
+         }
+      }
+      return (clone);
    }
 
 
 
    /*******************************************************************************
-    ** todo - move to a cloning utils maybe?
+    **
     *******************************************************************************/
-   @SuppressWarnings({ "unchecked" })
-   private <T> List<T> doDeepCopy(List<T> list)
+   private Map<String, List<QRecord>> deepCopyAssociatedRecords(Map<String, List<QRecord>> input)
    {
-      if(list == null)
+      if(input == null)
       {
          return (null);
       }
 
-      if(list instanceof Serializable serializableList)
+      Map<String, List<QRecord>> clone = new HashMap<>();
+      for(Map.Entry<String, List<QRecord>> entry : input.entrySet())
       {
-         return (List<T>) SerializationUtils.clone(serializableList);
+         clone.put(entry.getKey(), new ArrayList<>(entry.getValue()));
       }
-
-      return (new ArrayList<>(list));
+      return (clone);
    }
 
 

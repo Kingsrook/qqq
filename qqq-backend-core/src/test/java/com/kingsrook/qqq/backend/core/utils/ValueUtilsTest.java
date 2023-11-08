@@ -83,7 +83,15 @@ class ValueUtilsTest extends BaseTest
       assertTrue(ValueUtils.getValueAsBoolean("True"));
       assertTrue(ValueUtils.getValueAsBoolean("TRUE"));
       assertFalse(ValueUtils.getValueAsBoolean("false"));
-      assertFalse(ValueUtils.getValueAsBoolean("yes"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // time used to be, that "yes" was false... changing that 2023-10-20 //
+      ///////////////////////////////////////////////////////////////////////
+      assertTrue(ValueUtils.getValueAsBoolean("yes"));
+      assertTrue(ValueUtils.getValueAsBoolean("Yes"));
+      assertTrue(ValueUtils.getValueAsBoolean("YES"));
+      assertTrue(ValueUtils.getValueAsBoolean("yES"));
+
       assertFalse(ValueUtils.getValueAsBoolean("t"));
       assertFalse(ValueUtils.getValueAsBoolean(new Object()));
       assertFalse(ValueUtils.getValueAsBoolean(1));

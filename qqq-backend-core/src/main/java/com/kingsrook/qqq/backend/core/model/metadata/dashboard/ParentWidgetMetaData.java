@@ -35,6 +35,16 @@ public class ParentWidgetMetaData extends QWidgetMetaData
    private List<String> childWidgetNameList;
    private List<String> childProcessNameList;
 
+   private LayoutType layoutType = LayoutType.GRID;
+
+
+
+   public enum LayoutType
+   {
+      GRID,
+      TABS
+   }
+
 
 
    /*******************************************************************************
@@ -136,5 +146,37 @@ public class ParentWidgetMetaData extends QWidgetMetaData
       this.childProcessNameList = childProcessNameList;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for layoutType
+    *******************************************************************************/
+   public LayoutType getLayoutType()
+   {
+      return (this.layoutType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for layoutType
+    *******************************************************************************/
+   public void setLayoutType(LayoutType layoutType)
+   {
+      this.layoutType = layoutType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for layoutType
+    *******************************************************************************/
+   public ParentWidgetMetaData withLayoutType(LayoutType layoutType)
+   {
+      this.layoutType = layoutType;
+      return (this);
+   }
+
 
 }

@@ -23,12 +23,18 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -219,6 +225,74 @@ class SearchPossibleValueSourceActionTest extends BaseTest
    void testSearchPvsAction_tableByIdNotFound() throws QException
    {
       SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputById(-1, TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+      assertEquals(0, output.getResults().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_tableByIdOnlyNonNumeric() throws QException
+   {
+      QContext.getQInstance().getPossibleValueSource(TestUtils.TABLE_NAME_SHAPE)
+         .withSearchFields(List.of("id"));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // a non-integer input should find nothing                                                 //
+      // the catch { (IN, empty) } code makes this happen - without that, all records are found. //
+      // (furthermore, i think that's only exposed if there's only 1 search field, maybe)        //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutput("A", TestUtils.TABLE_NAME_SHAPE);
+      assertEquals(0, output.getResults().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_tableByLocalDate() throws QException
+   {
+      MemoryRecordStore.getInstance().reset();
+
+      ////////////////////////////////////////////
+      // make a PVS for the person-memory table //
+      ////////////////////////////////////////////
+      QContext.getQInstance().addPossibleValueSource(QPossibleValueSource.newForTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withSearchFields(List.of("id", "firstName", "birthDate"))
+      );
+
+      List<QRecord> shapeRecords = List.of(
+         new QRecord().withValue("id", 1).withValue("firstName", "Homer").withValue("birthDate", LocalDate.of(1960, Month.JANUARY, 1)),
+         new QRecord().withValue("id", 2).withValue("firstName", "Marge").withValue("birthDate", LocalDate.of(1961, Month.FEBRUARY, 2)),
+         new QRecord().withValue("id", 3).withValue("firstName", "Bart").withValue("birthDate", LocalDate.of(1980, Month.MARCH, 3)));
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(shapeRecords);
+      new InsertAction().execute(insertInput);
+
+      /////////////////////////////////////
+      // a parseable date yields a match //
+      /////////////////////////////////////
+      SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutput("1960-01-01", TestUtils.TABLE_NAME_PERSON_MEMORY);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(1));
+
+      ///////////////////////////////////////////////////////////////////////
+      // alternative date format also works (thanks to ValueUtils parsing) //
+      ///////////////////////////////////////////////////////////////////////
+      output = getSearchPossibleValueSourceOutput("1/1/1960", TestUtils.TABLE_NAME_PERSON_MEMORY);
+      assertEquals(1, output.getResults().size());
+      assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(1));
+
+      ///////////////////////////////////
+      // incomplete date finds nothing //
+      ///////////////////////////////////
+      output = getSearchPossibleValueSourceOutput("1960-01", TestUtils.TABLE_NAME_PERSON_MEMORY);
       assertEquals(0, output.getResults().size());
    }
 

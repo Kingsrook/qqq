@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -208,37 +210,50 @@ public class SearchPossibleValueSourceAction
       }
       else
       {
-         if(StringUtils.hasContent(input.getSearchTerm()))
+         String searchTerm = input.getSearchTerm();
+         if(StringUtils.hasContent(searchTerm))
          {
             for(String valueField : possibleValueSource.getSearchFields())
             {
-               QFieldMetaData field = table.getField(valueField);
-               if(field.getType().equals(QFieldType.STRING))
+               try
                {
-                  queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.STARTS_WITH, List.of(input.getSearchTerm())));
-               }
-               else if(field.getType().equals(QFieldType.DATE) || field.getType().equals(QFieldType.DATE_TIME))
-               {
-                  LOG.debug("Not querying PVS [" + possibleValueSource.getName() + "] on date field [" + field.getName() + "]");
-                  // todo - what? queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.STARTS_WITH, List.of(input.getSearchTerm())));
-               }
-               else
-               {
-                  try
+                  QFieldMetaData field = table.getField(valueField);
+                  if(field.getType().equals(QFieldType.STRING))
                   {
-                     Integer valueAsInteger = ValueUtils.getValueAsInteger(input.getSearchTerm());
+                     queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.STARTS_WITH, List.of(searchTerm)));
+                  }
+                  else if(field.getType().equals(QFieldType.DATE))
+                  {
+                     LocalDate searchDate = ValueUtils.getValueAsLocalDate(searchTerm);
+                     if(searchDate != null)
+                     {
+                        queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.EQUALS, searchDate));
+                     }
+                  }
+                  else if(field.getType().equals(QFieldType.DATE_TIME))
+                  {
+                     Instant searchDate = ValueUtils.getValueAsInstant(searchTerm);
+                     if(searchDate != null)
+                     {
+                        queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.EQUALS, searchDate));
+                     }
+                  }
+                  else
+                  {
+                     Integer valueAsInteger = ValueUtils.getValueAsInteger(searchTerm);
                      if(valueAsInteger != null)
                      {
                         queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.EQUALS, List.of(valueAsInteger)));
                      }
                   }
-                  catch(Exception e)
-                  {
-                     ////////////////////////////////////////////////////////
-                     // write a FALSE criteria if the value isn't a number //
-                     ////////////////////////////////////////////////////////
-                     queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.IN, List.of()));
-                  }
+               }
+               catch(Exception e)
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////
+                  // write a FALSE criteria upon exceptions (e.g., type conversion fails)                 //
+                  // Why are we doing this?  so a single-field query finds nothing instead of everything. //
+                  //////////////////////////////////////////////////////////////////////////////////////////
+                  queryFilter.addCriteria(new QFilterCriteria(valueField, QCriteriaOperator.IN, List.of()));
                }
             }
          }

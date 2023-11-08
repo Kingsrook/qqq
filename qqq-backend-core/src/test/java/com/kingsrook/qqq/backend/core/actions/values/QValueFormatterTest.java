@@ -121,6 +121,12 @@ class QValueFormatterTest extends BaseTest
       table = new QTableMetaData().withPrimaryKeyField("id");
       assertEquals("42", QValueFormatter.formatRecordLabel(table, new QRecord().withValue("id", 42)));
 
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // exceptional flow:  no recordLabelFormat specified, and record already had a label //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      table = new QTableMetaData().withPrimaryKeyField("id");
+      assertEquals("my label", QValueFormatter.formatRecordLabel(table, new QRecord().withRecordLabel("my label").withValue("id", 42)));
+
       /////////////////////////////////////////////////
       // exceptional flow:  no fields for the format //
       /////////////////////////////////////////////////

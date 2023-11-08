@@ -36,7 +36,9 @@ import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFiel
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -156,14 +158,21 @@ public class CsvToQRecordAdapter
                // now move values into the QRecord, using the mapping to get the 'header' corresponding to each QField //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
                QRecord qRecord = new QRecord();
-               for(QFieldMetaData field : table.getFields().values())
+               try
                {
-                  String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
-                  fieldSource = adjustHeaderCase(fieldSource, inputWrapper);
-                  qRecord.setValue(field.getName(), csvValues.get(fieldSource));
-               }
+                  for(QFieldMetaData field : table.getFields().values())
+                  {
+                     String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
+                     fieldSource = adjustHeaderCase(fieldSource, inputWrapper);
+                     setValue(inputWrapper, qRecord, field, csvValues.get(fieldSource));
+                  }
 
-               runRecordCustomizer(recordCustomizer, qRecord);
+                  runRecordCustomizer(recordCustomizer, qRecord);
+               }
+               catch(Exception e)
+               {
+                  qRecord.addError(new BadInputStatusMessage("Error parsing line #" + (recordCount + 1) + ": " + e.getMessage()));
+               }
                addRecord(qRecord);
 
                recordCount++;
@@ -202,13 +211,20 @@ public class CsvToQRecordAdapter
                // now move values into the QRecord, using the mapping to get the 'header' corresponding to each QField //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////
                QRecord qRecord = new QRecord();
-               for(QFieldMetaData field : table.getFields().values())
+               try
                {
-                  Integer fieldIndex = (Integer) mapping.getFieldSource(field.getName());
-                  qRecord.setValue(field.getName(), csvValues.get(fieldIndex));
-               }
+                  for(QFieldMetaData field : table.getFields().values())
+                  {
+                     Integer fieldIndex = (Integer) mapping.getFieldSource(field.getName());
+                     setValue(inputWrapper, qRecord, field, csvValues.get(fieldIndex));
+                  }
 
-               runRecordCustomizer(recordCustomizer, qRecord);
+                  runRecordCustomizer(recordCustomizer, qRecord);
+               }
+               catch(Exception e)
+               {
+                  qRecord.addError(new BadInputStatusMessage("Error parsing line #" + (recordCount + 1) + ": " + e.getMessage()));
+               }
                addRecord(qRecord);
 
                recordCount++;
@@ -226,6 +242,23 @@ public class CsvToQRecordAdapter
       catch(IOException e)
       {
          throw (new IllegalArgumentException("Error parsing CSV: " + e.getMessage(), e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setValue(InputWrapper inputWrapper, QRecord qRecord, QFieldMetaData field, String valueString)
+   {
+      if(inputWrapper.doCorrectValueTypes)
+      {
+         qRecord.setValue(field.getName(), ValueUtils.getValueAsFieldType(field.getType(), valueString));
+      }
+      else
+      {
+         qRecord.setValue(field.getName(), valueString);
       }
    }
 
@@ -341,6 +374,7 @@ public class CsvToQRecordAdapter
       private AbstractQFieldMapping<?> mapping;
       private Consumer<QRecord>        recordCustomizer;
       private Integer                  limit;
+      private boolean                  doCorrectValueTypes = false;
 
       private boolean caseSensitiveHeaders = false;
 
@@ -579,6 +613,40 @@ public class CsvToQRecordAdapter
       public InputWrapper withCaseSensitiveHeaders(boolean caseSensitiveHeaders)
       {
          this.caseSensitiveHeaders = caseSensitiveHeaders;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for doCorrectValueTypes
+       **
+       *******************************************************************************/
+      public boolean getDoCorrectValueTypes()
+      {
+         return doCorrectValueTypes;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for doCorrectValueTypes
+       **
+       *******************************************************************************/
+      public void setDoCorrectValueTypes(boolean doCorrectValueTypes)
+      {
+         this.doCorrectValueTypes = doCorrectValueTypes;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for doCorrectValueTypes
+       **
+       *******************************************************************************/
+      public InputWrapper withDoCorrectValueTypes(boolean doCorrectValueTypes)
+      {
+         this.doCorrectValueTypes = doCorrectValueTypes;
          return (this);
       }
 

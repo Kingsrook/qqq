@@ -135,7 +135,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   for(QFieldMetaData field : insertableFields)
                   {
                      Serializable value = record.getValue(field.getName());
-                     value = scrubValue(field, value, true);
+                     value = scrubValue(field, value);
                      params.add(value);
                   }
                }

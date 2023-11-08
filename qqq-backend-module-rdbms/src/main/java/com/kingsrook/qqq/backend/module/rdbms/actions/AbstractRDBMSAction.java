@@ -149,7 +149,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     ** and type conversions that we can do "better" than jdbc...
     **
     *******************************************************************************/
-   protected Serializable scrubValue(QFieldMetaData field, Serializable value, boolean isInsert)
+   protected Serializable scrubValue(QFieldMetaData field, Serializable value)
    {
       if("".equals(value))
       {
@@ -724,9 +724,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
             }
 
-            //////////////////////////////////////////////////////////////
-            // replace any expression-type values with their evaluation //
-            //////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // replace any expression-type values with their evaluation                                                                         //
+            // also, "scrub" non-expression values, which type-converts them (e.g., strings in various supported date formats become LocalDate) //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ListIterator<Serializable> valueListIterator = values.listIterator();
             while(valueListIterator.hasNext())
             {
@@ -734,6 +735,11 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                if(value instanceof AbstractFilterExpression<?> expression)
                {
                   valueListIterator.set(expression.evaluate());
+               }
+               else
+               {
+                  Serializable scrubbedValue = scrubValue(field, value);
+                  valueListIterator.set(scrubbedValue);
                }
             }
          }
