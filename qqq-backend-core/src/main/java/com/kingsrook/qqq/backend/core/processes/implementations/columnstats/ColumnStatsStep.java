@@ -57,9 +57,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -77,6 +82,21 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class ColumnStatsStep implements BackendStep
 {
    private static final QLogger LOG = QLogger.getLogger(ColumnStatsStep.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessMetaData getProcessMetaData()
+   {
+      return (new QProcessMetaData()
+         .withName("columnStats")
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withStepList(List.of(new QBackendStepMetaData()
+            .withName("step")
+            .withCode(new QCodeReference(ColumnStatsStep.class)))));
+   }
 
 
 
