@@ -271,6 +271,32 @@ public class QMetaDataVariableInterpreter
 
 
    /*******************************************************************************
+    ** First look for a string in the specified system property -
+    ** Next look for a string in the specified env var name -
+    ** Finally return the default.
+    *******************************************************************************/
+   public String getStringFromPropertyOrEnvironment(String systemPropertyName, String environmentVariableName, String defaultIfNotSet)
+   {
+      String propertyValue = System.getProperty(systemPropertyName);
+      if(StringUtils.hasContent(propertyValue))
+      {
+         LOG.info("Read system property [" + systemPropertyName + "] as [" + propertyValue + "].");
+         return (propertyValue);
+      }
+
+      String envValue = interpret("${env." + environmentVariableName + "}");
+      if(StringUtils.hasContent(envValue))
+      {
+         LOG.info("Read env var [" + environmentVariableName + "] as [" + envValue + "].");
+         return (envValue);
+      }
+
+      return defaultIfNotSet;
+   }
+
+
+
+   /*******************************************************************************
     ** First look for a boolean ("true" or "false") in the specified system property -
     ** Next look for a boolean in the specified env var name -
     ** Finally return the default.
