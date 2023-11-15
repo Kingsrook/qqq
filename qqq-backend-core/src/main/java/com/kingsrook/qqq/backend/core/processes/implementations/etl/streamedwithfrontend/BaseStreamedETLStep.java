@@ -93,7 +93,7 @@ public class BaseStreamedETLStep
          qValueFormatter.setDisplayValuesInRecords(table, list);
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(input.getInstance(), input.getSession());
-         qPossibleValueTranslator.translatePossibleValuesInRecords(input.getTable(), list);
+         qPossibleValueTranslator.translatePossibleValuesInRecords(table, list);
       }
    }
 
