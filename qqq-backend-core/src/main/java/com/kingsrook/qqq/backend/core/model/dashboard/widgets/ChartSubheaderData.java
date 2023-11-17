@@ -311,9 +311,9 @@ public class ChartSubheaderData
          BigDecimal current    = new BigDecimal(String.valueOf(mainNumber));
          BigDecimal previous   = new BigDecimal(String.valueOf(vsPreviousNumber));
          BigDecimal difference = current.subtract(previous);
-         BigDecimal ratio      = difference.divide(previous, new MathContext(2, RoundingMode.HALF_UP));
+         BigDecimal ratio      = difference.divide(previous, new MathContext(3, RoundingMode.HALF_UP));
          BigDecimal percentBD  = ratio.multiply(new BigDecimal(100));
-         Integer    percent    = Math.abs(percentBD.intValue());
+         BigDecimal percent    = percentBD.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO.subtract(percentBD) : percentBD;
          if(mainNumber.doubleValue() < vsPreviousNumber.doubleValue())
          {
             setIsUpVsPrevious(false);
