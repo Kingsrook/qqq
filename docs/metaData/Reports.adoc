@@ -1,0 +1,173 @@
+== QQQ Reports
+include::../variables.adoc[]
+
+QQQ can generate reports based on {link-tables} defined within a QQQ Instance.
+Users can run reports, providing input values.
+Alternatively, application code can run reports as needed, supplying input values.
+
+=== QReportMetaData
+Reports are defined in a QQQ Instance with a `*QReportMetaData*` object.
+Reports are defined in terms of their sources of data (`QReportDataSource`), and their view(s) of that data (`QReportView`).
+
+*QReportMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the report within the QQQ Instance.
+* `label` - *String* - User-facing label for the report, presented in User Interfaces.
+Inferred from `name` if not set.
+* `processName` - *String* - Name of a {link-process} used to run the report in a User Interface.
+* `inputFields` - *List of {link-field}* - Optional list of fields used as input to the report.
+** The values in these fields can be used via the syntax `${input.NAME}`, where `NAME` is the `name` attribute of the `inputField`.
+** For example:
+
+[source,java]
+----
+// given this inputField:
+new QFieldMetaData("storeId", QFieldType.INTEGER)
+
+// its run-time value can be accessed, e.g., in a query filter under a data source:
+new QFilterCriteria("storeId", QCriteriaOperator.EQUALS, List.of("${input.storeId}"))
+
+// or in a report view's title or field formulas:
+.withTitleFields(List.of("${input.storeId}"))
+new QReportField().withName("storeId").withFormula("${input.storeId}")
+----
+
+* `dataSources` - *List of QReportDataSource, Required* - Definitions of the sources of data for the report.
+At least one is required.
+
+==== QReportDataSource
+Data sources for QQQ Reports can either reference {link-tables} within the QQQ Instance, or they can provide custom code in the form of a `CodeReference` to a  `Supplier`, for use cases such as a static data tab in an Excel report.
+
+*QReportDataSource Properties:*
+
+* `name` - *String, Required* - Unique name for the data source within its containing Report.
+* `sourceTable` - *String, Conditional* - Reference to a {link-table} in the QQQ Instance, which the data source queries data from.
+* `queryFilter` - *QQueryFilter* - If a `sourceTable` is defined, then the filter specified here is used to filter and sort the records queried from that table when generating the report.
+* `staticDataSupplier` - *QCodeReference, Conditional* - Reference to custom code which can be used to supply the data for the data source, as an alternative to querying a `sourceTable`.
+** Must be a `JAVA` code type
+** Must be a `REPORT_STATIC_DATA_SUPPLIER` code usage.
+** The referenced class must implement the interface: `Supplier<List<List<Serializable>>>`.
+
+==== QReportView
+Report Views control how the source data for a report is organized and presented to the user in the output report file.
+If a DataSource describes the rows for a report (e.g., what table provides what records), then a View may be thought of as describing the columns in the report.
+A single report can have multiple views, specifically, for the use-case where an Excel file is being generated, in which case each View creates a tab or sheet within the `xlsx` file.
+
+*QReportView Properties:*
+
+* `name` - *String, Required* - Unique name for the view within its containing Report.
+* `label` - *String* - Used as a sheet (tab) label in Excel formatted reports.
+* `type` - *enum of TABLE, SUMMARY, PIVOT. Required* - Defines the type of view being defined.
+** *TABLE* views are a simple listing of the records from the data source.
+** *SUMMARY* views are essentially pre-computed Pivot Tables.
+That is to say, the aggregation done by a Pivot Table in a spreadsheet file is done by QQQ while generating the report.
+In this way, a non-spreadsheet report (e.g., PDF or CSV) can have summarized data, as though it were a Pivot Table in a live spreadsheet.
+** *PIVOT* views produce actual Pivot Tables, and are only supported in Excel files _(and are not supported at the time of this writing)_.
+* `dataSourceName` - *String, Required* - Reference to a DataSource within the report, that is used to provide the rows for the view.
+* `varianceDataSourceName` - *String* - Optional reference to a second DataSource within the report, that is used in `*SUMMARY*` type views for computing variances.
+** For example, given a Data Source with a filter that selects all sales records for a given year, a Variance Data Source may have a filter that selects the previous year, for doing comparissons.
+* `pivotFields` - *List of String, Conditional* - For *SUMMARY* or *PIVOT* type views, specify the field(s) used as pivot rows.
+** For example, in a summary view of orders, you may "pivot" on the *customerId* field, to produce one row per-customer, with aggregate data for that customer.
+* `titleFormat` - *String* - Java Format String, used with `titleFields` (if given), to produce a title row, e.g., first row in the view (before any rows from the data source).
+* `titleFields` - *List of String, Conditional* - Used with `titleFormat`, to provide values for any format specifiers in the format string.
+Syntax to reference a field (e.g., from a report input field) is: `${input.NAME}`, where `NAME` is the `name` attribute of the inputField.
+** Example of using `titleFormat` and `titleFields`:
+
+[source,java]
+----
+// given these inputFields:
+new QFieldMetaData("startDate", QFieldType.DATE)
+new QFieldMetaData("endDate", QFieldType.DATE)
+
+// a view can have a title row like this:
+.withTitleFormat("Weekly Sales Report - %s - %s")
+.withTitleFields(List.of("${input.startDate}", "${input.endDate}"))
+----
+
+* `includeHeaderRow` - *boolean, default true* - Indication that first row of the view should be the column labels.
+** If true, then header row is put in the view.
+** If false, then no header row is put in the view.
+* `includeTotalRow` - *boolean, default false* - Indication that a totals row should be added to the view.
+All numeric columns are summed to produce values in the totals row.
+** If true, then totals row is put in the view.
+** If false, then no totals row is put in the view.
+* `includePivotSubTotals` - *boolean, default false* - For a *SUMMARY* or *PIVOT* type view, if there are more than 1 *pivotFields* being used, this field is an indication that each higher-level pivot should include sub-totals.
+** #TODO - provide example#
+* `columns` - *List of QReportField, required* - Definition of the columns to appear in the view.  See section on QReportField for details.
+* `orderByFields` - *List of QFilterOrderBy, optional* - For a *SUMMARY* or *PIVOT* type view, how to sort the rows.
+* `recordTransformStep` - *QCodeReference, subclass of `AbstractTransformStep`* - Custom code reference that can be used to transform records after they are queried from the data source, and before they are placed into the view.
+Can be used to transform or customize values, or to look up additional values to add to the report.
+** #TODO - provide example#
+* `viewCustomizer` - *QCodeReference, implementation of interface `Function<QReportView, QReportView>`* - Custom code reference that can be used to customize the report view, at runtime.
+Can be used, for example, to dynamically define the report's *columns*.
+** #TODO - provide example#
+
+===== QReportField
+Report Fields define the fields (AKA columns) of data that appear in a report view.
+These fields can either be direct references to fields from the report's data sources, or values computed using formula defined in the QReportField.
+
+*QReportField Properties:*
+
+* `name` - *String, required* - Unique identifier for the field within its ReportView.
+In general, will be a reference to a field from the ReportView's DataSource *unless a *formula* is given (for *SUMMARY* type views), the field is marked as *isVirtual*, or the field is marked as *showPossibleValueLabel*).
+* `label` - *String* - Optional text label to identify the field, for example, in a header row.
+If not given, may be derived from field, where possible.
+* `type` - *QFieldType*
+* `formula` - *String, conditional* - Required for *SUMMARY* type views.
+Defines the formula to be used for computing the value in this field.
+** For example:
+
+[source,java]
+----
+.withName("reportEndDate").withFormula("${input.endDate}")
+
+.withName("count").withFormula("${pivot.count.id}")
+
+.withName("percentOfTotal").withFormula("=DIVIDE(${pivot.count.id},${total.count.id})")
+
+.withName("sumCost").withFormula("${pivot.sum.cost}")
+
+.withName("sumCharge").withFormula("${pivot.sum.charge}")
+
+.withName("profit").withFormula("=MINUS(${pivot.sum.charge},${pivot.sum.cost})")
+
+.withName("totalCost").withFormula("=DIVIDE_SCALE(${pivot.sum.cost},${pivot.count.id},2)")
+
+.withName("revenuePer").withFormula("=DIVIDE_SCALE(${pivot.sum.charge},${pivot.count.id},2)")
+
+.withName("marginPer").withFormula("=MINUS(DIVIDE_SCALE(${pivot.sum.charge},${pivot.count.id},2),DIVIDE_SCALE(${pivot.sum.cost},${pivot.count.id},2))")
+
+.withName("thisWeekMargin").withFormula("=SCALE(DIVIDE(${thisRow.profit},${pivot.sum.charge}),2)")
+
+.withName("previousWeekProfit").withFormula("=MINUS(${variancePivot.sum.charge},${variancePivot.sum.cost})")
+
+.withName("previousWeekMargin").withFormula("=SCALE(DIVIDE(${thisRow.previousWeekProfit},${variancePivot.sum.charge}),2)")
+
+.withName("marginThisVsPrevious").withFormula("=SCALE(MINUS(${thisRow.margin},${thisRow.marginPrevious}),3)")
+
+.withName("exception").withFormula("""
+   =IF(LT(${thisRow.margin},0),Negative Margin,IF(LT(${thisRow.marginThisVsPrevious},0),Margin Decreased,""))""")
+----
+
+* `displayFormat` *String*
+* `isVirtual` *Boolean, default false* - (needs reviewed - may only be required for report views using a data source with a *staticDataSupplier*)
+* `showPossibleValueLabel` *Boolean, default false* - To show a translated value for a Possible Value field (e.g., a name or other value meaningful to a user, instead of a foreign key).
+* `sourceFieldName` *String* - Used for the scenario where a possibleValue field is included in a report both as the foreign key (raw, id value), and the translated "label" value.
+In that case, the field marked with *showPossibleValueLabel* = true should be given a different name, and should use *sourceFieldName* to indicate the field that has the id value.
+** For example:
+
+[source,java]
+----
+// this field would have the "raw" warehouseId values
+// e.g., integers - foreign keys to a warehouse table.  Generally useful for machines to know.
+new QReportField("warehouseId")
+   .withLabel("Warehouse Id"),
+
+// this field would have the translated values from the warehouse PossibleValueSource
+// for example, maybe the name field from the warehouse table.  A string, useful for humans to read.
+new QReportField("warehouseName")
+   .withSourceFieldName("warehouseId")
+   .withShowPossibleValueLabel(true)
+   .withLabel("Warehouse Name"),
+----
+

@@ -1,0 +1,8 @@
+= Introduction
+
+QQQ is ...
+
+- Framework
+- Declarative
+- Easy thing easy; Hard thing possible
+- Customizable

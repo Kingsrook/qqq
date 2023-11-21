@@ -1,0 +1,49 @@
+== QQQ Tables
+include::../variables.adoc[]
+
+The core type of object in a QQQ Instance is the Table.
+In the most common use-case, a QQQ Table may be the in-app representation of a Database table.
+That is, it is a collection of records (or rows) of data, each of which has a set of fields (or columns).
+
+QQQ also allows other types of data sources ({link-backends}) to be used as tables, such as File systems, API's, Java enums or objects, etc.
+All of these backend types present the same interfaces (both user-interfaces, and application programming interfaces), regardless of their backend type.
+
+=== QTableMetaData
+Tables are defined in a QQQ Instance in a `*QTableMetaData*` object.
+All tables must reference a {link-backend}, a list of fields that define the shape of records in the table, and additional data to describe how to work with the table within its backend.
+
+*QTableMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the table within the QQQ Instance.
+* `label` - *String* - User-facing label for the table, presented in User Interfaces.
+Inferred from `name` if not set.
+* `backendName` - *String, Required* - Name of a {link-backend} in which this table's data is managed.
+* `fields` - *Map of String → {link-field}, Required* - The columns of data that make up all records in this table.
+* `primaryKeyField` - *String, Conditional* - Name of a {link-field} that serves as the primary key (e.g., unique identifier) for records in this table.
+* `uniqueKeys` - *List of UniqueKey* - Definition of additional unique constraints (from an RDBMS point of view) from the table.
+e.g., sets of columns which must have unique values for each record in the table.
+* `backendDetails` - *QTableBackendDetails or subclass* - Additional data to configure the table within its {link-backend}.
+* `automationDetails` - *QTableAutomationDetails* - Configuration of automated jobs that run against records in the table, e.g., upon insert or update.
+* `customizers` - *Map of String → QCodeReference* - References to custom code that are injected into standard table actions, that allow applications to customize certain parts of how the table works.
+* `parentAppName` - *String* - Name of a {link-app} that this table exists within.
+* `icon` - *QIcon* - Icon associated with this table in certain user interfaces.
+* `recordLabelFormat` - *String* - Java Format String, used with `recordLabelFields` to produce a label shown for records from the table.
+* `recordLabelFields` - *List of String, Conditional* - Used with `recordLabelFormat` to provide values for any format specifiers in the format string.
+These strings must be field names within the table.
+** Example of using `recordLabelFormat` and `recordLabelFields`:
+
+[source,java]
+----
+// given these fields in the table:
+new QFieldMetaData("name", QFieldType.STRING)
+new QFieldMetaData("birthDate", QFieldType.DATE)
+
+// We can produce a record label such as "Darin Kelkhoff (1980-05-31)" via:
+.withRecordLabelFormat("%s (%s)")
+.withRecordLabelFields(List.of("name", "birthDate"))
+----
+* `sections` - *List of QFieldSection* - Mechanism to organize fields within user interfaces, into logical sections.
+If any sections are present in the table meta data, then all fields in the table must be listed in exactly 1 section.
+If no sections are defined, then instance enrichment will define default sections.
+* `associatedScripts` - *List of AssociatedScript* - Definition of user-defined scripts that can be associated with records within the table.
+* `enabledCapabilities` and `disabledCapabilities` - *Set of Capability enum values* - Overrides from the backend level, for capabilities that this table does or does not possess.
