@@ -36,6 +36,7 @@ public abstract class QWidgetData
    private String       footerHTML;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
+   private List<String> dropdownDefaultValueList;
    private Boolean      hasPermission;
 
    /////////////////////////////////////////////////////////////////////////////////////////
@@ -290,5 +291,37 @@ public abstract class QWidgetData
       this.hasPermission = hasPermission;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdownDefaultValueList
+    *******************************************************************************/
+   public List<String> getDropdownDefaultValueList()
+   {
+      return (this.dropdownDefaultValueList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dropdownDefaultValueList
+    *******************************************************************************/
+   public void setDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   {
+      this.dropdownDefaultValueList = dropdownDefaultValueList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdownDefaultValueList
+    *******************************************************************************/
+   public QWidgetData withDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   {
+      this.dropdownDefaultValueList = dropdownDefaultValueList;
+      return (this);
+   }
+
 
 }
