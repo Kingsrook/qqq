@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 
 
 /*******************************************************************************
@@ -33,7 +35,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
  ** etc) within a qqq instance
  **
  *******************************************************************************/
-public class QAuthenticationMetaData
+public class QAuthenticationMetaData implements TopLevelMetaDataInterface
 {
    private String name;
    private QAuthenticationType type;
@@ -177,6 +179,17 @@ public class QAuthenticationMetaData
    {
       this.values = values;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.setAuthentication(this);
    }
 
 }

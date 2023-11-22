@@ -22,13 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.metadata.automation;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
  ** Meta-data definition of a qqq service to drive record automations.
  *******************************************************************************/
-public class QAutomationProviderMetaData
+public class QAutomationProviderMetaData implements TopLevelMetaDataInterface
 {
    private String                  name;
    private QAutomationProviderType type;
@@ -135,6 +137,17 @@ public class QAutomationProviderMetaData
    {
       this.schedule = schedule;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addAutomationProvider(this);
    }
 
 }

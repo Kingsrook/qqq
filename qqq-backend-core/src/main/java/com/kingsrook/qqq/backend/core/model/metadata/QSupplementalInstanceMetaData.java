@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  ** Base-class for instance-level meta-data defined by some supplemental module, etc,
  ** outside of qqq core
  *******************************************************************************/
-public abstract class QSupplementalInstanceMetaData
+public abstract class QSupplementalInstanceMetaData implements TopLevelMetaDataInterface
 {
 
    /*******************************************************************************
@@ -61,4 +61,16 @@ public abstract class QSupplementalInstanceMetaData
       // noop in base class //
       ////////////////////////
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.withSupplementalMetaData(this);
+   }
+
 }

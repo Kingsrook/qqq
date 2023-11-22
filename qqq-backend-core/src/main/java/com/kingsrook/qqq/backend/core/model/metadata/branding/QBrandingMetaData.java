@@ -22,11 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.metadata.branding;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+
+
 /*******************************************************************************
  ** Meta-Data to define branding in a QQQ instance.
  **
  *******************************************************************************/
-public class QBrandingMetaData
+public class QBrandingMetaData implements TopLevelMetaDataInterface
 {
    private String companyName;
    private String companyUrl;
@@ -309,4 +313,14 @@ public class QBrandingMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.setBranding(this);
+   }
 }

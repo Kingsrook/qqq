@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -34,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRule
  ** Interface for qqq widget meta data
  **
  *******************************************************************************/
-public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
+public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
    /*******************************************************************************
     ** Getter for name
@@ -224,6 +226,14 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
    default String getTooltip()
    {
       return (null);
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addWidget(this);
    }
 
 }
