@@ -29,14 +29,12 @@ import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Disabled("Because localstack won't start")
 public class S3QueryActionTest extends BaseS3Test
 {
 

@@ -33,9 +33,7 @@
 
    <properties>
       <!-- props specifically to this module -->
-
-      <!-- temp - disable this when localstack is fixed -->
-      <coverage.haltOnFailure>false</coverage.haltOnFailure>
+      <!-- none at this time -->
    </properties>
 
    <dependencies>

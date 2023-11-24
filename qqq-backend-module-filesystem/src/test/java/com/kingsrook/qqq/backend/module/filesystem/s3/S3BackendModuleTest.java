@@ -31,14 +31,12 @@ import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for S3BackendModule
  *******************************************************************************/
-@Disabled("Because localstack won't start")
 public class S3BackendModuleTest extends BaseS3Test
 {
    private final String PATH_THAT_WONT_EXIST = "some/path/that/wont/exist";

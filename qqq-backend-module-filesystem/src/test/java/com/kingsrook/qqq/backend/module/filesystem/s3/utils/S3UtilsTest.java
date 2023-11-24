@@ -28,7 +28,6 @@ import java.util.List;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  **
  *******************************************************************************/
-@Disabled("Because localstack won't start")
 public class S3UtilsTest extends BaseS3Test
 {
 
