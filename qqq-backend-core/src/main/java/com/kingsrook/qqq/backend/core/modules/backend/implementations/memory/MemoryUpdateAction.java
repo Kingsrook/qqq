@@ -53,7 +53,7 @@ public class MemoryUpdateAction extends AbstractMemoryAction implements UpdateIn
             ///////////////////////////////////////////
             // todo .. better (not hard-coded names) //
             ///////////////////////////////////////////
-            setValueIfTableHasField(record, table, "modifyDate", now);
+            setValueIfTableHasField(record, table, "modifyDate", now, false);
          }
 
          UpdateOutput updateOutput = new UpdateOutput();

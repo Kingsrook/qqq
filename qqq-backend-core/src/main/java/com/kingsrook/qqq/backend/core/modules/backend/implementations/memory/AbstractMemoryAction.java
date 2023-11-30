@@ -26,6 +26,8 @@ import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -36,15 +38,22 @@ public abstract class AbstractMemoryAction implements QActionInterface
 
    /*******************************************************************************
     ** If the table has a field with the given name, then set the given value in the
-    ** given record.
+    ** given record - flag added to control overwriting value.
     *******************************************************************************/
-   protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
+   protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value, boolean overwriteIfSet)
    {
       try
       {
          if(table.getFields().containsKey(fieldName))
          {
-            record.setValue(fieldName, value);
+            ///////////////////////////////////////////////////////////////////////
+            // always set value if boolean to overwrite is true, otherwise,      //
+            // only set the value if there is currently no content for the field //
+            ///////////////////////////////////////////////////////////////////////
+            if(overwriteIfSet || !StringUtils.hasContent(ValueUtils.getValueAsString(table.getField(fieldName))))
+            {
+               record.setValue(fieldName, value);
+            }
          }
       }
       catch(Exception e)

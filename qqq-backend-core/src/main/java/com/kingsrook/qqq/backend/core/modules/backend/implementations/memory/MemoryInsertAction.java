@@ -53,8 +53,8 @@ public class MemoryInsertAction extends AbstractMemoryAction implements InsertIn
             ///////////////////////////////////////////
             // todo .. better (not hard-coded names) //
             ///////////////////////////////////////////
-            setValueIfTableHasField(record, table, "createDate", now);
-            setValueIfTableHasField(record, table, "modifyDate", now);
+            setValueIfTableHasField(record, table, "createDate", now, false);
+            setValueIfTableHasField(record, table, "modifyDate", now, false);
          }
 
          InsertOutput insertOutput = new InsertOutput();
