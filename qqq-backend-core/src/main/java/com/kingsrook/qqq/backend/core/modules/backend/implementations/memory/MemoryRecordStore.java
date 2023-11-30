@@ -308,7 +308,10 @@ public class MemoryRecordStore
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
-      queryInput.setFilter(input.getFilter().clone().withSkip(null).withLimit(null));
+      if(input.getFilter() != null)
+      {
+         queryInput.setFilter(input.getFilter().clone().withSkip(null).withLimit(null));
+      }
       List<QRecord> queryResult = query(queryInput);
 
       return (queryResult.size());
