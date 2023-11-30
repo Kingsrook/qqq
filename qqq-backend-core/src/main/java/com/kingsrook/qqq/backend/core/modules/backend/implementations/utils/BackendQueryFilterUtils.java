@@ -61,10 +61,10 @@ public class BackendQueryFilterUtils
          return (true);
       }
 
-      /////////////////////////////////////////////////////////////////////////////////////
-      // for an AND query, default to a TRUE answer, and we'll &= each criteria's value. //
-      // for an OR query, default to FALSE, and |= each criteria's value.                //
-      /////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////
+      // for an AND query, default to a TRUE answer, and we'll &= each criterion's value. //
+      // for an OR query, default to FALSE, and |= each criterion's value.                //
+      //////////////////////////////////////////////////////////////////////////////////////
       AtomicBoolean recordMatches = new AtomicBoolean(filter.getBooleanOperator().equals(QQueryFilter.BooleanOperator.AND) ? true : false);
 
       ///////////////////////////////////////

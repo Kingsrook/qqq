@@ -120,7 +120,7 @@ public class QFilterCriteria implements Serializable, Cloneable
       }
       else
       {
-         this.values = Arrays.stream(values).toList();
+         this.values = new ArrayList<>(Arrays.stream(values).toList());
       }
    }
 

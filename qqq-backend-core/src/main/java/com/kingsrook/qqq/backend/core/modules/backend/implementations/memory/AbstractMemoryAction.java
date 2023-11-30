@@ -22,48 +22,38 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
-import java.time.Instant;
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** In-memory version of update action.
- **
+ ** Base class for all core actions in the Memory backend module.
  *******************************************************************************/
-public class MemoryUpdateAction extends AbstractMemoryAction implements UpdateInterface
+public abstract class AbstractMemoryAction implements QActionInterface
 {
 
    /*******************************************************************************
-    **
+    ** If the table has a field with the given name, then set the given value in the
+    ** given record.
     *******************************************************************************/
-   public UpdateOutput execute(UpdateInput updateInput) throws QException
+   protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
    {
       try
       {
-         QTableMetaData table = updateInput.getTable();
-         Instant        now   = Instant.now();
-
-         for(QRecord record : updateInput.getRecords())
+         if(table.getFields().containsKey(fieldName))
          {
-            ///////////////////////////////////////////
-            // todo .. better (not hard-coded names) //
-            ///////////////////////////////////////////
-            setValueIfTableHasField(record, table, "modifyDate", now);
+            record.setValue(fieldName, value);
          }
-
-         UpdateOutput updateOutput = new UpdateOutput();
-         updateOutput.setRecords(MemoryRecordStore.getInstance().update(updateInput, true));
-         return (updateOutput);
       }
       catch(Exception e)
       {
-         throw new QException("Error executing update: " + e.getMessage(), e);
+         /////////////////////////////////////////////////
+         // this means field doesn't exist, so, ignore. //
+         /////////////////////////////////////////////////
       }
    }
 
 }
+
