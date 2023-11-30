@@ -27,7 +27,6 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -50,7 +49,7 @@ public abstract class AbstractMemoryAction implements QActionInterface
             // always set value if boolean to overwrite is true, otherwise,      //
             // only set the value if there is currently no content for the field //
             ///////////////////////////////////////////////////////////////////////
-            if(overwriteIfSet || !StringUtils.hasContent(ValueUtils.getValueAsString(table.getField(fieldName))))
+            if(overwriteIfSet || !StringUtils.hasContent(record.getValueString(fieldName)))
             {
                record.setValue(fieldName, value);
             }
