@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
@@ -31,7 +33,9 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -139,6 +143,25 @@ class QRecordTest extends BaseTest
       QRecord nullWarnings = new QRecord();
       nullWarnings.setWarnings(null);
       assertNull(new QRecord(nullWarnings).getWarnings());
+
+      QRecord byteArrayValue = new QRecord().withValue("myBytes", new byte[] { 65, 66, 67, 68 });
+      assertArrayEquals(new byte[] { 65, 66, 67, 68 }, new QRecord(byteArrayValue).getValueByteArray("myBytes"));
+
+      ArrayList<Integer> originalArrayList        = new ArrayList<>(List.of(1, 2, 3));
+      QRecord            recordWithArrayListValue = new QRecord().withValue("myList", originalArrayList);
+      QRecord            cloneWithArrayListValue  = new QRecord(recordWithArrayListValue);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the clone list and original list should be equals (have contents that are equals), but not be the same (reference) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(List.of(1, 2, 3), cloneWithArrayListValue.getValue("myList"));
+      assertNotSame(originalArrayList, cloneWithArrayListValue.getValue("myList"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure a change to the original list doesn't change the cloned list (as it was cloned deeply) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      originalArrayList.add(4);
+      assertNotEquals(originalArrayList, cloneWithArrayListValue.getValue("myList"));
 
       QRecord emptyRecord = new QRecord();
       QRecord emptyClone  = new QRecord(emptyRecord);

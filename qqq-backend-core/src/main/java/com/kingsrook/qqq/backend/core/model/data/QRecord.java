@@ -158,9 +158,14 @@ public class QRecord implements Serializable
          //////////////////////////////////////////////////////////////////////////
          // not sure from where/how java.sql.Date objects are getting in here... //
          //////////////////////////////////////////////////////////////////////////
-         if(value == null || value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Temporal || value instanceof Date)
+         if(value == null || value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Temporal || value instanceof Date || value instanceof byte[])
          {
             clone.put(entry.getKey(), entry.getValue());
+         }
+         else if(entry.getValue() instanceof ArrayList<?> arrayList)
+         {
+            ArrayList<?> cloneList = new ArrayList<>(arrayList);
+            clone.put(entry.getKey(), (V) cloneList);
          }
          else if(entry.getValue() instanceof Serializable serializableValue)
          {
