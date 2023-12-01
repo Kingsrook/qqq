@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -50,9 +51,9 @@ public class MetaDataProducerHelper
     *******************************************************************************/
    public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws IOException
    {
-      ////////////////////////////////////////////////////////////
-      // find all the meta data producer classes in the package //
-      ////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////
+      // find all the meta data producer classes in (and under) the package //
+      ////////////////////////////////////////////////////////////////////////
       List<Class<?>>            classesInPackage = getClassesInPackage(packageName);
       List<MetaDataProducer<?>> producers        = new ArrayList<>();
       for(Class<?> aClass : classesInPackage)
@@ -83,10 +84,31 @@ public class MetaDataProducerHelper
          }
       }
 
-      /////////////////////////////
-      // sort them by sort order //
-      /////////////////////////////
-      producers.sort(Comparator.comparing(p -> p.getSortOrder()));
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // sort them by sort order, then by the type that they return - specifically - doing apps //
+      // after all other types (as apps often try to get other types from the instance)         //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      producers.sort(Comparator
+         .comparing((MetaDataProducer<?> p) -> p.getSortOrder())
+         .thenComparing((MetaDataProducer<?> p) ->
+         {
+            try
+            {
+               Class<?> outputType = p.getClass().getMethod("produce", QInstance.class).getReturnType();
+               if(outputType.equals(QAppMetaData.class))
+               {
+                  return (1);
+               }
+               else
+               {
+                  return (0);
+               }
+            }
+            catch(Exception e)
+            {
+               return (0);
+            }
+         }));
 
       //////////////////////////////////////////////////////////////
       // execute each one, adding their meta data to the instance //
