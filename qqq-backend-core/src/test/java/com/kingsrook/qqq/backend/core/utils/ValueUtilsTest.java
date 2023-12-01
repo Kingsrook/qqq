@@ -68,6 +68,7 @@ class ValueUtilsTest extends BaseTest
       assertEquals("1", ValueUtils.getValueAsString(1));
       assertEquals("1", ValueUtils.getValueAsString(1));
       assertEquals("1.10", ValueUtils.getValueAsString(new BigDecimal("1.10")));
+      assertEquals("ABC", ValueUtils.getValueAsString(new byte[] { 65, 66, 67 }));
    }
 
 

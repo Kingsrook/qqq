@@ -69,6 +69,10 @@ public class ValueUtils
       {
          return (s);
       }
+      else if(value instanceof byte[] ba)
+      {
+         return (new String(ba));
+      }
       else
       {
          return (String.valueOf(value));
