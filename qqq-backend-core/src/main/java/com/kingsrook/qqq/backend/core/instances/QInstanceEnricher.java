@@ -77,6 +77,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -531,7 +532,66 @@ public class QInstanceEnricher
          enrichAppSection(section);
       }
 
+      ensureAppSectionMembersAreAppChildren(app);
+
       enrichPermissionRules(app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void ensureAppSectionMembersAreAppChildren(QAppMetaData app)
+   {
+      ListingHash<Class<? extends QAppChildMetaData>, String> childrenByType = new ListingHash<>();
+      childrenByType.put(QTableMetaData.class, new ArrayList<>());
+      childrenByType.put(QProcessMetaData.class, new ArrayList<>());
+      childrenByType.put(QReportMetaData.class, new ArrayList<>());
+
+      for(QAppChildMetaData qAppChildMetaData : CollectionUtils.nonNullList(app.getChildren()))
+      {
+         childrenByType.add(qAppChildMetaData.getClass(), qAppChildMetaData.getName());
+      }
+
+      for(QAppSection section : CollectionUtils.nonNullList(app.getSections()))
+      {
+         for(String tableName : CollectionUtils.nonNullList(section.getTables()))
+         {
+            if(!childrenByType.get(QTableMetaData.class).contains(tableName))
+            {
+               QTableMetaData table = qInstance.getTable(tableName);
+               if(table != null)
+               {
+                  app.withChild(table);
+               }
+            }
+         }
+
+         for(String processName : CollectionUtils.nonNullList(section.getProcesses()))
+         {
+            if(!childrenByType.get(QProcessMetaData.class).contains(processName))
+            {
+               QProcessMetaData process = qInstance.getProcess(processName);
+               if(process != null)
+               {
+                  app.withChild(process);
+               }
+            }
+         }
+
+         for(String reportName : CollectionUtils.nonNullList(section.getReports()))
+         {
+            if(!childrenByType.get(QReportMetaData.class).contains(reportName))
+            {
+               QReportMetaData report = qInstance.getReport(reportName);
+               if(report != null)
+               {
+                  app.withChild(report);
+               }
+            }
+         }
+      }
    }
 
 
