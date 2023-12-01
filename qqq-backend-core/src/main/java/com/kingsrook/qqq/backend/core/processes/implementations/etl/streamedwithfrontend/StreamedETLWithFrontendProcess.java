@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
  ** - review (frontend) - a review screen
  ** - validate (backend) - optionally (per input on review screen), does like the preview step,
  **      but on all records from the extract step.
+ ** - review (frontend) - a second view of the review screen, if the validate step was executed.
  ** - execute (backend) - processes all the rows, does all the work.
  ** - result (frontend) - a result screen
  **
