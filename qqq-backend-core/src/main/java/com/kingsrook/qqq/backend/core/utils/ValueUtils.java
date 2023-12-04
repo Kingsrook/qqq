@@ -42,6 +42,7 @@ import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
@@ -72,6 +73,10 @@ public class ValueUtils
       else if(value instanceof byte[] ba)
       {
          return (new String(ba));
+      }
+      else if(value instanceof PossibleValueEnum<?> pve)
+      {
+         return getValueAsString(pve.getPossibleValueId());
       }
       else
       {
@@ -154,6 +159,10 @@ public class ValueUtils
          else if(value instanceof BigDecimal bd)
          {
             return bd.intValueExact();
+         }
+         else if(value instanceof PossibleValueEnum<?> pve)
+         {
+            return getValueAsInteger(pve.getPossibleValueId());
          }
          else if(value instanceof String s)
          {

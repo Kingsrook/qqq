@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -771,6 +772,10 @@ public class QueryManager
          Timestamp  timestamp   = new Timestamp(epochMillis);
          statement.setTimestamp(index, timestamp);
          return (1);
+      }
+      else if(value instanceof PossibleValueEnum<?> pve)
+      {
+         return (bindParamObject(statement, index, pve.getPossibleValueId()));
       }
       else
       {
