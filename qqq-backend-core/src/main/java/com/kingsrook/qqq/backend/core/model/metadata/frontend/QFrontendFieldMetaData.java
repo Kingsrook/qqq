@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 
 
 /*******************************************************************************
@@ -50,6 +51,7 @@ public class QFrontendFieldMetaData
    private Serializable defaultValue;
 
    private List<FieldAdornment> adornments;
+   private List<QHelpContent>   helpContents;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -72,6 +74,7 @@ public class QFrontendFieldMetaData
       this.displayFormat = fieldMetaData.getDisplayFormat();
       this.adornments = fieldMetaData.getAdornments();
       this.defaultValue = fieldMetaData.getDefaultValue();
+      this.helpContents = fieldMetaData.getHelpContents();
    }
 
 
@@ -183,4 +186,16 @@ public class QFrontendFieldMetaData
    {
       return defaultValue;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    **
+    *******************************************************************************/
+   public List<QHelpContent> getHelpContents()
+   {
+      return helpContents;
+   }
+
 }
