@@ -34,10 +34,13 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -65,7 +68,7 @@ public class QFieldMetaData implements Cloneable
    // propose doing that in a secondary field, e.g., "onlyEditableOn=insert|update" //
    ///////////////////////////////////////////////////////////////////////////////////
 
-   private String       displayFormat = "%s";
+   private String displayFormat = "%s";
    private Serializable defaultValue;
    private String       possibleValueSourceName;
    private QQueryFilter possibleValueSourceFilter;
@@ -84,6 +87,7 @@ public class QFieldMetaData implements Cloneable
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    private List<FieldAdornment> adornments;
+   private List<QHelpContent>   helpContents;
 
    private Map<String, QSupplementalFieldMetaData> supplementalMetaData;
 
@@ -926,6 +930,63 @@ public class QFieldMetaData implements Cloneable
    {
       this.isHidden = isHidden;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    *******************************************************************************/
+   public List<QHelpContent> getHelpContents()
+   {
+      return (this.helpContents);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContents
+    *******************************************************************************/
+   public void setHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContents
+    *******************************************************************************/
+   public QFieldMetaData withHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent
+    *******************************************************************************/
+   public QFieldMetaData withHelpContent(QHelpContent helpContent)
+   {
+      if(this.helpContents == null)
+      {
+         this.helpContents = new ArrayList<>();
+      }
+
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, this.helpContents);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a single helpContent based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(Set<HelpRole> roles)
+   {
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
 
 }
