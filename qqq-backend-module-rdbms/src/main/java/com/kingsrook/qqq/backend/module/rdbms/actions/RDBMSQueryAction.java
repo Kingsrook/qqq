@@ -346,7 +346,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    {
       RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
       PreparedStatement    statement;
-      if("mysql".equals(backend.getVendor()) || "aurora".equals(backend.getName()))
+      if("mysql".equals(backend.getVendor()) || "aurora".equals(backend.getVendor()))
       {
          if(!loggedMysqlOptimizationsForStatements)
          {
