@@ -1,0 +1,17 @@
+[#SecurityKeyTypes]
+== Security Key Types
+include::../variables.adoc[]
+
+#TODO#
+
+=== QSecurityKeyType
+A Security Key Type is defined in a QQQ Instance in a `*QSecurityKeyType*` object.
+
+#TODO#
+
+*QSecurityKeyType Properties:*
+
+* `name` - *String, Required* - Unique name for the security key type within the QQQ Instance.
+
+#TODO#
+

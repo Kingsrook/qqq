@@ -1,0 +1,216 @@
+[#Processes]
+== Processes
+
+include::../variables.adoc[]
+
+Besides {link-tables}, the other most common type of object in a QQQ Instance is the Process.
+Processes are "custom" actions (e.g., defined by the application developers, rather than QQQ) that users and/or the system can execute against records.
+Processes generally are made up of two types of sub-objects:
+
+* *Screens* - i.e., User Interfaces (e.g., for gathering input and/or showing output).
+* *BackendSteps* - Java classes (of type `BackendStep`) that execute the logic of the process.
+
+=== QProcessMetaData
+
+Processes are defined in a QQQ Instance in a `*QProcessMetaData*` object.
+In addition to directly building a `QProcessMetaData` object setting its properties directly, there are a few common process patterns that provide *Builder* objects for ease-of-use.
+See StreamedETLWithFrontendProcess below for a common example
+
+*QProcessMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the process within the QQQ Instance.
+* `label` - *String* - User-facing label for the process, presented in User Interfaces.
+Inferred from `name` if not set.
+* `icon` - *QIcon* - Icon associated with this process in certain user interfaces.
+See {link-icons}.
+* `tableName` - *String* - Name of a {link-table} that the process is associated with in User Interfaces (e.g., Action menu).
+* `isHidden` - *Boolean, default false* - Option to hide the process from all User Interfaces.
+* `basepullConfiguration` - *<<BasepullConfiguration>>* - config for the common "Basepull" pattern, of identifying records with a timestamp greater than the last time the process was ran.
+See below for details.
+* `permissionRules` - *QPermissionRules object* - define the permission/access rules for the process.
+See {link-permissionRules} for details.
+* `steps` and `stepList` - *Map of String → <<QStepMetaData>>* and *List of QStepMetaData* - Defines the <<QFrontendStepMetaData,screens>> and <<QBackendStepMetaData,backend code>> that makes up the process.
+** `stepList` is the list of steps in the order that they will by default be executed.
+** `steps` is a map, including all steps from `stepList`, but which may also include steps which can used by the process if its backend steps make the decision to do so, at run-time.
+** A process's steps are normally defined in one of two was:
+*** 1) by a single call to `.withStepList(List<QStepMetaData>)`, which internally adds each step into the `steps` map.
+*** 2) by multiple calls to `.addStep(QStepMetaData)`, which adds a step to both the `stepList` and `steps` map.
+** If a process also needs optional steps, they should be added by a call to `.addOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
+* `schedule` - *<<QScheduleMetaData>>* - set up the process to run automatically on the specified schedule.
+See below for details.
+* `minInputRecords` - *Integer* - #not used...#
+* `maxInputRecords` - *Integer* - #not used...#
+
+#todo: supplementalMetaData (API)#
+
+==== QStepMetaData
+
+This is the base class for the two types of steps in a process - <<QFrontendStepMetaData,screens>> and <<QBackendStepMetaData,backend code>>.
+There are some shared attributes of both of them, defined here.
+
+*QStepMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the step within the process.
+* `label` - *String* - User-facing label for the step, presented in User Interfaces.
+Inferred from `name` if not set.
+* `stepType` - *String* - _Deprecated._
+
+==== QFrontendStepMetaData
+
+For processes with a user-interface, they must define one or more "screens" in the form of `QFrontendStepMetaData` objects.
+
+*QFrontendStepMetaData Properties:*
+
+* `components` - *List of <<QFrontendComponentMetaData>>* - a list of components to be rendered on the screen.
+* `formFields` - *List of String* - list of field names used by the screen as form-inputs.
+* `viewFields` - *List of String* - list of field names used by the screen as visible outputs.
+* `recordListFields` - *List of String* - list of field names used by the screen in a record listing.
+
+==== QFrontendComponentMetaData
+
+A screen in a process may consist of multiple "components" - e.g., help text, and a form, and a list of records.
+Each of these components are defined in a `QFrontendComponentMetaData`.
+
+*QFrontendComponentMetaData Properties:*
+
+* `type` - *enum, Required* - The type of component to display.
+Each component type works with different keys in the `values` map.
+Possible values for `type` are:
+** `EDIT_FORM` - Displays a list of fields for editing, similar to a record edit screen.
+Requires that `formFields` be populated in the step.
+** `VIEW_FORM` - Displays a list of fields for viewing (not editing), similar to a record view screen.
+Requires that `viewFields` be populated in the step.
+** `HELP_TEXT` - Block of help text to be display on the screen.
+Requires an entry in the component's `values` map named `"text"`.
+** `HTML` - Block of custom HTML, generated by the process backend.
+Expects a process value named `html`.
+** `DOWNLOAD_FORM` - Presentation of a link to download a file generated by the process.
+Expects process values named `downloadFileName` and `serverFilePath`.
+** `GOOGLE_DRIVE_SELECT_FOLDER` - Special form that presents a UI from Google Drive, where the user can select a folder (e.g., as a target for uploading files in a subsequent backend step).
+** `BULK_EDIT_FORM` - For use by the standard QQQ Bulk Edit process.
+** `VALIDATION_REVIEW_SCREEN` - For use by the QQQ Streamed ETL With Frontend process family of processes.
+Displays a component prompting the user to run full validation or to skip it, or, if full validation has been ran, then showing the results of that validation.
+** `PROCESS_SUMMARY_RESULTS` - For use by the QQQ Streamed ETL With Frontend process family of processes.
+Displays the summary results of running the process.
+** `RECORD_LIST` - _Deprecated.
+Showed a grid with a list of records as populated by the process._
+* `values` - *Map of String → Serializable* - Key=value pairs, with different expectations based on the component's `type`.
+See above for details.
+
+==== QBackendStepMetaData
+
+Process Backend Steps are where custom (at this time, Java, but in the future, potentially, from any supported language) code is executed, to provide the logic of the process.
+QQQ comes with several common backend steps, such as for extracting lists of records, storing lists of records, etc.
+
+*QBackendStepMetaData Properties:*
+
+* `code` - *QCodeReference, Required* - Reference to the code to be executed for the step.
+The referenced code must implement the `BackendStep` interface.
+* `inputMetaData` - *QFunctionInputMetaData* - Definition of the data that the backend step expects and/or requires.
+Sub-properties are:
+** `fieldList` - *List of {link-fields}* - Optional list of fields used by the process step.
+In general, a process does not _have to_ specify the fields that its steps use.
+It can be used, however, for example, to cause a `defaultValue` to be applied to a field if it isn't specified in the process's input.
+It can also be used to cause the process to throw an error, if a field is marked as `isRequired`, but a value is not present.
+** `recordListMetaData` - *RecordListMetaData object* - _Not used at this time._
+
+==== BasepullConfiguration
+
+A "Basepull" process is a common pattern where an application needs to perform some action on all new (or updated) records from a particular data source.
+To implement this pattern, one needs to store the timestamp of when the action runs, then query the source for records where a date-time field is after that timestamp.
+
+QQQ helps facilitate this pattern by automatically retrieving and updating that timestamp field, and by building a default query filter based on that timestamp.
+
+This is done by adding a `BasepullConfiguration` object to a process's meta-data.
+
+*BasepullConfiguration Properties:*
+
+* `tableName` - *String, Required* - Name of a {link-table} in the QQQ Instance where the basepull timestamps are stored.
+* `keyField` - *String, Required* - Name of a {link-field} in the basepull table that stores a unique identifier for the process.
+* `keyValue` - *String* - Optional value to be stored in the `keyField` of the basepull table as the unique identifier for the process.
+If not set, then the process's `name` is used.
+* `lastRunTimeFieldName` - *String, Required* - Name of a {link-field} in the basepull table that stores the last-run time for the process.
+* `hoursBackForInitialTimestamp` - *Integer* - Optional number of hours to go back in time (from `now`) for the first time that the process is executed (i.e., if there is no timestamp stored in the basepull table).
+* `timestampField` - *String, Required* - Name of a {link-field} in the table being queried against the last-run timestamp.
+
+==== QScheduleMetaData
+
+QQQ can automatically run processes using an internal scheduler, if they are configured with a `QScheduleMetaData` object.
+
+*QScheduleMetaData Properties*
+
+* `repeatSeconds` - *Integer, Conditional* - How often the process should be executed, in seconds.
+* `repeatMillis` - *Integer, Conditional* - How often the process should be executed, in milliseconds.
+Mutually exclusive with `repeatSeconds`.
+* `initialDelaySeconds` - *Integer, Conditional* - How long between when the scheduler starts and the process should first run, in seconds.
+* `initialDelayMillis` - *Integer, Conditional* - How long between when the scheduler starts and the process should first run, in milliseconds.
+Mutually exclusive with `initialDelaySeconds`.
+* `variantRunStrategory` - *enum, Conditional* - For processes than run against {link-tables} that use a {link-backend} with Variants enabled, this property controls if the various instances of the process should run in `PARALLEL` or in `SERIAL`.
+* `variantBackend` - *enum, Conditional* - For processes than run against {link-tables} that use a {link-backend} with Variants enabled, this property specifies the name of the {link-backend}.
+
+==== StreamedETLWithFrontendProcess
+
+A common pattern for QQQ processes to exhibit is called the "Streamed ETL With Frontend" process pattern.
+This pattern is to do an "Extract, Transform, Load" job on a potentially large set of records.
+
+The records are Streamed through the process's steps, meaning, QQQ runs multiple threads - a producer, which is selecting records, and a consumer, which is processing records.
+As such, in general, an unlimited number of records can be processed by a process, without worrying about exhausting server resources (e.g., OutOfMemory).
+
+These processes also have a standard user-interface for displaying a summary of what the process will do (and has done), with a small number of records as a preview.
+The goal of the summary is to give the user the big-picture of what the process will do (e.g., X records will be inserted; Y records will be updated), along with a small view of some details on the records that will be stored (e.g., on record A field B will be set to C).
+
+This type of process uses 3 backend steps, and 2 frontend steps, as follows:
+
+* *preview* (backend) - does just a little work (limited # of rows), to give the user a preview of what the final result will be - e.g., some data to seed the review screen.
+* *review* (frontend) - a review screen, which after the preview step does not have a full process summary, but can generally tell the user how many records are input to the process, and can show a preview of a small number of the records.
+* *validate* (backend) - optionally (per input on review screen), does like the preview step, but does it for all records from the extract step.
+* *review* (frontend) - a second view of the review screen, if the validate step was executed.
+Now that the full validation was performed, a full process summary can be shown, along with a some preview records.
+* *execute* (backend) - processes all the rows - does all the work - stores data in the backend.
+* *result* (frontend) - a result screen, showing a "past-tense" version of the process summary.
+
+These backend steps are defined within QQQ, meaning they themselves do not execute any application-defined custom code.
+Instead, these steps use the following secondary <<QBackendStepMetaData,backend steps>>:
+
+* *Extract* - Fetch the rows to be processed.
+Used by preview (but only for a limited number of rows), validate (without limit), and execute (without limit).
+* *Transform* - Do whatever transformation is needed to the rows.
+Done on preview, validate, and execute.
+Always works with a page of records at a time.
+Since it is called on the preview & validate steps, it should *NOT* ever store any data (unless it does a specific check to confirm that it is being used on an *execute* step).
+* *Load* - Store the records into the backend, as appropriate.
+Only called by the execute step.
+Always works with a page of records at a time.
+
+The meta-data for a `StreamedETLWithFrontendProcess` uses several input fields on its steps.
+As such, it can be somewhat clumsy and error-prone to fully define a `StreamedETLWithFrontendProcess`.
+To improve this programmer-interface, an inner `Builder` class exists within `StreamedETLWithFrontendProcess` (generated by a call to `StreamedETLWithFrontendProcess.processMetaDataBuilder()`).
+
+*StreamedETLWithFrontendProcess.Builder methods:*
+
+* `withName(String name) - Set the name for the process.
+* `withLabel(String label) - Set the label for the process.
+* `withIcon(QIcon icon)` - Set an {link-icon} to be display with the process in the UI.
+* `withExtractStepClass(Class<? extends AbstractExtractStep>)` - Define the Extract step for the process.
+If no special extraction logic is needed, `ExtractViaQuery.class` is often a reasonable default.
+In other cases, `ExtractViaQuery` can be a reasonable class to extend for a custom extract step.
+* `withTransformStepClass(Class<? extends AbstractTransformStep>)` - Define the Transform step for the process.
+If no transformation logic is needed, `NoopTransformStep.class` can be used (though this is not very common).
+* `withLoadStepClass(Class<? extends AbstractLoadStep>)` - Define the Load step for the process.
+Several standard implementations exist, such as: `LoadViaInsertStep.class`, `LoadViaUpdateStep.class`, and `LoadViaDeleteStep.class`.
+* `withTableName(String tableName)` - Specify the name of the {link-table} that the process should be associated with in the UI.
+* `withSourceTable(String sourceTable)` - Specify the name of the {link-table} to be used as the source of records for the process.
+* `withDestinationTable(String destinationTable)` - Specify the name of the {link-table} to be used as the destination for records from the process.
+* `withSupportsFullValidation(Boolean supportsFullValidation)` - By default, all StreamedETLWithFrontendProcesses do allow the user to choose to run the full validation step.
+However, in case cases it may not make sense to do so - so this method can be used to turn off that option.
+* `withDoFullValidation(Boolean doFullValidation)` - By default, all StreamedETLWithFrontendProcesses will prompt the user if they want to run the full validation step or not.
+However, in case cases you may want to enforce that the validation step always be executed.
+Calling this method will remove the option from the user, and always run a full validation.
+* `withTransactionLevelAutoCommit()`, `withTransactionLevelPage()`, and `withTransactionLevelProcess()` - Change the transaction-level used by the process.
+By default, these processes are ran with a single transaction for all pages of their execute step.
+But for some cases, doing page-level transactions can reduce long-transactions and locking within the system.
+* `withPreviewMessage(String previewMessage)` - Sets the message shown on the validation review screen(s) above the preview records.
+* `withReviewStepRecordFields(List<QFieldMetaData> fieldList)` -
+* `withFields(List<QFieldMetaData> fieldList)` - Adds additional input fields to the preview step of the process.
+* `withBasepullConfiguration(BasepullConfiguration basepullConfiguration)` - Add a <<BasepullConfiguration>> to the process.
+* `withSchedule(QScheduleMetaData schedule)` - Add a <<QScheduleMetaData>> to the process.
