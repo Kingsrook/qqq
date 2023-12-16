@@ -65,6 +65,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
    private ActionTimeoutHelper actionTimeoutHelper;
 
+   private static boolean loggedMysqlOptimizationsForStatements = false;
 
 
    /*******************************************************************************
@@ -345,8 +346,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    {
       RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
       PreparedStatement    statement;
-      if("mysql".equals(backend.getVendor()))
+      if("mysql".equals(backend.getVendor()) || "aurora".equals(backend.getName()))
       {
+         if(!loggedMysqlOptimizationsForStatements)
+         {
+            LOG.info("Using mysql optimizations for statements (TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, FetchSize(MIN_VALUE)");
+            loggedMysqlOptimizationsForStatements = true;
+         }
+
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-implementation-notes.html //
          // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                     //
