@@ -53,7 +53,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 
 
 /*******************************************************************************
@@ -343,15 +342,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
    {
-      RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
-      PreparedStatement    statement;
-      if("mysql".equals(backend.getVendor()))
+      PreparedStatement statement;
+      if(connection.getClass().getName().startsWith("com.mysql"))
       {
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-implementation-notes.html //
-         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                     //
-         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                                //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
+         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
+         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
          statement.setFetchSize(Integer.MIN_VALUE);
       }
