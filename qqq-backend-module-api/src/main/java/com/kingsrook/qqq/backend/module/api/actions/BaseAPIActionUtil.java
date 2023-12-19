@@ -81,6 +81,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -1048,7 +1049,7 @@ public class BaseAPIActionUtil
          //////////////////////////////////////////////////////
          // make sure to use closeable client to avoid leaks //
          //////////////////////////////////////////////////////
-         try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+         try(CloseableHttpClient httpClient = buildHttpClient())
          {
             ////////////////////////////////////////////////////////////
             // call utility methods that populate data in the request //
@@ -1149,6 +1150,25 @@ public class BaseAPIActionUtil
             throw (new QException(message, e));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Build the default HttpClient used by the makeRequest method
+    *******************************************************************************/
+   protected CloseableHttpClient buildHttpClient()
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // do we want this?? .setConnectionManager(new PoolingHttpClientConnectionManager()) //
+      // needs some good scrutiny.                                                         //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      return HttpClientBuilder.create()
+         .setDefaultRequestConfig(RequestConfig.custom()
+            .setConnectTimeout(getConnectionTimeoutMillis())
+            .setConnectionRequestTimeout(getConnectionRequestTimeoutMillis())
+            .setSocketTimeout(getSocketTimeoutMillis()).build())
+         .build();
    }
 
 
@@ -1435,6 +1455,51 @@ public class BaseAPIActionUtil
       // rsyslog default limit appears to be 8K - we've got some extra content, so 7 feels safe enough //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       return (7 * 1024);
+   }
+
+
+
+   /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getConnectionTimeoutMillis()
+   {
+      //////////////
+      // 1 minute //
+      //////////////
+      return (60 * 1000);
+   }
+
+
+
+   /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionRequestTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getConnectionRequestTimeoutMillis()
+   {
+      //////////////
+      // 1 minute //
+      //////////////
+      return (60 * 1000);
+   }
+
+
+
+   /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionRequestTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getSocketTimeoutMillis()
+   {
+      ///////////////
+      // 3 minutes //
+      ///////////////
+      return (3 * 60 * 1000);
    }
 
 
