@@ -23,8 +23,14 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.io.IOException;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestAbstractMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestDisabledMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestImplementsMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoInterfacesExtendsObject;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoValidConstructorMetaDataProducer;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -43,6 +49,11 @@ class MetaDataProducerHelperTest
       QInstance qInstance = new QInstance();
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, "com.kingsrook.qqq.backend.core.model.metadata.producers");
       assertTrue(qInstance.getTables().containsKey(TestMetaDataProducer.NAME));
+      assertTrue(qInstance.getTables().containsKey(TestImplementsMetaDataProducer.NAME));
+      assertFalse(qInstance.getTables().containsKey(TestNoValidConstructorMetaDataProducer.NAME));
+      assertFalse(qInstance.getTables().containsKey(TestNoInterfacesExtendsObject.NAME));
+      assertFalse(qInstance.getTables().containsKey(TestAbstractMetaDataProducer.NAME));
+      assertFalse(qInstance.getTables().containsKey(TestDisabledMetaDataProducer.NAME));
    }
 
 }
