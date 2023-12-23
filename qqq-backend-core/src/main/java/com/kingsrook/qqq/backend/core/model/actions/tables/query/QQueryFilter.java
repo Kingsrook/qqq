@@ -359,7 +359,7 @@ public class QQueryFilter implements Serializable, Cloneable
          rs.append(")");
 
          rs.append("OrderBy[");
-         for(QFilterOrderBy orderBy : orderBys)
+         for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(orderBys))
          {
             rs.append(orderBy).append(",");
          }
