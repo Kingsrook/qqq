@@ -270,6 +270,10 @@ public class QPossibleValueTranslator
          {
             value = ValueUtils.getValueAsInteger(value);
          }
+         if(field.getType().equals(QFieldType.LONG) && !(value instanceof Long))
+         {
+            value = ValueUtils.getValueAsLong(value);
+         }
       }
       catch(QValueException e)
       {

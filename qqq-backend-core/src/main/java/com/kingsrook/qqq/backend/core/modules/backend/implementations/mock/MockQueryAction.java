@@ -103,6 +103,7 @@ public class MockQueryAction implements QueryInterface
       {
          case STRING -> UUID.randomUUID().toString();
          case INTEGER -> 42;
+         case LONG -> 42L;
          case DECIMAL -> new BigDecimal("3.14159");
          case DATE -> LocalDate.of(1970, Month.JANUARY, 1);
          case DATE_TIME -> LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0);

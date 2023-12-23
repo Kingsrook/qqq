@@ -1680,7 +1680,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       return switch(type)
       {
          case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
-         case INTEGER -> "integer";
+         case INTEGER, LONG -> "integer"; // todo - we could give 'format' w/ int32 & int64 to further specify
          case DECIMAL -> "number";
          case BOOLEAN -> "boolean";
       };

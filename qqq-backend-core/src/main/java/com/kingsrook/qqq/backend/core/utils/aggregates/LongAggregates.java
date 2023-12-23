@@ -19,83 +19,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.fields;
+package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
- ** Possible data types for Q-fields.
- **
+ ** Long version of data aggregator
  *******************************************************************************/
-public enum QFieldType
+public class LongAggregates implements AggregatesInterface<Long>
 {
-   STRING,
-   INTEGER,
-   LONG,
-   DECIMAL,
-   BOOLEAN,
-   DATE,
-   TIME,
-   DATE_TIME,
-   TEXT,
-   HTML,
-   PASSWORD,
-   BLOB;
-   ///////////////////////////////////////////////////////////////////////
-   // keep these values in sync with QFieldType.ts in qqq-frontend-core //
-   ///////////////////////////////////////////////////////////////////////
+   private int  count = 0;
+   // private Long countDistinct;
+   private Long sum;
+   private Long min;
+   private Long max;
 
 
 
    /*******************************************************************************
-    ** Get a field type enum constant for a java class.
+    ** Add a new value to this aggregate set
     *******************************************************************************/
-   public static QFieldType fromClass(Class<?> c) throws QException
+   public void add(Long input)
    {
-      if(c.equals(String.class))
+      if(input == null)
       {
-         return (STRING);
-      }
-      if(c.equals(Integer.class) || c.equals(int.class))
-      {
-         return (INTEGER);
-      }
-      if(c.equals(Long.class) || c.equals(long.class))
-      {
-         return (LONG);
-      }
-      if(c.equals(BigDecimal.class))
-      {
-         return (DECIMAL);
-      }
-      if(c.equals(Instant.class))
-      {
-         return (DATE_TIME);
-      }
-      if(c.equals(LocalDate.class))
-      {
-         return (DATE);
-      }
-      if(c.equals(LocalTime.class))
-      {
-         return (TIME);
-      }
-      if(c.equals(Boolean.class))
-      {
-         return (BOOLEAN);
-      }
-      if(c.equals(byte[].class))
-      {
-         return (BLOB);
+         return;
       }
 
-      throw (new QException("Unrecognized class [" + c + "]"));
+      count++;
+
+      if(sum == null)
+      {
+         sum = input;
+      }
+      else
+      {
+         sum = sum + input;
+      }
+
+      if(min == null || input < min)
+      {
+         min = input;
+      }
+
+      if(max == null || input > max)
+      {
+         max = input;
+      }
    }
 
 
@@ -103,9 +75,10 @@ public enum QFieldType
    /*******************************************************************************
     **
     *******************************************************************************/
-   public boolean isStringLike()
+   @Override
+   public int getCount()
    {
-      return this == QFieldType.STRING || this == QFieldType.TEXT || this == QFieldType.HTML || this == QFieldType.PASSWORD;
+      return (count);
    }
 
 
@@ -113,9 +86,10 @@ public enum QFieldType
    /*******************************************************************************
     **
     *******************************************************************************/
-   public boolean isNumeric()
+   @Override
+   public Long getSum()
    {
-      return this == QFieldType.INTEGER || this == QFieldType.LONG || this == QFieldType.DECIMAL;
+      return (sum);
    }
 
 
@@ -123,8 +97,39 @@ public enum QFieldType
    /*******************************************************************************
     **
     *******************************************************************************/
-   public boolean needsMasked()
+   @Override
+   public Long getMin()
    {
-      return this == QFieldType.PASSWORD;
+      return (min);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public Long getMax()
+   {
+      return (max);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getAverage()
+   {
+      if(this.count > 0)
+      {
+         return (BigDecimal.valueOf(this.sum.doubleValue() / (double) this.count));
+      }
+      else
+      {
+         return (null);
+      }
+   }
+
 }

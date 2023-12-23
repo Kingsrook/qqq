@@ -115,6 +115,113 @@ public class ValueUtils
 
 
    /*******************************************************************************
+    ** Type-safely make an Long from any Object.
+    ** null and empty-string inputs return null.
+    ** We try to strip away commas and decimals (as long as they are exactly equal to the int value)
+    ** We may throw if the input can't be converted to an integer.
+    *******************************************************************************/
+   public static Long getValueAsLong(Object value) throws QValueException
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof Integer i)
+         {
+            return Long.valueOf((i));
+         }
+         else if(value instanceof Long l)
+         {
+            return (l);
+         }
+         else if(value instanceof BigInteger b)
+         {
+            return (b.longValue());
+         }
+         else if(value instanceof Float f)
+         {
+            if(f.longValue() != f)
+            {
+               throw (new QValueException(f + " does not have an exact integer representation."));
+            }
+            return (f.longValue());
+         }
+         else if(value instanceof Double d)
+         {
+            if(d.longValue() != d)
+            {
+               throw (new QValueException(d + " does not have an exact integer representation."));
+            }
+            return (d.longValue());
+         }
+         else if(value instanceof BigDecimal bd)
+         {
+            return bd.longValueExact();
+         }
+         else if(value instanceof PossibleValueEnum<?> pve)
+         {
+            return getValueAsLong(pve.getPossibleValueId());
+         }
+         else if(value instanceof String s)
+         {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
+            try
+            {
+               return (Long.parseLong(s));
+            }
+            catch(NumberFormatException nfe)
+            {
+               if(s.contains(","))
+               {
+                  String sWithoutCommas = s.replaceAll(",", "");
+                  try
+                  {
+                     return (getValueAsLong(sWithoutCommas));
+                  }
+                  catch(Exception ignore)
+                  {
+                     throw (nfe);
+                  }
+               }
+               if(s.matches(".*\\.\\d+$"))
+               {
+                  String sWithoutDecimal = s.replaceAll("\\.\\d+$", "");
+                  try
+                  {
+                     return (getValueAsLong(sWithoutDecimal));
+                  }
+                  catch(Exception ignore)
+                  {
+                     throw (nfe);
+                  }
+               }
+               throw (nfe);
+            }
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to Long."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a Long.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Type-safely make an Integer from any Object.
     ** null and empty-string inputs return null.
     ** We try to strip away commas and decimals (as long as they are exactly equal to the int value)
@@ -693,6 +800,7 @@ public class ValueUtils
       {
          case STRING, TEXT, HTML, PASSWORD -> getValueAsString(value);
          case INTEGER -> getValueAsInteger(value);
+         case LONG -> getValueAsLong(value);
          case DECIMAL -> getValueAsBigDecimal(value);
          case BOOLEAN -> getValueAsBoolean(value);
          case DATE -> getValueAsLocalDate(value);
