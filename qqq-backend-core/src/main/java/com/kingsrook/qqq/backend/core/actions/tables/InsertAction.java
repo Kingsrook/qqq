@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -286,7 +287,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             {
                if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
                {
-                  record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
+                  record.addError(new BadInputStatusMessage("Missing value in required field: " + Objects.requireNonNullElse(requiredField.getLabel(), requiredField.getName())));
                }
             }
          }
