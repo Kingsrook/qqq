@@ -19,18 +19,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.producers;
 
 
-import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** Abstract class that knows how to produce meta data objects.  Useful with
- ** MetaDataProducerHelper, to put point at a package full of these, and populate
- ** your whole QInstance.
+ **
  *******************************************************************************/
-public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface> implements MetaDataProducerInterface<T>
+public class TestNoInterfacesExtendsObject
 {
+   public static final String NAME = "TestNoInterfacesExtendsObject";
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData produce(QInstance qInstance) throws QException
+   {
+      return new QTableMetaData().withName(NAME);
+   }
 }

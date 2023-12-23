@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -44,7 +45,7 @@ public class MetaDataProducerHelper
 
 
    /*******************************************************************************
-    ** Recursively find all classes in the given package, that extend MetaDataProducer,
+    ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
     ** run them, and add their output to the given qInstance.
     **
     ** Note - they'll be sorted by the sortOrder they provide.
@@ -54,8 +55,8 @@ public class MetaDataProducerHelper
       ////////////////////////////////////////////////////////////////////////
       // find all the meta data producer classes in (and under) the package //
       ////////////////////////////////////////////////////////////////////////
-      List<Class<?>>            classesInPackage = getClassesInPackage(packageName);
-      List<MetaDataProducer<?>> producers        = new ArrayList<>();
+      List<Class<?>>                     classesInPackage = getClassesInPackage(packageName);
+      List<MetaDataProducerInterface<?>> producers        = new ArrayList<>();
       for(Class<?> aClass : classesInPackage)
       {
          try
@@ -65,22 +66,29 @@ public class MetaDataProducerHelper
                continue;
             }
 
-            for(Constructor<?> constructor : aClass.getConstructors())
+            if(MetaDataProducerInterface.class.isAssignableFrom(aClass))
             {
-               if(constructor.getParameterCount() == 0)
+               boolean foundValidConstructor = false;
+               for(Constructor<?> constructor : aClass.getConstructors())
                {
-                  Object o = constructor.newInstance();
-                  if(o instanceof MetaDataProducer<?> metaDataProducer)
+                  if(constructor.getParameterCount() == 0)
                   {
-                     producers.add(metaDataProducer);
+                     Object o = constructor.newInstance();
+                     producers.add((MetaDataProducerInterface<?>) o);
+                     foundValidConstructor = true;
+                     break;
                   }
-                  break;
+               }
+
+               if(!foundValidConstructor)
+               {
+                  LOG.warn("Found a class which implements MetaDataProducerInterface, but it does not have a no-arg constructor, so it cannot be used.", logPair("class", aClass.getSimpleName()));
                }
             }
          }
          catch(Exception e)
          {
-            LOG.info("Error adding metaData from producer", e, logPair("producer", aClass.getSimpleName()));
+            LOG.warn("Error evaluating a possible meta-data producer class", e, logPair("class", aClass.getSimpleName()));
          }
       }
 
@@ -89,8 +97,8 @@ public class MetaDataProducerHelper
       // after all other types (as apps often try to get other types from the instance)         //
       ////////////////////////////////////////////////////////////////////////////////////////////
       producers.sort(Comparator
-         .comparing((MetaDataProducer<?> p) -> p.getSortOrder())
-         .thenComparing((MetaDataProducer<?> p) ->
+         .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
+         .thenComparing((MetaDataProducerInterface<?> p) ->
          {
             try
             {
@@ -110,22 +118,29 @@ public class MetaDataProducerHelper
             }
          }));
 
-      //////////////////////////////////////////////////////////////
-      // execute each one, adding their meta data to the instance //
-      //////////////////////////////////////////////////////////////
-      for(MetaDataProducer<?> producer : producers)
+      ///////////////////////////////////////////////////////////////////////////
+      // execute each one (if enabled), adding their meta data to the instance //
+      ///////////////////////////////////////////////////////////////////////////
+      for(MetaDataProducerInterface<?> producer : producers)
       {
-         try
+         if(producer.isEnabled())
          {
-            TopLevelMetaDataInterface metaData = producer.produce(instance);
-            if(metaData != null)
+            try
             {
-               metaData.addSelfToInstance(instance);
+               TopLevelMetaDataInterface metaData = producer.produce(instance);
+               if(metaData != null)
+               {
+                  metaData.addSelfToInstance(instance);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("error executing metaDataProducer", logPair("producer", producer.getClass().getSimpleName()), e);
             }
          }
-         catch(Exception e)
+         else
          {
-            LOG.warn("error executing metaDataProducer", logPair("producer", producer.getClass().getSimpleName()), e);
+            LOG.debug("Not using producer which is not enabled", logPair("producer", producer.getClass().getSimpleName()));
          }
       }
 
