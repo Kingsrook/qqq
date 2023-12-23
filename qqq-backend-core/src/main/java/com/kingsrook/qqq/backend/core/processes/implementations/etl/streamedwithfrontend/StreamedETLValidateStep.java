@@ -91,7 +91,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Preview>ValidateStep", null, recordPipe, (status) ->
+      int recordCount = new AsyncRecordPipeLoop().run("StreamedETLValidate>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
          {
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);

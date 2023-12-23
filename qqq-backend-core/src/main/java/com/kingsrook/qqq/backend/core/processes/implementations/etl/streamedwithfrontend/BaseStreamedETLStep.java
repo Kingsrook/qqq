@@ -104,12 +104,12 @@ public class BaseStreamedETLStep
     *******************************************************************************/
    protected void moveReviewStepAfterValidateStep(RunBackendStepOutput runBackendStepOutput)
    {
-      LOG.info("Skipping to validation step");
+      LOG.debug("Skipping to validation step");
       ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
-      LOG.debug("Step list pre: " + stepList);
+      LOG.trace("Step list pre: " + stepList);
       stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
       stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
       runBackendStepOutput.getProcessState().setStepList(stepList);
-      LOG.debug("Step list post: " + stepList);
+      LOG.trace("Step list post: " + stepList);
    }
 }
