@@ -62,11 +62,9 @@ public class QuerySavedFilterProcess implements BackendStep
    {
       return (new QProcessMetaData()
          .withName("querySavedFilter")
-         .withStepList(List.of(
-            new QBackendStepMetaData()
-               .withCode(new QCodeReference(QuerySavedFilterProcess.class))
-               .withName("query")
-         )));
+         .withStepList(List.of(new QBackendStepMetaData()
+            .withCode(new QCodeReference(QuerySavedFilterProcess.class))
+            .withName("query"))));
    }
 
 
@@ -110,7 +108,7 @@ public class QuerySavedFilterProcess implements BackendStep
       }
       catch(Exception e)
       {
-         LOG.warn("Error deleting saved filter", e);
+         LOG.warn("Error querying for saved filter", e);
          throw (e);
       }
    }
