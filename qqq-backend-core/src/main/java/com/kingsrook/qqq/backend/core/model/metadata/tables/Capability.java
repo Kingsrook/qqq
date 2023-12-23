@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.Set;
+
+
 /*******************************************************************************
  ** Things that can be done to tables, fields.
  **
@@ -38,5 +41,26 @@ public enum Capability
    // keep these values in sync with Capability.ts in qqq-frontend-core //
    ///////////////////////////////////////////////////////////////////////
 
-   QUERY_STATS
+   QUERY_STATS;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Set<Capability> allReadCapabilities()
+   {
+      return (Set.of(TABLE_QUERY, TABLE_GET, TABLE_COUNT, QUERY_STATS));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Set<Capability> allWriteCapabilities()
+   {
+      return (Set.of(TABLE_INSERT, TABLE_UPDATE, TABLE_DELETE));
+   }
+
 }
