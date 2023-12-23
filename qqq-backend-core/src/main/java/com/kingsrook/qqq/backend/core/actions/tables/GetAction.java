@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 
 
 /*******************************************************************************
@@ -202,7 +203,7 @@ public class GetAction
       }
       else
       {
-         throw (new QException("No primaryKey or uniqueKey was passed to Get"));
+         throw (new QException("Unable to get " + ObjectUtils.tryElse(() -> queryInput.getTable().getLabel(), queryInput.getTableName()) + ".  Missing required input."));
       }
 
       queryInput.setFilter(filter);
