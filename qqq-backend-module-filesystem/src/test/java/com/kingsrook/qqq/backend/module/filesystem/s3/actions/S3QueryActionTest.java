@@ -23,13 +23,19 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
+import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -64,6 +70,41 @@ public class S3QueryActionTest extends BaseS3Test
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.defineS3CSVPersonTable().getName());
       return queryInput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testQueryForCardinalityOne() throws QException
+   {
+      QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_BLOB_S3);
+      queryInput.setFilter(new QQueryFilter());
+
+      S3QueryAction s3QueryAction = new S3QueryAction();
+      s3QueryAction.setS3Utils(getS3Utils());
+
+      QueryOutput queryOutput = s3QueryAction.execute(queryInput);
+      assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      queryOutput = s3QueryAction.execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Filtered query should find 1 row");
+      assertEquals("BLOB-1.txt", queryOutput.getRecords().get(0).getValueString("fileName"));
+
+      ////////////////////////////////////////////////////////////////
+      // put a glob on the table - now should only find 2 txt files //
+      ////////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      ((S3TableBackendDetails) (instance.getTable(TestUtils.TABLE_NAME_BLOB_S3).getBackendDetails()))
+         .withGlob("*.txt");
+      reInitInstanceInContext(instance);
+
+      queryInput.setFilter(new QQueryFilter());
+      queryOutput = s3QueryAction.execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");
    }
 
 }

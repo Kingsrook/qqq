@@ -35,6 +35,11 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
    private RecordFormat recordFormat;
    private Cardinality  cardinality;
 
+   ///////////////////////////////////////////////////////////////////////////////////////////////////
+   // todo default these to null, and give validation error if not set for a cardinality=ONE table? //
+   ///////////////////////////////////////////////////////////////////////////////////////////////////
+   private String contentsFieldName = "contents";
+   private String fileNameFieldName = "fileName";
 
 
    /*******************************************************************************
@@ -174,5 +179,68 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
       this.cardinality = cardinality;
       return ((T) this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for contentsFieldName
+    *******************************************************************************/
+   public String getContentsFieldName()
+   {
+      return (this.contentsFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentsFieldName
+    *******************************************************************************/
+   public void setContentsFieldName(String contentsFieldName)
+   {
+      this.contentsFieldName = contentsFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentsFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withContentsFieldName(String contentsFieldName)
+   {
+      this.contentsFieldName = contentsFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fileNameFieldName
+    *******************************************************************************/
+   public String getFileNameFieldName()
+   {
+      return (this.fileNameFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fileNameFieldName
+    *******************************************************************************/
+   public void setFileNameFieldName(String fileNameFieldName)
+   {
+      this.fileNameFieldName = fileNameFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fileNameFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withFileNameFieldName(String fileNameFieldName)
+   {
+      this.fileNameFieldName = fileNameFieldName;
+      return (this);
+   }
+
 
 }

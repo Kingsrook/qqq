@@ -25,6 +25,11 @@ package com.kingsrook.qqq.backend.module.filesystem.local;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -36,6 +41,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -47,6 +54,9 @@ public class FilesystemBackendModuleTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @BeforeEach
    public void beforeEach() throws IOException
    {
@@ -55,10 +65,85 @@ public class FilesystemBackendModuleTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @AfterEach
    public void afterEach() throws Exception
    {
       new FilesystemActionTest().cleanFilesystem();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testListFiles() throws QException
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_BLOB_LOCAL_FS);
+
+      AbstractFilesystemAction abstractFilesystemAction = new AbstractFilesystemAction();
+      QBackendMetaData         backend                  = qInstance.getBackendForTable(table.getName());
+
+      //////////////////////////////////////////////////////////
+      // with no filter given, all (3) files should come back //
+      //////////////////////////////////////////////////////////
+      List<File> files = abstractFilesystemAction.listFiles(table, backend);
+      assertEquals(3, files.size());
+
+      /////////////////////////////////////////
+      // filter for a file name that's found //
+      /////////////////////////////////////////
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      assertEquals(1, files.size());
+      assertEquals("BLOB-2.txt", files.get(0).getName());
+
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      assertEquals(1, files.size());
+      assertEquals("BLOB-1.txt", files.get(0).getName());
+
+      ///////////////////////////////////
+      // filter for 2 names that exist //
+      ///////////////////////////////////
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
+      assertEquals(2, files.size());
+
+      /////////////////////////////////////////////
+      // filter for a file name that isn't found //
+      /////////////////////////////////////////////
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "NOT-FOUND.txt")));
+      assertEquals(0, files.size());
+
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
+      assertEquals(1, files.size());
+
+      ////////////////////////////////////////////////////
+      // 2 criteria, and'ed, and can't match, so find 0 //
+      ////////////////////////////////////////////////////
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      assertEquals(0, files.size());
+
+      //////////////////////////////////////////////////
+      // 2 criteria, or'ed, and both match, so find 2 //
+      //////////////////////////////////////////////////
+      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
+         .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      assertEquals(2, files.size());
+
+      //////////////////////////////////////
+      // ensure unsupported filters throw //
+      //////////////////////////////////////
+      assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("foo", QCriteriaOperator.GREATER_THAN, 42))))
+         .hasMessageContaining("Unable to query filesystem table by field");
+      assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IS_BLANK))))
+         .hasMessageContaining("Unable to query filename field using operator");
    }
 
 

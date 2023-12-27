@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
-import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -187,7 +187,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void assertTableListing(S3BackendMetaData backend, QTableMetaData table, String... paths) throws QModuleDispatchException
+   private void assertTableListing(S3BackendMetaData backend, QTableMetaData table, String... paths) throws QException
    {
       S3BackendModule  module     = (S3BackendModule) new QBackendModuleDispatcher().getQBackendModule(backend);
       AbstractS3Action actionBase = (AbstractS3Action) module.getActionBase();
@@ -207,7 +207,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void printTableListing(S3BackendMetaData backend, QTableMetaData table) throws QModuleDispatchException
+   private void printTableListing(S3BackendMetaData backend, QTableMetaData table) throws QException
    {
       S3BackendModule  module     = (S3BackendModule) new QBackendModuleDispatcher().getQBackendModule(backend);
       AbstractS3Action actionBase = (AbstractS3Action) module.getActionBase();

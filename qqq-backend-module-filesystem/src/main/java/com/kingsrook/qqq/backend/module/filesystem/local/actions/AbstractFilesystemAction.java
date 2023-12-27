@@ -23,19 +23,36 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOCase;
+import org.apache.commons.io.filefilter.AndFileFilter;
+import org.apache.commons.io.filefilter.NameFileFilter;
+import org.apache.commons.io.filefilter.OrFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 
 /*******************************************************************************
@@ -51,12 +68,66 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** List the files for this table.
     *******************************************************************************/
    @Override
-   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase)
+   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
    {
-      // todo - needs rewritten to do globbing...
       String fullPath  = getFullBasePath(table, backendBase);
       File   directory = new File(fullPath);
-      File[] files     = directory.listFiles();
+      File[] files     = null;
+
+      AbstractFilesystemTableBackendDetails tableBackendDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
+
+      FileFilter fileFilter = TrueFileFilter.INSTANCE;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if each file is its own record (ONE), then we may need to do filtering of the directory listing based on the input filter //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(Cardinality.ONE.equals(tableBackendDetails.getCardinality()))
+      {
+         if(filter != null && filter.hasAnyCriteria())
+         {
+            List<FileFilter> fileFilterList = new ArrayList<>();
+            for(QFilterCriteria criteria : filter.getCriteria())
+            {
+               if(tableBackendDetails.getFileNameFieldName().equals(criteria.getFieldName()))
+               {
+                  if(QCriteriaOperator.EQUALS.equals(criteria.getOperator()) && CollectionUtils.nonNullList(criteria.getValues()).size() == 1)
+                  {
+                     fileFilterList.add(new NameFileFilter(ValueUtils.getValueAsString(criteria.getValues().get(0))));
+                  }
+                  else if(QCriteriaOperator.IN.equals(criteria.getOperator()) && !CollectionUtils.nonNullList(criteria.getValues()).isEmpty())
+                  {
+                     List<NameFileFilter> nameInFilters = new ArrayList<>();
+                     for(int i = 0; i < criteria.getValues().size(); i++)
+                     {
+                        nameInFilters.add(new NameFileFilter(ValueUtils.getValueAsString(criteria.getValues().get(i))));
+                     }
+                     fileFilterList.add(new OrFileFilter(nameInFilters));
+                  }
+                  else
+                  {
+                     throw (new QException("Unable to query filename field using operator: " + criteria.getOperator()));
+                  }
+               }
+               else
+               {
+                  throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
+               }
+            }
+
+            fileFilter = QQueryFilter.BooleanOperator.AND.equals(filter.getBooleanOperator()) ? new AndFileFilter(fileFilterList) : new OrFileFilter(fileFilterList);
+         }
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // if the table has a glob specified, add it as an AND to the filter built to this point //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      if(StringUtils.hasContent(tableBackendDetails.getGlob()))
+      {
+         WildcardFileFilter globFilenameFilter = new WildcardFileFilter(tableBackendDetails.getGlob(), IOCase.INSENSITIVE);
+         fileFilter = new AndFileFilter(List.of(globFilenameFilter, fileFilter));
+      }
+
+      files = directory.listFiles(fileFilter);
 
       if(files == null)
       {
