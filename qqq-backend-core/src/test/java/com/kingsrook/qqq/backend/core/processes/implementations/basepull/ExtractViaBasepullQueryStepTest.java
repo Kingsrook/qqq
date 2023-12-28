@@ -97,4 +97,87 @@ class ExtractViaBasepullQueryStepTest extends BaseTest
          .withValues(Map.of("queryFilterJson", "{}"))));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSubtractingSeconds() throws QException
+   {
+      String originalLastRunTime       = "2023-12-28T15:00:00Z";
+      String lastRunTimeMinusOneMinute = "2023-12-28T14:59:00Z";
+
+      String originalThisRunTime        = "2023-12-28T15:05:00Z";
+      String thisRunTimePlusFiveSeconds = "2023-12-28T15:05:05Z";
+
+      ///////////////////////////
+      // cases for lastRunTime //
+      ///////////////////////////
+      {
+         ///////////////////////////////////////////////////////////////////////////////
+         // confirm we don't fail (and don't subtract) if config is absent from input //
+         ///////////////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.setBasepullLastRunTime(Instant.parse(originalLastRunTime));
+         String lastRunTimeString = new ExtractViaBasepullQueryStep().getLastRunTimeString(input);
+         assertEquals(originalLastRunTime, lastRunTimeString);
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////
+         // confirm we don't fail or subtract if secondsToSubtract isn't given in config //
+         //////////////////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.setBasepullLastRunTime(Instant.parse(originalLastRunTime));
+         input.addValue(RunProcessAction.BASEPULL_CONFIGURATION, new BasepullConfiguration());
+         String lastRunTimeString = new ExtractViaBasepullQueryStep().getLastRunTimeString(input);
+         assertEquals(originalLastRunTime, lastRunTimeString);
+      }
+      {
+         ///////////////////////////////////////////////////////////////////////
+         // confirm we do subtract if a subtract value is given in the config //
+         ///////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.setBasepullLastRunTime(Instant.parse(originalLastRunTime));
+         input.addValue(RunProcessAction.BASEPULL_CONFIGURATION, new BasepullConfiguration()
+            .withSecondsToSubtractFromLastRunTimeForTimestampQuery(60));
+         String lastRunTimeString = new ExtractViaBasepullQueryStep().getLastRunTimeString(input);
+         assertEquals(lastRunTimeMinusOneMinute, lastRunTimeString);
+      }
+
+      ///////////////////////////
+      // cases for thisRunTime //
+      ///////////////////////////
+      {
+         ///////////////////////////////////////////////////////////////////////////////
+         // confirm we don't fail (and don't subtract) if config is absent from input //
+         ///////////////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.addValue(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY, originalThisRunTime);
+         String thisRunTimeString = new ExtractViaBasepullQueryStep().getThisRunTimeString(input);
+         assertEquals(originalThisRunTime, thisRunTimeString);
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////
+         // confirm we don't fail or subtract if secondsToSubtract isn't given in config //
+         //////////////////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.addValue(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY, originalThisRunTime);
+         input.addValue(RunProcessAction.BASEPULL_CONFIGURATION, new BasepullConfiguration());
+         String thisRunTimeString = new ExtractViaBasepullQueryStep().getThisRunTimeString(input);
+         assertEquals(originalThisRunTime, thisRunTimeString);
+      }
+      {
+         ///////////////////////////////////////////////////////////////////////
+         // confirm we do subtract if a subtract value is given in the config //
+         ///////////////////////////////////////////////////////////////////////
+         RunBackendStepInput input = new RunBackendStepInput();
+         input.addValue(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY, originalThisRunTime);
+         input.addValue(RunProcessAction.BASEPULL_CONFIGURATION, new BasepullConfiguration()
+            .withSecondsToSubtractFromThisRunTimeForTimestampQuery(-5));
+         String thisRunTimeString = new ExtractViaBasepullQueryStep().getThisRunTimeString(input);
+         assertEquals(thisRunTimePlusFiveSeconds, thisRunTimeString);
+      }
+   }
+
 }
