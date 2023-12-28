@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -142,8 +141,6 @@ public class TestUtils
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
 
-      new QInstanceValidator().validate(qInstance);
-
       return (qInstance);
    }
 
@@ -249,6 +246,8 @@ public class TestUtils
          .withBackendDetails(new FilesystemTableBackendDetails()
             .withBasePath("blobs")
             .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
          );
    }
 
@@ -269,6 +268,8 @@ public class TestUtils
          .withBackendDetails(new S3TableBackendDetails()
             .withBasePath("blobs")
             .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
          );
    }
 

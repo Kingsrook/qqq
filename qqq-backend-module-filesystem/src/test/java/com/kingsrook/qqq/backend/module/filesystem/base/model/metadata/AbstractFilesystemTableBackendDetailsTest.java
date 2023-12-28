@@ -1,0 +1,195 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
+
+
+import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
+import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+
+/*******************************************************************************
+ ** Unit test for AbstractFilesystemTableBackendDetails 
+ *******************************************************************************/
+class AbstractFilesystemTableBackendDetailsTest extends BaseTest
+{
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValidInstancePasses() throws QInstanceValidationException
+   {
+      new QInstanceValidator().validate(QContext.getQInstance());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMissingCardinality() throws QException
+   {
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_S3).withBackendDetails(new FilesystemTableBackendDetails());
+      }, false, "missing cardinality");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCardinalityOneIssues() throws QException
+   {
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+         );
+      }, false, "missing contentsFieldName", "missing fileNameFieldName");
+
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+            .withContentsFieldName("foo")
+            .withFileNameFieldName("bar")
+         );
+      }, false, "contentsFieldName [foo] is not a field", "fileNameFieldName [bar] is not a field");
+
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+            .withContentsFieldName("contents")
+            .withFileNameFieldName("fileName")
+            .withRecordFormat(RecordFormat.CSV)
+         );
+      }, false, "has a recordFormat");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCardinalityManyIssues() throws QException
+   {
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_CSV).withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.MANY)
+         );
+      }, false, "missing recordFormat");
+
+      assertValidationFailureReasons((QInstance qInstance) ->
+      {
+         qInstance.getTable(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_CSV).withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.MANY)
+            .withRecordFormat(RecordFormat.CSV)
+            .withContentsFieldName("foo")
+            .withFileNameFieldName("bar")
+         );
+      }, false, "has a contentsFieldName", "has a fileNameFieldName");
+   }
+
+
+
+   /*******************************************************************************
+    ** Implementation for the overloads of this name.
+    *******************************************************************************/
+   private void assertValidationFailureReasons(Consumer<QInstance> setup, boolean allowExtraReasons, String... reasons) throws QException
+   {
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         setup.accept(qInstance);
+         new QInstanceValidator().validate(qInstance);
+         fail("Should have thrown validationException");
+      }
+      catch(QInstanceValidationException e)
+      {
+         if(!allowExtraReasons)
+         {
+            int noOfReasons = e.getReasons() == null ? 0 : e.getReasons().size();
+            assertEquals(reasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", reasons)
+               + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", e.getReasons()) : "--"));
+         }
+
+         for(String reason : reasons)
+         {
+            assertReason(reason, e);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Assert that an instance is valid!
+    *******************************************************************************/
+   private void assertValidationSuccess(Consumer<QInstance> setup) throws QException
+   {
+      try
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         setup.accept(qInstance);
+         new QInstanceValidator().validate(qInstance);
+      }
+      catch(QInstanceValidationException e)
+      {
+         fail("Expected no validation errors, but received: " + e.getMessage());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** utility method for asserting that a specific reason string is found within
+    ** the list of reasons in the QInstanceValidationException.
+    **
+    *******************************************************************************/
+   private void assertReason(String reason, QInstanceValidationException e)
+   {
+      assertNotNull(e.getReasons(), "Expected there to be a reason for the failure (but there was not)");
+      assertThat(e.getReasons())
+         .withFailMessage("Expected any of:\n%s\nTo match: [%s]", e.getReasons(), reason)
+         .anyMatch(s -> s.contains(reason));
+   }
+
+}

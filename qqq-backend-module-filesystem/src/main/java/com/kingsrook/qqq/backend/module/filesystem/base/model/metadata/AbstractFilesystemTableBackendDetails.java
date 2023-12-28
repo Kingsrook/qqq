@@ -22,7 +22,11 @@
 package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
 
 
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -35,11 +39,9 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
    private RecordFormat recordFormat;
    private Cardinality  cardinality;
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////
-   // todo default these to null, and give validation error if not set for a cardinality=ONE table? //
-   ///////////////////////////////////////////////////////////////////////////////////////////////////
-   private String contentsFieldName = "contents";
-   private String fileNameFieldName = "fileName";
+   private String contentsFieldName;
+   private String fileNameFieldName;
+
 
 
    /*******************************************************************************
@@ -243,4 +245,40 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
    }
 
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QTableMetaData table, QInstanceValidator qInstanceValidator)
+   {
+      super.validate(qInstance, table, qInstanceValidator);
+
+      String prefix = "Table " + (table == null ? "null" : table.getName()) + " backend details - ";
+      if(qInstanceValidator.assertCondition(cardinality != null, prefix + "missing cardinality"))
+      {
+         if(cardinality.equals(Cardinality.ONE))
+         {
+            if(qInstanceValidator.assertCondition(StringUtils.hasContent(contentsFieldName), prefix + "missing contentsFieldName, which is required for Cardinality ONE"))
+            {
+               qInstanceValidator.assertCondition(table != null && table.getFields().containsKey(contentsFieldName), prefix + "contentsFieldName [" + contentsFieldName + "] is not a field on this table.");
+            }
+
+            if(qInstanceValidator.assertCondition(StringUtils.hasContent(fileNameFieldName), prefix + "missing fileNameFieldName, which is required for Cardinality ONE"))
+            {
+               qInstanceValidator.assertCondition(table != null && table.getFields().containsKey(fileNameFieldName), prefix + "fileNameFieldName [" + fileNameFieldName + "] is not a field on this table.");
+            }
+
+            qInstanceValidator.assertCondition(recordFormat == null, prefix + "has a recordFormat, which is not allowed for Cardinality ONE");
+         }
+
+         if(cardinality.equals(Cardinality.MANY))
+         {
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(contentsFieldName), prefix + "has a contentsFieldName, which is not allowed for Cardinality MANY");
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(fileNameFieldName), prefix + "has a fileNameFieldName, which is not allowed for Cardinality MANY");
+            qInstanceValidator.assertCondition(recordFormat != null, prefix + "missing recordFormat, which is required for Cardinality MANY");
+         }
+      }
+
+   }
 }
