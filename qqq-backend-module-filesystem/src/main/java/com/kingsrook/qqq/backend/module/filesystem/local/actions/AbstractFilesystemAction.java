@@ -85,6 +85,14 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
       {
          if(filter != null && filter.hasAnyCriteria())
          {
+            if(CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
+            {
+               ///////////////////////////////////////////////////////////////////////
+               // todo - well, we could - just build up a tree of and's and or's... //
+               ///////////////////////////////////////////////////////////////////////
+               throw (new QException("Filters with sub-filters are not supported for querying filesystems at this time."));
+            }
+
             List<FileFilter> fileFilterList = new ArrayList<>();
             for(QFilterCriteria criteria : filter.getCriteria())
             {

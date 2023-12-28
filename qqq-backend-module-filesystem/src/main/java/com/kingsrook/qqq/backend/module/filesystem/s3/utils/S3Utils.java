@@ -106,6 +106,10 @@ public class S3Utils
          useQQueryFilter = true;
       }
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's a filter for single file, make that file name the "prefix" that we send to s3, so we just get back that 1 file. //
+      // as this will be a common case.                                                                                             //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(filter != null && useQQueryFilter)
       {
          if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
@@ -200,6 +204,18 @@ public class S3Utils
             }
 
             rs.add(objectSummary);
+
+            /////////////////////////////////////////////////////////////////
+            // if we have a limit, and we've hit it, break out of the loop //
+            /////////////////////////////////////////////////////////////////
+            if(filter != null && useQQueryFilter && filter.getLimit() != null)
+            {
+               if(rs.size() >= filter.getLimit())
+               {
+                  break;
+               }
+            }
+
          }
       }
       while(listObjectsV2Result.isTruncated());
@@ -217,6 +233,14 @@ public class S3Utils
       if(filter == null || !filter.hasAnyCriteria())
       {
          return (true);
+      }
+
+      if(CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
+      {
+         ///////////////////////////////
+         // todo - well, we could ... //
+         ///////////////////////////////
+         throw (new QException("Filters with sub-filters are not supported for querying filesystems at this time."));
       }
 
       Path path = Path.of(URI.create("file:///" + key));

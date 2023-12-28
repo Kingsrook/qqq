@@ -93,13 +93,15 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
    @Test
    public void testQueryForCardinalityOne() throws QException
    {
+      FilesystemQueryAction filesystemQueryAction = new FilesystemQueryAction();
+
       QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS);
       queryInput.setFilter(new QQueryFilter());
-      QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
+      QueryOutput queryOutput = filesystemQueryAction.execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
-      queryOutput = new FilesystemQueryAction().execute(queryInput);
+      queryOutput = filesystemQueryAction.execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Filtered query should find 1 row");
       assertEquals("BLOB-1.txt", queryOutput.getRecords().get(0).getValueString("fileName"));
 
@@ -112,8 +114,15 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       reInitInstanceInContext(instance);
 
       queryInput.setFilter(new QQueryFilter());
-      queryOutput = new FilesystemQueryAction().execute(queryInput);
+      queryOutput = filesystemQueryAction.execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");
+
+      //////////////////////////////
+      // add a limit to the query //
+      //////////////////////////////
+      queryInput.setFilter(new QQueryFilter().withLimit(1));
+      queryOutput = filesystemQueryAction.execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Query with limit should be respected");
    }
 
 

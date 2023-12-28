@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -52,6 +53,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinali
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -205,15 +207,17 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
          List<FILE>                            files        = listFiles(table, queryInput.getBackend(), queryInput.getFilter());
 
+         int recordCount = 0;
+
+         FILE_LOOP:
          for(FILE file : files)
          {
-            LOG.info("Processing file: " + getFullPathForFile(file));
-
             InputStream inputStream = readFile(file);
             switch(tableDetails.getCardinality())
             {
                case MANY:
                {
+                  LOG.info("Extracting records from file", logPair("table", table.getName()), logPair("path", getFullPathForFile(file)));
                   switch(tableDetails.getRecordFormat())
                   {
                      case CSV:
@@ -260,13 +264,32 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                }
                case ONE:
                {
+                  ////////////////////////////////////////////////////////////////////////////////
+                  // for one-record tables, put the entire file's contents into a single record //
+                  ////////////////////////////////////////////////////////////////////////////////
                   String filePathWithoutBase = stripBackendAndTableBasePathsFromFileName(getFullPathForFile(file), queryInput.getBackend(), table);
+                  byte[] bytes               = inputStream.readAllBytes();
 
-                  byte[] bytes = inputStream.readAllBytes();
                   QRecord record = new QRecord()
                      .withValue(tableDetails.getFileNameFieldName(), filePathWithoutBase)
                      .withValue(tableDetails.getContentsFieldName(), bytes);
                   queryOutput.addRecord(record);
+
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // keep our own count - in case the query output is using a pipe (e.g., so we can't just call a .size()) //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  recordCount++;
+
+                  ////////////////////////////////////////////////////////////////////////////
+                  // break out of the file loop if we have hit the limit (if one was given) //
+                  ////////////////////////////////////////////////////////////////////////////
+                  if(queryInput.getFilter() != null && queryInput.getFilter().getLimit() != null)
+                  {
+                     if(recordCount >= queryInput.getFilter().getLimit())
+                     {
+                        break FILE_LOOP;
+                     }
+                  }
 
                   break;
                }
@@ -373,6 +396,8 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          InsertOutput     output  = new InsertOutput();
          QTableMetaData   table   = insertInput.getTable();
          QBackendMetaData backend = insertInput.getBackend();
+
+         output.setRecords(new ArrayList<>());
 
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
          if(tableDetails.getCardinality().equals(Cardinality.ONE))

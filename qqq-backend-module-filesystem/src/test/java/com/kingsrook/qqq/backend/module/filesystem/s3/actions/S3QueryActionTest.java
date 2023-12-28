@@ -105,6 +105,13 @@ public class S3QueryActionTest extends BaseS3Test
       queryInput.setFilter(new QQueryFilter());
       queryOutput = s3QueryAction.execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");
+
+      //////////////////////////////
+      // add a limit to the query //
+      //////////////////////////////
+      queryInput.setFilter(new QQueryFilter().withLimit(1));
+      queryOutput = s3QueryAction.execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Query with limit should be respected");
    }
 
 }
