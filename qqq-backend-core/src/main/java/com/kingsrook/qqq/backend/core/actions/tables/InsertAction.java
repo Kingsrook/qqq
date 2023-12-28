@@ -132,6 +132,15 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       ////////////////////////////////////
       InsertOutput insertOutput = insertInterface.execute(insertInput);
 
+      if(insertOutput.getRecords() == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // in case the module failed to set record in the output, put an empty list there //
+         // to avoid so many downstream NPE's                                              //
+         ////////////////////////////////////////////////////////////////////////////////////
+         insertOutput.setRecords(new ArrayList<>());
+      }
+
       //////////////////////////////
       // log if there were errors //
       //////////////////////////////
