@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -64,6 +65,19 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
    private ActionTimeoutHelper actionTimeoutHelper;
 
+   private static boolean mysqlResultSetOptimizationEnabled = false;
+
+   static
+   {
+      try
+      {
+         mysqlResultSetOptimizationEnabled = new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.rdbms.mysql.resultSetOptimizationEnabled", "QQQ_RDBMS_MYSQL_RESULT_SET_OPTIMIZATION_ENABLED", false);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error reading property/env for mysqlResultSetOptimizationEnabled", e);
+      }
+   }
 
 
    /*******************************************************************************
@@ -342,22 +356,19 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
    {
-      PreparedStatement statement;
-      if(connection.getClass().getName().startsWith("com.mysql"))
+      if(mysqlResultSetOptimizationEnabled && connection.getClass().getName().startsWith("com.mysql"))
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
          // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
          // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+         PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
          statement.setFetchSize(Integer.MIN_VALUE);
+         return (statement);
       }
-      else
-      {
-         statement = connection.prepareStatement(sql);
-      }
-      return (statement);
+
+      return (connection.prepareStatement(sql));
    }
 
 
