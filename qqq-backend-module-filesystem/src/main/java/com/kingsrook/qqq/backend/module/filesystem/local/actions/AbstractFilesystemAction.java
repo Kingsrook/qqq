@@ -23,36 +23,32 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
-import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.utils.SharedFilesystemBackendModuleUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOCase;
-import org.apache.commons.io.filefilter.AndFileFilter;
-import org.apache.commons.io.filefilter.NameFileFilter;
-import org.apache.commons.io.filefilter.OrFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 
 /*******************************************************************************
@@ -70,79 +66,69 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
    @Override
    public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
    {
-      String fullPath  = getFullBasePath(table, backendBase);
-      File   directory = new File(fullPath);
-      File[] files     = null;
-
-      AbstractFilesystemTableBackendDetails tableBackendDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
-
-      FileFilter fileFilter = TrueFileFilter.INSTANCE;
-
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if each file is its own record (ONE), then we may need to do filtering of the directory listing based on the input filter //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(Cardinality.ONE.equals(tableBackendDetails.getCardinality()))
+      try
       {
-         if(filter != null && filter.hasAnyCriteria())
+         String fullPath  = getFullBasePath(table, backendBase);
+         File   directory = new File(fullPath);
+
+         AbstractFilesystemTableBackendDetails tableBackendDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
+
+         String pattern = "regex:.*";
+         if(StringUtils.hasContent(tableBackendDetails.getGlob()))
          {
-            if(CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
-            {
-               ///////////////////////////////////////////////////////////////////////
-               // todo - well, we could - just build up a tree of and's and or's... //
-               ///////////////////////////////////////////////////////////////////////
-               throw (new QException("Filters with sub-filters are not supported for querying filesystems at this time."));
-            }
-
-            List<FileFilter> fileFilterList = new ArrayList<>();
-            for(QFilterCriteria criteria : filter.getCriteria())
-            {
-               if(tableBackendDetails.getFileNameFieldName().equals(criteria.getFieldName()))
-               {
-                  if(QCriteriaOperator.EQUALS.equals(criteria.getOperator()) && CollectionUtils.nonNullList(criteria.getValues()).size() == 1)
-                  {
-                     fileFilterList.add(new NameFileFilter(ValueUtils.getValueAsString(criteria.getValues().get(0))));
-                  }
-                  else if(QCriteriaOperator.IN.equals(criteria.getOperator()) && !CollectionUtils.nonNullList(criteria.getValues()).isEmpty())
-                  {
-                     List<NameFileFilter> nameInFilters = new ArrayList<>();
-                     for(int i = 0; i < criteria.getValues().size(); i++)
-                     {
-                        nameInFilters.add(new NameFileFilter(ValueUtils.getValueAsString(criteria.getValues().get(i))));
-                     }
-                     fileFilterList.add(new OrFileFilter(nameInFilters));
-                  }
-                  else
-                  {
-                     throw (new QException("Unable to query filename field using operator: " + criteria.getOperator()));
-                  }
-               }
-               else
-               {
-                  throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
-               }
-            }
-
-            fileFilter = QQueryFilter.BooleanOperator.AND.equals(filter.getBooleanOperator()) ? new AndFileFilter(fileFilterList) : new OrFileFilter(fileFilterList);
+            pattern = "glob:" + tableBackendDetails.getGlob();
          }
-      }
+         List<String> matchedFiles = recursivelyListFilesMatchingPattern(directory.toPath(), pattern, backendBase, table);
+         List<File>   rs           = new ArrayList<>();
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // if the table has a glob specified, add it as an AND to the filter built to this point //
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      if(StringUtils.hasContent(tableBackendDetails.getGlob()))
+         for(String matchedFile : matchedFiles)
+         {
+            if(SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails))
+            {
+               rs.add(new File(fullPath + File.separatorChar + matchedFile));
+            }
+         }
+
+         return (rs);
+      }
+      catch(Exception e)
       {
-         WildcardFileFilter globFilenameFilter = new WildcardFileFilter(tableBackendDetails.getGlob(), IOCase.INSENSITIVE);
-         fileFilter = new AndFileFilter(List.of(globFilenameFilter, fileFilter));
+         throw (new QException("Error searching files", e));
       }
+   }
 
-      files = directory.listFiles(fileFilter);
 
-      if(files == null)
+
+   /*******************************************************************************
+    ** Credit: https://www.baeldung.com/java-files-match-wildcard-strings
+    *******************************************************************************/
+   List<String> recursivelyListFilesMatchingPattern(Path rootDir, String pattern, QBackendMetaData backend, QTableMetaData table) throws IOException
+   {
+      List<String> matchesList = new ArrayList<>();
+
+      FileVisitor<Path> matcherVisitor = new SimpleFileVisitor<>()
       {
-         return Collections.emptyList();
+         @Override
+         public FileVisitResult visitFile(Path file, BasicFileAttributes attribs)
+         {
+            FileSystem  fs      = FileSystems.getDefault();
+            PathMatcher matcher = fs.getPathMatcher(pattern);
+            Path        path    = Path.of(stripBackendAndTableBasePathsFromFileName(file.toAbsolutePath().toString(), backend, table));
+
+            if(matcher.matches(path))
+            {
+               matchesList.add(path.toString());
+            }
+            return FileVisitResult.CONTINUE;
+         }
+      };
+
+      if(rootDir.toFile().exists())
+      {
+         Files.walkFileTree(rootDir, matcherVisitor);
       }
 
-      return (Arrays.stream(files).filter(File::isFile).toList());
+      return matchesList;
    }
 
 
