@@ -25,6 +25,11 @@ package com.kingsrook.qqq.backend.module.filesystem.s3;
 import java.util.List;
 import java.util.UUID;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -32,6 +37,9 @@ import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemExceptio
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -40,6 +48,83 @@ import org.junit.jupiter.api.Test;
 public class S3BackendModuleTest extends BaseS3Test
 {
    private final String PATH_THAT_WONT_EXIST = "some/path/that/wont/exist";
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testListFiles() throws QException
+   {
+      QInstance        qInstance = TestUtils.defineInstance();
+      QTableMetaData   table     = qInstance.getTable(TestUtils.TABLE_NAME_BLOB_S3);
+      QBackendMetaData backend   = qInstance.getBackendForTable(table.getName());
+
+      //////////////////////////////////////////////////////
+      // set up the backend module (e.g., for localstack) //
+      //////////////////////////////////////////////////////
+      S3BackendModule  s3BackendModule = new S3BackendModule();
+      AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
+      actionBase.setS3Utils(getS3Utils());
+
+      //////////////////////////////////////////////////////////
+      // with no filter given, all (3) files should come back //
+      //////////////////////////////////////////////////////////
+      List<S3ObjectSummary> files = actionBase.listFiles(table, backend);
+      assertEquals(3, files.size());
+
+      /////////////////////////////////////////
+      // filter for a file name that's found //
+      /////////////////////////////////////////
+      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      assertEquals(1, files.size());
+      assertThat(files.get(0).getKey()).contains("BLOB-2.txt");
+
+      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      assertEquals(1, files.size());
+      assertThat(files.get(0).getKey()).contains("BLOB-1.txt");
+
+      ///////////////////////////////////
+      // filter for 2 names that exist //
+      ///////////////////////////////////
+      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
+      assertEquals(2, files.size());
+
+      /////////////////////////////////////////////
+      // filter for a file name that isn't found //
+      /////////////////////////////////////////////
+      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "NOT-FOUND.txt")));
+      assertEquals(0, files.size());
+
+      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
+      assertEquals(1, files.size());
+
+      ////////////////////////////////////////////////////
+      // 2 criteria, and'ed, and can't match, so find 0 //
+      ////////////////////////////////////////////////////
+      files = actionBase.listFiles(table, backend, new QQueryFilter(
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      assertEquals(0, files.size());
+
+      //////////////////////////////////////////////////
+      // 2 criteria, or'ed, and both match, so find 2 //
+      //////////////////////////////////////////////////
+      files = actionBase.listFiles(table, backend, new QQueryFilter(
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
+         .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      assertEquals(2, files.size());
+
+      //////////////////////////////////////
+      // ensure unsupported filters throw //
+      //////////////////////////////////////
+      assertThatThrownBy(() -> actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("foo", QCriteriaOperator.GREATER_THAN, 42))))
+         .hasMessageContaining("Unable to query filesystem table by field");
+      assertThatThrownBy(() -> actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IS_BLANK))))
+         .hasMessageContaining("Unable to query filename field using operator");
+   }
 
 
 

@@ -37,7 +37,14 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
 
@@ -61,7 +68,19 @@ public class S3Utils
     ** List the objects in an S3 bucket matching a glob, per:
     ** https://docs.oracle.com/javase/7/docs/api/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)
     *******************************************************************************/
-   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob)
+   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob) throws QException
+   {
+      return listObjectsInBucketMatchingGlob(bucketName, path, glob, null, null);
+   }
+
+
+
+   /*******************************************************************************
+    ** List the objects in an S3 bucket matching a glob, per:
+    ** https://docs.oracle.com/javase/7/docs/api/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)
+    ** and also - (possibly) apply a file-name filter (based on the table's details).
+    *******************************************************************************/
+   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob, QQueryFilter filter, AbstractFilesystemTableBackendDetails tableDetails) throws QException
    {
       //////////////////////////////////////////////////////////////////////////////////////////////////
       // s3 list requests find nothing if the path starts with a /, so strip away any leading slashes //
@@ -77,6 +96,32 @@ public class S3Utils
          prefix = prefix.substring(0, prefix.indexOf('*'));
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // for a file-per-record (ONE) table, we may need to apply the filter to listing.                    //
+      // but for MANY tables, the filtering would be done on the records after they came out of the files. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      boolean useQQueryFilter = false;
+      if(tableDetails != null && Cardinality.ONE.equals(tableDetails.getCardinality()))
+      {
+         useQQueryFilter = true;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there's a filter for single file, make that file name the "prefix" that we send to s3, so we just get back that 1 file. //
+      // as this will be a common case.                                                                                             //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(filter != null && useQQueryFilter)
+      {
+         if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
+         {
+            QFilterCriteria criteria = filter.getCriteria().get(0);
+            if(tableDetails.getFileNameFieldName().equals(criteria.getFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
+            {
+               prefix += "/" + criteria.getValues().get(0);
+            }
+         }
+      }
+
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // mmm, we're assuming here we always want more than 1 file - so there must be some * in the glob.                //
       // That's a bad assumption, as it doesn't consider other wildcards like ? and [-] - but - put that aside for now. //
@@ -86,6 +131,7 @@ public class S3Utils
       {
          glob = "";
       }
+
       if(!glob.contains("*"))
       {
          if(glob.equals(""))
@@ -114,7 +160,7 @@ public class S3Utils
          {
             listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken());
          }
-         LOG.info("Listing bucket=" + bucketName + ", path=" + path);
+         LOG.info("Listing bucket=" + bucketName + ", path=" + path + ", prefix=" + prefix + ", glob=" + glob);
          listObjectsV2Result = getAmazonS3().listObjectsV2(listObjectsV2Request);
 
          //////////////////////////////////
@@ -149,12 +195,129 @@ public class S3Utils
                continue;
             }
 
+            ///////////////////////////////////////////////////////////////////////////////////
+            // if we're a file-per-record table, and we have a filter, compare the key to it //
+            ///////////////////////////////////////////////////////////////////////////////////
+            if(!doesObjectKeyMatchFilter(key, filter, tableDetails))
+            {
+               continue;
+            }
+
             rs.add(objectSummary);
+
+            /////////////////////////////////////////////////////////////////
+            // if we have a limit, and we've hit it, break out of the loop //
+            /////////////////////////////////////////////////////////////////
+            if(filter != null && useQQueryFilter && filter.getLimit() != null)
+            {
+               if(rs.size() >= filter.getLimit())
+               {
+                  break;
+               }
+            }
+
          }
       }
       while(listObjectsV2Result.isTruncated());
 
       return rs;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean doesObjectKeyMatchFilter(String key, QQueryFilter filter, AbstractFilesystemTableBackendDetails tableDetails) throws QException
+   {
+      if(filter == null || !filter.hasAnyCriteria())
+      {
+         return (true);
+      }
+
+      if(CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
+      {
+         ///////////////////////////////
+         // todo - well, we could ... //
+         ///////////////////////////////
+         throw (new QException("Filters with sub-filters are not supported for querying filesystems at this time."));
+      }
+
+      Path path = Path.of(URI.create("file:///" + key));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // foreach criteria, build a pathmatcher (or many, for an in-list), and check if the file matches //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QFilterCriteria criteria : filter.getCriteria())
+      {
+         boolean matches = doesObjectKeyMatchOneCriteria(criteria, tableDetails, path);
+
+         if(!matches && QQueryFilter.BooleanOperator.AND.equals(filter.getBooleanOperator()))
+         {
+            ////////////////////////////////////////////////////////////////////////////////
+            // if it's not a match, and it's an AND filter, then the whole thing is false //
+            ////////////////////////////////////////////////////////////////////////////////
+            return (false);
+         }
+
+         if(matches && QQueryFilter.BooleanOperator.OR.equals(filter.getBooleanOperator()))
+         {
+            ////////////////////////////////////////////////////////////
+            // if it's an OR filter, and we've a match, return a true //
+            ////////////////////////////////////////////////////////////
+            return (true);
+         }
+      }
+
+      //////////////////////////////////////////////////////////////////////
+      // if we didn't return above, return now                            //
+      // for an OR - if we didn't find something true, then return false. //
+      // else, an AND - if we didn't find a false, we can return true.    //
+      //////////////////////////////////////////////////////////////////////
+      if(QQueryFilter.BooleanOperator.OR.equals(filter.getBooleanOperator()))
+      {
+         return (false);
+      }
+
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static boolean doesObjectKeyMatchOneCriteria(QFilterCriteria criteria, AbstractFilesystemTableBackendDetails tableBackendDetails, Path path) throws QException
+   {
+      if(tableBackendDetails.getFileNameFieldName().equals(criteria.getFieldName()))
+      {
+         if(QCriteriaOperator.EQUALS.equals(criteria.getOperator()) && CollectionUtils.nonNullList(criteria.getValues()).size() == 1)
+         {
+            return (FileSystems.getDefault().getPathMatcher("glob:**/" + criteria.getValues().get(0)).matches(path));
+         }
+         else if(QCriteriaOperator.IN.equals(criteria.getOperator()) && !CollectionUtils.nonNullList(criteria.getValues()).isEmpty())
+         {
+            boolean anyMatch = false;
+            for(int i = 0; i < criteria.getValues().size(); i++)
+            {
+               if(FileSystems.getDefault().getPathMatcher("glob:**/" + criteria.getValues().get(i)).matches(path))
+               {
+                  anyMatch = true;
+                  break;
+               }
+            }
+
+            return (anyMatch);
+         }
+         else
+         {
+            throw (new QException("Unable to query filename field using operator: " + criteria.getOperator()));
+         }
+      }
+      else
+      {
+         throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
+      }
    }
 
 
@@ -245,4 +408,5 @@ public class S3Utils
 
       return amazonS3;
    }
+
 }

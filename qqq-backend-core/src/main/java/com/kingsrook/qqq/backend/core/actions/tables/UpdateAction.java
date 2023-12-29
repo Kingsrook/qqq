@@ -137,6 +137,15 @@ public class UpdateAction
       ////////////////////////////////////
       UpdateOutput updateOutput = updateInterface.execute(updateInput);
 
+      if(updateOutput.getRecords() == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // in case the module failed to set record in the output, put an empty list there //
+         // to avoid so many downstream NPE's                                              //
+         ////////////////////////////////////////////////////////////////////////////////////
+         updateOutput.setRecords(new ArrayList<>());
+      }
+
       //////////////////////////////
       // log if there were errors //
       //////////////////////////////

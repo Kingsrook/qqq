@@ -89,6 +89,7 @@ public class FilesystemActionTest extends BaseTest
 
       writePersonJSONFiles(baseDirectory);
       writePersonCSVFiles(baseDirectory);
+      writeBlobFiles(baseDirectory);
    }
 
 
@@ -154,6 +155,37 @@ public class FilesystemActionTest extends BaseTest
          "4","2022-07-18 15:53:00","2022-07-18 15:53:00","Marge","S","1984-04-04","marge.s@kingsrook.com"
          "5","2022-11-11 12:00:00","2022-11-12 13:00:00","Bart","S","1985-05-05","bart.s@kingsrook.com\""""; // intentionally no \n at EOL here
       FileUtils.writeStringToFile(new File(fullPath + "FILE-2.csv"), csvData2);
+   }
+
+
+
+   /*******************************************************************************
+    ** Write some data files into the directory for the filesystem module.
+    *******************************************************************************/
+   private void writeBlobFiles(File baseDirectory) throws IOException
+   {
+      String fullPath = baseDirectory.getAbsolutePath();
+      if(TestUtils.defineLocalFilesystemBlobTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)
+      {
+         if(StringUtils.hasContent(details.getBasePath()))
+         {
+            fullPath += File.separatorChar + details.getBasePath();
+         }
+      }
+      fullPath += File.separatorChar;
+
+      String data1 = """
+         Hello, Blob
+         """;
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-1.txt"), data1);
+
+      String data2 = """
+         Hi Bob""";
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-2.txt"), data2);
+
+      String data3 = """
+         # Hi MD...""";
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-3.md"), data3);
    }
 
 

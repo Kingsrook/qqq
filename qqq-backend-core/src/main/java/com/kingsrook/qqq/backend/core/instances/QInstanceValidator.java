@@ -480,6 +480,11 @@ public class QInstanceValidator
                validateTableCustomizer(tableName, entry.getKey(), entry.getValue());
             }
 
+            if(table.getBackendDetails() != null)
+            {
+               table.getBackendDetails().validate(qInstance, table, this);
+            }
+
             validateTableAutomationDetails(qInstance, table);
             validateTableUniqueKeys(table);
             validateAssociatedScripts(table);
