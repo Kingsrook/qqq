@@ -141,8 +141,10 @@ public class FilesystemBackendModuleTest
       // ensure unsupported filters throw //
       //////////////////////////////////////
       assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("foo", QCriteriaOperator.GREATER_THAN, 42))))
+         .rootCause()
          .hasMessageContaining("Unable to query filesystem table by field");
       assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IS_BLANK))))
+         .rootCause()
          .hasMessageContaining("Unable to query filename field using operator");
    }
 

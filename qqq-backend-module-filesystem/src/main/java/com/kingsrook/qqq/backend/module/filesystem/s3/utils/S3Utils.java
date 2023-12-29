@@ -42,9 +42,9 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.utils.SharedFilesystemBackendModuleUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
 
@@ -198,7 +198,7 @@ public class S3Utils
             ///////////////////////////////////////////////////////////////////////////////////
             // if we're a file-per-record table, and we have a filter, compare the key to it //
             ///////////////////////////////////////////////////////////////////////////////////
-            if(!doesObjectKeyMatchFilter(key, filter, tableDetails))
+            if(!SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(key, filter, tableDetails))
             {
                continue;
             }
@@ -221,103 +221,6 @@ public class S3Utils
       while(listObjectsV2Result.isTruncated());
 
       return rs;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private boolean doesObjectKeyMatchFilter(String key, QQueryFilter filter, AbstractFilesystemTableBackendDetails tableDetails) throws QException
-   {
-      if(filter == null || !filter.hasAnyCriteria())
-      {
-         return (true);
-      }
-
-      if(CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
-      {
-         ///////////////////////////////
-         // todo - well, we could ... //
-         ///////////////////////////////
-         throw (new QException("Filters with sub-filters are not supported for querying filesystems at this time."));
-      }
-
-      Path path = Path.of(URI.create("file:///" + key));
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
-      // foreach criteria, build a pathmatcher (or many, for an in-list), and check if the file matches //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
-      for(QFilterCriteria criteria : filter.getCriteria())
-      {
-         boolean matches = doesObjectKeyMatchOneCriteria(criteria, tableDetails, path);
-
-         if(!matches && QQueryFilter.BooleanOperator.AND.equals(filter.getBooleanOperator()))
-         {
-            ////////////////////////////////////////////////////////////////////////////////
-            // if it's not a match, and it's an AND filter, then the whole thing is false //
-            ////////////////////////////////////////////////////////////////////////////////
-            return (false);
-         }
-
-         if(matches && QQueryFilter.BooleanOperator.OR.equals(filter.getBooleanOperator()))
-         {
-            ////////////////////////////////////////////////////////////
-            // if it's an OR filter, and we've a match, return a true //
-            ////////////////////////////////////////////////////////////
-            return (true);
-         }
-      }
-
-      //////////////////////////////////////////////////////////////////////
-      // if we didn't return above, return now                            //
-      // for an OR - if we didn't find something true, then return false. //
-      // else, an AND - if we didn't find a false, we can return true.    //
-      //////////////////////////////////////////////////////////////////////
-      if(QQueryFilter.BooleanOperator.OR.equals(filter.getBooleanOperator()))
-      {
-         return (false);
-      }
-
-      return (true);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static boolean doesObjectKeyMatchOneCriteria(QFilterCriteria criteria, AbstractFilesystemTableBackendDetails tableBackendDetails, Path path) throws QException
-   {
-      if(tableBackendDetails.getFileNameFieldName().equals(criteria.getFieldName()))
-      {
-         if(QCriteriaOperator.EQUALS.equals(criteria.getOperator()) && CollectionUtils.nonNullList(criteria.getValues()).size() == 1)
-         {
-            return (FileSystems.getDefault().getPathMatcher("glob:**/" + criteria.getValues().get(0)).matches(path));
-         }
-         else if(QCriteriaOperator.IN.equals(criteria.getOperator()) && !CollectionUtils.nonNullList(criteria.getValues()).isEmpty())
-         {
-            boolean anyMatch = false;
-            for(int i = 0; i < criteria.getValues().size(); i++)
-            {
-               if(FileSystems.getDefault().getPathMatcher("glob:**/" + criteria.getValues().get(i)).matches(path))
-               {
-                  anyMatch = true;
-                  break;
-               }
-            }
-
-            return (anyMatch);
-         }
-         else
-         {
-            throw (new QException("Unable to query filename field using operator: " + criteria.getOperator()));
-         }
-      }
-      else
-      {
-         throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
-      }
    }
 
 
