@@ -117,7 +117,15 @@ public class S3Utils
             QFilterCriteria criteria = filter.getCriteria().get(0);
             if(tableDetails.getFileNameFieldName().equals(criteria.getFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
             {
-               prefix += "/" + criteria.getValues().get(0);
+               if(!prefix.isEmpty())
+               {
+                  ///////////////////////////////////////////////////////
+                  // remember, a prefix starting with / finds nothing! //
+                  ///////////////////////////////////////////////////////
+                  prefix += "/";
+               }
+
+               prefix += criteria.getValues().get(0);
             }
          }
       }

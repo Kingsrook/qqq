@@ -55,9 +55,10 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   public static final String BACKEND_NAME_LOCAL_FS = "local-filesystem";
-   public static final String BACKEND_NAME_S3       = "s3";
-   public static final String BACKEND_NAME_MOCK     = "mock";
+   public static final String BACKEND_NAME_LOCAL_FS       = "local-filesystem";
+   public static final String BACKEND_NAME_S3             = "s3";
+   public static final String BACKEND_NAME_S3_SANS_PREFIX = "s3sansPrefix";
+   public static final String BACKEND_NAME_MOCK           = "mock";
 
    public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
    public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
@@ -65,6 +66,7 @@ public class TestUtils
    public static final String TABLE_NAME_PERSON_S3            = "person-s3";
    public static final String TABLE_NAME_BLOB_S3              = "s3-blob";
    public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
+   public static final String TABLE_NAME_BLOB_S3_SANS_PREFIX = "s3-blob-sans-prefix";
 
    public static final String PROCESS_NAME_STREAMED_ETL = "etl.streamed";
 
@@ -135,8 +137,10 @@ public class TestUtils
       qInstance.addTable(defineLocalFilesystemCSVPersonTable());
       qInstance.addTable(defineLocalFilesystemBlobTable());
       qInstance.addBackend(defineS3Backend());
+      qInstance.addBackend(defineS3BackendSansPrefix());
       qInstance.addTable(defineS3CSVPersonTable());
       qInstance.addTable(defineS3BlobTable());
+      qInstance.addTable(defineS3BlobSansPrefixTable());
       qInstance.addBackend(defineMockBackend());
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
@@ -278,12 +282,45 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static QTableMetaData defineS3BlobSansPrefixTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_BLOB_S3_SANS_PREFIX)
+         .withLabel("Blob S3")
+         .withBackendName(defineS3BackendSansPrefix().getName())
+         .withPrimaryKeyField("fileName")
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withBackendDetails(new S3TableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static S3BackendMetaData defineS3Backend()
    {
       return (new S3BackendMetaData()
          .withBucketName(BaseS3Test.BUCKET_NAME)
          .withBasePath(BaseS3Test.TEST_FOLDER)
          .withName(BACKEND_NAME_S3));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static S3BackendMetaData defineS3BackendSansPrefix()
+   {
+      return (new S3BackendMetaData()
+         .withBucketName(BaseS3Test.BUCKET_NAME_FOR_SANS_PREFIX_BACKEND)
+         .withName(BACKEND_NAME_S3_SANS_PREFIX));
    }
 
 

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3;
 
 
+import java.util.List;
 import cloud.localstack.ServiceName;
 import cloud.localstack.awssdkv1.TestUtils;
 import cloud.localstack.docker.LocalstackDockerExtension;
@@ -46,6 +47,7 @@ public class BaseS3Test extends BaseTest
    public static final String TEST_FOLDER = "test-files";
    public static final String SUB_FOLDER  = "sub-folder";
 
+   public static final String BUCKET_NAME_FOR_SANS_PREFIX_BACKEND = "localstack-test-bucket-sans-prefix";
 
 
    /*******************************************************************************
@@ -65,6 +67,11 @@ public class BaseS3Test extends BaseTest
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-1.txt", "Hello, Blob");
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-2.txt", "Hi, Bob");
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-3.md", "# Hi, MD");
+
+      amazonS3.createBucket(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND);
+      amazonS3.putObject(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND, "BLOB-1.txt", "Hello, Blob");
+      amazonS3.putObject(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND, "BLOB-2.txt", "Hi, Bob");
+      amazonS3.putObject(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND, "BLOB-3.md", "# Hi, MD");
    }
 
 
@@ -77,16 +84,19 @@ public class BaseS3Test extends BaseTest
    {
       AmazonS3 amazonS3 = getAmazonS3();
 
-      if(amazonS3.doesBucketExistV2(BUCKET_NAME))
+      for(String bucketName : List.of(BUCKET_NAME, BUCKET_NAME_FOR_SANS_PREFIX_BACKEND))
       {
-         ////////////////////////
-         // todo - paginate... //
-         ////////////////////////
-         for(S3ObjectSummary objectSummary : amazonS3.listObjectsV2(BUCKET_NAME).getObjectSummaries())
+         if(amazonS3.doesBucketExistV2(bucketName))
          {
-            amazonS3.deleteObject(BUCKET_NAME, objectSummary.getKey());
+            ////////////////////////
+            // todo - paginate... //
+            ////////////////////////
+            for(S3ObjectSummary objectSummary : amazonS3.listObjectsV2(bucketName).getObjectSummaries())
+            {
+               amazonS3.deleteObject(bucketName, objectSummary.getKey());
+            }
+            amazonS3.deleteBucket(bucketName);
          }
-         amazonS3.deleteBucket(BUCKET_NAME);
       }
    }
 
