@@ -151,6 +151,14 @@ class QRecordTest extends BaseTest
       QRecord            recordWithArrayListValue = new QRecord().withValue("myList", originalArrayList);
       QRecord            cloneWithArrayListValue  = new QRecord(recordWithArrayListValue);
 
+      ////////////////////////////////////////////
+      // qrecord as a value inside another (!?) //
+      ////////////////////////////////////////////
+      QRecord nestedQRecordValue     = new QRecord().withValue("myRecord", new QRecord().withValue("A", 1));
+      QRecord cloneWithNestedQRecord = new QRecord(nestedQRecordValue);
+      assertEquals(1, ((QRecord) cloneWithNestedQRecord.getValue("myRecord")).getValueInteger("A"));
+      assertNotSame(cloneWithNestedQRecord.getValue("myRecord"), nestedQRecordValue.getValue("myRecord"));
+
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // the clone list and original list should be equals (have contents that are equals), but not be the same (reference) //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

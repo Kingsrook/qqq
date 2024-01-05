@@ -108,7 +108,7 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
-    ** Copy constructor.
+    ** Copy constructor.  Makes a deep clone.
     **
     *******************************************************************************/
    public QRecord(QRecord record)
@@ -120,10 +120,10 @@ public class QRecord implements Serializable
       this.displayValues = deepCopySimpleMap(record.displayValues);
       this.backendDetails = deepCopySimpleMap(record.backendDetails);
 
-      this.associatedRecords = deepCopyAssociatedRecords(record.associatedRecords);
-
       this.errors = record.errors == null ? null : new ArrayList<>(record.errors);
       this.warnings = record.warnings == null ? null : new ArrayList<>(record.warnings);
+
+      this.associatedRecords = deepCopyAssociatedRecords(record.associatedRecords);
    }
 
 
@@ -143,17 +143,17 @@ public class QRecord implements Serializable
     ** todo - move to a cloning utils maybe?
     *******************************************************************************/
    @SuppressWarnings({ "unchecked" })
-   private <K, V> Map<K, V> deepCopySimpleMap(Map<K, V> map)
+   private <V extends Serializable> Map<String, V> deepCopySimpleMap(Map<String, V> map)
    {
       if(map == null)
       {
          return (null);
       }
 
-      Map<K, V> clone = new LinkedHashMap<>();
-      for(Map.Entry<K, V> entry : map.entrySet())
+      Map<String, V> clone = new LinkedHashMap<>();
+      for(Map.Entry<String, V> entry : map.entrySet())
       {
-         V value = entry.getValue();
+         Serializable value = entry.getValue();
 
          //////////////////////////////////////////////////////////////////////////
          // not sure from where/how java.sql.Date objects are getting in here... //
@@ -167,15 +167,17 @@ public class QRecord implements Serializable
             ArrayList<?> cloneList = new ArrayList<>(arrayList);
             clone.put(entry.getKey(), (V) cloneList);
          }
-         else if(entry.getValue() instanceof Serializable serializableValue)
+         else if(entry.getValue() instanceof QRecord otherQRecord)
          {
-            LOG.info("Non-primitive serializable value in QRecord - calling SerializationUtils.clone...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
-            clone.put(entry.getKey(), (V) SerializationUtils.clone(serializableValue));
+            clone.put(entry.getKey(), (V) new QRecord(otherQRecord));
          }
          else
          {
-            LOG.warn("Non-serializable value in QRecord...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
-            clone.put(entry.getKey(), entry.getValue());
+            //////////////////////////////////////////////////////////////////////////////
+            // we know entry is serializable at this point, based on type param's bound //
+            //////////////////////////////////////////////////////////////////////////////
+            LOG.info("Non-primitive serializable value in QRecord - calling SerializationUtils.clone...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
+            clone.put(entry.getKey(), (V) SerializationUtils.clone(entry.getValue()));
          }
       }
       return (clone);
