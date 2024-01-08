@@ -22,20 +22,27 @@
 package com.kingsrook.qqq.backend.module.rdbms;
 
 
+import java.sql.Connection;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.module.rdbms.actions.AbstractRDBMSAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSCountAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSInsertAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSQueryAction;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSTransaction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSUpdateAction;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
@@ -46,6 +53,10 @@ import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDe
  *******************************************************************************/
 public class RDBMSBackendModule implements QBackendModuleInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(RDBMSBackendModule.class);
+
+
+
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).
     *******************************************************************************/
@@ -140,6 +151,26 @@ public class RDBMSBackendModule implements QBackendModuleInterface
    public AggregateInterface getAggregateInterface()
    {
       return (new RDBMSAggregateAction());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QBackendTransaction openTransaction(AbstractTableActionInput input) throws QException
+   {
+      try
+      {
+         LOG.debug("Opening transaction");
+         Connection connection = AbstractRDBMSAction.getConnection(input);
+         return (new RDBMSTransaction(connection));
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error opening transaction: " + e.getMessage(), e);
+      }
    }
 
 }
