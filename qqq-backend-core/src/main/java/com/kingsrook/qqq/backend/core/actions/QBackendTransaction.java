@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
 /*******************************************************************************
@@ -30,11 +33,25 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
  ** part of a transaction.
  **
  ** Most obvious use-case would be a JDBC Connection.  See subclass in rdbms module.
+ ** Ditto MongoDB.
  **
  ** Note:  One would imagine that this class shouldn't ever implement Serializable...
  *******************************************************************************/
 public class QBackendTransaction
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QBackendTransaction openFor(AbstractTableActionInput input) throws QException
+   {
+      QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(input.getBackend());
+      QBackendTransaction      transaction              = qModule.openTransaction(input);
+      return (transaction);
+   }
+
+
 
    /*******************************************************************************
     ** Commit the transaction.

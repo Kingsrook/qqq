@@ -27,7 +27,6 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -116,7 +115,7 @@ public class StreamedETLBackendStep implements BackendStep
 
       insertInput.setTableName(runBackendStepInput.getValueString(BasicETLProcess.FIELD_DESTINATION_TABLE));
 
-      return new InsertAction().openTransaction(insertInput);
+      return QBackendTransaction.openFor(insertInput);
    }
 
 

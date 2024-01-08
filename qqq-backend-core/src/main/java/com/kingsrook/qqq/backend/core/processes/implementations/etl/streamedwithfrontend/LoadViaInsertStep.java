@@ -88,7 +88,6 @@ public class LoadViaInsertStep extends AbstractLoadStep
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
+      return (Optional.of(QBackendTransaction.openFor(insertInput)));
    }
 }

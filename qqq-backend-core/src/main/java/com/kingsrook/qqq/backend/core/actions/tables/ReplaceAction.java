@@ -84,9 +84,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          String         primaryKeyField = table.getPrimaryKeyField();
          if(transaction == null)
          {
-            InsertInput insertInput = new InsertInput();
-            insertInput.setTableName(input.getTableName());
-            transaction = new InsertAction().openTransaction(insertInput);
+            transaction = QBackendTransaction.openFor(new InsertInput(input.getTableName()));
             weOwnTheTransaction = true;
          }
 
