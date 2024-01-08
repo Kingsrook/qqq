@@ -103,13 +103,23 @@ public class JsonToQRecordAdapter
    {
       QRecord record = new QRecord();
 
-      for(QFieldMetaData field : table.getFields().values())
+      if(table == null)
       {
-         String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
-         // todo - so if the mapping didn't say how to map this field, does that mean we should use the default name for the field?
-         if(jsonObject.has(fieldSource))
+         jsonObject.keys().forEachRemaining(key ->
          {
-            record.setValue(field.getName(), (Serializable) jsonObject.get(fieldSource));
+            record.setValue(key, jsonObject.optString(key));
+         });
+      }
+      else
+      {
+         for(QFieldMetaData field : table.getFields().values())
+         {
+            String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
+            // todo - so if the mapping didn't say how to map this field, does that mean we should use the default name for the field?
+            if(jsonObject.has(fieldSource))
+            {
+               record.setValue(field.getName(), (Serializable) jsonObject.get(fieldSource));
+            }
          }
       }
 

@@ -168,6 +168,29 @@ class JsonToQRecordAdapterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   public void test_buildRecordsFromJsonWithoutTable_inputList()
+   {
+      JsonToQRecordAdapter jsonToQRecordAdapter = new JsonToQRecordAdapter();
+      List<QRecord> qRecords = jsonToQRecordAdapter.buildRecordsFromJson("""
+         [
+            { "firstName":"Tyler", "last":"Samples" },
+            { "firstName":"Tim", "lastName":"Chamberlain" }
+         ]
+         """, null, null);
+      assertNotNull(qRecords);
+      assertEquals(2, qRecords.size());
+      assertEquals("Tyler", qRecords.get(0).getValue("firstName"));
+      assertEquals("Samples", qRecords.get(0).getValue("last"));
+      assertEquals("Tim", qRecords.get(1).getValue("firstName"));
+      assertEquals("Chamberlain", qRecords.get(1).getValue("lastName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void test_buildRecordsFromJson_inputListWithNonObjectMembers()
    {
       testExpectedToThrow("[ 1701 ]");
