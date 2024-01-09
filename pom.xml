@@ -33,6 +33,7 @@
       <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
       <module>qqq-backend-module-rdbms</module>
+      <module>qqq-backend-module-mongodb</module>
       <module>qqq-language-support-javascript</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
