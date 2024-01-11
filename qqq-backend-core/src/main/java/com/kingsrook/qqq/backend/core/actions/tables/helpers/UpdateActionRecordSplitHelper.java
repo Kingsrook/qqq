@@ -171,7 +171,7 @@ public class UpdateActionRecordSplitHelper
 
 
    /*******************************************************************************
-    ** Getter for haveAnyWithoutErorrs
+    ** Getter for haveAnyWithoutErrors
     **
     *******************************************************************************/
    public boolean getHaveAnyWithoutErrors()
