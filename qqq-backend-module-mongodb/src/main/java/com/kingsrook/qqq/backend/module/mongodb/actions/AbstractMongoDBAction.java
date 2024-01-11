@@ -25,10 +25,12 @@ package com.kingsrook.qqq.backend.module.mongodb.actions;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -86,7 +88,8 @@ public class AbstractMongoDBAction
          return (new MongoClientContainer(mongoDBTransaction.getMongoClient(), mongoDBTransaction.getClientSession(), false));
       }
 
-      ConnectionString connectionString = new ConnectionString("mongodb://" + backend.getHost() + ":" + backend.getPort() + "/");
+      String           suffix           = StringUtils.hasContent(backend.getUrlSuffix()) ? "?" + backend.getUrlSuffix() : "";
+      ConnectionString connectionString = new ConnectionString("mongodb://" + backend.getHost() + ":" + backend.getPort() + "/" + suffix);
 
       MongoCredential credential = MongoCredential.createCredential(backend.getUsername(), backend.getAuthSourceDatabase(), backend.getPassword().toCharArray());
 
@@ -165,19 +168,66 @@ public class AbstractMongoDBAction
       QRecord record = new QRecord();
       record.setTableName(table.getName());
 
-      ///////////////////////////////////////////////////////////////////////////
-      // todo - this - or iterate over the values in the document??            //
-      // seems like, maybe, this is an attribute in the table-backend-details? //
-      ///////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // first iterate over the table's fields, looking for them (at their backend name (path,    //
+      // if it has dots) inside the document note that we'll remove values from the document      //
+      // as we go - then after this loop, will handle all remaining values as unstructured fields //
+      //////////////////////////////////////////////////////////////////////////////////////////////
       Map<String, Serializable> values = record.getValues();
       for(QFieldMetaData field : table.getFields().values())
       {
+         String fieldName = field.getName();
          String fieldBackendName = getFieldBackendName(field);
-         Object value            = document.get(fieldBackendName);
-         String fieldName        = field.getName();
 
-         setValue(values, fieldName, value);
+         if(fieldBackendName.contains("."))
+         {
+            /////////////////////////////////////////////////////////////
+            // process backend-names with dots as hierarchical objects //
+            /////////////////////////////////////////////////////////////
+            String[] parts       = fieldBackendName.split("\\.");
+            Document tmpDocument = document;
+            for(int i = 0; i < parts.length - 1; i++)
+            {
+               if(!tmpDocument.containsKey(parts[i]))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if we can't find the sub-document, break, and we won't have a value for this field (do we want null?) //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  setValue(values, fieldName, null);
+                  break;
+               }
+               else
+               {
+                  if(tmpDocument.get(parts[i]) instanceof Document subDocument)
+                  {
+                     tmpDocument = subDocument;
+                  }
+                  else
+                  {
+                     LOG.warn("Unexpected - In table [" + table.getName() + "] found a non-document at sub-key [" + parts[i] + "] for field [" + field.getName() + "]");
+                  }
+               }
+            }
+
+            Object value = tmpDocument.remove(parts[parts.length - 1]);
+            setValue(values, fieldName, value);
+         }
+         else
+         {
+            Object value = document.remove(fieldBackendName);
+            setValue(values, fieldName, value);
+         }
       }
+
+      //////////////////////////////////////////////////////////////
+      // handle remaining values in the document as un-structured //
+      //////////////////////////////////////////////////////////////
+      for(String subFieldName : document.keySet())
+      {
+         Object subValue = document.get(subFieldName);
+         setValue(values, subFieldName, subValue);
+      }
+
       return (record);
    }
 
@@ -227,17 +277,23 @@ public class AbstractMongoDBAction
    /*******************************************************************************
     ** Convert a QRecord to a mongodb document.
     *******************************************************************************/
-   protected Document recordToDocument(QTableMetaData table, QRecord record)
+   protected Document recordToDocument(QTableMetaData table, QRecord record) throws QException
    {
       Document document = new Document();
 
-      ///////////////////////////////////////////////////////////////////////////
-      // todo - this - or iterate over the values in the record??              //
-      // seems like, maybe, this is an attribute in the table-backend-details? //
-      ///////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // first iterate over fields defined in the table - put them in the document for mongo first. //
+      // track the names that we've processed in a set. then later we'll go over all values in the  //
+      // record and send them all to mongo (skipping ones we knew about from the table definition)  //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      Set<String> processedFields = new HashSet<>();
+
       for(QFieldMetaData field : table.getFields().values())
       {
-         if(field.getName().equals(table.getPrimaryKeyField()) && record.getValue(field.getName()) == null)
+         Serializable value = record.getValue(field.getName());
+         processedFields.add(field.getName());
+
+         if(field.getName().equals(table.getPrimaryKeyField()) && value == null)
          {
             ////////////////////////////////////
             // let mongodb client generate id //
@@ -246,8 +302,53 @@ public class AbstractMongoDBAction
          }
 
          String fieldBackendName = getFieldBackendName(field);
-         document.append(fieldBackendName, record.getValue(field.getName()));
+         if(fieldBackendName.contains("."))
+         {
+            /////////////////////////////////////////////////////////////
+            // process backend-names with dots as hierarchical objects //
+            /////////////////////////////////////////////////////////////
+            String[] parts       = fieldBackendName.split("\\.");
+            Document tmpDocument = document;
+            for(int i = 0; i < parts.length - 1; i++)
+            {
+               if(!tmpDocument.containsKey(parts[i]))
+               {
+                  Document subDocument = new Document();
+                  tmpDocument.put(parts[i], subDocument);
+                  tmpDocument = subDocument;
+               }
+               else
+               {
+                  if(tmpDocument.get(parts[i]) instanceof Document subDocument)
+                  {
+                     tmpDocument = subDocument;
+                  }
+                  else
+                  {
+                     throw (new QException("Fields in table [" + table.getName() + "] specify both a sub-object and a field at the key: " + parts[i]));
+                  }
+               }
+            }
+            tmpDocument.append(parts[parts.length - 1], value);
+         }
+         else
+         {
+            document.append(fieldBackendName, value);
+         }
       }
+
+      /////////////////////////
+      // do remaining values //
+      /////////////////////////
+      // for(Map.Entry<String, Serializable> entry : clone.getValues().entrySet())
+      for(Map.Entry<String, Serializable> entry : record.getValues().entrySet())
+      {
+         if(!processedFields.contains(entry.getKey()))
+         {
+            document.append(entry.getKey(), entry.getValue());
+         }
+      }
+
       return (document);
    }
 

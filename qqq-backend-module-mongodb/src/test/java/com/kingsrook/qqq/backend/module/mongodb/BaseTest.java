@@ -26,8 +26,17 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.module.mongodb.actions.AbstractMongoDBAction;
+import com.kingsrook.qqq.backend.module.mongodb.actions.MongoClientContainer;
+import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoDatabase;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
 
 /*******************************************************************************
@@ -36,6 +45,27 @@ import org.junit.jupiter.api.BeforeEach;
 public class BaseTest
 {
    private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
+
+   private static GenericContainer<?> mongoDBContainer;
+
+   private static final String MONGO_IMAGE = "mongo:4.2.0-bionic";
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeAll
+   static void beforeAll()
+   {
+      mongoDBContainer = new GenericContainer<>(DockerImageName.parse(MONGO_IMAGE))
+         .withEnv("MONGO_INITDB_ROOT_USERNAME", TestUtils.MONGO_USERNAME)
+         .withEnv("MONGO_INITDB_ROOT_PASSWORD", TestUtils.MONGO_PASSWORD)
+         .withEnv("MONGO_INITDB_DATABASE", TestUtils.MONGO_DATABASE)
+         .withExposedPorts(TestUtils.MONGO_PORT);
+
+      mongoDBContainer.start();
+   }
 
 
 
@@ -46,6 +76,13 @@ public class BaseTest
    void baseBeforeEach()
    {
       QContext.init(TestUtils.defineInstance(), new QSession());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // host could(?) be different, and mapped port will be, so set them in backend meta-data based on our running container //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      MongoDBBackendMetaData backend = (MongoDBBackendMetaData) QContext.getQInstance().getBackend(TestUtils.DEFAULT_BACKEND_NAME);
+      backend.setHost(mongoDBContainer.getHost());
+      backend.setPort(mongoDBContainer.getMappedPort(TestUtils.MONGO_PORT));
    }
 
 
@@ -56,7 +93,39 @@ public class BaseTest
    @AfterEach
    void baseAfterEach()
    {
+      ///////////////////////////////////////
+      // clear test database between tests //
+      ///////////////////////////////////////
+      MongoClient   mongoClient = getMongoClient();
+      MongoDatabase database    = mongoClient.getDatabase(TestUtils.MONGO_DATABASE);
+      database.drop();
+
       QContext.clear();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected static MongoClient getMongoClient()
+   {
+      MongoDBBackendMetaData backend              = (MongoDBBackendMetaData) QContext.getQInstance().getBackend(TestUtils.DEFAULT_BACKEND_NAME);
+      MongoClientContainer   mongoClientContainer = new AbstractMongoDBAction().openClient(backend, null);
+      MongoClient            mongoClient          = mongoClientContainer.getMongoClient();
+      return mongoClient;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterAll
+   static void afterAll()
+   {
+      // this.mongoDbReplicaSet.close();
+      mongoDBContainer.close();
    }
 
 

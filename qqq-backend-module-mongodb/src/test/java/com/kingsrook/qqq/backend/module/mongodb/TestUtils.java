@@ -43,6 +43,13 @@ public class TestUtils
 
    public static final String SECURITY_KEY_STORE_ALL_ACCESS = "storeAllAccess";
 
+   public static final String  MONGO_USERNAME = "mongoUser";
+   public static final String  MONGO_PASSWORD = "password";
+   public static final Integer MONGO_PORT     = 27017;
+   public static final String  MONGO_DATABASE = "testDatabase";
+
+   public static final String TEST_COLLECTION = "testTable";
+
 
 
    /*******************************************************************************
@@ -105,12 +112,11 @@ public class TestUtils
       return (new MongoDBBackendMetaData()
          .withName(DEFAULT_BACKEND_NAME)
          .withHost("localhost")
-         .withPort(27017)
-         .withUsername("ctliveuser")
-         .withPassword("uoaKOIjfk23h8lozK983L")
+         .withPort(TestUtils.MONGO_PORT)
+         .withUsername(TestUtils.MONGO_USERNAME)
+         .withPassword(TestUtils.MONGO_PASSWORD)
          .withAuthSourceDatabase("admin")
-         .withDatabaseName("testDatabase")
-         /*.withUrlSuffix("?tls=true&tlsCAFile=global-bundle.pem&retryWrites=false")*/);
+         .withDatabaseName(TestUtils.MONGO_DATABASE));
    }
 
 
@@ -128,8 +134,8 @@ public class TestUtils
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.STRING).withBackendName("_id"))
-         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
-         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("metaData.createDate"))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("metaData.modifyDate"))
          .withField(new QFieldMetaData("firstName", QFieldType.STRING))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
@@ -139,7 +145,7 @@ public class TestUtils
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER))
          .withField(new QFieldMetaData("homeTown", QFieldType.STRING))
          .withBackendDetails(new MongoDBTableBackendDetails()
-            .withTableName("testTable"));
+            .withTableName(TEST_COLLECTION));
    }
 
 }
