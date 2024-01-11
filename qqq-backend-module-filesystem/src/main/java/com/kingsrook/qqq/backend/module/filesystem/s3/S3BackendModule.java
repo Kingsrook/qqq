@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBack
  *******************************************************************************/
 public class S3BackendModule implements QBackendModuleInterface, FilesystemBackendModuleInterface
 {
+   public static final String BACKEND_TYPE = "s3";
 
 
    /*******************************************************************************
@@ -66,7 +67,7 @@ public class S3BackendModule implements QBackendModuleInterface, FilesystemBacke
    @Override
    public String getBackendType()
    {
-      return ("s3");
+      return (BACKEND_TYPE);
    }
 
 
