@@ -334,23 +334,33 @@ public class QValueFormatter
                         if(exposedJoin.getJoinTable().equals(nameParts[0]))
                         {
                            QTableMetaData joinTable = QContext.getQInstance().getTable(nameParts[0]);
-                           fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                           if(joinTable.getFields().containsKey(nameParts[1]))
+                           {
+                              fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                           }
                         }
                      }
                   }
                   else
                   {
-                     fieldMap.put(fieldName, table.getField(fieldName));
+                     if(table.getFields().containsKey(fieldName))
+                     {
+                        fieldMap.put(fieldName, table.getField(fieldName));
+                     }
                   }
                }
                catch(Exception e)
                {
-                  ///////////////////////////////////////////////////////////
-                  // put an empty field in - so no formatting will be done //
-                  ///////////////////////////////////////////////////////////
-                  LOG.info("Error getting field for setting display value", e, logPair("fieldName", fieldName), logPair("tableName", table.getName()));
-                  fieldMap.put(fieldName, new QFieldMetaData());
+                  LOG.warn("Error getting field for setting display value", e, logPair("fieldName", fieldName), logPair("tableName", table.getName()));
                }
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if we didn't find the field definition, put an empty field in the map, so no formatting will be done //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!fieldMap.containsKey(fieldName))
+            {
+               fieldMap.put(fieldName, new QFieldMetaData());
             }
          }
 
