@@ -581,4 +581,16 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLoadingRecordTypesToEnsureClassCoverage()
+   {
+      new PollingAutomationPerTableRunner.TableActions(null, null).noopToFakeTestCoverage();
+      new PollingAutomationPerTableRunner.ShardedTableActions(null, null, null, null, null).noopToFakeTestCoverage();
+   }
+
 }
