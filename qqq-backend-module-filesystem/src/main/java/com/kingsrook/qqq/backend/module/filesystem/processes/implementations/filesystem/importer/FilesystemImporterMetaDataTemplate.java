@@ -91,7 +91,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEv
 
  // finally, add all the meta-data from the template to a QInstance
  template.addToInstance(qInstance);
- <pre>
+ </pre>
  **
  *******************************************************************************/
 public class FilesystemImporterMetaDataTemplate
