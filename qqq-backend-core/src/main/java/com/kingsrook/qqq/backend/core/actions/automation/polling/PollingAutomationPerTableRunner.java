@@ -574,7 +574,7 @@ public class PollingAutomationPerTableRunner implements Runnable
             @Override
             public QQueryFilter getQueryFilter()
             {
-               List<Serializable> recordIds = records.stream().map(r -> r.getValueInteger(table.getPrimaryKeyField())).collect(Collectors.toList());
+               List<Serializable> recordIds = records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).collect(Collectors.toList());
                return (new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordIds)));
             }
          });
