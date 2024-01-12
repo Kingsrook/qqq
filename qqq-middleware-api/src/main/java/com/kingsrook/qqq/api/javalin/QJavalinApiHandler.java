@@ -730,11 +730,6 @@ public class QJavalinApiHandler
       }
       catch(Exception e)
       {
-         /////////////////////////////////////////////////
-         // add some logging to diagnose a test failing //
-         /////////////////////////////////////////////////
-         System.out.println("Caught exception in doSpecHtml"); // todo - remove
-         e.printStackTrace();
          handleException(context, e);
       }
    }
