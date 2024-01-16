@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer;
 
 
+import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -59,6 +60,8 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_ARCHIVE_FILE_ENABLED, QFieldType.BOOLEAN).withDefaultValue(false))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_ARCHIVE_TABLE_NAME, QFieldType.STRING))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_ARCHIVE_PATH, QFieldType.STRING))
+               .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME, QFieldType.STRING))
+               .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE, QFieldType.STRING))
             )));
    }
 
@@ -158,6 +161,28 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
    public FilesystemImporterProcessMetaDataBuilder withArchivePath(String archivePath)
    {
       setInputFieldDefaultValue(FilesystemImporterStep.FIELD_ARCHIVE_PATH, archivePath);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public FilesystemImporterProcessMetaDataBuilder withImportSecurityFieldName(String securityFieldName)
+   {
+      setInputFieldDefaultValue(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME, securityFieldName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public FilesystemImporterProcessMetaDataBuilder withImportSecurityFieldValue(Serializable securityFieldValue)
+   {
+      setInputFieldDefaultValue(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE, securityFieldValue);
       return (this);
    }
 

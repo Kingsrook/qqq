@@ -177,6 +177,7 @@ public class FilesystemImporterMetaDataTemplate
       return ChildRecordListRenderer.widgetMetaDataBuilder(join)
          .withName(join.getName())
          .withLabel("Import Records")
+         .withMaxRows(100)
          .withCanAddChildRecord(false)
          .getWidgetMetaData();
    }
@@ -215,10 +216,11 @@ public class FilesystemImporterMetaDataTemplate
 
          .withField(new QFieldMetaData("id", idType).withIsEditable(false).withBackendName(getIdFieldBackendName(backend)))
          .withField(new QFieldMetaData("sourceFileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("archivedPath", QFieldType.STRING))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
 
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "sourceFileName")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "sourceFileName", "archivedPath")))
          .withSection(new QFieldSection("records", new QIcon().withName("power_input"), Tier.T2).withWidgetName(importBaseName + IMPORT_FILE_RECORD_JOIN_SUFFIX))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
 

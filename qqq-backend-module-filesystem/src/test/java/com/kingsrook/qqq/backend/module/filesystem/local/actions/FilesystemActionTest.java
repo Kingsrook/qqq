@@ -130,7 +130,7 @@ public class FilesystemActionTest extends BaseTest
    /*******************************************************************************
     ** Write some data files into the directory for the filesystem module.
     *******************************************************************************/
-   private void writePersonCSVFiles(File baseDirectory) throws IOException
+   protected void writePersonCSVFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
       if(TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)

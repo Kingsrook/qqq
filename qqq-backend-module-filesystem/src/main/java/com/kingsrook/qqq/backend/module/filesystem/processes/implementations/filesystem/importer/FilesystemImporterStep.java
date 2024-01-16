@@ -28,10 +28,10 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
@@ -56,8 +56,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -80,6 +82,9 @@ public class FilesystemImporterStep implements BackendStep
    public static final String FIELD_FILE_FORMAT         = "fileFormat";
    public static final String FIELD_IMPORT_FILE_TABLE   = "importFileTable";
    public static final String FIELD_IMPORT_RECORD_TABLE = "importRecordTable";
+
+   public static final String FIELD_IMPORT_SECURITY_FIELD_NAME  = "importSecurityFieldName";
+   public static final String FIELD_IMPORT_SECURITY_FIELD_VALUE = "importSecurityFieldValue";
 
    public static final String FIELD_ARCHIVE_FILE_ENABLED     = "archiveFileEnabled";
    public static final String FIELD_ARCHIVE_TABLE_NAME       = "archiveTableName";
@@ -173,6 +178,7 @@ public class FilesystemImporterStep implements BackendStep
                else
                {
                   LOG.debug("Skipping already-imported file", logPair("fileName", sourceFileName));
+                  removeSourceFileIfSoConfigured(removeFileAfterImport, sourceActionBase, sourceTable, sourceBackend, sourceFileName);
                   continue;
                }
             }
@@ -198,10 +204,11 @@ public class FilesystemImporterStep implements BackendStep
                /////////////////////////////////
                LOG.info("Syncing file [" + sourceFileName + "]");
                QRecord importFileRecord = new QRecord()
-                  // todo - how to get clientId in here?
                   .withValue("id", idToUpdate)
                   .withValue("sourceFileName", sourceFileName)
                   .withValue("archivedPath", archivedPath);
+
+               addSecurityValue(runBackendStepInput, importFileRecord);
 
                //////////////////////////////////////
                // build child importRecord records //
@@ -232,11 +239,7 @@ public class FilesystemImporterStep implements BackendStep
             // if we are interrupted between the commit & the delete, then the file will be found again, //
             // and we'll either skip it or do an update, based on FIELD_UPDATE_FILE_IF_NAME_EXISTS flag  //
             ///////////////////////////////////////////////////////////////////////////////////////////////
-            if(removeFileAfterImport)
-            {
-               String fullBasePath = sourceActionBase.getFullBasePath(sourceTable, sourceBackend);
-               sourceActionBase.deleteFile(QContext.getQInstance(), sourceTable, fullBasePath + "/" + sourceFileName);
-            }
+            removeSourceFileIfSoConfigured(removeFileAfterImport, sourceActionBase, sourceTable, sourceBackend, sourceFileName);
          }
          catch(Exception e)
          {
@@ -253,6 +256,37 @@ public class FilesystemImporterStep implements BackendStep
                transaction.close();
             }
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** if the process is configured w/ a security field & value, set it on the import
+    ** File & Record records.
+    *******************************************************************************/
+   private void addSecurityValue(RunBackendStepInput runBackendStepInput, QRecord record)
+   {
+      String       securityField = runBackendStepInput.getValueString(FIELD_IMPORT_SECURITY_FIELD_NAME);
+      Serializable securityValue = runBackendStepInput.getValue(FIELD_IMPORT_SECURITY_FIELD_VALUE);
+
+      if(StringUtils.hasContent(securityField) && securityValue != null)
+      {
+         record.setValue(securityField, securityValue);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static <F> void removeSourceFileIfSoConfigured(Boolean removeFileAfterImport, AbstractBaseFilesystemAction<F> sourceActionBase, QTableMetaData sourceTable, QBackendMetaData sourceBackend, String sourceFileName) throws FilesystemException
+   {
+      if(removeFileAfterImport)
+      {
+         String fullBasePath = sourceActionBase.getFullBasePath(sourceTable, sourceBackend);
+         sourceActionBase.deleteFile(QContext.getQInstance(), sourceTable, fullBasePath + "/" + sourceFileName);
       }
    }
 
@@ -288,6 +322,8 @@ public class FilesystemImporterStep implements BackendStep
          + File.separator + now.getMonth()
          + File.separator + UUID.randomUUID()
          + "-" + sourceFileName.replaceAll(".*" + File.separator, "");
+      path = AbstractBaseFilesystemAction.stripDuplicatedSlashes(path);
+
       LOG.info("Archiving file", logPair("path", path));
       archiveActionBase.writeFile(archiveBackend, path, bytes);
 
@@ -325,15 +361,15 @@ public class FilesystemImporterStep implements BackendStep
          default -> throw (new QException("Unexpected file format: " + fileFormat));
       };
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // now, wrap those records with the fields of the importRecord table, putting the unknown fields in a blob together //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////
+      // now, add some fields that we know about to those records, for returning //
+      /////////////////////////////////////////////////////////////////////////////
       List<QRecord> importRecordList = new ArrayList<>();
       int           recordNo         = 1;
       for(QRecord record : contentRecords)
       {
          record.setValue("recordNo", recordNo++);
-         // todo - client_id??
+         addSecurityValue(runBackendStepInput, record);
 
          importRecordList.add(record);
       }
@@ -348,8 +384,12 @@ public class FilesystemImporterStep implements BackendStep
     *******************************************************************************/
    private <F> Map<String, F> getFileNames(AbstractBaseFilesystemAction<F> actionBase, QTableMetaData table, QBackendMetaData backend) throws QException
    {
-      List<F>        files = actionBase.listFiles(table, backend);
-      Map<String, F> rs    = new LinkedHashMap<>();
+      List<F> files = actionBase.listFiles(table, backend);
+
+      /////////////////////////////////////////////////////
+      // use a tree map, so files will be sorted by name //
+      /////////////////////////////////////////////////////
+      Map<String, F> rs = new TreeMap<>();
 
       for(F file : files)
       {

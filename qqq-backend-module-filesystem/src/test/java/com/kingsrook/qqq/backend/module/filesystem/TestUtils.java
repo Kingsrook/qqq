@@ -154,6 +154,18 @@ public class TestUtils
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
 
+      definePersonCsvImporter(qInstance);
+
+      return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void definePersonCsvImporter(QInstance qInstance)
+   {
       String importBaseName = "personImporter";
       FilesystemImporterProcessMetaDataBuilder filesystemImporterProcessMetaDataBuilder = (FilesystemImporterProcessMetaDataBuilder) new FilesystemImporterProcessMetaDataBuilder()
          .withSourceTableName(TABLE_NAME_PERSON_LOCAL_FS_CSV)
@@ -164,10 +176,7 @@ public class TestUtils
          .withName(LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
 
       FilesystemImporterMetaDataTemplate filesystemImporterMetaDataTemplate = new FilesystemImporterMetaDataTemplate(qInstance, importBaseName, BACKEND_NAME_MEMORY, filesystemImporterProcessMetaDataBuilder, table -> table.withAuditRules(QAuditRules.defaultInstanceLevelNone()));
-
       filesystemImporterMetaDataTemplate.addToInstance(qInstance);
-
-      return (qInstance);
    }
 
 

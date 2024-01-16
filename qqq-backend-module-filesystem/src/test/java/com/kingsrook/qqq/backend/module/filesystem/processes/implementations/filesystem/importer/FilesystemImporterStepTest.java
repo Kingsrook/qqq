@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemActionTest;
@@ -42,7 +43,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -62,7 +63,7 @@ class FilesystemImporterStepTest extends FilesystemActionTest
     **
     *******************************************************************************/
    @AfterEach
-   public void filesystemBaseAfterEach() throws Exception
+   public void afterEach() throws Exception
    {
       MemoryRecordStore.getInstance().reset();
    }
@@ -75,6 +76,14 @@ class FilesystemImporterStepTest extends FilesystemActionTest
    @Test
    void test() throws QException
    {
+      /////////////////////////////////////////////////////
+      // make sure we see 2 source files before we begin //
+      /////////////////////////////////////////////////////
+      FilesystemBackendMetaData backend   = (FilesystemBackendMetaData) QContext.getQInstance().getBackend(TestUtils.BACKEND_NAME_LOCAL_FS);
+      String                    basePath  = backend.getBasePath();
+      File                      sourceDir = new File(basePath + "/persons-csv/");
+      assertEquals(2, listOrFail(sourceDir).length);
+
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
       new RunProcessAction().execute(runProcessInput);
@@ -90,25 +99,166 @@ class FilesystemImporterStepTest extends FilesystemActionTest
       JSONObject values = new JSONObject(record.getValueString("values"));
       assertEquals("John", values.get("firstName"));
 
-      FilesystemBackendMetaData backend  = (FilesystemBackendMetaData) QContext.getQInstance().getBackend(TestUtils.BACKEND_NAME_LOCAL_FS);
-      String                    basePath = backend.getBasePath();
-      System.out.println(basePath);
-
       ///////////////////////////////////////////
       // make sure 2 archive files got created //
       ///////////////////////////////////////////
-      LocalDateTime now   = LocalDateTime.now();
-      File[]        files = new File(basePath + "/archive/archive-of/personImporterFiles/" + now.getYear() + "/" + now.getMonth()).listFiles();
-      assertNotNull(files);
-      assertEquals(2, files.length);
+      LocalDateTime now = LocalDateTime.now();
+      assertEquals(2, listOrFail(new File(basePath + "/archive/archive-of/personImporterFiles/" + now.getYear() + "/" + now.getMonth())).length);
+
+      ////////////////////////////////////////////
+      // make sure the source files got deleted //
+      ////////////////////////////////////////////
+      assertEquals(0, listOrFail(sourceDir).length);
    }
 
-   // todo - test json
 
-   // todo - test no files found
 
-   // todo - confirm delete happens?
+   /*******************************************************************************
+    ** do a listFiles, but fail properly if it returns null (so IJ won't warn all the time)
+    *******************************************************************************/
+   private static File[] listOrFail(File dir)
+   {
+      File[] files = dir.listFiles();
+      if(files == null)
+      {
+         fail("Null result when listing directory: " + dir);
+      }
+      return (files);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJSON() throws QException
+   {
+      ////////////////////////////////////////////////////////////////////
+      // adjust the process to use the JSON file table, and JSON format //
+      ////////////////////////////////////////////////////////////////////
+      QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_SOURCE_TABLE)).findFirst().get().setDefaultValue(TestUtils.TABLE_NAME_PERSON_LOCAL_FS_JSON);
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_FILE_FORMAT)).findFirst().get().setDefaultValue("json");
+
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      String importBaseName = "personImporter";
+      assertEquals(2, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX)).getCount());
+      assertEquals(3, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX)).getCount());
+
+      QRecord record = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
+      assertEquals(1, record.getValue("importFileId"));
+      assertEquals("John", record.getValue("firstName"));
+      assertThat(record.getValue("values")).isInstanceOf(String.class);
+      JSONObject values = new JSONObject(record.getValueString("values"));
+      assertEquals("John", values.get("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNoFilesFound() throws Exception
+   {
+      cleanFilesystem();
+
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      String importBaseName = "personImporter";
+      assertEquals(0, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX)).getCount());
+      assertEquals(0, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX)).getCount());
+   }
 
    // todo - updates?
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDuplicateFileNameNonUpdate() throws Exception
+   {
+      FilesystemBackendMetaData backend   = (FilesystemBackendMetaData) QContext.getQInstance().getBackend(TestUtils.BACKEND_NAME_LOCAL_FS);
+      String                    basePath  = backend.getBasePath();
+      File                      sourceDir = new File(basePath + "/persons-csv/");
+
+      /////////////////////////////////////////////////////////////////
+      // run the process once - assert how many records got inserted //
+      /////////////////////////////////////////////////////////////////
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      String importBaseName = "personImporter";
+      assertEquals(2, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX)).getCount());
+      assertEquals(5, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX)).getCount());
+
+      ///////////////////////////////////////////////////////
+      // put the source files back - assert they are there //
+      ///////////////////////////////////////////////////////
+      writePersonCSVFiles(new File(basePath));
+      assertEquals(2, listOrFail(sourceDir).length);
+
+      ////////////////////////
+      // re-run the process //
+      ////////////////////////
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      ////////////////////////////////////////
+      // make sure no new records are built //
+      ////////////////////////////////////////
+      assertEquals(2, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX)).getCount());
+      assertEquals(5, new CountAction().execute(new CountInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX)).getCount());
+
+      /////////////////////////////////////////////////
+      // make sure no new archive files were created //
+      /////////////////////////////////////////////////
+      LocalDateTime now = LocalDateTime.now();
+      assertEquals(2, listOrFail(new File(basePath + "/archive/archive-of/personImporterFiles/" + now.getYear() + "/" + now.getMonth())).length);
+
+      ////////////////////////////////////////////
+      // make sure the source files got deleted //
+      ////////////////////////////////////////////
+      assertEquals(0, listOrFail(sourceDir).length);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecurityKey() throws QException
+   {
+      //////////////////////////////////////////////
+      // Add a security name/value to our process //
+      //////////////////////////////////////////////
+      QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME)).findFirst().get().setDefaultValue("customerId");
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE)).findFirst().get().setDefaultValue(47);
+
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // assert the security field gets its value on both the importFile & importRecord records //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      String  importBaseName = "personImporter";
+      QRecord fileRecord     = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
+      assertEquals(47, fileRecord.getValue("customerId"));
+
+      QRecord recordRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
+      assertEquals(47, recordRecord.getValue("customerId"));
+   }
 
 }
