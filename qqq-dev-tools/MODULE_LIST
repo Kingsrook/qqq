@@ -1,6 +1,7 @@
 qqq-backend-core
 qqq-backend-module-api
 qqq-backend-module-rdbms
+qqq-backend-module-mongodb
 qqq-backend-module-filesystem
 qqq-language-support-javascript
 qqq-middleware-javalin
