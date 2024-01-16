@@ -39,6 +39,7 @@ public class ApiFieldMetaData
 
    private String apiFieldName;
    private String description;
+   private boolean listEnumPossibleValues = true;
 
    private Boolean        isExcluded;
    private String         replacedByFieldName;
@@ -343,6 +344,37 @@ public class ApiFieldMetaData
    public ApiFieldMetaData withCustomValueMapper(QCodeReference customValueMapper)
    {
       this.customValueMapper = customValueMapper;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for listEnumPossibleValues
+    *******************************************************************************/
+   public boolean getListEnumPossibleValues()
+   {
+      return (this.listEnumPossibleValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for listEnumPossibleValues
+    *******************************************************************************/
+   public void setListEnumPossibleValues(boolean listEnumPossibleValues)
+   {
+      this.listEnumPossibleValues = listEnumPossibleValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for listEnumPossibleValues
+    *******************************************************************************/
+   public ApiFieldMetaData withListEnumPossibleValues(boolean listEnumPossibleValues)
+   {
+      this.listEnumPossibleValues = listEnumPossibleValues;
       return (this);
    }
 
