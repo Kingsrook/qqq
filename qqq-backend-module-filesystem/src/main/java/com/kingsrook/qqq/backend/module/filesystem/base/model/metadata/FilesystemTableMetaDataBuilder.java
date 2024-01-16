@@ -33,7 +33,18 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBack
 
 
 /*******************************************************************************
+ ** Builder class to create standard style QTableMetaData for tables in filesystem
+ ** modules (avoid some boilerplate).
  **
+ ** e.g., lets us create a file-based table like so:
+ <pre>
+ QTableMetaData table = new FilesystemTableMetaDataBuilder()
+ .withName("myTableName")
+ .withBackend(qInstance.getBackend("myBackendName"))
+ .withGlob("*.csv")
+ .withBasePath("/")
+ .buildStandardCardinalityOneTable();
+ </pre>
  *******************************************************************************/
 public class FilesystemTableMetaDataBuilder
 {
