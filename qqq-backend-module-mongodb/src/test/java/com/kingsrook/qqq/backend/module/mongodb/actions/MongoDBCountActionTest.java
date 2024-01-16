@@ -54,7 +54,7 @@ class MongoDBCountActionTest extends BaseTest
       // directly insert some mongo records //
       ////////////////////////////////////////
       MongoDatabase             database   = getMongoClient().getDatabase(TestUtils.MONGO_DATABASE);
-      MongoCollection<Document> collection = database.getCollection(TestUtils.TEST_COLLECTION);
+      MongoCollection<Document> collection = database.getCollection(TestUtils.TABLE_NAME_PERSON);
       collection.insertMany(List.of(
          Document.parse("""
             {"firstName": "Darin", "lastName": "Kelkhoff"}"""),

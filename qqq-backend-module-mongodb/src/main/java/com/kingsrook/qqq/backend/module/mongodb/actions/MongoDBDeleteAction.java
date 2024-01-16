@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.module.mongodb.actions;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -70,6 +72,9 @@ public class MongoDBDeleteAction extends AbstractMongoDBAction implements Delete
    {
       MongoClientContainer mongoClientContainer = null;
 
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
+
       try
       {
          DeleteOutput           deleteOutput     = new DeleteOutput();
@@ -98,6 +103,8 @@ public class MongoDBDeleteAction extends AbstractMongoDBAction implements Delete
             return (deleteOutput);
          }
 
+         queryToLog.add(searchQuery);
+
          ////////////////////////////////////////////////////////
          // todo - system property to control (like print-sql) //
          ////////////////////////////////////////////////////////
@@ -119,6 +126,8 @@ public class MongoDBDeleteAction extends AbstractMongoDBAction implements Delete
       }
       finally
       {
+         logQuery(getBackendTableName(deleteInput.getTable()), "delete", queryToLog, queryStartTime);
+
          if(mongoClientContainer != null)
          {
             mongoClientContainer.closeIfNeeded();

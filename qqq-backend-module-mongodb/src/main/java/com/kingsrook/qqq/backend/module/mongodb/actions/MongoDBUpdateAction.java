@@ -141,26 +141,29 @@ public class MongoDBUpdateAction extends AbstractMongoDBAction implements Update
     *******************************************************************************/
    private void updateRecordsWithMatchingValuesAndFields(MongoClientContainer mongoClientContainer, MongoCollection<Document> collection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated)
    {
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
+
       QRecord        firstRecord = recordList.get(0);
       List<ObjectId> ids         = recordList.stream().map(r -> new ObjectId(r.getValueString("id"))).toList();
       Bson           filter      = Filters.in("_id", ids);
+      queryToLog.add(filter);
 
       List<Bson> updates = new ArrayList<>();
       for(String fieldName : fieldsBeingUpdated)
       {
          QFieldMetaData field            = table.getField(fieldName);
          String         fieldBackendName = getFieldBackendName(field);
-         updates.add(Updates.set(fieldBackendName, firstRecord.getValue(fieldName)));
+         Bson set = Updates.set(fieldBackendName, firstRecord.getValue(fieldName));
+         updates.add(set);
+         queryToLog.add(set);
       }
       Bson changes = Updates.combine(updates);
 
-      ////////////////////////////////////////////////////////
-      // todo - system property to control (like print-sql) //
-      ////////////////////////////////////////////////////////
-      // LOG.debug(filter, changes);
-
       UpdateResult updateResult = collection.updateMany(mongoClientContainer.getMongoSession(), filter, changes);
       // todo - anything with the output??
+
+      logQuery(getBackendTableName(table), "update", queryToLog, queryStartTime);
    }
 
 }

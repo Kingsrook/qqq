@@ -22,8 +22,13 @@
 package com.kingsrook.qqq.backend.module.mongodb.actions;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -48,7 +53,7 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
 {
    private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
 
-   // todo? private ActionTimeoutHelper actionTimeoutHelper;
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
 
@@ -58,6 +63,9 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
    public QueryOutput execute(QueryInput queryInput) throws QException
    {
       MongoClientContainer mongoClientContainer = null;
+
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
 
       try
       {
@@ -70,16 +78,19 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          MongoDatabase             database   = mongoClientContainer.getMongoClient().getDatabase(backend.getDatabaseName());
          MongoCollection<Document> collection = database.getCollection(backendTableName);
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         actionTimeoutHelper = new ActionTimeoutHelper(queryInput.getTimeoutSeconds(), TimeUnit.SECONDS, new TimeoutCanceller(mongoClientContainer));
+         actionTimeoutHelper.start();
+
          /////////////////////////
          // set up filter/query //
          /////////////////////////
          QQueryFilter filter      = queryInput.getFilter();
          Bson         searchQuery = makeSearchQueryDocument(table, filter);
-
-         ////////////////////////////////////////////////////////
-         // todo - system property to control (like print-sql) //
-         ////////////////////////////////////////////////////////
-         // LOG.debug(searchQuery);
+         queryToLog.add(searchQuery);
+         setQueryInQueryStat(searchQuery);
 
          ////////////////////////////////////////////////////////////
          // create cursor - further adjustments to it still follow //
@@ -92,6 +103,7 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
             Document sortDocument = new Document();
+            queryToLog.add(sortDocument);
             for(QFilterOrderBy orderBy : filter.getOrderBys())
             {
                String fieldBackendName = getFieldBackendName(table.getField(orderBy.getFieldName()));
@@ -121,6 +133,12 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          ////////////////////////////////////////////
          for(Document document : cursor)
          {
+            /////////////////////////////////////////////////////////////////////////
+            // once we've started getting results, go ahead and cancel the timeout //
+            /////////////////////////////////////////////////////////////////////////
+            actionTimeoutHelper.cancel();
+            setQueryStatFirstResultTime();
+
             QRecord record = documentToRecord(table, document);
             queryOutput.addRecord(record);
 
@@ -135,13 +153,16 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
       }
       catch(Exception e)
       {
-         /*
          if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
          {
             setQueryStatFirstResultTime();
             throw (new QUserFacingException("Query timed out."));
          }
 
+         /*
+         /////////////////////////////////////////////////////////////////////////////////////
+         // this was copied from RDBMS - not sure where/how/if it's being used there though //
+         /////////////////////////////////////////////////////////////////////////////////////
          if(isCancelled)
          {
             throw (new QUserFacingException("Query was cancelled."));
@@ -153,6 +174,8 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
       }
       finally
       {
+         logQuery(getBackendTableName(queryInput.getTable()), "query", queryToLog, queryStartTime);
+
          if(mongoClientContainer != null)
          {
             mongoClientContainer.closeIfNeeded();

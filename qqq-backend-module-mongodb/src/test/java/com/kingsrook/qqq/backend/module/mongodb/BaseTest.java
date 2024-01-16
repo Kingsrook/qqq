@@ -58,6 +58,8 @@ public class BaseTest
    @BeforeAll
    static void beforeAll()
    {
+      System.setProperty("qqq.mongodb.logQueries", "true");
+
       mongoDBContainer = new GenericContainer<>(DockerImageName.parse(MONGO_IMAGE))
          .withEnv("MONGO_INITDB_ROOT_USERNAME", TestUtils.MONGO_USERNAME)
          .withEnv("MONGO_INITDB_ROOT_PASSWORD", TestUtils.MONGO_PASSWORD)
@@ -93,14 +95,24 @@ public class BaseTest
    @AfterEach
    void baseAfterEach()
    {
+      clearDatabase();
+
+      QContext.clear();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected static void clearDatabase()
+   {
       ///////////////////////////////////////
       // clear test database between tests //
       ///////////////////////////////////////
       MongoClient   mongoClient = getMongoClient();
       MongoDatabase database    = mongoClient.getDatabase(TestUtils.MONGO_DATABASE);
       database.drop();
-
-      QContext.clear();
    }
 
 

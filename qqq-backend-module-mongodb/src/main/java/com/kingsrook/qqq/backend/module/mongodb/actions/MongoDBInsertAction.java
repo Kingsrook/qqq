@@ -38,6 +38,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.InsertManyResult;
 import org.bson.BsonValue;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 
 /*******************************************************************************
@@ -59,6 +60,9 @@ public class MongoDBInsertAction extends AbstractMongoDBAction implements Insert
       List<QRecord>        outputRecords        = new ArrayList<>();
       rs.setRecords(outputRecords);
 
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
+
       try
       {
          QTableMetaData         table            = insertInput.getTable();
@@ -68,10 +72,6 @@ public class MongoDBInsertAction extends AbstractMongoDBAction implements Insert
          mongoClientContainer = openClient(backend, insertInput.getTransaction());
          MongoDatabase             database   = mongoClientContainer.getMongoClient().getDatabase(backend.getDatabaseName());
          MongoCollection<Document> collection = database.getCollection(backendTableName);
-
-         //////////////////////////
-         // todo - transaction?! //
-         //////////////////////////
 
          ///////////////////////////////////////////////////////////////////////////
          // page over input record list (assuming some size of batch is too big?) //
@@ -88,7 +88,10 @@ public class MongoDBInsertAction extends AbstractMongoDBAction implements Insert
                {
                   continue;
                }
-               documentList.add(recordToDocument(table, record));
+
+               Document document = recordToDocument(table, record);
+               documentList.add(document);
+               queryToLog.add(document);
             }
 
             /////////////////////////////////////
@@ -98,11 +101,6 @@ public class MongoDBInsertAction extends AbstractMongoDBAction implements Insert
             {
                continue;
             }
-
-            ////////////////////////////////////////////////////////
-            // todo - system property to control (like print-sql) //
-            ////////////////////////////////////////////////////////
-            // LOG.debug(documentList);
 
             ///////////////////////////////////////////////
             // actually do the insert                    //
@@ -134,6 +132,8 @@ public class MongoDBInsertAction extends AbstractMongoDBAction implements Insert
       }
       finally
       {
+         logQuery(getBackendTableName(insertInput.getTable()), "insert", queryToLog, queryStartTime);
+
          if(mongoClientContainer != null)
          {
             mongoClientContainer.closeIfNeeded();

@@ -22,9 +22,13 @@
 package com.kingsrook.qqq.backend.module.mongodb.actions;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
@@ -48,7 +52,7 @@ public class MongoDBCountAction extends AbstractMongoDBAction implements CountIn
 {
    private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
 
-   // todo? private ActionTimeoutHelper actionTimeoutHelper;
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
 
@@ -58,6 +62,9 @@ public class MongoDBCountAction extends AbstractMongoDBAction implements CountIn
    public CountOutput execute(CountInput countInput) throws QException
    {
       MongoClientContainer mongoClientContainer = null;
+
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
 
       try
       {
@@ -70,34 +77,43 @@ public class MongoDBCountAction extends AbstractMongoDBAction implements CountIn
          MongoDatabase             database   = mongoClientContainer.getMongoClient().getDatabase(backend.getDatabaseName());
          MongoCollection<Document> collection = database.getCollection(backendTableName);
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         actionTimeoutHelper = new ActionTimeoutHelper(countInput.getTimeoutSeconds(), TimeUnit.SECONDS, new TimeoutCanceller(mongoClientContainer));
+         actionTimeoutHelper.start();
+
          QQueryFilter filter      = countInput.getFilter();
          Bson         searchQuery = makeSearchQueryDocument(table, filter);
+         queryToLog.add(searchQuery);
+         setQueryInQueryStat(searchQuery);
 
          List<Bson> bsonList = List.of(
             Aggregates.match(searchQuery),
             Aggregates.group("_id", Accumulators.sum("count", 1)));
-
-         ////////////////////////////////////////////////////////
-         // todo - system property to control (like print-sql) //
-         ////////////////////////////////////////////////////////
-         // LOG.debug(bsonList.toString());
 
          AggregateIterable<Document> aggregate = collection.aggregate(mongoClientContainer.getMongoSession(), bsonList);
 
          Document document = aggregate.first();
          countOutput.setCount(document == null ? 0 : document.get("count", Integer.class));
 
+         actionTimeoutHelper.cancel();
+         setQueryStatFirstResultTime();
+
          return (countOutput);
       }
       catch(Exception e)
       {
-         /*
          if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
          {
-            setCountStatFirstResultTime();
+            setQueryStatFirstResultTime();
             throw (new QUserFacingException("Count timed out."));
          }
 
+         /*
+         /////////////////////////////////////////////////////////////////////////////////////
+         // this was copied from RDBMS - not sure where/how/if it's being used there though //
+         /////////////////////////////////////////////////////////////////////////////////////
          if(isCancelled)
          {
             throw (new QUserFacingException("Count was cancelled."));
@@ -109,6 +125,8 @@ public class MongoDBCountAction extends AbstractMongoDBAction implements CountIn
       }
       finally
       {
+         logQuery(getBackendTableName(countInput.getTable()), "count", queryToLog, queryStartTime);
+
          if(mongoClientContainer != null)
          {
             mongoClientContainer.closeIfNeeded();

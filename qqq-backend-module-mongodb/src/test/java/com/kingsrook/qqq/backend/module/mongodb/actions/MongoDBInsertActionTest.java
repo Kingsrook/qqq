@@ -78,7 +78,7 @@ class MongoDBInsertActionTest extends BaseTest
       // directly query mongo for the inserted records //
       ///////////////////////////////////////////////////
       MongoDatabase             database   = getMongoClient().getDatabase(TestUtils.MONGO_DATABASE);
-      MongoCollection<Document> collection = database.getCollection(TestUtils.TEST_COLLECTION);
+      MongoCollection<Document> collection = database.getCollection(TestUtils.TABLE_NAME_PERSON);
       assertEquals(3, collection.countDocuments());
       for(Document document : collection.find())
       {

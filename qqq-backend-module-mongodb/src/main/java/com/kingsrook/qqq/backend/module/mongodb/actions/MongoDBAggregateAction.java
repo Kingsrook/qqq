@@ -24,8 +24,11 @@ package com.kingsrook.qqq.backend.module.mongodb.actions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
@@ -61,7 +64,7 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
 {
    private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
 
-   // todo? private ActionTimeoutHelper actionTimeoutHelper;
+   private ActionTimeoutHelper actionTimeoutHelper;
 
 
 
@@ -72,6 +75,9 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
    public AggregateOutput execute(AggregateInput aggregateInput) throws QException
    {
       MongoClientContainer mongoClientContainer = null;
+
+      Long       queryStartTime = System.currentTimeMillis();
+      List<Bson> queryToLog     = new ArrayList<>();
 
       try
       {
@@ -87,6 +93,12 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          QQueryFilter filter      = aggregateInput.getFilter();
          Bson         searchQuery = makeSearchQueryDocument(table, filter);
 
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set up & start an actionTimeoutHelper (note, internally it'll deal with the time being null or negative as meaning not to timeout) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         actionTimeoutHelper = new ActionTimeoutHelper(aggregateInput.getTimeoutSeconds(), TimeUnit.SECONDS, new TimeoutCanceller(mongoClientContainer));
+         actionTimeoutHelper.start();
+
          /////////////////////////////////////////////////////////////////////////
          // we have to submit a list of BSON objects to the aggregate function. //
          // the first one is the search query                                   //
@@ -94,6 +106,8 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          /////////////////////////////////////////////////////////////////////////
          List<Bson> bsonList = new ArrayList<>();
          bsonList.add(Aggregates.match(searchQuery));
+         setQueryInQueryStat(searchQuery);
+         queryToLog = bsonList;
 
          //////////////////////////////////////////////////////////////////////////////////////
          // if there are group-by fields, then we need to build a document with those fields //
@@ -184,6 +198,12 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          /////////////////////
          for(Document document : aggregates)
          {
+            /////////////////////////////////////////////////////////////////////////
+            // once we've started getting results, go ahead and cancel the timeout //
+            /////////////////////////////////////////////////////////////////////////
+            actionTimeoutHelper.cancel();
+            setQueryStatFirstResultTime();
+
             AggregateResult result = new AggregateResult();
             results.add(result);
 
@@ -222,13 +242,16 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
       }
       catch(Exception e)
       {
-         /*
          if(actionTimeoutHelper != null && actionTimeoutHelper.getDidTimeout())
          {
-            setCountStatFirstResultTime();
+            setQueryStatFirstResultTime();
             throw (new QUserFacingException("Aggregate timed out."));
          }
 
+         /*
+         /////////////////////////////////////////////////////////////////////////////////////
+         // this was copied from RDBMS - not sure where/how/if it's being used there though //
+         /////////////////////////////////////////////////////////////////////////////////////
          if(isCancelled)
          {
             throw (new QUserFacingException("Aggregate was cancelled."));
@@ -239,8 +262,9 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          throw new QException("Error executing aggregate", e);
       }
       finally
-
       {
+         logQuery(getBackendTableName(aggregateInput.getTable()), "aggregate", queryToLog, queryStartTime);
+
          if(mongoClientContainer != null)
          {
             mongoClientContainer.closeIfNeeded();
