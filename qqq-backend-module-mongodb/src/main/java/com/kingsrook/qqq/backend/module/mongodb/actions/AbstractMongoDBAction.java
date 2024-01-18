@@ -352,7 +352,6 @@ public class AbstractMongoDBAction
       /////////////////////////
       // do remaining values //
       /////////////////////////
-      // for(Map.Entry<String, Serializable> entry : clone.getValues().entrySet())
       for(Map.Entry<String, Serializable> entry : record.getValues().entrySet())
       {
          if(!processedFields.contains(entry.getKey()))
