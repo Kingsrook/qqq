@@ -36,10 +36,9 @@ include::misc/ProcessBackendSteps.adoc[leveloffset=+1]
 === Table Customizers
 #todo#
 
-== QQQ Actions
+== QQQ Core Actions
 include::actions/QueryAction.adoc[leveloffset=+1]
 
-=== GetAction
 include::actions/GetAction.adoc[leveloffset=+1]
 
 === CountAction
@@ -48,7 +47,6 @@ include::actions/GetAction.adoc[leveloffset=+1]
 === AggregateAction
 #todo#
 
-=== InsertAction
 include::actions/InsertAction.adoc[leveloffset=+1]
 
 === UpdateAction
@@ -60,4 +58,6 @@ include::actions/InsertAction.adoc[leveloffset=+1]
 === AuditAction
 #todo#
 
+== QQQ Default Implementations
+include::implementations/TableSync.adoc[leveloffset=+1]
 // later... include::actions/RenderTemplateAction.adoc[leveloffset=+1]
