@@ -235,7 +235,7 @@ public class UpdateAction
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
-      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, updateInput.getInstance(), table, updateInput.getRecords());
       validatePrimaryKeysAreGiven(updateInput);
 
       if(oldRecordList.isPresent())

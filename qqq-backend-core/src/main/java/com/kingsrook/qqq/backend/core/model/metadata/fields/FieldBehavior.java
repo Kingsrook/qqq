@@ -22,10 +22,41 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+
+
 /*******************************************************************************
+ ** Interface for (expected to be?) enums which define behaviors that get applied
+ ** to fields.
+ **
+ ** At the present, these behaviors get applied before a field is stored (insert
+ ** or update), through the ValueBehaviorApplier class.
  **
  *******************************************************************************/
-public interface FieldBehavior
+public interface FieldBehavior<T extends FieldBehavior<T>>
 {
+
+   /*******************************************************************************
+    ** In case a behavior of this type wasn't set on the field, what should the
+    ** default of this type be?
+    *******************************************************************************/
+   T getDefault();
+
+   /*******************************************************************************
+    ** Apply this behavior to a list of records
+    *******************************************************************************/
+   void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field);
+
+   /*******************************************************************************
+    ** control if multiple behaviors of this type should be allowed together on a field.
+    *******************************************************************************/
+   default boolean allowMultipleBehaviorsOfThisType()
+   {
+      return (false);
+   }
 
 }

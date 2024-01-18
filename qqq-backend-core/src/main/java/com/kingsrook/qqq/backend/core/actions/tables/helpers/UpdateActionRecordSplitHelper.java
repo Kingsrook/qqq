@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,11 +60,6 @@ public class UpdateActionRecordSplitHelper
 
       for(QRecord record : updateInput.getRecords())
       {
-         ////////////////////////////////////////////
-         // todo .. better (not a hard-coded name) //
-         ////////////////////////////////////////////
-         setValueIfTableHasField(record, table, "modifyDate", now);
-
          List<String> updatableFields = table.getFields().values().stream()
             .map(QFieldMetaData::getName)
             // todo - intent here is to avoid non-updateable fields - but this
@@ -142,29 +136,6 @@ public class UpdateActionRecordSplitHelper
          }
 
          return (true);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** If the table has a field with the given name, then set the given value in the
-    ** given record.
-    *******************************************************************************/
-   protected void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
-   {
-      try
-      {
-         if(table.getFields().containsKey(fieldName))
-         {
-            record.setValue(fieldName, value);
-         }
-      }
-      catch(Exception e)
-      {
-         /////////////////////////////////////////////////
-         // this means field doesn't exist, so, ignore. //
-         /////////////////////////////////////////////////
       }
    }
 
