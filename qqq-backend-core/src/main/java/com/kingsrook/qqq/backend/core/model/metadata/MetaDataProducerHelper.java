@@ -95,6 +95,7 @@ public class MetaDataProducerHelper
       ////////////////////////////////////////////////////////////////////////////////////////////
       // sort them by sort order, then by the type that they return - specifically - doing apps //
       // after all other types (as apps often try to get other types from the instance)         //
+      // also - do backends earlier than others (e.g., tables may expect backends to exist)     //
       ////////////////////////////////////////////////////////////////////////////////////////////
       producers.sort(Comparator
          .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
@@ -105,11 +106,15 @@ public class MetaDataProducerHelper
                Class<?> outputType = p.getClass().getMethod("produce", QInstance.class).getReturnType();
                if(outputType.equals(QAppMetaData.class))
                {
-                  return (1);
+                  return (2);
+               }
+               else if(outputType.equals(QBackendMetaData.class))
+               {
+                  return (0);
                }
                else
                {
-                  return (0);
+                  return (1);
                }
             }
             catch(Exception e)

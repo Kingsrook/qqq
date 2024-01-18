@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
@@ -54,6 +55,54 @@ public class AbstractProcessMetaDataBuilder
    public QProcessMetaData getProcessMetaData()
    {
       return processMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withName(String name)
+   {
+      processMetaData.setName(name);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withLabel(String name)
+   {
+      processMetaData.setLabel(name);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withTableName(String tableName)
+   {
+      processMetaData.setTableName(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withIcon(QIcon icon)
+   {
+      processMetaData.setIcon(icon);
+      return (this);
    }
 
 

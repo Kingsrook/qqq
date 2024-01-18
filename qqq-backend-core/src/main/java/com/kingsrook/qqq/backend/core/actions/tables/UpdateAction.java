@@ -135,7 +135,7 @@ public class UpdateAction
       ////////////////////////////////////
       // have the backend do the update //
       ////////////////////////////////////
-      UpdateOutput updateOutput = updateInterface.execute(updateInput);
+      UpdateOutput updateOutput = runUpdateInBackend(updateInput, updateInterface);
 
       if(updateOutput.getRecords() == null)
       {
@@ -198,6 +198,28 @@ public class UpdateAction
          }
       }
 
+      return updateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private UpdateOutput runUpdateInBackend(UpdateInput updateInput, UpdateInterface updateInterface) throws QException
+   {
+      ///////////////////////////////////
+      // exit early if 0 input records //
+      ///////////////////////////////////
+      if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
+      {
+         LOG.debug("Update request called with 0 records.  Returning with no-op", logPair("tableName", updateInput.getTableName()));
+         UpdateOutput rs = new UpdateOutput();
+         rs.setRecords(new ArrayList<>());
+         return (rs);
+      }
+
+      UpdateOutput updateOutput = updateInterface.execute(updateInput);
       return updateOutput;
    }
 

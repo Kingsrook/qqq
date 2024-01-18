@@ -51,6 +51,7 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
 {
    private static final QLogger LOG = QLogger.getLogger(FilesystemBackendModule.class);
 
+   public static final String BACKEND_TYPE = "filesystem";
 
 
    /*******************************************************************************
@@ -71,7 +72,7 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
    @Override
    public String getBackendType()
    {
-      return ("filesystem");
+      return (BACKEND_TYPE);
    }
 
 

@@ -1198,4 +1198,14 @@ public class QInstance
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void add(TopLevelMetaDataInterface metaData)
+   {
+      metaData.addSelfToInstance(this);
+   }
+
 }

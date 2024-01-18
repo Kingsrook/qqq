@@ -49,7 +49,7 @@ public class FilesystemActionTest extends BaseTest
     **
     *******************************************************************************/
    @BeforeEach
-   public void beforeEach() throws Exception
+   public void filesystemBaseBeforeEach() throws Exception
    {
       primeFilesystem();
       QContext.init(TestUtils.defineInstance(), new QSession());
@@ -61,7 +61,7 @@ public class FilesystemActionTest extends BaseTest
     **
     *******************************************************************************/
    @AfterEach
-   public void afterEach() throws Exception
+   public void filesystemBaseAfterEach() throws Exception
    {
       cleanFilesystem();
    }
@@ -130,7 +130,7 @@ public class FilesystemActionTest extends BaseTest
    /*******************************************************************************
     ** Write some data files into the directory for the filesystem module.
     *******************************************************************************/
-   private void writePersonCSVFiles(File baseDirectory) throws IOException
+   protected void writePersonCSVFiles(File baseDirectory) throws IOException
    {
       String fullPath = baseDirectory.getAbsolutePath();
       if(TestUtils.defineLocalFilesystemCSVPersonTable().getBackendDetails() instanceof FilesystemTableBackendDetails details)

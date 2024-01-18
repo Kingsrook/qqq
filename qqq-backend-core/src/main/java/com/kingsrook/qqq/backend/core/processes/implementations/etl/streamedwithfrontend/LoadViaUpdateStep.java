@@ -24,14 +24,12 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 
@@ -81,9 +79,8 @@ public class LoadViaUpdateStep extends AbstractLoadStep
    @Override
    public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      return (Optional.of(QBackendTransaction.openFor(updateInput)));
    }
 }

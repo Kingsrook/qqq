@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
 import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -32,7 +31,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 /*******************************************************************************
  ** Base class for all core actions in the Memory backend module.
  *******************************************************************************/
-public abstract class AbstractMemoryAction implements QActionInterface
+public abstract class AbstractMemoryAction
 {
 
    /*******************************************************************************

@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -133,10 +134,16 @@ public class CsvToQRecordAdapter
                CSVFormat.DEFAULT
                   .withFirstRecordAsHeader()
                   .withIgnoreHeaderCase()
+                  .withIgnoreEmptyLines()
                   .withTrim());
 
             List<String> headers = csvParser.getHeaderNames();
             headers = makeHeadersUnique(headers);
+
+            ////////////////////////////////////////
+            // used by csv-headers-as-field-names //
+            ////////////////////////////////////////
+            Map<String, QFieldMetaData> csvHeaderFieldMapping = buildCsvHeaderFieldMappingIfNeeded(inputWrapper, headers);
 
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
             int                 recordCount = 0;
@@ -160,11 +167,27 @@ public class CsvToQRecordAdapter
                QRecord qRecord = new QRecord();
                try
                {
-                  for(QFieldMetaData field : table.getFields().values())
+                  if(inputWrapper.getCsvHeadersAsFieldNames())
                   {
-                     String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
-                     fieldSource = adjustHeaderCase(fieldSource, inputWrapper);
-                     setValue(inputWrapper, qRecord, field, csvValues.get(fieldSource));
+                     /////////////////////////////////////////////////////////////////////////////////////////
+                     // in csv-headers-as-field-names mode, don't mess with table, and don't do any mapping //
+                     /////////////////////////////////////////////////////////////////////////////////////////
+                     for(Map.Entry<String, String> entry : csvValues.entrySet())
+                     {
+                        setValue(inputWrapper, qRecord, csvHeaderFieldMapping.get(entry.getKey()), entry.getValue());
+                     }
+                  }
+                  else
+                  {
+                     ///////////////////////////////////////
+                     // otherwise, fields come from table //
+                     ///////////////////////////////////////
+                     for(QFieldMetaData field : table.getFields().values())
+                     {
+                        String fieldSource = mapping == null ? field.getName() : String.valueOf(mapping.getFieldSource(field.getName()));
+                        fieldSource = adjustHeaderCase(fieldSource, inputWrapper);
+                        setValue(inputWrapper, qRecord, field, csvValues.get(fieldSource));
+                     }
                   }
 
                   runRecordCustomizer(recordCustomizer, qRecord);
@@ -243,6 +266,26 @@ public class CsvToQRecordAdapter
       {
          throw (new IllegalArgumentException("Error parsing CSV: " + e.getMessage(), e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Map<String, QFieldMetaData> buildCsvHeaderFieldMappingIfNeeded(InputWrapper inputWrapper, List<String> headers)
+   {
+      Map<String, QFieldMetaData> csvHeaderFieldMapping = null;
+      if(inputWrapper.getCsvHeadersAsFieldNames())
+      {
+         csvHeaderFieldMapping = new HashMap<>();
+         for(String header : headers)
+         {
+            header = adjustHeaderCase(header, inputWrapper);
+            csvHeaderFieldMapping.put(header, new QFieldMetaData(header, QFieldType.STRING));
+         }
+      }
+      return csvHeaderFieldMapping;
    }
 
 
@@ -376,7 +419,8 @@ public class CsvToQRecordAdapter
       private Integer                  limit;
       private boolean                  doCorrectValueTypes = false;
 
-      private boolean caseSensitiveHeaders = false;
+      private boolean caseSensitiveHeaders   = false;
+      private boolean csvHeadersAsFieldNames = false;
 
 
 
@@ -613,6 +657,40 @@ public class CsvToQRecordAdapter
       public InputWrapper withCaseSensitiveHeaders(boolean caseSensitiveHeaders)
       {
          this.caseSensitiveHeaders = caseSensitiveHeaders;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       ** Getter for csvHeadersAsFieldNames
+       **
+       *******************************************************************************/
+      public boolean getCsvHeadersAsFieldNames()
+      {
+         return csvHeadersAsFieldNames;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for csvHeadersAsFieldNames
+       **
+       *******************************************************************************/
+      public void setCsvHeadersAsFieldNames(boolean csvHeadersAsFieldNames)
+      {
+         this.csvHeadersAsFieldNames = csvHeadersAsFieldNames;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for csvHeadersAsFieldNames
+       **
+       *******************************************************************************/
+      public InputWrapper withCsvHeadersAsFieldNames(boolean csvHeadersAsFieldNames)
+      {
+         this.csvHeadersAsFieldNames = csvHeadersAsFieldNames;
          return (this);
       }
 

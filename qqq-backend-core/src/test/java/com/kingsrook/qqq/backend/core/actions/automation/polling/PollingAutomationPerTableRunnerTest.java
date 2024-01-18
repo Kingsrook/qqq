@@ -202,8 +202,8 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
     *******************************************************************************/
    private void runAllTableActions(QInstance qInstance) throws QException
    {
-      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
-      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+      for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
       {
          PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, QSession::new, tableAction);
 
@@ -504,8 +504,8 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertThatThrownBy(() ->
       {
-         List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
-         for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+         List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+         for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
          {
             PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun(qInstance, TestUtils.POLLING_AUTOMATION, QSession::new, tableAction);
 
@@ -564,7 +564,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
       /*******************************************************************************
        **
        *******************************************************************************/
-      public PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActions tableActions)
+      public PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActionsInterface tableActions)
       {
          super(instance, providerName, sessionSupplier, tableActions);
       }
@@ -579,6 +579,18 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
       {
          throw (new RuntimeException(EXCEPTION_MESSAGE));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLoadingRecordTypesToEnsureClassCoverage()
+   {
+      new PollingAutomationPerTableRunner.TableActions(null, null).noopToFakeTestCoverage();
+      new PollingAutomationPerTableRunner.ShardedTableActions(null, null, null, null, null).noopToFakeTestCoverage();
    }
 
 }

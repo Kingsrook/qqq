@@ -30,10 +30,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -73,6 +75,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
 
    public static final String AUDIT_CONTEXT_FIELD_NAME = "auditContext";
 
+   private static Set<String> loggedUnauditableTableNames = new HashSet<>();
 
 
    /*******************************************************************************
@@ -87,6 +90,20 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       QTableMetaData           table            = tableActionInput.getTable();
       long                     start            = System.currentTimeMillis();
       DMLType                  dmlType          = getDMLType(tableActionInput);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // currently, the table's primary key must be integer... so, log (once) and return early if not that //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      QFieldMetaData field = table.getField(table.getPrimaryKeyField());
+      if(!QFieldType.INTEGER.equals(field.getType()))
+      {
+         if(!loggedUnauditableTableNames.contains(table.getName()))
+         {
+            LOG.info("Cannot audit table without integer as its primary key", logPair("tableName", table.getName()));
+            loggedUnauditableTableNames.add(table.getName());
+         }
+         return (output);
+      }
 
       try
       {
