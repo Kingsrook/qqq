@@ -45,7 +45,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.module.mongodb.MongoDBBackendModule;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -62,7 +61,7 @@ import org.bson.conversions.Bson;
  *******************************************************************************/
 public class MongoDBAggregateAction extends AbstractMongoDBAction implements AggregateInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
+   private static final QLogger LOG = QLogger.getLogger(MongoDBAggregateAction.class);
 
    private ActionTimeoutHelper actionTimeoutHelper;
 

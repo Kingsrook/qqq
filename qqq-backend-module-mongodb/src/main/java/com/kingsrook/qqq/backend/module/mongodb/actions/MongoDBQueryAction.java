@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.mongodb.MongoDBBackendModule;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -51,7 +50,7 @@ import org.bson.conversions.Bson;
  *******************************************************************************/
 public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
+   private static final QLogger LOG = QLogger.getLogger(MongoDBQueryAction.class);
 
    private ActionTimeoutHelper actionTimeoutHelper;
 

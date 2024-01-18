@@ -34,7 +34,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.module.mongodb.MongoDBBackendModule;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -50,7 +49,7 @@ import org.bson.conversions.Bson;
  *******************************************************************************/
 public class MongoDBCountAction extends AbstractMongoDBAction implements CountInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
+   private static final QLogger LOG = QLogger.getLogger(MongoDBCountAction.class);
 
    private ActionTimeoutHelper actionTimeoutHelper;
 

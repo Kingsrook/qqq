@@ -33,7 +33,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import com.kingsrook.qqq.backend.module.mongodb.MongoDBBackendModule;
 import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMetaData;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -50,7 +49,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public class MongoDBDeleteAction extends AbstractMongoDBAction implements DeleteInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(MongoDBBackendModule.class);
+   private static final QLogger LOG = QLogger.getLogger(MongoDBDeleteAction.class);
 
 
 

@@ -91,9 +91,9 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       long                     start            = System.currentTimeMillis();
       DMLType                  dmlType          = getDMLType(tableActionInput);
 
-      //////////////////////////////////////////////////////////////////////////////////////////////////
-      // currently, the table's primary key must be id... so, log (once) and return early if not that //
-      //////////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // currently, the table's primary key must be integer... so, log (once) and return early if not that //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
       QFieldMetaData field = table.getField(table.getPrimaryKeyField());
       if(!QFieldType.INTEGER.equals(field.getType()))
       {
