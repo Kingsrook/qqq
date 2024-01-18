@@ -1,0 +1,17 @@
+[#Widgets]
+== Widgets
+include::../variables.adoc[]
+
+#TODO#
+
+=== QWidgetMetaData
+A Widget is defined in a QQQ Instance in a `*QWidgetMetaData*` object.
+
+#TODO#
+
+*QWidgetMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the widget within the QQQ Instance.
+
+#TODO#
+
