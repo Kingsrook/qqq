@@ -75,6 +75,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -86,6 +87,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
 
 
 /*******************************************************************************
@@ -492,6 +494,11 @@ public class QInstanceValidator
             validateTableRecordSecurityLocks(qInstance, table);
             validateTableAssociations(qInstance, table);
             validateExposedJoins(qInstance, joinGraph, table);
+
+            for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
+            {
+               supplementalTableMetaData.validate(qInstance, table, this);
+            }
          });
       }
    }
@@ -1761,20 +1768,6 @@ public class QInstanceValidator
          errors.add(message);
          return (false);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   interface UnsafeLambda
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      void run() throws Exception;
    }
 
 
