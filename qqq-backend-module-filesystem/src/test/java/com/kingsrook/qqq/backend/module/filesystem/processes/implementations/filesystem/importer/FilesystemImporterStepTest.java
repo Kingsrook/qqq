@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -33,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
@@ -259,6 +262,53 @@ class FilesystemImporterStepTest extends FilesystemActionTest
 
       QRecord recordRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
       assertEquals(47, recordRecord.getValue("customerId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSecuritySupplier() throws QException
+   {
+      //////////////////////////////////////////////
+      // Add a security name/value to our process //
+      //////////////////////////////////////////////
+      QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME)).findFirst().get().setDefaultValue("customerId");
+      process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER)).findFirst().get().setDefaultValue(new QCodeReference(SecuritySupplier.class));
+
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+      new RunProcessAction().execute(runProcessInput);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // assert the security field gets its value on both the importFile & importRecord records //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      String  importBaseName = "personImporter";
+      QRecord fileRecord     = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_FILE_TABLE_SUFFIX).withPrimaryKey(1));
+      assertEquals(1701, fileRecord.getValue("customerId"));
+
+      QRecord recordRecord = new GetAction().executeForRecord(new GetInput(importBaseName + FilesystemImporterMetaDataTemplate.IMPORT_RECORD_TABLE_SUFFIX).withPrimaryKey(1));
+      assertEquals(1701, recordRecord.getValue("customerId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class SecuritySupplier implements Function<QRecord, Serializable>
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Serializable apply(QRecord qRecord)
+      {
+         return (1701);
+      }
    }
 
 }
