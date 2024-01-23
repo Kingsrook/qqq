@@ -141,28 +141,38 @@ public class FilesystemImporterMetaDataTemplate
 
 
    /*******************************************************************************
-    **
+    ** Set up importRecord table being built by this template to hve an automation-
+    ** status field on it, and an automation details object attached to it.
     *******************************************************************************/
-   public void addAutomationStatusField(QTableMetaData table, QFieldMetaData automationStatusField)
+   public void addImportRecordAutomations(QFieldMetaData automationStatusField, QTableAutomationDetails automationDetails)
    {
-      table.addField(automationStatusField);
-      table.getSections().get(1).getFieldNames().add(0, automationStatusField.getName());
+      getImportRecordTable().addField(automationStatusField);
+      getImportRecordTable().getSections().get(1).getFieldNames().add(0, automationStatusField.getName());
+      getImportRecordTable().withAutomationDetails(automationDetails);
    }
 
 
 
    /*******************************************************************************
+    ** Add 1 process as a post-insert automation-action on this template's importRecord
+    ** table.
     **
+    ** The automation action is returned - which you may want for changing things, e.g.,
+    ** its priority (e.g., addImportRecordPostInsertAutomationAction(...).withPriority(1);
     *******************************************************************************/
-   public TableAutomationAction addStandardPostInsertAutomation(QTableMetaData table, QTableAutomationDetails automationDetails, String processName)
+   public TableAutomationAction addImportRecordPostInsertAutomationAction(String processName)
    {
+      if(getImportRecordTable().getAutomationDetails() == null)
+      {
+         throw (new IllegalStateException(getImportRecordTable().getName() + " does not have automationDetails - do you need to call addAutomations first?"));
+      }
+
       TableAutomationAction action = new TableAutomationAction()
-         .withName(table.getName() + "PostInsert")
+         .withName(processName)
          .withTriggerEvent(TriggerEvent.POST_INSERT)
          .withProcessName(processName);
 
-      table.withAutomationDetails(automationDetails
-         .withAction(action));
+      getImportRecordTable().getAutomationDetails().withAction(action);
 
       return (action);
    }
