@@ -34,8 +34,6 @@ import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
-import com.kingsrook.qqq.backend.core.instances.QMetaDataElementInterface;
-import com.kingsrook.qqq.backend.core.instances.visitors.QMetaDataVisitorInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -67,7 +65,7 @@ import io.github.cdimascio.dotenv.DotenvEntry;
  ** Container for all meta-data in a running instance of a QQQ application.
  **
  *******************************************************************************/
-public class QInstance implements QMetaDataElementInterface
+public class QInstance
 {
    ///////////////////////////////////////////////////////////////////////////////
    // Do not let the backend data be serialized - e.g., sent to a frontend user //
@@ -1220,25 +1218,4 @@ public class QInstance implements QMetaDataElementInterface
       metaData.addSelfToInstance(this);
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public List<QMetaDataElementInterface> getChildren()
-   {
-      return null;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void acceptVisitor(QMetaDataVisitorInterface visitor)
-   {
-      visitor.visitQInstance(this);
-   }
 }
