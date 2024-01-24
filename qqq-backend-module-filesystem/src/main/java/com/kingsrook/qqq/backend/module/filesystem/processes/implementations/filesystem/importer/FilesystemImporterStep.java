@@ -33,7 +33,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -41,6 +43,7 @@ import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -53,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -83,8 +87,9 @@ public class FilesystemImporterStep implements BackendStep
    public static final String FIELD_IMPORT_FILE_TABLE   = "importFileTable";
    public static final String FIELD_IMPORT_RECORD_TABLE = "importRecordTable";
 
-   public static final String FIELD_IMPORT_SECURITY_FIELD_NAME  = "importSecurityFieldName";
-   public static final String FIELD_IMPORT_SECURITY_FIELD_VALUE = "importSecurityFieldValue";
+   public static final String FIELD_IMPORT_SECURITY_FIELD_NAME     = "importSecurityFieldName";
+   public static final String FIELD_IMPORT_SECURITY_FIELD_VALUE    = "importSecurityFieldValue";
+   public static final String FIELD_IMPORT_SECURITY_VALUE_SUPPLIER = "importSecurityFieldSupplier";
 
    public static final String FIELD_ARCHIVE_FILE_ENABLED     = "archiveFileEnabled";
    public static final String FIELD_ARCHIVE_TABLE_NAME       = "archiveTableName";
@@ -93,6 +98,7 @@ public class FilesystemImporterStep implements BackendStep
 
    public static final String FIELD_UPDATE_FILE_IF_NAME_EXISTS = "updateFileIfNameExists";
 
+   private Function<QRecord, Serializable> securitySupplier = null;
 
 
    /*******************************************************************************
@@ -267,9 +273,34 @@ public class FilesystemImporterStep implements BackendStep
     *******************************************************************************/
    private void addSecurityValue(RunBackendStepInput runBackendStepInput, QRecord record)
    {
-      String       securityField = runBackendStepInput.getValueString(FIELD_IMPORT_SECURITY_FIELD_NAME);
-      Serializable securityValue = runBackendStepInput.getValue(FIELD_IMPORT_SECURITY_FIELD_VALUE);
+      String securityField = runBackendStepInput.getValueString(FIELD_IMPORT_SECURITY_FIELD_NAME);
 
+      /////////////////////////////////////////////////////////////
+      // if we're using a security supplier function, load it up //
+      /////////////////////////////////////////////////////////////
+      QCodeReference securitySupplierReference = (QCodeReference) runBackendStepInput.getValue(FIELD_IMPORT_SECURITY_VALUE_SUPPLIER);
+      try
+      {
+         if(securitySupplierReference != null && securitySupplier == null)
+         {
+            securitySupplier = QCodeLoader.getAdHoc(Function.class, securitySupplierReference);
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QRuntimeException("Error loading Security Supplier Function from QCodeReference [" + securitySupplierReference + "]", e));
+      }
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // either get the security value from the supplier, or the field value field's value //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      Serializable securityValue = securitySupplier != null
+         ? securitySupplier.apply(record)
+         : runBackendStepInput.getValue(FIELD_IMPORT_SECURITY_FIELD_VALUE);
+
+      ////////////////////////////////////////////////////////////////////
+      // if we have a field name and a value, then add it to the record //
+      ////////////////////////////////////////////////////////////////////
       if(StringUtils.hasContent(securityField) && securityValue != null)
       {
          record.setValue(securityField, securityValue);

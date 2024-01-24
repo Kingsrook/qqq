@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -1251,7 +1252,25 @@ public class QInstanceValidator
                         {
                            if(fieldMetaData.getDefaultValue() != null && fieldMetaData.getDefaultValue() instanceof QCodeReference codeReference)
                            {
-                              validateSimpleCodeReference("Process " + processName + " backend step code reference: ", codeReference, BackendStep.class);
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              // by default, assume that any process field which is a QCodeReference should be a reference to a BackendStep... //
+                              // but... allow a secondary field name to be set, to tell us what class to *actually* expect here...             //
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              Class<?> expectedClass = BackendStep.class;
+                              try
+                              {
+                                 Optional<QFieldMetaData> expectedTypeField = backendStepMetaData.getInputMetaData().getField(fieldMetaData.getName() + "_expectedType");
+                                 if(expectedTypeField.isPresent() && expectedTypeField.get().getDefaultValue() != null)
+                                 {
+                                    expectedClass = Class.forName(ValueUtils.getValueAsString(expectedTypeField.get().getDefaultValue()));
+                                 }
+                              }
+                              catch(Exception e)
+                              {
+                                 warn("Error loading expectedType for field [" + fieldMetaData.getName() + "] in process [" + processName + "]: " + e.getMessage());
+                              }
+
+                              validateSimpleCodeReference("Process " + processName + " code reference: ", codeReference, expectedClass);
                            }
                         }
                      }

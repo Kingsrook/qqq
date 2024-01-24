@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 
 import java.io.Serializable;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -62,6 +64,15 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_ARCHIVE_PATH, QFieldType.STRING))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME, QFieldType.STRING))
                .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE, QFieldType.STRING))
+
+               //////////////////////////////////////////////////////////////////////////////////////
+               // define a QCodeReference - expected to be of type Function<QRecord, Serializable> //
+               // make sure the QInstanceValidator knows that the QCodeReference should be a       //
+               // Function (not a BackendStep, which is the default for process fields)            //
+               //////////////////////////////////////////////////////////////////////////////////////
+               .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER, QFieldType.STRING))
+               .withField(new QFieldMetaData(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER + "_expectedType", QFieldType.STRING)
+                  .withDefaultValue(Function.class.getName()))
             )));
    }
 
@@ -183,6 +194,17 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
    public FilesystemImporterProcessMetaDataBuilder withImportSecurityFieldValue(Serializable securityFieldValue)
    {
       setInputFieldDefaultValue(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_VALUE, securityFieldValue);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public FilesystemImporterProcessMetaDataBuilder withImportSecurityValueSupplierFunction(Class<? extends Function<QRecord, Serializable>> supplierFunction)
+   {
+      setInputFieldDefaultValue(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER, new QCodeReference(supplierFunction));
       return (this);
    }
 
