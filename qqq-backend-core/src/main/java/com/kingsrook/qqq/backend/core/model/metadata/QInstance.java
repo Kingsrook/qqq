@@ -34,6 +34,8 @@ import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataElementInterface;
+import com.kingsrook.qqq.backend.core.instances.visitors.QMetaDataVisitorInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -65,7 +67,7 @@ import io.github.cdimascio.dotenv.DotenvEntry;
  ** Container for all meta-data in a running instance of a QQQ application.
  **
  *******************************************************************************/
-public class QInstance
+public class QInstance implements QMetaDataElementInterface
 {
    ///////////////////////////////////////////////////////////////////////////////
    // Do not let the backend data be serialized - e.g., sent to a frontend user //
@@ -746,12 +748,22 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the hasBeenValidated field will be set to true.
     **
+    ** Else, if passed a null, hasBeenValidated will be reset to false - e.g., to
+    ** re-trigger validation (can be useful in tests).
     *******************************************************************************/
    public void setHasBeenValidated(QInstanceValidationKey key)
    {
-      this.hasBeenValidated = true;
+      if(key == null)
+      {
+         this.hasBeenValidated = false;
+      }
+      else
+      {
+         this.hasBeenValidated = true;
+      }
    }
 
 
@@ -1208,4 +1220,25 @@ public class QInstance
       metaData.addSelfToInstance(this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QMetaDataElementInterface> getChildren()
+   {
+      return null;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void acceptVisitor(QMetaDataVisitorInterface visitor)
+   {
+      visitor.visitQInstance(this);
+   }
 }

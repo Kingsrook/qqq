@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -278,6 +279,12 @@ class FilesystemImporterStepTest extends FilesystemActionTest
       QProcessMetaData process = QContext.getQInstance().getProcess(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_FIELD_NAME)).findFirst().get().setDefaultValue("customerId");
       process.getInputFields().stream().filter(f -> f.getName().equals(FilesystemImporterStep.FIELD_IMPORT_SECURITY_VALUE_SUPPLIER)).findFirst().get().setDefaultValue(new QCodeReference(SecuritySupplier.class));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // re-validate our instance now that we have that code-reference in place for the security supplier //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().setHasBeenValidated(null);
+      new QInstanceValidator().validate(QContext.getQInstance());
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(TestUtils.LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
