@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,25 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.savedfilters;
+package com.kingsrook.qqq.backend.core.model.savedviews;
 
 
+import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.DeleteSavedFilterProcess;
-import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.QuerySavedFilterProcess;
-import com.kingsrook.qqq.backend.core.processes.implementations.savedfilters.StoreSavedFilterProcess;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedviews.DeleteSavedViewProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedviews.QuerySavedViewProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedviews.StoreSavedViewProcess;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SavedFiltersMetaDataProvider
+public class SavedViewsMetaDataProvider
 {
 
 
@@ -46,11 +52,11 @@ public class SavedFiltersMetaDataProvider
     *******************************************************************************/
    public void defineAll(QInstance instance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      instance.addTable(defineSavedFilterTable(backendName, backendDetailEnricher));
-      instance.addPossibleValueSource(defineSavedFilterPossibleValueSource());
-      instance.addProcess(QuerySavedFilterProcess.getProcessMetaData());
-      instance.addProcess(StoreSavedFilterProcess.getProcessMetaData());
-      instance.addProcess(DeleteSavedFilterProcess.getProcessMetaData());
+      instance.addTable(defineSavedViewTable(backendName, backendDetailEnricher));
+      instance.addPossibleValueSource(defineSavedViewPossibleValueSource());
+      instance.addProcess(QuerySavedViewProcess.getProcessMetaData());
+      instance.addProcess(StoreSavedViewProcess.getProcessMetaData());
+      instance.addProcess(DeleteSavedViewProcess.getProcessMetaData());
    }
 
 
@@ -58,16 +64,21 @@ public class SavedFiltersMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QTableMetaData defineSavedFilterTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   private QTableMetaData defineSavedViewTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       QTableMetaData table = new QTableMetaData()
-         .withName(SavedFilter.TABLE_NAME)
-         .withLabel("Saved Filter")
+         .withName(SavedView.TABLE_NAME)
+         .withLabel("Saved View")
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withBackendName(backendName)
          .withPrimaryKeyField("id")
-         .withFieldsFromEntity(SavedFilter.class);
+         .withFieldsFromEntity(SavedView.class)
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label")))
+         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId", "tableName", "viewJson")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      table.getField("viewJson").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("json")));
 
       if(backendDetailEnricher != null)
       {
@@ -82,12 +93,12 @@ public class SavedFiltersMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QPossibleValueSource defineSavedFilterPossibleValueSource()
+   private QPossibleValueSource defineSavedViewPossibleValueSource()
    {
       return new QPossibleValueSource()
-         .withName(SavedFilter.TABLE_NAME)
+         .withName(SavedView.TABLE_NAME)
          .withType(QPossibleValueSourceType.TABLE)
-         .withTableName(SavedFilter.TABLE_NAME)
+         .withTableName(SavedView.TABLE_NAME)
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
          .withOrderByField("label");
    }
