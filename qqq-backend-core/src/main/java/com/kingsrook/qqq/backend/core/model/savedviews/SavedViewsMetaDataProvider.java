@@ -64,7 +64,7 @@ public class SavedViewsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QTableMetaData defineSavedViewTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   public QTableMetaData defineSavedViewTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       QTableMetaData table = new QTableMetaData()
          .withName(SavedView.TABLE_NAME)
