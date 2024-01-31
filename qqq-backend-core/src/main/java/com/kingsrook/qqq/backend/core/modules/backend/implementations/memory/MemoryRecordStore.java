@@ -24,6 +24,10 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -66,6 +71,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -577,7 +583,11 @@ public class MemoryRecordStore
          for(GroupBy groupBy : groupBys)
          {
             Serializable groupByValue = record.getValue(groupBy.getFieldName());
-            if(groupBy.getType() != null)
+            if(StringUtils.hasContent(groupBy.getFormatString()))
+            {
+               groupByValue = applyFormatString(groupByValue, groupBy);
+            }
+            else if(groupBy.getType() != null)
             {
                groupByValue = ValueUtils.getValueAsFieldType(groupBy.getType(), groupByValue);
             }
@@ -629,7 +639,9 @@ public class MemoryRecordStore
       /////////////////////
       if(aggregateInput.getFilter() != null && CollectionUtils.nullSafeHasContents(aggregateInput.getFilter().getOrderBys()))
       {
-         Comparator<AggregateResult> comparator = null;
+         /////////////////////////////////////////////////////////////////////////////////////
+         // lambda to compare 2 serializables, as we'll assume (& cast) them to Comparables //
+         /////////////////////////////////////////////////////////////////////////////////////
          Comparator<Serializable> serializableComparator = (Serializable a, Serializable b) ->
          {
             if(a == null && b == null)
@@ -647,9 +659,15 @@ public class MemoryRecordStore
             return ((Comparable) a).compareTo(b);
          };
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // reverse of the lambda above (we had some errors calling .reversed() on the comparator we were building, so this seemed simpler & worked) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Comparator<Serializable> reverseSerializableComparator = (Serializable a, Serializable b) -> -serializableComparator.compare(a, b);
+
          ////////////////////////////////////////////////
          // build a comparator out of all the orderBys //
          ////////////////////////////////////////////////
+         Comparator<AggregateResult> comparator = null;
          for(QFilterOrderBy orderBy : aggregateInput.getFilter().getOrderBys())
          {
             Function<AggregateResult, Serializable> keyExtractor = aggregateResult ->
@@ -670,16 +688,11 @@ public class MemoryRecordStore
 
             if(comparator == null)
             {
-               comparator = Comparator.comparing(keyExtractor, serializableComparator);
+               comparator = Comparator.comparing(keyExtractor, orderBy.getIsAscending() ? serializableComparator : reverseSerializableComparator);
             }
             else
             {
-               comparator = comparator.thenComparing(keyExtractor, serializableComparator);
-            }
-
-            if(!orderBy.getIsAscending())
-            {
-               comparator = comparator.reversed();
+               comparator = comparator.thenComparing(keyExtractor, orderBy.getIsAscending() ? serializableComparator : reverseSerializableComparator);
             }
          }
 
@@ -692,6 +705,57 @@ public class MemoryRecordStore
       AggregateOutput aggregateOutput = new AggregateOutput();
       aggregateOutput.setResults(results);
       return (aggregateOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Serializable applyFormatString(Serializable value, GroupBy groupBy) throws QException
+   {
+      if(value == null)
+      {
+         return (null);
+      }
+
+      String formatString = groupBy.getFormatString();
+
+      try
+      {
+         if(formatString.startsWith("DATE_FORMAT"))
+         {
+            /////////////////////////////////////////////////////////////////////////////
+            // one known-use case we have here looks like this:                        //
+            // DATE_FORMAT(CONVERT_TZ(%s, 'UTC', 'UTC'), '%%Y-%%m-%%dT%%H')            //
+            // ... for now, let's just try to support the formatting bit at the end... //
+            // todo - support the CONVERT_TZ bit too!                                  //
+            /////////////////////////////////////////////////////////////////////////////
+            String            sqlDateTimeFormat = formatString.replaceFirst(".*'%%", "%%").replaceFirst("'.*", "");
+            DateTimeFormatter dateTimeFormatter = DateTimeGroupBy.sqlDateFormatToSelectedDateTimeFormatter(sqlDateTimeFormat);
+            if(dateTimeFormatter == null)
+            {
+               throw (new QException("Unsupported sql dateTime format string [" + sqlDateTimeFormat + "] for MemoryRecordStore"));
+            }
+
+            String        valueAsString  = ValueUtils.getValueAsString(value);
+            Instant       valueAsInstant = ValueUtils.getValueAsInstant(valueAsString);
+            ZonedDateTime zonedDateTime  = valueAsInstant.atZone(ZoneId.systemDefault());
+            return (dateTimeFormatter.format(zonedDateTime));
+         }
+         else
+         {
+            throw (new QException("Unsupported group-by format string [" + formatString + "] for MemoryRecordStore"));
+         }
+      }
+      catch(QException qe)
+      {
+         throw (qe);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error applying format string [" + formatString + "] to group by value [" + value + "]", e));
+      }
    }
 
 
