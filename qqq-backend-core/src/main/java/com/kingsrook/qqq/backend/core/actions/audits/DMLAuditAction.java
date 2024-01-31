@@ -91,20 +91,6 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       long                     start            = System.currentTimeMillis();
       DMLType                  dmlType          = getDMLType(tableActionInput);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////
-      // currently, the table's primary key must be integer... so, log (once) and return early if not that //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////
-      QFieldMetaData field = table.getField(table.getPrimaryKeyField());
-      if(!QFieldType.INTEGER.equals(field.getType()))
-      {
-         if(!loggedUnauditableTableNames.contains(table.getName()))
-         {
-            LOG.info("Cannot audit table without integer as its primary key", logPair("tableName", table.getName()));
-            loggedUnauditableTableNames.add(table.getName());
-         }
-         return (output);
-      }
-
       try
       {
          List<QRecord> recordList = CollectionUtils.nonNullList(input.getRecordList()).stream()
@@ -116,6 +102,21 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             /////////////////////////////////////////////
             // return with noop for null or level NONE //
             /////////////////////////////////////////////
+            return (output);
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // currently, the table's primary key must be integer... so, log (once) and return early if not that //
+         // (or, if no primary key!)                                                                          //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         QFieldMetaData field = table.getFields().get(table.getPrimaryKeyField());
+         if(field == null || !QFieldType.INTEGER.equals(field.getType()))
+         {
+            if(!loggedUnauditableTableNames.contains(table.getName()))
+            {
+               LOG.info("Cannot audit table without integer as its primary key", logPair("tableName", table.getName()));
+               loggedUnauditableTableNames.add(table.getName());
+            }
             return (output);
          }
 
