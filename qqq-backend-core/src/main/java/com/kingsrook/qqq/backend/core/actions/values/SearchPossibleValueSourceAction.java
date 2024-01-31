@@ -275,8 +275,19 @@ public class SearchPossibleValueSourceAction
 
       queryInput.setFilter(queryFilter);
 
-      QueryOutput             queryOutput     = new QueryAction().execute(queryInput);
-      List<Serializable>      ids             = queryOutput.getRecords().stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList();
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+
+      String fieldName;
+      if(StringUtils.hasContent(possibleValueSource.getOverrideIdField()))
+      {
+         fieldName = possibleValueSource.getOverrideIdField();
+      }
+      else
+      {
+         fieldName = table.getPrimaryKeyField();
+      }
+
+      List<Serializable> ids = queryOutput.getRecords().stream().map(r -> r.getValue(fieldName)).toList();
       List<QPossibleValue<?>> qPossibleValues = possibleValueTranslator.buildTranslatedPossibleValueList(possibleValueSource, ids);
       output.setResults(qPossibleValues);
 
