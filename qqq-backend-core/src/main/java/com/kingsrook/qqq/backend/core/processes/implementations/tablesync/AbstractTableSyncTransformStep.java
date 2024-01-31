@@ -276,6 +276,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
+            LOG.debug("Skipping record without a value in the sourceKeyField", logPair("keyField", sourceTableKeyField));
             errorMissingKeyField.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
 
             try
