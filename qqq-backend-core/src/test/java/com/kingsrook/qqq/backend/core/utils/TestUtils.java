@@ -549,7 +549,9 @@ public class TestUtils
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("ssn", QFieldType.STRING).withType(QFieldType.PASSWORD))
-         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true));
+         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
+         ;
    }
 
 
@@ -602,6 +604,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING).withLabel("SKU"))

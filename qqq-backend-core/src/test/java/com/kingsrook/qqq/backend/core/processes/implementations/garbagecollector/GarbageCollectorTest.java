@@ -74,7 +74,7 @@ class GarbageCollectorTest extends BaseTest
    @Test
    void testBasic() throws QException
    {
-      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_PERSON_MEMORY, "createDate", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
+      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_PERSON_MEMORY, "timestamp", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
       QContext.getQInstance().addProcess(process);
 
       new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(getPersonRecords()));
@@ -97,11 +97,11 @@ class GarbageCollectorTest extends BaseTest
    private static List<QRecord> getPersonRecords()
    {
       List<QRecord> records = List.of(
-         new QRecord().withValue("id", 1).withValue("createDate", Instant.now().minus(90, ChronoUnit.DAYS)),
-         new QRecord().withValue("id", 2).withValue("createDate", Instant.now().minus(31, ChronoUnit.DAYS)),
-         new QRecord().withValue("id", 3).withValue("createDate", Instant.now().minus(30, ChronoUnit.DAYS).minus(5, ChronoUnit.MINUTES)),
-         new QRecord().withValue("id", 4).withValue("createDate", Instant.now().minus(29, ChronoUnit.DAYS).minus(23, ChronoUnit.HOURS)),
-         new QRecord().withValue("id", 5).withValue("createDate", Instant.now().minus(5, ChronoUnit.DAYS)));
+         new QRecord().withValue("id", 1).withValue("timestamp", Instant.now().minus(90, ChronoUnit.DAYS)),
+         new QRecord().withValue("id", 2).withValue("timestamp", Instant.now().minus(31, ChronoUnit.DAYS)),
+         new QRecord().withValue("id", 3).withValue("timestamp", Instant.now().minus(30, ChronoUnit.DAYS).minus(5, ChronoUnit.MINUTES)),
+         new QRecord().withValue("id", 4).withValue("timestamp", Instant.now().minus(29, ChronoUnit.DAYS).minus(23, ChronoUnit.HOURS)),
+         new QRecord().withValue("id", 5).withValue("timestamp", Instant.now().minus(5, ChronoUnit.DAYS)));
       return records;
    }
 
@@ -113,7 +113,7 @@ class GarbageCollectorTest extends BaseTest
    @Test
    void testOverrideDate() throws QException
    {
-      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_PERSON_MEMORY, "createDate", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
+      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_PERSON_MEMORY, "timestamp", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
       QContext.getQInstance().addProcess(process);
 
       new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withRecords(getPersonRecords()));
@@ -157,7 +157,7 @@ class GarbageCollectorTest extends BaseTest
    @Test
    void testWithDeleteAllJoins() throws QException
    {
-      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "createDate", NowWithOffset.minus(30, ChronoUnit.DAYS), "*");
+      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "timestamp", NowWithOffset.minus(30, ChronoUnit.DAYS), "*");
       QContext.getQInstance().addProcess(process);
 
       QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
@@ -192,7 +192,7 @@ class GarbageCollectorTest extends BaseTest
    @Test
    void testWithDeleteSomeJoins() throws QException
    {
-      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "createDate", NowWithOffset.minus(30, ChronoUnit.DAYS), TestUtils.TABLE_NAME_LINE_ITEM);
+      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "timestamp", NowWithOffset.minus(30, ChronoUnit.DAYS), TestUtils.TABLE_NAME_LINE_ITEM);
       QContext.getQInstance().addProcess(process);
 
       //////////////////////////////////////////////////////////////////////////
@@ -232,7 +232,7 @@ class GarbageCollectorTest extends BaseTest
    @Test
    void testWithDeleteNoJoins() throws QException
    {
-      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "createDate", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
+      QProcessMetaData process = GarbageCollectorProcessMetaDataProducer.createProcess(TestUtils.TABLE_NAME_ORDER, "timestamp", NowWithOffset.minus(30, ChronoUnit.DAYS), null);
       QContext.getQInstance().addProcess(process);
 
       ////////////////////////////////////////////////////////////////////////////////
@@ -270,11 +270,11 @@ class GarbageCollectorTest extends BaseTest
    private static List<QRecord> getOrderRecords()
    {
       List<QRecord> records = List.of(
-         new QRecord().withValue("id", 1).withValue("createDate", Instant.now().minus(90, ChronoUnit.DAYS)),
-         new QRecord().withValue("id", 2).withValue("createDate", Instant.now().minus(31, ChronoUnit.DAYS)),
-         new QRecord().withValue("id", 3).withValue("createDate", Instant.now().minus(30, ChronoUnit.DAYS).minus(5, ChronoUnit.MINUTES)),
-         new QRecord().withValue("id", 4).withValue("createDate", Instant.now().minus(29, ChronoUnit.DAYS).minus(23, ChronoUnit.HOURS)),
-         new QRecord().withValue("id", 5).withValue("createDate", Instant.now().minus(5, ChronoUnit.DAYS)));
+         new QRecord().withValue("id", 1).withValue("timestamp", Instant.now().minus(90, ChronoUnit.DAYS)),
+         new QRecord().withValue("id", 2).withValue("timestamp", Instant.now().minus(31, ChronoUnit.DAYS)),
+         new QRecord().withValue("id", 3).withValue("timestamp", Instant.now().minus(30, ChronoUnit.DAYS).minus(5, ChronoUnit.MINUTES)),
+         new QRecord().withValue("id", 4).withValue("timestamp", Instant.now().minus(29, ChronoUnit.DAYS).minus(23, ChronoUnit.HOURS)),
+         new QRecord().withValue("id", 5).withValue("timestamp", Instant.now().minus(5, ChronoUnit.DAYS)));
       return records;
    }
 

@@ -635,7 +635,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
 
       InsertAction        insertAction = new InsertAction();
-      QBackendTransaction transaction  = insertAction.openTransaction(insertInput);
+      QBackendTransaction transaction = QBackendTransaction.openFor(insertInput);
 
       insertInput.setTransaction(transaction);
       insertInput.setRecords(List.of(

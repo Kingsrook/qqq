@@ -574,7 +574,7 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static LocalTime getValueAsLocalTime(Serializable value)
+   public static LocalTime getValueAsLocalTime(Object value)
    {
       try
       {
@@ -615,7 +615,7 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static byte[] getValueAsByteArray(Serializable value)
+   public static byte[] getValueAsByteArray(Object value)
    {
       if(value == null)
       {
@@ -641,7 +641,7 @@ public class ValueUtils
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   public static <T extends Serializable> T getValueAsType(Class<T> type, Serializable value)
+   public static <T extends Serializable> T getValueAsType(Class<T> type, Object value)
    {
       if(type.equals(Integer.class))
       {
@@ -687,7 +687,7 @@ public class ValueUtils
     **
     *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
-   public static Serializable getValueAsFieldType(QFieldType type, Serializable value)
+   public static Serializable getValueAsFieldType(QFieldType type, Object value)
    {
       return switch(type)
       {

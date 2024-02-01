@@ -189,12 +189,6 @@ public class BaseAPIActionUtil
       InsertOutput insertOutput = new InsertOutput();
       insertOutput.setRecords(new ArrayList<>());
 
-      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
-      {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op");
-         return (insertOutput);
-      }
-
       try
       {
          // todo - supports bulk post?

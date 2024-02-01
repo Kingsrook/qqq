@@ -75,7 +75,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
       InsertAction insertAction = new InsertAction();
       InsertInput  insertInput  = new InsertInput();
       insertInput.setTableName(ScriptRevision.TABLE_NAME);
-      QBackendTransaction transaction = insertAction.openTransaction(insertInput);
+      QBackendTransaction transaction = QBackendTransaction.openFor(insertInput);
       insertInput.setTransaction(transaction);
 
       try

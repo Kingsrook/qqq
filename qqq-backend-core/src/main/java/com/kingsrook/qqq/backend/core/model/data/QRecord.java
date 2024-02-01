@@ -167,6 +167,16 @@ public class QRecord implements Serializable
             ArrayList<?> cloneList = new ArrayList<>(arrayList);
             clone.put(entry.getKey(), (V) cloneList);
          }
+         else if(entry.getValue() instanceof LinkedHashMap<?, ?> linkedHashMap)
+         {
+            LinkedHashMap<?, ?> cloneMap = new LinkedHashMap<>(linkedHashMap);
+            clone.put(entry.getKey(), (V) cloneMap);
+         }
+         else if(entry.getValue() instanceof HashMap<?, ?> hashMap)
+         {
+            HashMap<?, ?> cloneMap = new HashMap<>(hashMap);
+            clone.put(entry.getKey(), (V) cloneMap);
+         }
          else if(entry.getValue() instanceof QRecord otherQRecord)
          {
             clone.put(entry.getKey(), (V) new QRecord(otherQRecord));

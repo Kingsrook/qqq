@@ -23,8 +23,11 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -32,6 +35,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
  *******************************************************************************/
 public class AbstractProcessMetaDataBuilder
 {
+   private static final QLogger LOG = QLogger.getLogger(AbstractProcessMetaDataBuilder.class);
+
    protected QProcessMetaData processMetaData;
 
 
@@ -59,13 +64,62 @@ public class AbstractProcessMetaDataBuilder
 
 
    /*******************************************************************************
+    ** Fluent setter for name
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withName(String name)
+   {
+      processMetaData.setName(name);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for label
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withLabel(String name)
+   {
+      processMetaData.setLabel(name);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withTableName(String tableName)
+   {
+      processMetaData.setTableName(tableName);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icon
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withIcon(QIcon icon)
+   {
+      processMetaData.setIcon(icon);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected void setInputFieldDefaultValue(String fieldName, Serializable value)
    {
       processMetaData.getInputFields().stream()
          .filter(f -> f.getName().equals(fieldName)).findFirst()
-         .ifPresent(f -> f.setDefaultValue(value));
+         .ifPresentOrElse(f -> f.setDefaultValue(value),
+            () -> LOG.warn("Could not find process input field for setting default value", logPair("processName", () -> processMetaData.getName()), logPair("fieldName", fieldName)));
    }
 
 

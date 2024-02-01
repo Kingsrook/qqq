@@ -746,12 +746,22 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the hasBeenValidated field will be set to true.
     **
+    ** Else, if passed a null, hasBeenValidated will be reset to false - e.g., to
+    ** re-trigger validation (can be useful in tests).
     *******************************************************************************/
    public void setHasBeenValidated(QInstanceValidationKey key)
    {
-      this.hasBeenValidated = true;
+      if(key == null)
+      {
+         this.hasBeenValidated = false;
+      }
+      else
+      {
+         this.hasBeenValidated = true;
+      }
    }
 
 
@@ -1196,6 +1206,16 @@ public class QInstance
    {
       this.deploymentMode = deploymentMode;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void add(TopLevelMetaDataInterface metaData)
+   {
+      metaData.addSelfToInstance(this);
    }
 
 }

@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
  ** Interface for the Insert action.
  **
  *******************************************************************************/
-public interface InsertInterface extends QActionInterface
+public interface InsertInterface
 {
    /*******************************************************************************
     **

@@ -1,13 +1,25 @@
-ifdef::env-name[:relfilesuffix: .adoc]
-:link-backend: link:Backends{relfilesuffix}[QQQ Backend]
-:link-backends: link:Backends{relfilesuffix}[QQQ Backends]
-:link-table: link:Tables{relfilesuffix}[QQQ Table]
-:link-tables: link:Tables{relfilesuffix}[QQQ Tables]
-:link-join: link:Joins{relfilesuffix}[QQQ Join]
-:link-joins: link:Joins{relfilesuffix}[QQQ Joins]
-:link-field: link:Fields{relfilesuffix}[QQQ Field]
-:link-fields: link:Fields{relfilesuffix}[QQQ Fields]
-:link-process: link:Processes{relfilesuffix}[QQQ Process]
-:link-processes: link:Processes{relfilesuffix}[QQQ Processes]
-:link-app: link:Apps{relfilesuffix}[QQQ App]
-:link-apps: link:Apps{relfilesuffix}[QQQ Apps]
+:link-app: <<Apps,QQQ App>>
+:link-apps: <<Apps,QQQ Apps>>
+:link-backend: <<Backends,QQQ Backend>>
+:link-backends: <<Backends,QQQ Backends>>
+:link-field: <<Fields,QQQ Field>>
+:link-fields: <<Fields,QQQ Fields>>
+:link-icon: <<Icons,Icon>>
+:link-icons: <<Icons,Icons>>
+:link-instance: <<QInstance,QInstance>>
+:link-join: <<Joins,QQQ Join>>
+:link-joins: <<Joins,QQQ Joins>>
+:link-permissionRule: <<PermissionRules,Permission Rule>>
+:link-permissionRules: <<PermissionRules,Permission Rules>>
+:link-possibleValueSource: <<PossibleValueSources,QQQ Possible Value Source>>
+:link-possibleValueSources: <<PossibleValueSources,QQQ Possible Value Sources>>
+:link-process: <<Processes,QQQ Process>>
+:link-processes: <<Processes,QQQ Processes>>
+:link-report: <<Reports,QQQ Report>>
+:link-reports: <<Reports,QQQ Reports>>
+:link-securityKeyType: <<SecurityKeyTypes,Security Key Type>>
+:link-securityKeyTypes: <<SecurityKeyTypes,Security Key Types>>
+:link-table: <<Tables,QQQ Table>>
+:link-tables: <<Tables,QQQ Tables>>
+:link-widget: <<Widgets,QQQ Widget>>
+:link-widgets: <<Widgets,QQQ Widgets>>

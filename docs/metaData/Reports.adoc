@@ -1,4 +1,5 @@
-== QQQ Reports
+[#Reports]
+== Reports
 include::../variables.adoc[]
 
 QQQ can generate reports based on {link-tables} defined within a QQQ Instance.

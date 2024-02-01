@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -49,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRule
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -57,6 +59,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
  *******************************************************************************/
 public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(QTableMetaData.class);
+
    private String name;
    private String label;
 
@@ -813,6 +817,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
     *******************************************************************************/
    public QTableMetaData withUniqueKey(UniqueKey uniqueKey)
    {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // you can't add a null key, so, if someone tried, just gracefully return w/ noop //
+      ////////////////////////////////////////////////////////////////////////////////////
+      if(uniqueKey == null)
+      {
+         LOG.debug("Skipping request to add null uniqueKey", logPair("tableName", name));
+         return (this);
+      }
+
       if(this.uniqueKeys == null)
       {
          this.uniqueKeys = new ArrayList<>();
@@ -1130,6 +1143,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
     *******************************************************************************/
    public QTableMetaData withRecordSecurityLock(RecordSecurityLock recordSecurityLock)
    {
+      /////////////////////////////////////////////////////////////////////////////////////
+      // you can't add a null lock, so, if someone tried, just gracefully return w/ noop //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(recordSecurityLock == null)
+      {
+         LOG.debug("Skipping request to add null recordSecurityLock", logPair("tableName", name));
+         return (this);
+      }
+
       if(this.recordSecurityLocks == null)
       {
          this.recordSecurityLocks = new ArrayList<>();

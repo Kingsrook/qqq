@@ -183,6 +183,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
 
       /*******************************************************************************
+       ** Overloaded constructor - defaults both performInserts & performUpdates to true.
+       *******************************************************************************/
+      public SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+      {
+         this(sourceTable, sourceTableKeyField, destinationTable, destinationTableForeignKey, true, true);
+      }
+
+      /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
        *******************************************************************************/
@@ -268,6 +276,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
+            LOG.debug("Skipping record without a value in the sourceKeyField", logPair("keyField", sourceTableKeyField));
             errorMissingKeyField.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
 
             try

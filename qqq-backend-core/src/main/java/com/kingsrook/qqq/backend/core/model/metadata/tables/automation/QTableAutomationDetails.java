@@ -37,6 +37,11 @@ public class QTableAutomationDetails
 
    private Integer overrideBatchSize;
 
+   private String shardByFieldName; // field in "this" table, to use for sharding
+   private String shardSourceTableName; // name of the table where the shards are defined as rows
+   private String shardLabelFieldName; // field in shard-source-table to use for labeling shards
+   private String shardIdFieldName; // field in shard-source-table to identify shards (e.g., joins to this table's shardByFieldName)
+
 
 
    /*******************************************************************************
@@ -185,6 +190,130 @@ public class QTableAutomationDetails
    public QTableAutomationDetails withOverrideBatchSize(Integer overrideBatchSize)
    {
       this.overrideBatchSize = overrideBatchSize;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shardByFieldName
+    *******************************************************************************/
+   public String getShardByFieldName()
+   {
+      return (this.shardByFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shardByFieldName
+    *******************************************************************************/
+   public void setShardByFieldName(String shardByFieldName)
+   {
+      this.shardByFieldName = shardByFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shardByFieldName
+    *******************************************************************************/
+   public QTableAutomationDetails withShardByFieldName(String shardByFieldName)
+   {
+      this.shardByFieldName = shardByFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shardSourceTableName
+    *******************************************************************************/
+   public String getShardSourceTableName()
+   {
+      return (this.shardSourceTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shardSourceTableName
+    *******************************************************************************/
+   public void setShardSourceTableName(String shardSourceTableName)
+   {
+      this.shardSourceTableName = shardSourceTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shardSourceTableName
+    *******************************************************************************/
+   public QTableAutomationDetails withShardSourceTableName(String shardSourceTableName)
+   {
+      this.shardSourceTableName = shardSourceTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shardLabelFieldName
+    *******************************************************************************/
+   public String getShardLabelFieldName()
+   {
+      return (this.shardLabelFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shardLabelFieldName
+    *******************************************************************************/
+   public void setShardLabelFieldName(String shardLabelFieldName)
+   {
+      this.shardLabelFieldName = shardLabelFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shardLabelFieldName
+    *******************************************************************************/
+   public QTableAutomationDetails withShardLabelFieldName(String shardLabelFieldName)
+   {
+      this.shardLabelFieldName = shardLabelFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shardIdFieldName
+    *******************************************************************************/
+   public String getShardIdFieldName()
+   {
+      return (this.shardIdFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shardIdFieldName
+    *******************************************************************************/
+   public void setShardIdFieldName(String shardIdFieldName)
+   {
+      this.shardIdFieldName = shardIdFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shardIdFieldName
+    *******************************************************************************/
+   public QTableAutomationDetails withShardIdFieldName(String shardIdFieldName)
+   {
+      this.shardIdFieldName = shardIdFieldName;
       return (this);
    }
 

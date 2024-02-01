@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
@@ -87,8 +88,9 @@ public class PollingAutomationPerTableRunner implements Runnable
 {
    private static final QLogger LOG = QLogger.getLogger(PollingAutomationPerTableRunner.class);
 
-   private final TableActions tableActions;
-   private final String       name;
+   private final TableActionsInterface tableActions;
+
+   private String name;
 
    private QInstance          instance;
    private Supplier<QSession> sessionSupplier;
@@ -116,10 +118,51 @@ public class PollingAutomationPerTableRunner implements Runnable
 
 
    /*******************************************************************************
-    **
+    ** Interface to be used by 2 records in this class - normal TableActions, and
+    ** ShardedTableActions.
     *******************************************************************************/
-   public record TableActions(String tableName, AutomationStatus status)
+   public interface TableActionsInterface
    {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      String tableName();
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      AutomationStatus status();
+   }
+
+
+
+   /*******************************************************************************
+    ** Wrapper for a pair of (tableName, automationStatus)
+    *******************************************************************************/
+   public record TableActions(String tableName, AutomationStatus status) implements TableActionsInterface
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public void noopToFakeTestCoverage()
+      {
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** extended version of TableAction, for sharding use-case - adds the shard
+    ** details.
+    *******************************************************************************/
+   public record ShardedTableActions(String tableName, AutomationStatus status, String shardByFieldName, Serializable shardValue, String shardLabel) implements TableActionsInterface
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public void noopToFakeTestCoverage()
+      {
+      }
    }
 
 
@@ -128,16 +171,46 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** basically just get a list of tables which at least *could* have automations
     ** run - either meta-data automations, or table-triggers (data/user defined).
     *******************************************************************************/
-   public static List<TableActions> getTableActions(QInstance instance, String providerName)
+   public static List<TableActionsInterface> getTableActions(QInstance instance, String providerName)
    {
-      List<TableActions> tableActionList = new ArrayList<>();
+      List<TableActionsInterface> tableActionList = new ArrayList<>();
 
       for(QTableMetaData table : instance.getTables().values())
       {
-         if(table.getAutomationDetails() != null && providerName.equals(table.getAutomationDetails().getProviderName()))
+         QTableAutomationDetails automationDetails = table.getAutomationDetails();
+         if(automationDetails != null && providerName.equals(automationDetails.getProviderName()))
          {
-            tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS));
-            tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS));
+            if(StringUtils.hasContent(automationDetails.getShardByFieldName()))
+            {
+               //////////////////////////////////////////////////////////////////////////////////////////////
+               // for sharded automations, add a tableAction (of the sharded subtype) for each shard-value //
+               //////////////////////////////////////////////////////////////////////////////////////////////
+               try
+               {
+                  QueryInput queryInput = new QueryInput();
+                  queryInput.setTableName(automationDetails.getShardSourceTableName());
+                  QueryOutput queryOutput = new QueryAction().execute(queryInput);
+                  for(QRecord record : queryOutput.getRecords())
+                  {
+                     Serializable shardId = record.getValue(automationDetails.getShardIdFieldName());
+                     String       label   = record.getValueString(automationDetails.getShardLabelFieldName());
+                     tableActionList.add(new ShardedTableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
+                     tableActionList.add(new ShardedTableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
+                  }
+               }
+               catch(Exception e)
+               {
+                  LOG.error("Error getting sharded table automation actions for a table", e, new LogPair("tableName", table.getName()));
+               }
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////
+               // for non-sharded, we just need tabler name & automation status //
+               ///////////////////////////////////////////////////////////////////
+               tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS));
+               tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS));
+            }
          }
       }
 
@@ -149,12 +222,17 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public PollingAutomationPerTableRunner(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActions tableActions)
+   public PollingAutomationPerTableRunner(QInstance instance, String providerName, Supplier<QSession> sessionSupplier, TableActionsInterface tableActions)
    {
       this.instance = instance;
       this.sessionSupplier = sessionSupplier;
       this.tableActions = tableActions;
       this.name = providerName + ">" + tableActions.tableName() + ">" + tableActions.status().getInsertOrUpdate();
+
+      if(tableActions instanceof ShardedTableActions shardedTableActions)
+      {
+         this.name += ":" + shardedTableActions.shardLabel();
+      }
    }
 
 
@@ -229,6 +307,15 @@ public class PollingAutomationPerTableRunner implements Runnable
                throw (new NotImplementedException("Automation Status Tracking type [" + statusTrackingType + "] is not yet implemented in here."));
             }
 
+            if(tableActions instanceof ShardedTableActions shardedTableActions)
+            {
+               //////////////////////////////////////////////////////////////
+               // for sharded actions, add the shardBy field as a criteria //
+               //////////////////////////////////////////////////////////////
+               QQueryFilter filter = queryInput.getFilter();
+               filter.addCriteria(new QFilterCriteria(shardedTableActions.shardByFieldName(), QCriteriaOperator.EQUALS, shardedTableActions.shardValue()));
+            }
+
             queryInput.setRecordPipe(recordPipe);
             return (new QueryAction().execute(queryInput));
          }, () ->
@@ -258,7 +345,23 @@ public class PollingAutomationPerTableRunner implements Runnable
       {
          if(action.getTriggerEvent().equals(triggerEvent))
          {
-            rs.add(action);
+            ///////////////////////////////////////////////////////////
+            // for sharded configs, only run if the shard id matches //
+            ///////////////////////////////////////////////////////////
+            if(tableActions instanceof ShardedTableActions shardedTableActions)
+            {
+               if(shardedTableActions.shardValue().equals(action.getShardId()))
+               {
+                  rs.add(action);
+               }
+            }
+            else
+            {
+               ////////////////////////////////////////////
+               // for non-sharded, always add the action //
+               ////////////////////////////////////////////
+               rs.add(action);
+            }
          }
       }
 
@@ -471,7 +574,7 @@ public class PollingAutomationPerTableRunner implements Runnable
             @Override
             public QQueryFilter getQueryFilter()
             {
-               List<Serializable> recordIds = records.stream().map(r -> r.getValueInteger(table.getPrimaryKeyField())).collect(Collectors.toList());
+               List<Serializable> recordIds = records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).collect(Collectors.toList());
                return (new QQueryFilter().withCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordIds)));
             }
          });

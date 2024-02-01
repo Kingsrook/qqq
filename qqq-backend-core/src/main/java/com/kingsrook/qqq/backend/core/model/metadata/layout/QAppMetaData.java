@@ -43,6 +43,8 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    private String name;
    private String label;
 
+   private Integer sortOrder = 500;
+
    private QPermissionRules permissionRules;
 
    private List<QAppChildMetaData> children;
@@ -426,4 +428,36 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    {
       qInstance.addApp(this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for sortOrder
+    *******************************************************************************/
+   public Integer getSortOrder()
+   {
+      return (this.sortOrder);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sortOrder
+    *******************************************************************************/
+   public void setSortOrder(Integer sortOrder)
+   {
+      this.sortOrder = sortOrder;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sortOrder
+    *******************************************************************************/
+   public QAppMetaData withSortOrder(Integer sortOrder)
+   {
+      this.sortOrder = sortOrder;
+      return (this);
+   }
+
 }
