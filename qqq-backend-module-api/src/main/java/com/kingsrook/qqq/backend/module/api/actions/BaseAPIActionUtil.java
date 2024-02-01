@@ -709,11 +709,11 @@ public class BaseAPIActionUtil
 
          if(backendMetaData.getAuthorizationType().equals(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD))
          {
-            request.addHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+            request.setHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
          }
          else if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_HEADER))
          {
-            request.addHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+            request.setHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
          }
          else
          {
@@ -727,10 +727,10 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
-         case API_TOKEN -> request.addHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case BASIC_AUTH_API_KEY -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+         case API_KEY_HEADER -> request.setHeader("API-Key", backendMetaData.getApiKey());
+         case API_TOKEN -> request.setHeader("Authorization", "Token " + backendMetaData.getApiKey());
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM ->
          {
@@ -786,9 +786,9 @@ public class BaseAPIActionUtil
 
             if(setCredentialsInHeader)
             {
-               request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
+               request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
             }
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+            request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
 
             HttpResponse response     = executeOAuthTokenRequest(client, request);
             int          statusCode   = response.getStatusLine().getStatusCode();
@@ -850,7 +850,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void setupContentTypeInRequest(HttpRequestBase request)
    {
-      request.addHeader("Content-Type", backendMetaData.getContentType());
+      request.setHeader("Content-Type", backendMetaData.getContentType());
    }
 
 
@@ -872,7 +872,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public void setupAdditionalHeaders(HttpRequestBase request)
    {
-      request.addHeader("Accept", "application/json");
+      request.setHeader("Accept", "application/json");
    }
 
 
