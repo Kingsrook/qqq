@@ -39,7 +39,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
- ** Unit test for ValueBehaviorApplier
+ ** Unit test for ValueBehaviorApplier - and also providing coverage for
+ ** ValueTooLongBehavior (the first implementation, which was previously in the
+ ** class under test).
  *******************************************************************************/
 class ValueBehaviorApplierTest extends BaseTest
 {
@@ -61,7 +63,7 @@ class ValueBehaviorApplierTest extends BaseTest
          new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Last name too long").withValue("email", "john@smith.com"),
          new QRecord().withValue("id", 3).withValue("firstName", "First name too long").withValue("lastName", "Smith").withValue("email", "john.smith@emaildomainwayytolongtofit.com")
       );
-      ValueBehaviorApplier.applyFieldBehaviors(qInstance, table, recordList);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, recordList);
 
       assertEquals("First name", getRecordById(recordList, 1).getValueString("firstName"));
       assertEquals("Last na...", getRecordById(recordList, 2).getValueString("lastName"));
@@ -93,7 +95,7 @@ class ValueBehaviorApplierTest extends BaseTest
          new QRecord().withValue("id", 1).withValue("firstName", "First name too long").withValue("lastName", null).withValue("email", "john@smith.com"),
          new QRecord().withValue("id", 2).withValue("firstName", "").withValue("lastName", "Last name too long").withValue("email", "john@smith.com")
       );
-      ValueBehaviorApplier.applyFieldBehaviors(qInstance, table, recordList);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, recordList);
 
       assertEquals("First name too long", getRecordById(recordList, 1).getValueString("firstName"));
       assertNull(getRecordById(recordList, 1).getValueString("lastName"));

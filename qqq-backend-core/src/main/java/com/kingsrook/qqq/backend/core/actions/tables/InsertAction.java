@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -207,17 +206,6 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          return (rs);
       }
 
-      /////////////////////////////////////////////
-      // set values in create date & modify date //
-      // todo .. better (not hard-coded names)   //
-      /////////////////////////////////////////////
-      Instant now = Instant.now();
-      for(QRecord record : insertInput.getRecords())
-      {
-         setValueIfTableHasField(record, insertInput.getTable(), "createDate", now);
-         setValueIfTableHasField(record, insertInput.getTable(), "modifyDate", now);
-      }
-
       //////////////////////////////////////////////////////
       // load the backend module and its insert interface //
       //////////////////////////////////////////////////////
@@ -229,29 +217,6 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       ////////////////////////////////////
       InsertOutput insertOutput = insertInterface.execute(insertInput);
       return insertOutput;
-   }
-
-
-
-   /*******************************************************************************
-    ** If the table has a field with the given name, then set the given value in the
-    ** given record.
-    *******************************************************************************/
-   private static void setValueIfTableHasField(QRecord record, QTableMetaData table, String fieldName, Serializable value)
-   {
-      try
-      {
-         if(table.getFields().containsKey(fieldName))
-         {
-            record.setValue(fieldName, value);
-         }
-      }
-      catch(Exception e)
-      {
-         /////////////////////////////////////////////////
-         // this means field doesn't exist, so, ignore. //
-         /////////////////////////////////////////////////
-      }
    }
 
 
@@ -277,7 +242,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
-      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords());
 
       runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
       setErrorsIfUniqueKeyErrors(insertInput, table);

@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -94,10 +95,8 @@ public class QInstanceEnricher
 
    private JoinGraph joinGraph;
 
-   //////////////////////////////////////////////////////////
-   // todo - come up w/ a way for app devs to set configs! //
-   //////////////////////////////////////////////////////////
-   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels        = true;
+   private boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = true;
 
    //////////////////////////////////////////////////////////////////////////////////////////////////
    // let an instance define mappings to be applied during name-to-label enrichments,              //
@@ -462,6 +461,22 @@ public class QInstanceEnricher
                   }
                }
             }
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////
+      // add field behaviors for create date & modify date, if so configured //
+      /////////////////////////////////////////////////////////////////////////
+      if(configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+      {
+         if("createDate".equals(field.getName()) && field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class) == null)
+         {
+            field.withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
+         }
+
+         if("modifyDate".equals(field.getName()) && field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class) == null)
+         {
+            field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
          }
       }
    }
@@ -1218,6 +1233,68 @@ public class QInstanceEnricher
    public static void clearLabelMappings()
    {
       labelMappings.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public boolean getConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels()
+   {
+      return (this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public void setConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels(boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels)
+   {
+      this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public QInstanceEnricher withConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels(boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels)
+   {
+      this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public boolean getConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate()
+   {
+      return (this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public void setConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+   {
+      this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public QInstanceEnricher withConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+   {
+      this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate;
+      return (this);
    }
 
 }
