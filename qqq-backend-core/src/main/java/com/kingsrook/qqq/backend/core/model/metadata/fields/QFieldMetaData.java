@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.hervian.reflection.Fun;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -44,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -52,6 +54,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class QFieldMetaData implements Cloneable
 {
+   private static final QLogger LOG = QLogger.getLogger(QFieldMetaData.class);
+
    private String     name;
    private String     label;
    private String     backendName;
@@ -73,8 +77,8 @@ public class QFieldMetaData implements Cloneable
    private String       possibleValueSourceName;
    private QQueryFilter possibleValueSourceFilter;
 
-   private Integer            maxLength;
-   private Set<FieldBehavior> behaviors;
+   private Integer               maxLength;
+   private Set<FieldBehavior<?>> behaviors;
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // w/ longer-term vision for FieldBehaviors                                                                           //
@@ -674,7 +678,7 @@ public class QFieldMetaData implements Cloneable
     ** Getter for behaviors
     **
     *******************************************************************************/
-   public Set<FieldBehavior> getBehaviors()
+   public Set<FieldBehavior<?>> getBehaviors()
    {
       return behaviors;
    }
@@ -682,11 +686,12 @@ public class QFieldMetaData implements Cloneable
 
 
    /*******************************************************************************
-    **
+    ** Get the FieldBehavior object of a given behaviorType (class) - but - if one
+    ** isn't set, then use the default from that type.
     *******************************************************************************/
-   public <T extends FieldBehavior> T getBehavior(QInstance instance, Class<T> behaviorType)
+   public <T extends FieldBehavior<T>> T getBehaviorOrDefault(QInstance instance, Class<T> behaviorType)
    {
-      for(FieldBehavior fieldBehavior : CollectionUtils.nonNullCollection(behaviors))
+      for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(behaviors))
       {
          if(behaviorType.isInstance(fieldBehavior))
          {
@@ -701,9 +706,33 @@ public class QFieldMetaData implements Cloneable
       ///////////////////////////////////////////
       // return default behavior for this type //
       ///////////////////////////////////////////
-      if(behaviorType.equals(ValueTooLongBehavior.class))
+      if(behaviorType.isEnum())
       {
-         return behaviorType.cast(ValueTooLongBehavior.getDefault());
+         return (behaviorType.getEnumConstants()[0].getDefault());
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the FieldBehavior object of a given behaviorType (class) - and if one
+    ** isn't set, then return null.
+    *******************************************************************************/
+   public <T extends FieldBehavior<T>> T getBehaviorOnlyIfSet(Class<T> behaviorType)
+   {
+      if(behaviors == null)
+      {
+         return (null);
+      }
+
+      for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(behaviors))
+      {
+         if(behaviorType.isInstance(fieldBehavior))
+         {
+            return (behaviorType.cast(fieldBehavior));
+         }
       }
 
       return (null);
@@ -715,7 +744,7 @@ public class QFieldMetaData implements Cloneable
     ** Setter for behaviors
     **
     *******************************************************************************/
-   public void setBehaviors(Set<FieldBehavior> behaviors)
+   public void setBehaviors(Set<FieldBehavior<?>> behaviors)
    {
       this.behaviors = behaviors;
    }
@@ -726,7 +755,7 @@ public class QFieldMetaData implements Cloneable
     ** Fluent setter for behaviors
     **
     *******************************************************************************/
-   public QFieldMetaData withBehaviors(Set<FieldBehavior> behaviors)
+   public QFieldMetaData withBehaviors(Set<FieldBehavior<?>> behaviors)
    {
       this.behaviors = behaviors;
       return (this);
@@ -738,12 +767,30 @@ public class QFieldMetaData implements Cloneable
     ** Fluent setter for behaviors
     **
     *******************************************************************************/
-   public QFieldMetaData withBehavior(FieldBehavior behavior)
+   public QFieldMetaData withBehavior(FieldBehavior<?> behavior)
    {
+      if(behavior == null)
+      {
+         LOG.debug("Skipping request to add null behavior", logPair("fieldName", getName()));
+         return (this);
+      }
+
       if(behaviors == null)
       {
          behaviors = new HashSet<>();
       }
+
+      if(!behavior.allowMultipleBehaviorsOfThisType())
+      {
+         @SuppressWarnings("unchecked")
+         FieldBehavior<?> existingBehaviorOfThisType = getBehaviorOnlyIfSet(behavior.getClass());
+         if(existingBehaviorOfThisType != null)
+         {
+            LOG.debug("Replacing a field behavior", logPair("fieldName", getName()), logPair("oldBehavior", existingBehaviorOfThisType), logPair("newBehavior", behavior));
+            this.behaviors.remove(existingBehaviorOfThisType);
+         }
+      }
+
       this.behaviors.add(behavior);
       return (this);
    }

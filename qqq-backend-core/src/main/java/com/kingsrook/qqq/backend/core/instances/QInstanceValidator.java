@@ -692,7 +692,7 @@ public class QInstanceValidator
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
 
-      ValueTooLongBehavior behavior = field.getBehavior(qInstance, ValueTooLongBehavior.class);
+      ValueTooLongBehavior behavior = field.getBehaviorOrDefault(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
