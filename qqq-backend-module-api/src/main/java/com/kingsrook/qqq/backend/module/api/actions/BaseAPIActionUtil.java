@@ -1081,7 +1081,7 @@ public class BaseAPIActionUtil
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // trim response body (just to keep logs smaller, or, in case someone consuming logs doesn't want such long lines) //
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
+               LOG.debug("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
                return (qResponse);
             }
          }

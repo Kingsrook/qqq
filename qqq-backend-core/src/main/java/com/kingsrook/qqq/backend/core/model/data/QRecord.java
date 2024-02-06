@@ -186,7 +186,7 @@ public class QRecord implements Serializable
             //////////////////////////////////////////////////////////////////////////////
             // we know entry is serializable at this point, based on type param's bound //
             //////////////////////////////////////////////////////////////////////////////
-            LOG.info("Non-primitive serializable value in QRecord - calling SerializationUtils.clone...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
+            LOG.debug("Non-primitive serializable value in QRecord - calling SerializationUtils.clone...", logPair("key", entry.getKey()), logPair("type", value.getClass()));
             clone.put(entry.getKey(), (V) SerializationUtils.clone(entry.getValue()));
          }
       }

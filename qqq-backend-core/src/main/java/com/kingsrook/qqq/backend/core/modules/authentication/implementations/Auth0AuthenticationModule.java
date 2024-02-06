@@ -176,7 +176,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process a sessionUUID - looks up userSession record - cannot create token this way. //
             /////////////////////////////////////////////////////////////////////////////////////////
             String sessionUUID = context.get(SESSION_UUID_KEY);
-            LOG.info("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
+            LOG.debug("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
             if(sessionUUID != null)
             {
                accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
