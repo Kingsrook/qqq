@@ -52,7 +52,7 @@ fi
 ## locations of env files in 1password ##
 #########################################
 QQQ_OP_LOCATION="op://Development Environments/"
-CTL_OP_LOCATION="op://NF-One-Development/"
+CTL_OP_LOCATION="op://Engineering - CTL-Development/"
 
 
 ##################################################
