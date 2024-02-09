@@ -56,14 +56,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcessTest;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,18 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  *******************************************************************************/
 class PollingAutomationPerTableRunnerTest extends BaseTest
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @BeforeEach
-   @AfterEach
-   void beforeAndAfterEach()
-   {
-      MemoryRecordStore.getInstance().reset();
-   }
-
-
 
    /*******************************************************************************
     ** Test a cycle that does an insert, some automations, then and an update, and more automations.
@@ -200,7 +185,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runAllTableActions(QInstance qInstance) throws QException
+   static void runAllTableActions(QInstance qInstance) throws QException
    {
       List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
       for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
