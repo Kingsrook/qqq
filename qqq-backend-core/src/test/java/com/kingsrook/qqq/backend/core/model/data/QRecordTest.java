@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -175,7 +176,7 @@ class QRecordTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testListAsValue()
+   void testArrayListAsValue()
    {
       ArrayList<Integer> originalArrayList        = new ArrayList<>(List.of(1, 2, 3));
       QRecord            recordWithArrayListValue = new QRecord().withValue("myList", originalArrayList);
@@ -192,6 +193,31 @@ class QRecordTest extends BaseTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       originalArrayList.add(4);
       assertNotEquals(originalArrayList, cloneWithArrayListValue.getValue("myList"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLinkedListAsValue()
+   {
+      LinkedList<Integer> originalLinkedList        = new LinkedList<>(List.of(1, 2, 3));
+      QRecord             recordWithLinkedListValue = new QRecord().withValue("myList", originalLinkedList);
+      QRecord             cloneWithLinkedListValue  = new QRecord(recordWithLinkedListValue);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the clone list and original list should be equals (have contents that are equals), but not be the same (reference) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(List.of(1, 2, 3), cloneWithLinkedListValue.getValue("myList"));
+      assertNotSame(originalLinkedList, cloneWithLinkedListValue.getValue("myList"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure a change to the original list doesn't change the cloned list (as it was cloned deeply) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      originalLinkedList.add(4);
+      assertNotEquals(originalLinkedList, cloneWithLinkedListValue.getValue("myList"));
    }
 
 

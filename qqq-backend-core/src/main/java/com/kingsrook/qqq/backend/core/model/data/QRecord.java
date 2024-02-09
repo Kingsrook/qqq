@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -165,6 +166,11 @@ public class QRecord implements Serializable
          else if(entry.getValue() instanceof ArrayList<?> arrayList)
          {
             ArrayList<?> cloneList = new ArrayList<>(arrayList);
+            clone.put(entry.getKey(), (V) cloneList);
+         }
+         else if(entry.getValue() instanceof LinkedList<?> linkedList)
+         {
+            LinkedList<?> cloneList = new LinkedList<>(linkedList);
             clone.put(entry.getKey(), (V) cloneList);
          }
          else if(entry.getValue() instanceof LinkedHashMap<?, ?> linkedHashMap)
