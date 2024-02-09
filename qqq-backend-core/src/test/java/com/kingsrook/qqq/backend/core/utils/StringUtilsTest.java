@@ -82,6 +82,20 @@ class StringUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void test_safeAppend()
+   {
+      assertEquals("Foo", StringUtils.safeAppend("Foo", null));
+      assertEquals("Foo", StringUtils.safeAppend(null, "Foo"));
+      assertEquals("FooBar", StringUtils.safeAppend("Foo", "Bar"));
+      assertEquals("", StringUtils.safeAppend(null, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void test_allCapsToMixedCase()
    {
       assertNull(StringUtils.allCapsToMixedCase(null));
