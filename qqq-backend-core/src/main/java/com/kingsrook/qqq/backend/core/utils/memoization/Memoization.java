@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 
 
 /*******************************************************************************
@@ -58,8 +59,16 @@ public class Memoization<K, V>
 
 
    /*******************************************************************************
+    ** Get the memoized Value for a given input Key.
     **
+    ** But note, this looks the same to the caller, whether the key just wasn't in
+    ** the internal map (e.g., had never been looked up), or if it was previously looked
+    ** up, and that returned null.  In either case, the optional will be empty.
+    **
+    ** See getMemoizedResult for where we can tell the difference (and we would
+    ** generally want to call that.
     *******************************************************************************/
+   @Deprecated
    public Optional<V> getResult(K key)
    {
       MemoizedResult<V> result = map.get(key);
@@ -77,7 +86,57 @@ public class Memoization<K, V>
 
 
    /*******************************************************************************
+    ** Get the memoized Value for a given input Key - computing it if it wasn't previously
+    ** memoized (or expired).
     **
+    ** In here, if the optional is empty, it means the value is null (whether that
+    ** came form memoization, or from the lookupFunction, you don't care - the answer
+    ** is null).
+    *******************************************************************************/
+   public Optional<V> getResult(K key, UnsafeFunction<K, V, ?> lookupFunction)
+   {
+      MemoizedResult<V> result = map.get(key);
+      if(result != null)
+      {
+         if(result.getTime().isAfter(Instant.now().minus(timeout)))
+         {
+            //////////////////////////////////////////////////////////////////////////////
+            // ok, we have a memoized value, and it's not expired, so we can return it. //
+            // of course, it might be a memoized null, so we use .ofNullable.           //
+            //////////////////////////////////////////////////////////////////////////////
+            return (Optional.ofNullable(result.getResult()));
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ok - either we never memoized this key, or it's expired, so, apply the lookup function, //
+      // store the result, and then return the value (in an Optional.ofNullable)                 //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         V value = lookupFunction.apply(key);
+         storeResult(key, value);
+         return (Optional.ofNullable(value));
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Uncaught Exception while executing a Memoization lookupFunction (to avoid this log, add a catch in the lookupFunction)", e);
+         storeResult(key, null);
+         return (Optional.empty());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Get a memoized result, optionally containing a Value, for a given input Key.
+    **
+    ** In this method (contrasted with getResult), if the returned Optional is empty,
+    ** it means that we haven't ever looked up or memoized the key (or it's expired).
+    **
+    ** If the returned Optional is not empty, then it means we've memoized something
+    ** (and it's not expired) - so if the Value from the MemoizedResult is null,
+    ** then null is the proper memoized value.
     *******************************************************************************/
    public Optional<MemoizedResult<V>> getMemoizedResult(K key)
    {
@@ -86,7 +145,7 @@ public class Memoization<K, V>
       {
          if(result.getTime().isAfter(Instant.now().minus(timeout)))
          {
-            return (Optional.ofNullable(result));
+            return (Optional.of(result));
          }
       }
 
@@ -181,4 +240,47 @@ public class Memoization<K, V>
    {
       return map;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for timeout
+    *******************************************************************************/
+   public Duration getTimeout()
+   {
+      return (this.timeout);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for timeout
+    *******************************************************************************/
+   public Memoization<K, V> withTimeout(Duration timeout)
+   {
+      this.timeout = timeout;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxSize
+    *******************************************************************************/
+   public Integer getMaxSize()
+   {
+      return (this.maxSize);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxSize
+    *******************************************************************************/
+   public Memoization<K, V> withMaxSize(Integer maxSize)
+   {
+      this.maxSize = maxSize;
+      return (this);
+   }
+
 }
