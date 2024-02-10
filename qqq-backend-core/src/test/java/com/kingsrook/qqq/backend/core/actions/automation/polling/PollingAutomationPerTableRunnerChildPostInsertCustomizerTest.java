@@ -76,6 +76,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class PollingAutomationPerTableRunnerChildPostInsertCustomizerTest extends BaseTest
 {
 
+   static
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // we can set this property to revert to the behavior that existed before this test was written. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // System.setProperty("qqq.recordAutomationStatusUpdater.skipPreUpdateFetch", "true");
+   }
+
    /*******************************************************************************
     **
     *******************************************************************************/

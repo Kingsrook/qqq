@@ -563,7 +563,7 @@ public class UpdateAction
     *******************************************************************************/
    private void setAutomationStatusField(UpdateInput updateInput)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getSession(), updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, updateInput.getTransaction());
    }
 
 }

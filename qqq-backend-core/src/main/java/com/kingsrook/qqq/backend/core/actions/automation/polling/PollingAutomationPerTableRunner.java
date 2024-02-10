@@ -251,8 +251,7 @@ public class PollingAutomationPerTableRunner implements Runnable
 
       try
       {
-         QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
-         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), session, tableActions.status());
+         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), tableActions.status());
       }
       catch(Exception e)
       {
@@ -270,7 +269,7 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   public void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus) throws QException
+   public void processTableInsertOrUpdate(QTableMetaData table, AutomationStatus automationStatus) throws QException
    {
       /////////////////////////////////////////////////////////////////////////
       // get the actions to run against this table in this automation status //
@@ -321,7 +320,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          }, () ->
          {
             List<QRecord> records = recordPipe.consumeAvailableRecords();
-            applyActionsToRecords(session, table, records, actions, automationStatus);
+            applyActionsToRecords(table, records, actions, automationStatus);
             return (records.size());
          }
       );
@@ -427,7 +426,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** table's actions against them - IF they are found to match the action's filter
     ** (assuming it has one - if it doesn't, then all records match).
     *******************************************************************************/
-   private void applyActionsToRecords(QSession session, QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, AutomationStatus automationStatus) throws QException
+   private void applyActionsToRecords(QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, AutomationStatus automationStatus) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -437,7 +436,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       ///////////////////////////////////////////////////
       // mark the records as RUNNING their automations //
       ///////////////////////////////////////////////////
-      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToRunningStatusMap.get(automationStatus));
+      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(table, records, pendingToRunningStatusMap.get(automationStatus), null);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // foreach action - run it against the records (but only if they match the action's filter, if there is one) //
@@ -457,11 +456,11 @@ public class PollingAutomationPerTableRunner implements Runnable
       ////////////////////////////////////////
       if(anyActionsFailed)
       {
-         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToFailedStatusMap.get(automationStatus));
+         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(table, records, pendingToFailedStatusMap.get(automationStatus), null);
       }
       else
       {
-         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, AutomationStatus.OK);
+         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(table, records, AutomationStatus.OK, null);
       }
    }
 

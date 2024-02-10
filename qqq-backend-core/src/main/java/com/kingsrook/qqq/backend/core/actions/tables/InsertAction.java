@@ -444,7 +444,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
     *******************************************************************************/
    private void setAutomationStatusField(InsertInput insertInput)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getSession(), insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS, insertInput.getTransaction());
    }
 
 

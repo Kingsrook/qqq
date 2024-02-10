@@ -195,7 +195,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
          /////////////////////////////////////////////////////////////////////////////////////////////////////
-         pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
+         pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), tableAction.status());
       }
    }
 
@@ -497,7 +497,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
             /////////////////////////////////////////////////////////////////////////////////////////////////////
             // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
             /////////////////////////////////////////////////////////////////////////////////////////////////////
-            pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
+            pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), tableAction.status());
          }
       }).hasMessage(PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun.EXCEPTION_MESSAGE);
 
