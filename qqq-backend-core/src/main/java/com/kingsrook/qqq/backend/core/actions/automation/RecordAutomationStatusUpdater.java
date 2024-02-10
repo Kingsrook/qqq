@@ -53,7 +53,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.Speaker;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import org.apache.commons.lang.NotImplementedException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -151,7 +150,6 @@ public class RecordAutomationStatusUpdater
             catch(QException qe)
             {
                LOG.error("Error checking existing automation status before setting new automation status - more records will be updated than maybe should be...", qe);
-               Speaker.say("Avoid re-set todd update during automation");
             }
          }
       }
