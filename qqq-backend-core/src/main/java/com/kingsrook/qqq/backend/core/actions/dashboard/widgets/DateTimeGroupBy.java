@@ -297,4 +297,21 @@ public enum DateTimeGroupBy
       ZonedDateTime zoned = instant.atZone(zoneId);
       return (zoned.plus(noOfChronoUnitsToAdd, chronoUnitToAdd).toInstant());
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static DateTimeFormatter sqlDateFormatToSelectedDateTimeFormatter(String sqlDateFormat)
+   {
+      for(DateTimeGroupBy value : values())
+      {
+         if(value.sqlDateFormat.equals(sqlDateFormat))
+         {
+            return (value.selectedStringFormatter);
+         }
+      }
+      return null;
+   }
 }
