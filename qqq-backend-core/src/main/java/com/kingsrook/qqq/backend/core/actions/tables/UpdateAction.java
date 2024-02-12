@@ -113,7 +113,6 @@ public class UpdateAction
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       ActionHelper.validateSession(updateInput);
-      setAutomationStatusField(updateInput);
 
       QTableMetaData table = updateInput.getTable();
 
@@ -129,6 +128,7 @@ public class UpdateAction
       // for "not-found detection", and for the pre-action to use (if there is one) //
       ////////////////////////////////////////////////////////////////////////////////
       Optional<List<QRecord>> oldRecordList = fetchOldRecords(updateInput, updateInterface);
+      setAutomationStatusField(updateInput, oldRecordList);
 
       performValidations(updateInput, oldRecordList, false);
 
@@ -561,9 +561,9 @@ public class UpdateAction
    /*******************************************************************************
     ** If the table being updated uses an automation-status field, populate it now.
     *******************************************************************************/
-   private void setAutomationStatusField(UpdateInput updateInput)
+   private void setAutomationStatusField(UpdateInput updateInput, Optional<List<QRecord>> oldRecordList)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, updateInput.getTransaction());
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, updateInput.getTransaction(), oldRecordList.orElse(null));
    }
 
 }

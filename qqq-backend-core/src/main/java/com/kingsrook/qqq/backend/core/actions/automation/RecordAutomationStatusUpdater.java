@@ -65,13 +65,13 @@ public class RecordAutomationStatusUpdater
 {
    private static final QLogger LOG = QLogger.getLogger(RecordAutomationStatusUpdater.class);
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-   // feature flag - by default, will be false - and before setting records to PENDING_UPDATE_AUTOMATIONS,  //
-   // we will fetch them, to check their current automationStatus - and if they are currently PENDING       //
-   // or RUNNING inserts or updates, we won't update them.  This is added to fix cases where an update that //
-   // comes in before insert-automations have run, will cause the pending-insert status to be missed.       //
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static boolean skipPreUpdateFetch = new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.recordAutomationStatusUpdater.skipPreUpdateFetch", "QQQ_RECORD_AUTOMATION_STATUS_UPDATER_SKIP_PRE_UPDATE_FETCH", false);
+   ///////////////////////////////////////////////////////////////////////////////////////////////////////
+   // feature flag - by default, will be true - before setting records to PENDING_UPDATE_AUTOMATIONS,   //
+   // we will fetch them (if we didn't take them in from the caller, which, UpdateAction does if its    //
+   // backend supports it), to check their current automationStatus - and if they are currently PENDING //
+   // or RUNNING inserts or updates, we won't update them.                                              //
+   ///////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static boolean allowPreUpdateFetch = new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.recordAutomationStatusUpdater.allowPreUpdateFetch", "QQQ_RECORD_AUTOMATION_STATUS_UPDATER_ALLOW_PRE_UPDATE_FETCH", true);
 
    ///////////////////////////////////////////////////////////////////////////////////////////////
    // feature flag - by default, we'll memoize the check for triggers - but we can turn it off. //
@@ -86,7 +86,7 @@ public class RecordAutomationStatusUpdater
     ** for a list of records from a table, set their automation status - based on
     ** how the table is configured.
     *******************************************************************************/
-   public static boolean setAutomationStatusInRecords(QTableMetaData table, List<QRecord> records, AutomationStatus automationStatus, QBackendTransaction transaction)
+   public static boolean setAutomationStatusInRecords(QTableMetaData table, List<QRecord> records, AutomationStatus automationStatus, QBackendTransaction transaction, List<QRecord> oldRecordList)
    {
       if(table == null || table.getAutomationDetails() == null || CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -116,24 +116,35 @@ public class RecordAutomationStatusUpdater
             }
          }
 
-         ////////////////////////////////////////////////////////////////////////////////
-         // if table uses field-in-table status tracking (and feature flag allows it)  //
-         // then look the records up before we set them to pending-updates, to avoid   //
-         // losing other pending or running status information.  We will allow moving  //
-         // from OK or the 2 failed statuses into pending-updates - which seems right. //
-         ////////////////////////////////////////////////////////////////////////////////
-         if(automationDetails.getStatusTracking() != null && AutomationStatusTrackingType.FIELD_IN_TABLE.equals(automationDetails.getStatusTracking().getType()) && !skipPreUpdateFetch)
+         ///////////////////////////////////////////////////////////////////////////////
+         // if table uses field-in-table status tracking, then check the old records, //
+         // before we set them to pending-updates, to avoid losing other pending or   //
+         // running status information.  We will allow moving  from OK or the 2       //
+         // failed statuses into pending-updates - which seems right.                 //
+         // This is added to fix cases where an update that comes in before insert    //
+         // -automations have run, will cause the pending-insert status to be missed. //
+         ///////////////////////////////////////////////////////////////////////////////
+         if(automationDetails.getStatusTracking() != null && AutomationStatusTrackingType.FIELD_IN_TABLE.equals(automationDetails.getStatusTracking().getType()))
          {
             try
             {
-               List<Serializable> pkeysToLookup = records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList();
+               if(CollectionUtils.nullSafeIsEmpty(oldRecordList))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////
+                  // if we didn't get the oldRecordList as input (though UpdateAction should usually pass it?) //
+                  // then check feature-flag if we're allowed to do a lookup here & now.  If so, then do.      //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////
+                  if(allowPreUpdateFetch)
+                  {
+                     List<Serializable> pkeysToLookup = records.stream().map(r -> r.getValue(table.getPrimaryKeyField())).toList();
+                     oldRecordList = new QueryAction().execute(new QueryInput(table.getName())
+                        .withFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, pkeysToLookup)))
+                        .withTransaction(transaction)
+                     ).getRecords();
+                  }
+               }
 
-               List<QRecord> freshRecords = new QueryAction().execute(new QueryInput(table.getName())
-                  .withFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, pkeysToLookup)))
-                  .withTransaction(transaction)
-               ).getRecords();
-
-               for(QRecord freshRecord : freshRecords)
+               for(QRecord freshRecord : CollectionUtils.nonNullList(oldRecordList))
                {
                   Serializable recordStatus = freshRecord.getValue(automationDetails.getStatusTracking().getFieldName());
                   if(AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId().equals(recordStatus)
@@ -302,7 +313,7 @@ public class RecordAutomationStatusUpdater
       QTableAutomationDetails automationDetails = table.getAutomationDetails();
       if(automationDetails != null && AutomationStatusTrackingType.FIELD_IN_TABLE.equals(automationDetails.getStatusTracking().getType()))
       {
-         boolean didSetStatusField = setAutomationStatusInRecords(table, records, automationStatus, transaction);
+         boolean didSetStatusField = setAutomationStatusInRecords(table, records, automationStatus, transaction, null);
          if(didSetStatusField)
          {
             UpdateInput updateInput = new UpdateInput();
