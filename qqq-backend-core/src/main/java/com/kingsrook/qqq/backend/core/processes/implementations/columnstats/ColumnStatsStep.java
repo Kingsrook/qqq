@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -173,11 +175,10 @@ public class ColumnStatsStep implements BackendStep
          Aggregate aggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
          GroupBy   groupBy   = new GroupBy(field.getType(), fieldName);
 
-         // todo - something here about "by-date, not time"
+         // todo - something here about an input param to specify how you want dates & date-times grouped
          if(field.getType().equals(QFieldType.DATE_TIME))
          {
-            // groupBy = new GroupBy(field.getType(), fieldName, "DATE(%s)");
-            String sqlExpression = DateTimeGroupBy.HOUR.getSqlExpression();
+            String sqlExpression = DateTimeGroupBy.HOUR.getSqlExpression(ZoneId.systemDefault());
             groupBy = new GroupBy(QFieldType.STRING, fieldName, sqlExpression);
          }
 
@@ -230,6 +231,12 @@ public class ColumnStatsStep implements BackendStep
          for(AggregateResult result : aggregateOutput.getResults())
          {
             Serializable value = result.getGroupByValue(groupBy);
+
+            if(field.getType().equals(QFieldType.DATE_TIME) && value != null)
+            {
+               value = Instant.parse(value + ":00:00Z");
+            }
+
             Integer      count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
             valueCounts.add(new QRecord().withValue(fieldName, value).withValue("count", count));
          }

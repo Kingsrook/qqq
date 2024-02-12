@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.savedfilters;
+package com.kingsrook.qqq.backend.core.model.savedviews;
 
 
 import java.time.Instant;
@@ -32,9 +32,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 /*******************************************************************************
  ** Entity bean for the saved filter table
  *******************************************************************************/
-public class SavedFilter extends QRecordEntity
+public class SavedView extends QRecordEntity
 {
-   public static final String TABLE_NAME = "savedFilter";
+   public static final String TABLE_NAME = "savedView";
 
    @QField(isEditable = false)
    private Integer id;
@@ -55,7 +55,7 @@ public class SavedFilter extends QRecordEntity
    private String userId;
 
    @QField(isEditable = false)
-   private String filterJson;
+   private String viewJson;
 
 
 
@@ -63,7 +63,7 @@ public class SavedFilter extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public SavedFilter()
+   public SavedView()
    {
    }
 
@@ -73,7 +73,7 @@ public class SavedFilter extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public SavedFilter(QRecord qRecord) throws QException
+   public SavedView(QRecord qRecord) throws QException
    {
       populateFromQRecord(qRecord);
    }
@@ -172,7 +172,7 @@ public class SavedFilter extends QRecordEntity
     ** Fluent setter for label
     **
     *******************************************************************************/
-   public SavedFilter withLabel(String label)
+   public SavedView withLabel(String label)
    {
       this.label = label;
       return (this);
@@ -206,7 +206,7 @@ public class SavedFilter extends QRecordEntity
     ** Fluent setter for tableName
     **
     *******************************************************************************/
-   public SavedFilter withTableName(String tableName)
+   public SavedView withTableName(String tableName)
    {
       this.tableName = tableName;
       return (this);
@@ -240,7 +240,7 @@ public class SavedFilter extends QRecordEntity
     ** Fluent setter for userId
     **
     *******************************************************************************/
-   public SavedFilter withUserId(String userId)
+   public SavedView withUserId(String userId)
    {
       this.userId = userId;
       return (this);
@@ -249,34 +249,31 @@ public class SavedFilter extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for filterJson
-    **
+    ** Getter for viewJson
     *******************************************************************************/
-   public String getFilterJson()
+   public String getViewJson()
    {
-      return filterJson;
+      return (this.viewJson);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filterJson
-    **
+    ** Setter for viewJson
     *******************************************************************************/
-   public void setFilterJson(String filterJson)
+   public void setViewJson(String viewJson)
    {
-      this.filterJson = filterJson;
+      this.viewJson = viewJson;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for filterJson
-    **
+    ** Fluent setter for viewJson
     *******************************************************************************/
-   public SavedFilter withFilterJson(String filterJson)
+   public SavedView withViewJson(String viewJson)
    {
-      this.filterJson = filterJson;
+      this.viewJson = viewJson;
       return (this);
    }
 

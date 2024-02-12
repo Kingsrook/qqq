@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.savedfilters;
+package com.kingsrook.qqq.backend.core.processes.implementations.savedviews;
 
 
 import java.util.List;
@@ -34,15 +34,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
+import com.kingsrook.qqq.backend.core.model.savedviews.SavedView;
 
 
 /*******************************************************************************
- ** Process used by the delete filter dialog
+ ** Process used by the delete view dialog
  *******************************************************************************/
-public class DeleteSavedFilterProcess implements BackendStep
+public class DeleteSavedViewProcess implements BackendStep
 {
-   private static final QLogger LOG = QLogger.getLogger(DeleteSavedFilterProcess.class);
+   private static final QLogger LOG = QLogger.getLogger(DeleteSavedViewProcess.class);
 
 
 
@@ -52,10 +52,10 @@ public class DeleteSavedFilterProcess implements BackendStep
    public static QProcessMetaData getProcessMetaData()
    {
       return (new QProcessMetaData()
-         .withName("deleteSavedFilter")
+         .withName("deleteSavedView")
          .withStepList(List.of(
             new QBackendStepMetaData()
-               .withCode(new QCodeReference(DeleteSavedFilterProcess.class))
+               .withCode(new QCodeReference(DeleteSavedViewProcess.class))
                .withName("delete")
          )));
    }
@@ -72,16 +72,16 @@ public class DeleteSavedFilterProcess implements BackendStep
 
       try
       {
-         Integer savedFilterId = runBackendStepInput.getValueInteger("id");
+         Integer savedViewId = runBackendStepInput.getValueInteger("id");
 
          DeleteInput input = new DeleteInput();
-         input.setTableName(SavedFilter.TABLE_NAME);
-         input.setPrimaryKeys(List.of(savedFilterId));
+         input.setTableName(SavedView.TABLE_NAME);
+         input.setPrimaryKeys(List.of(savedViewId));
          new DeleteAction().execute(input);
       }
       catch(Exception e)
       {
-         LOG.warn("Error deleting saved filter", e);
+         LOG.warn("Error deleting saved view", e);
          throw (e);
       }
    }

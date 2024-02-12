@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -89,6 +90,52 @@ class ColumnStatsStepTest extends BaseTest
          .hasFieldOrPropertyWithValue("lastName", "Flanders")
          .hasFieldOrPropertyWithValue("count", 1)
          .hasFieldOrPropertyWithValue("percent", new BigDecimal("16.67"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDateTimesRollupByHour() throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("timestamp", Instant.parse("2024-01-31T09:59:01Z")),
+         new QRecord().withValue("timestamp", Instant.parse("2024-01-31T09:59:59Z")),
+         new QRecord().withValue("timestamp", Instant.parse("2024-01-31T10:00:00Z")),
+         new QRecord().withValue("timestamp", Instant.parse("2024-01-31T10:01:01Z")),
+         new QRecord().withValue("timestamp", Instant.parse("2024-01-31T10:59:59Z")),
+         new QRecord().withValue("timestamp", null)
+      ));
+      new InsertAction().execute(insertInput);
+
+      RunBackendStepInput input = new RunBackendStepInput();
+      input.addValue("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY);
+      input.addValue("fieldName", "timestamp");
+      input.addValue("orderBy", "count.desc");
+
+      RunBackendStepOutput output = new RunBackendStepOutput();
+      new ColumnStatsStep().run(input, output);
+
+      Map<String, Serializable> values = output.getValues();
+
+      @SuppressWarnings("unchecked")
+      List<QRecord> valueCounts = (List<QRecord>) values.get("valueCounts");
+
+      assertThat(valueCounts.get(0).getValues())
+         .hasFieldOrPropertyWithValue("timestamp", Instant.parse("2024-01-31T10:00:00Z"))
+         .hasFieldOrPropertyWithValue("count", 3);
+
+      assertThat(valueCounts.get(1).getValues())
+         .hasFieldOrPropertyWithValue("timestamp", Instant.parse("2024-01-31T09:00:00Z"))
+         .hasFieldOrPropertyWithValue("count", 2);
+
+      assertThat(valueCounts.get(2).getValues())
+         .hasFieldOrPropertyWithValue("timestamp", null)
+         .hasFieldOrPropertyWithValue("count", 1);
    }
 
 }
