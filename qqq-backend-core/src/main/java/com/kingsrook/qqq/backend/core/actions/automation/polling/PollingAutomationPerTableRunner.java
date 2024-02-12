@@ -65,13 +65,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
-import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
+import com.kingsrook.qqq.backend.core.model.savedviews.SavedView;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.NotImplementedException;
+import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -388,13 +389,15 @@ public class PollingAutomationPerTableRunner implements Runnable
                if(filterId != null)
                {
                   GetInput getInput = new GetInput();
-                  getInput.setTableName(SavedFilter.TABLE_NAME);
+                  getInput.setTableName(SavedView.TABLE_NAME);
                   getInput.setPrimaryKey(filterId);
                   GetOutput getOutput = new GetAction().execute(getInput);
                   if(getOutput.getRecord() != null)
                   {
-                     SavedFilter savedFilter = new SavedFilter(getOutput.getRecord());
-                     filter = JsonUtils.toObject(savedFilter.getFilterJson(), QQueryFilter.class);
+                     SavedView  savedView   = new SavedView(getOutput.getRecord());
+                     JSONObject viewJson    = new JSONObject(savedView.getViewJson());
+                     JSONObject queryFilter = viewJson.getJSONObject("queryFilter");
+                     filter = JsonUtils.toObject(queryFilter.toString(), QQueryFilter.class);
                   }
                }
 

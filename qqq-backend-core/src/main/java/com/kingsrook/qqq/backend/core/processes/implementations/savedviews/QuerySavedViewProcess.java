@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.savedfilters;
+package com.kingsrook.qqq.backend.core.processes.implementations.savedviews;
 
 
 import java.io.Serializable;
@@ -43,15 +43,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFilter;
+import com.kingsrook.qqq.backend.core.model.savedviews.SavedView;
 
 
 /*******************************************************************************
- ** Process used by the saved filter dialogs
+ ** Process used by the saved view dialogs
  *******************************************************************************/
-public class QuerySavedFilterProcess implements BackendStep
+public class QuerySavedViewProcess implements BackendStep
 {
-   private static final QLogger LOG = QLogger.getLogger(QuerySavedFilterProcess.class);
+   private static final QLogger LOG = QLogger.getLogger(QuerySavedViewProcess.class);
 
 
 
@@ -61,10 +61,10 @@ public class QuerySavedFilterProcess implements BackendStep
    public static QProcessMetaData getProcessMetaData()
    {
       return (new QProcessMetaData()
-         .withName("querySavedFilter")
+         .withName("querySavedView")
          .withStepList(List.of(
             new QBackendStepMetaData()
-               .withCode(new QCodeReference(QuerySavedFilterProcess.class))
+               .withCode(new QCodeReference(QuerySavedViewProcess.class))
                .withName("query")
          )));
    }
@@ -81,36 +81,36 @@ public class QuerySavedFilterProcess implements BackendStep
 
       try
       {
-         Integer savedFilterId = runBackendStepInput.getValueInteger("id");
-         if(savedFilterId != null)
+         Integer savedViewId = runBackendStepInput.getValueInteger("id");
+         if(savedViewId != null)
          {
             GetInput input = new GetInput();
-            input.setTableName(SavedFilter.TABLE_NAME);
-            input.setPrimaryKey(savedFilterId);
+            input.setTableName(SavedView.TABLE_NAME);
+            input.setPrimaryKey(savedViewId);
 
             GetOutput output = new GetAction().execute(input);
             runBackendStepOutput.addRecord(output.getRecord());
-            runBackendStepOutput.addValue("savedFilter", output.getRecord());
-            runBackendStepOutput.addValue("savedFilterList", (Serializable) List.of(output.getRecord()));
+            runBackendStepOutput.addValue("savedView", output.getRecord());
+            runBackendStepOutput.addValue("savedViewList", (Serializable) List.of(output.getRecord()));
          }
          else
          {
             String tableName = runBackendStepInput.getValueString("tableName");
 
             QueryInput input = new QueryInput();
-            input.setTableName(SavedFilter.TABLE_NAME);
+            input.setTableName(SavedView.TABLE_NAME);
             input.setFilter(new QQueryFilter()
                .withCriteria(new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, tableName))
                .withOrderBy(new QFilterOrderBy("label")));
 
             QueryOutput output = new QueryAction().execute(input);
             runBackendStepOutput.setRecords(output.getRecords());
-            runBackendStepOutput.addValue("savedFilterList", (Serializable) output.getRecords());
+            runBackendStepOutput.addValue("savedViewList", (Serializable) output.getRecords());
          }
       }
       catch(Exception e)
       {
-         LOG.warn("Error deleting saved filter", e);
+         LOG.warn("Error querying for saved views", e);
          throw (e);
       }
    }
