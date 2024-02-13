@@ -22,13 +22,10 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 
-import java.time.Instant;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
@@ -45,17 +42,6 @@ public class MemoryUpdateAction extends AbstractMemoryAction implements UpdateIn
    {
       try
       {
-         QTableMetaData table = updateInput.getTable();
-         Instant        now   = Instant.now();
-
-         for(QRecord record : updateInput.getRecords())
-         {
-            ///////////////////////////////////////////
-            // todo .. better (not hard-coded names) //
-            ///////////////////////////////////////////
-            setValueIfTableHasField(record, table, "modifyDate", now, false);
-         }
-
          UpdateOutput updateOutput = new UpdateOutput();
          updateOutput.setRecords(MemoryRecordStore.getInstance().update(updateInput, true));
          return (updateOutput);
