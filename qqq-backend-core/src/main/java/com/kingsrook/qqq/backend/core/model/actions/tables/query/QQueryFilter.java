@@ -324,6 +324,18 @@ public class QQueryFilter implements Serializable, Cloneable
 
 
    /*******************************************************************************
+    ** Fluent setter for adding a single subFilter
+    **
+    *******************************************************************************/
+   public QQueryFilter withSubFilter(QQueryFilter subFilter)
+   {
+      addSubFilter(subFilter);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addSubFilter(QQueryFilter subFilter)
