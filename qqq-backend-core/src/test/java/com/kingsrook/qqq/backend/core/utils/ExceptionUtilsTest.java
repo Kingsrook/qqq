@@ -117,6 +117,19 @@ class ExceptionUtilsTest extends BaseTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetTopAndBottomMessages()
+   {
+      assertEquals("foo", ExceptionUtils.getTopAndBottomMessages(new Exception("foo")));
+      assertEquals("foo: bar", ExceptionUtils.getTopAndBottomMessages(new Exception("foo", new Exception("bar"))));
+      assertEquals("foo: baz", ExceptionUtils.getTopAndBottomMessages(new Exception("foo", new Exception("bar", new Exception("baz")))));
+   }
+
+
+
+   /*******************************************************************************
     ** Test exception class - lets you set the cause, easier to create a loop.
     *******************************************************************************/
    public class MyException extends Exception
