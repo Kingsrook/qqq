@@ -40,8 +40,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -75,18 +75,15 @@ public class RunTableAutomationsProcessStep implements BackendStep, MetaDataProd
             new QFrontendStepMetaData()
                .withName("input")
                .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
-               .withFormField(new QFieldMetaData("tableName", QFieldType.STRING).withIsRequired(true))
+               .withFormField(new QFieldMetaData("tableName", QFieldType.STRING).withIsRequired(true).withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME))
                .withFormField(new QFieldMetaData("automationProviderName", QFieldType.STRING)),
             new QBackendStepMetaData()
                .withName("run")
-               .withCode(new QCodeReference(getClass()))
-               .withInputData(new QFunctionInputMetaData()
-                  .withField(new QFieldMetaData("tableName", QFieldType.STRING))
-                  .withField(new QFieldMetaData("automationProviderName", QFieldType.STRING))),
+               .withCode(new QCodeReference(getClass())),
             new QFrontendStepMetaData()
                .withName("output")
                .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
-               .withFormField(new QFieldMetaData("ok", QFieldType.STRING))
+               .withViewField(new QFieldMetaData("ok", QFieldType.STRING))
          ));
 
       return (processMetaData);
