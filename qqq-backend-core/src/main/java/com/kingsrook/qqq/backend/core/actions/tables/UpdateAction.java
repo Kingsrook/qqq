@@ -128,7 +128,16 @@ public class UpdateAction
       // for "not-found detection", and for the pre-action to use (if there is one) //
       ////////////////////////////////////////////////////////////////////////////////
       Optional<List<QRecord>> oldRecordList = fetchOldRecords(updateInput, updateInterface);
-      setAutomationStatusField(updateInput, oldRecordList);
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // allow caller to specify that we don't want to trigger automations. this isn't     //
+      // isn't expected to be used much - by design, only for the process that is meant to //
+      // heal automation status, so that it can force us into status=Pending-inserts       //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      if(!updateInput.getOmitTriggeringAutomations())
+      {
+         setAutomationStatusField(updateInput, oldRecordList);
+      }
 
       performValidations(updateInput, oldRecordList, false);
 
