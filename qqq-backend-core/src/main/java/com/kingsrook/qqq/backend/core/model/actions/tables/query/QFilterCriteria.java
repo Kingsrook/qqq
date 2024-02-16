@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
@@ -344,6 +345,39 @@ public class QFilterCriteria implements Serializable, Cloneable
       }
 
       return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+
+      QFilterCriteria that = (QFilterCriteria) o;
+      return Objects.equals(fieldName, that.fieldName) && operator == that.operator && Objects.equals(values, that.values) && Objects.equals(otherFieldName, that.otherFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(fieldName, operator, values, otherFieldName);
    }
 
 }
