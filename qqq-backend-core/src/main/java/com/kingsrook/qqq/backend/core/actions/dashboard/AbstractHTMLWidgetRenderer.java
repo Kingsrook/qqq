@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.QQueryFilterDeduper;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -176,8 +177,10 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       {
          return (totalString);
       }
+      filter = QQueryFilterDeduper.dedupeFilter(filter);
       return ("<a href='" + tablePath + "?filter=" + JsonUtils.toJson(filter) + "'>" + totalString + "</a>");
    }
+
 
 
 
@@ -192,6 +195,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
          return;
       }
 
+      filter = QQueryFilterDeduper.dedupeFilter(filter);
       urls.add(tablePath + "?filter=" + JsonUtils.toJson(filter));
    }
 
@@ -208,6 +212,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
          return (null);
       }
 
+      filter = QQueryFilterDeduper.dedupeFilter(filter);
       return (tablePath + "?filter=" + JsonUtils.toJson(filter));
    }
 
@@ -224,6 +229,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
          return (null);
       }
 
+      filter = QQueryFilterDeduper.dedupeFilter(filter);
       return (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
    }
 
@@ -326,6 +332,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       }
 
       String tablePath = QContext.getQInstance().getTablePath(tableName);
+      filter = QQueryFilterDeduper.dedupeFilter(filter);
       return (tablePath + "/" + processName + "?recordsParam=filterJSON&filterJSON=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
    }
 
