@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -479,4 +480,36 @@ public class QQueryFilter implements Serializable, Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+
+      QQueryFilter that = (QQueryFilter) o;
+      return Objects.equals(criteria, that.criteria) && Objects.equals(orderBys, that.orderBys) && booleanOperator == that.booleanOperator && Objects.equals(subFilters, that.subFilters) && Objects.equals(skip, that.skip) && Objects.equals(limit, that.limit);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(criteria, orderBys, booleanOperator, subFilters, skip, limit);
+   }
 }

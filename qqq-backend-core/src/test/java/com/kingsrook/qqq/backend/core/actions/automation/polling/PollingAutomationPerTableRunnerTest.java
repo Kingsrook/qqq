@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -576,6 +577,72 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
    {
       new PollingAutomationPerTableRunner.TableActions(null, null).noopToFakeTestCoverage();
       new PollingAutomationPerTableRunner.ShardedTableActions(null, null, null, null, null).noopToFakeTestCoverage();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddOrderByToQueryFilter()
+   {
+      //////////////////////////////////////////////////////////////////////////
+      // make a table we'll test with.  just put a primary-key id on it first //
+      //////////////////////////////////////////////////////////////////////////
+      QTableMetaData table = new QTableMetaData()
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // add createDate & modifyDate fields, but not with dynamic-default-behaviors //
+      // so should still sort by id                                                 //
+      ////////////////////////////////////////////////////////////////////////////////
+      QFieldMetaData createDate = new QFieldMetaData("createDate", QFieldType.DATE_TIME);
+      QFieldMetaData modifyDate = new QFieldMetaData("modifyDate", QFieldType.DATE_TIME);
+      table.addField(createDate);
+      table.addField(modifyDate);
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // add dynamic default value behaviors, confirm create/modify date fields are used //
+      /////////////////////////////////////////////////////////////////////////////////////
+      createDate.withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
+      modifyDate.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("createDate", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("modifyDate", filter.getOrderBys().get(0).getFieldName());
+      }
+
    }
 
 }
