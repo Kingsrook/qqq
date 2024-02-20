@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,137 +19,102 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.tablesubrowdetailrow;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend parent widget
  **
  *******************************************************************************/
-public class ParentWidgetData extends QWidgetData
+public class TableSubRowDetailRowValues implements BlockValuesInterface
 {
-   private List<String> childWidgetNameList;
-   private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
-
-   private boolean isLabelPageTitle = false;
+   private String       label;
+   private Serializable value;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public ParentWidgetData()
+   public TableSubRowDetailRowValues()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Constructor
     **
     *******************************************************************************/
-   public String getType()
+   public TableSubRowDetailRowValues(String label, Serializable value)
    {
-      return WidgetType.PARENT_WIDGET.getType();
+      this.label = label;
+      this.value = value;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for childWidgetNameList
-    **
+    ** Getter for label
     *******************************************************************************/
-   public List<String> getChildWidgetNameList()
+   public String getLabel()
    {
-      return childWidgetNameList;
+      return (this.label);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for childWidgetNameList
-    **
+    ** Setter for label
     *******************************************************************************/
-   public void setChildWidgetNameList(List<String> childWidgetNameList)
+   public void setLabel(String label)
    {
-      this.childWidgetNameList = childWidgetNameList;
+      this.label = label;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for childWidgetNameList
-    **
+    ** Fluent setter for label
     *******************************************************************************/
-   public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
+   public TableSubRowDetailRowValues withLabel(String label)
    {
-      this.childWidgetNameList = childWidgetNameList;
+      this.label = label;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for layoutType
+    ** Getter for value
     *******************************************************************************/
-   public ParentWidgetMetaData.LayoutType getLayoutType()
+   public Serializable getValue()
    {
-      return (this.layoutType);
+      return (this.value);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for layoutType
+    ** Setter for value
     *******************************************************************************/
-   public void setLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public void setValue(Serializable value)
    {
-      this.layoutType = layoutType;
+      this.value = value;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for layoutType
+    ** Fluent setter for value
     *******************************************************************************/
-   public ParentWidgetData withLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public TableSubRowDetailRowValues withValue(Serializable value)
    {
-      this.layoutType = layoutType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isLabelPageTitle
-    *******************************************************************************/
-   public boolean getIsLabelPageTitle()
-   {
-      return (this.isLabelPageTitle);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isLabelPageTitle
-    *******************************************************************************/
-   public void setIsLabelPageTitle(boolean isLabelPageTitle)
-   {
-      this.isLabelPageTitle = isLabelPageTitle;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for isLabelPageTitle
-    *******************************************************************************/
-   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
-   {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.value = value;
       return (this);
    }
 

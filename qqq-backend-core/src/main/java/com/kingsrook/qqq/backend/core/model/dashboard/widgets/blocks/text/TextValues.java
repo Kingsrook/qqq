@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,61 +19,69 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text;
+
+
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ **
  *******************************************************************************/
-public enum WidgetType
+public class TextValues implements BlockValuesInterface
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STACKED_BAR_CHART("stackedBarChart"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap"),
-   COMPOSITE("composite"),
-   DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer");
-
-
-   private final String type;
+   private String text;
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public TextValues()
    {
-      this.type = type;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Constructor
     **
     *******************************************************************************/
-   public String getType()
+   public TextValues(String text)
    {
-      return type;
+      setText(text);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for text
+    *******************************************************************************/
+   public String getText()
+   {
+      return (this.text);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for text
+    *******************************************************************************/
+   public void setText(String text)
+   {
+      this.text = text;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for text
+    *******************************************************************************/
+   public TextValues withText(String text)
+   {
+      this.text = text;
+      return (this);
    }
 
 }

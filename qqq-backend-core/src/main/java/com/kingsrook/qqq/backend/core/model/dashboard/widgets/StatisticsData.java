@@ -22,19 +22,24 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** Model containing datastructure expected by frontend statistics widget
  **
  *******************************************************************************/
 public class StatisticsData extends QWidgetData
 {
-   private Number  count;
-   private String  countFontSize;
-   private String  countURL;
-   private Number  percentageAmount;
-   private String  percentageLabel;
-   private boolean isCurrency     = false;
-   private boolean increaseIsGood = true;
+   private Serializable count;
+   private String       countFontSize;
+   private String       countURL;
+   private String       countContext;
+   private Number       percentageAmount;
+   private String       percentageLabel;
+   private String       percentageURL;
+   private boolean      isCurrency     = false;
+   private boolean      increaseIsGood = true;
 
 
 
@@ -50,7 +55,7 @@ public class StatisticsData extends QWidgetData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public StatisticsData(Number count, Number percentageAmount, String percentageLabel)
+   public StatisticsData(Serializable count, Number percentageAmount, String percentageLabel)
    {
       this.count = count;
       this.percentageLabel = percentageLabel;
@@ -142,7 +147,7 @@ public class StatisticsData extends QWidgetData
     ** Getter for count
     **
     *******************************************************************************/
-   public Number getCount()
+   public Serializable getCount()
    {
       return count;
    }
@@ -153,7 +158,7 @@ public class StatisticsData extends QWidgetData
     ** Setter for count
     **
     *******************************************************************************/
-   public void setCount(Number count)
+   public void setCount(Serializable count)
    {
       this.count = count;
    }
@@ -164,7 +169,7 @@ public class StatisticsData extends QWidgetData
     ** Fluent setter for count
     **
     *******************************************************************************/
-   public StatisticsData withCount(Number count)
+   public StatisticsData withCount(Serializable count)
    {
       this.count = count;
       return (this);
@@ -303,6 +308,68 @@ public class StatisticsData extends QWidgetData
    public StatisticsData withIncreaseIsGood(boolean increaseIsGood)
    {
       this.increaseIsGood = increaseIsGood;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for countContext
+    *******************************************************************************/
+   public String getCountContext()
+   {
+      return (this.countContext);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for countContext
+    *******************************************************************************/
+   public void setCountContext(String countContext)
+   {
+      this.countContext = countContext;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for countContext
+    *******************************************************************************/
+   public StatisticsData withCountContext(String countContext)
+   {
+      this.countContext = countContext;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for percentageURL
+    *******************************************************************************/
+   public String getPercentageURL()
+   {
+      return (this.percentageURL);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for percentageURL
+    *******************************************************************************/
+   public void setPercentageURL(String percentageURL)
+   {
+      this.percentageURL = percentageURL;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for percentageURL
+    *******************************************************************************/
+   public StatisticsData withPercentageURL(String percentageURL)
+   {
+      this.percentageURL = percentageURL;
       return (this);
    }
 

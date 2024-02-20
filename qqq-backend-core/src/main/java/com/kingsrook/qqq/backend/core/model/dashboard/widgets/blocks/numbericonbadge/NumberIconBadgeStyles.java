@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,61 +19,48 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.numbericonbadge;
+
+
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockStylesInterface;
 
 
 /*******************************************************************************
- ** Possible values for widget type
+ **
  *******************************************************************************/
-public enum WidgetType
+public class NumberIconBadgeStyles implements BlockStylesInterface
 {
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
-   PIE_CHART("pieChart"),
-   PROCESS("process"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STACKED_BAR_CHART("stackedBarChart"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap"),
-   COMPOSITE("composite"),
-   DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer");
-
-
-   private final String type;
+   private String color;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for color
     *******************************************************************************/
-   WidgetType(String type)
+   public String getColor()
    {
-      this.type = type;
+      return (this.color);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
+    ** Setter for color
     *******************************************************************************/
-   public String getType()
+   public void setColor(String color)
    {
-      return type;
+      this.color = color;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for color
+    *******************************************************************************/
+   public NumberIconBadgeStyles withColor(String color)
+   {
+      this.color = color;
+      return (this);
    }
 
 }

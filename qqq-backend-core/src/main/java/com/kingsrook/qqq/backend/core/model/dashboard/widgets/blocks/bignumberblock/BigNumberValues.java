@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,137 +19,112 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.bignumberblock;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend parent widget
  **
  *******************************************************************************/
-public class ParentWidgetData extends QWidgetData
+public class BigNumberValues implements BlockValuesInterface
 {
-   private List<String> childWidgetNameList;
-   private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
-
-   private boolean isLabelPageTitle = false;
+   private String       heading;
+   private Serializable number;
+   private String       context;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for heading
     *******************************************************************************/
-   public ParentWidgetData()
+   public String getHeading()
    {
+      return (this.heading);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
+    ** Setter for heading
     *******************************************************************************/
-   public String getType()
+   public void setHeading(String heading)
    {
-      return WidgetType.PARENT_WIDGET.getType();
+      this.heading = heading;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for childWidgetNameList
-    **
+    ** Fluent setter for heading
     *******************************************************************************/
-   public List<String> getChildWidgetNameList()
+   public BigNumberValues withHeading(String heading)
    {
-      return childWidgetNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for childWidgetNameList
-    **
-    *******************************************************************************/
-   public void setChildWidgetNameList(List<String> childWidgetNameList)
-   {
-      this.childWidgetNameList = childWidgetNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for childWidgetNameList
-    **
-    *******************************************************************************/
-   public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
-   {
-      this.childWidgetNameList = childWidgetNameList;
+      this.heading = heading;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for layoutType
+    ** Getter for number
     *******************************************************************************/
-   public ParentWidgetMetaData.LayoutType getLayoutType()
+   public Serializable getNumber()
    {
-      return (this.layoutType);
+      return (this.number);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for layoutType
+    ** Setter for number
     *******************************************************************************/
-   public void setLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public void setNumber(Serializable number)
    {
-      this.layoutType = layoutType;
+      this.number = number;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for layoutType
+    ** Fluent setter for number
     *******************************************************************************/
-   public ParentWidgetData withLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public BigNumberValues withNumber(Serializable number)
    {
-      this.layoutType = layoutType;
+      this.number = number;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isLabelPageTitle
+    ** Getter for context
     *******************************************************************************/
-   public boolean getIsLabelPageTitle()
+   public String getContext()
    {
-      return (this.isLabelPageTitle);
+      return (this.context);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isLabelPageTitle
+    ** Setter for context
     *******************************************************************************/
-   public void setIsLabelPageTitle(boolean isLabelPageTitle)
+   public void setContext(String context)
    {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.context = context;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for isLabelPageTitle
+    ** Fluent setter for context
     *******************************************************************************/
-   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
+   public BigNumberValues withContext(String context)
    {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.context = context;
       return (this);
    }
 

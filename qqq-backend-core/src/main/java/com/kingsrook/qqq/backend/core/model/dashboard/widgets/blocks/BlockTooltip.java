@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,137 +19,103 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
-
-
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend parent widget
+ ** A tooltip used within a (widget) block.
  **
  *******************************************************************************/
-public class ParentWidgetData extends QWidgetData
+public class BlockTooltip
 {
-   private List<String> childWidgetNameList;
-   private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
+   private String    title;
+   private Placement placement = Placement.BOTTOM;
 
-   private boolean isLabelPageTitle = false;
+
+
+   public enum Placement
+   {BOTTOM, LEFT, RIGHT, TOP}
 
 
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   public ParentWidgetData()
+   public BlockTooltip()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Constructor
     **
     *******************************************************************************/
-   public String getType()
+   public BlockTooltip(String title)
    {
-      return WidgetType.PARENT_WIDGET.getType();
+      this.title = title;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for childWidgetNameList
-    **
+    ** Getter for title
     *******************************************************************************/
-   public List<String> getChildWidgetNameList()
+   public String getTitle()
    {
-      return childWidgetNameList;
+      return (this.title);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for childWidgetNameList
-    **
+    ** Setter for title
     *******************************************************************************/
-   public void setChildWidgetNameList(List<String> childWidgetNameList)
+   public void setTitle(String title)
    {
-      this.childWidgetNameList = childWidgetNameList;
+      this.title = title;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for childWidgetNameList
-    **
+    ** Fluent setter for title
     *******************************************************************************/
-   public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
+   public BlockTooltip withTitle(String title)
    {
-      this.childWidgetNameList = childWidgetNameList;
+      this.title = title;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for layoutType
+    ** Getter for placement
     *******************************************************************************/
-   public ParentWidgetMetaData.LayoutType getLayoutType()
+   public Placement getPlacement()
    {
-      return (this.layoutType);
+      return (this.placement);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for layoutType
+    ** Setter for placement
     *******************************************************************************/
-   public void setLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public void setPlacement(Placement placement)
    {
-      this.layoutType = layoutType;
+      this.placement = placement;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for layoutType
+    ** Fluent setter for placement
     *******************************************************************************/
-   public ParentWidgetData withLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public BlockTooltip withPlacement(Placement placement)
    {
-      this.layoutType = layoutType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isLabelPageTitle
-    *******************************************************************************/
-   public boolean getIsLabelPageTitle()
-   {
-      return (this.isLabelPageTitle);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isLabelPageTitle
-    *******************************************************************************/
-   public void setIsLabelPageTitle(boolean isLabelPageTitle)
-   {
-      this.isLabelPageTitle = isLabelPageTitle;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for isLabelPageTitle
-    *******************************************************************************/
-   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
-   {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.placement = placement;
       return (this);
    }
 

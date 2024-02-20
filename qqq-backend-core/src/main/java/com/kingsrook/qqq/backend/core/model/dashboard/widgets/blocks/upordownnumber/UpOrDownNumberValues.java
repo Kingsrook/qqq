@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,137 +19,144 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.upordownnumber;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
 
 
 /*******************************************************************************
- ** Model containing datastructure expected by frontend parent widget
  **
  *******************************************************************************/
-public class ParentWidgetData extends QWidgetData
+public class UpOrDownNumberValues implements BlockValuesInterface
 {
-   private List<String> childWidgetNameList;
-   private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
-
-   private boolean isLabelPageTitle = false;
+   private boolean      isUp   = false;
+   private boolean      isGood = false;
+   private Serializable number;
+   private String       context;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for isUp
     *******************************************************************************/
-   public ParentWidgetData()
+   public boolean getIsUp()
    {
+      return (this.isUp);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
-    **
+    ** Setter for isUp
     *******************************************************************************/
-   public String getType()
+   public void setIsUp(boolean isUp)
    {
-      return WidgetType.PARENT_WIDGET.getType();
+      this.isUp = isUp;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for childWidgetNameList
-    **
+    ** Fluent setter for isUp
     *******************************************************************************/
-   public List<String> getChildWidgetNameList()
+   public UpOrDownNumberValues withIsUp(boolean isUp)
    {
-      return childWidgetNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for childWidgetNameList
-    **
-    *******************************************************************************/
-   public void setChildWidgetNameList(List<String> childWidgetNameList)
-   {
-      this.childWidgetNameList = childWidgetNameList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for childWidgetNameList
-    **
-    *******************************************************************************/
-   public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
-   {
-      this.childWidgetNameList = childWidgetNameList;
+      this.isUp = isUp;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for layoutType
+    ** Getter for isGood
     *******************************************************************************/
-   public ParentWidgetMetaData.LayoutType getLayoutType()
+   public boolean getIsGood()
    {
-      return (this.layoutType);
+      return (this.isGood);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for layoutType
+    ** Setter for isGood
     *******************************************************************************/
-   public void setLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public void setIsGood(boolean isGood)
    {
-      this.layoutType = layoutType;
+      this.isGood = isGood;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for layoutType
+    ** Fluent setter for isGood
     *******************************************************************************/
-   public ParentWidgetData withLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   public UpOrDownNumberValues withIsGood(boolean isGood)
    {
-      this.layoutType = layoutType;
+      this.isGood = isGood;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for isLabelPageTitle
+    ** Getter for number
     *******************************************************************************/
-   public boolean getIsLabelPageTitle()
+   public Serializable getNumber()
    {
-      return (this.isLabelPageTitle);
+      return (this.number);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for isLabelPageTitle
+    ** Setter for number
     *******************************************************************************/
-   public void setIsLabelPageTitle(boolean isLabelPageTitle)
+   public void setNumber(Serializable number)
    {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.number = number;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for isLabelPageTitle
+    ** Fluent setter for number
     *******************************************************************************/
-   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
+   public UpOrDownNumberValues withNumber(Serializable number)
    {
-      this.isLabelPageTitle = isLabelPageTitle;
+      this.number = number;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for context
+    *******************************************************************************/
+   public String getContext()
+   {
+      return (this.context);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for context
+    *******************************************************************************/
+   public void setContext(String context)
+   {
+      this.context = context;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for context
+    *******************************************************************************/
+   public UpOrDownNumberValues withContext(String context)
+   {
+      this.context = context;
       return (this);
    }
 

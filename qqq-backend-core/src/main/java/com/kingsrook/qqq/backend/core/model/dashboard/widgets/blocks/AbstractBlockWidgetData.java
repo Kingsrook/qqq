@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,341 +19,368 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
 
 
-import java.io.Serializable;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidgetData;
 
 
 /*******************************************************************************
- ** Base class for the data returned by rendering a Widget.
+ ** Base class for the data returned in rendering a block of a specific type.
  **
+ ** The type parameters define the structure of the block's data, and should
+ ** generally be defined along with a sub-class of this class, in a block-specific
+ ** sub-package.
  *******************************************************************************/
-public abstract class QWidgetData
+public abstract class AbstractBlockWidgetData<
+   T extends AbstractBlockWidgetData<T, V, S, SX>,
+   V extends BlockValuesInterface,
+   S extends BlockSlotsInterface,
+   SX extends BlockStylesInterface> extends QWidgetData
 {
-   private String       label;
-   private String       footerHTML;
-   private List<String> dropdownNameList;
-   private List<String> dropdownLabelList;
-   private List<String> dropdownDefaultValueList;
-   private Boolean      hasPermission;
+   private BlockTooltip tooltip;
+   private BlockLink    link;
 
-   /////////////////////////////////////////////////////////////////////////////////////////
-   // this is a list of lists, the outer list corresponds to each dropdown (parallel list //
-   // with the above dropdownLabelList) - the inner list is the list of actual dropdown   //
-   // options                                                                             //
-   /////////////////////////////////////////////////////////////////////////////////////////
-   private List<List<Map<String, String>>> dropdownDataList;
-   private String                          dropdownNeedsSelectedText;
+   private Map<S, BlockTooltip> tooltipMap;
+   private Map<S, BlockLink>    linkMap;
 
-   private List<List<Serializable>> csvData;
-
-
-   /*******************************************************************************
-    ** Getter for type
-    *******************************************************************************/
-   public abstract String getType();
+   private V  values;
+   private SX styles;
 
 
 
    /*******************************************************************************
-    ** Getter for label
     **
     *******************************************************************************/
-   public String getLabel()
+   @Override
+   public final String getType()
    {
-      return label;
+      return "block";
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
     **
     *******************************************************************************/
-   public void setLabel(String label)
-   {
-      this.label = label;
-   }
+   public abstract String getBlockTypeName();
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
     **
     *******************************************************************************/
-   public QWidgetData withLabel(String label)
+   public T withTooltip(S key, String value)
    {
-      this.label = label;
-      return (this);
+      addTooltip(key, value);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for footerHTML
     **
     *******************************************************************************/
-   public String getFooterHTML()
+   public void addTooltip(S key, String value)
    {
-      return footerHTML;
+      if(this.tooltipMap == null)
+      {
+         this.tooltipMap = new HashMap<>();
+      }
+      this.tooltipMap.put(key, new BlockTooltip().withTitle(value));
    }
 
 
 
    /*******************************************************************************
-    ** Setter for footerHTML
     **
     *******************************************************************************/
-   public void setFooterHTML(String footerHTML)
+   public T withTooltip(S key, BlockTooltip value)
    {
-      this.footerHTML = footerHTML;
+      addTooltip(key, value);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for footerHTML
     **
     *******************************************************************************/
-   public QWidgetData withFooterHTML(String footerHTML)
+   public void addTooltip(S key, BlockTooltip value)
    {
-      this.footerHTML = footerHTML;
-      return (this);
+      if(this.tooltipMap == null)
+      {
+         this.tooltipMap = new HashMap<>();
+      }
+      this.tooltipMap.put(key, value);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dropdownLabelList
+    ** Getter for tooltipMap
+    *******************************************************************************/
+   public Map<S, BlockTooltip> getTooltipMap()
+   {
+      return (this.tooltipMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tooltipMap
+    *******************************************************************************/
+   public void setTooltipMap(Map<S, BlockTooltip> tooltipMap)
+   {
+      this.tooltipMap = tooltipMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tooltipMap
+    *******************************************************************************/
+   public T withTooltipMap(Map<S, BlockTooltip> tooltipMap)
+   {
+      this.tooltipMap = tooltipMap;
+      return (T) (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tooltip
     **
     *******************************************************************************/
-   public List<String> getDropdownLabelList()
+   public BlockTooltip getTooltip()
    {
-      return dropdownLabelList;
+      return tooltip;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dropdownLabelList
+    ** Setter for tooltip
     **
     *******************************************************************************/
-   public void setDropdownLabelList(List<String> dropdownLabelList)
+   public void setTooltip(BlockTooltip tooltip)
    {
-      this.dropdownLabelList = dropdownLabelList;
+      this.tooltip = tooltip;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dropdownLabelList
+    ** Fluent setter for tooltip
     **
     *******************************************************************************/
-   public QWidgetData withDropdownLabelList(List<String> dropdownLabelList)
+   public T withTooltip(String tooltip)
    {
-      this.dropdownLabelList = dropdownLabelList;
-      return (this);
+      this.tooltip = new BlockTooltip(tooltip);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dropdownNameList
+    ** Fluent setter for tooltip
     **
     *******************************************************************************/
-   public List<String> getDropdownNameList()
+   public T withTooltip(BlockTooltip tooltip)
    {
-      return dropdownNameList;
+      this.tooltip = tooltip;
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dropdownNameList
     **
     *******************************************************************************/
-   public void setDropdownNameList(List<String> dropdownNameList)
+   public T withLink(S key, String value)
    {
-      this.dropdownNameList = dropdownNameList;
+      addLink(key, value);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dropdownNameList
     **
     *******************************************************************************/
-   public QWidgetData withDropdownNameList(List<String> dropdownNameList)
+   public void addLink(S key, String value)
    {
-      this.dropdownNameList = dropdownNameList;
-      return (this);
+      if(this.linkMap == null)
+      {
+         this.linkMap = new HashMap<>();
+      }
+      this.linkMap.put(key, new BlockLink(value));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dropdownDataList
     **
     *******************************************************************************/
-   public List<List<Map<String, String>>> getDropdownDataList()
+   public T withLink(S key, BlockLink value)
    {
-      return dropdownDataList;
+      addLink(key, value);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dropdownDataList
     **
     *******************************************************************************/
-   public void setDropdownDataList(List<List<Map<String, String>>> dropdownDataList)
+   public void addLink(S key, BlockLink value)
    {
-      this.dropdownDataList = dropdownDataList;
+      if(this.linkMap == null)
+      {
+         this.linkMap = new HashMap<>();
+      }
+      this.linkMap.put(key, value);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dropdownDataList
+    ** Getter for linkMap
+    *******************************************************************************/
+   public Map<S, BlockLink> getLinkMap()
+   {
+      return (this.linkMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for linkMap
+    *******************************************************************************/
+   public void setLinkMap(Map<S, BlockLink> linkMap)
+   {
+      this.linkMap = linkMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for linkMap
+    *******************************************************************************/
+   public T withLinkMap(Map<S, BlockLink> linkMap)
+   {
+      this.linkMap = linkMap;
+      return (T) (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for link
     **
     *******************************************************************************/
-   public QWidgetData withDropdownDataList(List<List<Map<String, String>>> dropdownDataList)
+   public BlockLink getLink()
    {
-      this.dropdownDataList = dropdownDataList;
-      return (this);
+      return link;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dropdownNeedsSelectedText
+    ** Setter for link
     **
     *******************************************************************************/
-   public String getDropdownNeedsSelectedText()
+   public void setLink(BlockLink link)
    {
-      return dropdownNeedsSelectedText;
+      this.link = link;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dropdownNeedsSelectedText
+    ** Fluent setter for link
     **
     *******************************************************************************/
-   public void setDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
+   public T withLink(String link)
    {
-      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
+      this.link = new BlockLink(link);
+      return (T) (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dropdownNeedsSelectedText
+    ** Fluent setter for link
     **
     *******************************************************************************/
-   public QWidgetData withDropdownNeedsSelectedText(String dropdownNeedsSelectedText)
+   public T withLink(BlockLink link)
    {
-      this.dropdownNeedsSelectedText = dropdownNeedsSelectedText;
-      return (this);
+      this.link = link;
+      return (T) this;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for hasPermission
-    **
+    ** Getter for values
     *******************************************************************************/
-   public Boolean getHasPermission()
+   public V getValues()
    {
-      return hasPermission;
+      return (this.values);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for hasPermission
-    **
+    ** Setter for values
     *******************************************************************************/
-   public void setHasPermission(Boolean hasPermission)
+   public void setValues(V values)
    {
-      this.hasPermission = hasPermission;
+      this.values = values;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for hasPermission
-    **
+    ** Fluent setter for values
     *******************************************************************************/
-   public QWidgetData withHasPermission(Boolean hasPermission)
+   public T withValues(V values)
    {
-      this.hasPermission = hasPermission;
-      return (this);
+      this.values = values;
+      return (T) this;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for dropdownDefaultValueList
+    ** Getter for styles
     *******************************************************************************/
-   public List<String> getDropdownDefaultValueList()
+   public SX getStyles()
    {
-      return (this.dropdownDefaultValueList);
+      return (this.styles);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for dropdownDefaultValueList
+    ** Setter for styles
     *******************************************************************************/
-   public void setDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   public void setStyles(SX styles)
    {
-      this.dropdownDefaultValueList = dropdownDefaultValueList;
+      this.styles = styles;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for dropdownDefaultValueList
+    ** Fluent setter for styles
     *******************************************************************************/
-   public QWidgetData withDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   public T withStyles(SX styles)
    {
-      this.dropdownDefaultValueList = dropdownDefaultValueList;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for csvData
-    *******************************************************************************/
-   public List<List<Serializable>> getCsvData()
-   {
-      return (this.csvData);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for csvData
-    *******************************************************************************/
-   public void setCsvData(List<List<Serializable>> csvData)
-   {
-      this.csvData = csvData;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for csvData
-    *******************************************************************************/
-   public QWidgetData withCsvData(List<List<Serializable>> csvData)
-   {
-      this.csvData = csvData;
-      return (this);
+      this.styles = styles;
+      return (T) this;
    }
 
 }
