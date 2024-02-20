@@ -62,7 +62,7 @@ public class SampleStackedBarChartWidgetMetaDataProducer extends MetaDataProduce
          .withLabel("Stacked Bar Chart")
          .withTooltip("This is a sample of a stacked bar chart")
          .withShowReloadButton(true)
-         .withIcon(MaterialDashboardIconRoleNames.TOP_LEFT_INSIDE_CARD, new QIcon("new_releases").withColor("#6BA47D"))
+         .withIcon(MaterialDashboardIconRoleNames.TOP_RIGHT_INSIDE_CARD, new QIcon("new_releases").withColor("#6BA47D"))
          .withCodeReference(new QCodeReference(SampleStackedBarChartRenderer.class));
    }
 
