@@ -31,6 +31,9 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -46,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -803,7 +807,7 @@ class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testChildNotInAnySections()
+   void testAppChildNotInAnySections()
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
@@ -818,6 +822,19 @@ class QInstanceValidatorTest extends BaseTest
          .withChild(new QTableMetaData().withName("test"))
          .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not listed in any app sections");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppUnrecognizedWidgetName()
+   {
+      QAppMetaData app = new QAppMetaData().withName("test")
+         .withWidgets(List.of("no-such-widget"));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not a recognized widget");
    }
 
 
@@ -1809,6 +1826,65 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", "foo"))), "fileNameFormatFields could not be accessed");
       assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", new ArrayList<>(List.of("foo"))))), "unrecognized field name in fileNameFormatFields [foo]");
       assertValidationSuccess((qInstance -> fieldExtractor.apply(qInstance).withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD).withValue("fileNameFormatFields", new ArrayList<>(List.of("lastName"))))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidgetNaming()
+   {
+      String name = PersonsByCreateDateBarChart.class.getSimpleName();
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName(null),
+         "Inconsistent naming for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName(""),
+         "Inconsistent naming for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName("wrongName"),
+         "Inconsistent naming for widget");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidgetCodeReference()
+   {
+      String name = PersonsByCreateDateBarChart.class.getSimpleName();
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withCodeReference(null),
+         "Missing codeReference for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withCodeReference(new QCodeReference(ArrayList.class)),
+         "CodeReference is not of the expected type: class " + AbstractWidgetRenderer.class.getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testParentWidgets()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.addWidget(new ParentWidgetMetaData()
+            .withName("parentWidget")
+            .withCodeReference(new QCodeReference(ParentWidgetRenderer.class))
+         ),
+         "Missing child widgets");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addWidget(new ParentWidgetMetaData()
+            .withChildWidgetNameList(List.of("noSuchWidget"))
+            .withName("parentWidget")
+            .withCodeReference(new QCodeReference(ParentWidgetRenderer.class))
+         ),
+         "Unrecognized child widget name");
    }
 
 
