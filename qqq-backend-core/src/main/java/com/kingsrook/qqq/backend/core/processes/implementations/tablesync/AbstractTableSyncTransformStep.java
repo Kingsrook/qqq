@@ -252,6 +252,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
       }
+      else
+      {
+         reinitializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
@@ -464,6 +468,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** for pages after the first, possibly load more records in the lookup helper.
+    *******************************************************************************/
+   protected void reinitializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 
