@@ -48,6 +48,7 @@ public enum WidgetType
    STEPPER("stepper"),
    TABLE("table"),
    USA_MAP("usaMap"),
+   COMPOSITE("composite"),
    DATA_BAG_VIEWER("dataBagViewer"),
    SCRIPT_VIEWER("scriptViewer");
 

@@ -66,6 +66,11 @@
          <version>${revision}</version>
       </dependency>
       <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-frontend-material-dashboard</artifactId>
+         <version>feature-CE-876-develop-missing-widget-types-20240221.011827-1</version>
+      </dependency>
+      <dependency>
          <groupId>com.h2database</groupId>
          <artifactId>h2</artifactId>
          <version>2.2.220</version>

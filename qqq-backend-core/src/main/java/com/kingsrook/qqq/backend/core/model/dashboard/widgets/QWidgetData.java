@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,7 @@ public abstract class QWidgetData
    private List<List<Map<String, String>>> dropdownDataList;
    private String                          dropdownNeedsSelectedText;
 
+   private List<List<Serializable>> csvData;
 
 
    /*******************************************************************************
@@ -323,5 +325,35 @@ public abstract class QWidgetData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for csvData
+    *******************************************************************************/
+   public List<List<Serializable>> getCsvData()
+   {
+      return (this.csvData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for csvData
+    *******************************************************************************/
+   public void setCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for csvData
+    *******************************************************************************/
+   public QWidgetData withCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+      return (this);
+   }
 
 }

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.google.common.reflect.ClassPath;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -50,13 +51,22 @@ public class MetaDataProducerHelper
     **
     ** Note - they'll be sorted by the sortOrder they provide.
     *******************************************************************************/
-   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws IOException
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws QException
    {
-      ////////////////////////////////////////////////////////////////////////
-      // find all the meta data producer classes in (and under) the package //
-      ////////////////////////////////////////////////////////////////////////
-      List<Class<?>>                     classesInPackage = getClassesInPackage(packageName);
-      List<MetaDataProducerInterface<?>> producers        = new ArrayList<>();
+      List<Class<?>> classesInPackage;
+      try
+      {
+         ////////////////////////////////////////////////////////////////////////
+         // find all the meta data producer classes in (and under) the package //
+         ////////////////////////////////////////////////////////////////////////
+         classesInPackage = getClassesInPackage(packageName);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error getting classes in package [" + packageName + "]", e));
+      }
+      List<MetaDataProducerInterface<?>> producers = new ArrayList<>();
+
       for(Class<?> aClass : classesInPackage)
       {
          try

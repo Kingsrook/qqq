@@ -25,13 +25,17 @@ package com.kingsrook.qqq.backend.core.actions.permissions;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -541,9 +545,28 @@ class PermissionsHelperTest extends BaseTest
          .withView(new QReportView().withType(ReportType.TABLE).withColumn(new QReportField("id"))));
 
       qInstance.addWidget(new QWidgetMetaData()
-         .withName(WIDGET_NAME));
+         .withName(WIDGET_NAME)
+         .withCodeReference(new QCodeReference(WidgetRenderer.class))
+      );
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class WidgetRenderer extends AbstractWidgetRenderer
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public RenderWidgetOutput render(RenderWidgetInput input) throws QException
+      {
+         return null;
+      }
    }
 
 

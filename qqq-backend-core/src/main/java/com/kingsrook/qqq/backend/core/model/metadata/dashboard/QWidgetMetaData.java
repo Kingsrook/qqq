@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -55,7 +56,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    private boolean                  storeDropdownSelections;
 
    private boolean showReloadButton = true;
-   private boolean showExportButton = true;
+   private boolean showExportButton = false;
 
    protected Map<String, QIcon> icons;
 
@@ -217,6 +218,17 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public void setType(String type)
    {
       this.type = type;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // originally, showExportButton defaulted to true, and only a few frontend components knew how to render it. //
+      // but, with the advent of csvData that any widget type can export, then the generic frontend widget code    //
+      // became aware of the export button, so we wanted to flip the default for showExportButton to false, but    //
+      // still have it by-default be true for these 2 types                                                        //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(WidgetType.TABLE.getType().equals(type) || WidgetType.CHILD_RECORD_LIST.getType().equals(type))
+      {
+         setShowExportButton(true);
+      }
    }
 
 
@@ -227,7 +239,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
     *******************************************************************************/
    public QWidgetMetaData withType(String type)
    {
-      this.type = type;
+      setType(type);
       return (this);
    }
 
