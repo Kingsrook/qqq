@@ -51,6 +51,7 @@ public class HtmlWrapper implements Serializable
    public static final String STYLE_INDENT_2        = "padding-left: 2rem; ";
    public static final String STYLE_FLOAT_RIGHT     = "float: right; ";
    public static final String STYLE_RED             = "color: red; ";
+   public static final String STYLE_YELLOW = "color: #bfb743; ";
 
 
 

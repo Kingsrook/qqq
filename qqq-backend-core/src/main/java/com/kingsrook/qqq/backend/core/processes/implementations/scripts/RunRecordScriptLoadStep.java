@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.audits.AuditAction;
-import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.RunAdHocRecordScriptAction;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.StoreScriptLogAndScriptLogLineExecutionLogger;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -132,11 +131,6 @@ public class RunRecordScriptLoadStep extends AbstractLoadStep implements Process
       {
          throw (new QException("Could not find script by id: " + scriptId));
       }
-
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // set an "audit context" - so any DML executed during the script will include the note of what script was running. //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      runBackendStepInput.addValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME, "via Script \"" + script.getValue("name") + "\"");
 
       String tableName = script.getValueString("tableName");
 

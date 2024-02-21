@@ -51,6 +51,7 @@ public class UpdateInput extends AbstractTableActionInput
    ////////////////////////////////////////////////////////////////////////////////////////////
    private Boolean areAllValuesBeingUpdatedTheSame = null;
 
+   private boolean omitTriggeringAutomations = false;
    private boolean omitDmlAudit = false;
    private String  auditContext = null;
 
@@ -318,6 +319,37 @@ public class UpdateInput extends AbstractTableActionInput
    public UpdateInput withInputSource(InputSource inputSource)
    {
       this.inputSource = inputSource;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitTriggeringAutomations
+    *******************************************************************************/
+   public boolean getOmitTriggeringAutomations()
+   {
+      return (this.omitTriggeringAutomations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitTriggeringAutomations
+    *******************************************************************************/
+   public void setOmitTriggeringAutomations(boolean omitTriggeringAutomations)
+   {
+      this.omitTriggeringAutomations = omitTriggeringAutomations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitTriggeringAutomations
+    *******************************************************************************/
+   public UpdateInput withOmitTriggeringAutomations(boolean omitTriggeringAutomations)
+   {
+      this.omitTriggeringAutomations = omitTriggeringAutomations;
       return (this);
    }
 

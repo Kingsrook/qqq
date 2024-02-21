@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,37 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
+package com.kingsrook.qqq.backend.core.actions.dashboard;
 
 
-import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
- ** In-memory version of update action.
- **
+ ** Unit test for AbstractHTMLWidgetRenderer 
  *******************************************************************************/
-public class MemoryUpdateAction extends AbstractMemoryAction implements UpdateInterface
+class AbstractHTMLWidgetRendererTest extends BaseTest
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public UpdateOutput execute(UpdateInput updateInput) throws QException
+   @Test
+   void test() throws QException
    {
-      try
-      {
-         UpdateOutput updateOutput = new UpdateOutput();
-         updateOutput.setRecords(MemoryRecordStore.getInstance().update(updateInput, true));
-         return (updateOutput);
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing update: " + e.getMessage(), e);
-      }
+      String link = AbstractHTMLWidgetRenderer.getCountLink(null, TestUtils.TABLE_NAME_PERSON, new QQueryFilter()
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1))
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1)), 2
+      );
+
+      ////////////////////////////////////////////////////
+      // assert that filter de-duplication is occurring //
+      ////////////////////////////////////////////////////
+      assertThat(link).doesNotMatch(".*EQUALS.*EQUALS.*");
    }
 
 }

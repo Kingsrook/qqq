@@ -720,7 +720,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableAutomationDetails defineStandardAutomationDetails()
+   public static QTableAutomationDetails defineStandardAutomationDetails()
    {
       return (new QTableAutomationDetails()
          .withProviderName(POLLING_AUTOMATION)

@@ -32,11 +32,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -118,6 +121,58 @@ class MemoizationTest extends BaseTest
       optionalMemoizedResult = memoization.getMemoizedResult("never-stored");
       assertNotNull(optionalMemoizedResult);
       assertTrue(optionalMemoizedResult.isEmpty());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLookupFunction()
+   {
+      AtomicInteger lookupFunctionCallCounter = new AtomicInteger(0);
+
+      Memoization<String, Integer> memoization = new Memoization<>();
+
+      UnsafeFunction<String, Integer, Exception> lookupFunction = numberString ->
+      {
+         lookupFunctionCallCounter.getAndIncrement();
+
+         if(numberString.equals("null"))
+         {
+            return (null);
+         }
+
+         return Integer.parseInt(numberString);
+      };
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // get "1" twice - should return 1 each time, and call the lookup function exactly once //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(memoization.getResult("1", lookupFunction)).isPresent().contains(1);
+      assertEquals(1, lookupFunctionCallCounter.get());
+
+      assertThat(memoization.getResult("1", lookupFunction)).isPresent().contains(1);
+      assertEquals(1, lookupFunctionCallCounter.get());
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now get "null" twice - should return null each time, and call the lookup function exactly once more //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(memoization.getResult("null", lookupFunction)).isEmpty();
+      assertEquals(2, lookupFunctionCallCounter.get());
+
+      assertThat(memoization.getResult("null", lookupFunction)).isEmpty();
+      assertEquals(2, lookupFunctionCallCounter.get());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now make a call that throws twice - again, should return null each time, and only do one more loookup call //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(memoization.getResult(null, lookupFunction)).isEmpty();
+      assertEquals(3, lookupFunctionCallCounter.get());
+
+      assertThat(memoization.getResult(null, lookupFunction)).isEmpty();
+      assertEquals(3, lookupFunctionCallCounter.get());
    }
 
 

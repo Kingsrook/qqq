@@ -78,6 +78,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    private static Set<String> loggedUnauditableTableNames = new HashSet<>();
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -210,6 +211,19 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          contextSuffix.append(" ").append(input.getAuditContext());
       }
 
+      //////////////////////////////////////////////////////////////
+      // look for a context value place directly into the session //
+      //////////////////////////////////////////////////////////////
+      QSession qSession = QContext.getQSession();
+      if(qSession != null)
+      {
+         String sessionContext = qSession.getValue(AUDIT_CONTEXT_FIELD_NAME);
+         if(StringUtils.hasContent(sessionContext))
+         {
+            contextSuffix.append(" ").append(sessionContext);
+         }
+      }
+
       /////////////////////////////////////////////////////////////////////////////////////
       // note process label (and a possible context from the process's state) if present //
       /////////////////////////////////////////////////////////////////////////////////////
@@ -233,17 +247,20 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       ///////////////////////////////////////////////////
       // use api label & version if present in session //
       ///////////////////////////////////////////////////
-      QSession qSession   = QContext.getQSession();
-      String   apiVersion = qSession.getValue("apiVersion");
-      if(apiVersion != null)
+      if(qSession != null)
       {
-         String apiLabel = qSession.getValue("apiLabel");
-         if(!StringUtils.hasContent(apiLabel))
+         String apiVersion = qSession.getValue("apiVersion");
+         if(apiVersion != null)
          {
-            apiLabel = "API";
+            String apiLabel = qSession.getValue("apiLabel");
+            if(!StringUtils.hasContent(apiLabel))
+            {
+               apiLabel = "API";
+            }
+            contextSuffix.append(" via ").append(apiLabel).append(" Version: ").append(apiVersion);
          }
-         contextSuffix.append(" via ").append(apiLabel).append(" Version: ").append(apiVersion);
       }
+
       return (contextSuffix.toString());
    }
 

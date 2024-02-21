@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
@@ -60,6 +61,8 @@ import com.kingsrook.qqq.backend.core.model.automation.TableTrigger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.AutomationStatusTrackingType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
@@ -252,12 +255,11 @@ public class PollingAutomationPerTableRunner implements Runnable
 
       try
       {
-         QSession session = sessionSupplier != null ? sessionSupplier.get() : new QSession();
-         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), session, tableActions.status());
+         processTableInsertOrUpdate(instance.getTable(tableActions.tableName()), tableActions.status());
       }
       catch(Exception e)
       {
-         LOG.warn("Error running automations", e);
+         LOG.warn("Error running automations", e, logPair("tableName", tableActions.tableName()), logPair("status", tableActions.status()));
       }
       finally
       {
@@ -271,7 +273,7 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     ** Query for and process records that have a PENDING_INSERT or PENDING_UPDATE status on a given table.
     *******************************************************************************/
-   public void processTableInsertOrUpdate(QTableMetaData table, QSession session, AutomationStatus automationStatus) throws QException
+   public void processTableInsertOrUpdate(QTableMetaData table, AutomationStatus automationStatus) throws QException
    {
       /////////////////////////////////////////////////////////////////////////
       // get the actions to run against this table in this automation status //
@@ -301,7 +303,9 @@ public class PollingAutomationPerTableRunner implements Runnable
             AutomationStatusTrackingType statusTrackingType = automationDetails.getStatusTracking().getType();
             if(AutomationStatusTrackingType.FIELD_IN_TABLE.equals(statusTrackingType))
             {
-               queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(automationDetails.getStatusTracking().getFieldName(), QCriteriaOperator.EQUALS, List.of(automationStatus.getId()))));
+               QQueryFilter filter = new QQueryFilter().withCriteria(new QFilterCriteria(automationDetails.getStatusTracking().getFieldName(), QCriteriaOperator.EQUALS, List.of(automationStatus.getId())));
+               addOrderByToQueryFilter(table, automationStatus, filter);
+               queryInput.setFilter(filter);
             }
             else
             {
@@ -322,10 +326,42 @@ public class PollingAutomationPerTableRunner implements Runnable
          }, () ->
          {
             List<QRecord> records = recordPipe.consumeAvailableRecords();
-            applyActionsToRecords(session, table, records, actions, automationStatus);
+            applyActionsToRecords(table, records, actions, automationStatus);
             return (records.size());
          }
       );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void addOrderByToQueryFilter(QTableMetaData table, AutomationStatus automationStatus, QQueryFilter filter)
+   {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // look for a field in the table with either create-date or modify-date behavior, //
+      // based on if doing insert or update automations                                 //
+      ////////////////////////////////////////////////////////////////////////////////////
+      DynamicDefaultValueBehavior dynamicDefaultValueBehavior = automationStatus.equals(AutomationStatus.PENDING_INSERT_AUTOMATIONS) ? DynamicDefaultValueBehavior.CREATE_DATE : DynamicDefaultValueBehavior.MODIFY_DATE;
+      Optional<QFieldMetaData> field = table.getFields().values().stream()
+         .filter(f -> dynamicDefaultValueBehavior.equals(f.getBehaviorOrDefault(QContext.getQInstance(), DynamicDefaultValueBehavior.class)))
+         .findFirst();
+
+      if(field.isPresent())
+      {
+         //////////////////////////////////////////////////////////////////////
+         // if a create/modify date field was found, order by it (ascending) //
+         //////////////////////////////////////////////////////////////////////
+         filter.addOrderBy(new QFilterOrderBy(field.get().getName()));
+      }
+      else
+      {
+         ////////////////////////////////////
+         // else, order by the primary key //
+         ////////////////////////////////////
+         filter.addOrderBy(new QFilterOrderBy(table.getPrimaryKeyField()));
+      }
    }
 
 
@@ -430,7 +466,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** table's actions against them - IF they are found to match the action's filter
     ** (assuming it has one - if it doesn't, then all records match).
     *******************************************************************************/
-   private void applyActionsToRecords(QSession session, QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, AutomationStatus automationStatus) throws QException
+   private void applyActionsToRecords(QTableMetaData table, List<QRecord> records, List<TableAutomationAction> actions, AutomationStatus automationStatus) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -440,7 +476,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       ///////////////////////////////////////////////////
       // mark the records as RUNNING their automations //
       ///////////////////////////////////////////////////
-      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToRunningStatusMap.get(automationStatus));
+      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(table, records, pendingToRunningStatusMap.get(automationStatus), null);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // foreach action - run it against the records (but only if they match the action's filter, if there is one) //
@@ -458,13 +494,15 @@ public class PollingAutomationPerTableRunner implements Runnable
       ////////////////////////////////////////
       // update status on all these records //
       ////////////////////////////////////////
-      if(anyActionsFailed)
+      AutomationStatus statusToUpdateTo = anyActionsFailed ? pendingToFailedStatusMap.get(automationStatus) : AutomationStatus.OK;
+      try
       {
-         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, pendingToFailedStatusMap.get(automationStatus));
+         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(table, records, statusToUpdateTo, null);
       }
-      else
+      catch(Exception e)
       {
-         RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(instance, session, table, records, AutomationStatus.OK);
+         LOG.warn("Error updating automationStatus after running automations", logPair("tableName", table), logPair("count", records.size()), logPair("status", statusToUpdateTo));
+         throw (e);
       }
    }
 
@@ -494,7 +532,7 @@ public class PollingAutomationPerTableRunner implements Runnable
       }
       catch(Exception e)
       {
-         LOG.warn("Caught exception processing records on " + table + " for action " + action, e);
+         LOG.warn("Caught exception processing automations", e, logPair("tableName", table), logPair("action", action.getName()));
          return (true);
       }
    }

@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -56,14 +57,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAut
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcessTest;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,18 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  *******************************************************************************/
 class PollingAutomationPerTableRunnerTest extends BaseTest
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @BeforeEach
-   @AfterEach
-   void beforeAndAfterEach()
-   {
-      MemoryRecordStore.getInstance().reset();
-   }
-
-
 
    /*******************************************************************************
     ** Test a cycle that does an insert, some automations, then and an update, and more automations.
@@ -200,7 +186,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runAllTableActions(QInstance qInstance) throws QException
+   static void runAllTableActions(QInstance qInstance) throws QException
    {
       List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
       for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
@@ -210,7 +196,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
          /////////////////////////////////////////////////////////////////////////////////////////////////////
-         pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
+         pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), tableAction.status());
       }
    }
 
@@ -512,7 +498,7 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
             /////////////////////////////////////////////////////////////////////////////////////////////////////
             // note - don't call run - it is meant to be called async - e.g., it sets & clears thread context. //
             /////////////////////////////////////////////////////////////////////////////////////////////////////
-            pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), QContext.getQSession(), tableAction.status());
+            pollingAutomationPerTableRunner.processTableInsertOrUpdate(qInstance.getTable(tableAction.tableName()), tableAction.status());
          }
       }).hasMessage(PollingAutomationPerTableRunnerThatShouldSimulateServerShutdownMidRun.EXCEPTION_MESSAGE);
 
@@ -591,6 +577,72 @@ class PollingAutomationPerTableRunnerTest extends BaseTest
    {
       new PollingAutomationPerTableRunner.TableActions(null, null).noopToFakeTestCoverage();
       new PollingAutomationPerTableRunner.ShardedTableActions(null, null, null, null, null).noopToFakeTestCoverage();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddOrderByToQueryFilter()
+   {
+      //////////////////////////////////////////////////////////////////////////
+      // make a table we'll test with.  just put a primary-key id on it first //
+      //////////////////////////////////////////////////////////////////////////
+      QTableMetaData table = new QTableMetaData()
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER));
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // add createDate & modifyDate fields, but not with dynamic-default-behaviors //
+      // so should still sort by id                                                 //
+      ////////////////////////////////////////////////////////////////////////////////
+      QFieldMetaData createDate = new QFieldMetaData("createDate", QFieldType.DATE_TIME);
+      QFieldMetaData modifyDate = new QFieldMetaData("modifyDate", QFieldType.DATE_TIME);
+      table.addField(createDate);
+      table.addField(modifyDate);
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("id", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // add dynamic default value behaviors, confirm create/modify date fields are used //
+      /////////////////////////////////////////////////////////////////////////////////////
+      createDate.withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
+      modifyDate.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_INSERT_AUTOMATIONS, filter);
+         assertEquals("createDate", filter.getOrderBys().get(0).getFieldName());
+      }
+
+      {
+         QQueryFilter filter = new QQueryFilter();
+         PollingAutomationPerTableRunner.addOrderByToQueryFilter(table, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, filter);
+         assertEquals("modifyDate", filter.getOrderBys().get(0).getFieldName());
+      }
+
    }
 
 }
