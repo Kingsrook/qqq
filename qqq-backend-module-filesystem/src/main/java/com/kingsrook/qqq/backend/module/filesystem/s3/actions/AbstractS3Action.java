@@ -220,10 +220,11 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
    {
-      QBackendMetaData backend    = instance.getBackend(table.getBackendName());
-      String           bucketName = ((S3BackendMetaData) backend).getBucketName();
+      QBackendMetaData backend     = instance.getBackend(table.getBackendName());
+      String           bucketName  = ((S3BackendMetaData) backend).getBucketName();
+      String           cleanedPath = stripLeadingSlash(stripDuplicatedSlashes(fileReference));
 
-      getS3Utils().deleteObject(bucketName, fileReference);
+      getS3Utils().deleteObject(bucketName, cleanedPath);
    }
 
 
