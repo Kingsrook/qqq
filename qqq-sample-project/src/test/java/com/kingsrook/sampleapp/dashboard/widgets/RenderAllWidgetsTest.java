@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,14 @@ class RenderAllWidgetsTest
       ////////////////////////////////////////////////////////////////
       for(QWidgetMetaDataInterface widget : qInstance.getWidgets().values())
       {
+         if(widget instanceof QuickSightChartMetaData)
+         {
+            ///////////////////////////////////////////
+            // credentials not in circleci, so, skip //
+            ///////////////////////////////////////////
+            continue;
+         }
+
          RenderWidgetInput input = new RenderWidgetInput();
          input.setWidgetMetaData(widget);
          RenderWidgetOutput output = new RenderWidgetAction().execute(input);
