@@ -164,6 +164,7 @@ public class FilesystemImporterStep implements BackendStep
          try
          {
             String sourceFileName = sourceEntry.getKey();
+            LOG.info("Found file", logPair("fileName", sourceFileName));
 
             /////////////////////////////////////////////////////////
             // if filename was already imported, decide what to do //
@@ -183,7 +184,7 @@ public class FilesystemImporterStep implements BackendStep
                }
                else
                {
-                  LOG.debug("Skipping already-imported file", logPair("fileName", sourceFileName));
+                  LOG.info("Skipping already-imported file", logPair("fileName", sourceFileName)); // todo - downgrade to debug?
                   removeSourceFileIfSoConfigured(removeFileAfterImport, sourceActionBase, sourceTable, sourceBackend, sourceFileName);
                   continue;
                }
@@ -317,7 +318,13 @@ public class FilesystemImporterStep implements BackendStep
       if(removeFileAfterImport)
       {
          String fullBasePath = sourceActionBase.getFullBasePath(sourceTable, sourceBackend);
+         LOG.info("Removing source file", logPair("path", fullBasePath + "/" + sourceFileName), logPair("sourceTable", sourceTable.getName()));
          sourceActionBase.deleteFile(QContext.getQInstance(), sourceTable, fullBasePath + "/" + sourceFileName);
+      }
+      else
+      {
+         // todo - downgrade to debug
+         LOG.info("Not configured to remove source file", logPair("sourceFileName", sourceFileName), logPair("sourceTable", sourceTable.getName()));
       }
    }
 
