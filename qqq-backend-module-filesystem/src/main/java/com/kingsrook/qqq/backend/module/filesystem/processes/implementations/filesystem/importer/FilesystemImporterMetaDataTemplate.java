@@ -280,7 +280,7 @@ public class FilesystemImporterMetaDataTemplate
       QTableMetaData qTableMetaData = new QTableMetaData()
          .withName(importBaseName + IMPORT_RECORD_TABLE_SUFFIX)
          .withIcon(new QIcon().withName("power_input"))
-         .withRecordLabelFormat("%s")
+         .withRecordLabelFormat("%s - Record %s")
          .withRecordLabelFields("importFileId", "recordNo")
          .withPrimaryKeyField("id")
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.RECORD))
