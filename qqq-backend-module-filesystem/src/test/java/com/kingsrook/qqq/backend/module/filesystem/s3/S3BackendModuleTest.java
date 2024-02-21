@@ -155,6 +155,35 @@ public class S3BackendModuleTest extends BaseS3Test
 
 
    /*******************************************************************************
+    ** Regression check on the s3 delete method - if the file name has duplicated
+    ** slashes and/or leading slash(es), those need stripped.  So, create that
+    ** situation and assert delete works.
+    *******************************************************************************/
+   @Test
+   public void testDeleteFileExtraSlashes() throws Exception
+   {
+      QInstance      qInstance = TestUtils.defineInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_S3);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // first list the files - then delete one, then re-list, and assert that we have one fewer //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      List<S3ObjectSummary> s3ObjectSummariesBeforeDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
+
+      S3BackendModule  s3BackendModule = new S3BackendModule();
+      AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
+      actionBase.setS3Utils(getS3Utils());
+      String path = "//" + s3ObjectSummariesBeforeDelete.get(0).getKey().replaceAll("/", "//");
+      actionBase.deleteFile(qInstance, table, "//" + path);
+
+      List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
+      Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size() - 1, s3ObjectSummariesAfterDelete.size(),
+         "Should be one fewer file listed after deleting one.");
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test
