@@ -66,7 +66,7 @@ public class SampleBigNumberBlocksWidgetMetaDataProducer extends MetaDataProduce
          .withLabel("Big Number Blocks")
          .withTooltip("This is a sample of a widget using Big Number Blocks")
          .withShowReloadButton(false)
-         .withIcon(MaterialDashboardIconRoleNames.TOP_RIGHT_INSIDE_CARD, new QIcon("blocks").withColor("skyblue"))
+         .withIcon(MaterialDashboardIconRoleNames.TOP_LEFT_INSIDE_CARD, new QIcon("blocks").withColor("skyblue"))
          .withCodeReference(new QCodeReference(SampleBigNumberBlocksWidgetRenderer.class));
    }
 

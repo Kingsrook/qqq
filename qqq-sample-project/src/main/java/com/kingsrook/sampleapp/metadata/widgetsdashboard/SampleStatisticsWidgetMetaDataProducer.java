@@ -60,7 +60,7 @@ public class SampleStatisticsWidgetMetaDataProducer extends MetaDataProducer<QWi
          .withLabel("Statistics")
          .withTooltip("This is a sample of a statistics widget")
          .withShowReloadButton(false)
-         .withIcon(MaterialDashboardIconRoleNames.TOP_RIGHT_INSIDE_CARD, new QIcon("assessment").withColor("#0061FF"))
+         .withIcon(MaterialDashboardIconRoleNames.TOP_LEFT_INSIDE_CARD, new QIcon("assessment").withColor("#0061FF"))
          .withCodeReference(new QCodeReference(SampleStatisticsWidgetRenderer.class));
    }
 
