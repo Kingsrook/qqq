@@ -355,7 +355,7 @@ public class FilesystemImporterStep implements BackendStep
          + "-" + sourceFileName.replaceAll(".*" + File.separator, "");
       path = AbstractBaseFilesystemAction.stripDuplicatedSlashes(path);
 
-      LOG.info("Archiving file", logPair("path", path));
+      LOG.info("Archiving file", logPair("path", path), logPair("archiveBackendName", archiveBackend.getName()), logPair("archiveTableName", archiveTable.getName()));
       archiveActionBase.writeFile(archiveBackend, path, bytes);
 
       return (path);

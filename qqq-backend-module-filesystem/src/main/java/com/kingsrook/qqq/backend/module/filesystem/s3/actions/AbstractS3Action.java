@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractF
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -162,9 +163,18 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public void writeFile(QBackendMetaData backendMetaData, String path, byte[] contents) throws IOException
    {
-      path = stripLeadingSlash(stripDuplicatedSlashes(path));
       String bucketName = ((S3BackendMetaData) backendMetaData).getBucketName();
-      getS3Utils().writeFile(bucketName, path, contents);
+
+      try
+      {
+         path = stripLeadingSlash(stripDuplicatedSlashes(path));
+         getS3Utils().writeFile(bucketName, path, contents);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error writing file", e, logPair("path", path), logPair("bucketName", bucketName));
+         throw (new IOException("Error writing file", e));
+      }
    }
 
 
