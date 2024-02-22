@@ -244,3 +244,41 @@ QQQ provides the mechanism for UI's to present and manage such scripts (e.g., th
 * `scriptTypeId` - *Serializable (typically Integer), Required* - primary key value from the `"scriptType"` table in the instance, to designate the type of the Script.
 * `scriptTester` - *QCodeReference* - reference to a class which implements `TestScriptActionInterface`, that can be used by UI's for running an associated script to test it.
 
+
+
+=== Supplemental Meta Data
+==== QQQ Frontend Material Dashboard
+When running a QQQ application with the QQQ Frontend Material Dashboard module (QFMD),
+there are various pieces of supplemental meta-data which can be assigned to a Table,
+to modify some behaviors for the table in this UI.
+
+===== Default Quick Filter Field Names
+QFMD's table query has a "Basic" mode, which will always display a subset of the table's fields as quick-access filters.
+By default, the "Tier 1" fields on a table (e.g., fields in a Section that is marked as T1) will be used for this purpose.
+
+However, you can customize which fields are shown as the default quick-filter fields, by providing a list of field names in a
+`MaterialDashboardTableMetaData` object, placed in the table's `supplementalMetaData`.
+
+[source,java]
+----
+table.withSupplementalMetaData(new MaterialDashboardTableMetaData()
+    .withDefaultQuickFilterFieldNames(List.of("id", "warehouseId", "statusId", "orderDate")));
+----
+
+===== Go To Field Names
+QFMD has a feature where a table's query screen can include a "Go To" button,
+which a user can hit to open a modal popup, into which the user can enter a record's identifier,
+to be brought directly to the record matching that identifier.
+
+To use this feature, the table must have a List of `GotoFieldNames` set in its
+`MaterialDashboardTableMetaData` object in the table's `supplementalMetaData`.
+
+Each entry in this list is actually a list of fields, e.g., to account for a multi-value unique-key.
+
+[source,java]
+----
+table.withSupplementalMetaData(new MaterialDashboardTableMetaData()
+    .withGotoFieldNames(List.of(
+        List.of("id"),
+        List.of("partnerName", "partnerOrderId"))));
+----
