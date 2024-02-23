@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -334,15 +335,31 @@ class ApiScriptUtilsTest extends BaseTest
       String jobId = ValueUtils.getValueAsString(((Map<String, ?>) asyncResult).get("jobId"));
       assertNotNull(jobId);
 
-      SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+      //////////////////////////////////////////////////////////////////////////////////
+      // check every 100 ms or so to see if the process is done - but after 10 loops, //
+      //////////////////////////////////////////////////////////////////////////////////
+      for(int i = 0; i < 10; i++)
+      {
+         Serializable result = apiScriptUtils.getProcessStatus(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, jobId);
 
-      Serializable result = apiScriptUtils.getProcessStatus(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, jobId);
-      assertThat(result).isInstanceOf(List.class);
-      List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
-      assertEquals(3, resultList.size());
+         if(result instanceof Map map && map.containsKey("jobId"))
+         {
+            System.out.println("Process is still running - sleep and look again...");
+            SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+            continue;
+         }
 
-      assertThat(resultList.stream().filter(m -> m.get("id").equals(2)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 200);
-      assertThat(resultList.stream().filter(m -> m.get("id").equals(3)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 500);
+         assertThat(result).isInstanceOf(List.class);
+         List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
+         assertEquals(3, resultList.size());
+
+         assertThat(resultList.stream().filter(m -> m.get("id").equals(2)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 200);
+         assertThat(resultList.stream().filter(m -> m.get("id").equals(3)).findFirst()).isPresent().get().hasFieldOrPropertyWithValue("statusCode", 500);
+
+         return;
+      }
+
+      fail("Process didn't complete after 10 loops, ~1 second.");
    }
 
 
