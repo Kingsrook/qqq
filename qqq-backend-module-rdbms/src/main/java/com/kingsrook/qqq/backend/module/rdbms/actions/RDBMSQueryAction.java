@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -260,7 +261,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             throw (new QUserFacingException("Query was cancelled."));
          }
 
-         LOG.warn("Error executing query", e);
+         LOG.warn("Error executing query", e, logPair("tableName", queryInput.getTableName()), logPair("filter", queryInput.getFilter()));
          throw new QException("Error executing query", e);
       }
    }
