@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -223,6 +224,11 @@ public class QFieldMetaData implements Cloneable
             if(fieldAnnotation.valueTooLongBehavior() != ValueTooLongBehavior.PASS_THROUGH)
             {
                withBehavior(fieldAnnotation.valueTooLongBehavior());
+            }
+
+            if(StringUtils.hasContent(fieldAnnotation.defaultValue()))
+            {
+               ValueUtils.getValueAsFieldType(this.type, fieldAnnotation.defaultValue());
             }
          }
       }
