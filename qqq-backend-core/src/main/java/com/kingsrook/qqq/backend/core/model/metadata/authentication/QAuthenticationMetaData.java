@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -43,6 +44,7 @@ public class QAuthenticationMetaData implements TopLevelMetaDataInterface
    @JsonFilter("secretsFilter")
    private Map<String, String> values;
 
+   private QCodeReference customizer;
 
 
    /*******************************************************************************
@@ -190,6 +192,37 @@ public class QAuthenticationMetaData implements TopLevelMetaDataInterface
    public void addSelfToInstance(QInstance qInstance)
    {
       qInstance.setAuthentication(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for customizer
+    *******************************************************************************/
+   public QCodeReference getCustomizer()
+   {
+      return (this.customizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customizer
+    *******************************************************************************/
+   public void setCustomizer(QCodeReference customizer)
+   {
+      this.customizer = customizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customizer
+    *******************************************************************************/
+   public QAuthenticationMetaData withCustomizer(QCodeReference customizer)
+   {
+      this.customizer = customizer;
+      return (this);
    }
 
 }

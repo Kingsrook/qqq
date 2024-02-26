@@ -1816,6 +1816,19 @@ class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testAuthenticationCustomizer()
+   {
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(null)));
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ValidAuthCustomizer.class))));
+      assertValidationFailureReasons((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ArrayList.class))), "not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QTableMetaData newTable(String tableName, String... fieldNames)
    {
       QTableMetaData tableMetaData = new QTableMetaData()
@@ -1987,5 +2000,13 @@ class QInstanceValidatorTest extends BaseTest
          return null;
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class ValidAuthCustomizer implements QAuthenticationModuleCustomizerInterface {}
+
 }
 

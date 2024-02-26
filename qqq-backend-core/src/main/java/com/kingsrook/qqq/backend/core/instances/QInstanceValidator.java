@@ -153,6 +153,7 @@ public class QInstanceValidator
       try
       {
          validateBackends(qInstance);
+         validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
          validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
@@ -378,6 +379,23 @@ public class QInstanceValidator
             assertCondition(Objects.equals(name, automationProvider.getName()), "Inconsistent naming for automationProvider: " + name + "/" + automationProvider.getName() + ".");
             assertCondition(automationProvider.getType() != null, "Missing type for automationProvider: " + name);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAuthentication(QInstance qInstance)
+   {
+      QAuthenticationMetaData authentication = qInstance.getAuthentication();
+      if(authentication != null)
+      {
+         if(authentication.getCustomizer() != null)
+         {
+            validateSimpleCodeReference("Instance Authentication meta data customizer ", authentication.getCustomizer(), QAuthenticationModuleCustomizerInterface.class);
+         }
       }
    }
 
