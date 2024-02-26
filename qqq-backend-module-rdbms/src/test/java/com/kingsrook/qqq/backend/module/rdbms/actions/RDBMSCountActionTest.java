@@ -196,7 +196,7 @@ public class RDBMSCountActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(8);
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(2, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(5);
    }
 

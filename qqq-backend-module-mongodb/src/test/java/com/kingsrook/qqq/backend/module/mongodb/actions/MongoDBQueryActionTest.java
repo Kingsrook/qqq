@@ -875,13 +875,13 @@ class MongoDBQueryActionTest extends BaseTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, null));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(2)
          .anyMatch(r -> r.getValueInteger("key").equals(1))
@@ -919,13 +919,13 @@ class MongoDBQueryActionTest extends BaseTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, null));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(6)
          .allMatch(r -> r.getValueInteger("storeKey").equals(1) || r.getValueInteger("storeKey").equals(3));
@@ -961,7 +961,7 @@ class MongoDBQueryActionTest extends BaseTest
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeKey", QCriteriaOperator.IN, List.of(1, 2))));
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeKey").equals(1));

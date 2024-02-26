@@ -328,7 +328,7 @@ class InsertActionTest extends BaseTest
          // insert an order and lineItem with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 2);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
@@ -342,7 +342,7 @@ class InsertActionTest extends BaseTest
          assertEquals(4200, insertLineItemOutput.getRecords().get(0).getValueInteger("id"));
 
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertLineItemExtrinsicInput = new InsertInput();
          insertLineItemExtrinsicInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          insertLineItemExtrinsicInput.setRecords(List.of(new QRecord().withValue("lineItemId", 4200).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
@@ -352,7 +352,7 @@ class InsertActionTest extends BaseTest
 
       {
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
@@ -450,7 +450,7 @@ class InsertActionTest extends BaseTest
          // insert an order with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 2);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
@@ -458,7 +458,7 @@ class InsertActionTest extends BaseTest
          assertEquals(42, insertOrderOutput.getRecords().get(0).getValueInteger("id"));
 
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertLineItemInput = new InsertInput();
          insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          insertLineItemInput.setRecords(List.of(new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1)));
@@ -468,7 +468,7 @@ class InsertActionTest extends BaseTest
 
       {
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
