@@ -420,6 +420,7 @@ public class QJavalinImplementation
          authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
          authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
 
+         QContext.init(qInstance, null); // hmm...
          QSession session = authenticationModule.createSession(qInstance, authContext);
 
          context.cookie(SESSION_UUID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
