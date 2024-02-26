@@ -26,12 +26,12 @@ include::metaData/Reports.adoc[leveloffset=+1]
 include::metaData/Icons.adoc[leveloffset=+1]
 include::metaData/PermissionRules.adoc[leveloffset=+1]
 
-
 == Custom Application Code
 include::misc/QContext.adoc[leveloffset=+1]
 include::misc/QRecords.adoc[leveloffset=+1]
 include::misc/QRecordEntities.adoc[leveloffset=+1]
 include::misc/ProcessBackendSteps.adoc[leveloffset=+1]
+include::misc/RenderingWidgets.adoc[leveloffset=+1]
 
 === Table Customizers
 #todo#
@@ -61,3 +61,6 @@ include::actions/InsertAction.adoc[leveloffset=+1]
 == QQQ Default Implementations
 include::implementations/TableSync.adoc[leveloffset=+1]
 // later... include::actions/RenderTemplateAction.adoc[leveloffset=+1]
+
+== QQQ Utility Classes
+include::utilities/RecordLookupHelper.adoc[leveloffset=+1]
