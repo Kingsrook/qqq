@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -61,9 +62,9 @@ class MemoizationTest extends BaseTest
       memoization.setMaxSize(3);
       memoization.setTimeout(Duration.ofMillis(100));
 
-      assertThat(memoization.getResult("one")).isEmpty();
+      assertThat(memoization.getMemoizedResult("one")).isEmpty();
       memoization.storeResult("one", 1);
-      assertThat(memoization.getResult("one")).isPresent().get().isEqualTo(1);
+      assertThat(memoization.getMemoizedResult("one")).isPresent().get().extracting("result").isEqualTo(1);
 
       ////////////////////////////////////////////////////
       // store 3 more results - this should force 1 out //
@@ -71,22 +72,22 @@ class MemoizationTest extends BaseTest
       memoization.storeResult("two", 2);
       memoization.storeResult("three", 3);
       memoization.storeResult("four", 4);
-      assertThat(memoization.getResult("one")).isEmpty();
+      assertThat(memoization.getMemoizedResult("one")).isEmpty();
 
       //////////////////////////////////
       // make sure others are present //
       //////////////////////////////////
-      assertThat(memoization.getResult("two")).isPresent().get().isEqualTo(2);
-      assertThat(memoization.getResult("three")).isPresent().get().isEqualTo(3);
-      assertThat(memoization.getResult("four")).isPresent().get().isEqualTo(4);
+      assertThat(memoization.getMemoizedResult("two")).isPresent().get().extracting("result").isEqualTo(2);
+      assertThat(memoization.getMemoizedResult("three")).isPresent().get().extracting("result").isEqualTo(3);
+      assertThat(memoization.getMemoizedResult("four")).isPresent().get().extracting("result").isEqualTo(4);
 
       /////////////////////////////////////////////////////////////
       // wait more than the timeout, then make sure all are gone //
       /////////////////////////////////////////////////////////////
       SleepUtils.sleep(150, TimeUnit.MILLISECONDS);
-      assertThat(memoization.getResult("two")).isEmpty();
-      assertThat(memoization.getResult("three")).isEmpty();
-      assertThat(memoization.getResult("four")).isEmpty();
+      assertThat(memoization.getMemoizedResult("two")).isEmpty();
+      assertThat(memoization.getMemoizedResult("three")).isEmpty();
+      assertThat(memoization.getMemoizedResult("four")).isEmpty();
    }
 
 
@@ -100,24 +101,17 @@ class MemoizationTest extends BaseTest
       Memoization<String, Integer> memoization = new Memoization<>();
       memoization.storeResult("null", null);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // note - we can't tell a stored null apart from a non-stored value by calling getResult //
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      Optional<Integer> optionalNull = memoization.getResult("null");
-      assertNotNull(optionalNull);
-      assertTrue(optionalNull.isEmpty());
-
-      ////////////////////////////////////////////
-      // instead, we must use getMemoizedResult //
-      ////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the memoizedResult should never be null, and should be present if we memoized/stored a null value //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
       Optional<MemoizedResult<Integer>> optionalMemoizedResult = memoization.getMemoizedResult("null");
       assertNotNull(optionalMemoizedResult);
       assertTrue(optionalMemoizedResult.isPresent());
       assertNull(optionalMemoizedResult.get().getResult());
 
-      /////////////////////////////////////////////////////////////////
-      // make sure getMemoizedResult returns empty for an un-set key //
-      /////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////
+      // make sure getMemoizedResult returns non-null and empty for an un-set key //
+      //////////////////////////////////////////////////////////////////////////////
       optionalMemoizedResult = memoization.getMemoizedResult("never-stored");
       assertNotNull(optionalMemoizedResult);
       assertTrue(optionalMemoizedResult.isEmpty());
@@ -181,6 +175,23 @@ class MemoizationTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testGetResultThrowing() throws Exception
+   {
+      Memoization<String, Integer> memoization = new Memoization<>();
+
+      UnsafeFunction<String, Integer, Exception> lookupFunction = Integer::parseInt;
+
+      assertEquals(Optional.of(1), memoization.getResultThrowing("1", lookupFunction));
+      assertThatThrownBy(() -> memoization.getResultThrowing(null, lookupFunction)).hasMessageContaining("null");
+      assertThatThrownBy(() -> memoization.getResultThrowing("two", lookupFunction)).hasMessageContaining("For input string:");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    @Disabled("Slow, so not for CI - but good to demonstrate thread-safety during dev")
    void testMultiThread() throws InterruptedException, ExecutionException
    {
@@ -198,7 +209,7 @@ class MemoizationTest extends BaseTest
             for(int n = 0; n < 1_000_000; n++)
             {
                memoization.storeResult(String.valueOf(n), n);
-               memoization.getResult(String.valueOf(n));
+               memoization.getMemoizedResult(String.valueOf(n));
 
                if(n % 100_000 == 0)
                {
