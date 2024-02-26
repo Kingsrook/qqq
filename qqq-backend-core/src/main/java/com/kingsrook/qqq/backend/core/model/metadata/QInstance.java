@@ -1052,9 +1052,15 @@ public class QInstance
       for(QSecurityKeyType securityKeyType : CollectionUtils.nonNullMap(getSecurityKeyTypes()).values())
       {
          rs.add(securityKeyType.getName());
+
          if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
          {
             rs.add(securityKeyType.getAllAccessKeyName());
+         }
+
+         if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+         {
+            rs.add(securityKeyType.getNullValueBehaviorKeyName());
          }
       }
       return (rs);

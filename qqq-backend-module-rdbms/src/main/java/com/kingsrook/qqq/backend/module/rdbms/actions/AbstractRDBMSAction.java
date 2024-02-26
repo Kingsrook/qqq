@@ -66,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.NullValueBehaviorUtil;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
@@ -467,7 +468,7 @@ public abstract class AbstractRDBMSAction
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
          {
             lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
          }
@@ -486,7 +487,7 @@ public abstract class AbstractRDBMSAction
          // else, if user/session has some values, build an IN rule -                                                //
          // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
          {
             lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
          }

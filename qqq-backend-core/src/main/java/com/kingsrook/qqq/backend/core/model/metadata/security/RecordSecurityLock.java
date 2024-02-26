@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /*******************************************************************************
@@ -67,7 +69,34 @@ public class RecordSecurityLock
    {
       ALLOW,
       ALLOW_WRITE_ONLY, // not common - but see Audit, where you can do a thing that inserts them into a generic table, even though you can't later read them yourself...
-      DENY
+      DENY;
+
+
+      ////////////////////////////////////////////////////////////////////
+      // for use in tryToGetFromString, where we'll lowercase the input //
+      ////////////////////////////////////////////////////////////////////
+      private static final Map<String, NullValueBehavior> stringMapping = new HashMap<>();
+
+      static
+      {
+         stringMapping.put("allow", ALLOW);
+         stringMapping.put("allow_write_only", ALLOW_WRITE_ONLY);
+         stringMapping.put("allowwriteonly", ALLOW_WRITE_ONLY);
+         stringMapping.put("deny", DENY);
+      }
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public static NullValueBehavior tryToGetFromString(String string)
+      {
+         if(string == null)
+         {
+            return (null);
+         }
+
+         return stringMapping.get(string.toLowerCase());
+      }
    }
 
 

@@ -2,16 +2,79 @@
 == Security Key Types
 include::../variables.adoc[]
 
-#TODO#
+In QQQ, record-level security is provided by using a lock & key metaphor.
+
+The use-case being handled here is:
+
+* A user has full permission on a table (query, insert, update, and delete).
+* However, they should only be allowed to read a sub-set of the rows in the table.
+** e.g., maybe it's a multi-tenant system, or the table has user-specific records.
+
+The lock & key metaphor is realized by the user being associated with one or more "Keys"
+(as values in their session), and records in tables being associated with one or more "Locks"
+(as values in fields).
+A user is only allowed to access records where the user's key(s) match the record's security lock(s).
+
+For a practical example, picture a multi-tenant Order Management System,where all orders are assigned to a "client".
+Users (customers) should only be able to see orders associated with the client which that user works for.
+
+In this scenario, the `order` table would have a "lock" on its `clientId` field.
+Customer-users would have a `clientId` key in their session.
+When the QQQ backend did a search for records (e.g., an SQL query) it would implicitly
+(without any code being written by the application developer) filter the table to only
+allow the user to see records with their `clientId`.
+
+To implement this scenario, the application would define the following pieces of meta-data:
+
+* At the QQQ-Instance level, a `SecurityKeyType`,
+to define a domain of possible locks & keys within an application.
+** An application can define multiple Security Key Types.
+For example, maybe `clientId` and `userId` as key types.
+* At the per-table level, a `RecordSecurityLock`,
+which references a security key type, and how that key type should be applied to the table.
+** For example, what field stores the `clientId` value in the `order` table.
+* Finally, when a user's session is constructed via a QQQ Authentication provider,
+security key values are set, based on data from the authentication backend.
+
+=== Additional Scenarios
+
+==== All Access Key
+A "super-user" may be allowed to access all records in a table regardless of their record locks,
+if the Security Key Type specifies an `allAccessKeyName`,
+and if the user has a key in their session with that key name, and a value of `true`.
+Going back to the lock & key metaphor, this can be thought of as a "skeleton key",
+that can unlock any record lock (of the security key's type).
+
+==== Null Value Behaviors
+In a record security lock, different behaviors can be defined for handling rows with a null key value.
+
+For example:
+
+* Sometimes orders may be loaded into the OMS system described above, where the application doesn't yet know what client the order belongs to.
+In this case, the application may need to ensure that such records, with a `null` value in `clientId` are hidden from customer-users,
+to avoid potentially leaking a different client's data.
+** This can be accomplished with a record security lock on the `order` table, with a `nullValueBehavior` of `DENY`.
+** Furthermore, if internal/admin users _should_ be given access to such records, then the security key type can be
+configured with a `nullValueBehaviorKeyName` (e.g., `"clientIdNullValueBehavior"`), which can be set per-user to allow
+access to records, overriding the table lock's specified `nullValueBehavior`.
+*** This could also be done by giving internal/admin users an `allAccessKey`, but sometimes that is not what is required.
+
+* Maybe a warehouse locations table is assigned a `clientId` once inventory for a client is placed in the location,
+at which point in time, only the client's users should be allowed to see the record.
+But, if no client has been assigned to the location, and `clientId` is `null`,
+then you may want to allow any user to see such records.
+** This can be accomplished with a record security lock on the Warehouse Locations table, with a `nullValueBehavior` of `ALLOW`.
 
 === QSecurityKeyType
 A Security Key Type is defined in a QQQ Instance in a `*QSecurityKeyType*` object.
 
-#TODO#
-
 *QSecurityKeyType Properties:*
 
-* `name` - *String, Required* - Unique name for the security key type within the QQQ Instance.
+* `name` - *String, Required* - Unique name for this security key type within the QQQ Instance.
+* `allAccessKeyName` - *String* - Optional name of the all-access security key associated with this key type.
+* `nullValueBehaviorKeyName` - *String* - Optional name of the null-value-behavior overriding security key associated with this key type.
+** Note, `name`, `allAccessKeyName`, and `nullValueBehaviorKeyName` are all checked against each other for uniqueness.
+A `QInstanceValidationException` will be thrown if any name collisions occur.
+* `possibleValueSourceName` - *String* - Optional reference to a possible value source from which value for the key can come.
 
-#TODO#
 
