@@ -30,12 +30,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
@@ -109,6 +111,8 @@ public class QInstanceHelpContentManager
          String processName = nameValuePairs.get("process");
          String fieldName   = nameValuePairs.get("field");
          String sectionName = nameValuePairs.get("section");
+         String widgetName  = nameValuePairs.get("widget");
+         String slotName    = nameValuePairs.get("slot");
 
          ///////////////////////////////////////////////////////////
          // build a help content meta-data object from the record //
@@ -137,94 +141,146 @@ public class QInstanceHelpContentManager
          ///////////////////////////////////////////////////////////////////////////////////
          if(StringUtils.hasContent(tableName))
          {
-            QTableMetaData table = qInstance.getTable(tableName);
-            if(table == null)
-            {
-               LOG.info("Unrecognized table in help content", logPair("key", key));
-               return;
-            }
-
-            if(StringUtils.hasContent(fieldName))
-            {
-               //////////////////////////
-               // handle a table field //
-               //////////////////////////
-               QFieldMetaData field = table.getFields().get(fieldName);
-               if(field == null)
-               {
-                  LOG.info("Unrecognized table field in help content", logPair("key", key));
-                  return;
-               }
-
-               if(helpContent != null)
-               {
-                  field.withHelpContent(helpContent);
-               }
-               else
-               {
-                  field.removeHelpContent(roles);
-               }
-            }
-            else if(StringUtils.hasContent(sectionName))
-            {
-               ////////////////////////////
-               // handle a table section //
-               ////////////////////////////
-               Optional<QFieldSection> optionalSection = table.getSections().stream().filter(s -> sectionName.equals(s.getName())).findFirst();
-               if(optionalSection.isEmpty())
-               {
-                  LOG.info("Unrecognized table section in help content", logPair("key", key));
-                  return;
-               }
-
-               if(helpContent != null)
-               {
-                  optionalSection.get().withHelpContent(helpContent);
-               }
-               else
-               {
-                  optionalSection.get().removeHelpContent(roles);
-               }
-            }
+            processHelpContentForTable(key, tableName, sectionName, fieldName, roles, helpContent);
          }
          else if(StringUtils.hasContent(processName))
          {
-            QProcessMetaData process = qInstance.getProcess(processName);
-            if(process == null)
-            {
-               LOG.info("Unrecognized process in help content", logPair("key", key));
-               return;
-            }
+            processHelpContentForProcess(key, processName, fieldName, roles, helpContent);
+         }
+         else if(StringUtils.hasContent(widgetName))
+         {
+            processHelpContentForWidget(key, widgetName, slotName, helpContent);
 
-            if(StringUtils.hasContent(fieldName))
-            {
-               ////////////////////////////
-               // handle a process field //
-               ////////////////////////////
-               Optional<QFieldMetaData> optionalField = CollectionUtils.mergeLists(process.getInputFields(), process.getOutputFields())
-                  .stream().filter(f -> fieldName.equals(f.getName()))
-                  .findFirst();
-
-               if(optionalField.isEmpty())
-               {
-                  LOG.info("Unrecognized process field in help content", logPair("key", key));
-                  return;
-               }
-
-               if(helpContent != null)
-               {
-                  optionalField.get().withHelpContent(helpContent);
-               }
-               else
-               {
-                  optionalField.get().removeHelpContent(roles);
-               }
-            }
          }
       }
       catch(Exception e)
       {
          LOG.warn("Error processing a helpContent record", e, logPair("id", record.getValue("id")));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processHelpContentForTable(String key, String tableName, String sectionName, String fieldName, Set<HelpRole> roles, QHelpContent helpContent)
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(tableName);
+      if(table == null)
+      {
+         LOG.info("Unrecognized table in help content", logPair("key", key));
+      }
+      else if(StringUtils.hasContent(fieldName))
+      {
+         //////////////////////////
+         // handle a table field //
+         //////////////////////////
+         QFieldMetaData field = table.getFields().get(fieldName);
+         if(field == null)
+         {
+            LOG.info("Unrecognized table field in help content", logPair("key", key));
+         }
+         else if(helpContent != null)
+         {
+            field.withHelpContent(helpContent);
+         }
+         else
+         {
+            field.removeHelpContent(roles);
+         }
+      }
+      else if(StringUtils.hasContent(sectionName))
+      {
+         ////////////////////////////
+         // handle a table section //
+         ////////////////////////////
+         Optional<QFieldSection> optionalSection = table.getSections().stream().filter(s -> sectionName.equals(s.getName())).findFirst();
+         if(optionalSection.isEmpty())
+         {
+            LOG.info("Unrecognized table section in help content", logPair("key", key));
+         }
+         else if(helpContent != null)
+         {
+            optionalSection.get().withHelpContent(helpContent);
+         }
+         else
+         {
+            optionalSection.get().removeHelpContent(roles);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processHelpContentForProcess(String key, String processName, String fieldName, Set<HelpRole> roles, QHelpContent helpContent)
+   {
+      QProcessMetaData process = QContext.getQInstance().getProcess(processName);
+      if(process == null)
+      {
+         LOG.info("Unrecognized process in help content", logPair("key", key));
+      }
+      else if(StringUtils.hasContent(fieldName))
+      {
+         ////////////////////////////
+         // handle a process field //
+         ////////////////////////////
+         Optional<QFieldMetaData> optionalField = CollectionUtils.mergeLists(process.getInputFields(), process.getOutputFields())
+            .stream().filter(f -> fieldName.equals(f.getName()))
+            .findFirst();
+
+         if(optionalField.isEmpty())
+         {
+            LOG.info("Unrecognized process field in help content", logPair("key", key));
+         }
+         else if(helpContent != null)
+         {
+            optionalField.get().withHelpContent(helpContent);
+         }
+         else
+         {
+            optionalField.get().removeHelpContent(roles);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processHelpContentForWidget(String key, String widgetName, String slotName, QHelpContent helpContent)
+   {
+      QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(widgetName);
+      if(!StringUtils.hasContent(slotName))
+      {
+         LOG.info("Missing slot name in help content", logPair("key", key));
+      }
+      else if(widget == null)
+      {
+         LOG.info("Unrecognized widget in help content", logPair("key", key));
+      }
+      else
+      {
+         Map<String, QHelpContent> widgetHelpContent = widget.getHelpContent();
+         if(widgetHelpContent == null)
+         {
+            widgetHelpContent = new HashMap<>();
+         }
+
+         if(helpContent != null)
+         {
+            widgetHelpContent.put(slotName, helpContent);
+         }
+         else
+         {
+            widgetHelpContent.remove(slotName);
+         }
+
+         widget.setHelpContent(widgetHelpContent);
       }
    }
 

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
@@ -59,6 +60,8 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    private boolean showExportButton = false;
 
    protected Map<String, QIcon> icons;
+
+   protected Map<String, QHelpContent> helpContent;
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
@@ -686,5 +689,36 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
       this.tooltip = tooltip;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, QHelpContent> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, QHelpContent> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QWidgetMetaData withHelpContent(Map<String, QHelpContent> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
 
 }
