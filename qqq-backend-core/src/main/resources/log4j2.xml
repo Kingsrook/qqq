@@ -20,6 +20,12 @@
    <Loggers>
       <Logger name="org.apache.log4j.xml" additivity="false">
       </Logger>
+      <Logger name="org.mongodb.driver" level="WARN">
+      </Logger>
+      <Logger name="org.eclipse.jetty" level="INFO">
+      </Logger>
+      <Logger name="io.javalin" level="INFO">
+      </Logger>
       <Root level="all">
          <AppenderRef ref="SystemOutAppender"/>
          <AppenderRef ref="SyslogAppender"/>

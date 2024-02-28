@@ -1,0 +1,272 @@
+== RecordLookupHelper
+include::../variables.adoc[]
+
+`RecordLookupHelper` is a utility class that exists to help you... lookup records :)
+
+OK, I'll try to give a little more context:
+
+=== Motivation 1:  Performance
+One of the most significant performance optimizations that the team behind QQQ has found time and time again,
+is to minimize the number of times you have to perform an I/O operation.
+To just say it more plainly:
+Make fewer calls to your database (or other backend).
+
+This is part of why the DML actions in QQQ (InsertAction, UpdateAction, DeleteAction) are all written to work on multiple records:
+If you've got to insert 1,000 records, the performance difference between doing that as 1,000 SQL INSERT statements vs. just 1 statement cannot be overstated.
+
+Similarly then, for looking up records:
+If we can do 1 round-trip to the database backend - that is - 1 query to fetch _n_ records,
+then in almost all cases it will be significantly faster than doing _n_ queries, one-by-one, for those _n_ records.
+
+The primary reason why `RecordLookupHelper` exists is to help you cut down on the number of times you have to make a round-trip to a backend data store to fetch records within a process.
+
+[sidebar]
+This basically is version of caching, isn't it?
+Take a set of data from "far away" (e.g., database), and bring it "closer" (local or instance variables), for faster access.
+So we may describe this as a "cache" through the rest of this document.
+
+=== Motivation 2:  Convenience
+
+So, given that one wants to try to minimize the number of queries being executed to look up data in a QQQ processes,
+one can certainly do this "by-hand" in each process that they write.
+
+Doing this kind of record caching in a QQQ Process `BackendStep` may be done as:
+
+* Adding a `Map<Integer, QRecord>` as a field in your class.
+* Setting up and running a `QueryAction`, with a filter based on the collection of the keys you need to look up, then iterating over (or streaming) the results into the map field.
+* Getting values out of the map when you need to use them (dealing with missing values as needed).
+
+That's not so bad, but, it does get a little verbose, especially if you're going to have several such caches in your class.
+
+As such, the second reason that `RecordLookupHelper` exists, is to be a reusable and convenient way to do this kind of optimization,
+by providing methods to perform the bulk query & map building operation described above,
+while also providing some convenient methods for accessing such data after it's been fetched.
+In addition, a single instance of `RecordLookupHelper` can provide this service for multiple tables at once
+(e.g., so you don't need to add a field to your class for each type of data that you're trying to cache).
+
+=== Use Cases
+==== Preload records, then access them
+Scenario:
+
+* We're writing a process `BackendStep` that uses `shipment` records as input.
+* We need to know the `order` record associated with each `shipment` (via an `orderId` foreign key), for some business logic that isn't germaine to the explanation of `RecordLookupHelper`.
+* We also to access some field on the `shippingPartner` record assigned to each `shipment`.
+** Note that here, the `shipment` table has a `partnerCode` field, which relates to the `code` unique-key in the `shippingPartner` table.
+** It's also worth mentioning, we only have a handful of `shippingPartner` records in our database, and we never expect to have very many more than that.
+
+[source,java]
+.Example of a process step using a RecordLookupHelper to preload records
+----
+public class MyShipmentProcessStep implements BackendStep
+{
+   // Add a new RecordLookupHelper field, which will "cache" both orders and shippingPartners
+   private RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
+
+   @Override
+   public void run(RunBackendStepInput input, RunBackendStepOutput output) throws QException;
+   {
+      // lookup the full shippingPartner table (because it's cheap & easy to do so)
+      // use the partner's "code" as the key field (e.g,. they key in the helper's internal map).
+      recordLookupHelper.preloadRecords("shippingPartner", "code");
+
+      // get all of the orderIds from the input shipments
+      List<Serializable> orderIds = input.getRecords().stream()
+         .map(r -> r.getValue("id")).toList();
+
+      // fetch the orders related to by these shipments
+      recordLookupHelper.preloadRecords("order", "id", orderIds);
+
+      for(QRecord shipment : input.getRecords())
+      {
+         // get someConfigField from the shippingPartner assigned to the shipment
+         Boolean someConfig = recordLookupHelper.getRecordValue("shippingPartner", "someConfigField", "code", shipment.getValue("partnerCode"));
+
+         // get the order record assigned to the shipment
+         QRecord order = recordLookupHelper.getRecordByKey("order", "id", shipment.getValue("orderId"));
+      }
+   }
+}
+----
+
+==== Lazy fetching records
+Scenario:
+
+* We have a `BackendStep` that is taking in `purchaseOrderHeader` records, from an API partner.
+* For each record, we need to make an API call to the partner to fetch the `purchaseOrderLine` records under that header.
+** In this contrived example, the partner's API forces us to do these lookups order-by-order...
+* Each `purchaseOrderLine` that we fetch will have a `sku` on it - a reference to our `item` table.
+** We need to look up each `item` to apply some business logic.
+** We assume there are very many item records in the backend database, so we don't want to pre-load the full table.
+Also, we don't know what `sku` values we will need until we fetch the `purchaseOrderLine`.
+
+This is a situation where we can use `RecordLookupHelper` to lazily fetch the `item` records as we discover them,
+and it will take care of not re-fetching ones that it has already loaded.
+
+[source,java]
+.Example of a process step using a RecordLookupHelper to lazy fetch records
+----
+public class MyPurchaseOrderProcessStep implements BackendStep
+{
+   // Add a new RecordLookupHelper field, which will "cache" lazy-loaded item records
+   private RecordLookupHelper recordLookupHelper = new RecordLookupHelper();
+
+   @Override
+   public void run(RunBackendStepInput input, RunBackendStepOutput output) throws QException;
+   {
+      for(QRecord poHeader : input.getRecords())
+      {
+         // fetch the lines under the header
+         Serializable poNo = poHeader.getValue("poNo");
+         List<QRecord> poLines = new QueryAction().execute(new QueryInput("purchaseOrderLine")
+            .withFilter(new QQueryFilter(new QFilterCriteria("poNo", EQUALS, poNo))));
+
+         for(QRecord poLine : poLines)
+         {
+            // use recordLookupHelper to lazy-load item records by SKU.
+            QRecord item = recordLookupHelper.getRecordByKey("item", "sku", poLine.getValue("sku"));
+
+            // business logic related to item performed here.
+         }
+      }
+   }
+}
+----
+
+In this example, we will be doing exactly 1 query on the `item` table for each unique `sku` that is found across all of the `poLine` records we process.
+That is to say, if the same `sku` appears on only 1 `poLine`, or if it appears on 100 `poLines`, we will still only query once for that `sku`.
+
+A slight tweak could be made to the example above, to make 1 `item` table lookup for each `poHeader` record:
+
+[source,java]
+.Tweaked example doing 1 item lookup per poLine
+----
+// continuing from above, after the List<QRecord> poLines has been built
+
+// get all of the skus from the lines
+List<Serializable> skus = poLines.stream().map(r -> r.getValue("sku")).toList();
+
+// preload the items for the skus
+recordLookupHelper.preloadRecords("item", "sku", new QQueryFilter(new QFilterCriteria("sku", IN, skus)));
+
+for(QRecord poLine : poLines)
+{
+   // get the items from the helper
+   QRecord item = recordLookupHelper.getRecordByKey("item", "sku", poLine.getValue("sku"));
+
+----
+
+In this example, we've made a trade-off:  We will query the `item` table exactly 1 time for each `poHeader` that we process.
+However, if the same `sku` is on every PO that we process, we will end up fetching it multiple times.
+
+This could end up being better or worse than the previous example, depending on the distribution of the data we are dealing with.
+
+A further tweak, a hybrid approach, could potentially reap the benefits of both of these examples (at the tradeoff of, more code, more complexity):
+
+[source,java]
+.Tweaked example doing 1 item lookup per poLine, but only for not-previously-encountered skus
+----
+// Critically - we must tell our recordLookupHelper to NOT do any one-off lookups in this table
+recordLookupHelper.setMayNotDoOneOffLookups("item", "sku");
+
+// continuing from above, after the List<QRecord> poLines has been built
+
+// get all of the skus from the lines
+List<Serializable> skus = poLines.stream().map(r -> r.getValue("sku")).toList();
+
+// determine which skus have not yet been loaded - e.g., they are not in the recordLookupHelper.
+// this is why we needed to tell it above not to do one-off lookups; else it would lazy-load each sku here.
+List<Serializable> skusToLoad = new ArrayList<>();
+for(Serializable sku : skus)
+{
+   if(recordLookupHelper.getRecordByKey("item", "sku", sku) == null)
+   {
+      skusToLoad.add(sku);
+   }
+}
+
+// preload the item records for any skus that are still needed
+if(!skusToLoad.isEmpty())
+{
+   recordLookupHelper.preloadRecords("item", "sku",
+      new QQueryFilter(new QFilterCriteria("sku", IN, skusToLoad)));
+}
+
+// continue as above
+
+----
+
+In this example, we will start by querying the `item` table once for each `poHeader`, but,
+if we eventually encounter a PO where all of its `skus` have already been loaded, then we may be able to avoid any `item` queries for such a PO.
+
+=== Implementation Details
+
+* Internally, an instance of `RecordLookupHelper` maintains a number of `Maps`,
+with QQQ table names and field names as keys.
+* The accessing/lazy-fetching methods (e.g., any method whose name starts with `getRecord`)
+all begin by looking in these internal maps for the `tableName` and `keyFieldName` that they take as parameters.
+** If they find an entry in the maps, then it is used for producing a return value.
+** If they do not find an entry, then they will perform the a `QueryAction`,
+to try to fetch the requested record from the table's backend.
+*** Unless the `setMayNotDoOneOffLookups` method has been called for the `(tableName, keyFieldName)` pair.
+
+=== Full API
+
+==== Methods for accessing and lazy-fetching
+* `getRecordByKey(String tableName, String keyFieldName, Serializable key)`
+
+Get a `QRecord` from `tableName`, where `keyFieldName` = `key`.
+
+* `getRecordValue(String tableName, String requestedField, String keyFieldName, Serializable key)`
+
+Get the field `requestedField` from the record in `tableName`, where `keyFieldName` = `key`, as a `Serializable`.
+If the record is not found, `null` is returned.
+
+* `getRecordValue(String tableName, String requestedField, String keyFieldName, Serializable key, Class<T> type)`
+
+Get the field `requestedField` from the record in `tableName`, where `keyFieldName` = `key`, as an instance of `type`.
+If the record is not found, `null` is returned.
+
+* `getRecordId(String tableName, String keyFieldName, Serializable key)`
+
+Get the primary key of the record in `tableName`, where `keyFieldName` = `key`, as a `Serializable`.
+If the record is not found, `null` is returned.
+
+* `getRecordId(String tableName, String keyFieldName, Serializable key, Class<T> type)`
+
+Get the primary key of the record in `tableName`, where `keyFieldName` = `key`, as an instance of `type`.
+If the record is not found, `null` is returned.
+
+* `getRecordByUniqueKey(String tableName, Map<String, Serializable> uniqueKey)`
+
+Get a `QRecord` from `tableName`, where the record matches the field/value pairs in `uniqueKey`.
+
+_Note: this method does not use the same internal map as the rest of the class.
+As such, it does not take advantage of any data fetched via the preload methods.
+It is only used for caching lazy-fetches._
+
+==== Methods for preloading
+* `preloadRecords(String tableName, String keyFieldName)`
+
+Query for all records from `tableName`, storing them in an internal map keyed by the field `keyFieldName`.
+
+* `preloadRecords(String tableName, String keyFieldName, QQueryFilter filter)`
+
+Query for records matching `filter` from `tableName`,
+storing them in an internal map keyed by the field `keyFieldName`.
+
+* `preloadRecords(String tableName, String keyFieldName, List<Serializable> inList)`
+
+Query for records with the field `keyFieldName` having a value in `inList` from `tableName`,
+storing them in an internal map keyed by the field `keyFieldName`.
+
+==== Config Methods
+* `setMayNotDoOneOffLookups(String tableName, String fieldName)`
+
+For cases where you know that you have preloaded records for `tableName`, keyed by `fieldName`,
+and you know that some of the keys may not have been found,
+so you want to avoid doing a query when a missed key is found in one of the `getRecord...` methods,
+then if you call this method, an internal flag is set, which will prevent any such one-off lookups.
+
+In other words, if this method has been called for a `(tableName, fieldName)` pair,
+then the `getRecord...` methods will only look in the internal map for records,
+and no queries will be performed to look for records.
