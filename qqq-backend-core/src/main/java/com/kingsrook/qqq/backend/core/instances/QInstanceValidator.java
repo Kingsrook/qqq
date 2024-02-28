@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -85,6 +86,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -153,6 +155,7 @@ public class QInstanceValidator
       try
       {
          validateBackends(qInstance);
+         validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
          validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
@@ -207,12 +210,21 @@ public class QInstanceValidator
          if(assertCondition(StringUtils.hasContent(securityKeyType.getName()), "Missing name for a securityKeyType"))
          {
             assertCondition(Objects.equals(name, securityKeyType.getName()), "Inconsistent naming for securityKeyType: " + name + "/" + securityKeyType.getName() + ".");
-            assertCondition(!usedNames.contains(name), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + name);
+
+            String duplicateNameMessagePrefix = "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: ";
+            assertCondition(!usedNames.contains(name), duplicateNameMessagePrefix + name);
             usedNames.add(name);
+
             if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
             {
-               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + securityKeyType.getAllAccessKeyName());
+               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), duplicateNameMessagePrefix + securityKeyType.getAllAccessKeyName());
                usedNames.add(securityKeyType.getAllAccessKeyName());
+            }
+
+            if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+            {
+               assertCondition(!usedNames.contains(securityKeyType.getNullValueBehaviorKeyName()), duplicateNameMessagePrefix + securityKeyType.getNullValueBehaviorKeyName());
+               usedNames.add(securityKeyType.getNullValueBehaviorKeyName());
             }
 
             if(StringUtils.hasContent(securityKeyType.getPossibleValueSourceName()))
@@ -378,6 +390,23 @@ public class QInstanceValidator
             assertCondition(Objects.equals(name, automationProvider.getName()), "Inconsistent naming for automationProvider: " + name + "/" + automationProvider.getName() + ".");
             assertCondition(automationProvider.getType() != null, "Missing type for automationProvider: " + name);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAuthentication(QInstance qInstance)
+   {
+      QAuthenticationMetaData authentication = qInstance.getAuthentication();
+      if(authentication != null)
+      {
+         if(authentication.getCustomizer() != null)
+         {
+            validateSimpleCodeReference("Instance Authentication meta data customizer ", authentication.getCustomizer(), QAuthenticationModuleCustomizerInterface.class);
+         }
       }
    }
 

@@ -75,6 +75,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
@@ -1622,19 +1623,30 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientId"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: clientId");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: clientId");
+
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientId").withNullValueBehaviorKeyName("clientId"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: clientId");
 
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("warehouseId").withAllAccessKeyName("allAccess"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: allAccess");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withNullValueBehaviorKeyName("nullBehavior"));
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("warehouseId").withNullValueBehaviorKeyName("nullBehavior"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: nullBehavior");
 
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("allAccess"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: allAccess");
 
       assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withPossibleValueSourceName("nonPVS"))),
          "Unrecognized possibleValueSourceName in securityKeyType");
@@ -1816,6 +1828,19 @@ class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testAuthenticationCustomizer()
+   {
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(null)));
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ValidAuthCustomizer.class))));
+      assertValidationFailureReasons((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ArrayList.class))), "not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QTableMetaData newTable(String tableName, String... fieldNames)
    {
       QTableMetaData tableMetaData = new QTableMetaData()
@@ -1987,5 +2012,13 @@ class QInstanceValidatorTest extends BaseTest
          return null;
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class ValidAuthCustomizer implements QAuthenticationModuleCustomizerInterface {}
+
 }
 

@@ -59,41 +59,14 @@ public class Memoization<K, V>
 
 
    /*******************************************************************************
-    ** Get the memoized Value for a given input Key.
-    **
-    ** But note, this looks the same to the caller, whether the key just wasn't in
-    ** the internal map (e.g., had never been looked up), or if it was previously looked
-    ** up, and that returned null.  In either case, the optional will be empty.
-    **
-    ** See getMemoizedResult for where we can tell the difference (and we would
-    ** generally want to call that.
-    *******************************************************************************/
-   @Deprecated
-   public Optional<V> getResult(K key)
-   {
-      MemoizedResult<V> result = map.get(key);
-      if(result != null)
-      {
-         if(result.getTime().isAfter(Instant.now().minus(timeout)))
-         {
-            return (Optional.ofNullable(result.getResult()));
-         }
-      }
-
-      return (Optional.empty());
-   }
-
-
-
-   /*******************************************************************************
     ** Get the memoized Value for a given input Key - computing it if it wasn't previously
     ** memoized (or expired).
     **
-    ** In here, if the optional is empty, it means the value is null (whether that
+    ** If the returned Optional is empty, it means the value is null (whether that
     ** came form memoization, or from the lookupFunction, you don't care - the answer
     ** is null).
     *******************************************************************************/
-   public Optional<V> getResult(K key, UnsafeFunction<K, V, ?> lookupFunction)
+   public <E extends Exception> Optional<V> getResultThrowing(K key, UnsafeFunction<K, V, E> lookupFunction) throws E
    {
       MemoizedResult<V> result = map.get(key);
       if(result != null)
@@ -111,12 +84,33 @@ public class Memoization<K, V>
       /////////////////////////////////////////////////////////////////////////////////////////////
       // ok - either we never memoized this key, or it's expired, so, apply the lookup function, //
       // store the result, and then return the value (in an Optional.ofNullable)                 //
+      // and if the lookup function throws - then we let it throw.                               //
       /////////////////////////////////////////////////////////////////////////////////////////////
+      V value = lookupFunction.apply(key);
+      storeResult(key, value);
+      return (Optional.ofNullable(value));
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the memoized Value for a given input Key - computing it if it wasn't previously
+    ** memoized (or expired).
+    **
+    ** If a null value was memoized, the resulting optional here will be empty.
+    **
+    ** If the lookup function throws, then a null value will be memoized and an empty
+    ** Optional will be returned.
+    **
+    ** In here, if the optional is empty, it means the value is null (whether that
+    ** came form memoization, or from the lookupFunction, you don't care - the answer
+    ** is null).
+    *******************************************************************************/
+   public Optional<V> getResult(K key, UnsafeFunction<K, V, ?> lookupFunction)
+   {
       try
       {
-         V value = lookupFunction.apply(key);
-         storeResult(key, value);
-         return (Optional.ofNullable(value));
+         return getResultThrowing(key, lookupFunction);
       }
       catch(Exception e)
       {
@@ -131,8 +125,8 @@ public class Memoization<K, V>
    /*******************************************************************************
     ** Get a memoized result, optionally containing a Value, for a given input Key.
     **
-    ** In this method (contrasted with getResult), if the returned Optional is empty,
-    ** it means that we haven't ever looked up or memoized the key (or it's expired).
+    ** If the returned Optional is empty, it means that we haven't ever looked up
+    ** or memoized the key (or it's expired).
     **
     ** If the returned Optional is not empty, then it means we've memoized something
     ** (and it's not expired) - so if the Value from the MemoizedResult is null,

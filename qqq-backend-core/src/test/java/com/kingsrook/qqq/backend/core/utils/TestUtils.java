@@ -173,6 +173,7 @@ public class TestUtils
 
    public static final String SECURITY_KEY_TYPE_STORE                = "store";
    public static final String SECURITY_KEY_TYPE_STORE_ALL_ACCESS     = "storeAllAccess";
+   public static final String SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR  = "storeNullBehavior";
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
 
@@ -471,6 +472,7 @@ public class TestUtils
       return new QSecurityKeyType()
          .withName(SECURITY_KEY_TYPE_STORE)
          .withAllAccessKeyName(SECURITY_KEY_TYPE_STORE_ALL_ACCESS)
+         .withNullValueBehaviorKeyName(SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR)
          .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STORE);
    }
 
@@ -1252,7 +1254,6 @@ public class TestUtils
          "id","createDate","modifyDate","firstName","lastName","birthDate","email"
          """);
    }
-
 
 
 

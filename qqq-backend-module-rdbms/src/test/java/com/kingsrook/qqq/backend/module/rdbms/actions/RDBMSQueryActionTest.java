@@ -635,7 +635,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       insertInput.setTableName(TestUtils.TABLE_NAME_PERSON);
 
       InsertAction        insertAction = new InsertAction();
-      QBackendTransaction transaction = QBackendTransaction.openFor(insertInput);
+      QBackendTransaction transaction  = QBackendTransaction.openFor(insertInput);
 
       insertInput.setTransaction(transaction);
       insertInput.setRecords(List.of(
@@ -1325,13 +1325,13 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, null));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(2)
          .anyMatch(r -> r.getValueInteger("id").equals(1))
@@ -1369,13 +1369,13 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, null));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(6)
          .allMatch(r -> r.getValueInteger("storeId").equals(1) || r.getValueInteger("storeId").equals(3));
@@ -1411,7 +1411,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeId").equals(1));
@@ -1556,10 +1556,17 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // user with list of all ids shouldn't see the nulls (given that default null-behavior on this key type is DENY) //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
-      assertThat(new QueryAction().execute(queryInput).getRecords())
-         .hasSize(8)
-         .noneMatch(hasNullStoreId);
+      {
+         QSession qSession = new QSession();
+         for(Integer i : List.of(1, 2, 3, 4, 5))
+         {
+            qSession.withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, i);
+         }
+         QContext.setQSession(qSession);
+         assertThat(new QueryAction().execute(queryInput).getRecords())
+            .hasSize(8)
+            .noneMatch(hasNullStoreId);
+      }
 
       //////////////////////////////////////////////////////////////////////////
       // specifically set the null behavior to deny - repeat the last 2 tests //
@@ -1569,10 +1576,17 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
-      assertThat(new QueryAction().execute(queryInput).getRecords())
-         .hasSize(8)
-         .noneMatch(hasNullStoreId);
+      {
+         QSession qSession = new QSession();
+         for(Integer i : List.of(1, 2, 3, 4, 5))
+         {
+            qSession.withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, i);
+         }
+         QContext.setQSession(qSession);
+         assertThat(new QueryAction().execute(queryInput).getRecords())
+            .hasSize(8)
+            .noneMatch(hasNullStoreId);
+      }
 
       ///////////////////////////////////
       // change null behavior to ALLOW //
@@ -1598,10 +1612,17 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       ////////////////////////////////////////////////////
       // user with list of all ids should see the nulls //
       ////////////////////////////////////////////////////
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 2, 3, 4, 5)));
-      assertThat(new QueryAction().execute(queryInput).getRecords())
-         .hasSize(10)
-         .anyMatch(hasNullStoreId);
+      {
+         QSession qSession = new QSession();
+         for(Integer i : List.of(1, 2, 3, 4, 5))
+         {
+            qSession.withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, i);
+         }
+         QContext.setQSession(qSession);
+         assertThat(new QueryAction().execute(queryInput).getRecords())
+            .hasSize(10)
+            .anyMatch(hasNullStoreId);
+      }
    }
 
 
@@ -1644,7 +1665,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeId").equals(1));

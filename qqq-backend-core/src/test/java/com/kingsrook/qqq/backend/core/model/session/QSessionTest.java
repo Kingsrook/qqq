@@ -52,7 +52,8 @@ class QSessionTest extends BaseTest
       assertEquals(List.of(1701), session.getSecurityKeyValues("warehouseId"));
       assertEquals(List.of(), session.getSecurityKeyValues("tenantId"));
 
-      session.withSecurityKeyValues("clientId", List.of(256, 512));
+      session.withSecurityKeyValue("clientId", 256);
+      session.withSecurityKeyValue("clientId", 512);
       for(int i : List.of(42, 47, 256, 512))
       {
          assertTrue(session.hasSecurityKeyValue("clientId", i), "Should contain: " + i);

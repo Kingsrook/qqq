@@ -420,6 +420,10 @@ public class QJavalinImplementation
          authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
          authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
 
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // put the qInstance into context - but no session yet (since, the whole point of this call is to manage the session!) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QContext.init(qInstance, null);
          QSession session = authenticationModule.createSession(qInstance, authContext);
 
          context.cookie(SESSION_UUID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
@@ -524,7 +528,10 @@ public class QJavalinImplementation
             }
          }
 
-         QContext.init(qInstance, null); // hmm...
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // put the qInstance into context - but no session yet (since, the whole point of this call is to setup the session!) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QContext.init(qInstance, null);
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, input);
 
