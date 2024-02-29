@@ -35,6 +35,8 @@ public class ParentWidgetData extends QWidgetData
    private List<String> childWidgetNameList;
    private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
 
+   private boolean isLabelPageTitle = false;
+
 
 
    /*******************************************************************************
@@ -120,5 +122,35 @@ public class ParentWidgetData extends QWidgetData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for isLabelPageTitle
+    *******************************************************************************/
+   public boolean getIsLabelPageTitle()
+   {
+      return (this.isLabelPageTitle);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isLabelPageTitle
+    *******************************************************************************/
+   public void setIsLabelPageTitle(boolean isLabelPageTitle)
+   {
+      this.isLabelPageTitle = isLabelPageTitle;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isLabelPageTitle
+    *******************************************************************************/
+   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
+   {
+      this.isLabelPageTitle = isLabelPageTitle;
+      return (this);
+   }
 
 }

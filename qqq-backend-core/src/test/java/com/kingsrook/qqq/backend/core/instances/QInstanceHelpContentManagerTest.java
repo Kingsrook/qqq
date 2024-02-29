@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.instances;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
@@ -37,13 +38,16 @@ import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContent;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentRole;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpRole;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -179,6 +183,40 @@ class QInstanceHelpContentManagerTest extends BaseTest
       // now - post-insert customizer should have automatically added help content to the instance //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       assertOneGreetPersonFieldHelp(qInstance, "v1", Set.of(QHelpRole.INSERT_SCREEN));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidget() throws QException
+   {
+      /////////////////////////////////////
+      // get the instance from base test //
+      /////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      //////////////////////////////////////////////////////////
+      // first, assert there's no help content on the section //
+      //////////////////////////////////////////////////////////
+      QWidgetMetaDataInterface widget = qInstance.getWidget(PersonsByCreateDateBarChart.class.getSimpleName());
+      assertTrue(CollectionUtils.nullSafeIsEmpty(widget.getHelpContent()));
+
+      HelpContent recordEntity = new HelpContent()
+         .withId(1)
+         .withKey("widget:" + widget.getName() + ";slot:label")
+         .withContent("i need somebody")
+         .withRole(HelpContentRole.ALL_SCREENS.getId());
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(recordEntity));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // now - post-insert customizer should have automatically added help content to the instance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(widget.getHelpContent().containsKey("label"));
+      assertEquals("i need somebody", widget.getHelpContent().get("label").getContent());
    }
 
 

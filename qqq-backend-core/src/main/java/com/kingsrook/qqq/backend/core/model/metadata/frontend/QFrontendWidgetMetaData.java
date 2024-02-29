@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
@@ -57,7 +58,8 @@ public class QFrontendWidgetMetaData
    private boolean showReloadButton = false;
    private boolean showExportButton = false;
 
-   protected Map<String, QIcon> icons;
+   protected Map<String, QIcon>        icons;
+   protected Map<String, QHelpContent> helpContent;
 
    private final boolean hasPermission;
 
@@ -91,6 +93,8 @@ public class QFrontendWidgetMetaData
          this.showReloadButton = qWidgetMetaData.getShowReloadButton();
          this.icons = qWidgetMetaData.getIcons();
       }
+
+      this.helpContent = widgetMetaData.getHelpContent();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -258,5 +262,16 @@ public class QFrontendWidgetMetaData
    public String getTooltip()
    {
       return tooltip;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    **
+    *******************************************************************************/
+   public Map<String, QHelpContent> getHelpContent()
+   {
+      return helpContent;
    }
 }

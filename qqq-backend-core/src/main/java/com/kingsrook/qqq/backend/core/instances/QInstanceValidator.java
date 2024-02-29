@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
@@ -53,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -161,6 +163,7 @@ public class QInstanceValidator
          validateProcesses(qInstance);
          validateReports(qInstance);
          validateApps(qInstance);
+         validateWidgets(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
@@ -1575,7 +1578,48 @@ public class QInstanceValidator
                   }
                }
             }
+
+            //////////////////////
+            // validate widgets //
+            //////////////////////
+            for(String widgetName : CollectionUtils.nonNullList(app.getWidgets()))
+            {
+               assertCondition(qInstance.getWidget(widgetName) != null, "App " + appName + " widget " + widgetName + " is not a recognized widget.");
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateWidgets(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getWidgets()))
+      {
+         qInstance.getWidgets().forEach((widgetName, widget) ->
+            {
+               assertCondition(Objects.equals(widgetName, widget.getName()), "Inconsistent naming for widget: " + widgetName + "/" + widget.getName() + ".");
+
+               if(assertCondition(widget.getCodeReference() != null, "Missing codeReference for widget: " + widgetName))
+               {
+                  validateSimpleCodeReference("Widget " + widgetName + " code reference: ", widget.getCodeReference(), AbstractWidgetRenderer.class);
+               }
+
+               if(widget instanceof ParentWidgetMetaData parentWidgetMetaData)
+               {
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(parentWidgetMetaData.getChildWidgetNameList()), "Missing child widgets for parent widget: " + widget.getName()))
+                  {
+                     for(String childWidgetName : parentWidgetMetaData.getChildWidgetNameList())
+                     {
+                        assertCondition(qInstance.getWidget(childWidgetName) != null, "Unrecognized child widget name [" + childWidgetName + "] in parent widget: " + widget.getName());
+                     }
+                  }
+               }
+            }
+         );
       }
    }
 
