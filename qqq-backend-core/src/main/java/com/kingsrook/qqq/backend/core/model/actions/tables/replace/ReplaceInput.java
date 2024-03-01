@@ -39,6 +39,7 @@ public class ReplaceInput extends AbstractTableActionInput
    private UniqueKey           key;
    private List<QRecord>       records;
    private QQueryFilter        filter;
+   private boolean             performDeletes = true;
 
    private boolean omitDmlAudit = false;
 
@@ -204,6 +205,37 @@ public class ReplaceInput extends AbstractTableActionInput
    public ReplaceInput withOmitDmlAudit(boolean omitDmlAudit)
    {
       this.omitDmlAudit = omitDmlAudit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for performDeletes
+    *******************************************************************************/
+   public boolean getPerformDeletes()
+   {
+      return (this.performDeletes);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for performDeletes
+    *******************************************************************************/
+   public void setPerformDeletes(boolean performDeletes)
+   {
+      this.performDeletes = performDeletes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for performDeletes
+    *******************************************************************************/
+   public ReplaceInput withPerformDeletes(boolean performDeletes)
+   {
+      this.performDeletes = performDeletes;
       return (this);
    }
 
