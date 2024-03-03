@@ -44,7 +44,8 @@ public class RecordPipe
    private static final long BLOCKING_SLEEP_MILLIS = 100;
    private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes
 
-   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(1_000);
+   private int capacity = 1_000;
+   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(capacity);
 
    private boolean isTerminated = false;
 
@@ -72,6 +73,7 @@ public class RecordPipe
     *******************************************************************************/
    public RecordPipe(Integer overrideCapacity)
    {
+      this.capacity = overrideCapacity;
       queue = new ArrayBlockingQueue<>(overrideCapacity);
    }
 
@@ -213,4 +215,14 @@ public class RecordPipe
       this.postRecordActions = postRecordActions;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for capacity
+    **
+    *******************************************************************************/
+   public int getCapacity()
+   {
+      return capacity;
+   }
 }
