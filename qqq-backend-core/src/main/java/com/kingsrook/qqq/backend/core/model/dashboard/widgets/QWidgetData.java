@@ -34,6 +34,7 @@ import java.util.Map;
 public abstract class QWidgetData
 {
    private String       label;
+   private String       sublabel;
    private String       footerHTML;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
@@ -49,6 +50,7 @@ public abstract class QWidgetData
    private String                          dropdownNeedsSelectedText;
 
    private List<List<Serializable>> csvData;
+
 
 
    /*******************************************************************************
@@ -353,6 +355,37 @@ public abstract class QWidgetData
    public QWidgetData withCsvData(List<List<Serializable>> csvData)
    {
       this.csvData = csvData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sublabel
+    *******************************************************************************/
+   public String getSublabel()
+   {
+      return (this.sublabel);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sublabel
+    *******************************************************************************/
+   public void setSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sublabel
+    *******************************************************************************/
+   public QWidgetData withSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
       return (this);
    }
 
