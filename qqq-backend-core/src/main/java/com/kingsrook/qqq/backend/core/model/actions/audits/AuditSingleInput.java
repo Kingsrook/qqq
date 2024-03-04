@@ -41,7 +41,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  ** Input data to insert a single audit record (with optional child record)..
  *******************************************************************************/
-public class AuditSingleInput
+public class AuditSingleInput implements Serializable
 {
    private String  auditTableName;
    private String  auditUserName;
