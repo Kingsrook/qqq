@@ -103,7 +103,7 @@ class HealBadRecordAutomationStatusesProcessStepTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testOldRunning() throws QException
+   void testOldRunningUpdates() throws QException
    {
       /////////////////////////////////////////////////
       // temporarily remove the modify-date behavior //
@@ -156,6 +156,72 @@ class HealBadRecordAutomationStatusesProcessStepTest extends BaseTest
       assertEquals(1, output.getValueInteger("totalRecordsUpdated"));
       assertThat(queryAllRecords())
          .allMatch(r -> AutomationStatus.PENDING_UPDATE_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOldRunningInserts() throws QException
+   {
+      ///////////////////////////////////////////////////////////////
+      // temporarily remove the create-date & modify-date behavior //
+      ///////////////////////////////////////////////////////////////
+      QContext.getQInstance().getTable(tableName).getField("modifyDate").withBehavior(DynamicDefaultValueBehavior.NONE);
+      QContext.getQInstance().getTable(tableName).getField("createDate").withBehavior(DynamicDefaultValueBehavior.NONE);
+
+      //////////////////////////////////////////////////////////////////////////
+      // insert 2 records, one with an old createDate, one with 6 minutes ago //
+      // but set both with modifyDate very recent                             //
+      //////////////////////////////////////////////////////////////////////////
+      Instant old    = Instant.parse("2023-01-01T12:00:00Z");
+      Instant recent = Instant.now().minus(6, ChronoUnit.MINUTES);
+      new InsertAction().execute(new InsertInput(tableName).withRecords(List.of(
+         new QRecord().withValue("firstName", "Darin").withValue("createDate", old).withValue("modifyDate", recent),
+         new QRecord().withValue("firstName", "Tim").withValue("createDate", recent).withValue("modifyDate", recent)
+      )));
+      List<QRecord> records = queryAllRecords();
+
+      ///////////////////////////////////////////////////////
+      // put those records both in status: running-inserts //
+      ///////////////////////////////////////////////////////
+      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(QContext.getQInstance().getTable(tableName), records, AutomationStatus.RUNNING_INSERT_AUTOMATIONS, null);
+
+      assertThat(queryAllRecords())
+         .allMatch(r -> AutomationStatus.RUNNING_INSERT_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
+
+      //////////////////////////////////////////////////
+      // restore the createDate & modifyDate behavior //
+      //////////////////////////////////////////////////
+      QContext.getQInstance().getTable(tableName).getField("modifyDate").withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
+      QContext.getQInstance().getTable(tableName).getField("createDate").withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
+
+      /////////////////////////
+      // run code under test //
+      /////////////////////////
+      RunBackendStepOutput output = runProcessStep();
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // assert we updated 1 (the old one) to pending-inserts, the other left as running-inserts //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(1, output.getValueInteger("totalRecordsUpdated"));
+      assertThat(queryAllRecords())
+         .anyMatch(r -> AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId().equals(getAutomationStatus(r)))
+         .anyMatch(r -> AutomationStatus.RUNNING_INSERT_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
+
+      /////////////////////////////////
+      // re-run, with 3-minute limit //
+      /////////////////////////////////
+      output = runProcessStep(new RunBackendStepInput().withValues(Map.of("minutesOldLimit", 3)));
+
+      /////////////////////////////////////////////////////////////////
+      // assert that one updated too, and all are now pending-insert //
+      /////////////////////////////////////////////////////////////////
+      assertEquals(1, output.getValueInteger("totalRecordsUpdated"));
+      assertThat(queryAllRecords())
+         .allMatch(r -> AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
    }
 
 

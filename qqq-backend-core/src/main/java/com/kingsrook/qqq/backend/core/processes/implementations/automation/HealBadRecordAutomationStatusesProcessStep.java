@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -101,6 +102,31 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
    @Override
    public QProcessMetaData produce(QInstance qInstance) throws QException
    {
+      Function<String, QFrontendStepMetaData> makeReviewOrResultStep = (String name) -> new QFrontendStepMetaData()
+         .withName(name)
+         .withComponent(new NoCodeWidgetFrontendComponentMetaData()
+            .withOutput(new WidgetHtmlLine()
+               .withCondition(new QFilterCriteria("warningCount", QCriteriaOperator.GREATER_THAN, 0))
+               .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_YELLOW))
+               .withVelocityTemplate("<b>Warning:</b>"))
+            .withOutput(new WidgetHtmlLine()
+               .withCondition(new QFilterCriteria("warningCount", QCriteriaOperator.GREATER_THAN, 0))
+               .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_INDENT_1))
+               .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_YELLOW))
+               .withVelocityTemplate("""
+                  <ul>
+                     #foreach($string in $warnings)
+                        <li>$string</li>
+                     #end
+                  </ul>
+                  """)))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
+         .withViewField(new QFieldMetaData("review".equals(name) ? "totalRecordsToUpdate" : "totalRecordsUpdated", QFieldType.INTEGER) /* todo - didn't display commas... .withDisplayFormat(DisplayFormat.COMMAS) */)
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST))
+         .withRecordListField(new QFieldMetaData("tableName", QFieldType.STRING))
+         .withRecordListField(new QFieldMetaData("badStatus", QFieldType.STRING))
+         .withRecordListField(new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS) /* todo - didn't display commas... */);
+
       QProcessMetaData processMetaData = new QProcessMetaData()
          .withName(NAME)
          .withStepList(List.of(
@@ -110,36 +136,13 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
                .withFormField(new QFieldMetaData("tableName", QFieldType.STRING).withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME))
                .withFormField(new QFieldMetaData("minutesOldLimit", QFieldType.INTEGER).withDefaultValue(60)),
             new QBackendStepMetaData()
+               .withName("preview")
+               .withCode(new QCodeReference(getClass())),
+            makeReviewOrResultStep.apply("review"),
+            new QBackendStepMetaData()
                .withName("run")
                .withCode(new QCodeReference(getClass())),
-            new QFrontendStepMetaData()
-               .withName("output")
-
-               .withComponent(new NoCodeWidgetFrontendComponentMetaData()
-                  .withOutput(new WidgetHtmlLine()
-                     .withCondition(new QFilterCriteria("warningCount", QCriteriaOperator.GREATER_THAN, 0))
-                     .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_YELLOW))
-                     .withVelocityTemplate("<b>Warning:</b>"))
-                  .withOutput(new WidgetHtmlLine()
-                     .withCondition(new QFilterCriteria("warningCount", QCriteriaOperator.GREATER_THAN, 0))
-                     .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_INDENT_1))
-                     .withWrapper(HtmlWrapper.divWithStyles(HtmlWrapper.STYLE_YELLOW))
-                     .withVelocityTemplate("""
-                        <ul>
-                           #foreach($string in $warnings)
-                              <li>$string</li>
-                           #end
-                        </ul>
-                        """)))
-
-               .withComponent(new QFrontendComponentMetaData().withType(QComponentType.VIEW_FORM))
-               .withViewField(new QFieldMetaData("totalRecordsUpdated", QFieldType.INTEGER) /* todo - didn't display commas... .withDisplayFormat(DisplayFormat.COMMAS) */)
-
-               .withComponent(new QFrontendComponentMetaData().withType(QComponentType.RECORD_LIST))
-               .withRecordListField(new QFieldMetaData("tableName", QFieldType.STRING))
-               .withRecordListField(new QFieldMetaData("badStatus", QFieldType.STRING))
-               .withRecordListField(new QFieldMetaData("count", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS) /* todo - didn't display commas... */)
-
+            makeReviewOrResultStep.apply("result")
          ));
 
       return (processMetaData);
@@ -154,6 +157,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       int recordsUpdated = 0;
+      boolean isReview = "preview".equals(runBackendStepInput.getStepName());
 
       ////////////////////////////////////////////////////////////////////////
       // if a table name is given, validate it, and run for just that table //
@@ -167,7 +171,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
             throw (new QException("Unrecognized table name: " + tableName));
          }
 
-         recordsUpdated += processTable(tableName, runBackendStepInput, runBackendStepOutput, warnings);
+         recordsUpdated += processTable(isReview, tableName, runBackendStepInput, runBackendStepOutput, warnings);
       }
       else
       {
@@ -176,11 +180,12 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
          //////////////////////////////////////////////////////////////////////////
          for(QTableMetaData table : QContext.getQInstance().getTables().values())
          {
-            recordsUpdated += processTable(table.getName(), runBackendStepInput, runBackendStepOutput, warnings);
+            recordsUpdated += processTable(isReview, table.getName(), runBackendStepInput, runBackendStepOutput, warnings);
          }
       }
 
       runBackendStepOutput.addValue("totalRecordsUpdated", recordsUpdated);
+      runBackendStepOutput.addValue("totalRecordsToUpdate", recordsUpdated);
       runBackendStepOutput.addValue("warnings", warnings);
       runBackendStepOutput.addValue("warningCount", warnings.size());
 
@@ -198,7 +203,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
    /*******************************************************************************
     **
     *******************************************************************************/
-   private int processTable(String tableName, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<String> warnings)
+   private int processTable(boolean isReview, String tableName, RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<String> warnings)
    {
       try
       {
@@ -216,34 +221,42 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
             // find the modify-date field on the table //
             /////////////////////////////////////////////
             String modifyDateFieldName = null;
+            String createDateFieldName = null;
             for(QFieldMetaData field : table.getFields().values())
             {
                if(DynamicDefaultValueBehavior.MODIFY_DATE.equals(field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class)))
                {
                   modifyDateFieldName = field.getName();
-                  break;
+               }
+               if(DynamicDefaultValueBehavior.CREATE_DATE.equals(field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class)))
+               {
+                  createDateFieldName = field.getName();
                }
             }
 
-            if(modifyDateFieldName == null)
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+            // set up a filter to query for records either FAILED, or RUNNING w/ create/modify date too old //
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+            QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
+            filter.addSubFilter(new QQueryFilter().withCriteria(new QFilterCriteria(automationStatusFieldName, QCriteriaOperator.IN, AutomationStatus.FAILED_INSERT_AUTOMATIONS.getId(), AutomationStatus.FAILED_UPDATE_AUTOMATIONS.getId())));
+
+            if(modifyDateFieldName != null)
             {
-               warnings.add("Could not find a Modify Date field on table: " + tableName);
-               LOG.info("Couldn't find a MODIFY_DATE field on table", logPair("tableName", tableName));
-               return 0;
+               filter.addSubFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria(automationStatusFieldName, QCriteriaOperator.EQUALS, AutomationStatus.RUNNING_UPDATE_AUTOMATIONS.getId()))
+                  .withCriteria(new QFilterCriteria(modifyDateFieldName, QCriteriaOperator.LESS_THAN, NowWithOffset.minus(minutesOldLimit, ChronoUnit.MINUTES))));
             }
 
-            ////////////////////////////////////////////////////////////////////////
-            // query for records either FAILED, or RUNNING w/ modify date too old //
-            ////////////////////////////////////////////////////////////////////////
+            if(createDateFieldName != null)
+            {
+               filter.addSubFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria(automationStatusFieldName, QCriteriaOperator.EQUALS, AutomationStatus.RUNNING_INSERT_AUTOMATIONS.getId()))
+                  .withCriteria(new QFilterCriteria(createDateFieldName, QCriteriaOperator.LESS_THAN, NowWithOffset.minus(minutesOldLimit, ChronoUnit.MINUTES))));
+            }
+
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
-            queryInput.setFilter(new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR)
-               .withSubFilter(new QQueryFilter()
-                  .withCriteria(new QFilterCriteria(automationStatusFieldName, QCriteriaOperator.IN, AutomationStatus.FAILED_INSERT_AUTOMATIONS.getId(), AutomationStatus.FAILED_UPDATE_AUTOMATIONS.getId())))
-               .withSubFilter(new QQueryFilter()
-                  .withCriteria(new QFilterCriteria(automationStatusFieldName, QCriteriaOperator.IN, AutomationStatus.RUNNING_INSERT_AUTOMATIONS.getId(), AutomationStatus.RUNNING_UPDATE_AUTOMATIONS.getId()))
-                  .withCriteria(new QFilterCriteria(modifyDateFieldName, QCriteriaOperator.LESS_THAN, NowWithOffset.minus(minutesOldLimit, ChronoUnit.MINUTES))))
-            );
+            queryInput.setFilter(filter);
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,7 +282,10 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
                }
             }
 
-            if(!recordsToUpdate.isEmpty())
+            //////////////////////////////////////////////////////////////////////////////////////
+            // if there are record to update (and this isn't the review step), then update them //
+            //////////////////////////////////////////////////////////////////////////////////////
+            if(!recordsToUpdate.isEmpty() && !isReview)
             {
                LOG.info("Healing bad record automation statuses", logPair("tableName", tableName), logPair("count", recordsToUpdate.size()));
                new UpdateAction().execute(new UpdateInput(tableName).withRecords(recordsToUpdate).withOmitTriggeringAutomations(true));
@@ -278,7 +294,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
             for(Map.Entry<String, Integer> entry : countByStatus.entrySet())
             {
                runBackendStepOutput.addRecord(new QRecord()
-                  .withValue("tableName", tableName)
+                  .withValue("tableName", QContext.getQInstance().getTable(tableName).getLabel())
                   .withValue("badStatus", entry.getKey())
                   .withValue("count", entry.getValue()));
             }
