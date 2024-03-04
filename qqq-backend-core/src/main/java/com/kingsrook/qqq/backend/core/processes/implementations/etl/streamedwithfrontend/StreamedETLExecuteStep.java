@@ -83,23 +83,32 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          // before it can put more records in.                                      //
          /////////////////////////////////////////////////////////////////////////////
          RecordPipe recordPipe;
-         Integer    overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
          if(overrideRecordPipeCapacity != null)
          {
             recordPipe = new RecordPipe(overrideRecordPipeCapacity);
-            LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+            LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
          }
          else
          {
-            overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+            overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
             if(overrideRecordPipeCapacity != null)
             {
                recordPipe = new RecordPipe(overrideRecordPipeCapacity);
-               LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
             }
             else
             {
-               recordPipe = new RecordPipe();
+               overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+               if(overrideRecordPipeCapacity != null)
+               {
+                  recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+                  LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               }
+               else
+               {
+                  recordPipe = new RecordPipe();
+               }
             }
          }
 

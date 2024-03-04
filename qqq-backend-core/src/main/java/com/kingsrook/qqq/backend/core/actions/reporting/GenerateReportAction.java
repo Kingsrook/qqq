@@ -273,7 +273,7 @@ public class GenerateReportAction
       RunBackendStepOutput  transformStepOutput = null;
       if(tableView != null && tableView.getRecordTransformStep() != null)
       {
-         transformStep = QCodeLoader.getBackendStep(AbstractTransformStep.class, tableView.getRecordTransformStep());
+         transformStep = QCodeLoader.getAdHoc(AbstractTransformStep.class, tableView.getRecordTransformStep());
 
          transformStepInput = new RunBackendStepInput();
          transformStepInput.setValues(reportInput.getInputValues());
