@@ -295,7 +295,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
          }
          catch(Exception e)
          {
-            LOG.debug("Error performing an audit", e);
+            LOG.warn("Error performing an audit", e);
          }
       }
 
