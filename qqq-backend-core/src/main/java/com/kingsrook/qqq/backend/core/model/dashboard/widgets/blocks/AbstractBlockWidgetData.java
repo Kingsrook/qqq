@@ -40,6 +40,8 @@ public abstract class AbstractBlockWidgetData<
    S extends BlockSlotsInterface,
    SX extends BlockStylesInterface> extends QWidgetData
 {
+   private String blockId;
+
    private BlockTooltip tooltip;
    private BlockLink    link;
 
@@ -382,5 +384,36 @@ public abstract class AbstractBlockWidgetData<
       this.styles = styles;
       return (T) this;
    }
+
+
+   /*******************************************************************************
+    ** Getter for blockId
+    *******************************************************************************/
+   public String getBlockId()
+   {
+      return (this.blockId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for blockId
+    *******************************************************************************/
+   public void setBlockId(String blockId)
+   {
+      this.blockId = blockId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for blockId
+    *******************************************************************************/
+   public T withBlockId(String blockId)
+   {
+      this.blockId = blockId;
+      return (T) this;
+   }
+
 
 }
