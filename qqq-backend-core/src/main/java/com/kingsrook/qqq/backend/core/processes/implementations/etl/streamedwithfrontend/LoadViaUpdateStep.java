@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -40,7 +41,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
  *******************************************************************************/
 public class LoadViaUpdateStep extends AbstractLoadStep
 {
-   public static final String FIELD_DESTINATION_TABLE = "destinationTable";
+   public static final String FIELD_DESTINATION_TABLE               = "destinationTable";
+   public static final String DO_NOT_UPDATE_MODIFY_DATE_FIELD_NAME  = "doNotUpdateModifyDateFieldName";
+   public static final String DO_NOT_TRIGGER_AUTOMATIONS_FIELD_NAME = "doNotTriggerAutomationsFieldName";
 
 
 
@@ -67,6 +70,15 @@ public class LoadViaUpdateStep extends AbstractLoadStep
       updateInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(updateInput::setTransaction);
       updateInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // look for flags in the input to either not update modify dates or not run automations //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      boolean doNotUpdateModifyDate   = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean(LoadViaUpdateStep.DO_NOT_UPDATE_MODIFY_DATE_FIELD_NAME));
+      boolean doNotTriggerAutomations = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean(LoadViaUpdateStep.DO_NOT_TRIGGER_AUTOMATIONS_FIELD_NAME));
+      updateInput.setOmitModifyDateUpdate(doNotUpdateModifyDate);
+      updateInput.setOmitTriggeringAutomations(doNotTriggerAutomations);
+
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
       runBackendStepOutput.getRecords().addAll(updateOutput.getRecords());
    }

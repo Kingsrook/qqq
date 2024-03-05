@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Unit test for DynamicDefaultValueBehavior 
+ ** Unit test for DynamicDefaultValueBehavior
  *******************************************************************************/
 class DynamicDefaultValueBehaviorTest extends BaseTest
 {
@@ -53,7 +54,7 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
       QRecord record = new QRecord().withValue("id", 1);
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
 
       assertNotNull(record.getValue("createDate"));
       assertNotNull(record.getValue("modifyDate"));
@@ -71,10 +72,29 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
       QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
       QRecord record = new QRecord().withValue("id", 1);
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record), null);
 
       assertNull(record.getValue("createDate"));
       assertNotNull(record.getValue("modifyDate"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOmitModifyDateUpdate()
+   {
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      Set<FieldBehavior<?>> behaviorsToOmit = Set.of(DynamicDefaultValueBehavior.MODIFY_DATE);
+      QRecord               record          = new QRecord().withValue("id", 1);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record), behaviorsToOmit);
+
+      assertNull(record.getValue("createDate"));
+      assertNull(record.getValue("modifyDate"));
    }
 
 
@@ -92,11 +112,11 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
 
       QRecord record = new QRecord().withValue("id", 1);
 
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
       assertNull(record.getValue("createDate"));
       assertNull(record.getValue("modifyDate"));
 
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record), null);
       assertNull(record.getValue("createDate"));
       assertNull(record.getValue("modifyDate"));
    }
@@ -114,7 +134,7 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
       table.getField("createDate").withType(QFieldType.DATE);
 
       QRecord record = new QRecord().withValue("id", 1);
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
       assertNotNull(record.getValue("createDate"));
       assertThat(record.getValue("createDate")).isInstanceOf(LocalDate.class);
    }
@@ -132,7 +152,7 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
       table.getField("firstName").withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
 
       QRecord record = new QRecord().withValue("id", 1);
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record));
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
       assertNull(record.getValue("firstName"));
    }
 

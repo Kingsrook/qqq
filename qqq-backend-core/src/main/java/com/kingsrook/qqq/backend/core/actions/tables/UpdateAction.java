@@ -57,6 +57,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -72,6 +74,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -244,7 +247,13 @@ public class UpdateAction
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, updateInput.getInstance(), table, updateInput.getRecords());
+      Set<FieldBehavior<?>> behaviorsToOmit = null;
+      if(BooleanUtils.isTrue(updateInput.getOmitModifyDateUpdate()))
+      {
+         behaviorsToOmit = Set.of(DynamicDefaultValueBehavior.MODIFY_DATE);
+      }
+
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, updateInput.getInstance(), table, updateInput.getRecords(), behaviorsToOmit);
       validatePrimaryKeysAreGiven(updateInput);
 
       if(oldRecordList.isPresent())
