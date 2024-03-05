@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -65,9 +66,13 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
     **
     *******************************************************************************/
    @Override
-   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field)
+   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field, Set<FieldBehavior<?>> behaviorsToOmit)
    {
       if(this.equals(NONE))
+      {
+         return;
+      }
+      if(behaviorsToOmit != null && behaviorsToOmit.contains(this))
       {
          return;
       }

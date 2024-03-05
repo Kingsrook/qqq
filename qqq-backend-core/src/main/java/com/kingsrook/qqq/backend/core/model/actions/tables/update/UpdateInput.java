@@ -52,8 +52,9 @@ public class UpdateInput extends AbstractTableActionInput
    private Boolean areAllValuesBeingUpdatedTheSame = null;
 
    private boolean omitTriggeringAutomations = false;
-   private boolean omitDmlAudit = false;
-   private String  auditContext = null;
+   private boolean omitDmlAudit              = false;
+   private boolean omitModifyDateUpdate      = false;
+   private String  auditContext              = null;
 
 
 
@@ -350,6 +351,37 @@ public class UpdateInput extends AbstractTableActionInput
    public UpdateInput withOmitTriggeringAutomations(boolean omitTriggeringAutomations)
    {
       this.omitTriggeringAutomations = omitTriggeringAutomations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitModifyDateUpdate
+    *******************************************************************************/
+   public boolean getOmitModifyDateUpdate()
+   {
+      return (this.omitModifyDateUpdate);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitModifyDateUpdate
+    *******************************************************************************/
+   public void setOmitModifyDateUpdate(boolean omitModifyDateUpdate)
+   {
+      this.omitModifyDateUpdate = omitModifyDateUpdate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitModifyDateUpdate
+    *******************************************************************************/
+   public UpdateInput withOmitModifyDateUpdate(boolean omitModifyDateUpdate)
+   {
+      this.omitModifyDateUpdate = omitModifyDateUpdate;
       return (this);
    }
 

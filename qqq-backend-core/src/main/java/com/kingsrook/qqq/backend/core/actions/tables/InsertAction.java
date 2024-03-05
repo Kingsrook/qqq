@@ -242,7 +242,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords());
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords(), null);
 
       runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
       setErrorsIfUniqueKeyErrors(insertInput, table);
@@ -455,7 +455,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    private QBackendModuleInterface getBackendModuleInterface(QBackendMetaData backend) throws QException
    {
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface qModule = qBackendModuleDispatcher.getQBackendModule(backend);
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
       return (qModule);
    }
 

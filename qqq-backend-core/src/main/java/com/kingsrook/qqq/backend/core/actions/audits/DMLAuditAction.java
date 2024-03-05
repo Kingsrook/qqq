@@ -187,7 +187,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
       }
       catch(Exception e)
       {
-         LOG.error("Error performing DML audit", e, logPair("type", String.valueOf(dmlType)), logPair("table", table.getName()));
+         LOG.warn("Error performing DML audit", e, logPair("type", String.valueOf(dmlType)), logPair("table", table.getName()));
       }
 
       return (output);

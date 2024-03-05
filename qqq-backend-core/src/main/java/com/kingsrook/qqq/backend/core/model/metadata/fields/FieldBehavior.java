@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -49,7 +50,7 @@ public interface FieldBehavior<T extends FieldBehavior<T>>
    /*******************************************************************************
     ** Apply this behavior to a list of records
     *******************************************************************************/
-   void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field);
+   void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field, Set<FieldBehavior<?>> behaviorsToOmit);
 
    /*******************************************************************************
     ** control if multiple behaviors of this type should be allowed together on a field.

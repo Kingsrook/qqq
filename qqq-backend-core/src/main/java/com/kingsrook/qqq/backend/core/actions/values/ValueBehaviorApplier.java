@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
@@ -32,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
- ** Utility class to apply value behaviors to records.  
+ ** Utility class to apply value behaviors to records.
  *******************************************************************************/
 public class ValueBehaviorApplier
 {
@@ -51,7 +52,7 @@ public class ValueBehaviorApplier
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void applyFieldBehaviors(Action action, QInstance instance, QTableMetaData table, List<QRecord> recordList)
+   public static void applyFieldBehaviors(Action action, QInstance instance, QTableMetaData table, List<QRecord> recordList, Set<FieldBehavior<?>> behaviorsToOmit)
    {
       if(CollectionUtils.nullSafeIsEmpty(recordList))
       {
@@ -62,7 +63,7 @@ public class ValueBehaviorApplier
       {
          for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(field.getBehaviors()))
          {
-            fieldBehavior.apply(action, recordList, instance, table, field);
+            fieldBehavior.apply(action, recordList, instance, table, field, behaviorsToOmit);
          }
       }
    }
