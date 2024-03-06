@@ -293,8 +293,25 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends QRecordEntity> List<T> loadTable(String tableName, Class<T> entityClass) throws QException
    {
+      return (loadTable(tableName, entityClass, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** Load all rows from a table as a RecordEntity, takes in a filter as well
+    **
+    ** Note, this is inherently unsafe, if you were to call it on a table with
+    ** too many rows...  Caveat emptor.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> List<T> loadTable(String tableName, Class<T> entityClass, QQueryFilter filter) throws QException
+   {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(tableName);
+      if(filter != null)
+      {
+         queryInput.setFilter(filter);
+      }
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
 
       List<T> rs = new ArrayList<>();
