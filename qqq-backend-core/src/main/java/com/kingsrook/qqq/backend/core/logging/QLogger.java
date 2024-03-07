@@ -122,6 +122,34 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static QCollectingLogger activateCollectingLoggerForClass(Class<?> c)
+   {
+      Logger            loggerFromLogManager = LogManager.getLogger(c);
+      QCollectingLogger collectingLogger     = new QCollectingLogger(loggerFromLogManager);
+
+      QLogger qLogger = getLogger(c);
+      qLogger.setLogger(collectingLogger);
+
+      return collectingLogger;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void deactivateCollectingLoggerForClass(Class<?> c)
+   {
+      Logger  loggerFromLogManager = LogManager.getLogger(c);
+      QLogger qLogger              = getLogger(c);
+      qLogger.setLogger(loggerFromLogManager);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void log(Level level, String message)
    {
       logger.log(level, () -> makeJsonString(message));
@@ -518,7 +546,7 @@ public class QLogger
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String makeJsonString(String message, Throwable t, List<LogPair> logPairList)
+   protected String makeJsonString(String message, Throwable t, List<LogPair> logPairList)
    {
       if(logPairList == null)
       {
@@ -619,5 +647,16 @@ public class QLogger
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       exceptionList.get(0).setHasLoggedLevel(level);
       return (level);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for logger
+    **
+    *******************************************************************************/
+   private void setLogger(Logger logger)
+   {
+      this.logger = logger;
    }
 }
