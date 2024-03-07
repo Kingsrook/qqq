@@ -1,0 +1,12 @@
+## https://github.com/casey/just
+
+default:
+   just --list
+
+build-index-html:
+   asciidoctor -a docinfo=shared index.adoc
+   line=$(grep 'Last updated' index.html) && sed -i "s/id=\"content\">/&$line/" index.html
+
+build-and-publish-index-html: build-index-html
+   scp index.html first-node:/mnt/first-volume/dkelkhoff/nginx/html/justinsgotskinnylegs.com/qqq-docs.html
+   @echo "Updated: https://justinsgotskinnylegs.com/qqq-docs.html"
