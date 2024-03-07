@@ -29,6 +29,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -491,6 +492,41 @@ class QInstanceEnricherTest extends BaseTest
       }
 
       return (tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCreateDateAndModifyDateBehaviors()
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      qInstance.addTable(newTable("A", "id", "createDate", "modifyDate"));
+      QTableMetaData table = qInstance.getTable("A");
+
+      ////////////////////////////////////////////////
+      // make sure behavior wasn't there by default //
+      ////////////////////////////////////////////////
+      assertNull(table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertNull(table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+
+      //////////////////////////////////////////////////////////////////
+      // make sure if config'ing off the adding of the behavior works //
+      //////////////////////////////////////////////////////////////////
+      new QInstanceEnricher(qInstance)
+         .withConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(false)
+         .enrich();
+      assertNull(table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertNull(table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure default value for the config (e.g., in a new enricher) is to add the behavior //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new QInstanceEnricher(qInstance).enrich();
+      assertEquals(DynamicDefaultValueBehavior.CREATE_DATE, table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertEquals(DynamicDefaultValueBehavior.MODIFY_DATE, table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
    }
 
 }

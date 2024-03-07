@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -787,4 +788,59 @@ class UpdateActionTest extends BaseTest
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUpdateDoNotUpdateModifyDate() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValues(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, ListBuilder.of(true)));
+
+      ////////////////////////////////////////////////////
+      // create a test order and capture its modifyDate //
+      ////////////////////////////////////////////////////
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      insertInput.setRecords(List.of(new QRecord()));
+      QRecord qRecord = new InsertAction().execute(insertInput).getRecords().get(0);
+
+      Instant initialModifyDate = qRecord.getValueInstant("modifyDate");
+      assertNotNull(initialModifyDate);
+
+      ///////////////////////////////////////////////////////////////////
+      // update the order, the modify date should be in the future now //
+      ///////////////////////////////////////////////////////////////////
+      {
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         updateInput.setRecords(List.of(qRecord));
+         QRecord updatedRecord = new UpdateAction().execute(updateInput).getRecords().get(0);
+
+         Instant newModifyDate = updatedRecord.getValueInstant("modifyDate");
+         assertNotNull(initialModifyDate);
+         assertThat(initialModifyDate).isBefore(newModifyDate);
+
+         /////////////////////////////////////////////////////////////////////////////
+         // set the initial modify date to this modify date for the next test below //
+         /////////////////////////////////////////////////////////////////////////////
+         initialModifyDate = newModifyDate;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // now do an update setting flag to not update the modify date, then compare, should be equal //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         UpdateInput updateInput = new UpdateInput();
+         updateInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         updateInput.setRecords(List.of(qRecord));
+         updateInput.setOmitModifyDateUpdate(true);
+         QRecord updatedRecord = new UpdateAction().execute(updateInput).getRecords().get(0);
+
+         Instant newModifyDate = updatedRecord.getValueInstant("modifyDate");
+         assertNotNull(initialModifyDate);
+         assertThat(initialModifyDate).isEqualTo(newModifyDate);
+      }
+   }
 }

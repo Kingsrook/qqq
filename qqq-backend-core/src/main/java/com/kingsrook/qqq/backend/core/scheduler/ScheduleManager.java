@@ -120,52 +120,68 @@ public class ScheduleManager
          return;
       }
 
-      for(QQueueProviderMetaData queueProvider : qInstance.getQueueProviders().values())
+      boolean needToClearContext = false;
+      try
       {
-         startQueueProvider(queueProvider);
-      }
-
-      for(QAutomationProviderMetaData automationProvider : qInstance.getAutomationProviders().values())
-      {
-         startAutomationProviderPerTable(automationProvider);
-      }
-
-      for(QProcessMetaData process : qInstance.getProcesses().values())
-      {
-         if(process.getSchedule() != null && allowedToStart(process.getName()))
+         if(QContext.getQInstance() == null)
          {
-            QScheduleMetaData scheduleMetaData = process.getSchedule();
-            if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+            needToClearContext = true;
+            QContext.init(qInstance, sessionSupplier.get());
+         }
+
+         for(QQueueProviderMetaData queueProvider : qInstance.getQueueProviders().values())
+         {
+            startQueueProvider(queueProvider);
+         }
+
+         for(QAutomationProviderMetaData automationProvider : qInstance.getAutomationProviders().values())
+         {
+            startAutomationProviderPerTable(automationProvider);
+         }
+
+         for(QProcessMetaData process : qInstance.getProcesses().values())
+         {
+            if(process.getSchedule() != null && allowedToStart(process.getName()))
             {
-               ///////////////////////////////////////////////
-               // if no variants, or variant is serial mode //
-               ///////////////////////////////////////////////
-               startProcess(process, null);
-            }
-            else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
-            {
-               /////////////////////////////////////////////////////////////////////////////////////////////////////
-               // if this a "parallel", which for example means we want to have a thread for each backend variant //
-               // running at the same time, get the variant records and schedule each separately                  //
-               /////////////////////////////////////////////////////////////////////////////////////////////////////
-               QContext.init(qInstance, sessionSupplier.get());
-               QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
-               for(QRecord qRecord : CollectionUtils.nonNullList(getBackendVariantFilteredRecords(process)))
+               QScheduleMetaData scheduleMetaData = process.getSchedule();
+               if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
                {
-                  try
+                  ///////////////////////////////////////////////
+                  // if no variants, or variant is serial mode //
+                  ///////////////////////////////////////////////
+                  startProcess(process, null);
+               }
+               else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+               {
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if this a "parallel", which for example means we want to have a thread for each backend variant //
+                  // running at the same time, get the variant records and schedule each separately                  //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////
+                  QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
+                  for(QRecord qRecord : CollectionUtils.nonNullList(getBackendVariantFilteredRecords(process)))
                   {
-                     startProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
-                  }
-                  catch(Exception e)
-                  {
-                     LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
+                     try
+                     {
+                        startProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+                     }
+                     catch(Exception e)
+                     {
+                        LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
+                     }
                   }
                }
+               else
+               {
+                  LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
+               }
             }
-            else
-            {
-               LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
-            }
+         }
+      }
+      finally
+      {
+         if(needToClearContext)
+         {
+            QContext.clear();
          }
       }
    }
@@ -210,8 +226,8 @@ public class ScheduleManager
       // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
       // then start a scheduled executor foreach one                                   //
       ///////////////////////////////////////////////////////////////////////////////////
-      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
-      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
+      for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
       {
          if(allowedToStart(tableAction.tableName()))
          {

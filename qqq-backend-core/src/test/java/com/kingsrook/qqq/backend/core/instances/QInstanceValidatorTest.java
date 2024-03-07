@@ -31,6 +31,9 @@ import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -46,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -75,6 +79,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
@@ -803,7 +808,7 @@ class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testChildNotInAnySections()
+   void testAppChildNotInAnySections()
    {
       QTableMetaData table = new QTableMetaData().withName("test")
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
@@ -818,6 +823,19 @@ class QInstanceValidatorTest extends BaseTest
          .withChild(new QTableMetaData().withName("test"))
          .withSection(new QAppSection("section1", "Section 1", new QIcon("person"), List.of("test"), null, null));
       assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not listed in any app sections");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppUnrecognizedWidgetName()
+   {
+      QAppMetaData app = new QAppMetaData().withName("test")
+         .withWidgets(List.of("no-such-widget"));
+      assertValidationFailureReasons((qInstance) -> qInstance.addApp(app), "not a recognized widget");
    }
 
 
@@ -1622,19 +1640,30 @@ class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientId"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: clientId");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: clientId");
+
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("clientId").withNullValueBehaviorKeyName("clientId"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: clientId");
 
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("warehouseId").withAllAccessKeyName("allAccess"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: allAccess");
+
+      assertValidationFailureReasons((qInstance ->
+      {
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withNullValueBehaviorKeyName("nullBehavior"));
+         qInstance.addSecurityKeyType(new QSecurityKeyType().withName("warehouseId").withNullValueBehaviorKeyName("nullBehavior"));
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: nullBehavior");
 
       assertValidationFailureReasons((qInstance ->
       {
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withAllAccessKeyName("allAccess"));
          qInstance.addSecurityKeyType(new QSecurityKeyType().withName("allAccess"));
-      }), "More than one SecurityKeyType with name (or allAccessKeyName) of: allAccess");
+      }), "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: allAccess");
 
       assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType().withName("clientId").withPossibleValueSourceName("nonPVS"))),
          "Unrecognized possibleValueSourceName in securityKeyType");
@@ -1816,6 +1845,78 @@ class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testAuthenticationCustomizer()
+   {
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(null)));
+      assertValidationSuccess((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ValidAuthCustomizer.class))));
+      assertValidationFailureReasons((qInstance -> qInstance.getAuthentication().withCustomizer(new QCodeReference(ArrayList.class))), "not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidgetNaming()
+   {
+      String name = PersonsByCreateDateBarChart.class.getSimpleName();
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName(null),
+         "Inconsistent naming for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName(""),
+         "Inconsistent naming for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withName("wrongName"),
+         "Inconsistent naming for widget");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testWidgetCodeReference()
+   {
+      String name = PersonsByCreateDateBarChart.class.getSimpleName();
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withCodeReference(null),
+         "Missing codeReference for widget");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getWidget(name).withCodeReference(new QCodeReference(ArrayList.class)),
+         "CodeReference is not of the expected type: class " + AbstractWidgetRenderer.class.getName());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testParentWidgets()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.addWidget(new ParentWidgetMetaData()
+            .withName("parentWidget")
+            .withCodeReference(new QCodeReference(ParentWidgetRenderer.class))
+         ),
+         "Missing child widgets");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addWidget(new ParentWidgetMetaData()
+            .withChildWidgetNameList(List.of("noSuchWidget"))
+            .withName("parentWidget")
+            .withCodeReference(new QCodeReference(ParentWidgetRenderer.class))
+         ),
+         "Unrecognized child widget name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QTableMetaData newTable(String tableName, String... fieldNames)
    {
       QTableMetaData tableMetaData = new QTableMetaData()
@@ -1987,5 +2088,13 @@ class QInstanceValidatorTest extends BaseTest
          return null;
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class ValidAuthCustomizer implements QAuthenticationModuleCustomizerInterface {}
+
 }
 

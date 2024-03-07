@@ -81,13 +81,41 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       // basically repeat the preview step, but with no limit //
       //////////////////////////////////////////////////////////
       runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
-      RecordPipe          recordPipe  = new RecordPipe();
+
       AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+
+      //////////////////////////////////////////////////////////////////////
+      // let the transform step override the capacity for the record pipe //
+      //////////////////////////////////////////////////////////////////////
+      RecordPipe recordPipe;
+      Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
+      if(overrideRecordPipeCapacity != null)
+      {
+         recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+         LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+      }
+      else
+      {
+         overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         if(overrideRecordPipeCapacity != null)
+         {
+            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+         }
+         else
+         {
+            recordPipe = new RecordPipe();
+         }
+      }
+
+      /////////////////////////////
+      // set up the extract step //
+      /////////////////////////////
       extractStep.setLimit(null);
       extractStep.setRecordPipe(recordPipe);
       extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();

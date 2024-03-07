@@ -1,0 +1,51 @@
+[#Widgets]
+== Widgets
+include::../variables.adoc[]
+
+Widgets are the most customizable UI components in QQQ.
+They can be used either on App Home Screens (e.g., as Dashboard screens),
+or they can be included into Record View screens.
+
+QQQ defines several types of widgets, such as charts (pie, bar, line),
+numeric displays, application-populated tables, or even fully custom HTML.
+
+=== QWidgetMetaData
+A Widget is defined in a QQQ Instance in a `*QWidgetMetaData*` object.
+
+*QWidgetMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the widget within the QQQ Instance.
+* `type` - *String, Required* - Specifies the UI & data type for the widget.
+* `label` - *String* - User-facing header or title for a widget.
+* `tooltip` - *String* - Text contents to be placed in a tooltip associated with the widget's label in the UI.
+** Values should come from the `WidgetType` enum's `getType()` method (e.g., `WidgetType.BAR_CHART.getType()`)
+* `gridColumns` - *Integer* - for a desktop-sized screen, in a 12-based grid,
+how many columns the widget should consume.
+* `codeReference` - *QCodeReference, Required* - Reference to the custom code,
+a subclass of `AbstractWidgetRenderer`, which is responsible for loading data to render the widget.
+* `footerHTML` - *String* - HTML String, which, if present, will be displayed in the
+footer of the widget (not supported by all widget types).
+* `isCard` - *boolean, default false* #TODO#
+* `showReloadButton` - *boolean, default true* #TODO#
+* `showExportButton` - *boolean, default false* #TODO#
+* `dropdowns` - #TODO#
+* `storeDropdownSelections` - *boolean* #TODO#
+* `icons` - *Map<String, QIcon>* #TODO#
+* `defaultValues` - *Map<String, Serializable>* #TODO#
+
+There are also some subclasses of `QWidgetMetaData`, for some specific widget types:
+
+*ParentWidgetMetaData Properties:*
+
+* `title` - *String* #TODO - how does this differ from label?#
+* `childWidgetNameList` - *List<String>, Required*
+* `childProcessNameList` - *List<String>* #TODO appears unused - check, and delete#
+* `laytoutType` - *enum of GRID or TABS, default GRID*
+
+*QNoCodeWidgetMetaData Properties:*
+
+* `values` - *List<AbstractWidgetValueSource>* #TODO#
+* `outputs` - *List<AbstractWidgetOutput>* #TODO#
+
+#TODO - Examples#
+

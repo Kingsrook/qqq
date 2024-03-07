@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.NullValueBehaviorUtil;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
@@ -230,7 +231,7 @@ public class ValidateRecordSecurityLockHelper
                   {
                      for(QRecord inputRecord : inputRecords)
                      {
-                        if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
+                        if(RecordSecurityLock.NullValueBehavior.DENY.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
                         {
                            inputRecord.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " this record - the referenced " + leftMostJoinTable.getLabel() + " was not found."));
                         }
@@ -298,7 +299,7 @@ public class ValidateRecordSecurityLockHelper
          /////////////////////////////////////////////////////////////////
          // handle null values - error if the NullValueBehavior is DENY //
          /////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.DENY.equals(recordSecurityLock.getNullValueBehavior()))
+         if(RecordSecurityLock.NullValueBehavior.DENY.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
          {
             String lockLabel = CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()) ? recordSecurityLock.getSecurityKeyType() : table.getField(recordSecurityLock.getFieldName()).getLabel();
             record.addError(new PermissionDeniedMessage("You do not have permission to " + action.name().toLowerCase() + " a record without a value in the field: " + lockLabel));

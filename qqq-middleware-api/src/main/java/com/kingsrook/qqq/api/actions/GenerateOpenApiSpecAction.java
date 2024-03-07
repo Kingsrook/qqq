@@ -1477,15 +1477,21 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
          {
-            List<String> enumValues  = new ArrayList<>();
-            List<String> enumMapping = new ArrayList<>();
-            for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // by default, we will list all enum values in the docs - but - a field's api-meta-data object can opt out //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(apiFieldMetaData == null || apiFieldMetaData.getListEnumPossibleValues())
             {
-               enumValues.add(String.valueOf(enumValue.getId()));
-               enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               List<String> enumValues  = new ArrayList<>();
+               List<String> enumMapping = new ArrayList<>();
+               for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+               {
+                  enumValues.add(String.valueOf(enumValue.getId()));
+                  enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               }
+               fieldSchema.setEnumValues(enumValues);
+               fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
             }
-            fieldSchema.setEnumValues(enumValues);
-            fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
          }
          else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
          {

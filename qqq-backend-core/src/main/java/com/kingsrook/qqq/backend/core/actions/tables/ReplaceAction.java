@@ -84,9 +84,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          String         primaryKeyField = table.getPrimaryKeyField();
          if(transaction == null)
          {
-            InsertInput insertInput = new InsertInput();
-            insertInput.setTableName(input.getTableName());
-            transaction = new InsertAction().openTransaction(insertInput);
+            transaction = QBackendTransaction.openFor(new InsertInput(input.getTableName()));
             weOwnTheTransaction = true;
          }
 
@@ -138,19 +136,22 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          output.setUpdateOutput(updateOutput);
 
-         QQueryFilter deleteFilter = new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.NOT_IN, primaryKeysToKeep));
-         if(input.getFilter() != null)
+         if(input.getPerformDeletes())
          {
-            deleteFilter.addSubFilter(input.getFilter());
-         }
+            QQueryFilter deleteFilter = new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.NOT_IN, primaryKeysToKeep));
+            if(input.getFilter() != null)
+            {
+               deleteFilter.addSubFilter(input.getFilter());
+            }
 
-         DeleteInput deleteInput = new DeleteInput();
-         deleteInput.setTableName(table.getName());
-         deleteInput.setQueryFilter(deleteFilter);
-         deleteInput.setTransaction(transaction);
-         deleteInput.setOmitDmlAudit(input.getOmitDmlAudit());
-         DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
-         output.setDeleteOutput(deleteOutput);
+            DeleteInput deleteInput = new DeleteInput();
+            deleteInput.setTableName(table.getName());
+            deleteInput.setQueryFilter(deleteFilter);
+            deleteInput.setTransaction(transaction);
+            deleteInput.setOmitDmlAudit(input.getOmitDmlAudit());
+            DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+            output.setDeleteOutput(deleteOutput);
+         }
 
          if(weOwnTheTransaction)
          {

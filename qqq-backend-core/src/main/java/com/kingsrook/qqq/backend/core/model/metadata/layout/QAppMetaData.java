@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
@@ -45,6 +47,8 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    private String name;
    private String label;
 
+   private Integer sortOrder = 500;
+
    private QPermissionRules permissionRules;
 
    private List<QAppChildMetaData> children;
@@ -54,6 +58,8 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
 
    private List<String>      widgets;
    private List<QAppSection> sections;
+
+   private Map<String, QSupplementalAppMetaData> supplementalMetaData;
 
 
 
@@ -437,4 +443,82 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    {
       qInstance.addApp(this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for sortOrder
+    *******************************************************************************/
+   public Integer getSortOrder()
+   {
+      return (this.sortOrder);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sortOrder
+    *******************************************************************************/
+   public void setSortOrder(Integer sortOrder)
+   {
+      this.sortOrder = sortOrder;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sortOrder
+    *******************************************************************************/
+   public QAppMetaData withSortOrder(Integer sortOrder)
+   {
+      this.sortOrder = sortOrder;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalMetaData
+    *******************************************************************************/
+   public Map<String, QSupplementalAppMetaData> getSupplementalMetaData()
+   {
+      return (this.supplementalMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for supplementalMetaData
+    *******************************************************************************/
+   public void setSupplementalMetaData(Map<String, QSupplementalAppMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QAppMetaData withSupplementalMetaData(QSupplementalAppMetaData supplementalMetaData)
+   {
+      if(this.supplementalMetaData == null)
+      {
+         this.supplementalMetaData = new HashMap<>();
+      }
+      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for supplementalMetaData
+    *******************************************************************************/
+   public QAppMetaData withSupplementalMetaData(Map<String, QSupplementalAppMetaData> supplementalMetaData)
+   {
+      this.supplementalMetaData = supplementalMetaData;
+      return (this);
+   }
+
 }

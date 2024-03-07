@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.io.IOException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestAbstractMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestDisabledMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestImplementsMetaDataProducer;
@@ -44,7 +44,7 @@ class MetaDataProducerHelperTest
     **
     *******************************************************************************/
    @Test
-   void test() throws IOException
+   void test() throws QException
    {
       QInstance qInstance = new QInstance();
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, "com.kingsrook.qqq.backend.core.model.metadata.producers");

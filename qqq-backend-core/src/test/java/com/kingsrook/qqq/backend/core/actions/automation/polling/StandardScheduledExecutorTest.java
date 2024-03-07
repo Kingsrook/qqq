@@ -186,9 +186,9 @@ class StandardScheduledExecutorTest extends BaseTest
     *******************************************************************************/
    private void runPollingAutomationExecutorForAwhile(QInstance qInstance, Supplier<QSession> sessionSupplier)
    {
-      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
       List<StandardScheduledExecutor>                    executors    = new ArrayList<>();
-      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
       {
          PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, sessionSupplier, tableAction);
          StandardScheduledExecutor       pollingAutomationExecutor       = new StandardScheduledExecutor(pollingAutomationPerTableRunner);

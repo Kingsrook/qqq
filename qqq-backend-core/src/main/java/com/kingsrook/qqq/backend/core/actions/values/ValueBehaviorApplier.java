@@ -23,18 +23,17 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
- ** Utility class to apply value behaviors to records.  
+ ** Utility class to apply value behaviors to records.
  *******************************************************************************/
 public class ValueBehaviorApplier
 {
@@ -42,16 +41,10 @@ public class ValueBehaviorApplier
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void applyFieldBehaviors(QInstance instance, QTableMetaData table, List<QRecord> recordList)
+   public enum Action
    {
-      for(QFieldMetaData field : table.getFields().values())
-      {
-         String fieldName = field.getName();
-         if(field.getType().equals(QFieldType.STRING) && field.getMaxLength() != null)
-         {
-            applyValueTooLongBehavior(instance, recordList, field, fieldName);
-         }
-      }
+      INSERT,
+      UPDATE
    }
 
 
@@ -59,31 +52,18 @@ public class ValueBehaviorApplier
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void applyValueTooLongBehavior(QInstance instance, List<QRecord> recordList, QFieldMetaData field, String fieldName)
+   public static void applyFieldBehaviors(Action action, QInstance instance, QTableMetaData table, List<QRecord> recordList, Set<FieldBehavior<?>> behaviorsToOmit)
    {
-      ValueTooLongBehavior valueTooLongBehavior = field.getBehavior(instance, ValueTooLongBehavior.class);
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
-      // don't process PASS_THROUGH - so we don't have to iterate over the whole record list to do noop //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(valueTooLongBehavior != null && !valueTooLongBehavior.equals(ValueTooLongBehavior.PASS_THROUGH))
+      if(CollectionUtils.nullSafeIsEmpty(recordList))
       {
-         for(QRecord record : recordList)
+         return;
+      }
+
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(field.getBehaviors()))
          {
-            String value = record.getValueString(fieldName);
-            if(value != null && value.length() > field.getMaxLength())
-            {
-               switch(valueTooLongBehavior)
-               {
-                  case TRUNCATE -> record.setValue(fieldName, StringUtils.safeTruncate(value, field.getMaxLength()));
-                  case TRUNCATE_ELLIPSIS -> record.setValue(fieldName, StringUtils.safeTruncate(value, field.getMaxLength(), "..."));
-                  case ERROR -> record.addError(new BadInputStatusMessage("The value for " + field.getLabel() + " is too long (max allowed length=" + field.getMaxLength() + ")"));
-                  case PASS_THROUGH ->
-                  {
-                  }
-                  default -> throw new IllegalStateException("Unexpected valueTooLongBehavior: " + valueTooLongBehavior);
-               }
-            }
+            fieldBehavior.apply(action, recordList, instance, table, field, behaviorsToOmit);
          }
       }
    }

@@ -35,6 +35,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import org.apache.commons.io.FileUtils;
@@ -118,6 +120,8 @@ class FilesystemSyncProcessTest extends BaseTest
          .withBackendName(TestUtils.BACKEND_NAME_LOCAL_FS)
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withBackendDetails(new FilesystemTableBackendDetails()
+            .withCardinality(Cardinality.MANY)
+            .withRecordFormat(RecordFormat.CSV)
             .withBasePath(subPath));
    }
 

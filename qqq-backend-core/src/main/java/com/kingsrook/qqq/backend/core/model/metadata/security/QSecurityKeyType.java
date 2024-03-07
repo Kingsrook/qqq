@@ -34,6 +34,7 @@ public class QSecurityKeyType implements TopLevelMetaDataInterface
 {
    private String name;
    private String allAccessKeyName;
+   private String nullValueBehaviorKeyName;
    private String possibleValueSourceName;
 
 
@@ -148,5 +149,36 @@ public class QSecurityKeyType implements TopLevelMetaDataInterface
    {
       qInstance.addSecurityKeyType(this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public String getNullValueBehaviorKeyName()
+   {
+      return (this.nullValueBehaviorKeyName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public void setNullValueBehaviorKeyName(String nullValueBehaviorKeyName)
+   {
+      this.nullValueBehaviorKeyName = nullValueBehaviorKeyName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public QSecurityKeyType withNullValueBehaviorKeyName(String nullValueBehaviorKeyName)
+   {
+      this.nullValueBehaviorKeyName = nullValueBehaviorKeyName;
+      return (this);
+   }
+
 
 }

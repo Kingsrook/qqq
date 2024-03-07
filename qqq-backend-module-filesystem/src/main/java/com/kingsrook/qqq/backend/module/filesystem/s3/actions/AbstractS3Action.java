@@ -30,7 +30,9 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -40,6 +42,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractF
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -126,7 +129,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** List the files for a table.
     *******************************************************************************/
    @Override
-   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase)
+   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
    {
       S3BackendMetaData                     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendBase);
       AbstractFilesystemTableBackendDetails tableDetails      = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
@@ -138,7 +141,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
       ////////////////////////////////////////////////////////////////////
       // todo - look at metadata to configure the s3 client here?       //
       ////////////////////////////////////////////////////////////////////
-      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob);
+      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob, filter, tableDetails);
    }
 
 
@@ -160,9 +163,18 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public void writeFile(QBackendMetaData backendMetaData, String path, byte[] contents) throws IOException
    {
-      path = stripLeadingSlash(stripDuplicatedSlashes(path));
       String bucketName = ((S3BackendMetaData) backendMetaData).getBucketName();
-      getS3Utils().writeFile(bucketName, path, contents);
+
+      try
+      {
+         path = stripLeadingSlash(stripDuplicatedSlashes(path));
+         getS3Utils().writeFile(bucketName, path, contents);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error writing file", e, logPair("path", path), logPair("bucketName", bucketName));
+         throw (new IOException("Error writing file", e));
+      }
    }
 
 
@@ -218,10 +230,11 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    @Override
    public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
    {
-      QBackendMetaData backend    = instance.getBackend(table.getBackendName());
-      String           bucketName = ((S3BackendMetaData) backend).getBucketName();
+      QBackendMetaData backend     = instance.getBackend(table.getBackendName());
+      String           bucketName  = ((S3BackendMetaData) backend).getBucketName();
+      String           cleanedPath = stripLeadingSlash(stripDuplicatedSlashes(fileReference));
 
-      getS3Utils().deleteObject(bucketName, fileReference);
+      getS3Utils().deleteObject(bucketName, cleanedPath);
    }
 
 

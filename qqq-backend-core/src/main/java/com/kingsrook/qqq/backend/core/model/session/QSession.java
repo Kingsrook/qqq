@@ -48,6 +48,7 @@ public class QSession implements Serializable
    private String uuid;
 
    private Set<String>                     permissions;
+
    private Map<String, List<Serializable>> securityKeyValues;
    private Map<String, Serializable>       backendVariants;
 
@@ -138,6 +139,19 @@ public class QSession implements Serializable
          values = new HashMap<>();
       }
       values.put(key, value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void removeValue(String key)
+   {
+      if(values != null)
+      {
+         values.remove(key);
+      }
    }
 
 
@@ -324,15 +338,10 @@ public class QSession implements Serializable
 
 
    /*******************************************************************************
-    ** Fluent setter for securityKeyValues - add a list of values for 1 key
+    ** Fluent setter for securityKeyValues - add 1 value for 1 key.
     *******************************************************************************/
-   public QSession withSecurityKeyValues(String keyName, List<Serializable> values)
+   public QSession withSecurityKeyValue(String keyName, Serializable value)
    {
-      if(values == null)
-      {
-         return (this);
-      }
-
       if(securityKeyValues == null)
       {
          securityKeyValues = new HashMap<>();
@@ -342,25 +351,18 @@ public class QSession implements Serializable
 
       try
       {
-         securityKeyValues.get(keyName).addAll(values);
+         securityKeyValues.get(keyName).add(value);
       }
       catch(UnsupportedOperationException uoe)
       {
+         /////////////////////
+         // grr, List.of... //
+         /////////////////////
          securityKeyValues.put(keyName, new ArrayList<>(securityKeyValues.get(keyName)));
-         securityKeyValues.get(keyName).addAll(values);
+         securityKeyValues.get(keyName).add(value);
       }
 
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for securityKeyValues - add 1 value for 1 key.
-    *******************************************************************************/
-   public QSession withSecurityKeyValue(String keyName, Serializable value)
-   {
-      return (withSecurityKeyValues(keyName, List.of(value)));
    }
 
 

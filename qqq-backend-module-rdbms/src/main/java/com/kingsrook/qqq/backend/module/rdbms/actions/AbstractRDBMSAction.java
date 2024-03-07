@@ -40,8 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -68,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.NullValueBehaviorUtil;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
@@ -87,7 +86,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  ** Base class for all core actions in the RDBMS module.
  *******************************************************************************/
-public abstract class AbstractRDBMSAction implements QActionInterface
+public abstract class AbstractRDBMSAction
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
 
@@ -136,7 +135,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     ** Get a database connection, per the backend in the request.
     *******************************************************************************/
-   protected Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
+   public static Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
    {
       ConnectionManager connectionManager = new ConnectionManager();
       return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());
@@ -469,7 +468,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
          {
             lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
          }
@@ -488,7 +487,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          // else, if user/session has some values, build an IN rule -                                                //
          // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(NullValueBehaviorUtil.getEffectiveNullValueBehavior(recordSecurityLock)))
          {
             lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
          }
@@ -822,27 +821,6 @@ public abstract class AbstractRDBMSAction implements QActionInterface
 
       // todo - use parser!!
       return Optional.of(Instant.now());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public QBackendTransaction openTransaction(AbstractTableActionInput input) throws QException
-   {
-      try
-      {
-         LOG.debug("Opening transaction");
-         Connection connection = getConnection(input);
-
-         return (new RDBMSTransaction(connection));
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error opening transaction: " + e.getMessage(), e);
-      }
    }
 
 

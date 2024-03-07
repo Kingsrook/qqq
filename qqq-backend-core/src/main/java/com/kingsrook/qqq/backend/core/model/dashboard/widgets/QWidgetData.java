@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import java.util.Map;
 public abstract class QWidgetData
 {
    private String       label;
+   private String       sublabel;
    private String       footerHTML;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
@@ -46,6 +48,8 @@ public abstract class QWidgetData
    /////////////////////////////////////////////////////////////////////////////////////////
    private List<List<Map<String, String>>> dropdownDataList;
    private String                          dropdownNeedsSelectedText;
+
+   private List<List<Serializable>> csvData;
 
 
 
@@ -323,5 +327,66 @@ public abstract class QWidgetData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for csvData
+    *******************************************************************************/
+   public List<List<Serializable>> getCsvData()
+   {
+      return (this.csvData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for csvData
+    *******************************************************************************/
+   public void setCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for csvData
+    *******************************************************************************/
+   public QWidgetData withCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sublabel
+    *******************************************************************************/
+   public String getSublabel()
+   {
+      return (this.sublabel);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sublabel
+    *******************************************************************************/
+   public void setSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sublabel
+    *******************************************************************************/
+   public QWidgetData withSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
+      return (this);
+   }
 
 }

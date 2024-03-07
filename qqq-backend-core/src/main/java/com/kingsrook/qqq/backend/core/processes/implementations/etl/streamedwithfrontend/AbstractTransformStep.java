@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -40,9 +39,30 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
  ** a page of records flowing through a pipe.
  **
  *******************************************************************************/
-public abstract class AbstractTransformStep implements BackendStep, ProcessSummaryProviderInterface
+public abstract class AbstractTransformStep implements ProcessSummaryProviderInterface
 {
    private Optional<QBackendTransaction> transaction = Optional.empty();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Deprecated
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      runOnePage(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    ** todo - make abstract when run is deleted.
+    *******************************************************************************/
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+
+   }
 
 
 

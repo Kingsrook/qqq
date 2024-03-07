@@ -1,0 +1,17 @@
+[#Joins]
+== Joins
+include::../variables.adoc[]
+
+#TODO#
+
+=== QJoinMetaData
+Joins are defined in a QQQ Instance in a `*QJoinMetaData*` object.
+
+#TODO#
+
+*QJoinMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the join within the QQQ Instance. #todo infererences or conventions?#
+
+#TODO#
+

@@ -96,6 +96,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.Level;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -188,12 +189,6 @@ public class BaseAPIActionUtil
    {
       InsertOutput insertOutput = new InsertOutput();
       insertOutput.setRecords(new ArrayList<>());
-
-      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
-      {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op");
-         return (insertOutput);
-      }
 
       try
       {
@@ -715,11 +710,11 @@ public class BaseAPIActionUtil
 
          if(backendMetaData.getAuthorizationType().equals(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD))
          {
-            request.addHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+            request.setHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
          }
          else if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_HEADER))
          {
-            request.addHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+            request.setHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
          }
          else
          {
@@ -733,10 +728,10 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
-         case API_TOKEN -> request.addHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case BASIC_AUTH_API_KEY -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+         case API_KEY_HEADER -> request.setHeader("API-Key", backendMetaData.getApiKey());
+         case API_TOKEN -> request.setHeader("Authorization", "Token " + backendMetaData.getApiKey());
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM ->
          {
@@ -792,9 +787,9 @@ public class BaseAPIActionUtil
 
             if(setCredentialsInHeader)
             {
-               request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
+               request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
             }
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+            request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
 
             HttpResponse response     = executeOAuthTokenRequest(client, request);
             int          statusCode   = response.getStatusLine().getStatusCode();
@@ -856,7 +851,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void setupContentTypeInRequest(HttpRequestBase request)
    {
-      request.addHeader("Content-Type", backendMetaData.getContentType());
+      request.setHeader("Content-Type", backendMetaData.getContentType());
    }
 
 
@@ -878,7 +873,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public void setupAdditionalHeaders(HttpRequestBase request)
    {
-      request.addHeader("Accept", "application/json");
+      request.setHeader("Accept", "application/json");
    }
 
 
@@ -1087,7 +1082,7 @@ public class BaseAPIActionUtil
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // trim response body (just to keep logs smaller, or, in case someone consuming logs doesn't want such long lines) //
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
+               LOG.log(getAPIResponseLogLevel(), "Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
                return (qResponse);
             }
          }
@@ -1512,5 +1507,15 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////
       // nothing to do at this layer, meant to be overridden by subclasses //
       ///////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Level getAPIResponseLogLevel() throws QException
+   {
+      return (Level.DEBUG);
    }
 }

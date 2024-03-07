@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.google.common.reflect.ClassPath;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -50,13 +51,22 @@ public class MetaDataProducerHelper
     **
     ** Note - they'll be sorted by the sortOrder they provide.
     *******************************************************************************/
-   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws IOException
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws QException
    {
-      ////////////////////////////////////////////////////////////////////////
-      // find all the meta data producer classes in (and under) the package //
-      ////////////////////////////////////////////////////////////////////////
-      List<Class<?>>                     classesInPackage = getClassesInPackage(packageName);
-      List<MetaDataProducerInterface<?>> producers        = new ArrayList<>();
+      List<Class<?>> classesInPackage;
+      try
+      {
+         ////////////////////////////////////////////////////////////////////////
+         // find all the meta data producer classes in (and under) the package //
+         ////////////////////////////////////////////////////////////////////////
+         classesInPackage = getClassesInPackage(packageName);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error getting classes in package [" + packageName + "]", e));
+      }
+      List<MetaDataProducerInterface<?>> producers = new ArrayList<>();
+
       for(Class<?> aClass : classesInPackage)
       {
          try
@@ -95,6 +105,7 @@ public class MetaDataProducerHelper
       ////////////////////////////////////////////////////////////////////////////////////////////
       // sort them by sort order, then by the type that they return - specifically - doing apps //
       // after all other types (as apps often try to get other types from the instance)         //
+      // also - do backends earlier than others (e.g., tables may expect backends to exist)     //
       ////////////////////////////////////////////////////////////////////////////////////////////
       producers.sort(Comparator
          .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
@@ -105,11 +116,15 @@ public class MetaDataProducerHelper
                Class<?> outputType = p.getClass().getMethod("produce", QInstance.class).getReturnType();
                if(outputType.equals(QAppMetaData.class))
                {
-                  return (1);
+                  return (2);
+               }
+               else if(outputType.equals(QBackendMetaData.class))
+               {
+                  return (0);
                }
                else
                {
-                  return (0);
+                  return (1);
                }
             }
             catch(Exception e)

@@ -992,6 +992,8 @@ public class ApiImplementation
       runProcessInput.setProcessUUID(processUUID);
       // todo i don't think runProcessInput.setAsyncJobCallback();
 
+      PermissionsHelper.checkProcessPermissionThrowing(runProcessInput, processName);
+
       //////////////////////
       // map input values //
       //////////////////////

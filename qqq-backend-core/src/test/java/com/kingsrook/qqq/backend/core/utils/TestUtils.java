@@ -173,6 +173,7 @@ public class TestUtils
 
    public static final String SECURITY_KEY_TYPE_STORE                = "store";
    public static final String SECURITY_KEY_TYPE_STORE_ALL_ACCESS     = "storeAllAccess";
+   public static final String SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR  = "storeNullBehavior";
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
 
@@ -471,6 +472,7 @@ public class TestUtils
       return new QSecurityKeyType()
          .withName(SECURITY_KEY_TYPE_STORE)
          .withAllAccessKeyName(SECURITY_KEY_TYPE_STORE_ALL_ACCESS)
+         .withNullValueBehaviorKeyName(SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR)
          .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STORE);
    }
 
@@ -549,7 +551,9 @@ public class TestUtils
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("ssn", QFieldType.STRING).withType(QFieldType.PASSWORD))
-         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true));
+         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
+         ;
    }
 
 
@@ -602,6 +606,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING).withLabel("SKU"))
@@ -717,7 +722,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableAutomationDetails defineStandardAutomationDetails()
+   public static QTableAutomationDetails defineStandardAutomationDetails()
    {
       return (new QTableAutomationDetails()
          .withProviderName(POLLING_AUTOMATION)
@@ -1249,7 +1254,6 @@ public class TestUtils
          "id","createDate","modifyDate","firstName","lastName","birthDate","email"
          """);
    }
-
 
 
 

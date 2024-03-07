@@ -1548,7 +1548,7 @@ class QJavalinApiHandlerTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void assertErrorResponse(Integer expectedStatusCode, String expectedErrorMessage, HttpResponse<String> response)
+   static void assertErrorResponse(Integer expectedStatusCode, String expectedErrorMessage, HttpResponse<String> response)
    {
       if(expectedStatusCode != null)
       {

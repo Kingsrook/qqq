@@ -31,11 +31,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
@@ -49,8 +51,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -75,6 +79,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -83,9 +88,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
 
 
 /*******************************************************************************
@@ -150,11 +157,13 @@ public class QInstanceValidator
       try
       {
          validateBackends(qInstance);
+         validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
          validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
          validateReports(qInstance);
          validateApps(qInstance);
+         validateWidgets(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
@@ -204,12 +213,21 @@ public class QInstanceValidator
          if(assertCondition(StringUtils.hasContent(securityKeyType.getName()), "Missing name for a securityKeyType"))
          {
             assertCondition(Objects.equals(name, securityKeyType.getName()), "Inconsistent naming for securityKeyType: " + name + "/" + securityKeyType.getName() + ".");
-            assertCondition(!usedNames.contains(name), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + name);
+
+            String duplicateNameMessagePrefix = "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: ";
+            assertCondition(!usedNames.contains(name), duplicateNameMessagePrefix + name);
             usedNames.add(name);
+
             if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
             {
-               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + securityKeyType.getAllAccessKeyName());
+               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), duplicateNameMessagePrefix + securityKeyType.getAllAccessKeyName());
                usedNames.add(securityKeyType.getAllAccessKeyName());
+            }
+
+            if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+            {
+               assertCondition(!usedNames.contains(securityKeyType.getNullValueBehaviorKeyName()), duplicateNameMessagePrefix + securityKeyType.getNullValueBehaviorKeyName());
+               usedNames.add(securityKeyType.getNullValueBehaviorKeyName());
             }
 
             if(StringUtils.hasContent(securityKeyType.getPossibleValueSourceName()))
@@ -383,6 +401,23 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
+   private void validateAuthentication(QInstance qInstance)
+   {
+      QAuthenticationMetaData authentication = qInstance.getAuthentication();
+      if(authentication != null)
+      {
+         if(authentication.getCustomizer() != null)
+         {
+            validateSimpleCodeReference("Instance Authentication meta data customizer ", authentication.getCustomizer(), QAuthenticationModuleCustomizerInterface.class);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void validateTables(QInstance qInstance, JoinGraph joinGraph)
    {
       if(assertCondition(CollectionUtils.nullSafeHasContents(qInstance.getTables()), "At least 1 table must be defined."))
@@ -480,6 +515,11 @@ public class QInstanceValidator
                validateTableCustomizer(tableName, entry.getKey(), entry.getValue());
             }
 
+            if(table.getBackendDetails() != null)
+            {
+               table.getBackendDetails().validate(qInstance, table, this);
+            }
+
             validateTableAutomationDetails(qInstance, table);
             validateTableUniqueKeys(table);
             validateAssociatedScripts(table);
@@ -487,6 +527,11 @@ public class QInstanceValidator
             validateTableRecordSecurityLocks(qInstance, table);
             validateTableAssociations(qInstance, table);
             validateExposedJoins(qInstance, joinGraph, table);
+
+            for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
+            {
+               supplementalTableMetaData.validate(qInstance, table, this);
+            }
          });
       }
    }
@@ -686,7 +731,7 @@ public class QInstanceValidator
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
 
-      ValueTooLongBehavior behavior = field.getBehavior(qInstance, ValueTooLongBehavior.class);
+      ValueTooLongBehavior behavior = field.getBehaviorOrDefault(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
@@ -1239,7 +1284,25 @@ public class QInstanceValidator
                         {
                            if(fieldMetaData.getDefaultValue() != null && fieldMetaData.getDefaultValue() instanceof QCodeReference codeReference)
                            {
-                              validateSimpleCodeReference("Process " + processName + " backend step code reference: ", codeReference, BackendStep.class);
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              // by default, assume that any process field which is a QCodeReference should be a reference to a BackendStep... //
+                              // but... allow a secondary field name to be set, to tell us what class to *actually* expect here...             //
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              Class<?> expectedClass = BackendStep.class;
+                              try
+                              {
+                                 Optional<QFieldMetaData> expectedTypeField = backendStepMetaData.getInputMetaData().getField(fieldMetaData.getName() + "_expectedType");
+                                 if(expectedTypeField.isPresent() && expectedTypeField.get().getDefaultValue() != null)
+                                 {
+                                    expectedClass = Class.forName(ValueUtils.getValueAsString(expectedTypeField.get().getDefaultValue()));
+                                 }
+                              }
+                              catch(Exception e)
+                              {
+                                 warn("Error loading expectedType for field [" + fieldMetaData.getName() + "] in process [" + processName + "]: " + e.getMessage());
+                              }
+
+                              validateSimpleCodeReference("Process " + processName + " code reference: ", codeReference, expectedClass);
                            }
                         }
                      }
@@ -1515,7 +1578,48 @@ public class QInstanceValidator
                   }
                }
             }
+
+            //////////////////////
+            // validate widgets //
+            //////////////////////
+            for(String widgetName : CollectionUtils.nonNullList(app.getWidgets()))
+            {
+               assertCondition(qInstance.getWidget(widgetName) != null, "App " + appName + " widget " + widgetName + " is not a recognized widget.");
+            }
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateWidgets(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getWidgets()))
+      {
+         qInstance.getWidgets().forEach((widgetName, widget) ->
+            {
+               assertCondition(Objects.equals(widgetName, widget.getName()), "Inconsistent naming for widget: " + widgetName + "/" + widget.getName() + ".");
+
+               if(assertCondition(widget.getCodeReference() != null, "Missing codeReference for widget: " + widgetName))
+               {
+                  validateSimpleCodeReference("Widget " + widgetName + " code reference: ", widget.getCodeReference(), AbstractWidgetRenderer.class);
+               }
+
+               if(widget instanceof ParentWidgetMetaData parentWidgetMetaData)
+               {
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(parentWidgetMetaData.getChildWidgetNameList()), "Missing child widgets for parent widget: " + widget.getName()))
+                  {
+                     for(String childWidgetName : parentWidgetMetaData.getChildWidgetNameList())
+                     {
+                        assertCondition(qInstance.getWidget(childWidgetName) != null, "Unrecognized child widget name [" + childWidgetName + "] in parent widget: " + widget.getName());
+                     }
+                  }
+               }
+            }
+         );
       }
    }
 
@@ -1756,20 +1860,6 @@ public class QInstanceValidator
          errors.add(message);
          return (false);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   interface UnsafeLambda
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      void run() throws Exception;
    }
 
 

@@ -1,0 +1,92 @@
+[#Apps]
+== Apps
+include::../variables.adoc[]
+
+QQQ User Interfaces (e.g., Material Dashboard) generally organize their contents via *Apps*.
+Apps are a lightweight construct in QQQ - basically just containers for other objects.
+
+Specifically, Apps can contain:
+
+* {link-widgets}
+* {link-tables}
+* {link-process}
+* {link-reports}
+* Other {link-apps} - to create a multi-tiered navigational hierarchy.
+
+=== QAppMetaData
+Apps are defined in a QQQ Instance in `*QAppMetaData*` objects.  Apps must consist of either 1 or more {link-widgets}, or 1 or more *Sections*, which are expected to contain 1 or more {link-tables}, {link-processes}, or {link-reports}.
+
+*QAppMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the app within the QQQ Instance.
+* `label` - *String* - User-facing label for the app, presented in User Interfaces.
+Inferred from `name` if not set.
+* `permissionRules` - *QPermissionRules* - Permissions to apply to the app.  See {link-permissionRules} for details.
+* `children` - *List of QAppChildMetaData* - Objects contained within the app. These can be {link-tables}, {link-processes}, {link-reports} or other {link-apps}.
+** See the example below for some common patterns for how these child-meta data objects are added to an App.
+* `parentAppName` - *String* - For an app which is a child of another app, the parent app's name is referenced in this field.
+** Note that this is generally automatically set when the child is added to its parent, in the `addChild` method.
+* `icon` - *QIcon* - An icon to display in a UI for the app.  See {link-icons}.
+* `widgets` - *List of String* - A list of names of {link-widgets} to include in the app.
+* `sections` - *List of <<QAppSection>>* - A list of `QAppSection` objects, to create organizational subdivisions within the app.
+** As shown in the example below, the method `withSectionOfChildren` can be used to fluently add a new `QAppSection`, along with its child objects, to both an app and a section all at once.
+
+==== QAppSection
+A `QAppSection` is an organizational subsection of a {link-app}.
+
+* `name` - *String, Required* - Unique name for the section within its app.
+* `label` - *String* - User-facing label for the section, presented in User Interfaces.
+Inferred from `name` if not set.
+* `icon` - *QIcon* - An icon to display in a UI for the section.  See {link-icons}.
+* `tables` - *List of String* - A list of names of {link-tables} to include in the section.
+* `processes` - *List of String* - A list of names of {link-processes} to include in the section.
+* `reports` - *List of String* - A list of names of {link-reports} to include in the section.
+
+*Examples*
+[source,java]
+----
+/*******************************************************************************
+** Full example of constructing a QAppMetaData object.
+*******************************************************************************/
+public class ExampleAppMetaDataProducer extends MetaDataProducer<QAppMetaData>
+{
+
+   /*******************************************************************************
+    ** Produce the QAppMetaData
+    *******************************************************************************/
+   @Override
+   public QAppMetaData produce(QInstance qInstance) throws QException
+   {
+      return (new QAppMetaData()
+         .withName("sample")
+         .withLabel("My Sample App")
+         .withIcon(new QIcon().withName("thumb_up"))
+         .withWidgets(List.of(
+            UserWelcomeWidget.NAME,
+            SystemHealthLineChartWidget.NAME))
+         .withSectionOfChildren(new QAppSection().withName("peoplePlacesAndThings"),
+            qInstance.getTable(People.TABLE_NAME),
+            qInstance.getTable(Places.TABLE_NAME),
+            qInstance.getTable(Things.TABLE_NAME),
+            qInstance.getProcess(AssociatePeopleWithPlacesProcess.NAME))
+         .withSectionOfChildren(new QAppSection().withName("math").withLabel("Mathematics"),
+            qInstance.getProcess(ComputePiProcess.NAME),
+            qInstance.getReport(PrimeNumbersReport.NAME),
+            qInstance.getReport(PolygonReport.NAME)));
+   }
+
+
+   /*******************************************************************************
+    ** Since this meta-data producer expects to find other meta-data objects in the
+    ** QInstance, give it a sortOrder higher than the default (which we'll expect
+    ** the other objects used).
+    *******************************************************************************/
+   @Override
+   public int getSortOrder()
+   {
+      return (Integer.MAX_VALUE);
+   }
+
+}
+----
+

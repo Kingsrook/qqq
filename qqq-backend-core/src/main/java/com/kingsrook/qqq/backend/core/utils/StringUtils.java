@@ -177,6 +177,19 @@ public class StringUtils
 
 
    /*******************************************************************************
+    ** safely appends a string to another, changing empty string if either value is null
+    **
+    *******************************************************************************/
+   public static String safeAppend(String input, String contentToAppend)
+   {
+      input = input != null ? input : "";
+      contentToAppend = contentToAppend != null ? contentToAppend : "";
+      return input + contentToAppend;
+   }
+
+
+
+   /*******************************************************************************
     ** returns input if not null, or nullOutput if input == null (as in SQL NVL)
     **
     *******************************************************************************/

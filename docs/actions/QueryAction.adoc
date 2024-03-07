@@ -1,34 +1,45 @@
 == QueryAction
 include::../variables.adoc[]
 
-The `*QueryAction*` is the basic action that is used to get records from a {link-table}.
+The `*QueryAction*` is the basic action that is used to get records from a {link-table}, generally according to a <<QQueryFilter,Filter>>.
 In SQL/RDBMS terms, it is analogous to a `SELECT` statement, where 0 or more records may be found and returned.
 
 === Examples
 ==== Basic Form
 [source,java]
 ----
-QueryInput input = new QueryInput(qInstance);
-input.setSession(session);
+QueryInput input = new QueryInput();
 input.setTableName("orders");
 input.setFilter(new QQueryFilter()
    .withCriteria(new QFilterCriteria("total", GREATER_THAN, new BigDecimal("3.50")))
-   .withOrderBy(new QFilterOrderBy("orderDate", false))
-);
+   .withOrderBy(new QFilterOrderBy("orderDate", false)));
 QueryOutput output = new QueryAction.execute(input);
 List<QRecord> records = output.getRecords();
 ----
 
+=== Details
+`QueryAction`, in general, can be called in two different modes:
+
+. The most common use-case case, and default, fetches all records synchronously, does any post-processing (as requested in the <<QueryInput>>), and returns all records as a list in the <<QueryOutput>>).
+. The alternative use-case is meant for larger operations, where one wouldn't want all records matching a query in-memory.
+For this scenario, a `RecordPipe` object can be passed in to the <<QueryInput>>.
+This causes `QueryAction` to run its post-processing action on records as they are placed into the pipe, and to potentially block (per the pipe's settings).
+This method of usage needs to be done on a separate thread from another thread which would be consuming records from the pipe.
+QQQ's `AsyncRecordPipeLoop` class provides an implementation of doing such a dual-threaded job.
+
+If the {link-table} has a `POST_QUERY_CUSTOMIZER` defined, then after records are fetched from the backend, that code is executed on the records before they leave the `QueryAction` (either through its `QueryOutput` or `RecordPipe`).
+
 === QueryInput
 * `table` - *String, Required* - Name of the table being queried against.
-* `filter` - *QQueryFilter object* - Specification for what records should be returned, based on *QFilterCriteria* objects, and how they should be sorted, based on *QFilterOrderBy* objects.
+* `filter` - *<<QQueryFilter>> object* - Specification for what records should be returned, based on *<<QFilterCriteria>>* objects, and how they should be sorted, based on *<<QFilterOrderBy>>* objects.
+If a `filter` is not given, then all rows in the table will be returned by the query.
 * `skip` - *Integer* - Optional number of records to be skipped at the beginning of the result set.
 e.g., for implementing pagination.
 * `limit` - *Integer* - Optional maximum number of records to be returned by the query.
 * `transaction` - *QBackendTransaction object* - Optional transaction object.
 ** Behavior for this object is backend-dependant.
 In an RDBMS backend, this object is generally needed if you want your query to see data that may have been modified within the same transaction.
-* `recordPipe` - *RecordPipe object* - Optional object that records are placed into, for asynchronous processing.
+* `recordPipe` - *RecordPipe object* - Optional pipe object that records are placed into, for asynchronous processing.
 ** If a *recordPipe* is used, then records cannot be retrieved from the *QueryOutput*.
 Rather, such records must be read from the pipe's `consumeAvailableRecords()` method.
 ** A *recordPipe* should only be used when a *QueryAction* is running in a separate Thread from the record's consumer.
@@ -36,18 +47,21 @@ Rather, such records must be read from the pipe's `consumeAvailableRecords()` me
 (e.g., to provide text translations in the generated records' `displayValues` map).
 ** For example, if running a query to present results to a user, this would generally need to be *true*.
 But if running a query to provide data as part of a process, then this can generally be left as *false*.
-* `shouldGenerateDisplayValues` - *boolean, default: false* - Controls whether if field level *displayFormats* should be used to populate the generated records' `displayValues` map.
+* `shouldGenerateDisplayValues` - *boolean, default: false* - Controls whether field level *displayFormats* should be used to populate the generated records' `displayValues` map.
 ** For example, if running a query to present results to a user, this would generally need to be *true*.
 But if running a query to provide data as part of a process, then this can generally be left as *false*.
-* `queryJoins` - *List of QueryJoin objects* - Optional list of tables to be joined with the main *table* specified in the *QueryInput*.
+* `shouldFetchHeavyFields` - *boolean, default: true* - Controls whether or not fields marked as `isHeavy` should be fetched & returned or not.
+* `shouldOmitHiddenFields` - *boolean, default: true* - Controls whether or not fields marked as `isHidden` should be included in the result or not.
+* `shouldMaskPassword` - *boolean, default: true* - Controls whether or not fields with `type` = `PASSWORD` should be masked, or if their actual values should be returned.
+* `queryJoins` - *List of <<QueryJoin>> objects* - Optional list of tables to be joined with the main table being queried.
 See QueryJoin below for further details.
 
 ==== QQueryFilter
-A key component of *QueryInput*, a *QQueryFilter* defines both what records should be included in a query's results (e.g., an SQL `WHERE`), as well as how those results should be sorted (SQL `ORDER BY`).
+A key component of *<<QueryInput>>*, a *QQueryFilter* defines both what records should be included in a query's results (e.g., an SQL `WHERE`), as well as how those results should be sorted (SQL `ORDER BY`).
 
-* `criteria` - *List of QFilterCriteria* - Individual conditions or clauses to filter records.
+* `criteria` - *List of <<QFilterCriteria>>* - Individual conditions or clauses to filter records.
 They are combined using the *booleanOperator* specified in the *QQueryFilter*.  See below for further details.
-* `orderBys` - *List of QFilterOrderBy* - List of fields (and directions) to control the sorting of query results.
+* `orderBys` - *List of <<QFilterOrderBy>>* - List of fields (and directions) to control the sorting of query results.
 In general, multiple *orderBys* can be given (depending on backend implementations).
 * `booleanOperator` - *Enum of AND, OR, default: AND* - Specifies the logical joining operator used among individual criteria.
 * `subFilters` - *List of QQueryFilter* - To build arbitrarily complex queries, with nested boolean logic, 0 or more *subFilters* may be provided.
@@ -69,7 +83,7 @@ In general, multiple *orderBys* can be given (depending on backend implementatio
     )));
 
 // which would generate the following WHERE clause in an RDBMS backend:
-   WHERE (first_name='James' AND last_name='Maes') OR (first_name='Darin' AND last_name='Kelkhoff')
+// WHERE (first_name='James' AND last_name='Maes') OR (first_name='Darin' AND last_name='Kelkhoff')
 ----
 
 ===== QFilterCriteria
@@ -79,19 +93,19 @@ In general, multiple *orderBys* can be given (depending on backend implementatio
 * `operator` - *Enum of QCriteriaOperator, required* - Comparison operation to be applied to the field specified as *fieldName* and the *values* or *otherFieldName*.
 ** e.g., `EQUALS`, `NOT_IN`, `GREATER_THAN`, `BETWEEN`, `IS_BLANK`, etc.
 * `values` - *List of values, conditional* - Provides the value(s) that the field is compared against.
-The number of values (0, 1, 2, or more) be driven based on the *operator* being used.
+The number of values (0, 1, 2, or more) required are based on the *operator* being used.
 If an *otherFieldName* is given, and the *operator* expects 1 value, then *values* is ignored, and *otherFieldName* is used.
 * `otherFieldName` - *String, conditional* - Specifies that the *fieldName* should be compared against another field in the records, rather than the values in the *values* property.
 Only used for *operators* that expect 1 value (e.g., `EQUALS` or `LESS_THAN_OR_EQUALS` - not `IS_NOT_BLANK` or `IN`).
 
-QFilterCriteria definition examples:
 [source,java]
+.QFilterCriteria definition examples:
 ----
-// one-liners, via constructors that take (List<Serializable> values) or (Serializable... values) in 3rd position
-new QFilterCriteria("id", IN, List.of(1, 2, 3))
+// in-line, via constructors that take (List<Serializable> values) or (Serializable... values) as 3rd arg
+new QFilterCriteria("id", IN, 1, 2, 3)
 new QFilterCriteria("name", IS_BLANK)
 new QFilterCriteria("orderNo", IN, orderNoList)
-new QFilterCriteria("state", EQUALS, "MO");
+new QFilterCriteria("state", EQUALS, "MO")
 
 // long-form, with fluent setters
 new QFilterCriteria()
@@ -105,7 +119,7 @@ new QFilterCriteria()
    .withOpeartor(QCriteriaOperator.EQUALS)
    .withOtherFieldName("lastName");
 
-// using otherFieldName to build a criterion that looks at two fields from join tables
+// using otherFieldName to build a criterion that looks at two fields from two different join tables
 new QFilterCriteria()
    .withFieldName("billToCustomer.lastName")
    .withOpeartor(QCriteriaOperator.NOT_EQUALS)
@@ -118,9 +132,9 @@ new QFilterCriteria()
 ** Or, in the case of a query with *queryJoins*, a qualified name of a field from a join-table (where the qualifier would be the joined table's name or alias, followed by a dot)
 * `isAscending` - *boolean, default: true* - Specify if the sort is ascending or descending.
 
-QFilterCriteria definition examples:
 
 [source,java]
+.QFilterOrderBy definition examples:
 ----
 // short-form, via constructors
 new QFilterOrderBy("id") // isAscending defaults to true.
@@ -129,7 +143,7 @@ new QFilterOrderBy("name", false)
 // long-form, with fluent setters
 new QFilterOrderBy()
    .withFieldName("birthDate")
-   .withIsAscending(true);
+   .withIsAscending(false);
 ----
 
 ==== QueryJoin
@@ -147,9 +161,8 @@ If given, must be used as the part before the dot in field name specifications t
 If *true*, then the `QRecord` objects returned by this query will have values with corresponding to the (table-or-alias `.` field-name) form.
 * `type` - *Enum of INNER, LEFT, RIGHT, FULL, default: INNER* - specifies the SQL-style type of join being performed.
 
-QueryJoin definition examples:
-
 [source,java]
+.QueryJoin definition examples:
 ----
 // selecting from an "orderLine" table - then join to its corresponding "order" table
 queryInput.withTableName("orderLine");

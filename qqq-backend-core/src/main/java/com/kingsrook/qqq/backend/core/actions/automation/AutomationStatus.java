@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 
 
@@ -51,6 +52,30 @@ public enum AutomationStatus implements PossibleValueEnum<Integer>
    {
       this.id = id;
       this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Get instance by id
+    **
+    *******************************************************************************/
+   public static AutomationStatus getById(Integer id)
+   {
+      if(id == null)
+      {
+         return (null);
+      }
+
+      for(AutomationStatus value : AutomationStatus.values())
+      {
+         if(Objects.equals(value.id, id))
+         {
+            return (value);
+         }
+      }
+
+      return (null);
    }
 
 
@@ -106,10 +131,10 @@ public enum AutomationStatus implements PossibleValueEnum<Integer>
    public String getInsertOrUpdate()
    {
       return switch(this)
-         {
-            case PENDING_INSERT_AUTOMATIONS, RUNNING_INSERT_AUTOMATIONS, FAILED_INSERT_AUTOMATIONS -> "Insert";
-            case PENDING_UPDATE_AUTOMATIONS, RUNNING_UPDATE_AUTOMATIONS, FAILED_UPDATE_AUTOMATIONS -> "Update";
-            case OK -> "";
-         };
+      {
+         case PENDING_INSERT_AUTOMATIONS, RUNNING_INSERT_AUTOMATIONS, FAILED_INSERT_AUTOMATIONS -> "Insert";
+         case PENDING_UPDATE_AUTOMATIONS, RUNNING_UPDATE_AUTOMATIONS, FAILED_UPDATE_AUTOMATIONS -> "Update";
+         case OK -> "";
+      };
    }
 }

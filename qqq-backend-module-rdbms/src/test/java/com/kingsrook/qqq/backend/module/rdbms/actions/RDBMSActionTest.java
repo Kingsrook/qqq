@@ -40,7 +40,7 @@ public class RDBMSActionTest extends BaseTest
     **
     *******************************************************************************/
    @AfterEach
-   private void afterEachRDBMSActionTest()
+   void afterEachRDBMSActionTest()
    {
       QueryManager.resetPageSize();
       QueryManager.resetStatistics();

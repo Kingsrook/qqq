@@ -183,6 +183,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
 
       /*******************************************************************************
+       ** Overloaded constructor - defaults both performInserts & performUpdates to true.
+       *******************************************************************************/
+      public SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+      {
+         this(sourceTable, sourceTableKeyField, destinationTable, destinationTableForeignKey, true, true);
+      }
+
+      /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
        *******************************************************************************/
@@ -244,6 +252,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
       }
+      else
+      {
+         reinitializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
@@ -268,6 +280,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
+            LOG.debug("Skipping record without a value in the sourceKeyField", logPair("keyField", sourceTableKeyField));
             errorMissingKeyField.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
 
             try
@@ -455,6 +468,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** for pages after the first, possibly load more records in the lookup helper.
+    *******************************************************************************/
+   protected void reinitializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 

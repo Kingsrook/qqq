@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.basepull;
 
 
+import java.io.Serializable;
+import java.time.Instant;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -122,7 +124,21 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
     *******************************************************************************/
    protected String getLastRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
    {
-      return (runBackendStepInput.getBasepullLastRunTime().toString());
+      Instant lastRunTime = runBackendStepInput.getBasepullLastRunTime();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // allow the timestamps to be adjusted by the specified number of seconds.                  //
+      // normally this would be a positive value, to move to an earlier time - but it could also  //
+      // be a negative value, if you wanted (for some reason) to move forward in time             //
+      // this is useful to provide overlapping windows of time, in case records are being missed. //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      Serializable basepullConfigurationValue = runBackendStepInput.getValue(RunProcessAction.BASEPULL_CONFIGURATION);
+      if(basepullConfigurationValue instanceof BasepullConfiguration basepullConfiguration && basepullConfiguration.getSecondsToSubtractFromLastRunTimeForTimestampQuery() != null)
+      {
+         lastRunTime = lastRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromLastRunTimeForTimestampQuery());
+      }
+
+      return (lastRunTime.toString());
    }
 
 
@@ -132,6 +148,14 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
     *******************************************************************************/
    protected String getThisRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
    {
-      return (runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY).toString());
+      Instant thisRunTime = runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY);
+
+      Serializable basepullConfigurationValue = runBackendStepInput.getValue(RunProcessAction.BASEPULL_CONFIGURATION);
+      if(basepullConfigurationValue instanceof BasepullConfiguration basepullConfiguration && basepullConfiguration.getSecondsToSubtractFromThisRunTimeForTimestampQuery() != null)
+      {
+         thisRunTime = thisRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromThisRunTimeForTimestampQuery());
+      }
+
+      return (thisRunTime.toString());
    }
 }

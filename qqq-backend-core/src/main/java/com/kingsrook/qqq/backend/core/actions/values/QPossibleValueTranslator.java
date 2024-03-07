@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
@@ -104,7 +103,7 @@ public class QPossibleValueTranslator
          {
             if(!transactionsPerTable.containsKey(tableName))
             {
-               transactionsPerTable.put(tableName, new InsertAction().openTransaction(new InsertInput(tableName)));
+               transactionsPerTable.put(tableName, QBackendTransaction.openFor(new InsertInput(tableName)));
             }
 
             return (transactionsPerTable.get(tableName));

@@ -63,7 +63,7 @@ public class BaseStreamedETLStep
    protected AbstractTransformStep getTransformStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_TRANSFORM_CODE);
-      return (QCodeLoader.getBackendStep(AbstractTransformStep.class, codeReference));
+      return (QCodeLoader.getAdHoc(AbstractTransformStep.class, codeReference));
    }
 
 
@@ -74,7 +74,7 @@ public class BaseStreamedETLStep
    protected AbstractLoadStep getLoadStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_LOAD_CODE);
-      return (QCodeLoader.getBackendStep(AbstractLoadStep.class, codeReference));
+      return (QCodeLoader.getAdHoc(AbstractLoadStep.class, codeReference));
    }
 
 
