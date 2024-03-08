@@ -287,7 +287,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
             //////////////////////////////////////////////////////////////////////////////////////
             if(!recordsToUpdate.isEmpty() && !isReview)
             {
-               LOG.info("Healing bad record automation statuses", logPair("tableName", tableName), logPair("count", recordsToUpdate.size()));
+               LOG.info("Healing bad record automation statuses", logPair("tableName", tableName), logPair("countByStatus", countByStatus));
                new UpdateAction().execute(new UpdateInput(tableName).withRecords(recordsToUpdate).withOmitTriggeringAutomations(true));
             }
 
