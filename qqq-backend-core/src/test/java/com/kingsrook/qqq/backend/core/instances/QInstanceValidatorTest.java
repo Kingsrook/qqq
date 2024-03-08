@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.AlwaysFailsProcessValidatorPlugin;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -97,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  ** Unit test for QInstanceValidator.
  **
  *******************************************************************************/
-class QInstanceValidatorTest extends BaseTest
+public class QInstanceValidatorTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -363,6 +364,35 @@ class QInstanceValidatorTest extends BaseTest
 
       assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(1).setName(null),
          "Missing name for a step");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_validatorPlugins()
+   {
+      try
+      {
+         QInstanceValidator.addValidatorPlugin(new AlwaysFailsProcessValidatorPlugin());
+
+         ////////////////////////////////////////
+         // make sure our always failer fails. //
+         ////////////////////////////////////////
+         assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> {
+         }, "always fail");
+      }
+      finally
+      {
+         QInstanceValidator.removeAllValidatorPlugins();
+         
+         ////////////////////////////////////////////////////
+         // make sure if remove all plugins, we don't fail //
+         ////////////////////////////////////////////////////
+         assertValidationSuccess((qInstance) -> {});
+      }
    }
 
 
@@ -1949,9 +1979,9 @@ class QInstanceValidatorTest extends BaseTest
     ** failed validation with reasons that match the supplied vararg-reasons (but allow
     ** more reasons - e.g., helpful when one thing we're testing causes other errors).
     *******************************************************************************/
-   private void assertValidationFailureReasonsAllowingExtraReasons(Consumer<QInstance> setup, String... reasons)
+   public static void assertValidationFailureReasonsAllowingExtraReasons(Consumer<QInstance> setup, String... expectedReasons)
    {
-      assertValidationFailureReasons(setup, true, reasons);
+      assertValidationFailureReasons(setup, true, expectedReasons);
    }
 
 
@@ -1961,9 +1991,9 @@ class QInstanceValidatorTest extends BaseTest
     ** failed validation with reasons that match the supplied vararg-reasons (and
     ** require that exact # of reasons).
     *******************************************************************************/
-   private void assertValidationFailureReasons(Consumer<QInstance> setup, String... reasons)
+   public static void assertValidationFailureReasons(Consumer<QInstance> setup, String... expectedReasons)
    {
-      assertValidationFailureReasons(setup, false, reasons);
+      assertValidationFailureReasons(setup, false, expectedReasons);
    }
 
 
@@ -1971,7 +2001,7 @@ class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     ** Implementation for the overloads of this name.
     *******************************************************************************/
-   private void assertValidationFailureReasons(Consumer<QInstance> setup, boolean allowExtraReasons, String... reasons)
+   public static void assertValidationFailureReasons(Consumer<QInstance> setup, boolean allowExtraReasons, String... expectedReasons)
    {
       try
       {
@@ -1982,17 +2012,27 @@ class QInstanceValidatorTest extends BaseTest
       }
       catch(QInstanceValidationException e)
       {
-         if(!allowExtraReasons)
-         {
-            int noOfReasons = e.getReasons() == null ? 0 : e.getReasons().size();
-            assertEquals(reasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", reasons)
-               + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", e.getReasons()) : "--"));
-         }
+         assertValidationFailureReasons(allowExtraReasons, e.getReasons(), expectedReasons);
+      }
+   }
 
-         for(String reason : reasons)
-         {
-            assertReason(reason, e);
-         }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void assertValidationFailureReasons(boolean allowExtraReasons, List<String> actualReasons, String... expectedReasons)
+   {
+      if(!allowExtraReasons)
+      {
+         int noOfReasons = actualReasons == null ? 0 : actualReasons.size();
+         assertEquals(expectedReasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", expectedReasons)
+            + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
+      }
+
+      for(String reason : expectedReasons)
+      {
+         assertReason(reason, actualReasons);
       }
    }
 
@@ -2022,11 +2062,11 @@ class QInstanceValidatorTest extends BaseTest
     ** the list of reasons in the QInstanceValidationException.
     **
     *******************************************************************************/
-   private void assertReason(String reason, QInstanceValidationException e)
+   public static void assertReason(String reason, List<String> actualReasons)
    {
-      assertNotNull(e.getReasons(), "Expected there to be a reason for the failure (but there was not)");
-      assertThat(e.getReasons())
-         .withFailMessage("Expected any of:\n%s\nTo match: [%s]", e.getReasons(), reason)
+      assertNotNull(actualReasons, "Expected there to be a reason for the failure (but there was not)");
+      assertThat(actualReasons)
+         .withFailMessage("Expected any of:\n%s\nTo match: [%s]", actualReasons, reason)
          .anyMatch(s -> s.contains(reason));
    }
 
