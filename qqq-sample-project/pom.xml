@@ -68,7 +68,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-frontend-material-dashboard</artifactId>
-         <version>${revision}</version>
+         <version>0.20.0-20240305.204725-27</version>
       </dependency>
       <dependency>
          <groupId>com.h2database</groupId>
