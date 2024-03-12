@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -90,6 +91,7 @@ public class QInstance
    private Map<String, QWidgetMetaDataInterface> widgets              = new LinkedHashMap<>();
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
+   private Map<String, QSchedulerMetaData>       schedulers           = new LinkedHashMap<>();
 
    private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
 
@@ -1223,5 +1225,57 @@ public class QInstance
    {
       metaData.addSelfToInstance(this);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addScheduler(QSchedulerMetaData scheduler)
+   {
+      String name = scheduler.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a scheduler without a name."));
+      }
+      if(this.schedulers.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second scheduler with name: " + name));
+      }
+      this.schedulers.put(name, scheduler);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QSchedulerMetaData getScheduler(String name)
+   {
+      return (this.schedulers.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulers
+    **
+    *******************************************************************************/
+   public Map<String, QSchedulerMetaData> getSchedulers()
+   {
+      return schedulers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulers
+    **
+    *******************************************************************************/
+   public void setSchedulers(Map<String, QSchedulerMetaData> schedulers)
+   {
+      this.schedulers = schedulers;
+   }
+
 
 }

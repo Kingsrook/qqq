@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,13 +22,11 @@
 package com.kingsrook.qqq.backend.core.scheduler.quartz;
 
 
-import java.io.Serializable;
-import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.scheduler.SchedulerUtils;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -41,9 +39,9 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  **
  *******************************************************************************/
 @DisallowConcurrentExecution
-public class QuartzRunProcessJob implements Job
+public class QuartzSqsPollerJob implements Job
 {
-   private static final QLogger LOG = QLogger.getLogger(QuartzRunProcessJob.class);
+   private static final QLogger LOG = QLogger.getLogger(QuartzSqsPollerJob.class);
 
 
 
@@ -55,34 +53,22 @@ public class QuartzRunProcessJob implements Job
    {
       try
       {
-         JobDataMap jobDataMap  = jobExecutionContext.getJobDetail().getJobDataMap();
-         String     processName = jobDataMap.getString("processName");
+         JobDataMap jobDataMap        = jobExecutionContext.getJobDetail().getJobDataMap();
+         String     queueProviderName = jobDataMap.getString("queueProviderName");
+         String     queueName         = jobDataMap.getString("queueName");
+         QInstance  qInstance         = QuartzScheduler.getInstance().getQInstance();
 
-         ///////////////////////////////////////
-         // get the process from the instance //
-         ///////////////////////////////////////
-         QInstance        qInstance = QuartzScheduler.getInstance().getQInstance();
-         QProcessMetaData process   = qInstance.getProcess(processName);
-         if(process == null)
-         {
-            LOG.warn("Could not find scheduled process in QInstance", logPair("processName", processName));
-            return;
-         }
-
-         ///////////////////////////////////////////////
-         // if the job has variant data, get it ready //
-         ///////////////////////////////////////////////
-         Map<String, Serializable> backendVariantData = null;
-         if(jobExecutionContext.getMergedJobDataMap().containsKey("backendVariantData"))
-         {
-            backendVariantData = (Map<String, Serializable>) jobExecutionContext.getMergedJobDataMap().get("backendVariantData");
-         }
+         SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
+         sqsQueuePoller.setQueueProviderMetaData((SQSQueueProviderMetaData) qInstance.getQueueProvider(queueProviderName));
+         sqsQueuePoller.setQueueMetaData(qInstance.getQueue(queueName));
+         sqsQueuePoller.setQInstance(qInstance);
+         sqsQueuePoller.setSessionSupplier(QuartzScheduler.getInstance().getSessionSupplier());
 
          /////////////
          // run it. //
          /////////////
-         LOG.debug("Running quartz process", logPair("processName", processName));
-         SchedulerUtils.runProcess(qInstance, QuartzScheduler.getInstance().getSessionSupplier(), qInstance.getProcess(processName), backendVariantData);
+         LOG.debug("Running quartz SQS Poller", logPair("queueName", queueName));
+         sqsQueuePoller.run();
       }
       finally
       {

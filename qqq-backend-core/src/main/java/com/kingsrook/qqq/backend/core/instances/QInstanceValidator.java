@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.instances;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -93,6 +96,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.quartz.CronExpression;
 
 
 /*******************************************************************************
@@ -342,6 +346,11 @@ public class QInstanceValidator
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getSecretKey()), "Missing secretKey for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
+
+               if(assertCondition(sqsQueueProvider.getSchedule() != null, "Missing schedule for SQSQueueProvider: " + name))
+               {
+                  validateScheduleMetaData(sqsQueueProvider.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
+               }
             }
          });
       }
@@ -392,6 +401,11 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(name, automationProvider.getName()), "Inconsistent naming for automationProvider: " + name + "/" + automationProvider.getName() + ".");
             assertCondition(automationProvider.getType() != null, "Missing type for automationProvider: " + name);
+
+            if(assertCondition(automationProvider.getSchedule() != null, "Missing schedule for automationProvider: " + name))
+            {
+               validateScheduleMetaData(automationProvider.getSchedule(), qInstance, "automationProvider " + name + ", schedule: ");
+            }
          });
       }
    }
@@ -1316,7 +1330,7 @@ public class QInstanceValidator
             if(process.getSchedule() != null)
             {
                QScheduleMetaData schedule = process.getSchedule();
-               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+               validateScheduleMetaData(schedule, qInstance, "Process " + processName + ", schedule: ");
 
                if(schedule.getVariantBackend() != null)
                {
@@ -1331,6 +1345,50 @@ public class QInstanceValidator
             }
 
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateScheduleMetaData(QScheduleMetaData schedule, QInstance qInstance, String prefix)
+   {
+      boolean isRepeat = schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null;
+      boolean isCron = StringUtils.hasContent(schedule.getCronExpression());
+      assertCondition(isRepeat || isCron, prefix + " either repeatMillis or repeatSeconds or cronExpression must be set");
+      assertCondition(!(isRepeat && isCron), prefix + " both a repeat time and cronExpression may not be set");
+
+      if(isCron)
+      {
+         boolean hasDelay = schedule.getInitialDelayMillis() != null || schedule.getInitialDelaySeconds() != null;
+         assertCondition(!hasDelay, prefix + " a cron schedule may not have an initial delay");
+
+         try
+         {
+            CronExpression.validateExpression(schedule.getCronExpression());
+         }
+         catch(ParseException pe)
+         {
+            errors.add(prefix + " invalid cron expression: " + pe.getMessage());
+         }
+
+         if(assertCondition(StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a cron schedule must specify a cronTimeZoneId"))
+         {
+            String[] availableIDs = TimeZone.getAvailableIDs();
+            Optional<String> first = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
+            assertCondition(first.isPresent(), prefix + " unrecognized cronTimeZoneId: " + schedule.getCronTimeZoneId());
+         }
+      }
+      else
+      {
+         assertCondition(!StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a non-cron schedule must not specify a cronTimeZoneId");
+      }
+
+      if(assertCondition(StringUtils.hasContent(schedule.getSchedulerName()), prefix + " is missing a scheduler name"))
+      {
+         assertCondition(qInstance.getScheduler(schedule.getSchedulerName()) != null, prefix + " is referencing an unknown scheduler name: " + schedule.getSchedulerName());
       }
    }
 

@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -48,11 +49,21 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
- **
+ ** Utility methods used by various schedulers.
  *******************************************************************************/
 public class SchedulerUtils
 {
    private static final QLogger LOG = QLogger.getLogger(SchedulerUtils.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static boolean allowedToStart(TopLevelMetaDataInterface metaDataObject)
+   {
+      return (allowedToStart(metaDataObject.getName()));
+   }
 
 
 

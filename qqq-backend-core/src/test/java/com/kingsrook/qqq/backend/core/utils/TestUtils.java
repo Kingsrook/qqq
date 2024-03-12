@@ -92,6 +92,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.simple.SimpleSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -176,6 +179,8 @@ public class TestUtils
    public static final String SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR  = "storeNullBehavior";
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
+   public static final String SIMPLE_SCHEDULER_NAME = "simpleScheduler";
+
 
 
    /*******************************************************************************
@@ -237,7 +242,19 @@ public class TestUtils
       defineWidgets(qInstance);
       defineApps(qInstance);
 
+      qInstance.addScheduler(defineSimpleScheduler());
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QSchedulerMetaData defineSimpleScheduler()
+   {
+      return new SimpleSchedulerMetaData().withName(SIMPLE_SCHEDULER_NAME);
    }
 
 
@@ -349,7 +366,10 @@ public class TestUtils
    private static QAutomationProviderMetaData definePollingAutomationProvider()
    {
       return (new PollingAutomationProviderMetaData()
-         .withName(POLLING_AUTOMATION));
+         .withName(POLLING_AUTOMATION)
+         .withSchedule(new QScheduleMetaData()
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)
+            .withRepeatSeconds(60)));
    }
 
 
@@ -1313,7 +1333,10 @@ public class TestUtils
          .withAccessKey(accessKey)
          .withSecretKey(secretKey)
          .withRegion(region)
-         .withBaseURL(baseURL));
+         .withBaseURL(baseURL)
+         .withSchedule(new QScheduleMetaData()
+            .withRepeatSeconds(60)
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)));
    }
 
 

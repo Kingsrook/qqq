@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+
+
 /*******************************************************************************
  ** Meta-data to define scheduled actions within QQQ.
  **
@@ -37,14 +40,27 @@ public class QScheduleMetaData
    {PARALLEL, SERIAL}
 
 
+   private String schedulerName;
 
    private Integer repeatSeconds;
    private Integer repeatMillis;
    private Integer initialDelaySeconds;
    private Integer initialDelayMillis;
 
+   private String cronExpression;
+   private String cronTimeZoneId;
+
    private RunStrategy variantRunStrategy;
    private String      variantBackend;
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isCron()
+   {
+      return StringUtils.hasContent(cronExpression);
+   }
 
 
 
@@ -243,5 +259,98 @@ public class QScheduleMetaData
       this.variantRunStrategy = variantRunStrategy;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for cronExpression
+    *******************************************************************************/
+   public String getCronExpression()
+   {
+      return (this.cronExpression);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cronExpression
+    *******************************************************************************/
+   public void setCronExpression(String cronExpression)
+   {
+      this.cronExpression = cronExpression;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cronExpression
+    *******************************************************************************/
+   public QScheduleMetaData withCronExpression(String cronExpression)
+   {
+      this.cronExpression = cronExpression;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for cronTimeZoneId
+    *******************************************************************************/
+   public String getCronTimeZoneId()
+   {
+      return (this.cronTimeZoneId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cronTimeZoneId
+    *******************************************************************************/
+   public void setCronTimeZoneId(String cronTimeZoneId)
+   {
+      this.cronTimeZoneId = cronTimeZoneId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cronTimeZoneId
+    *******************************************************************************/
+   public QScheduleMetaData withCronTimeZoneId(String cronTimeZoneId)
+   {
+      this.cronTimeZoneId = cronTimeZoneId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulerName
+    *******************************************************************************/
+   public String getSchedulerName()
+   {
+      return (this.schedulerName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulerName
+    *******************************************************************************/
+   public void setSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schedulerName
+    *******************************************************************************/
+   public QScheduleMetaData withSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+      return (this);
+   }
+
 
 }

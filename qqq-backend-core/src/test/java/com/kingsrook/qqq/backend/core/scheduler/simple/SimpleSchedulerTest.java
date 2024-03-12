@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.scheduler;
+package com.kingsrook.qqq.backend.core.scheduler.simple;
 
 
 import java.util.List;
@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for ScheduleManager
  *******************************************************************************/
-class ScheduleManagerTest extends BaseTest
+class SimpleSchedulerTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -57,7 +58,7 @@ class ScheduleManagerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      ScheduleManager.resetSingleton();
+      SimpleScheduler.resetSingleton();
    }
 
 
@@ -69,12 +70,13 @@ class ScheduleManagerTest extends BaseTest
    void testStartAndStop()
    {
       QInstance       qInstance       = QContext.getQInstance();
-      ScheduleManager scheduleManager = ScheduleManager.getInstance(qInstance);
-      scheduleManager.start();
+      SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
+      simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
+      simpleScheduler.start();
 
-      assertThat(scheduleManager.getExecutors()).isNotEmpty();
+      assertThat(simpleScheduler.getExecutors()).isNotEmpty();
 
-      scheduleManager.stopAsync();
+      simpleScheduler.stopAsync();
    }
 
 
@@ -101,11 +103,12 @@ class ScheduleManagerTest extends BaseTest
 
       BasicStep.counter = 0;
 
-      ScheduleManager scheduleManager = ScheduleManager.getInstance(qInstance);
-      scheduleManager.setSessionSupplier(QSession::new);
-      scheduleManager.start();
+      SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
+      simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
+      simpleScheduler.setSessionSupplier(QSession::new);
+      simpleScheduler.start();
       SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
-      scheduleManager.stopAsync();
+      simpleScheduler.stopAsync();
 
       System.out.println("Ran: " + BasicStep.counter + " times");
       assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice");

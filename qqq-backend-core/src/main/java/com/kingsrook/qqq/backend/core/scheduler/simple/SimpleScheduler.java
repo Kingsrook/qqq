@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.scheduler;
+package com.kingsrook.qqq.backend.core.scheduler.simple;
 
 
 import java.io.Serializable;
@@ -30,22 +30,16 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
-import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import com.kingsrook.qqq.backend.core.scheduler.QSchedulerInterface;
+import com.kingsrook.qqq.backend.core.scheduler.SchedulerUtils;
 
 
 /*******************************************************************************
@@ -58,12 +52,13 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
  **
  ** All of these jobs run using a "system session" - as defined by the sessionSupplier.
  *******************************************************************************/
-public class ScheduleManager
+public class SimpleScheduler implements QSchedulerInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(ScheduleManager.class);
+   private static final QLogger LOG = QLogger.getLogger(SimpleScheduler.class);
 
-   private static ScheduleManager scheduleManager = null;
+   private static SimpleScheduler simpleScheduler = null;
    private final  QInstance       qInstance;
+   private        String          schedulerName;
 
    protected Supplier<QSession> sessionSupplier;
 
@@ -79,7 +74,7 @@ public class ScheduleManager
    /*******************************************************************************
     ** Singleton constructor
     *******************************************************************************/
-   private ScheduleManager(QInstance qInstance)
+   private SimpleScheduler(QInstance qInstance)
    {
       this.qInstance = qInstance;
    }
@@ -89,13 +84,13 @@ public class ScheduleManager
    /*******************************************************************************
     ** Singleton accessor
     *******************************************************************************/
-   public static ScheduleManager getInstance(QInstance qInstance)
+   public static SimpleScheduler getInstance(QInstance qInstance)
    {
-      if(scheduleManager == null)
+      if(simpleScheduler == null)
       {
-         scheduleManager = new ScheduleManager(qInstance);
+         simpleScheduler = new SimpleScheduler(qInstance);
       }
-      return (scheduleManager);
+      return (simpleScheduler);
    }
 
 
@@ -103,88 +98,56 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Override
    public void start()
    {
-      if(!new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.scheduleManager.enabled", "QQQ_SCHEDULE_MANAGER_ENABLED", true))
+      for(StandardScheduledExecutor executor : executors)
       {
-         LOG.info("Not starting ScheduleManager per settings.");
+         executor.start();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void stopAsync()
+   {
+      for(StandardScheduledExecutor scheduledExecutor : executors)
+      {
+         scheduledExecutor.stopAsync();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void stop()
+   {
+      for(StandardScheduledExecutor scheduledExecutor : executors)
+      {
+         scheduledExecutor.stop();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider, boolean allowedToStartProvider)
+   {
+      if(!allowedToStartProvider)
+      {
          return;
       }
 
-      boolean needToClearContext = false;
-      try
-      {
-         if(QContext.getQInstance() == null)
-         {
-            needToClearContext = true;
-            QContext.init(qInstance, sessionSupplier.get());
-         }
-
-         for(QQueueProviderMetaData queueProvider : qInstance.getQueueProviders().values())
-         {
-            startQueueProvider(queueProvider);
-         }
-
-         for(QAutomationProviderMetaData automationProvider : qInstance.getAutomationProviders().values())
-         {
-            startAutomationProviderPerTable(automationProvider);
-         }
-
-         for(QProcessMetaData process : qInstance.getProcesses().values())
-         {
-            if(process.getSchedule() != null && SchedulerUtils.allowedToStart(process.getName()))
-            {
-               QScheduleMetaData scheduleMetaData = process.getSchedule();
-               if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
-               {
-                  ///////////////////////////////////////////////
-                  // if no variants, or variant is serial mode //
-                  ///////////////////////////////////////////////
-                  startProcess(process, null);
-               }
-               else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
-               {
-                  /////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // if this a "parallel", which for example means we want to have a thread for each backend variant //
-                  // running at the same time, get the variant records and schedule each separately                  //
-                  /////////////////////////////////////////////////////////////////////////////////////////////////////
-                  QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
-                  for(QRecord qRecord : CollectionUtils.nonNullList(SchedulerUtils.getBackendVariantFilteredRecords(process)))
-                  {
-                     try
-                     {
-                        startProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
-                     }
-                     catch(Exception e)
-                     {
-                        LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
-                     }
-                  }
-               }
-               else
-               {
-                  LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
-               }
-            }
-         }
-      }
-      finally
-      {
-         if(needToClearContext)
-         {
-            QContext.clear();
-         }
-      }
-   }
-
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void startAutomationProviderPerTable(QAutomationProviderMetaData automationProvider)
-   {
       ///////////////////////////////////////////////////////////////////////////////////
       // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
       // then start a scheduled executor foreach one                                   //
@@ -201,11 +164,6 @@ public class ScheduleManager
 
             executor.setName(runner.getName());
             setScheduleInExecutor(schedule, executor);
-            if(!executor.start())
-            {
-               LOG.warn("executor.start return false for: " + executor.getName());
-            }
-
             executors.add(executor);
          }
       }
@@ -216,28 +174,14 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startQueueProvider(QQueueProviderMetaData queueProvider)
+   @Override
+   public void setupSqsProvider(SQSQueueProviderMetaData queueProvider, boolean allowedToStartProvider)
    {
-      if(SchedulerUtils.allowedToStart(queueProvider.getName()))
+      if(!allowedToStartProvider)
       {
-         switch(queueProvider.getType())
-         {
-            case SQS:
-               startSqsProvider((SQSQueueProviderMetaData) queueProvider);
-               break;
-            default:
-               throw new IllegalArgumentException("Unhandled queue provider type: " + queueProvider.getType());
-         }
+         return;
       }
-   }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void startSqsProvider(SQSQueueProviderMetaData queueProvider)
-   {
       QInstance          scheduleManagerQueueInstance   = qInstance;
       Supplier<QSession> scheduleManagerSessionSupplier = sessionSupplier;
 
@@ -259,11 +203,6 @@ public class ScheduleManager
 
             executor.setName(queue.getName());
             setScheduleInExecutor(schedule, executor);
-            if(!executor.start())
-            {
-               LOG.warn("executor.start return false for: " + executor.getName());
-            }
-
             executors.add(executor);
          }
       }
@@ -274,8 +213,14 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData)
+   @Override
+   public void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, boolean allowedToStart)
    {
+      if(!allowedToStart)
+      {
+         return;
+      }
+
       Runnable runProcess = () ->
       {
          SchedulerUtils.runProcess(qInstance, sessionSupplier, process, backendVariantData);
@@ -284,11 +229,6 @@ public class ScheduleManager
       StandardScheduledExecutor executor = new StandardScheduledExecutor(runProcess);
       executor.setName("process:" + process.getName());
       setScheduleInExecutor(process.getSchedule(), executor);
-      if(!executor.start())
-      {
-         LOG.warn("executor.start return false for: " + executor.getName());
-      }
-
       executors.add(executor);
    }
 
@@ -363,22 +303,40 @@ public class ScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void stopAsync()
+   static void resetSingleton()
    {
-      for(StandardScheduledExecutor scheduledExecutor : executors)
-      {
-         scheduledExecutor.stopAsync();
-      }
+      simpleScheduler = null;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for schedulerName
     *******************************************************************************/
-   static void resetSingleton()
+   public String getSchedulerName()
    {
-      scheduleManager = null;
+      return (this.schedulerName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulerName
+    *******************************************************************************/
+   public void setSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schedulerName
+    *******************************************************************************/
+   public SimpleScheduler withSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+      return (this);
    }
 
 }
