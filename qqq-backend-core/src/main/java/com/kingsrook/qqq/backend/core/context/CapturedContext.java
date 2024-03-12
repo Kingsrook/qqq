@@ -34,6 +34,9 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
  *******************************************************************************/
 public record CapturedContext(QInstance qInstance, QSession qSession, QBackendTransaction qBackendTransaction, Stack<AbstractActionInput> actionStack)
 {
+   /*******************************************************************************
+    ** Simpler constructor
+    *******************************************************************************/
    public CapturedContext(QInstance qInstance, QSession qSession)
    {
       this(qInstance, qSession, null, null);
