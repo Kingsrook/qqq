@@ -51,12 +51,15 @@ public class QuartzSqsPollerJob implements Job
    @Override
    public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException
    {
+      String queueProviderName = null;
+      String queueName         = null;
+
       try
       {
-         JobDataMap jobDataMap        = jobExecutionContext.getJobDetail().getJobDataMap();
-         String     queueProviderName = jobDataMap.getString("queueProviderName");
-         String     queueName         = jobDataMap.getString("queueName");
-         QInstance  qInstance         = QuartzScheduler.getInstance().getQInstance();
+         JobDataMap jobDataMap = jobExecutionContext.getJobDetail().getJobDataMap();
+         queueProviderName = jobDataMap.getString("queueProviderName");
+         queueName = jobDataMap.getString("queueName");
+         QInstance qInstance = QuartzScheduler.getInstance().getQInstance();
 
          SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
          sqsQueuePoller.setQueueProviderMetaData((SQSQueueProviderMetaData) qInstance.getQueueProvider(queueProviderName));
@@ -67,8 +70,12 @@ public class QuartzSqsPollerJob implements Job
          /////////////
          // run it. //
          /////////////
-         LOG.debug("Running quartz SQS Poller", logPair("queueName", queueName));
+         LOG.debug("Running quartz SQS Poller", logPair("queueName", queueName), logPair("queueProviderName", queueProviderName));
          sqsQueuePoller.run();
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error running SQS Poller", e, logPair("queueName", queueName), logPair("queueProviderName", queueProviderName));
       }
       finally
       {

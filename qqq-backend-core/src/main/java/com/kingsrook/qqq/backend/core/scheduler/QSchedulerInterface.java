@@ -34,11 +34,25 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMeta
  *******************************************************************************/
 public interface QSchedulerInterface
 {
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, boolean allowedToStart);
 
    /*******************************************************************************
     **
     *******************************************************************************/
    void setupSqsProvider(SQSQueueProviderMetaData queueProvider, boolean allowedToStart);
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider, boolean allowedToStart);
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void start();
 
    /*******************************************************************************
     **
@@ -51,19 +65,12 @@ public interface QSchedulerInterface
    void stop();
 
    /*******************************************************************************
-    **
+    ** Handle a whole shutdown of the scheduler system (e.g., between unit tests).
     *******************************************************************************/
-   void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider, boolean allowedToStart);
+   default void unInit()
+   {
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, boolean allowedToStart);
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void start();
+   }
 
    /*******************************************************************************
     ** let the scheduler know when the schedule manager is at the start of setting up schedules.

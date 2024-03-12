@@ -77,7 +77,7 @@ public class PauseQuartzJobsProcess extends AbstractLoadStep implements MetaData
          QuartzScheduler instance = QuartzScheduler.getInstance();
          for(QRecord record : runBackendStepInput.getRecords())
          {
-            instance.pauseJob(record.getValueString("JOB_NAME"), record.getValueString("GROUP_NAME"));
+            instance.pauseJob(record.getValueString("jobName"), record.getValueString("groupName"));
          }
       }
       catch(Exception e)

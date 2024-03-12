@@ -58,7 +58,7 @@ class SimpleSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      SimpleScheduler.resetSingleton();
+      QScheduleManager.getInstance().unInit();
    }
 
 
@@ -81,7 +81,6 @@ class SimpleSchedulerTest extends BaseTest
       assertThat(simpleScheduler.getExecutors()).isNotEmpty();
 
       qScheduleManager.stop();
-      qScheduleManager.unInit();
    }
 
 
@@ -106,8 +105,7 @@ class SimpleSchedulerTest extends BaseTest
                .withInitialDelaySeconds(0))
             .withStepList(List.of(new QBackendStepMetaData()
                .withName("step")
-               .withCode(new QCodeReference(BasicStep.class))))
-      );
+               .withCode(new QCodeReference(BasicStep.class)))));
 
       BasicStep.counter = 0;
 
@@ -120,7 +118,6 @@ class SimpleSchedulerTest extends BaseTest
       //////////////////////////////////////////////////
       SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
       qScheduleManager.stopAsync();
-      qScheduleManager.unInit();
 
       System.out.println("Ran: " + BasicStep.counter + " times");
       assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s).");

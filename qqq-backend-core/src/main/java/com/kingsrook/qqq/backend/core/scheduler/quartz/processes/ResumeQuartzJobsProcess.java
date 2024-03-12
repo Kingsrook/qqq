@@ -77,7 +77,7 @@ public class ResumeQuartzJobsProcess extends AbstractLoadStep implements MetaDat
          QuartzScheduler instance = QuartzScheduler.getInstance();
          for(QRecord record : runBackendStepInput.getRecords())
          {
-            instance.resumeJob(record.getValueString("JOB_NAME"), record.getValueString("GROUP_NAME"));
+            instance.resumeJob(record.getValueString("jobName"), record.getValueString("groupName"));
          }
       }
       catch(Exception e)

@@ -309,6 +309,7 @@ public class QScheduleManager
    public void unInit()
    {
       qScheduleManager = null;
+      schedulers.values().forEach(s -> s.unInit());
       schedulers.clear();
    }
 }

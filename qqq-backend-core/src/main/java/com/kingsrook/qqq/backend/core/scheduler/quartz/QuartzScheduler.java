@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.scheduler.quartz;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -250,7 +251,7 @@ public class QuartzScheduler implements QSchedulerInterface
          }
          else
          {
-            long intervalMillis = Objects.requireNonNullElse(scheduleMetaData.getRepeatMillis(), scheduleMetaData.getRepeatSeconds() * 1000);
+            long intervalMillis = Objects.requireNonNullElseGet(scheduleMetaData.getRepeatMillis(), () -> scheduleMetaData.getRepeatSeconds() * 1000);
             scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
                .withIntervalInMilliseconds(intervalMillis)
                .repeatForever();
@@ -376,6 +377,8 @@ public class QuartzScheduler implements QSchedulerInterface
          this.scheduler.scheduleJob(jobDetail, trigger);
          LOG.info("Scheduled new job: " + jobKey);
       }
+
+      // todo - think about... clear memoization - but - when this is used in bulk, that's when we want the memo!
    }
 
 
@@ -498,5 +501,47 @@ public class QuartzScheduler implements QSchedulerInterface
    public void resumeJob(String jobName, String groupName) throws SchedulerException
    {
       this.scheduler.resumeJob(new JobKey(jobName, groupName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   List<QuartzJobAndTriggerWrapper> queryQuartz() throws SchedulerException
+   {
+      List<QuartzJobAndTriggerWrapper> rs = new ArrayList<>();
+      List<String> jobGroupNames = scheduler.getJobGroupNames();
+
+      for(String group : jobGroupNames)
+      {
+         Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.groupEquals(group));
+         for(JobKey jobKey : jobKeys)
+         {
+            JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+            List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
+            for(Trigger trigger : triggersOfJob)
+            {
+               Trigger.TriggerState triggerState = scheduler.getTriggerState(trigger.getKey());
+               rs.add(new QuartzJobAndTriggerWrapper(jobDetail, trigger, triggerState));
+            }
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void unInit()
+   {
+      ///////////////////////////////////////////////////
+      // resetting the singleton should be sufficient! //
+      ///////////////////////////////////////////////////
+      quartzScheduler = null;
    }
 }

@@ -51,13 +51,17 @@ public class QuartzTableAutomationsJob implements Job
    @Override
    public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException
    {
+      String           tableName              = null;
+      String           automationProviderName = null;
+      AutomationStatus automationStatus       = null;
+
       try
       {
-         JobDataMap       jobDataMap             = jobExecutionContext.getJobDetail().getJobDataMap();
-         String           tableName              = jobDataMap.getString("tableName");
-         String           automationProviderName = jobDataMap.getString("automationProviderName");
-         AutomationStatus automationStatus       = AutomationStatus.valueOf(jobDataMap.getString("automationStatus"));
-         QInstance        qInstance              = QuartzScheduler.getInstance().getQInstance();
+         JobDataMap jobDataMap = jobExecutionContext.getJobDetail().getJobDataMap();
+         tableName = jobDataMap.getString("tableName");
+         automationProviderName = jobDataMap.getString("automationProviderName");
+         automationStatus = AutomationStatus.valueOf(jobDataMap.getString("automationStatus"));
+         QInstance qInstance = QuartzScheduler.getInstance().getQInstance();
 
          PollingAutomationPerTableRunner.TableActionsInterface tableAction = new PollingAutomationPerTableRunner.TableActions(tableName, automationStatus);
          PollingAutomationPerTableRunner                       runner      = new PollingAutomationPerTableRunner(qInstance, automationProviderName, QuartzScheduler.getInstance().getSessionSupplier(), tableAction);
@@ -67,6 +71,10 @@ public class QuartzTableAutomationsJob implements Job
          /////////////
          LOG.debug("Running Table Automations", logPair("tableName", tableName), logPair("automationStatus", automationStatus));
          runner.run();
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error running Table Automations", e, logPair("tableName", tableName), logPair("automationStatus", automationStatus));
       }
       finally
       {

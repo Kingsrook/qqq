@@ -305,7 +305,6 @@ public class SimpleScheduler implements QSchedulerInterface
     *******************************************************************************/
    static void resetSingleton()
    {
-      simpleScheduler = null;
    }
 
 
@@ -339,4 +338,17 @@ public class SimpleScheduler implements QSchedulerInterface
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void unInit()
+   {
+      //////////////////////////////////////////////////
+      // resetting the singleton should be sufficient //
+      //////////////////////////////////////////////////
+      simpleScheduler = null;
+   }
 }
