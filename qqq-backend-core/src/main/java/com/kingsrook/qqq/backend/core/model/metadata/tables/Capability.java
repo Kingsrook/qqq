@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -50,7 +51,7 @@ public enum Capability
     *******************************************************************************/
    public static Set<Capability> allReadCapabilities()
    {
-      return (Set.of(TABLE_QUERY, TABLE_GET, TABLE_COUNT, QUERY_STATS));
+      return (new HashSet<>(Set.of(TABLE_QUERY, TABLE_GET, TABLE_COUNT, QUERY_STATS)));
    }
 
 
@@ -60,7 +61,7 @@ public enum Capability
     *******************************************************************************/
    public static Set<Capability> allWriteCapabilities()
    {
-      return (Set.of(TABLE_INSERT, TABLE_UPDATE, TABLE_DELETE));
+      return (new HashSet<>(Set.of(TABLE_INSERT, TABLE_UPDATE, TABLE_DELETE)));
    }
 
 }
