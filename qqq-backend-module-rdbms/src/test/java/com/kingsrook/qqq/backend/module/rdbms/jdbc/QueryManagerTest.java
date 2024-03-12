@@ -64,18 +64,20 @@ class QueryManagerTest extends BaseTest
    @BeforeEach
    void beforeEach() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, """
-         CREATE TABLE test_table
-         (
-            int_col INTEGER,
-            datetime_col DATETIME,
-            char_col CHAR(1),
-            date_col DATE,
-            time_col TIME,
-            long_col LONG
-         )
-         """);
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, """
+            CREATE TABLE test_table
+            (
+               int_col INTEGER,
+               datetime_col DATETIME,
+               char_col CHAR(1),
+               date_col DATE,
+               time_col TIME,
+               long_col LONG
+            )
+            """);
+      }
    }
 
 
@@ -86,8 +88,10 @@ class QueryManagerTest extends BaseTest
    @AfterEach
    void afterEach() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "DROP TABLE test_table");
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, "DROP TABLE test_table");
+      }
    }
 
 
@@ -109,56 +113,58 @@ class QueryManagerTest extends BaseTest
    @Test
    void testBindParams() throws SQLException
    {
-      long              ctMillis   = System.currentTimeMillis();
-      Connection        connection = getConnection();
-      PreparedStatement ps         = connection.prepareStatement("UPDATE test_table SET int_col = ? WHERE int_col > 0");
-
-      ///////////////////////////////////////////////////////////////////////////////
-      // these calls - we just want to assert that they don't throw any exceptions //
-      ///////////////////////////////////////////////////////////////////////////////
-      QueryManager.bindParamObject(ps, 1, (short) 1);
-      QueryManager.bindParamObject(ps, 1, (long) 1);
-      QueryManager.bindParamObject(ps, 1, true);
-      QueryManager.bindParamObject(ps, 1, BigDecimal.ONE);
-      QueryManager.bindParamObject(ps, 1, "hello".getBytes(StandardCharsets.UTF_8));
-      QueryManager.bindParamObject(ps, 1, new Timestamp(ctMillis));
-      QueryManager.bindParamObject(ps, 1, new Date(ctMillis));
-      QueryManager.bindParamObject(ps, 1, new GregorianCalendar());
-      QueryManager.bindParamObject(ps, 1, LocalDate.now());
-      QueryManager.bindParamObject(ps, 1, OffsetDateTime.now());
-      QueryManager.bindParamObject(ps, 1, LocalDateTime.now());
-      QueryManager.bindParamObject(ps, 1, AutomationStatus.PENDING_INSERT_AUTOMATIONS);
-
-      assertThrows(SQLException.class, () ->
+      try(Connection connection = getConnection())
       {
-         QueryManager.bindParamObject(ps, 1, new Object());
-      });
+         long              ctMillis = System.currentTimeMillis();
+         PreparedStatement ps       = connection.prepareStatement("UPDATE test_table SET int_col = ? WHERE int_col > 0");
 
-      QueryManager.bindParam(ps, 1, (Integer) null);
-      QueryManager.bindParam(ps, 1, (Boolean) null);
-      QueryManager.bindParam(ps, 1, (BigDecimal) null);
-      QueryManager.bindParam(ps, 1, (byte[]) null);
-      QueryManager.bindParam(ps, 1, (Timestamp) null);
-      QueryManager.bindParam(ps, 1, (String) null);
-      QueryManager.bindParam(ps, 1, (Date) null);
-      QueryManager.bindParam(ps, 1, (GregorianCalendar) null);
-      QueryManager.bindParam(ps, 1, (LocalDate) null);
-      QueryManager.bindParam(ps, 1, (LocalDateTime) null);
+         ///////////////////////////////////////////////////////////////////////////////
+         // these calls - we just want to assert that they don't throw any exceptions //
+         ///////////////////////////////////////////////////////////////////////////////
+         QueryManager.bindParamObject(ps, 1, (short) 1);
+         QueryManager.bindParamObject(ps, 1, (long) 1);
+         QueryManager.bindParamObject(ps, 1, true);
+         QueryManager.bindParamObject(ps, 1, BigDecimal.ONE);
+         QueryManager.bindParamObject(ps, 1, "hello".getBytes(StandardCharsets.UTF_8));
+         QueryManager.bindParamObject(ps, 1, new Timestamp(ctMillis));
+         QueryManager.bindParamObject(ps, 1, new Date(ctMillis));
+         QueryManager.bindParamObject(ps, 1, new GregorianCalendar());
+         QueryManager.bindParamObject(ps, 1, LocalDate.now());
+         QueryManager.bindParamObject(ps, 1, OffsetDateTime.now());
+         QueryManager.bindParamObject(ps, 1, LocalDateTime.now());
+         QueryManager.bindParamObject(ps, 1, AutomationStatus.PENDING_INSERT_AUTOMATIONS);
 
-      QueryManager.bindParam(ps, 1, 1);
-      QueryManager.bindParam(ps, 1, true);
-      QueryManager.bindParam(ps, 1, BigDecimal.ONE);
-      QueryManager.bindParam(ps, 1, "hello".getBytes(StandardCharsets.UTF_8));
-      QueryManager.bindParam(ps, 1, new Timestamp(ctMillis));
-      QueryManager.bindParam(ps, 1, "hello");
-      QueryManager.bindParam(ps, 1, new Date(ctMillis));
-      QueryManager.bindParam(ps, 1, new GregorianCalendar());
-      QueryManager.bindParam(ps, 1, LocalDate.now());
-      QueryManager.bindParam(ps, 1, LocalDateTime.now());
+         assertThrows(SQLException.class, () ->
+         {
+            QueryManager.bindParamObject(ps, 1, new Object());
+         });
 
-      ////////////////////////////////////////////////////////////////////////////////////////////////
-      // originally longs were being downgraded to int when binding, so, verify that doesn't happen //
-      ////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryManager.bindParam(ps, 1, (Integer) null);
+         QueryManager.bindParam(ps, 1, (Boolean) null);
+         QueryManager.bindParam(ps, 1, (BigDecimal) null);
+         QueryManager.bindParam(ps, 1, (byte[]) null);
+         QueryManager.bindParam(ps, 1, (Timestamp) null);
+         QueryManager.bindParam(ps, 1, (String) null);
+         QueryManager.bindParam(ps, 1, (Date) null);
+         QueryManager.bindParam(ps, 1, (GregorianCalendar) null);
+         QueryManager.bindParam(ps, 1, (LocalDate) null);
+         QueryManager.bindParam(ps, 1, (LocalDateTime) null);
+
+         QueryManager.bindParam(ps, 1, 1);
+         QueryManager.bindParam(ps, 1, true);
+         QueryManager.bindParam(ps, 1, BigDecimal.ONE);
+         QueryManager.bindParam(ps, 1, "hello".getBytes(StandardCharsets.UTF_8));
+         QueryManager.bindParam(ps, 1, new Timestamp(ctMillis));
+         QueryManager.bindParam(ps, 1, "hello");
+         QueryManager.bindParam(ps, 1, new Date(ctMillis));
+         QueryManager.bindParam(ps, 1, new GregorianCalendar());
+         QueryManager.bindParam(ps, 1, LocalDate.now());
+         QueryManager.bindParam(ps, 1, LocalDateTime.now());
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         // originally longs were being downgraded to int when binding, so, verify that doesn't happen //
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+      }
    }
 
 
@@ -169,19 +175,21 @@ class QueryManagerTest extends BaseTest
    @Test
    void testLongBinding() throws SQLException
    {
-      Long biggerThanMaxInteger = 2147483648L;
+      try(Connection connection = getConnection())
+      {
+         Long biggerThanMaxInteger = 2147483648L;
 
-      Connection        connection = getConnection();
-      PreparedStatement ps         = connection.prepareStatement("INSERT INTO test_table (long_col) VALUES (?)");
-      QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
-      ps.execute();
+         PreparedStatement ps = connection.prepareStatement("INSERT INTO test_table (long_col) VALUES (?)");
+         QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
+         ps.execute();
 
-      ps = connection.prepareStatement("SELECT long_col FROM test_table WHERE long_col = ?");
-      QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
-      ps.execute();
-      ResultSet rs = ps.getResultSet();
-      assertTrue(rs.next());
-      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
+         ps = connection.prepareStatement("SELECT long_col FROM test_table WHERE long_col = ?");
+         QueryManager.bindParam(ps, 1, biggerThanMaxInteger);
+         ps.execute();
+         ResultSet rs = ps.getResultSet();
+         assertTrue(rs.next());
+         assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
+      }
    }
 
 
@@ -192,43 +200,45 @@ class QueryManagerTest extends BaseTest
    @Test
    void testGetValueMethods() throws SQLException
    {
-      Long biggerThanMaxInteger = 2147483648L;
+      try(Connection connection = getConnection())
+      {
+         Long biggerThanMaxInteger = 2147483648L;
 
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col, long_col) VALUES (1, now(), 'A', " + biggerThanMaxInteger + ")");
-      PreparedStatement preparedStatement = connection.prepareStatement("SELECT int_col, datetime_col, char_col, long_col from test_table");
-      preparedStatement.execute();
-      ResultSet rs = preparedStatement.getResultSet();
-      rs.next();
+         QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col, long_col) VALUES (1, now(), 'A', " + biggerThanMaxInteger + ")");
+         PreparedStatement preparedStatement = connection.prepareStatement("SELECT int_col, datetime_col, char_col, long_col from test_table");
+         preparedStatement.execute();
+         ResultSet rs = preparedStatement.getResultSet();
+         rs.next();
 
-      assertEquals(1, QueryManager.getInteger(rs, "int_col"));
-      assertEquals(1, QueryManager.getInteger(rs, 1));
-      assertEquals(1L, QueryManager.getLong(rs, "int_col"));
-      assertEquals(1L, QueryManager.getLong(rs, 1));
-      assertArrayEquals(new byte[] { 0, 0, 0, 1 }, QueryManager.getByteArray(rs, "int_col"));
-      assertArrayEquals(new byte[] { 0, 0, 0, 1 }, QueryManager.getByteArray(rs, 1));
-      assertEquals(1, QueryManager.getObject(rs, "int_col"));
-      assertEquals(1, QueryManager.getObject(rs, 1));
-      assertEquals(BigDecimal.ONE, QueryManager.getBigDecimal(rs, "int_col"));
-      assertEquals(BigDecimal.ONE, QueryManager.getBigDecimal(rs, 1));
-      assertEquals(true, QueryManager.getBoolean(rs, "int_col"));
-      assertEquals(true, QueryManager.getBoolean(rs, 1));
-      assertNotNull(QueryManager.getDate(rs, "datetime_col"));
-      assertNotNull(QueryManager.getDate(rs, 2));
-      assertNotNull(QueryManager.getCalendar(rs, "datetime_col"));
-      assertNotNull(QueryManager.getCalendar(rs, 2));
-      assertNotNull(QueryManager.getLocalDate(rs, "datetime_col"));
-      assertNotNull(QueryManager.getLocalDate(rs, 2));
-      assertNotNull(QueryManager.getLocalDateTime(rs, "datetime_col"));
-      assertNotNull(QueryManager.getLocalDateTime(rs, 2));
-      assertNotNull(QueryManager.getOffsetDateTime(rs, "datetime_col"));
-      assertNotNull(QueryManager.getOffsetDateTime(rs, 2));
-      assertNotNull(QueryManager.getTimestamp(rs, "datetime_col"));
-      assertNotNull(QueryManager.getTimestamp(rs, 2));
-      assertEquals("A", QueryManager.getObject(rs, "char_col"));
-      assertEquals("A", QueryManager.getObject(rs, 3));
-      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
-      assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, 4));
+         assertEquals(1, QueryManager.getInteger(rs, "int_col"));
+         assertEquals(1, QueryManager.getInteger(rs, 1));
+         assertEquals(1L, QueryManager.getLong(rs, "int_col"));
+         assertEquals(1L, QueryManager.getLong(rs, 1));
+         assertArrayEquals(new byte[] { 0, 0, 0, 1 }, QueryManager.getByteArray(rs, "int_col"));
+         assertArrayEquals(new byte[] { 0, 0, 0, 1 }, QueryManager.getByteArray(rs, 1));
+         assertEquals(1, QueryManager.getObject(rs, "int_col"));
+         assertEquals(1, QueryManager.getObject(rs, 1));
+         assertEquals(BigDecimal.ONE, QueryManager.getBigDecimal(rs, "int_col"));
+         assertEquals(BigDecimal.ONE, QueryManager.getBigDecimal(rs, 1));
+         assertEquals(true, QueryManager.getBoolean(rs, "int_col"));
+         assertEquals(true, QueryManager.getBoolean(rs, 1));
+         assertNotNull(QueryManager.getDate(rs, "datetime_col"));
+         assertNotNull(QueryManager.getDate(rs, 2));
+         assertNotNull(QueryManager.getCalendar(rs, "datetime_col"));
+         assertNotNull(QueryManager.getCalendar(rs, 2));
+         assertNotNull(QueryManager.getLocalDate(rs, "datetime_col"));
+         assertNotNull(QueryManager.getLocalDate(rs, 2));
+         assertNotNull(QueryManager.getLocalDateTime(rs, "datetime_col"));
+         assertNotNull(QueryManager.getLocalDateTime(rs, 2));
+         assertNotNull(QueryManager.getOffsetDateTime(rs, "datetime_col"));
+         assertNotNull(QueryManager.getOffsetDateTime(rs, 2));
+         assertNotNull(QueryManager.getTimestamp(rs, "datetime_col"));
+         assertNotNull(QueryManager.getTimestamp(rs, 2));
+         assertEquals("A", QueryManager.getObject(rs, "char_col"));
+         assertEquals("A", QueryManager.getObject(rs, 3));
+         assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, "long_col"));
+         assertEquals(biggerThanMaxInteger, QueryManager.getLong(rs, 4));
+      }
    }
 
 
@@ -239,39 +249,41 @@ class QueryManagerTest extends BaseTest
    @Test
    void testGetValueMethodsReturningNull() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col) VALUES (null, null, null)");
-      PreparedStatement preparedStatement = connection.prepareStatement("SELECT * from test_table");
-      preparedStatement.execute();
-      ResultSet rs = preparedStatement.getResultSet();
-      rs.next();
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, datetime_col, char_col) VALUES (null, null, null)");
+         PreparedStatement preparedStatement = connection.prepareStatement("SELECT * from test_table");
+         preparedStatement.execute();
+         ResultSet rs = preparedStatement.getResultSet();
+         rs.next();
 
-      assertNull(QueryManager.getInteger(rs, "int_col"));
-      assertNull(QueryManager.getInteger(rs, 1));
-      assertNull(QueryManager.getLong(rs, "int_col"));
-      assertNull(QueryManager.getLong(rs, 1));
-      assertNull(QueryManager.getByteArray(rs, "int_col"));
-      assertNull(QueryManager.getByteArray(rs, 1));
-      assertNull(QueryManager.getObject(rs, "int_col"));
-      assertNull(QueryManager.getObject(rs, 1));
-      assertNull(QueryManager.getBigDecimal(rs, "int_col"));
-      assertNull(QueryManager.getBigDecimal(rs, 1));
-      assertNull(QueryManager.getBoolean(rs, "int_col"));
-      assertNull(QueryManager.getBoolean(rs, 1));
-      assertNull(QueryManager.getDate(rs, "datetime_col"));
-      assertNull(QueryManager.getDate(rs, 2));
-      assertNull(QueryManager.getCalendar(rs, "datetime_col"));
-      assertNull(QueryManager.getCalendar(rs, 2));
-      assertNull(QueryManager.getLocalDate(rs, "datetime_col"));
-      assertNull(QueryManager.getLocalDate(rs, 2));
-      assertNull(QueryManager.getLocalDateTime(rs, "datetime_col"));
-      assertNull(QueryManager.getLocalDateTime(rs, 2));
-      assertNull(QueryManager.getOffsetDateTime(rs, "datetime_col"));
-      assertNull(QueryManager.getOffsetDateTime(rs, 2));
-      assertNull(QueryManager.getTimestamp(rs, "datetime_col"));
-      assertNull(QueryManager.getTimestamp(rs, 2));
-      assertNull(QueryManager.getObject(rs, "char_col"));
-      assertNull(QueryManager.getObject(rs, 3));
+         assertNull(QueryManager.getInteger(rs, "int_col"));
+         assertNull(QueryManager.getInteger(rs, 1));
+         assertNull(QueryManager.getLong(rs, "int_col"));
+         assertNull(QueryManager.getLong(rs, 1));
+         assertNull(QueryManager.getByteArray(rs, "int_col"));
+         assertNull(QueryManager.getByteArray(rs, 1));
+         assertNull(QueryManager.getObject(rs, "int_col"));
+         assertNull(QueryManager.getObject(rs, 1));
+         assertNull(QueryManager.getBigDecimal(rs, "int_col"));
+         assertNull(QueryManager.getBigDecimal(rs, 1));
+         assertNull(QueryManager.getBoolean(rs, "int_col"));
+         assertNull(QueryManager.getBoolean(rs, 1));
+         assertNull(QueryManager.getDate(rs, "datetime_col"));
+         assertNull(QueryManager.getDate(rs, 2));
+         assertNull(QueryManager.getCalendar(rs, "datetime_col"));
+         assertNull(QueryManager.getCalendar(rs, 2));
+         assertNull(QueryManager.getLocalDate(rs, "datetime_col"));
+         assertNull(QueryManager.getLocalDate(rs, 2));
+         assertNull(QueryManager.getLocalDateTime(rs, "datetime_col"));
+         assertNull(QueryManager.getLocalDateTime(rs, 2));
+         assertNull(QueryManager.getOffsetDateTime(rs, "datetime_col"));
+         assertNull(QueryManager.getOffsetDateTime(rs, 2));
+         assertNull(QueryManager.getTimestamp(rs, "datetime_col"));
+         assertNull(QueryManager.getTimestamp(rs, 2));
+         assertNull(QueryManager.getObject(rs, "char_col"));
+         assertNull(QueryManager.getObject(rs, 3));
+      }
    }
 
 
@@ -283,37 +295,39 @@ class QueryManagerTest extends BaseTest
    @Test
    void testLocalDate() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (date_col) VALUES (?)", LocalDate.of(2013, Month.OCTOBER, 1));
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, "INSERT INTO test_table (date_col) VALUES (?)", LocalDate.of(2013, Month.OCTOBER, 1));
 
-      PreparedStatement preparedStatement = connection.prepareStatement("SELECT date_col from test_table");
-      preparedStatement.execute();
-      ResultSet rs = preparedStatement.getResultSet();
-      rs.next();
+         PreparedStatement preparedStatement = connection.prepareStatement("SELECT date_col from test_table");
+         preparedStatement.execute();
+         ResultSet rs = preparedStatement.getResultSet();
+         rs.next();
 
-      Date date = QueryManager.getDate(rs, 1);
-      assertEquals(1, date.getDate(), "Date value");
-      assertEquals(Month.OCTOBER.getValue(), date.getMonth() + 1, "Month value");
-      assertEquals(2013, date.getYear() + 1900, "Year value");
+         Date date = QueryManager.getDate(rs, 1);
+         assertEquals(1, date.getDate(), "Date value");
+         assertEquals(Month.OCTOBER.getValue(), date.getMonth() + 1, "Month value");
+         assertEquals(2013, date.getYear() + 1900, "Year value");
 
-      LocalDate localDate = QueryManager.getLocalDate(rs, 1);
-      assertEquals(1, localDate.getDayOfMonth(), "Date value");
-      assertEquals(Month.OCTOBER, localDate.getMonth(), "Month value");
-      assertEquals(2013, localDate.getYear(), "Year value");
+         LocalDate localDate = QueryManager.getLocalDate(rs, 1);
+         assertEquals(1, localDate.getDayOfMonth(), "Date value");
+         assertEquals(Month.OCTOBER, localDate.getMonth(), "Month value");
+         assertEquals(2013, localDate.getYear(), "Year value");
 
-      LocalDateTime localDateTime = QueryManager.getLocalDateTime(rs, 1);
-      assertEquals(1, localDateTime.getDayOfMonth(), "Date value");
-      assertEquals(Month.OCTOBER, localDateTime.getMonth(), "Month value");
-      assertEquals(2013, localDateTime.getYear(), "Year value");
-      assertEquals(0, localDateTime.getHour(), "Hour value");
-      assertEquals(0, localDateTime.getMinute(), "Minute value");
+         LocalDateTime localDateTime = QueryManager.getLocalDateTime(rs, 1);
+         assertEquals(1, localDateTime.getDayOfMonth(), "Date value");
+         assertEquals(Month.OCTOBER, localDateTime.getMonth(), "Month value");
+         assertEquals(2013, localDateTime.getYear(), "Year value");
+         assertEquals(0, localDateTime.getHour(), "Hour value");
+         assertEquals(0, localDateTime.getMinute(), "Minute value");
 
-      OffsetDateTime offsetDateTime = QueryManager.getOffsetDateTime(rs, 1);
-      assertEquals(1, offsetDateTime.getDayOfMonth(), "Date value");
-      assertEquals(Month.OCTOBER, offsetDateTime.getMonth(), "Month value");
-      assertEquals(2013, offsetDateTime.getYear(), "Year value");
-      assertEquals(0, offsetDateTime.getHour(), "Hour value");
-      assertEquals(0, offsetDateTime.getMinute(), "Minute value");
+         OffsetDateTime offsetDateTime = QueryManager.getOffsetDateTime(rs, 1);
+         assertEquals(1, offsetDateTime.getDayOfMonth(), "Date value");
+         assertEquals(Month.OCTOBER, offsetDateTime.getMonth(), "Month value");
+         assertEquals(2013, offsetDateTime.getYear(), "Year value");
+         assertEquals(0, offsetDateTime.getHour(), "Hour value");
+         assertEquals(0, offsetDateTime.getMinute(), "Minute value");
+      }
    }
 
 
@@ -324,47 +338,48 @@ class QueryManagerTest extends BaseTest
    @Test
    void testLocalTime() throws SQLException
    {
-      Connection connection = getConnection();
+      try(Connection connection = getConnection())
+      {
+         ////////////////////////////////////
+         // insert one just hour & minutes //
+         ////////////////////////////////////
+         QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, time_col) VALUES (?, ?)", 1, LocalTime.of(10, 42));
 
-      ////////////////////////////////////
-      // insert one just hour & minutes //
-      ////////////////////////////////////
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, time_col) VALUES (?, ?)", 1, LocalTime.of(10, 42));
+         PreparedStatement preparedStatement = connection.prepareStatement("SELECT time_col from test_table where int_col=1");
+         preparedStatement.execute();
+         ResultSet rs = preparedStatement.getResultSet();
+         rs.next();
 
-      PreparedStatement preparedStatement = connection.prepareStatement("SELECT time_col from test_table where int_col=1");
-      preparedStatement.execute();
-      ResultSet rs = preparedStatement.getResultSet();
-      rs.next();
+         LocalTime localTime = QueryManager.getLocalTime(rs, 1);
+         assertEquals(10, localTime.getHour(), "Hour value");
+         assertEquals(42, localTime.getMinute(), "Minute value");
+         assertEquals(0, localTime.getSecond(), "Second value");
 
-      LocalTime localTime = QueryManager.getLocalTime(rs, 1);
-      assertEquals(10, localTime.getHour(), "Hour value");
-      assertEquals(42, localTime.getMinute(), "Minute value");
-      assertEquals(0, localTime.getSecond(), "Second value");
+         localTime = QueryManager.getLocalTime(rs, "time_col");
+         assertEquals(10, localTime.getHour(), "Hour value");
+         assertEquals(42, localTime.getMinute(), "Minute value");
+         assertEquals(0, localTime.getSecond(), "Second value");
 
-      localTime = QueryManager.getLocalTime(rs, "time_col");
-      assertEquals(10, localTime.getHour(), "Hour value");
-      assertEquals(42, localTime.getMinute(), "Minute value");
-      assertEquals(0, localTime.getSecond(), "Second value");
+         /////////////////////////////////
+         // now insert one with seconds //
+         /////////////////////////////////
+         QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, time_col) VALUES (?, ?)", 2, LocalTime.of(10, 42, 59));
 
-      /////////////////////////////////
-      // now insert one with seconds //
-      /////////////////////////////////
-      QueryManager.executeUpdate(connection, "INSERT INTO test_table (int_col, time_col) VALUES (?, ?)", 2, LocalTime.of(10, 42, 59));
+         preparedStatement = connection.prepareStatement("SELECT time_col from test_table where int_col=2");
+         preparedStatement.execute();
+         rs = preparedStatement.getResultSet();
+         rs.next();
 
-      preparedStatement = connection.prepareStatement("SELECT time_col from test_table where int_col=2");
-      preparedStatement.execute();
-      rs = preparedStatement.getResultSet();
-      rs.next();
+         localTime = QueryManager.getLocalTime(rs, 1);
+         assertEquals(10, localTime.getHour(), "Hour value");
+         assertEquals(42, localTime.getMinute(), "Minute value");
+         assertEquals(59, localTime.getSecond(), "Second value");
 
-      localTime = QueryManager.getLocalTime(rs, 1);
-      assertEquals(10, localTime.getHour(), "Hour value");
-      assertEquals(42, localTime.getMinute(), "Minute value");
-      assertEquals(59, localTime.getSecond(), "Second value");
-
-      localTime = QueryManager.getLocalTime(rs, "time_col");
-      assertEquals(10, localTime.getHour(), "Hour value");
-      assertEquals(42, localTime.getMinute(), "Minute value");
-      assertEquals(59, localTime.getSecond(), "Second value");
+         localTime = QueryManager.getLocalTime(rs, "time_col");
+         assertEquals(10, localTime.getHour(), "Hour value");
+         assertEquals(42, localTime.getMinute(), "Minute value");
+         assertEquals(59, localTime.getSecond(), "Second value");
+      }
    }
 
 
@@ -375,27 +390,29 @@ class QueryManagerTest extends BaseTest
    @Test
    void testExecuteStatementForSingleValue() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, """
-         INSERT INTO test_table
-         ( int_col, datetime_col, char_col, date_col, time_col )
-         VALUES
-         ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
-         """);
-      assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col = -1"));
-      assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT COUNT(*) FROM test_table"));
-      assertEquals(47, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table"));
-      assertEquals("Q", QueryManager.executeStatementForSingleValue(connection, String.class, "SELECT char_col FROM test_table"));
-      assertEquals(new BigDecimal("1.1"), QueryManager.executeStatementForSingleValue(connection, BigDecimal.class, "SELECT 1.1 FROM test_table"));
-      assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT 1.1 FROM test_table"));
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, """
+            INSERT INTO test_table
+            ( int_col, datetime_col, char_col, date_col, time_col )
+            VALUES
+            ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
+            """);
+         assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col = -1"));
+         assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT COUNT(*) FROM test_table"));
+         assertEquals(47, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table"));
+         assertEquals("Q", QueryManager.executeStatementForSingleValue(connection, String.class, "SELECT char_col FROM test_table"));
+         assertEquals(new BigDecimal("1.1"), QueryManager.executeStatementForSingleValue(connection, BigDecimal.class, "SELECT 1.1 FROM test_table"));
+         assertEquals(1, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT 1.1 FROM test_table"));
 
-      QueryManager.executeUpdate(connection, """
-         INSERT INTO test_table
-         ( int_col, datetime_col, char_col, date_col, time_col )
-         VALUES
-         ( null, null, null, null, null)
-         """);
-      assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col IS NULL"));
+         QueryManager.executeUpdate(connection, """
+            INSERT INTO test_table
+            ( int_col, datetime_col, char_col, date_col, time_col )
+            VALUES
+            ( null, null, null, null, null)
+            """);
+         assertEquals(null, QueryManager.executeStatementForSingleValue(connection, Integer.class, "SELECT int_col FROM test_table WHERE int_col IS NULL"));
+      }
    }
 
 
@@ -406,17 +423,19 @@ class QueryManagerTest extends BaseTest
    @Test
    void testQueryForSimpleEntity() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, """
-         INSERT INTO test_table
-         ( int_col, datetime_col, char_col, date_col, time_col )
-         VALUES
-         ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
-         """);
-      SimpleEntity simpleEntity = QueryManager.executeStatementForSimpleEntity(connection, "SELECT * FROM test_table");
-      assertNotNull(simpleEntity);
-      assertEquals(47, simpleEntity.get("INT_COL"));
-      assertEquals("Q", simpleEntity.get("CHAR_COL"));
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, """
+            INSERT INTO test_table
+            ( int_col, datetime_col, char_col, date_col, time_col )
+            VALUES
+            ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
+            """);
+         SimpleEntity simpleEntity = QueryManager.executeStatementForSimpleEntity(connection, "SELECT * FROM test_table");
+         assertNotNull(simpleEntity);
+         assertEquals(47, simpleEntity.get("INT_COL"));
+         assertEquals("Q", simpleEntity.get("CHAR_COL"));
+      }
    }
 
 
@@ -427,17 +446,19 @@ class QueryManagerTest extends BaseTest
    @Test
    void testQueryForRows() throws SQLException
    {
-      Connection connection = getConnection();
-      QueryManager.executeUpdate(connection, """
-         INSERT INTO test_table
-         ( int_col, datetime_col, char_col, date_col, time_col )
-         VALUES
-         ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
-         """);
-      List<Map<String, Object>> rows = QueryManager.executeStatementForRows(connection, "SELECT * FROM test_table");
-      assertNotNull(rows);
-      assertEquals(47, rows.get(0).get("INT_COL"));
-      assertEquals("Q", rows.get(0).get("CHAR_COL"));
+      try(Connection connection = getConnection())
+      {
+         QueryManager.executeUpdate(connection, """
+            INSERT INTO test_table
+            ( int_col, datetime_col, char_col, date_col, time_col )
+            VALUES
+            ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
+            """);
+         List<Map<String, Object>> rows = QueryManager.executeStatementForRows(connection, "SELECT * FROM test_table");
+         assertNotNull(rows);
+         assertEquals(47, rows.get(0).get("INT_COL"));
+         assertEquals("Q", rows.get(0).get("CHAR_COL"));
+      }
    }
 
 }

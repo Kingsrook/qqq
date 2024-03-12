@@ -67,5 +67,6 @@ public class RDBMSActionTest extends BaseTest
       ConnectionManager connectionManager = new ConnectionManager();
       Connection        connection        = connectionManager.getConnection(TestUtils.defineBackend());
       QueryManager.executeStatement(connection, sql, resultSetProcessor);
+      connection.close();
    }
 }
