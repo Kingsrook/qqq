@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -38,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -67,9 +67,13 @@ class SimpleSchedulerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testStartAndStop()
+   void testStartAndStop() throws QException
    {
-      QInstance       qInstance       = QContext.getQInstance();
+      QInstance qInstance = QContext.getQInstance();
+
+      QScheduleManager qScheduleManager = QScheduleManager.initInstance(qInstance, () -> QContext.getQSession());
+      qScheduleManager.start();
+
       SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
       simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
       simpleScheduler.start();
@@ -85,7 +89,7 @@ class SimpleSchedulerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testScheduledProcess() throws QInstanceValidationException
+   void testScheduledProcess() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
       new QInstanceValidator().validate(qInstance);
@@ -95,13 +99,19 @@ class SimpleSchedulerTest extends BaseTest
       qInstance.addProcess(
          new QProcessMetaData()
             .withName("testScheduledProcess")
-            .withSchedule(new QScheduleMetaData().withRepeatMillis(2).withInitialDelaySeconds(0))
+            .withSchedule(new QScheduleMetaData()
+               .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME)
+               .withRepeatMillis(2)
+               .withInitialDelaySeconds(0))
             .withStepList(List.of(new QBackendStepMetaData()
                .withName("step")
                .withCode(new QCodeReference(BasicStep.class))))
       );
 
       BasicStep.counter = 0;
+
+      QScheduleManager qScheduleManager = QScheduleManager.initInstance(qInstance, () -> QContext.getQSession());
+      qScheduleManager.start();
 
       SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
       simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
