@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -43,6 +44,8 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 public class RDBMSTableMetaDataBuilder
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSTableMetaDataBuilder.class);
+
+   private boolean useCamelCaseNames = true;
 
    private static Map<String, QFieldType> typeMap = new HashMap<>();
 
@@ -120,9 +123,11 @@ public class RDBMSTableMetaDataBuilder
                   continue;
                }
 
-               QFieldMetaData fieldMetaData = new QFieldMetaData(columnName, type)
+               String qqqFieldName = QInstanceEnricher.inferNameFromBackendName(columnName);
+
+               QFieldMetaData fieldMetaData = new QFieldMetaData(qqqFieldName, type)
                   // todo - what string? .withIsRequired(!isNullable)
-                  .withLabel(columnName);
+                  .withBackendName(columnName);
 
                fieldMetaDataList.add(fieldMetaData);
 
@@ -143,10 +148,11 @@ public class RDBMSTableMetaDataBuilder
             throw (new QException("Could not find primary key in table: " + tableName));
          }
 
+         String qqqTableName = QInstanceEnricher.inferNameFromBackendName(tableName);
+
          QTableMetaData tableMetaData = new QTableMetaData()
             .withBackendName(backendMetaData.getName())
-            .withName(tableName)
-            .withLabel(tableName)
+            .withName(qqqTableName)
             .withBackendDetails(new RDBMSTableBackendDetails().withTableName(tableName))
             .withFields(fieldMetaDataList)
             .withPrimaryKeyField(primaryKey);
@@ -158,5 +164,36 @@ public class RDBMSTableMetaDataBuilder
          throw (new QException("Error automatically building table meta data for table: " + tableName, e));
       }
    }
+
+
+   /*******************************************************************************
+    ** Getter for useCamelCaseNames
+    *******************************************************************************/
+   public boolean getUseCamelCaseNames()
+   {
+      return (this.useCamelCaseNames);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for useCamelCaseNames
+    *******************************************************************************/
+   public void setUseCamelCaseNames(boolean useCamelCaseNames)
+   {
+      this.useCamelCaseNames = useCamelCaseNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for useCamelCaseNames
+    *******************************************************************************/
+   public RDBMSTableMetaDataBuilder withUseCamelCaseNames(boolean useCamelCaseNames)
+   {
+      this.useCamelCaseNames = useCamelCaseNames;
+      return (this);
+   }
+
 
 }
