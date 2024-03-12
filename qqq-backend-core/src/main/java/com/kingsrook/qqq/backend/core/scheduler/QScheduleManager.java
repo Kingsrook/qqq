@@ -299,4 +299,16 @@ public class QScheduleManager
 
       return (scheduler);
    }
+
+
+
+   /*******************************************************************************
+    ** reset the singleton instance (to null); clear the map of schedulers.
+    ** Not clear it's ever useful to call in main-code - but can be used for tests.
+    *******************************************************************************/
+   public void unInit()
+   {
+      qScheduleManager = null;
+      schedulers.clear();
+   }
 }

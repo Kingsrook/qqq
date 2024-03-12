@@ -80,7 +80,8 @@ class SimpleSchedulerTest extends BaseTest
 
       assertThat(simpleScheduler.getExecutors()).isNotEmpty();
 
-      simpleScheduler.stopAsync();
+      qScheduleManager.stop();
+      qScheduleManager.unInit();
    }
 
 
@@ -119,6 +120,7 @@ class SimpleSchedulerTest extends BaseTest
       //////////////////////////////////////////////////
       SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
       qScheduleManager.stopAsync();
+      qScheduleManager.unInit();
 
       System.out.println("Ran: " + BasicStep.counter + " times");
       assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s).");
