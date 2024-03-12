@@ -26,6 +26,11 @@
       </Logger>
       <Logger name="io.javalin" level="INFO">
       </Logger>
+      <!-- c3p0 -->
+      <Logger name="com.mchange.v2" level="INFO">
+      </Logger>
+      <Logger name="org.quartz" level="INFO">
+      </Logger>
       <Root level="all">
          <AppenderRef ref="SystemOutAppender"/>
          <AppenderRef ref="SyslogAppender"/>
