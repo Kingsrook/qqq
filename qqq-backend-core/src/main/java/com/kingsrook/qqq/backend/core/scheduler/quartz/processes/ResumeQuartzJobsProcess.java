@@ -49,7 +49,7 @@ public class ResumeQuartzJobsProcess extends AbstractLoadStep implements MetaDat
    @Override
    public QProcessMetaData produce(QInstance qInstance) throws QException
    {
-      String tableName = "QUARTZ_TRIGGERS";
+      String tableName = "quartzTriggers";
 
       return StreamedETLWithFrontendProcess.processMetaDataBuilder()
          .withName(getClass().getSimpleName())
