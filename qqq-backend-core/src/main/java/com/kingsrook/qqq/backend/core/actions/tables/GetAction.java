@@ -108,9 +108,11 @@ public class GetAction
       }
 
       GetOutput getOutput;
+      boolean usingDefaultGetInterface = false;
       if(getInterface == null)
       {
          getInterface = new DefaultGetInterface();
+         usingDefaultGetInterface = true;
       }
 
       getInterface.validateInput(getInput);
@@ -124,10 +126,11 @@ public class GetAction
          new GetActionCacheHelper().handleCaching(getInput, getOutput);
       }
 
-      ////////////////////////////////////////////////////////
-      // if the record is found, perform post-actions on it //
-      ////////////////////////////////////////////////////////
-      if(getOutput.getRecord() != null)
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the record is found, perform post-actions on it                                                        //
+      // unless the defaultGetInteface was used - as it just does a query, and the query will do the post-actions. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(getOutput.getRecord() != null && !usingDefaultGetInterface)
       {
          getOutput.setRecord(postRecordActions(getOutput.getRecord()));
       }
