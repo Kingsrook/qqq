@@ -61,6 +61,7 @@ public class RDBMSTableMetaDataBuilder
       typeMap.put("VARBINARY", QFieldType.BLOB);
       typeMap.put("MEDIUMBLOB", QFieldType.BLOB);
       typeMap.put("NUMERIC", QFieldType.INTEGER);
+      typeMap.put("INTEGER", QFieldType.INTEGER);
       typeMap.put("BIGINT UNSIGNED", QFieldType.LONG);
       typeMap.put("MEDIUMINT UNSIGNED", QFieldType.INTEGER);
       typeMap.put("SMALLINT UNSIGNED", QFieldType.INTEGER);
@@ -95,9 +96,18 @@ public class RDBMSTableMetaDataBuilder
             dataTypeMap.put(id, name);
          }
 
+         // todo - for h2, uppercase both db & table names...
          String databaseName = backendMetaData.getDatabaseName(); // these work for mysql - unclear about other vendors.
          String schemaName   = null;
-         try(ResultSet tableResultSet = databaseMetaData.getTables(databaseName, schemaName, tableName, null))
+         String tableNameForMetaDataQueries = tableName;
+
+         if(backendMetaData.getVendor().equals("h2"))
+         {
+            databaseName = databaseName.toUpperCase();
+            tableNameForMetaDataQueries = tableName.toUpperCase();
+         }
+
+         try(ResultSet tableResultSet = databaseMetaData.getTables(databaseName, schemaName, tableNameForMetaDataQueries, null))
          {
             if(!tableResultSet.next())
             {
@@ -105,7 +115,7 @@ public class RDBMSTableMetaDataBuilder
             }
          }
 
-         try(ResultSet columnsResultSet = databaseMetaData.getColumns(databaseName, schemaName, tableName, null))
+         try(ResultSet columnsResultSet = databaseMetaData.getColumns(databaseName, schemaName, tableNameForMetaDataQueries, null))
          {
             while(columnsResultSet.next())
             {
@@ -119,7 +129,7 @@ public class RDBMSTableMetaDataBuilder
                QFieldType type         = typeMap.get(dataTypeName);
                if(type == null)
                {
-                  LOG.info("Table " + tableName + " column " + columnName + " has an unampped type: " + dataTypeId + ".  Field will not be added to QTableMetaData");
+                  LOG.info("Table " + tableName + " column " + columnName + " has an unmapped type: " + dataTypeId + ".  Field will not be added to QTableMetaData");
                   continue;
                }
 
@@ -133,7 +143,7 @@ public class RDBMSTableMetaDataBuilder
 
                if("YES".equals(isAutoIncrement))
                {
-                  primaryKey = columnName;
+                  primaryKey = qqqFieldName;
                }
             }
          }
