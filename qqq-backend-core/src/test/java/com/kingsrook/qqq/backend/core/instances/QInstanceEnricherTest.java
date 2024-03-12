@@ -232,6 +232,23 @@ class QInstanceEnricherTest extends BaseTest
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferNameFromBackendName()
+   {
+      assertEquals("id", QInstanceEnricher.inferNameFromBackendName("id"));
+      assertEquals("wordAnotherWordMoreWords", QInstanceEnricher.inferNameFromBackendName("word_another_word_more_words"));
+      assertEquals("lUlUlUl", QInstanceEnricher.inferNameFromBackendName("l_ul_ul_ul"));
+      assertEquals("tlaFirst", QInstanceEnricher.inferNameFromBackendName("tla_first"));
+      assertEquals("wordThenTlaInMiddle", QInstanceEnricher.inferNameFromBackendName("word_then_tla_in_middle"));
+      assertEquals("endWithTla", QInstanceEnricher.inferNameFromBackendName("end_with_tla"));
+      assertEquals("tlaAndAnotherTla", QInstanceEnricher.inferNameFromBackendName("tla_and_another_tla"));
+      assertEquals("allCaps", QInstanceEnricher.inferNameFromBackendName("ALL_CAPS"));
+   }
+
+
 
    /*******************************************************************************
     **

@@ -1031,6 +1031,50 @@ public class QInstanceEnricher
 
 
    /*******************************************************************************
+    ** Do a default mapping from an underscore_style field name to a camelCase name.
+    **
+    ** Examples:
+    ** <ul>
+    **   <li>word_another_word_more_words -> wordAnotherWordMoreWords</li>
+    **   <li>l_ul_ul_ul -> lUlUlUl</li>
+    **   <li>tla_first -> tlaFirst</li>
+    **   <li>word_then_tla_in_middle -> wordThenTlaInMiddle</li>
+    **   <li>end_with_tla -> endWithTla</li>
+    **   <li>tla_and_another_tla -> tlaAndAnotherTla</li>
+    **   <li>ALL_CAPS -> allCaps</li>
+    ** </ul>
+    *******************************************************************************/
+   public static String inferNameFromBackendName(String backendName)
+   {
+      StringBuilder rs = new StringBuilder();
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // build a list of words in the name, then join them with _ and lower-case the result //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      String[] words = backendName.toLowerCase(Locale.ROOT).split("_");
+      for(int i = 0; i < words.length; i++)
+      {
+         String word = words[i];
+         if(i == 0)
+         {
+            rs.append(word);
+         }
+         else
+         {
+            rs.append(word.substring(0, 1).toUpperCase());
+            if(word.length() > 1)
+            {
+               rs.append(word.substring(1));
+            }
+         }
+      }
+
+      return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
     ** If a app didn't have any sections, generate "sensible defaults"
     *******************************************************************************/
    private void generateAppSections(QAppMetaData app)
