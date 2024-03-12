@@ -110,18 +110,18 @@ class SimpleSchedulerTest extends BaseTest
 
       BasicStep.counter = 0;
 
-      QScheduleManager qScheduleManager = QScheduleManager.initInstance(qInstance, () -> QContext.getQSession());
+      QSession         qSession         = QContext.getQSession();
+      QScheduleManager qScheduleManager = QScheduleManager.initInstance(qInstance, () -> qSession);
       qScheduleManager.start();
 
-      SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
-      simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
-      simpleScheduler.setSessionSupplier(QSession::new);
-      simpleScheduler.start();
+      //////////////////////////////////////////////////
+      // give a moment for the job to run a few times //
+      //////////////////////////////////////////////////
       SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
-      simpleScheduler.stopAsync();
+      qScheduleManager.stopAsync();
 
       System.out.println("Ran: " + BasicStep.counter + " times");
-      assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice");
+      assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s).");
    }
 
 

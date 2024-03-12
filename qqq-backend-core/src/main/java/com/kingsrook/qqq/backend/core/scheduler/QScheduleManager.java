@@ -127,6 +127,31 @@ public class QScheduleManager
       // ensure that everything which should be scheduled is scheduled, in the appropriate scheduler //
       /////////////////////////////////////////////////////////////////////////////////////////////////
       QContext.withTemporaryContext(new CapturedContext(qInstance, systemUserSessionSupplier.get()), () -> setupSchedules());
+
+      //////////////////////////
+      // start each scheduler //
+      //////////////////////////
+      schedulers.values().forEach(s -> s.start());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void stop()
+   {
+      schedulers.values().forEach(s -> s.stop());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void stopAsync()
+   {
+      schedulers.values().forEach(s -> s.stopAsync());
    }
 
 
@@ -274,5 +299,4 @@ public class QScheduleManager
 
       return (scheduler);
    }
-
 }
