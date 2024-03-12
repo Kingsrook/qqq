@@ -490,6 +490,13 @@ public class QValueFormatter
             {
                adornmentValues = fileDownloadAdornment.get().getValues();
             }
+            else
+            {
+               ///////////////////////////////////////////////////////
+               // don't change blobs unless they are file-downloads //
+               ///////////////////////////////////////////////////////
+               continue;
+            }
 
             String fileNameField    = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
             String fileNameFormat   = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT));
