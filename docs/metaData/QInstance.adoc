@@ -1,0 +1,39 @@
+[#QInstance]
+== QInstance
+include::../variables.adoc[]
+
+An application in QQQ is defined as a set of Meta Data objects.  These objects are all stored together in an object called a `*QInstance*`.
+
+Currently, a `QInstance` must be programmatically constructed in java code - e.g., by constructing objects which get added to the QInstance, for example:
+
+[source,java]
+.Adding meta-data for two tables and one process to a QInstance
+----
+QInstance qInstance = new QInstance();
+qInstance.addTable(definePersonTable());
+qInstance.addTable(defineHomeTable());
+qInstance.addProcess(defineSendPersonHomeProcess());
+----
+
+It is on the QQQ roadmap to allow meta-data to be defined in a non-programmatic way, for example, in YAML or JSON files, or even from a dynamic data source (e.g. a document or relational database).
+
+The middleware and/or frontends being used in an application will drive how the `QInstance` is connected to the running server/process.
+For example, using the `qqq-middleware-javalin` module, a the `QJavalinImplementation` class () has a constructor which takes a `QInstance` as an argument:
+
+[source,java]
+.Starting a QQQ Javalin middleware server - passing a QInstance as a parameter to the new QJavalinImplementation
+----
+QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
+Javalin service = Javalin.create();
+service.routes(qJavalinImplementation.getRoutes());
+service.start();
+----
+
+*QBackendMetaData Setup Methods:*
+
+These are the methods that one is most likely to use when setting up (defining) a `QInstance` object:
+
+* asdf
+
+*QBackendMetaData Usage Methods:*
+

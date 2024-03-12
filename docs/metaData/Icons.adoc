@@ -1,0 +1,20 @@
+[#Icons]
+== Icons
+include::../variables.adoc[]
+
+#TODO#
+
+=== QIcon
+Icons are defined in a QQQ Instance in a `*QIcon*` object.
+
+#TODO#
+
+*QIcon Properties:*
+
+* `name` - *String* - Name of an icon from the https://mui.com/material-ui/material-icons/[Material UI Icon set]
+** Note that icon names from the link above need to be converted from _CamelCase_ to _underscore_case_...
+* `path` - *String* - Path to a file served under the application's web root, to be used as the icon.
+
+_Either `name` or `path` must be specified. If both are given, then name is used._
+
+

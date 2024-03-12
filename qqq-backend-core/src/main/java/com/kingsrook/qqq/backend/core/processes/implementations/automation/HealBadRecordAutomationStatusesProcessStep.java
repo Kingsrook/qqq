@@ -287,16 +287,22 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
             //////////////////////////////////////////////////////////////////////////////////////
             if(!recordsToUpdate.isEmpty() && !isReview)
             {
-               LOG.info("Healing bad record automation statuses", logPair("tableName", tableName), logPair("count", recordsToUpdate.size()));
+               LOG.info("Healing bad record automation statuses", logPair("tableName", tableName), logPair("countByStatus", countByStatus));
                new UpdateAction().execute(new UpdateInput(tableName).withRecords(recordsToUpdate).withOmitTriggeringAutomations(true));
             }
 
-            for(Map.Entry<String, Integer> entry : countByStatus.entrySet())
+            ///////////////////////////////////////////////////
+            // on the review step, add records to the output //
+            ///////////////////////////////////////////////////
+            if(isReview)
             {
-               runBackendStepOutput.addRecord(new QRecord()
-                  .withValue("tableName", QContext.getQInstance().getTable(tableName).getLabel())
-                  .withValue("badStatus", entry.getKey())
-                  .withValue("count", entry.getValue()));
+               for(Map.Entry<String, Integer> entry : countByStatus.entrySet())
+               {
+                  runBackendStepOutput.addRecord(new QRecord()
+                     .withValue("tableName", QContext.getQInstance().getTable(tableName).getLabel())
+                     .withValue("badStatus", entry.getKey())
+                     .withValue("count", entry.getValue()));
+               }
             }
 
             return (recordsToUpdate.size());

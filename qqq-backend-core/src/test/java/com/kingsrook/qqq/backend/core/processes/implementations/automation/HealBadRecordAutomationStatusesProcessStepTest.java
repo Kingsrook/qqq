@@ -29,13 +29,20 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
@@ -69,6 +76,43 @@ class HealBadRecordAutomationStatusesProcessStepTest extends BaseTest
       RunBackendStepOutput output = runProcessStep();
 
       assertEquals(2, output.getValueInteger("totalRecordsUpdated"));
+      assertThat(queryAllRecords()).allMatch(r -> AutomationStatus.PENDING_UPDATE_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
+   }
+
+
+
+   /*******************************************************************************
+    ** at one point, when the review step go added, we were double-adding records
+    ** to the output/result screen.  This test verifies, if we run the full process
+    ** that that doesn't happen.
+    *******************************************************************************/
+   @Test
+   void testTwoFailedUpdatesFullProcess() throws QException
+   {
+      QContext.getQInstance().addProcess(new HealBadRecordAutomationStatusesProcessStep().produce(QContext.getQInstance()));
+
+      new InsertAction().execute(new InsertInput(tableName).withRecords(List.of(new QRecord(), new QRecord())));
+      List<QRecord> records = queryAllRecords();
+      RecordAutomationStatusUpdater.setAutomationStatusInRecordsAndUpdate(QContext.getQInstance().getTable(tableName), records, AutomationStatus.FAILED_UPDATE_AUTOMATIONS, null);
+
+      assertThat(queryAllRecords()).allMatch(r -> AutomationStatus.FAILED_UPDATE_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
+
+      RunProcessInput input = new RunProcessInput();
+      input.setProcessName(HealBadRecordAutomationStatusesProcessStep.NAME);
+      input.setCallback(QProcessCallbackFactory.forFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, records.stream().map(r -> r.getValue("id")).toList()))));
+      RunProcessAction runProcessAction = new RunProcessAction();
+      RunProcessOutput runProcessOutput = runProcessAction.execute(input);
+
+      input.setStartAfterStep(runProcessOutput.getProcessState().getNextStepName().get());
+      runProcessOutput = runProcessAction.execute(input);
+
+      input.setStartAfterStep(runProcessOutput.getProcessState().getNextStepName().get());
+      runProcessOutput = runProcessAction.execute(input);
+
+      List<QRecord> outputRecords = runProcessOutput.getProcessState().getRecords();
+      assertEquals(1, outputRecords.size());
+      assertEquals(2, outputRecords.get(0).getValueInteger("count"));
+
       assertThat(queryAllRecords()).allMatch(r -> AutomationStatus.PENDING_UPDATE_AUTOMATIONS.getId().equals(getAutomationStatus(r)));
    }
 

@@ -1,0 +1,68 @@
+== QRecords
+include::../variables.adoc[]
+
+Almost all code inside a QQQ application will be dealing with *Records* (aka Tuples or Rows).
+That is: a collection of named values, representing a single Entity, Fact, or, Row from a {link-table}.
+
+The class that QQQ uses to work with records is called:  `QRecord`.
+
+=== Values
+At its core, a `QRecord` is a wrapper around a `Map<String, Serializable> values`.
+These are the *actual* values for the fields in the table for the record.
+That is, direct representations of the values as they are stored in the {link-backend}.
+
+The keys in the `values` map are names from the {link-fields} in the {link-table}.
+
+The values in `values` map are declared as `Serializable` (to help ensure the serializability of the `QRecord` as a whole).
+In practice, their types will be based on the `QFieldType` of the {link-field} that they correspond to.
+That will typically be one of: `String`, `Integer`, `Boolean`, `BigDecimal`, `Instant`, `LocalDate`, `LocalTime`, or `byte[]`.
+Be aware that `null` values may be in the `values` map, especially/per if the backend/table support `null`.
+
+To work with the `values` map, the following methods are provided:
+
+* `setValue(String fieldName, Serializable value)` - Sets a value for the specified field in the record.
+** Overloaded as `setValue(String fieldName, Object value)` - For some cases where the value may not be known to be `Serializable`.
+In this overload, if the value is `null` or `Serializable`, the primary version of `setValue` is called.
+Otherwise, the `value` is passed through `String::valueOf`, and the result is stored.
+** Overloaded as `setValue(QFieldMetaData field, Serializable value)` - which simply defers to the primary version of `setValue`, passing `field.getName()` as the first parameter.
+* `removeValue(String fieldName)` - Remove the given field from the `values` map.
+** Note that in some situations this is an important distinction from having a `null` value in the map (See <<UpdateAction)>>).
+* `setValues(Map<String, Serializable> values)` - Sets the full map of `values`.
+* `getValues()` - Returns the full map of `values`.
+* `getValue(String fieldName)` - Returns the value for the named field - possibly `null` - as a `Serializable`.
+* Several type-specific variations of `getValueX(String fieldName)`, where internally, values will be not exactly type-cast, but effectively converted (if possible) to the requested type.
+These conversions are done using the `ValueUtils.getValueAsX(Object)` methods.
+These methods are generally the preferred/cleanest way to get record values in application code, when it is needed in a type-specific way .
+** `getValueString(String fieldName)`
+** `getValueInteger(String fieldName)`
+** `getValueBoolean(String fieldName)`
+** `getValueBigDecimal(String fieldName)`
+** `getValueInstant(String fieldName)`
+** `getValueLocalDate(String fieldName)`
+** `getValueLocalTime(String fieldName)`
+** `getValueByteArray(String fieldName)`
+
+=== Display Values
+In addition to the `values` map, a `QRecord` contains another map called `displayValues`, which only stores `String` values.
+That is to say, values for other types are stringified, based on their {link-field}'s type and `displayFormat` property.
+In addition, fields which have a `possibleValueSource` property will have their translated values set in the `displayValues` map.
+
+By default, a `QRecord` will not have its `displayValues` populated.
+To populate `displayValues`, the <<QueryAction>> and <<GetAction>> classes take a property in their inputs called `shouldGenerateDisplayValues`, which must be set to `true` to generate `displayValues`.
+In addition, these two actions also have a property `shouldTranslatePossibleValues` in their inputs, which needs to be set to `true` if possible-value lookups are to be performed.
+
+As an alternative to the `shouldGenerateDisplayValues` and `shouldTranslatePossibleValues` inputs to <<QueryAction>> and <<GetAction>>, one can directly call the `QValueFormatter.setDisplayValuesInRecords` and/or `qPossibleValueTranslator.translatePossibleValuesInRecords` methods.
+Or, for special cases, `setDisplayValue(String fieldName, String displayValue)` or `setDisplayValues(Map<String, String> displayValues)` can be called directly.
+
+=== Backend Details
+Sometimes a backend may want to place additional data in a `QRecord` that doesn't exactly correspond to a field.
+To do this, the `Map<String, Serializable> backendDetails` member is used.
+
+For example, an API backend may store the full JSON `String` that came from the API as a backend detail in a `QRecord`.
+Or fields that are marked as `isHeavy`, if the full (heavy) value of the field hasn't been fetched, then the lengths of any such heavy fields may be stored in `backendDetails`.
+
+=== Errors and Warnings
+#todo#
+
+=== Associated Records
+#todo#

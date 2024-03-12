@@ -1,0 +1,13 @@
+[#PermissionRules]
+== Permission Rules
+include::../variables.adoc[]
+
+#TODO#
+
+=== PermissionRule
+#TODO#
+
+*PermissionRule Properties:*
+
+#TODO#
+

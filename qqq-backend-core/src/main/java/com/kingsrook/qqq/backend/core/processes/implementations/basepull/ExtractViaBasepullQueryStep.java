@@ -38,7 +38,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 /*******************************************************************************
  ** Version of ExtractViaQueryStep that knows how to set up a basepull query.
  *******************************************************************************/
-public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep
+public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements BasepullExtractStepInterface
 {
 
    /*******************************************************************************
