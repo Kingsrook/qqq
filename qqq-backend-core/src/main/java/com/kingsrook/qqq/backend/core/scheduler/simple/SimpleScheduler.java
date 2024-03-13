@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
@@ -141,32 +140,19 @@ public class SimpleScheduler implements QSchedulerInterface
     **
     *******************************************************************************/
    @Override
-   public void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider, boolean allowedToStartProvider)
+   public void setupTableAutomation(QAutomationProviderMetaData automationProvider, PollingAutomationPerTableRunner.TableActionsInterface tableActions, QScheduleMetaData schedule, boolean allowedToStart)
    {
-      if(!allowedToStartProvider)
+      if(!allowedToStart)
       {
          return;
       }
 
-      ///////////////////////////////////////////////////////////////////////////////////
-      // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
-      // then start a scheduled executor foreach one                                   //
-      ///////////////////////////////////////////////////////////////////////////////////
-      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
-      for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
-      {
-         if(SchedulerUtils.allowedToStart(tableAction.tableName()))
-         {
-            PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableAction);
-            StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
+      PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableActions);
+      StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
 
-            QScheduleMetaData schedule = Objects.requireNonNullElseGet(automationProvider.getSchedule(), this::getDefaultSchedule);
-
-            executor.setName(runner.getName());
-            setScheduleInExecutor(schedule, executor);
-            executors.add(executor);
-         }
-      }
+      executor.setName(runner.getName());
+      setScheduleInExecutor(schedule, executor);
+      executors.add(executor);
    }
 
 
@@ -175,9 +161,9 @@ public class SimpleScheduler implements QSchedulerInterface
     **
     *******************************************************************************/
    @Override
-   public void setupSqsProvider(SQSQueueProviderMetaData queueProvider, boolean allowedToStartProvider)
+   public void setupSqsPoller(SQSQueueProviderMetaData queueProvider, QQueueMetaData queue, QScheduleMetaData schedule, boolean allowedToStart)
    {
-      if(!allowedToStartProvider)
+      if(!allowedToStart)
       {
          return;
       }
@@ -185,27 +171,17 @@ public class SimpleScheduler implements QSchedulerInterface
       QInstance          scheduleManagerQueueInstance   = qInstance;
       Supplier<QSession> scheduleManagerSessionSupplier = sessionSupplier;
 
-      for(QQueueMetaData queue : qInstance.getQueues().values())
-      {
-         if(queueProvider.getName().equals(queue.getProviderName()) && SchedulerUtils.allowedToStart(queue.getName()))
-         {
-            SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
-            sqsQueuePoller.setQueueProviderMetaData(queueProvider);
-            sqsQueuePoller.setQueueMetaData(queue);
-            sqsQueuePoller.setQInstance(scheduleManagerQueueInstance);
-            sqsQueuePoller.setSessionSupplier(scheduleManagerSessionSupplier);
+      SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
+      sqsQueuePoller.setQueueProviderMetaData(queueProvider);
+      sqsQueuePoller.setQueueMetaData(queue);
+      sqsQueuePoller.setQInstance(scheduleManagerQueueInstance);
+      sqsQueuePoller.setSessionSupplier(scheduleManagerSessionSupplier);
 
-            StandardScheduledExecutor executor = new StandardScheduledExecutor(sqsQueuePoller);
+      StandardScheduledExecutor executor = new StandardScheduledExecutor(sqsQueuePoller);
 
-            QScheduleMetaData schedule = Objects.requireNonNullElseGet(queue.getSchedule(),
-               () -> Objects.requireNonNullElseGet(queueProvider.getSchedule(),
-                  this::getDefaultSchedule));
-
-            executor.setName(queue.getName());
-            setScheduleInExecutor(schedule, executor);
-            executors.add(executor);
-         }
-      }
+      executor.setName(queue.getName());
+      setScheduleInExecutor(schedule, executor);
+      executors.add(executor);
    }
 
 
@@ -214,7 +190,7 @@ public class SimpleScheduler implements QSchedulerInterface
     **
     *******************************************************************************/
    @Override
-   public void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, boolean allowedToStart)
+   public void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, QScheduleMetaData schedule, boolean allowedToStart)
    {
       if(!allowedToStart)
       {
@@ -228,7 +204,7 @@ public class SimpleScheduler implements QSchedulerInterface
 
       StandardScheduledExecutor executor = new StandardScheduledExecutor(runProcess);
       executor.setName("process:" + process.getName());
-      setScheduleInExecutor(process.getSchedule(), executor);
+      setScheduleInExecutor(schedule, executor);
       executors.add(executor);
    }
 

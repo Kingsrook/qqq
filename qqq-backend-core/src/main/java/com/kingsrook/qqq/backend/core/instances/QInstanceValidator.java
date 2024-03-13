@@ -417,11 +417,6 @@ public class QInstanceValidator
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getSecretKey()), "Missing secretKey for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
-
-               if(assertCondition(sqsQueueProvider.getSchedule() != null, "Missing schedule for SQSQueueProvider: " + name))
-               {
-                  validateScheduleMetaData(sqsQueueProvider.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
-               }
             }
 
             runPlugins(QQueueProviderMetaData.class, queueProvider, qInstance);
@@ -438,6 +433,14 @@ public class QInstanceValidator
             if(assertCondition(StringUtils.hasContent(queue.getProcessName()), "Missing processName for queue: " + name))
             {
                assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // todo - if we have, in the future, a provider that doesn't require schedules per-queue, then make this check conditional //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(assertCondition(queue.getSchedule() != null, "Missing schedule for SQSQueueProvider: " + name))
+            {
+               validateScheduleMetaData(queue.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
             }
 
             runPlugins(QQueueMetaData.class, queue, qInstance);
@@ -478,11 +481,6 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(name, automationProvider.getName()), "Inconsistent naming for automationProvider: " + name + "/" + automationProvider.getName() + ".");
             assertCondition(automationProvider.getType() != null, "Missing type for automationProvider: " + name);
-
-            if(assertCondition(automationProvider.getSchedule() != null, "Missing schedule for automationProvider: " + name))
-            {
-               validateScheduleMetaData(automationProvider.getSchedule(), qInstance, "automationProvider " + name + ", schedule: ");
-            }
 
             runPlugins(QAutomationProviderMetaData.class, automationProvider, qInstance);
          });
@@ -1024,6 +1022,11 @@ public class QInstanceValidator
       if(assertCondition(StringUtils.hasContent(providerName), prefix + " is missing a providerName"))
       {
          assertCondition(qInstance.getAutomationProvider(providerName) != null, " has an unrecognized providerName: " + providerName);
+      }
+
+      if(assertCondition(automationDetails.getSchedule() != null, prefix + "Missing schedule for automations"))
+      {
+         validateScheduleMetaData(automationDetails.getSchedule(), qInstance, prefix + " automationDetails, schedule: ");
       }
 
       //////////////////////////////////

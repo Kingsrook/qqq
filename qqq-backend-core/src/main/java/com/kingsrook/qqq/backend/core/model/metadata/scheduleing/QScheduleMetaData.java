@@ -28,11 +28,12 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 /*******************************************************************************
  ** Meta-data to define scheduled actions within QQQ.
  **
- ** Initially, only supports repeating jobs, either on a given # of seconds or millis.
+ ** Supports repeating jobs, either on a given # of seconds or millis, or cron
+ ** expressions (though cron may not be supported by all schedulers!)
+ **
  ** Can also specify an initialDelay - e.g., to avoid all jobs starting up at the
  ** same moment.
  **
- ** In the future we most likely would want to allow cron strings to be added here.
  *******************************************************************************/
 public class QScheduleMetaData
 {

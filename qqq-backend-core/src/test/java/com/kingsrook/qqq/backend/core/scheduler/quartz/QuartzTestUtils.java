@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Properties;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.quartz.QuartzSchedulerMetaData;
 import org.quartz.SchedulerException;
 
@@ -43,7 +42,7 @@ public class QuartzTestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Properties getQuartzProperties()
+   public static Properties getQuartzProperties()
    {
       Properties quartzProperties = new Properties();
       quartzProperties.put("org.quartz.scheduler.instanceName", QUARTZ_SCHEDULER_NAME);
@@ -76,12 +75,16 @@ public class QuartzTestUtils
       ////////////////////////////////////////////////////////////////////////////////
       // set the queue providers & automation providers to use the quartz scheduler //
       ////////////////////////////////////////////////////////////////////////////////
-      qInstance.getAutomationProviders().values()
-         .forEach(ap -> ap.getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME));
+      qInstance.getTables().values().forEach(t ->
+      {
+         if(t.getAutomationDetails() != null)
+         {
+            t.getAutomationDetails().getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME);
+         }
+      });
 
-      qInstance.getQueueProviders().values()
-         .forEach(qp -> ((SQSQueueProviderMetaData) qp).getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME));
-
+      qInstance.getQueues().values()
+         .forEach(q -> q.getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME));
    }
 
 

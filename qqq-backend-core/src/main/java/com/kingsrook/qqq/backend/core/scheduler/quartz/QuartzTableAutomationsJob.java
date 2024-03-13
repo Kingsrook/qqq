@@ -27,6 +27,8 @@ import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomati
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -63,7 +65,24 @@ public class QuartzTableAutomationsJob implements Job
          automationStatus = AutomationStatus.valueOf(jobDataMap.getString("automationStatus"));
          QInstance qInstance = QuartzScheduler.getInstance().getQInstance();
 
-         PollingAutomationPerTableRunner.TableActionsInterface tableAction = new PollingAutomationPerTableRunner.TableActions(tableName, automationStatus);
+         QTableMetaData table = qInstance.getTable(tableName);
+         if(table == null)
+         {
+            LOG.warn("Could not find table for automations in QInstance", logPair("tableName", tableName));
+            return;
+         }
+
+         QTableAutomationDetails automationDetails = table.getAutomationDetails();
+         if(automationDetails == null)
+         {
+            LOG.warn("Could not find automationDetails for table for automations in QInstance", logPair("tableName", tableName));
+            return;
+         }
+
+         ///////////////////////////////////
+         // todo - sharded automations... //
+         ///////////////////////////////////
+         PollingAutomationPerTableRunner.TableActionsInterface tableAction = new PollingAutomationPerTableRunner.TableActions(tableName, automationDetails, automationStatus);
          PollingAutomationPerTableRunner                       runner      = new PollingAutomationPerTableRunner(qInstance, automationProviderName, QuartzScheduler.getInstance().getSessionSupplier(), tableAction);
 
          /////////////

@@ -469,19 +469,19 @@ public class QInstanceValidatorTest extends BaseTest
       assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("UTC")));
       assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("America/New_York")));
 
-      //////////////////////////////////////////////////////////////////
-      // make sure automation providers get their schedules validated //
-      //////////////////////////////////////////////////////////////////
-      assertValidationFailureReasons((qInstance) -> qInstance.getAutomationProvider(TestUtils.POLLING_AUTOMATION).withSchedule(baseScheduleMetaData.get()
+      ///////////////////////////////////////////////////////////////
+      // make sure table automations get their schedules validated //
+      ///////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().withSchedule(baseScheduleMetaData.get()
             .withSchedulerName(null)
             .withCronExpression(validCronString)
             .withCronTimeZoneId("UTC")),
          "is missing a scheduler name");
 
-      /////////////////////////////////////////////////////////////
-      // make sure queue providers get their schedules validated //
-      /////////////////////////////////////////////////////////////
-      assertValidationFailureReasons((qInstance) -> ((SQSQueueProviderMetaData)qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER)).withSchedule(baseScheduleMetaData.get()
+      ////////////////////////////////////////////////////
+      // make sure queues get their schedules validated //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> (qInstance.getQueue(TestUtils.TEST_SQS_QUEUE)).withSchedule(baseScheduleMetaData.get()
             .withSchedulerName(null)
             .withCronExpression(validCronString)
             .withCronTimeZoneId("UTC")),

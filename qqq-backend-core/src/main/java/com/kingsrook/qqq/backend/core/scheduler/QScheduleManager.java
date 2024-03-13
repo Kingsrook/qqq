@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.core.scheduler;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -37,12 +39,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -227,6 +231,8 @@ public class QScheduleManager
       // todo - read dynamic schedules and schedule those things //
       // e.g., user-scheduled processes, reports                 //
       /////////////////////////////////////////////////////////////
+      // ScheduledJob scheduledJob = new ScheduledJob();
+      // setupScheduledJob(scheduledJob);
 
       //////////////////////////////////////////////////////////
       // let the schedulers know we're done with this process //
@@ -242,7 +248,7 @@ public class QScheduleManager
    private void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData)
    {
       QSchedulerInterface scheduler = getScheduler(process.getSchedule().getSchedulerName());
-      scheduler.setupProcess(process, backendVariantData, SchedulerUtils.allowedToStart(process));
+      scheduler.setupProcess(process, backendVariantData, process.getSchedule(), SchedulerUtils.allowedToStart(process));
    }
 
 
@@ -269,8 +275,18 @@ public class QScheduleManager
     *******************************************************************************/
    private void setupSqsProvider(SQSQueueProviderMetaData queueProvider)
    {
-      QSchedulerInterface scheduler = getScheduler(queueProvider.getSchedule().getSchedulerName());
-      scheduler.setupSqsProvider(queueProvider, SchedulerUtils.allowedToStart(queueProvider));
+      boolean allowedToStartProvider = SchedulerUtils.allowedToStart(queueProvider);
+
+      for(QQueueMetaData queue : qInstance.getQueues().values())
+      {
+         QSchedulerInterface scheduler = getScheduler(queue.getSchedule().getSchedulerName());
+
+         boolean allowedToStart = allowedToStartProvider && SchedulerUtils.allowedToStart(queue.getName());
+         if(queueProvider.getName().equals(queue.getProviderName()))
+         {
+            scheduler.setupSqsPoller(queueProvider, queue, queue.getSchedule(), allowedToStart);
+         }
+      }
    }
 
 
@@ -280,8 +296,21 @@ public class QScheduleManager
     *******************************************************************************/
    private void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider)
    {
-      QSchedulerInterface scheduler = getScheduler(automationProvider.getSchedule().getSchedulerName());
-      scheduler.setupAutomationProviderPerTable(automationProvider, SchedulerUtils.allowedToStart(automationProvider));
+      boolean allowedToStartProvider = SchedulerUtils.allowedToStart(automationProvider);
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
+      // then schedule each one of them.                                               //
+      ///////////////////////////////////////////////////////////////////////////////////
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActionList = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
+      for(PollingAutomationPerTableRunner.TableActionsInterface tableActions : tableActionList)
+      {
+         boolean allowedToStart = allowedToStartProvider && SchedulerUtils.allowedToStart(tableActions.tableName());
+
+         QScheduleMetaData   schedule  = tableActions.tableAutomationDetails().getSchedule();
+         QSchedulerInterface scheduler = getScheduler(schedule.getSchedulerName());
+         scheduler.setupTableAutomation(automationProvider, tableActions, schedule, allowedToStart);
+      }
    }
 
 

@@ -43,7 +43,9 @@ import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.quartz.SchedulerException;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -59,7 +61,27 @@ class QuartzSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QScheduleManager.getInstance().unInit();
+      try
+      {
+         QScheduleManager.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
+
+      try
+      {
+         QuartzScheduler.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
    }
 
 
@@ -84,15 +106,7 @@ class QuartzSchedulerTest extends BaseTest
          //////////////////////////////////////////
          // add a process we can run and observe //
          //////////////////////////////////////////
-         qInstance.addProcess(new QProcessMetaData()
-            .withName("testScheduledProcess")
-            .withSchedule(new QScheduleMetaData()
-               .withSchedulerName(QuartzTestUtils.QUARTZ_SCHEDULER_NAME)
-               .withRepeatMillis(2)
-               .withInitialDelaySeconds(0))
-            .withStepList(List.of(new QBackendStepMetaData()
-               .withName("step")
-               .withCode(new QCodeReference(BasicStep.class)))));
+         qInstance.addProcess(buildTestProcess("testScheduledProcess"));
 
          //////////////////////////////////////////////////////////////////////////////
          // start the schedule manager, which will schedule things, and start quartz //
@@ -108,7 +122,7 @@ class QuartzSchedulerTest extends BaseTest
          qScheduleManager.stopAsync();
 
          System.out.println("Ran: " + BasicStep.counter + " times");
-         assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s).");
+         assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s)).");
 
          //////////////////////////////////////////////////////
          // make sure poller ran, and didn't issue any warns //
@@ -128,6 +142,56 @@ class QuartzSchedulerTest extends BaseTest
       {
          QLogger.deactivateCollectingLoggerForClass(QuartzSqsPollerJob.class);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QProcessMetaData buildTestProcess(String name)
+   {
+      return new QProcessMetaData()
+         .withName(name)
+         .withSchedule(new QScheduleMetaData()
+            .withSchedulerName(QuartzTestUtils.QUARTZ_SCHEDULER_NAME)
+            .withRepeatMillis(2)
+            .withInitialDelaySeconds(0))
+         .withStepList(List.of(new QBackendStepMetaData()
+            .withName("step")
+            .withCode(new QCodeReference(BasicStep.class))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRemovingNoLongerNeededJobsDuringSetupSchedules() throws SchedulerException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      QuartzTestUtils.setupInstanceForQuartzTests();
+
+      ////////////////////////////
+      // put two jobs in quartz //
+      ////////////////////////////
+      QProcessMetaData test1 = buildTestProcess("test1");
+      QProcessMetaData test2 = buildTestProcess("test2");
+      qInstance.addProcess(test1);
+      qInstance.addProcess(test2);
+
+      QuartzScheduler quartzScheduler = QuartzScheduler.initInstance(qInstance, QuartzTestUtils.QUARTZ_SCHEDULER_NAME, QuartzTestUtils.getQuartzProperties(), () -> QContext.getQSession());
+      quartzScheduler.setupProcess(test1, null, test1.getSchedule(), false);
+      quartzScheduler.setupProcess(test2, null, test2.getSchedule(), false);
+
+      quartzScheduler.startOfSetupSchedules();
+      quartzScheduler.setupProcess(test1, null, test1.getSchedule(), false);
+      quartzScheduler.endOfSetupSchedules();
+
+      List<QuartzJobAndTriggerWrapper> quartzJobAndTriggerWrappers = quartzScheduler.queryQuartz();
+      assertEquals(1, quartzJobAndTriggerWrappers.size());
+      assertEquals("test1", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getName());
    }
 
 

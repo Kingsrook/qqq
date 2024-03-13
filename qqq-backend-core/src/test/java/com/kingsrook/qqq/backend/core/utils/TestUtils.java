@@ -180,6 +180,7 @@ public class TestUtils
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
    public static final String SIMPLE_SCHEDULER_NAME = "simpleScheduler";
+   public static final String TEST_SQS_QUEUE        = "testSQSQueue";
 
 
 
@@ -366,10 +367,7 @@ public class TestUtils
    private static QAutomationProviderMetaData definePollingAutomationProvider()
    {
       return (new PollingAutomationProviderMetaData()
-         .withName(POLLING_AUTOMATION)
-         .withSchedule(new QScheduleMetaData()
-            .withSchedulerName(SIMPLE_SCHEDULER_NAME)
-            .withRepeatSeconds(60)));
+         .withName(POLLING_AUTOMATION));
    }
 
 
@@ -746,6 +744,9 @@ public class TestUtils
    {
       return (new QTableAutomationDetails()
          .withProviderName(POLLING_AUTOMATION)
+         .withSchedule(new QScheduleMetaData()
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)
+            .withRepeatSeconds(60))
          .withStatusTracking(new AutomationStatusTracking()
             .withType(AutomationStatusTrackingType.FIELD_IN_TABLE)
             .withFieldName("qqqAutomationStatus")));
@@ -1333,10 +1334,7 @@ public class TestUtils
          .withAccessKey(accessKey)
          .withSecretKey(secretKey)
          .withRegion(region)
-         .withBaseURL(baseURL)
-         .withSchedule(new QScheduleMetaData()
-            .withRepeatSeconds(60)
-            .withSchedulerName(SIMPLE_SCHEDULER_NAME)));
+         .withBaseURL(baseURL));
    }
 
 
@@ -1347,10 +1345,13 @@ public class TestUtils
    private static QQueueMetaData defineTestSqsQueue()
    {
       return (new QQueueMetaData()
-         .withName("testSQSQueue")
+         .withName(TEST_SQS_QUEUE)
          .withProviderName(DEFAULT_QUEUE_PROVIDER)
          .withQueueName("test-queue")
-         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
+         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE)
+         .withSchedule(new QScheduleMetaData()
+            .withRepeatSeconds(60)
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)));
    }
 
 

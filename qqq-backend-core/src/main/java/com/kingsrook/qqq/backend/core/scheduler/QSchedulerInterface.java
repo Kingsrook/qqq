@@ -24,9 +24,12 @@ package com.kingsrook.qqq.backend.core.scheduler;
 
 import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
@@ -37,17 +40,17 @@ public interface QSchedulerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, boolean allowedToStart);
+   void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, QScheduleMetaData schedule, boolean allowedToStart);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   void setupSqsProvider(SQSQueueProviderMetaData queueProvider, boolean allowedToStart);
+   void setupSqsPoller(SQSQueueProviderMetaData queueProvider, QQueueMetaData queue, QScheduleMetaData schedule, boolean allowedToStart);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider, boolean allowedToStart);
+   void setupTableAutomation(QAutomationProviderMetaData automationProvider, PollingAutomationPerTableRunner.TableActionsInterface tableActions, QScheduleMetaData schedule, boolean allowedToStart);
 
    /*******************************************************************************
     **

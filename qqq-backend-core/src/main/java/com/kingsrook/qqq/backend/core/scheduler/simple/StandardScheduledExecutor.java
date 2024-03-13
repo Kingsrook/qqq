@@ -32,8 +32,10 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Standard class ran by ScheduleManager.  Takes a Runnable in its constructor -
- ** that's the code that actually executes.
+ ** Standard class ran by SimpleScheduler.  Takes a Runnable in its constructor -
+ ** that's the code that actually executes.  Internally, this class will launch
+ ** a newSingleThreadScheduledExecutor / ScheduledExecutorService to run the
+ ** runnable on a repeating delay.
  **
  *******************************************************************************/
 public class StandardScheduledExecutor
