@@ -34,9 +34,8 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostUpdateCustomizer;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
@@ -192,14 +191,12 @@ public class UpdateAction
       //////////////////////////////////////////////////////////////
       // finally, run the post-update customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> postUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_UPDATE_RECORD.getRole());
       if(postUpdateCustomizer.isPresent())
       {
          try
          {
-            postUpdateCustomizer.get().setUpdateInput(updateInput);
-            oldRecordList.ifPresent(l -> postUpdateCustomizer.get().setOldRecordList(l));
-            updateOutput.setRecords(postUpdateCustomizer.get().apply(updateOutput.getRecords()));
+            updateOutput.setRecords(postUpdateCustomizer.get().postUpdate(updateInput, updateOutput.getRecords(), oldRecordList));
          }
          catch(Exception e)
          {
@@ -273,13 +270,10 @@ public class UpdateAction
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-update customizer, if there is one //
       ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> preUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
       if(preUpdateCustomizer.isPresent())
       {
-         preUpdateCustomizer.get().setUpdateInput(updateInput);
-         preUpdateCustomizer.get().setIsPreview(isPreview);
-         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
-         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+         updateInput.setRecords(preUpdateCustomizer.get().preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
       }
    }
 

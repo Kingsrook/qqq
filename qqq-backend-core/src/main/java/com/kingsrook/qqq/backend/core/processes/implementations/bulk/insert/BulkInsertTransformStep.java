@@ -34,6 +34,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer.WhenToRun;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
@@ -137,15 +138,13 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // we do this, in case it needs to, for example, adjust values that //
       // are part of a unique key                                         //
       //////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      Optional<TableCustomizerInterface> preInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
-         preInsertCustomizer.get().setInsertInput(insertInput);
-         preInsertCustomizer.get().setIsPreview(true);
-         AbstractPreInsertCustomizer.WhenToRun whenToRun = preInsertCustomizer.get().getWhenToRun();
+         AbstractPreInsertCustomizer.WhenToRun whenToRun = preInsertCustomizer.get().whenToRunPreInsert(insertInput, true);
          if(WhenToRun.BEFORE_ALL_VALIDATIONS.equals(whenToRun) || WhenToRun.BEFORE_UNIQUE_KEY_CHECKS.equals(whenToRun))
          {
-            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().apply(runBackendStepInput.getRecords());
+            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, runBackendStepInput.getRecords(), true);
             runBackendStepInput.setRecords(recordsAfterCustomizer);
 
             ///////////////////////////////////////////////////////////////////////////////////////

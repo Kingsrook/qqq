@@ -47,7 +47,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  **
  ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
-public abstract class AbstractPreInsertCustomizer
+public abstract class AbstractPreInsertCustomizer implements TableCustomizerInterface
 {
    protected InsertInput insertInput;
 
@@ -66,6 +66,30 @@ public abstract class AbstractPreInsertCustomizer
       BEFORE_REQUIRED_FIELD_CHECKS,
       BEFORE_SECURITY_CHECKS,
       AFTER_ALL_VALIDATIONS
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
+   {
+      this.insertInput = insertInput;
+      this.isPreview = isPreview;
+      return (apply(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public WhenToRun whenToRunPreInsert(InsertInput insertInput, boolean isPreview)
+   {
+      return getWhenToRun();
    }
 
 

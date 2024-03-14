@@ -64,12 +64,12 @@ public class QCodeLoader
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static <T> Optional<T> getTableCustomizer(Class<T> expectedClass, QTableMetaData table, String customizerName)
+   public static Optional<TableCustomizerInterface> getTableCustomizer(QTableMetaData table, String customizerName)
    {
       Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
       if(codeReference.isPresent())
       {
-         return (Optional.ofNullable(QCodeLoader.getAdHoc(expectedClass, codeReference.get())));
+         return (Optional.ofNullable(QCodeLoader.getAdHoc(TableCustomizerInterface.class, codeReference.get())));
       }
       return (Optional.empty());
    }

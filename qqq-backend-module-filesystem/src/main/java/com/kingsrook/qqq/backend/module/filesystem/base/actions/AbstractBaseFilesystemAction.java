@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -368,13 +369,19 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    {
       try
       {
-         Optional<AbstractPostReadFileCustomizer> tableCustomizer = QCodeLoader.getTableCustomizer(AbstractPostReadFileCustomizer.class, table, FilesystemTableCustomizers.POST_READ_FILE.getRole());
-         if(tableCustomizer.isEmpty())
+         Optional<QCodeReference> codeReference = table.getCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole());
+         if(codeReference.isEmpty())
          {
             return (fileContents);
          }
 
-         return tableCustomizer.get().customizeFileContents(fileContents);
+         AbstractPostReadFileCustomizer tableCustomizer = QCodeLoader.getAdHoc(AbstractPostReadFileCustomizer.class, codeReference.get());
+         if(tableCustomizer == null)
+         {
+            return (fileContents);
+         }
+
+         return tableCustomizer.customizeFileContents(fileContents);
       }
       catch(Exception e)
       {

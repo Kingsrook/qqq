@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.GetActionCacheHelper;
@@ -58,7 +58,7 @@ import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
  *******************************************************************************/
 public class GetAction
 {
-   private Optional<AbstractPostQueryCustomizer> postGetRecordCustomizer;
+   private Optional<TableCustomizerInterface> postGetRecordCustomizer;
 
    private GetInput                 getInput;
    private QPossibleValueTranslator qPossibleValueTranslator;
@@ -88,7 +88,7 @@ public class GetAction
          throw (new QException("Requested to Get a record from an unrecognized table: " + getInput.getTableName()));
       }
 
-      postGetRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
+      postGetRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.getInput = getInput;
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -126,10 +126,10 @@ public class GetAction
          new GetActionCacheHelper().handleCaching(getInput, getOutput);
       }
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if the record is found, perform post-actions on it                                                        //
-      // unless the defaultGetInteface was used - as it just does a query, and the query will do the post-actions. //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the record is found, perform post-actions on it                                                         //
+      // unless the defaultGetInterface was used - as it just does a query, and the query will do the post-actions. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(getOutput.getRecord() != null && !usingDefaultGetInterface)
       {
          getOutput.setRecord(postRecordActions(getOutput.getRecord()));
@@ -220,12 +220,12 @@ public class GetAction
     ** Run the necessary actions on a record.  This may include setting display values,
     ** translating possible values, and running post-record customizations.
     *******************************************************************************/
-   public QRecord postRecordActions(QRecord record)
+   public QRecord postRecordActions(QRecord record) throws QException
    {
       QRecord returnRecord = record;
       if(this.postGetRecordCustomizer.isPresent())
       {
-         returnRecord = postGetRecordCustomizer.get().apply(List.of(record)).get(0);
+         returnRecord = postGetRecordCustomizer.get().postQuery(getInput, List.of(record)).get(0);
       }
 
       if(getInput.getShouldTranslatePossibleValues())
