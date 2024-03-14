@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QSchedulerInterface;
 import com.kingsrook.qqq.backend.core.scheduler.SchedulerUtils;
+import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
@@ -153,6 +154,17 @@ public class SimpleScheduler implements QSchedulerInterface
       executor.setName(runner.getName());
       setScheduleInExecutor(schedule, executor);
       executors.add(executor);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void unscheduleProcess(QProcessMetaData process)
+   {
+      throw (new NotImplementedException("Unscheduling is not implemented in SimpleScheduler..."));
    }
 
 

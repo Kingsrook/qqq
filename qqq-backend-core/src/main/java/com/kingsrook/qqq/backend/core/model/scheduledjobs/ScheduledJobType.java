@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,66 +19,83 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.query;
+package com.kingsrook.qqq.backend.core.model.scheduledjobs;
 
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 
 
 /*******************************************************************************
- ** Output for a query action
  **
  *******************************************************************************/
-public class QueryOutput extends AbstractActionOutput implements Serializable
+public enum ScheduledJobType implements PossibleValueEnum<String>
 {
-   private QueryOutputStorageInterface storage;
+   PROCESS,
+   QUEUE_PROCESSOR,
+   TABLE_AUTOMATIONS,
+   // todo - future - USER_REPORT
+   ;
+
+   public static final String NAME = "scheduledJobType";
+
+   private final String label;
 
 
 
    /*******************************************************************************
-    ** Construct a new query output, based on a query input (which will drive some
-    ** of how our output is structured... e.g., if we pipe the output)
+    ** Constructor
+    **
     *******************************************************************************/
-   public QueryOutput(QueryInput queryInput)
+   ScheduledJobType()
    {
-      if(queryInput.getRecordPipe() != null)
-      {
-         storage = new QueryOutputRecordPipe(queryInput.getRecordPipe());
-      }
-      else
-      {
-         storage = new QueryOutputList();
-      }
+      this.label = QInstanceEnricher.nameToLabel(QInstanceEnricher.inferNameFromBackendName(name()));
    }
 
 
 
    /*******************************************************************************
-    ** Add a record to this output.  Note - we often don't care, in such a method,
-    ** whether the record is "completed" or not (e.g., all of its values have been
-    ** populated) - but - note in here - that this records MAY be going into a pipe
-    ** that could be read asynchronously, at any time, by another thread - SO - only
-    ** completely populated records should be passed into this method.
+    ** Get instance by id
+    **
     *******************************************************************************/
-   public void addRecord(QRecord record) throws QException
+   public static ScheduledJobType getById(String id)
    {
-      storage.addRecord(record);
+      if(id == null)
+      {
+         return (null);
+      }
+
+      for(ScheduledJobType value : ScheduledJobType.values())
+      {
+         if(value.name().equals(id))
+         {
+            return (value);
+         }
+      }
+
+      return (null);
    }
 
 
 
    /*******************************************************************************
-    ** add a list of records to this output
+    ** Getter for id
+    **
     *******************************************************************************/
-   public void addRecords(List<QRecord> records) throws QException
+   public String getId()
    {
-      storage.addRecords(records);
+      return name();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
    }
 
 
@@ -86,9 +103,10 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   @Override
+   public String getPossibleValueId()
    {
-      return storage.getRecords();
+      return name();
    }
 
 
@@ -96,13 +114,10 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public <T extends QRecordEntity> List<T> getRecordEntities(Class<T> entityClass) throws QException
+   @Override
+   public String getPossibleValueLabel()
    {
-      List<T> rs = new ArrayList<>();
-      for(QRecord record : storage.getRecords())
-      {
-         rs.add(QRecordEntity.fromQRecord(entityClass, record));
-      }
-      return (rs);
+      return (label);
    }
+
 }

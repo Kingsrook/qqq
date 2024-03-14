@@ -28,12 +28,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -44,11 +47,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -112,19 +117,23 @@ public class QScheduleManager
     *******************************************************************************/
    public void start() throws QException
    {
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // initialize the scheduler(s) we're configured to use                                                                     //
+      // do this, even if we won't start them - so, for example, a web server can still be aware of schedules in the application //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QSchedulerMetaData schedulerMetaData : CollectionUtils.nonNullMap(qInstance.getSchedulers()).values())
+      {
+         QSchedulerInterface scheduler = schedulerMetaData.initSchedulerInstance(qInstance, systemUserSessionSupplier);
+         schedulers.put(schedulerMetaData.getName(), scheduler);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now, exist w/o setting up schedules and not starting schedules, if schedule manager isn't enabled here //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(!new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.scheduleManager.enabled", "QQQ_SCHEDULE_MANAGER_ENABLED", true))
       {
          LOG.info("Not starting ScheduleManager per settings.");
          return;
-      }
-
-      /////////////////////////////////////////////////////////
-      // initialize the scheduler(s) we're configured to use //
-      /////////////////////////////////////////////////////////
-      for(QSchedulerMetaData schedulerMetaData : qInstance.getSchedulers().values())
-      {
-         QSchedulerInterface scheduler = schedulerMetaData.initSchedulerInstance(qInstance, systemUserSessionSupplier);
-         schedulers.put(schedulerMetaData.getName(), scheduler);
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,6 +174,26 @@ public class QScheduleManager
     *******************************************************************************/
    private void setupSchedules()
    {
+      /////////////////////////////////////////////
+      // read dynamic schedules                  //
+      // e.g., user-scheduled processes, reports //
+      /////////////////////////////////////////////
+      List<ScheduledJob> scheduledJobList = null;
+      try
+      {
+         if(QContext.getQInstance().getTables().containsKey(ScheduledJob.TABLE_NAME))
+         {
+            scheduledJobList = new QueryAction()
+               .execute(new QueryInput(ScheduledJob.TABLE_NAME)
+                  .withIncludeAssociations(true))
+               .getRecordEntities(ScheduledJob.class);
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QRuntimeException("Failed to query for scheduled jobs - will not set up scheduler!", e));
+      }
+
       /////////////////////////////////////////////////////////
       // let the schedulers know we're starting this process //
       /////////////////////////////////////////////////////////
@@ -193,51 +222,146 @@ public class QScheduleManager
       {
          if(process.getSchedule() != null)
          {
-            QScheduleMetaData scheduleMetaData = process.getSchedule();
-            if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
-            {
-               ///////////////////////////////////////////////
-               // if no variants, or variant is serial mode //
-               ///////////////////////////////////////////////
-               setupProcess(process, null);
-            }
-            else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
-            {
-               /////////////////////////////////////////////////////////////////////////////////////////////////////
-               // if this a "parallel", which for example means we want to have a thread for each backend variant //
-               // running at the same time, get the variant records and schedule each separately                  //
-               /////////////////////////////////////////////////////////////////////////////////////////////////////
-               QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
-               for(QRecord qRecord : CollectionUtils.nonNullList(SchedulerUtils.getBackendVariantFilteredRecords(process)))
-               {
-                  try
-                  {
-                     setupProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
-                  }
-                  catch(Exception e)
-                  {
-                     LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
-                  }
-               }
-            }
-            else
-            {
-               LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
-            }
+            setupProcess(process);
          }
       }
 
-      /////////////////////////////////////////////////////////////
-      // todo - read dynamic schedules and schedule those things //
-      // e.g., user-scheduled processes, reports                 //
-      /////////////////////////////////////////////////////////////
-      // ScheduledJob scheduledJob = new ScheduledJob();
-      // setupScheduledJob(scheduledJob);
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // todo- before, or after meta-datas?                                                      //
+      // like quartz, it'd just re-schedule if a dupe - but, should we do our own dupe checking? //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      for(ScheduledJob scheduledJob : CollectionUtils.nonNullList(scheduledJobList))
+      {
+         try
+         {
+            setupScheduledJob(scheduledJob);
+         }
+         catch(Exception e)
+         {
+            LOG.info("Caught exception while scheduling a job", e, logPair("id", scheduledJob.getId()));
+         }
+      }
 
       //////////////////////////////////////////////////////////
       // let the schedulers know we're done with this process //
       //////////////////////////////////////////////////////////
       schedulers.values().forEach(s -> s.endOfSetupSchedules());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setupScheduledJob(ScheduledJob scheduledJob)
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // non-active jobs should be deleted from the scheduler.  they get re-added              //
+      // if they get re-activated.  but we don't want to rely on (e.g., for quartz) the paused //
+      // state to be drive by is-active.  else, devops-pause & unpause ops would clobber       //
+      // scheduled-job record facts                                                            //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      if(!scheduledJob.getIsActive())
+      {
+         unscheduleScheduledJob(scheduledJob);
+         return;
+      }
+
+      QSchedulerInterface scheduler = getScheduler(scheduledJob.getSchedulerName());
+
+      QScheduleMetaData scheduleMetaData = new QScheduleMetaData();
+      scheduleMetaData.setCronExpression(scheduledJob.getCronExpression());
+      scheduleMetaData.setCronTimeZoneId(scheduledJob.getCronTimeZoneId());
+
+      switch(ScheduledJobType.getById(scheduledJob.getType()))
+      {
+         case PROCESS ->
+         {
+            Map<String, String> paramMap    = scheduledJob.getJobParametersMap();
+            String              processName = paramMap.get("processName");
+            QProcessMetaData    process     = qInstance.getProcess(processName);
+
+            // todo - variants... serial vs parallel?
+            scheduler.setupProcess(process, null, scheduleMetaData, true);
+         }
+         case QUEUE_PROCESSOR ->
+         {
+            throw new NotImplementedException("ScheduledJob queue processors are not yet implemented...");
+         }
+         case TABLE_AUTOMATIONS ->
+         {
+            throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void unscheduleScheduledJob(ScheduledJob scheduledJob)
+   {
+      QSchedulerInterface scheduler = getScheduler(scheduledJob.getSchedulerName());
+
+      switch(ScheduledJobType.getById(scheduledJob.getType()))
+      {
+         case PROCESS ->
+         {
+            Map<String, String> paramMap    = scheduledJob.getJobParametersMap();
+            String              processName = paramMap.get("processName");
+            QProcessMetaData    process     = qInstance.getProcess(processName);
+            scheduler.unscheduleProcess(process);
+         }
+         case QUEUE_PROCESSOR ->
+         {
+            throw new NotImplementedException("ScheduledJob queue processors are not yet implemented...");
+         }
+         case TABLE_AUTOMATIONS ->
+         {
+            throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void setupProcess(QProcessMetaData process)
+   {
+      QScheduleMetaData scheduleMetaData = process.getSchedule();
+      if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+      {
+         ///////////////////////////////////////////////
+         // if no variants, or variant is serial mode //
+         ///////////////////////////////////////////////
+         setupProcess(process, null);
+      }
+      else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if this a "parallel", which for example means we want to have a thread for each backend variant //
+         // running at the same time, get the variant records and schedule each separately                  //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
+         for(QRecord qRecord : CollectionUtils.nonNullList(SchedulerUtils.getBackendVariantFilteredRecords(process)))
+         {
+            try
+            {
+               setupProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+            }
+            catch(Exception e)
+            {
+               LOG.error("An error starting process [" + process.getLabel() + "], with backend variant data.", e, new LogPair("variantQRecord", qRecord));
+            }
+         }
+      }
+      else
+      {
+         LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
+      }
    }
 
 

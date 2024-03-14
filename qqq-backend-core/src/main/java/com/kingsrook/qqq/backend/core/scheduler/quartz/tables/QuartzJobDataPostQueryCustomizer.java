@@ -33,9 +33,9 @@ import org.apache.commons.lang3.SerializationUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QuartzJobDetailsPostQueryCustomizer extends AbstractPostQueryCustomizer
+public class QuartzJobDataPostQueryCustomizer extends AbstractPostQueryCustomizer
 {
-   private static final QLogger LOG = QLogger.getLogger(QuartzJobDetailsPostQueryCustomizer.class);
+   private static final QLogger LOG = QLogger.getLogger(QuartzJobDataPostQueryCustomizer.class);
 
 
 
@@ -55,9 +55,12 @@ public class QuartzJobDetailsPostQueryCustomizer extends AbstractPostQueryCustom
                // this field has a blob of essentially a serialized map - so, deserialize that, then convert to JSON //
                ////////////////////////////////////////////////////////////////////////////////////////////////////////
                byte[] value       = record.getValueByteArray("jobData");
-               Object deserialize = SerializationUtils.deserialize(value);
-               String json        = JsonUtils.toJson(deserialize);
-               record.setValue("jobData", json);
+               if(value.length > 0)
+               {
+                  Object deserialize = SerializationUtils.deserialize(value);
+                  String json        = JsonUtils.toJson(deserialize);
+                  record.setValue("jobData", json);
+               }
             }
             catch(Exception e)
             {

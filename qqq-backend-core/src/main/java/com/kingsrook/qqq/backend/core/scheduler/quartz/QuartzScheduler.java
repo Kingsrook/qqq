@@ -83,6 +83,11 @@ public class QuartzScheduler implements QSchedulerInterface
 
    private Scheduler scheduler;
 
+   private final static String GROUP_NAME_PROCESSES         = "processes";
+   private final static String GROUP_NAME_SQS_QUEUES        = "sqsQueues";
+   private final static String GROUP_NAME_TABLE_AUTOMATIONS = "tableAutomations";
+
+
    /////////////////////////////////////////////////////////////////////////////////////////
    // create memoization objects for some quartz-query functions, that we'll only want to //
    // use during our setup routine, when we'd query it many times over and over again.    //
@@ -95,12 +100,18 @@ public class QuartzScheduler implements QSchedulerInterface
    private Memoization<String, Set<JobKey>> jobKeyNamesMemoization = new Memoization<String, Set<JobKey>>()
       .withTimeout(Duration.of(0, ChronoUnit.SECONDS));
 
+   private Memoization<AnyKey, List<QuartzJobAndTriggerWrapper>> queryQuartzMemoization = new Memoization<AnyKey, List<QuartzJobAndTriggerWrapper>>()
+      .withTimeout(Duration.of(0, ChronoUnit.SECONDS));
+
+   private List<Memoization<?, ?>> allMemoizations = List.of(jobGroupNamesMemoization, jobKeyNamesMemoization, queryQuartzMemoization);
+
    ///////////////////////////////////////////////////////////////////////////////
    // vars used during the setup routine, to figure out what jobs need deleted. //
    ///////////////////////////////////////////////////////////////////////////////
-   private boolean insideSetup = false;
+   private boolean                          insideSetup                 = false;
    private List<QuartzJobAndTriggerWrapper> scheduledJobsAtStartOfSetup = new ArrayList<>();
-   private List<QuartzJobAndTriggerWrapper> scheduledJobsAtEndOfSetup = new ArrayList<>();
+   private List<QuartzJobAndTriggerWrapper> scheduledJobsAtEndOfSetup   = new ArrayList<>();
+
 
 
    /*******************************************************************************
@@ -227,7 +238,7 @@ public class QuartzScheduler implements QSchedulerInterface
          jobData.put("backendVariantData", backendVariantData);
       }
 
-      scheduleJob(process.getName(), "processes", QuartzRunProcessJob.class, jobData, schedule, allowedToStart);
+      scheduleJob(process.getName(), GROUP_NAME_PROCESSES, QuartzRunProcessJob.class, jobData, schedule, allowedToStart);
    }
 
 
@@ -239,8 +250,7 @@ public class QuartzScheduler implements QSchedulerInterface
    public void startOfSetupSchedules()
    {
       this.insideSetup = true;
-      this.jobGroupNamesMemoization.setTimeout(Duration.ofSeconds(5));
-      this.jobKeyNamesMemoization.setTimeout(Duration.ofSeconds(5));
+      this.allMemoizations.forEach(m -> m.setTimeout(Duration.ofSeconds(5)));
 
       try
       {
@@ -253,6 +263,7 @@ public class QuartzScheduler implements QSchedulerInterface
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -260,8 +271,7 @@ public class QuartzScheduler implements QSchedulerInterface
    public void endOfSetupSchedules()
    {
       this.insideSetup = false;
-      this.jobGroupNamesMemoization.setTimeout(Duration.ofSeconds(0));
-      this.jobKeyNamesMemoization.setTimeout(Duration.ofSeconds(0));
+      this.allMemoizations.forEach(m -> m.setTimeout(Duration.ofSeconds(0)));
 
       if(this.scheduledJobsAtStartOfSetup == null)
       {
@@ -271,7 +281,7 @@ public class QuartzScheduler implements QSchedulerInterface
       try
       {
          Set<JobKey> startJobKeys = this.scheduledJobsAtStartOfSetup.stream().map(w -> w.jobDetail().getKey()).collect(Collectors.toSet());
-         Set<JobKey> endJobKeys = scheduledJobsAtEndOfSetup.stream().map(w -> w.jobDetail().getKey()).collect(Collectors.toSet());
+         Set<JobKey> endJobKeys   = scheduledJobsAtEndOfSetup.stream().map(w -> w.jobDetail().getKey()).collect(Collectors.toSet());
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // remove all 'end' keys from the set of start keys.  any left-over start-keys need to be deleted. //
@@ -343,6 +353,14 @@ public class QuartzScheduler implements QSchedulerInterface
          {
             startAt.setTime(startAt.getTime() + scheduleMetaData.getInitialDelaySeconds() * 1000);
          }
+         else
+         {
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // by default, put a 3-second delay on everything we schedule                                       //
+            // this gives us a chance to re-pause if the job was previously paused, but then we re-schedule it. //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            startAt.setTime(startAt.getTime() + 3000);
+         }
 
          ///////////////////////////////////////
          // Define a Trigger for the schedule //
@@ -358,18 +376,6 @@ public class QuartzScheduler implements QSchedulerInterface
          // Schedule the job with the trigger //
          ///////////////////////////////////////
          addOrReplaceJobAndTrigger(jobKey, jobDetail, trigger);
-
-         //////////////////////////////////////////////////////////
-         // either pause or resume, based on if allowed to start //
-         //////////////////////////////////////////////////////////
-         if(!allowedToStart)
-         {
-            pauseJob(jobKey.getName(), jobKey.getGroup());
-         }
-         else
-         {
-            resumeJob(jobKey.getName(), jobKey.getGroup());
-         }
 
          ///////////////////////////////////////////////////////////////////////////
          // if we're inside the setup event (e.g., initial startup), then capture //
@@ -404,8 +410,9 @@ public class QuartzScheduler implements QSchedulerInterface
       jobData.put("queueProviderName", queueProvider.getName());
       jobData.put("queueName", queue.getName());
 
-      scheduleJob(queue.getName(), "sqsQueue", QuartzSqsPollerJob.class, jobData, schedule, allowedToStart);
+      scheduleJob(queue.getName(), GROUP_NAME_SQS_QUEUES, QuartzSqsPollerJob.class, jobData, schedule, allowedToStart);
    }
+
 
 
    /*******************************************************************************
@@ -422,8 +429,20 @@ public class QuartzScheduler implements QSchedulerInterface
       jobData.put("tableName", tableActions.tableName());
       jobData.put("automationStatus", tableActions.status().toString());
 
-      scheduleJob(tableActions.tableName() + "." + tableActions.status(), "tableAutomations", QuartzTableAutomationsJob.class, jobData, schedule, allowedToStart);
+      scheduleJob(tableActions.tableName() + "." + tableActions.status(), GROUP_NAME_TABLE_AUTOMATIONS, QuartzTableAutomationsJob.class, jobData, schedule, allowedToStart);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void unscheduleProcess(QProcessMetaData process)
+   {
+      deleteJob(new JobKey(process.getName(), GROUP_NAME_PROCESSES));
+   }
+
 
 
    /*******************************************************************************
@@ -434,17 +453,42 @@ public class QuartzScheduler implements QSchedulerInterface
       boolean isJobAlreadyScheduled = isJobAlreadyScheduled(jobKey);
       if(isJobAlreadyScheduled)
       {
-         this.scheduler.addJob(jobDetail, true);
+         boolean wasPaused = wasExistingJobPaused(jobKey);
+
+         this.scheduler.addJob(jobDetail, true); // note, true flag here replaces if already present.
          this.scheduler.rescheduleJob(trigger.getKey(), trigger);
-         LOG.info("Re-scheduled job: " + jobKey);
+         LOG.info("Re-scheduled job", logPair("jobKey", jobKey));
+         if(wasPaused)
+         {
+            LOG.info("Re-pausing job", logPair("jobKey", jobKey));
+            pauseJob(jobKey.getName(), jobKey.getGroup());
+         }
       }
       else
       {
          this.scheduler.scheduleJob(jobDetail, trigger);
-         LOG.info("Scheduled new job: " + jobKey);
+         LOG.info("Scheduled new job", logPair("jobKey", jobKey));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean wasExistingJobPaused(JobKey jobKey) throws SchedulerException
+   {
+      List<QuartzJobAndTriggerWrapper>     quartzJobAndTriggerWrappers = queryQuartz();
+      Optional<QuartzJobAndTriggerWrapper> existingWrapper             = quartzJobAndTriggerWrappers.stream().filter(w -> w.jobDetail().getKey().equals(jobKey)).findFirst();
+      if(existingWrapper.isPresent())
+      {
+         if(Trigger.TriggerState.PAUSED.equals(existingWrapper.get().triggerState()))
+         {
+            return (true);
+         }
       }
 
-      // todo - think about... clear memoization - but - when this is used in bulk, that's when we want the memo!
+      return(false);
    }
 
 
@@ -492,12 +536,15 @@ public class QuartzScheduler implements QSchedulerInterface
          /////////////////////////////////////////////////////////////////////////////////////////////
          if(isJobAlreadyScheduled(jobKey))
          {
-            return scheduler.deleteJob(jobKey);
+            boolean result = scheduler.deleteJob(jobKey);
+            LOG.info("Attempted to delete quartz job", logPair("jobKey", jobKey), logPair("deleteJobResult", result));
+            return (result);
          }
 
          /////////////////////////////////////////
          // return true to indicate, we're good //
          /////////////////////////////////////////
+         LOG.info("Request to delete quartz job, but it is not already scheduled.", logPair("jobKey", jobKey));
          return (true);
       }
       catch(Exception e)
@@ -576,25 +623,27 @@ public class QuartzScheduler implements QSchedulerInterface
     *******************************************************************************/
    List<QuartzJobAndTriggerWrapper> queryQuartz() throws SchedulerException
    {
-      List<QuartzJobAndTriggerWrapper> rs = new ArrayList<>();
-      List<String> jobGroupNames = scheduler.getJobGroupNames();
-
-      for(String group : jobGroupNames)
+      return queryQuartzMemoization.getResultThrowing(AnyKey.getInstance(), (x) ->
       {
-         Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.groupEquals(group));
-         for(JobKey jobKey : jobKeys)
+         List<QuartzJobAndTriggerWrapper> rs = new ArrayList<>();
+
+         for(String group : scheduler.getJobGroupNames())
          {
-            JobDetail jobDetail = scheduler.getJobDetail(jobKey);
-            List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
-            for(Trigger trigger : triggersOfJob)
+            Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.groupEquals(group));
+            for(JobKey jobKey : jobKeys)
             {
-               Trigger.TriggerState triggerState = scheduler.getTriggerState(trigger.getKey());
-               rs.add(new QuartzJobAndTriggerWrapper(jobDetail, trigger, triggerState));
+               JobDetail               jobDetail     = scheduler.getJobDetail(jobKey);
+               List<? extends Trigger> triggersOfJob = scheduler.getTriggersOfJob(jobKey);
+               for(Trigger trigger : triggersOfJob)
+               {
+                  Trigger.TriggerState triggerState = scheduler.getTriggerState(trigger.getKey());
+                  rs.add(new QuartzJobAndTriggerWrapper(jobDetail, trigger, triggerState));
+               }
             }
          }
-      }
 
-      return (rs);
+         return (rs);
+      }).orElse(null);
    }
 
 

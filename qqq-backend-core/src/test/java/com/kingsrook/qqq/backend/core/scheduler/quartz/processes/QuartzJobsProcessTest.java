@@ -177,7 +177,7 @@ class QuartzJobsProcessTest extends BaseTest
       List<QuartzJobAndTriggerWrapper> quartzJobAndTriggerWrappers = QuartzTestUtils.queryQuartz();
       new InsertAction().execute(new InsertInput("quartzTriggers").withRecord(new QRecord()
          .withValue("jobName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getName())
-         .withValue("groupName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
+         .withValue("jobGroup", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
       ));
 
       input = new RunProcessInput();
@@ -224,7 +224,7 @@ class QuartzJobsProcessTest extends BaseTest
       List<QuartzJobAndTriggerWrapper> quartzJobAndTriggerWrappers = QuartzTestUtils.queryQuartz();
       new InsertAction().execute(new InsertInput("quartzTriggers").withRecord(new QRecord()
          .withValue("jobName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getName())
-         .withValue("groupName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
+         .withValue("jobGroup", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
       ));
 
       RunProcessInput input = new RunProcessInput();
