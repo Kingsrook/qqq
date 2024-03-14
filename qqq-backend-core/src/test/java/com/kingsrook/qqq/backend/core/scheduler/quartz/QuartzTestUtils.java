@@ -72,19 +72,25 @@ public class QuartzTestUtils
          .withProperties(getQuartzProperties())
          .withName(QUARTZ_SCHEDULER_NAME));
 
-      ////////////////////////////////////////////////////////////////////////////////
-      // set the queue providers & automation providers to use the quartz scheduler //
-      ////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////
+      // set the queue providers & automation providers to use the quartz scheduler    //
+      // also, set their initial delay to avoid default delay done by our scheduler    //
+      // (that gives us a chance to re-pause if re-scheduling a previously paused job) //
+      ///////////////////////////////////////////////////////////////////////////////////
       qInstance.getTables().values().forEach(t ->
       {
          if(t.getAutomationDetails() != null)
          {
-            t.getAutomationDetails().getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME);
+            t.getAutomationDetails().getSchedule()
+               .withSchedulerName(QUARTZ_SCHEDULER_NAME)
+               .withInitialDelayMillis(1);
          }
       });
 
       qInstance.getQueues().values()
-         .forEach(q -> q.getSchedule().setSchedulerName(QUARTZ_SCHEDULER_NAME));
+         .forEach(q -> q.getSchedule()
+            .withSchedulerName(QUARTZ_SCHEDULER_NAME)
+            .withInitialDelayMillis(1));
    }
 
 
