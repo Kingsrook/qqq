@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.scheduler.quartz.processes;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractLoadStep;
@@ -61,6 +64,10 @@ public class ResumeQuartzJobsProcess extends AbstractLoadStep implements MetaDat
          .withTransformStepClass(NoopTransformStep.class)
          .withLoadStepClass(getClass())
          .withIcon(new QIcon("play_circle_outline"))
+         .withReviewStepRecordFields(List.of(
+            new QFieldMetaData("id", QFieldType.LONG),
+            new QFieldMetaData("jobName", QFieldType.STRING),
+            new QFieldMetaData("jobGroup", QFieldType.STRING)))
          .getProcessMetaData();
    }
 
@@ -77,7 +84,7 @@ public class ResumeQuartzJobsProcess extends AbstractLoadStep implements MetaDat
          QuartzScheduler instance = QuartzScheduler.getInstance();
          for(QRecord record : runBackendStepInput.getRecords())
          {
-            instance.resumeJob(record.getValueString("jobName"), record.getValueString("groupName"));
+            instance.resumeJob(record.getValueString("jobName"), record.getValueString("jobGroup"));
          }
       }
       catch(Exception e)
