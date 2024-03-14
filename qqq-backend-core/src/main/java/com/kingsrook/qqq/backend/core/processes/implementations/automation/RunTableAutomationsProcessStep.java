@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProvi
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -71,6 +72,7 @@ public class RunTableAutomationsProcessStep implements BackendStep, MetaDataProd
    {
       QProcessMetaData processMetaData = new QProcessMetaData()
          .withName(NAME)
+         .withIcon(new QIcon().withName("directions_run"))
          .withStepList(List.of(
             new QFrontendStepMetaData()
                .withName("input")
