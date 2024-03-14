@@ -83,9 +83,9 @@ public class QuartzScheduler implements QSchedulerInterface
 
    private Scheduler scheduler;
 
-   private final static String GROUP_NAME_PROCESSES         = "processes";
-   private final static String GROUP_NAME_SQS_QUEUES        = "sqsQueues";
-   private final static String GROUP_NAME_TABLE_AUTOMATIONS = "tableAutomations";
+   private static final String GROUP_NAME_PROCESSES         = "processes";
+   private static final String GROUP_NAME_SQS_QUEUES        = "sqsQueues";
+   private static final String GROUP_NAME_TABLE_AUTOMATIONS = "tableAutomations";
 
 
    /////////////////////////////////////////////////////////////////////////////////////////

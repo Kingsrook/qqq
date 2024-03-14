@@ -292,6 +292,7 @@ public class QScheduleManager
          {
             throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
          }
+         default -> throw new IllegalStateException("Unexpected value: " + ScheduledJobType.getById(scheduledJob.getType()));
       }
    }
 
@@ -321,6 +322,7 @@ public class QScheduleManager
          {
             throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
          }
+         default -> throw new IllegalStateException("Unexpected value: " + ScheduledJobType.getById(scheduledJob.getType()));
       }
    }
 
