@@ -37,11 +37,8 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class QScheduleMetaData
 {
-   public enum RunStrategy
-   {PARALLEL, SERIAL}
-
-
    private String schedulerName;
+   private String description;
 
    private Integer repeatSeconds;
    private Integer repeatMillis;
@@ -51,8 +48,6 @@ public class QScheduleMetaData
    private String cronExpression;
    private String cronTimeZoneId;
 
-   private RunStrategy variantRunStrategy;
-   private String      variantBackend;
 
 
    /*******************************************************************************
@@ -202,67 +197,6 @@ public class QScheduleMetaData
 
 
    /*******************************************************************************
-    ** Getter for variantBackend
-    *******************************************************************************/
-   public String getVariantBackend()
-   {
-      return (this.variantBackend);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for variantBackend
-    *******************************************************************************/
-   public void setVariantBackend(String variantBackend)
-   {
-      this.variantBackend = variantBackend;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for variantBackend
-    *******************************************************************************/
-   public QScheduleMetaData withBackendVariant(String backendVariant)
-   {
-      this.variantBackend = backendVariant;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantRunStrategy
-    *******************************************************************************/
-   public RunStrategy getVariantRunStrategy()
-   {
-      return (this.variantRunStrategy);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for variantRunStrategy
-    *******************************************************************************/
-   public void setVariantRunStrategy(RunStrategy variantRunStrategy)
-   {
-      this.variantRunStrategy = variantRunStrategy;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for variantRunStrategy
-    *******************************************************************************/
-   public QScheduleMetaData withVariantRunStrategy(RunStrategy variantRunStrategy)
-   {
-      this.variantRunStrategy = variantRunStrategy;
-      return (this);
-   }
-
-
-   /*******************************************************************************
     ** Getter for cronExpression
     *******************************************************************************/
    public String getCronExpression()
@@ -350,6 +284,36 @@ public class QScheduleMetaData
    public QScheduleMetaData withSchedulerName(String schedulerName)
    {
       this.schedulerName = schedulerName;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public QScheduleMetaData withDescription(String description)
+   {
+      this.description = description;
       return (this);
    }
 

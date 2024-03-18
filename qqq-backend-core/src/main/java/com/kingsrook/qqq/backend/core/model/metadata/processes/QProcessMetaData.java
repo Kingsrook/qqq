@@ -64,6 +64,9 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
    private QScheduleMetaData schedule;
 
+   private VariantRunStrategy variantRunStrategy;
+   private String             variantBackend;
+
    private Map<String, QSupplementalProcessMetaData> supplementalMetaData;
 
 
@@ -670,5 +673,67 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       this.maxInputRecords = maxInputRecords;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for variantRunStrategy
+    *******************************************************************************/
+   public VariantRunStrategy getVariantRunStrategy()
+   {
+      return (this.variantRunStrategy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantRunStrategy
+    *******************************************************************************/
+   public void setVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantRunStrategy
+    *******************************************************************************/
+   public QProcessMetaData withVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantBackend
+    *******************************************************************************/
+   public String getVariantBackend()
+   {
+      return (this.variantBackend);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantBackend
+    *******************************************************************************/
+   public void setVariantBackend(String variantBackend)
+   {
+      this.variantBackend = variantBackend;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantBackend
+    *******************************************************************************/
+   public QProcessMetaData withVariantBackend(String variantBackend)
+   {
+      this.variantBackend = variantBackend;
+      return (this);
+   }
+
 
 }

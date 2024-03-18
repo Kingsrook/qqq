@@ -1417,12 +1417,16 @@ public class QInstanceValidator
             {
                QScheduleMetaData schedule = process.getSchedule();
                validateScheduleMetaData(schedule, qInstance, "Process " + processName + ", schedule: ");
+            }
 
-               if(schedule.getVariantBackend() != null)
-               {
-                  assertCondition(qInstance.getBackend(schedule.getVariantBackend()) != null, "A variant backend was not found for " + schedule.getVariantBackend());
-                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant run strategy was not set for " + schedule.getVariantBackend() + " on schedule in process " + processName);
-               }
+            if(process.getVariantBackend() != null)
+            {
+               assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
+               assertCondition(process.getVariantRunStrategy() != null, "A variant run strategy was not set for process " + processName + " (which does specify a variant backend)");
+            }
+            else
+            {
+               assertCondition(process.getVariantRunStrategy() == null, "A variant run strategy was set for process " + processName + " (which isn't allowed, since it does not specify a variant backend)");
             }
 
             for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
