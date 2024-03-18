@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.utils.lambdas.VoidVoidMethod;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -110,7 +110,7 @@ public class QContext
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void withTemporaryContext(CapturedContext context, VoidVoidMethod method)
+   public static <T extends Throwable> void withTemporaryContext(CapturedContext context, UnsafeVoidVoidMethod<T> method) throws T
    {
       CapturedContext originalContext = QContext.capture();
       try
