@@ -66,7 +66,7 @@ public class ScheduledJobsMetaDataProvider
       instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ScheduledJobType.NAME, ScheduledJobType.values()));
       instance.addPossibleValueSource(defineSchedulersPossibleValueSource());
       defineStandardJoins(instance);
-      defineStandardScriptsWidgets(instance);
+      defineStandardWidgets(instance);
    }
 
 
@@ -74,11 +74,12 @@ public class ScheduledJobsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void defineStandardScriptsWidgets(QInstance instance)
+   public void defineStandardWidgets(QInstance instance)
    {
       QJoinMetaData join = instance.getJoin(JOB_PARAMETER_JOIN_NAME);
       instance.addWidget(ChildRecordListRenderer.widgetMetaDataBuilder(join)
          .withCanAddChildRecord(true)
+         .withManageAssociationName(ScheduledJobParameter.TABLE_NAME)
          .withLabel("Parameters")
          .getWidgetMetaData()
          .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED)));
@@ -165,7 +166,7 @@ public class ScheduledJobsMetaDataProvider
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "description")))
-         .withSection(new QFieldSection("schedule", new QIcon().withName("alarm"), Tier.T2, List.of("cronExpression", "cronTimeZoneId")))
+         .withSection(new QFieldSection("schedule", new QIcon().withName("alarm"), Tier.T2, List.of("cronExpression", "cronTimeZoneId", "repeatSeconds")))
          .withSection(new QFieldSection("settings", new QIcon().withName("tune"), Tier.T2, List.of("type", "isActive", "schedulerName")))
          .withSection(new QFieldSection("parameters", new QIcon().withName("list"), Tier.T2).withWidgetName(JOB_PARAMETER_JOIN_NAME))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
@@ -178,9 +179,9 @@ public class ScheduledJobsMetaDataProvider
       tableMetaData.withCustomizer(TableCustomizers.POST_DELETE_RECORD, customizerReference);
 
       tableMetaData.withAssociation(new Association()
+         .withName(ScheduledJobParameter.TABLE_NAME)
          .withAssociatedTableName(ScheduledJobParameter.TABLE_NAME)
-         .withJoinName(JOB_PARAMETER_JOIN_NAME)
-         .withName(ScheduledJobParameter.TABLE_NAME));
+         .withJoinName(JOB_PARAMETER_JOIN_NAME));
 
       return (tableMetaData);
    }
@@ -195,8 +196,7 @@ public class ScheduledJobsMetaDataProvider
       QTableMetaData tableMetaData = defineStandardTable(backendName, ScheduledJobParameter.TABLE_NAME, ScheduledJobParameter.class)
          .withRecordLabelFormat("%s - %s")
          .withRecordLabelFields("scheduledJobId", "key")
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scheduledJobId", "key")))
-         .withSection(new QFieldSection("value", new QIcon().withName("dataset"), Tier.T2, List.of("value")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scheduledJobId", "key", "value")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       return (tableMetaData);

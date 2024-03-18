@@ -24,12 +24,10 @@ package com.kingsrook.qqq.backend.core.scheduler;
 
 import java.io.Serializable;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
-import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
 
 
 /*******************************************************************************
@@ -37,30 +35,40 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
  *******************************************************************************/
 public interface QSchedulerInterface
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, QScheduleMetaData schedule, boolean allowedToStart);
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   void setupSqsPoller(SQSQueueProviderMetaData queueProvider, QQueueMetaData queue, QScheduleMetaData schedule, boolean allowedToStart);
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void setupTableAutomation(QAutomationProviderMetaData automationProvider, PollingAutomationPerTableRunner.TableActionsInterface tableActions, QScheduleMetaData schedule, boolean allowedToStart);
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void unscheduleProcess(QProcessMetaData process);
+   String getSchedulerName();
 
    /*******************************************************************************
     **
     *******************************************************************************/
    void start();
+
+   /*******************************************************************************
+    ** called to indicate that the schedule manager is past its startup routine,
+    ** but that the schedule should not actually be running in this process.
+    *******************************************************************************/
+   default void doNotStart()
+   {
+
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void setupSchedulable(SchedulableIdentity schedulableIdentity, SchedulableType schedulableType, Map<String, Serializable> parameters, QScheduleMetaData schedule, boolean allowedToStart);
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void unscheduleSchedulable(SchedulableIdentity schedulableIdentity, SchedulableType schedulableType);
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void unscheduleAll() throws QException;
 
    /*******************************************************************************
     **
@@ -77,7 +85,9 @@ public interface QSchedulerInterface
     *******************************************************************************/
    default void unInit()
    {
-
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
 
    /*******************************************************************************
@@ -85,7 +95,9 @@ public interface QSchedulerInterface
     *******************************************************************************/
    default void startOfSetupSchedules()
    {
-
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
 
    /*******************************************************************************
@@ -93,6 +105,9 @@ public interface QSchedulerInterface
     *******************************************************************************/
    default void endOfSetupSchedules()
    {
-
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
+
 }

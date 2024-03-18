@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.scheduler.quartz.processes;
+package com.kingsrook.qqq.backend.core.scheduler.processes;
 
 
 import java.util.List;
@@ -36,13 +36,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFront
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 
 
 /*******************************************************************************
- ** Manage process to pause all quartz jobs
+ ** Management process to reschedule all scheduled jobs (in all schedulers).
  *******************************************************************************/
-public class PauseAllQuartzJobsProcess implements BackendStep, MetaDataProducerInterface<QProcessMetaData>
+public class RescheduleAllJobsProcess implements BackendStep, MetaDataProducerInterface<QProcessMetaData>
 {
 
    /*******************************************************************************
@@ -53,20 +53,20 @@ public class PauseAllQuartzJobsProcess implements BackendStep, MetaDataProducerI
    {
       return new QProcessMetaData()
          .withName(getClass().getSimpleName())
-         .withLabel("Pause All Quartz Jobs")
+         .withLabel("Reschedule all Scheduled Jobs")
+         .withIcon(new QIcon("update"))
          .withStepList(List.of(
             new QFrontendStepMetaData()
                .withName("confirm")
                .withComponent(new NoCodeWidgetFrontendComponentMetaData()
-                  .withOutput(new WidgetHtmlLine().withVelocityTemplate("Please confirm you wish to pause all quartz jobs."))),
+                  .withOutput(new WidgetHtmlLine().withVelocityTemplate("Please confirm you wish to reschedule all jobs."))),
             new QBackendStepMetaData()
                .withName("execute")
                .withCode(new QCodeReference(getClass())),
             new QFrontendStepMetaData()
                .withName("results")
                .withComponent(new NoCodeWidgetFrontendComponentMetaData()
-                  .withOutput(new WidgetHtmlLine().withVelocityTemplate("All quartz jobs have been paused")))))
-         .withIcon(new QIcon("pause_circle_outline"));
+                  .withOutput(new WidgetHtmlLine().withVelocityTemplate("All jobs have been rescheduled.")))));
    }
 
 
@@ -79,11 +79,11 @@ public class PauseAllQuartzJobsProcess implements BackendStep, MetaDataProducerI
    {
       try
       {
-         QuartzScheduler.getInstance().pauseAll();
+         QScheduleManager.getInstance().setupAllSchedules();
       }
       catch(Exception e)
       {
-         throw (new QException("Error pausing all jobs", e));
+         throw (new QException("Error setting up all scheduled jobs.", e));
       }
    }
 

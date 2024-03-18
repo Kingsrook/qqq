@@ -22,14 +22,15 @@
 package com.kingsrook.qqq.backend.core.scheduler.quartz;
 
 
-import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
-import org.quartz.DisallowConcurrentExecution;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableRunner;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import org.quartz.Job;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -38,10 +39,9 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  **
  *******************************************************************************/
-@DisallowConcurrentExecution
-public class QuartzSqsPollerJob implements Job
+public class QuartzJobRunner implements Job
 {
-   private static final QLogger LOG = QLogger.getLogger(QuartzSqsPollerJob.class);
+   private static final QLogger LOG = QLogger.getLogger(QuartzJobRunner.class);
 
 
 
@@ -49,37 +49,28 @@ public class QuartzSqsPollerJob implements Job
     **
     *******************************************************************************/
    @Override
-   public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException
+   public void execute(JobExecutionContext context) throws JobExecutionException
    {
-      String queueProviderName = null;
-      String queueName         = null;
-
+      CapturedContext capturedContext = QContext.capture();
       try
       {
-         JobDataMap jobDataMap = jobExecutionContext.getJobDetail().getJobDataMap();
-         queueProviderName = jobDataMap.getString("queueProviderName");
-         queueName = jobDataMap.getString("queueName");
-         QInstance qInstance = QuartzScheduler.getInstance().getQInstance();
+         QuartzScheduler quartzScheduler = QuartzScheduler.getInstance();
+         QInstance       qInstance       = quartzScheduler.getQInstance();
+         QContext.init(qInstance, quartzScheduler.getSessionSupplier().get());
 
-         SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
-         sqsQueuePoller.setQueueProviderMetaData((SQSQueueProviderMetaData) qInstance.getQueueProvider(queueProviderName));
-         sqsQueuePoller.setQueueMetaData(qInstance.getQueue(queueName));
-         sqsQueuePoller.setQInstance(qInstance);
-         sqsQueuePoller.setSessionSupplier(QuartzScheduler.getInstance().getSessionSupplier());
+         SchedulableType     schedulableType = qInstance.getSchedulableType(context.getJobDetail().getJobDataMap().getString("type"));
+         Map<String, Object> params          = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
 
-         /////////////
-         // run it. //
-         /////////////
-         LOG.debug("Running quartz SQS Poller", logPair("queueName", queueName), logPair("queueProviderName", queueProviderName));
-         sqsQueuePoller.run();
+         SchedulableRunner schedulableRunner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
+         schedulableRunner.run(params);
       }
       catch(Exception e)
       {
-         LOG.warn("Error running SQS Poller", e, logPair("queueName", queueName), logPair("queueProviderName", queueProviderName));
+         LOG.warn("Error running QuartzJob", e, logPair("jobContext", context));
       }
       finally
       {
-         QContext.clear();
+         QContext.init(capturedContext);
       }
    }
 

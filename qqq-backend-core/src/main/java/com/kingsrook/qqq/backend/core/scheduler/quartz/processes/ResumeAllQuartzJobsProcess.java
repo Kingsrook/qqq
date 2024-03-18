@@ -40,7 +40,7 @@ import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 
 
 /*******************************************************************************
- **
+ ** Manage process to resume all quartz jobs
  *******************************************************************************/
 public class ResumeAllQuartzJobsProcess implements BackendStep, MetaDataProducerInterface<QProcessMetaData>
 {
@@ -55,6 +55,10 @@ public class ResumeAllQuartzJobsProcess implements BackendStep, MetaDataProducer
          .withName(getClass().getSimpleName())
          .withLabel("Resume All Quartz Jobs")
          .withStepList(List.of(
+            new QFrontendStepMetaData()
+               .withName("confirm")
+               .withComponent(new NoCodeWidgetFrontendComponentMetaData()
+                  .withOutput(new WidgetHtmlLine().withVelocityTemplate("Please confirm you wish to resume all quartz jobs."))),
             new QBackendStepMetaData()
                .withName("execute")
                .withCode(new QCodeReference(getClass())),

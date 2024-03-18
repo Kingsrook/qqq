@@ -41,10 +41,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.VariantRunStrategy;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
@@ -54,17 +54,6 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 public class SchedulerUtils
 {
    private static final QLogger LOG = QLogger.getLogger(SchedulerUtils.class);
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static boolean allowedToStart(TopLevelMetaDataInterface metaDataObject)
-   {
-      return (allowedToStart(metaDataObject.getName()));
-   }
-
 
 
    /*******************************************************************************
@@ -87,7 +76,7 @@ public class SchedulerUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void runProcess(QInstance qInstance, Supplier<QSession> sessionSupplier, QProcessMetaData process, Map<String, Serializable> backendVariantData)
+   public static void runProcess(QInstance qInstance, Supplier<QSession> sessionSupplier, QProcessMetaData process, Map<String, Serializable> backendVariantData, Map<String, Serializable> processInputValues)
    {
       String originalThreadName = Thread.currentThread().getName();
 
@@ -95,11 +84,11 @@ public class SchedulerUtils
       {
          QContext.init(qInstance, sessionSupplier.get());
 
-         if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+         if(process.getVariantBackend() == null || VariantRunStrategy.PARALLEL.equals(process.getVariantRunStrategy()))
          {
-            SchedulerUtils.executeSingleProcess(process, backendVariantData);
+            executeSingleProcess(process, backendVariantData, processInputValues);
          }
-         else if(QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+         else if(VariantRunStrategy.SERIAL.equals(process.getVariantRunStrategy()))
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // if this is "serial", which for example means we want to run each backend variant one after    //
@@ -109,9 +98,9 @@ public class SchedulerUtils
             {
                try
                {
-                  QScheduleMetaData scheduleMetaData = process.getSchedule();
-                  QBackendMetaData  backendMetaData  = qInstance.getBackend(scheduleMetaData.getVariantBackend());
-                  executeSingleProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+                  QBackendMetaData  backendMetaData  = qInstance.getBackend(process.getVariantBackend());
+                  Map<String, Serializable> thisVariantData = MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField()));
+                  executeSingleProcess(process, thisVariantData, processInputValues);
                }
                catch(Exception e)
                {
@@ -136,7 +125,7 @@ public class SchedulerUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void executeSingleProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData) throws QException
+   private static void executeSingleProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, Map<String, Serializable> processInputValues) throws QException
    {
       if(backendVariantData != null)
       {
@@ -144,10 +133,16 @@ public class SchedulerUtils
       }
 
       Thread.currentThread().setName("ScheduledProcess>" + process.getName());
-      LOG.debug("Running Scheduled Process [" + process.getName() + "]");
+      LOG.debug("Running Scheduled Process [" + process.getName() + "] with values [" + processInputValues + "]");
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(process.getName());
+
+      for(Map.Entry<String, Serializable> entry : CollectionUtils.nonNullMap(processInputValues).entrySet())
+      {
+         runProcessInput.withValue(entry.getKey(), entry.getValue());
+      }
+
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
 
       QContext.pushAction(runProcessInput);
@@ -166,8 +161,7 @@ public class SchedulerUtils
       List<QRecord> records = null;
       try
       {
-         QScheduleMetaData scheduleMetaData = processMetaData.getSchedule();
-         QBackendMetaData  backendMetaData  = QContext.getQInstance().getBackend(scheduleMetaData.getVariantBackend());
+         QBackendMetaData  backendMetaData  = QContext.getQInstance().getBackend(processMetaData.getVariantBackend());
 
          QueryInput queryInput = new QueryInput();
          queryInput.setTableName(backendMetaData.getVariantOptionsTableName());

@@ -22,27 +22,22 @@
 package com.kingsrook.qqq.backend.core.scheduler.simple;
 
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.BaseTest;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
+import com.kingsrook.qqq.backend.core.scheduler.SchedulerTestUtils;
+import com.kingsrook.qqq.backend.core.scheduler.SchedulerTestUtils.BasicStep;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -75,12 +70,10 @@ class SimpleSchedulerTest extends BaseTest
       qScheduleManager.start();
 
       SimpleScheduler simpleScheduler = SimpleScheduler.getInstance(qInstance);
-      simpleScheduler.setSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
-      simpleScheduler.start();
-
       assertThat(simpleScheduler.getExecutors()).isNotEmpty();
 
       qScheduleManager.stop();
+      simpleScheduler.getExecutors().forEach(e -> assertEquals(StandardScheduledExecutor.RunningState.STOPPED, e.getRunningState()));
    }
 
 
@@ -96,16 +89,7 @@ class SimpleSchedulerTest extends BaseTest
       qInstance.getAutomationProviders().clear();
       qInstance.getQueueProviders().clear();
 
-      qInstance.addProcess(
-         new QProcessMetaData()
-            .withName("testScheduledProcess")
-            .withSchedule(new QScheduleMetaData()
-               .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME)
-               .withRepeatMillis(2)
-               .withInitialDelaySeconds(0))
-            .withStepList(List.of(new QBackendStepMetaData()
-               .withName("step")
-               .withCode(new QCodeReference(BasicStep.class)))));
+      qInstance.addProcess(SchedulerTestUtils.buildTestProcess("testScheduledProcess", TestUtils.SIMPLE_SCHEDULER_NAME));
 
       BasicStep.counter = 0;
 
@@ -123,22 +107,5 @@ class SimpleSchedulerTest extends BaseTest
       assertTrue(BasicStep.counter > 1, "Scheduled process should have ran at least twice (but only ran [" + BasicStep.counter + "] time(s).");
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static class BasicStep implements BackendStep
-   {
-      static int counter = 0;
-
-
-
-      @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-      {
-         counter++;
-      }
-   }
 
 }

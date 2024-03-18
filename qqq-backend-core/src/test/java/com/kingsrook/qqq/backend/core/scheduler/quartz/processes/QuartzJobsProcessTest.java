@@ -79,6 +79,7 @@ class QuartzJobsProcessTest extends BaseTest
       QSession         qSession         = QContext.getQSession();
       QScheduleManager qScheduleManager = QScheduleManager.initInstance(qInstance, () -> qSession);
       qScheduleManager.start();
+      qScheduleManager.setupAllSchedules();
    }
 
 

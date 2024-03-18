@@ -435,10 +435,7 @@ public class QInstanceValidator
                assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
             }
 
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // todo - if we have, in the future, a provider that doesn't require schedules per-queue, then make this check conditional //
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(assertCondition(queue.getSchedule() != null, "Missing schedule for SQSQueueProvider: " + name))
+            if(queue.getSchedule() != null)
             {
                validateScheduleMetaData(queue.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
             }
@@ -1024,7 +1021,7 @@ public class QInstanceValidator
          assertCondition(qInstance.getAutomationProvider(providerName) != null, " has an unrecognized providerName: " + providerName);
       }
 
-      if(assertCondition(automationDetails.getSchedule() != null, prefix + "Missing schedule for automations"))
+      if(automationDetails.getSchedule() != null)
       {
          validateScheduleMetaData(automationDetails.getSchedule(), qInstance, prefix + " automationDetails, schedule: ");
       }

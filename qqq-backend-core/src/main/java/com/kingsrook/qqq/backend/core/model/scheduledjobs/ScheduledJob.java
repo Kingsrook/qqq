@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
@@ -68,6 +69,9 @@ public class ScheduledJob extends QRecordEntity
 
    @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = TimeZonePossibleValueSourceMetaDataProvider.NAME)
    private String cronTimeZoneId;
+
+   @QField(displayFormat = DisplayFormat.COMMAS)
+   private Integer repeatSeconds;
 
    @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = ScheduledJobType.NAME)
    private String type;
@@ -457,5 +461,36 @@ public class ScheduledJob extends QRecordEntity
       this.jobParameters = jobParameters;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for repeatSeconds
+    *******************************************************************************/
+   public Integer getRepeatSeconds()
+   {
+      return (this.repeatSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for repeatSeconds
+    *******************************************************************************/
+   public void setRepeatSeconds(Integer repeatSeconds)
+   {
+      this.repeatSeconds = repeatSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for repeatSeconds
+    *******************************************************************************/
+   public ScheduledJob withRepeatSeconds(Integer repeatSeconds)
+   {
+      this.repeatSeconds = repeatSeconds;
+      return (this);
+   }
+
 
 }

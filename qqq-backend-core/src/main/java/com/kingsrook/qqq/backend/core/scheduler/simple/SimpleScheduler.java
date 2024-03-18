@@ -24,22 +24,21 @@ package com.kingsrook.qqq.backend.core.scheduler.simple;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
-import com.kingsrook.qqq.backend.core.actions.queues.SQSQueuePoller;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QSchedulerInterface;
-import com.kingsrook.qqq.backend.core.scheduler.SchedulerUtils;
-import org.apache.commons.lang.NotImplementedException;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -67,7 +66,7 @@ public class SimpleScheduler implements QSchedulerInterface
    /////////////////////////////////////////////////////////////////////////////////////
    private int delayIndex = 0;
 
-   private List<StandardScheduledExecutor> executors = new ArrayList<>();
+   private Map<SchedulableIdentity, StandardScheduledExecutor> executors = new LinkedHashMap<>();
 
 
 
@@ -101,7 +100,7 @@ public class SimpleScheduler implements QSchedulerInterface
    @Override
    public void start()
    {
-      for(StandardScheduledExecutor executor : executors)
+      for(StandardScheduledExecutor executor : executors.values())
       {
          executor.start();
       }
@@ -115,7 +114,7 @@ public class SimpleScheduler implements QSchedulerInterface
    @Override
    public void stopAsync()
    {
-      for(StandardScheduledExecutor scheduledExecutor : executors)
+      for(StandardScheduledExecutor scheduledExecutor : executors.values())
       {
          scheduledExecutor.stopAsync();
       }
@@ -129,7 +128,7 @@ public class SimpleScheduler implements QSchedulerInterface
    @Override
    public void stop()
    {
-      for(StandardScheduledExecutor scheduledExecutor : executors)
+      for(StandardScheduledExecutor scheduledExecutor : executors.values())
       {
          scheduledExecutor.stop();
       }
@@ -141,83 +140,18 @@ public class SimpleScheduler implements QSchedulerInterface
     **
     *******************************************************************************/
    @Override
-   public void setupTableAutomation(QAutomationProviderMetaData automationProvider, PollingAutomationPerTableRunner.TableActionsInterface tableActions, QScheduleMetaData schedule, boolean allowedToStart)
+   public void setupSchedulable(SchedulableIdentity schedulableIdentity, SchedulableType schedulableType, Map<String, Serializable> parameters, QScheduleMetaData schedule, boolean allowedToStart)
    {
       if(!allowedToStart)
       {
          return;
       }
 
-      PollingAutomationPerTableRunner runner   = new PollingAutomationPerTableRunner(qInstance, automationProvider.getName(), sessionSupplier, tableActions);
-      StandardScheduledExecutor       executor = new StandardScheduledExecutor(runner);
-
-      executor.setName(runner.getName());
+      SimpleJobRunner           simpleJobRunner = new SimpleJobRunner(qInstance, schedulableType, new HashMap<>(parameters));
+      StandardScheduledExecutor executor        = new StandardScheduledExecutor(simpleJobRunner);
+      executor.setName(schedulableIdentity.getIdentity());
       setScheduleInExecutor(schedule, executor);
-      executors.add(executor);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void unscheduleProcess(QProcessMetaData process)
-   {
-      throw (new NotImplementedException("Unscheduling is not implemented in SimpleScheduler..."));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void setupSqsPoller(SQSQueueProviderMetaData queueProvider, QQueueMetaData queue, QScheduleMetaData schedule, boolean allowedToStart)
-   {
-      if(!allowedToStart)
-      {
-         return;
-      }
-
-      QInstance          scheduleManagerQueueInstance   = qInstance;
-      Supplier<QSession> scheduleManagerSessionSupplier = sessionSupplier;
-
-      SQSQueuePoller sqsQueuePoller = new SQSQueuePoller();
-      sqsQueuePoller.setQueueProviderMetaData(queueProvider);
-      sqsQueuePoller.setQueueMetaData(queue);
-      sqsQueuePoller.setQInstance(scheduleManagerQueueInstance);
-      sqsQueuePoller.setSessionSupplier(scheduleManagerSessionSupplier);
-
-      StandardScheduledExecutor executor = new StandardScheduledExecutor(sqsQueuePoller);
-
-      executor.setName(queue.getName());
-      setScheduleInExecutor(schedule, executor);
-      executors.add(executor);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData, QScheduleMetaData schedule, boolean allowedToStart)
-   {
-      if(!allowedToStart)
-      {
-         return;
-      }
-
-      Runnable runProcess = () ->
-      {
-         SchedulerUtils.runProcess(qInstance, sessionSupplier, process, backendVariantData);
-      };
-
-      StandardScheduledExecutor executor = new StandardScheduledExecutor(runProcess);
-      executor.setName("process:" + process.getName());
-      setScheduleInExecutor(schedule, executor);
-      executors.add(executor);
+      executors.put(schedulableIdentity, executor);
    }
 
 
@@ -255,13 +189,34 @@ public class SimpleScheduler implements QSchedulerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QScheduleMetaData getDefaultSchedule()
+   @Override
+   public void unscheduleSchedulable(SchedulableIdentity schedulableIdentity, SchedulableType schedulableType)
    {
-      QScheduleMetaData schedule;
-      schedule = new QScheduleMetaData()
-         .withInitialDelaySeconds(delayIndex++)
-         .withRepeatSeconds(60);
-      return schedule;
+      StandardScheduledExecutor executor = executors.get(schedulableIdentity);
+      if(executor != null)
+      {
+         LOG.info("Stopping job in simple scheduler", logPair("identity", schedulableIdentity));
+         executors.remove(schedulableIdentity);
+         executor.stop();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void unscheduleAll() throws QException
+   {
+      for(Map.Entry<SchedulableIdentity, StandardScheduledExecutor> entry : new HashSet<>(executors.entrySet()))
+      {
+         StandardScheduledExecutor executor = executors.remove(entry.getKey());
+         if(executor != null)
+         {
+            executor.stopAsync();
+         }
+      }
    }
 
 
@@ -278,21 +233,23 @@ public class SimpleScheduler implements QSchedulerInterface
 
 
    /*******************************************************************************
-    ** Getter for managedExecutors
+    ** Getter for sessionSupplier
     **
     *******************************************************************************/
-   public List<StandardScheduledExecutor> getExecutors()
+   public Supplier<QSession> getSessionSupplier()
    {
-      return executors;
+      return sessionSupplier;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for managedExecutors
     **
     *******************************************************************************/
-   static void resetSingleton()
+   public List<StandardScheduledExecutor> getExecutors()
    {
+      return new ArrayList<>(executors.values());
    }
 
 

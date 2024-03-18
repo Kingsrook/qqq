@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -91,7 +92,9 @@ public class QInstance
    private Map<String, QWidgetMetaDataInterface> widgets              = new LinkedHashMap<>();
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
-   private Map<String, QSchedulerMetaData>       schedulers           = new LinkedHashMap<>();
+
+   private Map<String, QSchedulerMetaData> schedulers       = new LinkedHashMap<>();
+   private Map<String, SchedulableType>    schedulableTypes = new LinkedHashMap<>();
 
    private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
 
@@ -1277,5 +1280,55 @@ public class QInstance
       this.schedulers = schedulers;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSchedulableType(SchedulableType schedulableType)
+   {
+      String name = schedulableType.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a schedulableType without a name."));
+      }
+      if(this.schedulableTypes.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second schedulableType with name: " + name));
+      }
+      this.schedulableTypes.put(name, schedulableType);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public SchedulableType getSchedulableType(String name)
+   {
+      return (this.schedulableTypes.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulableTypes
+    **
+    *******************************************************************************/
+   public Map<String, SchedulableType> getSchedulableTypes()
+   {
+      return schedulableTypes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulableTypes
+    **
+    *******************************************************************************/
+   public void setSchedulableTypes(Map<String, SchedulableType> schedulableTypes)
+   {
+      this.schedulableTypes = schedulableTypes;
+   }
 
 }

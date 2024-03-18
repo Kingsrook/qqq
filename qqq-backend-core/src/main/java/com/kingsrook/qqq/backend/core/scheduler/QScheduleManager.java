@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.automation.polling.PollingAutomationPerTableRunner;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -40,19 +41,27 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.VariantRunStrategy;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.BasicSchedulableIdentity;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentityFactory;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableProcessRunner;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableRunner;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableSQSQueueRunner;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableTableAutomationsRunner;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import org.apache.commons.lang.NotImplementedException;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -87,13 +96,44 @@ public class QScheduleManager
     ** Singleton initiator - e.g., must be called to initially initialize the singleton
     ** before anyone else calls getInstance (they'll get an error if they call that first).
     *******************************************************************************/
-   public static QScheduleManager initInstance(QInstance qInstance, Supplier<QSession> systemUserSessionSupplier)
+   public static QScheduleManager initInstance(QInstance qInstance, Supplier<QSession> systemUserSessionSupplier) throws QException
    {
       if(qScheduleManager == null)
       {
          qScheduleManager = new QScheduleManager(qInstance, systemUserSessionSupplier);
+
+         /////////////////////////////////////////////////////////////////
+         // if the instance doesn't have any schedulable types defined, //
+         // then go ahead and add the default set that qqq knows about  //
+         /////////////////////////////////////////////////////////////////
+         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
+         {
+            defineDefaultSchedulableTypesInInstance(qInstance);
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // initialize the scheduler(s) we're configured to use                                                                     //
+         // do this, even if we won't start them - so, for example, a web server can still be aware of schedules in the application //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         for(QSchedulerMetaData schedulerMetaData : CollectionUtils.nonNullMap(qInstance.getSchedulers()).values())
+         {
+            QSchedulerInterface scheduler = schedulerMetaData.initSchedulerInstance(qInstance, systemUserSessionSupplier);
+            qScheduleManager.schedulers.put(schedulerMetaData.getName(), scheduler);
+         }
       }
       return (qScheduleManager);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void defineDefaultSchedulableTypesInInstance(QInstance qInstance)
+   {
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.PROCESS.getId()).withRunner(new QCodeReference(SchedulableProcessRunner.class)));
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.QUEUE_PROCESSOR.getId()).withRunner(new QCodeReference(SchedulableSQSQueueRunner.class)));
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.TABLE_AUTOMATIONS.getId()).withRunner(new QCodeReference(SchedulableTableAutomationsRunner.class)));
    }
 
 
@@ -117,29 +157,20 @@ public class QScheduleManager
     *******************************************************************************/
    public void start() throws QException
    {
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // initialize the scheduler(s) we're configured to use                                                                     //
-      // do this, even if we won't start them - so, for example, a web server can still be aware of schedules in the application //
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      for(QSchedulerMetaData schedulerMetaData : CollectionUtils.nonNullMap(qInstance.getSchedulers()).values())
-      {
-         QSchedulerInterface scheduler = schedulerMetaData.initSchedulerInstance(qInstance, systemUserSessionSupplier);
-         schedulers.put(schedulerMetaData.getName(), scheduler);
-      }
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // now, exist w/o setting up schedules and not starting schedules, if schedule manager isn't enabled here //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////
+      // exit w/o starting schedulers, if schedule manager isn't enabled here //
+      //////////////////////////////////////////////////////////////////////////
       if(!new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.scheduleManager.enabled", "QQQ_SCHEDULE_MANAGER_ENABLED", true))
       {
          LOG.info("Not starting ScheduleManager per settings.");
+         schedulers.values().forEach(s -> s.doNotStart());
          return;
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////
       // ensure that everything which should be scheduled is scheduled, in the appropriate scheduler //
       /////////////////////////////////////////////////////////////////////////////////////////////////
-      QContext.withTemporaryContext(new CapturedContext(qInstance, systemUserSessionSupplier.get()), () -> setupSchedules());
+      QContext.withTemporaryContext(new CapturedContext(qInstance, systemUserSessionSupplier.get()), () -> setupAllSchedules());
 
       //////////////////////////
       // start each scheduler //
@@ -172,7 +203,7 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void setupSchedules()
+   public void setupAllSchedules() throws QException
    {
       /////////////////////////////////////////////
       // read dynamic schedules                  //
@@ -199,20 +230,27 @@ public class QScheduleManager
       /////////////////////////////////////////////////////////
       schedulers.values().forEach(s -> s.startOfSetupSchedules());
 
-      //////////////////////////////////
-      // schedule all queue providers //
-      //////////////////////////////////
-      for(QQueueProviderMetaData queueProvider : qInstance.getQueueProviders().values())
+      /////////////////////////
+      // schedule all queues //
+      /////////////////////////
+      for(QQueueMetaData queue : qInstance.getQueues().values())
       {
-         setupQueueProvider(queueProvider);
+         if(queue.getSchedule() != null)
+         {
+            setupQueue(queue);
+         }
       }
 
-      ///////////////////////////////////////
-      // schedule all automation providers //
-      ///////////////////////////////////////
-      for(QAutomationProviderMetaData automationProvider : qInstance.getAutomationProviders().values())
+      ////////////////////////////////////////
+      // schedule all tables w/ automations //
+      ////////////////////////////////////////
+      for(QTableMetaData table : qInstance.getTables().values())
       {
-         setupAutomationProviderPerTable(automationProvider);
+         QTableAutomationDetails automationDetails = table.getAutomationDetails();
+         if(automationDetails != null && automationDetails.getSchedule() != null)
+         {
+            setupTableAutomations(table);
+         }
       }
 
       /////////////////////////////////////////
@@ -253,47 +291,60 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void setupScheduledJob(ScheduledJob scheduledJob)
+   public void setupScheduledJob(ScheduledJob scheduledJob) throws QException
    {
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // non-active jobs should be deleted from the scheduler.  they get re-added              //
-      // if they get re-activated.  but we don't want to rely on (e.g., for quartz) the paused //
-      // state to be drive by is-active.  else, devops-pause & unpause ops would clobber       //
-      // scheduled-job record facts                                                            //
-      ///////////////////////////////////////////////////////////////////////////////////////////
+      BasicSchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(scheduledJob);
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // non-active jobs should be deleted from the scheduler.  they get re-added   //
+      // if they get re-activated.  but we don't want to rely on (e.g., for quartz) //
+      // the paused state to be drive by is-active.  else, devops-pause & unpause   //
+      // operations would clobber scheduled-job record facts                        //
+      ////////////////////////////////////////////////////////////////////////////////
       if(!scheduledJob.getIsActive())
       {
          unscheduleScheduledJob(scheduledJob);
          return;
       }
 
-      QSchedulerInterface scheduler = getScheduler(scheduledJob.getSchedulerName());
+      String exceptionSuffix = "in scheduledJob [" + scheduledJob.getId() + "]";
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // setup schedule meta-data object based on schedule data in the scheduled job - throwing if not well populated //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(scheduledJob.getRepeatSeconds() == null && !StringUtils.hasContent(scheduledJob.getCronExpression()))
+      {
+         throw (new QException("Missing a schedule (cronString or repeatSeconds) " + exceptionSuffix));
+      }
 
       QScheduleMetaData scheduleMetaData = new QScheduleMetaData();
       scheduleMetaData.setCronExpression(scheduledJob.getCronExpression());
       scheduleMetaData.setCronTimeZoneId(scheduledJob.getCronTimeZoneId());
+      scheduleMetaData.setRepeatSeconds(scheduledJob.getRepeatSeconds());
 
-      switch(ScheduledJobType.getById(scheduledJob.getType()))
+      /////////////////////////////////
+      // get & validate the job type //
+      /////////////////////////////////
+      if(!StringUtils.hasContent(scheduledJob.getType()))
       {
-         case PROCESS ->
-         {
-            Map<String, String> paramMap    = scheduledJob.getJobParametersMap();
-            String              processName = paramMap.get("processName");
-            QProcessMetaData    process     = qInstance.getProcess(processName);
-
-            // todo - variants... serial vs parallel?
-            scheduler.setupProcess(process, null, scheduleMetaData, true);
-         }
-         case QUEUE_PROCESSOR ->
-         {
-            throw new NotImplementedException("ScheduledJob queue processors are not yet implemented...");
-         }
-         case TABLE_AUTOMATIONS ->
-         {
-            throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
-         }
-         default -> throw new IllegalStateException("Unexpected value: " + ScheduledJobType.getById(scheduledJob.getType()));
+         throw (new QException("Missing a type " + exceptionSuffix));
       }
+
+      ScheduledJobType scheduledJobType = ScheduledJobType.getById(scheduledJob.getType());
+      if(scheduledJobType == null)
+      {
+         throw (new QException("Unrecognized type [" + scheduledJob.getType() + "] " + exceptionSuffix));
+      }
+
+      QSchedulerInterface       scheduler = getScheduler(scheduledJob.getSchedulerName());
+      Map<String, Serializable> paramMap  = new HashMap<>(scheduledJob.getJobParametersMap());
+
+      SchedulableType schedulableType = qInstance.getSchedulableType(scheduledJob.getType());
+
+      SchedulableRunner runner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
+      runner.validateParams(schedulableIdentity, new HashMap<>(paramMap));
+
+      scheduler.setupSchedulable(schedulableIdentity, schedulableType, paramMap, scheduleMetaData, true);
    }
 
 
@@ -301,29 +352,34 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void unscheduleScheduledJob(ScheduledJob scheduledJob)
+   public void unscheduleAll()
+   {
+      schedulers.values().forEach(s ->
+      {
+         try
+         {
+            s.unscheduleAll();
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error unscheduling everything in scheduler " + s, e);
+         }
+      });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void unscheduleScheduledJob(ScheduledJob scheduledJob) throws QException
    {
       QSchedulerInterface scheduler = getScheduler(scheduledJob.getSchedulerName());
 
-      switch(ScheduledJobType.getById(scheduledJob.getType()))
-      {
-         case PROCESS ->
-         {
-            Map<String, String> paramMap    = scheduledJob.getJobParametersMap();
-            String              processName = paramMap.get("processName");
-            QProcessMetaData    process     = qInstance.getProcess(processName);
-            scheduler.unscheduleProcess(process);
-         }
-         case QUEUE_PROCESSOR ->
-         {
-            throw new NotImplementedException("ScheduledJob queue processors are not yet implemented...");
-         }
-         case TABLE_AUTOMATIONS ->
-         {
-            throw new NotImplementedException("ScheduledJob table automations are not yet implemented...");
-         }
-         default -> throw new IllegalStateException("Unexpected value: " + ScheduledJobType.getById(scheduledJob.getType()));
-      }
+      BasicSchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(scheduledJob);
+      SchedulableType          schedulableType     = qInstance.getSchedulableType(scheduledJob.getType());
+
+      scheduler.unscheduleSchedulable(schedulableIdentity, schedulableType);
    }
 
 
@@ -331,28 +387,45 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void setupProcess(QProcessMetaData process)
+   private void setupProcess(QProcessMetaData process) throws QException
    {
-      QScheduleMetaData scheduleMetaData = process.getSchedule();
-      if(process.getSchedule().getVariantBackend() == null || QScheduleMetaData.RunStrategy.SERIAL.equals(process.getSchedule().getVariantRunStrategy()))
+      BasicSchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(process);
+      QSchedulerInterface      scheduler           = getScheduler(process.getSchedule().getSchedulerName());
+      boolean                  allowedToStart      = SchedulerUtils.allowedToStart(process.getName());
+
+      Map<String, String> paramMap = new HashMap<>();
+      paramMap.put("processName", process.getName());
+
+      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.getId());
+
+      if(process.getVariantBackend() == null || VariantRunStrategy.SERIAL.equals(process.getVariantRunStrategy()))
       {
          ///////////////////////////////////////////////
          // if no variants, or variant is serial mode //
          ///////////////////////////////////////////////
-         setupProcess(process, null);
+         scheduler.setupSchedulable(schedulableIdentity, schedulableType, new HashMap<>(paramMap), process.getSchedule(), allowedToStart);
       }
-      else if(QScheduleMetaData.RunStrategy.PARALLEL.equals(process.getSchedule().getVariantRunStrategy()))
+      else if(VariantRunStrategy.PARALLEL.equals(process.getVariantRunStrategy()))
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // if this a "parallel", which for example means we want to have a thread for each backend variant //
          // running at the same time, get the variant records and schedule each separately                  //
          /////////////////////////////////////////////////////////////////////////////////////////////////////
-         QBackendMetaData backendMetaData = qInstance.getBackend(scheduleMetaData.getVariantBackend());
+         QBackendMetaData backendMetaData = qInstance.getBackend(process.getVariantBackend());
          for(QRecord qRecord : CollectionUtils.nonNullList(SchedulerUtils.getBackendVariantFilteredRecords(process)))
          {
             try
             {
-               setupProcess(process, MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+               HashMap<String, Serializable> parameters = new HashMap<>(paramMap);
+               HashMap<String, Serializable> variantMap = new HashMap<>(Map.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+               parameters.put("backendVariantData", variantMap);
+
+               String identity    = schedulableIdentity.getIdentity() + ";" + backendMetaData.getVariantOptionsTableTypeValue() + "=" + qRecord.getValue(backendMetaData.getVariantOptionsTableIdField());
+               String description = schedulableIdentity.getDescription() + " for variant: " + backendMetaData.getVariantOptionsTableTypeValue() + "=" + qRecord.getValue(backendMetaData.getVariantOptionsTableIdField());
+
+               BasicSchedulableIdentity variantIdentity = new BasicSchedulableIdentity(identity, description);
+
+               scheduler.setupSchedulable(variantIdentity, schedulableType, parameters, process.getSchedule(), allowedToStart);
             }
             catch(Exception e)
             {
@@ -362,7 +435,7 @@ public class QScheduleManager
       }
       else
       {
-         LOG.error("Unsupported Schedule Run Strategy [" + process.getSchedule().getVariantRunStrategy() + "] was provided.");
+         LOG.error("Unsupported Schedule Run Strategy [" + process.getVariantRunStrategy() + "] was provided.");
       }
    }
 
@@ -371,71 +444,25 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void setupProcess(QProcessMetaData process, Map<String, Serializable> backendVariantData)
+   private void setupTableAutomations(QTableMetaData table) throws QException
    {
-      QSchedulerInterface scheduler = getScheduler(process.getSchedule().getSchedulerName());
-      scheduler.setupProcess(process, backendVariantData, process.getSchedule(), SchedulerUtils.allowedToStart(process));
-   }
+      SchedulableType         schedulableType   = qInstance.getSchedulableType(ScheduledJobType.TABLE_AUTOMATIONS.getId());
+      QTableAutomationDetails automationDetails = table.getAutomationDetails();
+      QSchedulerInterface     scheduler         = getScheduler(automationDetails.getSchedule().getSchedulerName());
 
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActionList = PollingAutomationPerTableRunner.getTableActions(qInstance, automationDetails.getProviderName())
+         .stream().filter(ta -> ta.tableName().equals(table.getName()))
+         .toList();
 
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void setupQueueProvider(QQueueProviderMetaData queueProvider)
-   {
-      switch(queueProvider.getType())
-      {
-         case SQS:
-            setupSqsProvider((SQSQueueProviderMetaData) queueProvider);
-            break;
-         default:
-            throw new IllegalArgumentException("Unhandled queue provider type: " + queueProvider.getType());
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void setupSqsProvider(SQSQueueProviderMetaData queueProvider)
-   {
-      boolean allowedToStartProvider = SchedulerUtils.allowedToStart(queueProvider);
-
-      for(QQueueMetaData queue : qInstance.getQueues().values())
-      {
-         QSchedulerInterface scheduler = getScheduler(queue.getSchedule().getSchedulerName());
-
-         boolean allowedToStart = allowedToStartProvider && SchedulerUtils.allowedToStart(queue.getName());
-         if(queueProvider.getName().equals(queue.getProviderName()))
-         {
-            scheduler.setupSqsPoller(queueProvider, queue, queue.getSchedule(), allowedToStart);
-         }
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void setupAutomationProviderPerTable(QAutomationProviderMetaData automationProvider)
-   {
-      boolean allowedToStartProvider = SchedulerUtils.allowedToStart(automationProvider);
-
-      ///////////////////////////////////////////////////////////////////////////////////
-      // ask the PollingAutomationPerTableRunner how many threads of itself need setup //
-      // then schedule each one of them.                                               //
-      ///////////////////////////////////////////////////////////////////////////////////
-      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActionList = PollingAutomationPerTableRunner.getTableActions(qInstance, automationProvider.getName());
       for(PollingAutomationPerTableRunner.TableActionsInterface tableActions : tableActionList)
       {
-         boolean allowedToStart = allowedToStartProvider && SchedulerUtils.allowedToStart(tableActions.tableName());
+         SchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(tableActions);
+         boolean             allowedToStart      = SchedulerUtils.allowedToStart(table.getName());
 
-         QScheduleMetaData   schedule  = tableActions.tableAutomationDetails().getSchedule();
-         QSchedulerInterface scheduler = getScheduler(schedule.getSchedulerName());
-         scheduler.setupTableAutomation(automationProvider, tableActions, schedule, allowedToStart);
+         Map<String, String> paramMap = new HashMap<>();
+         paramMap.put("tableName", tableActions.tableName());
+         paramMap.put("automationStatus", tableActions.status().name());
+         scheduler.setupSchedulable(schedulableIdentity, schedulableType, new HashMap<>(paramMap), automationDetails.getSchedule(), allowedToStart);
       }
    }
 
@@ -444,12 +471,34 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QSchedulerInterface getScheduler(String schedulerName)
+   private void setupQueue(QQueueMetaData queue) throws QException
    {
+      SchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(queue);
+      QSchedulerInterface scheduler           = getScheduler(queue.getSchedule().getSchedulerName());
+      SchedulableType     schedulableType     = qInstance.getSchedulableType(ScheduledJobType.QUEUE_PROCESSOR.getId());
+      boolean             allowedToStart      = SchedulerUtils.allowedToStart(queue.getName());
+
+      Map<String, String> paramMap = new HashMap<>();
+      paramMap.put("queueName", queue.getName());
+      scheduler.setupSchedulable(schedulableIdentity, schedulableType, new HashMap<>(paramMap), queue.getSchedule(), allowedToStart);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QSchedulerInterface getScheduler(String schedulerName) throws QException
+   {
+      if(!StringUtils.hasContent(schedulerName))
+      {
+         throw (new QException("Scheduler name was not given (and the concept of a default scheduler does not exist at this time)."));
+      }
+
       QSchedulerInterface scheduler = schedulers.get(schedulerName);
       if(scheduler == null)
       {
-         throw new NotImplementedException("default scheduler...");
+         throw (new QException("Unrecognized schedulerName [" + schedulerName + "]"));
       }
 
       return (scheduler);
