@@ -54,11 +54,7 @@ public class CollectedLogMessage
    @Override
    public String toString()
    {
-      return "CollectedLogMessage{" +
-         "level=" + level +
-         ", message='" + message + '\'' +
-         ", exception=" + exception +
-         '}';
+      return "CollectedLogMessage{level=" + level + ", message='" + message + '\'' + ", exception=" + exception + '}';
    }
 
 

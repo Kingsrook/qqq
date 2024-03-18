@@ -169,7 +169,8 @@ public class QCodeLoader
 
       try
       {
-         Optional<Constructor<?>> constructor = constructorMemoization.getResultThrowing(codeReference.getName(), (UnsafeFunction<String, Constructor<?>, Exception>) s -> {
+         Optional<Constructor<?>> constructor = constructorMemoization.getResultThrowing(codeReference.getName(), (UnsafeFunction<String, Constructor<?>, Exception>) s ->
+         {
             Class<?> customizerClass = Class.forName(codeReference.getName());
             return customizerClass.getConstructor();
          });
