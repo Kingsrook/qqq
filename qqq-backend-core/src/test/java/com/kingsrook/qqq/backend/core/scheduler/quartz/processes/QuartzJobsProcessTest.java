@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.scheduler.quartz.processes;
 
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzJobAndTriggerWrapper;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzTestUtils;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +134,7 @@ class QuartzJobsProcessTest extends BaseTest
       ///////////////////////////////
       RunProcessInput input = new RunProcessInput();
       input.setProcessName(PauseAllQuartzJobsProcess.class.getSimpleName());
+      input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       new RunProcessAction().execute(input);
 
       //////////////////////////////////////
@@ -153,7 +156,10 @@ class QuartzJobsProcessTest extends BaseTest
       ///////////////////////////////
       RunProcessInput input = new RunProcessInput();
       input.setProcessName(PauseAllQuartzJobsProcess.class.getSimpleName());
+      input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       new RunProcessAction().execute(input);
+
+      SleepUtils.sleep(3, TimeUnit.SECONDS);
 
       //////////////////////////////////////
       // assert everything becomes paused //
@@ -165,6 +171,7 @@ class QuartzJobsProcessTest extends BaseTest
       ////////////////////
       input = new RunProcessInput();
       input.setProcessName(ResumeAllQuartzJobsProcess.class.getSimpleName());
+      input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       new RunProcessAction().execute(input);
 
       ////////////////////////////////////////
@@ -198,6 +205,7 @@ class QuartzJobsProcessTest extends BaseTest
       //////////////////////////
       input = new RunProcessInput();
       input.setProcessName(ResumeAllQuartzJobsProcess.class.getSimpleName());
+      input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
       new RunProcessAction().execute(input);
 
       ////////////////////////////////////////

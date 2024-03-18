@@ -186,11 +186,13 @@ class QScheduleManagerTest extends BaseTest
          .withId(2)
          .withSchedulerName(QuartzTestUtils.QUARTZ_SCHEDULER_NAME));
 
+      qInstance.getQueue(TestUtils.TEST_SQS_QUEUE).setSchedule(null);
       qScheduleManager.setupScheduledJob(newScheduledJob(ScheduledJobType.QUEUE_PROCESSOR,
          Map.of("queueName", TestUtils.TEST_SQS_QUEUE))
          .withId(3)
          .withSchedulerName(QuartzTestUtils.QUARTZ_SCHEDULER_NAME));
 
+      qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().setSchedule(null);
       qScheduleManager.setupScheduledJob(newScheduledJob(ScheduledJobType.TABLE_AUTOMATIONS,
          Map.of("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY, "automationStatus", AutomationStatus.PENDING_UPDATE_AUTOMATIONS.name()))
          .withId(4)
