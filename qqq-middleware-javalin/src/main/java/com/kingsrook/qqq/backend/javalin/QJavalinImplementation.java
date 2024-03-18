@@ -779,30 +779,31 @@ public class QJavalinImplementation
       {
          String       fieldName = formParam.getKey();
          List<String> values    = formParam.getValue();
-         String       value     = values.get(0);
-
-         if("associations".equals(fieldName) && StringUtils.hasContent(value))
-         {
-            JSONObject associationsJSON = new JSONObject(value);
-            for(String key : associationsJSON.keySet())
-            {
-               JSONArray associatedRecords = associationsJSON.getJSONArray(key);
-               for(int i = 0; i < associatedRecords.length(); i++)
-               {
-                  QRecord    associatedRecord = new QRecord();
-                  JSONObject recordJSON       = associatedRecords.getJSONObject(i);
-                  for(String k : recordJSON.keySet())
-                  {
-                     associatedRecord.withValue(k, ValueUtils.getValueAsString(recordJSON.get(k)));
-                  }
-                  record.withAssociatedRecord(key, associatedRecord);
-               }
-            }
-            continue;
-         }
 
          if(CollectionUtils.nullSafeHasContents(values))
          {
+            String value = values.get(0);
+
+            if("associations".equals(fieldName) && StringUtils.hasContent(value))
+            {
+               JSONObject associationsJSON = new JSONObject(value);
+               for(String key : associationsJSON.keySet())
+               {
+                  JSONArray associatedRecords = associationsJSON.getJSONArray(key);
+                  for(int i = 0; i < associatedRecords.length(); i++)
+                  {
+                     QRecord    associatedRecord = new QRecord();
+                     JSONObject recordJSON       = associatedRecords.getJSONObject(i);
+                     for(String k : recordJSON.keySet())
+                     {
+                        associatedRecord.withValue(k, ValueUtils.getValueAsString(recordJSON.get(k)));
+                     }
+                     record.withAssociatedRecord(key, associatedRecord);
+                  }
+               }
+               continue;
+            }
+
             if(StringUtils.hasContent(value))
             {
                record.setValue(fieldName, value);
@@ -814,7 +815,6 @@ public class QJavalinImplementation
          }
          else
          {
-            // is this ever hit?
             record.setValue(fieldName, null);
          }
       }
