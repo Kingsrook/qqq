@@ -710,10 +710,15 @@ public class QJavalinImplementation
          {
             throw (new QUserFacingException("Error updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
          }
-         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
-         {
-            throw (new QUserFacingException("Warning updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
-         }
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at one time, we threw upon warning - but                                                           //
+         // on insert we need to return the record (e.g., to get a generated id), so, make update do the same. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         // {
+         //    throw (new QUserFacingException("Warning updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
+         // }
 
          QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(updateOutput));
@@ -902,10 +907,16 @@ public class QJavalinImplementation
          {
             throw (new QUserFacingException("Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
          }
-         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
-         {
-            throw (new QUserFacingException("Warning inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
-         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at one time, we threw upon warning - but                                                              //
+         // our use-case is, the frontend, it wants to get the record, and show a success (with the generated id) //
+         // and then to also show a warning message - so - let it all be returned and handled on the frontend.    //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         // {
+         //    throw (new QUserFacingException("Warning inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
+         // }
 
          QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (outputRecord.getValue(table.getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));
