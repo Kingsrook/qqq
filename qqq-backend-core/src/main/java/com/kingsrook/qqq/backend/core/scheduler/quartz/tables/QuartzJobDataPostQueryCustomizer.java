@@ -22,12 +22,17 @@
 package com.kingsrook.qqq.backend.core.scheduler.quartz.tables;
 
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import org.apache.commons.lang3.SerializationUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -67,8 +72,35 @@ public class QuartzJobDataPostQueryCustomizer extends AbstractPostQueryCustomize
                LOG.info("Error deserializing quartz job data", e);
             }
          }
+
+         formatEpochTime(record, "nextFireTime");
+         formatEpochTime(record, "prevFireTime");
+         formatEpochTime(record, "startTime");
       }
       return (records);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void formatEpochTime(QRecord record, String fieldName)
+   {
+      Long value = record.getValueLong(fieldName);
+
+      try
+      {
+         if(value != null && value > 0)
+         {
+            Instant instant = Instant.ofEpochMilli(value);
+            record.setDisplayValue(fieldName, String.format("%,d", value) + " (" + QValueFormatter.formatDateTimeWithZone(instant.atZone(ZoneId.of(QContext.getQInstance().getDefaultTimeZoneId()))) + ")");
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error formatting an epoc time value", e, logPair("fieldName", fieldName), logPair("value", value));
+      }
    }
 
 }
