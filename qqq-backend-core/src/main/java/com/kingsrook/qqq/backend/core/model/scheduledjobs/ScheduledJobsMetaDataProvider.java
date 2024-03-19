@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRule
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -183,6 +184,11 @@ public class ScheduledJobsMetaDataProvider
          .withAssociatedTableName(ScheduledJobParameter.TABLE_NAME)
          .withJoinName(JOB_PARAMETER_JOIN_NAME));
 
+      tableMetaData.withExposedJoin(new ExposedJoin()
+         .withJoinTable(ScheduledJobParameter.TABLE_NAME)
+         .withJoinPath(List.of(JOB_PARAMETER_JOIN_NAME))
+         .withLabel("Parameters"));
+
       return (tableMetaData);
    }
 
@@ -198,6 +204,11 @@ public class ScheduledJobsMetaDataProvider
          .withRecordLabelFields("scheduledJobId", "key")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scheduledJobId", "key", "value")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      tableMetaData.withExposedJoin(new ExposedJoin()
+         .withJoinTable(ScheduledJob.TABLE_NAME)
+         .withJoinPath(List.of(JOB_PARAMETER_JOIN_NAME))
+         .withLabel("Scheduled Job"));
 
       return (tableMetaData);
    }
