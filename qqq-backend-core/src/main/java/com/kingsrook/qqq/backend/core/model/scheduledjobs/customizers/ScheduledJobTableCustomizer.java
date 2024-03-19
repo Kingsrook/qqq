@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -126,6 +127,13 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
                record.addError(new BadInputStatusMessage("If a Cron Expression is given, then a Cron Time Zone Id is required."));
             }
          }
+         else
+         {
+            if(!StringUtils.hasContent(record.getValueString("repeatSeconds")))
+            {
+               record.addError(new BadInputStatusMessage("Either Cron Expression or Repeat Seconds must be given."));
+            }
+         }
       }
    }
 
@@ -189,7 +197,8 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
 
       try
       {
-         List<QRecord> freshRecordListWithAssociations = freshlyQueryForRecordsWithAssociations(recordsWithoutErrors);
+         Map<Integer, QRecord> originalRecordMap               = recordsWithoutErrors.stream().collect(Collectors.toMap(r -> r.getValueInteger("id"), r -> r));
+         List<QRecord>         freshRecordListWithAssociations = freshlyQueryForRecordsWithAssociations(recordsWithoutErrors);
 
          QScheduleManager scheduleManager = QScheduleManager.getInstance();
          for(QRecord record : freshRecordListWithAssociations)
@@ -200,7 +209,11 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
             }
             catch(Exception e)
             {
-               LOG.info("Caught exception while scheduling a job in post-action", e, logPair("id", record.getValue("id")));
+               LOG.warn("Caught exception while scheduling a job in post-action", e, logPair("id", record.getValue("id")));
+               if(originalRecordMap.containsKey(record.getValueInteger("id")))
+               {
+                  originalRecordMap.get(record.getValueInteger("id")).addWarning(new QWarningMessage("Error scheduling job: " + e.getMessage()));
+               }
             }
          }
       }
@@ -265,7 +278,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
             }
             catch(Exception e)
             {
-               LOG.info("Caught exception while scheduling a job in post-action", e, logPair("id", record.getValue("id")));
+               LOG.warn("Caught exception while un-scheduling a job in post-action", e, logPair("id", record.getValue("id")));
             }
          }
       }
