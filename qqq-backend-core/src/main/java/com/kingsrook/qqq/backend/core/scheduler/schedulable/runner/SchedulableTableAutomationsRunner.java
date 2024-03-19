@@ -75,10 +75,6 @@ public class SchedulableTableAutomationsRunner implements SchedulableRunner
 
       AutomationStatus automationStatus = AutomationStatus.valueOf(ValueUtils.getValueAsString(params.get("automationStatus")));
 
-      /////////////
-      // run it. //
-      /////////////
-      LOG.debug("Running table automations", logPair("tableName", tableName), logPair(""));
       QTableAutomationDetails automationDetails = table.getAutomationDetails();
       if(automationDetails == null)
       {
