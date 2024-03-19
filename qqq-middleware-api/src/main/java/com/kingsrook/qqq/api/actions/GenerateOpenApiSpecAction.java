@@ -1403,7 +1403,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          String           associatedTableName        = association.getAssociatedTableName();
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
-         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
+         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
 
          ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
