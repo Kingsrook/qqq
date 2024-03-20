@@ -30,16 +30,16 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SchedulersPossibleValueSource implements QCustomPossibleValueProvider<String>
+public class ScheduledJobTypePossibleValueSource implements QCustomPossibleValueProvider<String>
 {
-   public static final String NAME = "schedulers";
+   public static final String NAME = "scheduledJobType";
 
 
 
@@ -49,10 +49,10 @@ public class SchedulersPossibleValueSource implements QCustomPossibleValueProvid
    @Override
    public QPossibleValue<String> getPossibleValue(Serializable idValue)
    {
-      QSchedulerMetaData scheduler = QContext.getQInstance().getScheduler(String.valueOf(idValue));
-      if(scheduler != null)
+      SchedulableType schedulableType = QContext.getQInstance().getSchedulableType(String.valueOf(idValue));
+      if(schedulableType != null)
       {
-         return schedulerToPossibleValue(scheduler);
+         return schedulableTypeToPossibleValue(schedulableType);
       }
 
       return null;
@@ -67,12 +67,9 @@ public class SchedulersPossibleValueSource implements QCustomPossibleValueProvid
    public List<QPossibleValue<String>> search(SearchPossibleValueSourceInput input) throws QException
    {
       List<QPossibleValue<String>> rs = new ArrayList<>();
-      for(QSchedulerMetaData scheduler : CollectionUtils.nonNullMap(QContext.getQInstance().getSchedulers()).values())
+      for(SchedulableType schedulableType : CollectionUtils.nonNullMap(QContext.getQInstance().getSchedulableTypes()).values())
       {
-         if(scheduler.mayUseInScheduledJobsTable())
-         {
-            rs.add(schedulerToPossibleValue(scheduler));
-         }
+         rs.add(schedulableTypeToPossibleValue(schedulableType));
       }
       return rs;
    }
@@ -82,9 +79,9 @@ public class SchedulersPossibleValueSource implements QCustomPossibleValueProvid
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QPossibleValue<String> schedulerToPossibleValue(QSchedulerMetaData scheduler)
+   private static QPossibleValue<String> schedulableTypeToPossibleValue(SchedulableType schedulableType)
    {
-      return new QPossibleValue<>(scheduler.getName(), scheduler.getName());
+      return new QPossibleValue<>(schedulableType.getName(), schedulableType.getName());
    }
 
 }

@@ -92,7 +92,7 @@ class QScheduleManagerTest extends BaseTest
          .withId(1)
          .withIsActive(true)
          .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME)
-         .withType(type.getId())
+         .withType(type.name())
          .withRepeatSeconds(1)
          .withJobParameters(new ArrayList<>());
 

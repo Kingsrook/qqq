@@ -62,27 +62,7 @@ class QuartzSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      try
-      {
-         QScheduleManager.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
-
-      try
-      {
-         QuartzScheduler.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
+      QuartzTestUtils.afterEach();
    }
 
 
@@ -120,7 +100,7 @@ class QuartzSchedulerTest extends BaseTest
          //////////////////////////////////////////////////
          // give a moment for the job to run a few times //
          //////////////////////////////////////////////////
-         SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
+         SleepUtils.sleep(150, TimeUnit.MILLISECONDS);
          qScheduleManager.stopAsync();
 
          System.out.println("Ran: " + BasicStep.counter + " times");
@@ -156,7 +136,6 @@ class QuartzSchedulerTest extends BaseTest
    void testRemovingNoLongerNeededJobsDuringSetupSchedules() throws SchedulerException
    {
       QInstance qInstance = QContext.getQInstance();
-      QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
       QuartzTestUtils.setupInstanceForQuartzTests();
 
       ////////////////////////////
@@ -167,7 +146,7 @@ class QuartzSchedulerTest extends BaseTest
       qInstance.addProcess(test1);
       qInstance.addProcess(test2);
 
-      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.getId());
+      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.name());
 
       QuartzScheduler quartzScheduler = QuartzScheduler.initInstance(qInstance, QuartzTestUtils.QUARTZ_SCHEDULER_NAME, QuartzTestUtils.getQuartzProperties(), () -> QContext.getQSession());
       quartzScheduler.start();

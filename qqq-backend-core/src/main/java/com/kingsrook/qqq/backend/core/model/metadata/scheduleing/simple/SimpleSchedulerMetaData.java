@@ -64,6 +64,16 @@ public class SimpleSchedulerMetaData extends QSchedulerMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public boolean mayUseInScheduledJobsTable()
+   {
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public QSchedulerInterface initSchedulerInstance(QInstance qInstance, Supplier<QSession> systemSessionSupplier)
    {

@@ -102,15 +102,6 @@ public class QScheduleManager
       {
          qScheduleManager = new QScheduleManager(qInstance, systemUserSessionSupplier);
 
-         /////////////////////////////////////////////////////////////////
-         // if the instance doesn't have any schedulable types defined, //
-         // then go ahead and add the default set that qqq knows about  //
-         /////////////////////////////////////////////////////////////////
-         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
-         {
-            defineDefaultSchedulableTypesInInstance(qInstance);
-         }
-
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // initialize the scheduler(s) we're configured to use                                                                     //
          // do this, even if we won't start them - so, for example, a web server can still be aware of schedules in the application //
@@ -131,9 +122,9 @@ public class QScheduleManager
     *******************************************************************************/
    public static void defineDefaultSchedulableTypesInInstance(QInstance qInstance)
    {
-      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.PROCESS.getId()).withRunner(new QCodeReference(SchedulableProcessRunner.class)));
-      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.QUEUE_PROCESSOR.getId()).withRunner(new QCodeReference(SchedulableSQSQueueRunner.class)));
-      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.TABLE_AUTOMATIONS.getId()).withRunner(new QCodeReference(SchedulableTableAutomationsRunner.class)));
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.PROCESS.name()).withRunner(new QCodeReference(SchedulableProcessRunner.class)));
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.QUEUE_PROCESSOR.name()).withRunner(new QCodeReference(SchedulableSQSQueueRunner.class)));
+      qInstance.addSchedulableType(new SchedulableType().withName(ScheduledJobType.TABLE_AUTOMATIONS.name()).withRunner(new QCodeReference(SchedulableTableAutomationsRunner.class)));
    }
 
 
@@ -330,16 +321,14 @@ public class QScheduleManager
          throw (new QException("Missing a type " + exceptionSuffix));
       }
 
-      ScheduledJobType scheduledJobType = ScheduledJobType.getById(scheduledJob.getType());
-      if(scheduledJobType == null)
+      SchedulableType schedulableType = qInstance.getSchedulableType(scheduledJob.getType());
+      if(schedulableType == null)
       {
          throw (new QException("Unrecognized type [" + scheduledJob.getType() + "] " + exceptionSuffix));
       }
 
       QSchedulerInterface       scheduler = getScheduler(scheduledJob.getSchedulerName());
       Map<String, Serializable> paramMap  = new HashMap<>(scheduledJob.getJobParametersMap());
-
-      SchedulableType schedulableType = qInstance.getSchedulableType(scheduledJob.getType());
 
       SchedulableRunner runner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
       runner.validateParams(schedulableIdentity, new HashMap<>(paramMap));
@@ -396,7 +385,7 @@ public class QScheduleManager
       Map<String, String> paramMap = new HashMap<>();
       paramMap.put("processName", process.getName());
 
-      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.getId());
+      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.name());
 
       if(process.getVariantBackend() == null || VariantRunStrategy.SERIAL.equals(process.getVariantRunStrategy()))
       {
@@ -446,7 +435,7 @@ public class QScheduleManager
     *******************************************************************************/
    private void setupTableAutomations(QTableMetaData table) throws QException
    {
-      SchedulableType         schedulableType   = qInstance.getSchedulableType(ScheduledJobType.TABLE_AUTOMATIONS.getId());
+      SchedulableType         schedulableType   = qInstance.getSchedulableType(ScheduledJobType.TABLE_AUTOMATIONS.name());
       QTableAutomationDetails automationDetails = table.getAutomationDetails();
       QSchedulerInterface     scheduler         = getScheduler(automationDetails.getSchedule().getSchedulerName());
 
@@ -475,7 +464,7 @@ public class QScheduleManager
    {
       SchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(queue);
       QSchedulerInterface scheduler           = getScheduler(queue.getSchedule().getSchedulerName());
-      SchedulableType     schedulableType     = qInstance.getSchedulableType(ScheduledJobType.QUEUE_PROCESSOR.getId());
+      SchedulableType     schedulableType     = qInstance.getSchedulableType(ScheduledJobType.QUEUE_PROCESSOR.name());
       boolean             allowedToStart      = SchedulerUtils.allowedToStart(queue.getName());
 
       Map<String, String> paramMap = new HashMap<>();

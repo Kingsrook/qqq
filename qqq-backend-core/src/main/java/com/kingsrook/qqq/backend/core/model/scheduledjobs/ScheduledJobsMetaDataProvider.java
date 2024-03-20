@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.customizers.ScheduledJobParameterTableCustomizer;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.customizers.ScheduledJobTableCustomizer;
 
 
@@ -64,7 +65,7 @@ public class ScheduledJobsMetaDataProvider
    {
       defineStandardTables(instance, backendName, backendDetailEnricher);
       instance.addPossibleValueSource(QPossibleValueSource.newForTable(ScheduledJob.TABLE_NAME));
-      instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ScheduledJobType.NAME, ScheduledJobType.values()));
+      instance.addPossibleValueSource(defineScheduledJobTypePossibleValueSource());
       instance.addPossibleValueSource(defineSchedulersPossibleValueSource());
       defineStandardJoins(instance);
       defineStandardWidgets(instance);
@@ -205,6 +206,12 @@ public class ScheduledJobsMetaDataProvider
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scheduledJobId", "key", "value")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
+
+      QCodeReference customizerReference = new QCodeReference(ScheduledJobParameterTableCustomizer.class);
+      tableMetaData.withCustomizer(TableCustomizers.POST_INSERT_RECORD, customizerReference);
+      tableMetaData.withCustomizer(TableCustomizers.POST_UPDATE_RECORD, customizerReference);
+      tableMetaData.withCustomizer(TableCustomizers.POST_DELETE_RECORD, customizerReference);
+
       tableMetaData.withExposedJoin(new ExposedJoin()
          .withJoinTable(ScheduledJob.TABLE_NAME)
          .withJoinPath(List.of(JOB_PARAMETER_JOIN_NAME))
@@ -213,6 +220,19 @@ public class ScheduledJobsMetaDataProvider
       return (tableMetaData);
    }
 
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QPossibleValueSource defineScheduledJobTypePossibleValueSource()
+   {
+      return (new QPossibleValueSource()
+         .withName(ScheduledJobTypePossibleValueSource.NAME)
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withCustomCodeReference(new QCodeReference(ScheduledJobTypePossibleValueSource.class)));
+   }
 
 
    /*******************************************************************************
@@ -224,7 +244,6 @@ public class ScheduledJobsMetaDataProvider
          .withName(SchedulersPossibleValueSource.NAME)
          .withType(QPossibleValueSourceType.CUSTOM)
          .withCustomCodeReference(new QCodeReference(SchedulersPossibleValueSource.class)));
-
    }
 
 }

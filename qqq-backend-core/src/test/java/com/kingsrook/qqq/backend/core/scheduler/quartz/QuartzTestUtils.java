@@ -27,6 +27,7 @@ import java.util.Properties;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.quartz.QuartzSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import org.quartz.SchedulerException;
 
 
@@ -101,5 +102,36 @@ public class QuartzTestUtils
    public static List<QuartzJobAndTriggerWrapper> queryQuartz() throws SchedulerException
    {
       return QuartzScheduler.getInstance().queryQuartz();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void afterEach()
+   {
+      try
+      {
+         QScheduleManager.getInstance().stop();
+         QScheduleManager.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
+
+      try
+      {
+         QuartzScheduler.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
    }
 }

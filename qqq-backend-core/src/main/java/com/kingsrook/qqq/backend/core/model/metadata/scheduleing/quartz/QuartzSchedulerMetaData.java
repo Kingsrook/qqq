@@ -71,6 +71,16 @@ public class QuartzSchedulerMetaData extends QSchedulerMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
+   public boolean mayUseInScheduledJobsTable()
+   {
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Override
    public QSchedulerInterface initSchedulerInstance(QInstance qInstance, Supplier<QSession> systemSessionSupplier) throws QException
    {
