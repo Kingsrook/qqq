@@ -26,6 +26,16 @@ include::metaData/Reports.adoc[leveloffset=+1]
 include::metaData/Icons.adoc[leveloffset=+1]
 include::metaData/PermissionRules.adoc[leveloffset=+1]
 
+== Services
+
+include::misc/ScheduledJobs.adoc[leveloffset=+1]
+
+=== Web server (Javalin)
+#todo#
+
+=== API server (OpenAPI)
+#todo#
+
 == Custom Application Code
 include::misc/QContext.adoc[leveloffset=+1]
 include::misc/QRecords.adoc[leveloffset=+1]
