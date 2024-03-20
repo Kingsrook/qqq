@@ -22,10 +22,12 @@
 package com.kingsrook.qqq.backend.core.model.scheduledjobs.customizers;
 
 
-import java.io.Serializable;
+import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -47,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.quartz.CronScheduleBuilder;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -62,7 +65,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
    {
-      validateConditionalFields(records);
+      validateConditionalFields(records, Collections.emptyMap());
       return (records);
    }
 
@@ -86,7 +89,9 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      validateConditionalFields(records);
+      Map<Integer, QRecord> freshOldRecordsWithAssociationsMap = CollectionUtils.recordsToMap(freshlyQueryForRecordsWithAssociations(oldRecordList.get()), "id", Integer.class);
+
+      validateConditionalFields(records, freshOldRecordsWithAssociationsMap);
 
       if(isPreview || oldRecordList.isEmpty())
       {
@@ -96,8 +101,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // refresh the old-records w/ versions that have associations - so we can use those in the post-update to property unschedule things //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      Map<Serializable, QRecord> freshOldRecordsWithAssociationsMap = CollectionUtils.recordsToMap(freshlyQueryForRecordsWithAssociations(oldRecordList.get()), "id");
-      ListIterator<QRecord>      iterator                           = oldRecordList.get().listIterator();
+      ListIterator<QRecord> iterator = oldRecordList.get().listIterator();
       while(iterator.hasNext())
       {
          QRecord record      = iterator.next();
@@ -116,20 +120,40 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void validateConditionalFields(List<QRecord> records)
+   private static void validateConditionalFields(List<QRecord> records, Map<Integer, QRecord> freshOldRecordsWithAssociationsMap)
    {
+      QRecord blankRecord = new QRecord();
       for(QRecord record : records)
       {
-         if(StringUtils.hasContent(record.getValueString("cronExpression")))
+         QRecord oldRecord = Objects.requireNonNullElse(freshOldRecordsWithAssociationsMap.get(record.getValueInteger("id")), blankRecord);
+         String cronExpression = record.getValues().containsKey("cronExpression") ? record.getValueString("cronExpression") : oldRecord.getValueString("cronExpression");
+         String cronTimeZoneId = record.getValues().containsKey("cronTimeZoneId") ? record.getValueString("cronTimeZoneId") : oldRecord.getValueString("cronTimeZoneId");
+         String repeatSeconds = record.getValues().containsKey("repeatSeconds") ? record.getValueString("repeatSeconds") : oldRecord.getValueString("repeatSeconds");
+
+         if(StringUtils.hasContent(cronExpression))
          {
-            if(!StringUtils.hasContent(record.getValueString("cronTimeZoneId")))
+            if(StringUtils.hasContent(repeatSeconds))
             {
-               record.addError(new BadInputStatusMessage("If a Cron Expression is given, then a Cron Time Zone Id is required."));
+               record.addError(new BadInputStatusMessage("Cron Expression and Repeat Seconds may not both be given."));
+            }
+            
+            try
+            {
+               CronScheduleBuilder.cronScheduleNonvalidatedExpression(cronExpression);
+            }
+            catch(ParseException e)
+            {
+               record.addError(new BadInputStatusMessage("Cron Expression [" + cronExpression + "] is not valid: " + e.getMessage()));
+            }
+
+            if(!StringUtils.hasContent(cronTimeZoneId))
+            {
+               record.addError(new BadInputStatusMessage("If a Cron Expression is given, then a Cron Time Zone is required."));
             }
          }
          else
          {
-            if(!StringUtils.hasContent(record.getValueString("repeatSeconds")))
+            if(!StringUtils.hasContent(repeatSeconds))
             {
                record.addError(new BadInputStatusMessage("Either Cron Expression or Repeat Seconds must be given."));
             }

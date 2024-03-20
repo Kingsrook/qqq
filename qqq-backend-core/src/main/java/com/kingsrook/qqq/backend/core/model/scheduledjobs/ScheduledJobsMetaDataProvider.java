@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.customizers.ScheduledJobParameterTableCustomizer;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.customizers.ScheduledJobTableCustomizer;
 
 
@@ -204,6 +205,12 @@ public class ScheduledJobsMetaDataProvider
          .withRecordLabelFields("scheduledJobId", "key")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "scheduledJobId", "key", "value")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+
+      QCodeReference customizerReference = new QCodeReference(ScheduledJobParameterTableCustomizer.class);
+      tableMetaData.withCustomizer(TableCustomizers.POST_INSERT_RECORD, customizerReference);
+      tableMetaData.withCustomizer(TableCustomizers.POST_UPDATE_RECORD, customizerReference);
+      tableMetaData.withCustomizer(TableCustomizers.POST_DELETE_RECORD, customizerReference);
 
       tableMetaData.withExposedJoin(new ExposedJoin()
          .withJoinTable(ScheduledJob.TABLE_NAME)
