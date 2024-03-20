@@ -47,6 +47,7 @@ public class QuartzJobRunner implements Job
    private static Level logLevel = null;
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -54,31 +55,45 @@ public class QuartzJobRunner implements Job
    public void execute(JobExecutionContext context) throws JobExecutionException
    {
       CapturedContext capturedContext = QContext.capture();
+
+      String              name            = null;
+      SchedulableType     schedulableType = null;
+      Map<String, Object> params          = null;
       try
       {
+         name = context.getJobDetail().getKey().getName();
+
          QuartzScheduler quartzScheduler = QuartzScheduler.getInstance();
          QInstance       qInstance       = quartzScheduler.getQInstance();
          QContext.init(qInstance, quartzScheduler.getSessionSupplier().get());
 
-         SchedulableType     schedulableType = qInstance.getSchedulableType(context.getJobDetail().getJobDataMap().getString("type"));
-         Map<String, Object> params          = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
+         schedulableType = qInstance.getSchedulableType(context.getJobDetail().getJobDataMap().getString("type"));
+         params = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
 
          SchedulableRunner schedulableRunner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
+
          if(logLevel != null)
          {
-            LOG.log(logLevel, "Running QuartzJob", null, logPair("type", schedulableType.getName()), logPair("name", context.getJobDetail().getKey().getName()), logPair("params", params));
+            LOG.log(logLevel, "Running QuartzJob", null, logPair("name", name), logPair("type", schedulableType.getName()), logPair("params", params));
          }
+
          schedulableRunner.run(params);
+
+         if(logLevel != null)
+         {
+            LOG.log(logLevel, "Finished QuartzJob", null, logPair("name", name), logPair("type", schedulableType.getName()), logPair("params", params));
+         }
       }
       catch(Exception e)
       {
-         LOG.warn("Error running QuartzJob", e, logPair("jobContext", context));
+         LOG.warn("Error running QuartzJob", e, logPair("name", name), logPair("type", schedulableType == null ? null : schedulableType.getName()), logPair("params", params));
       }
       finally
       {
          QContext.init(capturedContext);
       }
    }
+
 
 
    /*******************************************************************************
