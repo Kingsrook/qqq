@@ -62,27 +62,7 @@ class QuartzSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      try
-      {
-         QScheduleManager.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
-
-      try
-      {
-         QuartzScheduler.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
+      QuartzTestUtils.afterEach();
    }
 
 
