@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableRunner;
+import org.apache.logging.log4j.Level;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -43,6 +44,7 @@ public class QuartzJobRunner implements Job
 {
    private static final QLogger LOG = QLogger.getLogger(QuartzJobRunner.class);
 
+   private static Level logLevel = null;
 
 
    /*******************************************************************************
@@ -62,6 +64,10 @@ public class QuartzJobRunner implements Job
          Map<String, Object> params          = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
 
          SchedulableRunner schedulableRunner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
+         if(logLevel != null)
+         {
+            LOG.log(logLevel, "Running QuartzJob", null, logPair("type", schedulableType.getName()), logPair("name", context.getJobDetail().getKey().getName()), logPair("params", params));
+         }
          schedulableRunner.run(params);
       }
       catch(Exception e)
@@ -72,6 +78,15 @@ public class QuartzJobRunner implements Job
       {
          QContext.init(capturedContext);
       }
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void setLogLevel(Level level)
+   {
+      logLevel = level;
    }
 
 }
