@@ -370,6 +370,14 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private String translatePossibleValueCustom(Serializable value, QPossibleValueSource possibleValueSource)
    {
+      /////////////////////////////////
+      // null input gets null output //
+      /////////////////////////////////
+      if(value == null)
+      {
+         return (null);
+      }
+
       try
       {
          QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
