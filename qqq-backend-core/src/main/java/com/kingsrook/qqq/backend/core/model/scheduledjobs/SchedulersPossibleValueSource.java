@@ -69,7 +69,10 @@ public class SchedulersPossibleValueSource implements QCustomPossibleValueProvid
       List<QPossibleValue<String>> rs = new ArrayList<>();
       for(QSchedulerMetaData scheduler : CollectionUtils.nonNullMap(QContext.getQInstance().getSchedulers()).values())
       {
-         rs.add(schedulerToPossibleValue(scheduler));
+         if(scheduler.mayUseInScheduledJobsTable())
+         {
+            rs.add(schedulerToPossibleValue(scheduler));
+         }
       }
       return rs;
    }

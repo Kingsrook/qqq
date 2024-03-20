@@ -53,6 +53,16 @@ public abstract class QSchedulerMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     **
     *******************************************************************************/
+   public boolean mayUseInScheduledJobsTable()
+   {
+      return (true);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public abstract QSchedulerInterface initSchedulerInstance(QInstance qInstance, Supplier<QSession> systemSessionSupplier) throws QException;
 
 
