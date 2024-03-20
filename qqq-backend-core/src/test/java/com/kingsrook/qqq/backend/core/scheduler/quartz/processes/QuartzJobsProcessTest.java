@@ -67,7 +67,7 @@ class QuartzJobsProcessTest extends BaseTest
    {
       QInstance qInstance = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
-         .withName("quartzTriggers")
+         .withName("quartzJobDetails")
          .withBackendName(TestUtils.MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.LONG)));
@@ -162,7 +162,7 @@ class QuartzJobsProcessTest extends BaseTest
       // pause just one //
       ////////////////////
       List<QuartzJobAndTriggerWrapper> quartzJobAndTriggerWrappers = QuartzTestUtils.queryQuartz();
-      new InsertAction().execute(new InsertInput("quartzTriggers").withRecord(new QRecord()
+      new InsertAction().execute(new InsertInput("quartzJobDetails").withRecord(new QRecord()
          .withValue("jobName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getName())
          .withValue("jobGroup", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
       ));
@@ -210,7 +210,7 @@ class QuartzJobsProcessTest extends BaseTest
       // pause just one //
       ////////////////////
       List<QuartzJobAndTriggerWrapper> quartzJobAndTriggerWrappers = QuartzTestUtils.queryQuartz();
-      new InsertAction().execute(new InsertInput("quartzTriggers").withRecord(new QRecord()
+      new InsertAction().execute(new InsertInput("quartzJobDetails").withRecord(new QRecord()
          .withValue("jobName", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getName())
          .withValue("jobGroup", quartzJobAndTriggerWrappers.get(0).jobDetail().getKey().getGroup())
       ));

@@ -100,7 +100,7 @@ class QuartzSchedulerTest extends BaseTest
          //////////////////////////////////////////////////
          // give a moment for the job to run a few times //
          //////////////////////////////////////////////////
-         SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
+         SleepUtils.sleep(150, TimeUnit.MILLISECONDS);
          qScheduleManager.stopAsync();
 
          System.out.println("Ran: " + BasicStep.counter + " times");
