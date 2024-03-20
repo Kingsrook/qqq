@@ -1,0 +1,141 @@
+== Schedulers and Scheduled Jobs
+include::../variables.adoc[]
+
+QQQ has the ability to automatically run various types of jobs on schedules,
+either defined in your instance's meta-data,
+or optionally via data in your application, in a `scheduledJob` table.
+
+=== Schedulers and QSchedulerMetaData
+2 types of schedulers are included in QQQ by default (though an application can define its own schedulers):
+
+* `SimpleScheduler` - is (as its name suggests) a simple class which uses java's `ScheduledExecutorService`
+to run jobs on repeating intervals.
+** Cannot run cron schedules - only repeating intervals.
+** If multiple servers are running, each will potentially run the same job concurrently
+** Has no configurations, e.g., to limit the number of threads.
+
+* `QuartzScheduler` - uses the 3rd party https://www.quartz-scheduler.org/[Quartz Scheduler] library to provide
+a much more capable, though admittedly more complex, scheduling solution.
+** Can run both cron schedules and repeating intervals.
+** By default, will not allow concurrent executions of the same job.
+** Supports multiple configurations, e.g., to limit the number of threads.
+
+An application can define its own scheduler by providing a class which implements the `QSchedulerInterface`.
+
+A `QInstance` can work with 0 or more schedulers, as defined by adding `QSchedulerMetaData` objects
+to the instance.
+
+This meta-data class is `abstract`, and is extended by the 2 built-in schedulers
+(e.g., `SimpleSchedulerMetaData` and `QuartzSchedulerMetaData`).  As such,
+these concrete subclasses are what you need to instantiate and add to your instance.
+
+To configure a QuartzScheduler, you can add a `Properties` object to the `QuartzSchedulerMetaData` object.
+See https://www.quartz-scheduler.org/documentation/[Quartz's documentation] for available configuration properties.
+
+[source,java]
+.Defining SchedulerMetaData
+----
+qInstance.addScheduler(new SimpleSchedulerMetaData().withName("mySimpleScheduler"));
+
+qInstance.addScheduler(new QuartzSchedulerMetaData()
+   .withName("myQuartzScheduler")
+   .withProperties(myQuartzProperties);
+----
+
+=== SchedulableTypes
+The types of jobs which can be scheduled in a QQQ application are defined in the `QInstance` by
+instances of the `SchedulableType` meta-data class.
+These objects contain a name, along with a `QCodeReference` to the `runner`,
+which must be a class that implements the `SchedulableRunner` interface.
+
+By default, (in the `QInstanceEnricher`), QQQ will make 3 `SchedulableType` options available:
+
+* `PROCESS` - Any Process defined in the `QInstance` can be scheduled.
+* `QUEUE_PROCESSOR` - A Queue defined in the `QInstance`, which requires polling (e.g., SQS), can be scheduled.
+* `TABLE_AUTOMATIONS` - A Table in the `QInstance`, with `AutomationDetails` referring to an
+AutomationProvider which requires polling, can be scheduled.
+
+If an application only wants to use a subset of these `SchedulableType` options,
+or to add custom `SchedulableType` options,
+the `QInstance` will need to have 1 or more `SchedulableType` objects in it before the `QInstanceEnricher` runs.
+
+=== User-defined Scheduled Jobs
+To allow users to schedule jobs (rather than using programmer-defined schedules (in meta-data)),
+you can add a set of tables to your `QInstance`, using the `ScheduledJobsMetaDataProvider` class:
+
+[source,java]
+.Adding the ScheduledJob tables and related meta-data to a QInstance
+----
+new ScheduledJobsMetaDataProvider().defineAll(
+   qInstance, backendName, table -> tableEnricher(table));
+----
+
+This meta-data provider adds a "scheduledJob" and "scheduledJobParameter" table, along with
+some PossibleValueSources.
+These tables include post-action customizers, which manage (re-, un-) scheduling jobs based on
+changes made to records in this these tables.
+
+Also, when `QScheduleManager` is started, it will query these tables,and will schedule jobs as defined therein.
+
+_You can use a mix of user-defined and meta-data defined scheduled jobs in your instance.
+However, if a ScheduledJob record references a process, queue, or table automation with a
+meta-data defined schedule, the ScheduledJob will NOT be started by ScheduleManager --
+rather, the meta-data definition will "win"._
+
+[source,sql]
+.Example of inserting scheduled jobs records directly into an SQL backend
+----
+-- A process:
+INSERT INTO scheduled_job (label, scheduler_name, cron_expression, cron_time_zone_id, repeat_seconds, type, is_active) VALUES
+   ('myProcess', 'QuartzScheduler', null, null, 300, 'PROCESS', 1);
+INSERT INTO scheduled_job_parameter (scheduled_job_id, `key`, value) VALUES
+   ((SELECT id FROM scheduled_job WHERE label = 'myProcess'), 'processName', 'myProcess');
+
+-- A table's insert & update automations:
+INSERT INTO scheduled_job (label, scheduler_name, cron_expression, cron_time_zone_id, repeat_seconds, type, is_active) VALUES
+   ('myTable.PENDING_INSERT_AUTOMATIONS', 'QuartzScheduler', null, null, 15, 'TABLE_AUTOMATIONS', 1),
+   ('myTable.PENDING_UPDATE_AUTOMATIONS', 'QuartzScheduler', null, null, 15, 'TABLE_AUTOMATIONS', 1);
+INSERT INTO scheduled_job_parameter (scheduled_job_id, `key`, value) VALUES
+   ((SELECT id FROM scheduled_job WHERE label = 'myTable.PENDING_INSERT_AUTOMATIONS'), 'tableName', 'myTable'),
+   ((SELECT id FROM scheduled_job WHERE label = 'myTable.PENDING_INSERT_AUTOMATIONS'), 'automationStatus', 'PENDING_INSERT_AUTOMATIONS'),
+   ((SELECT id FROM scheduled_job WHERE label = 'myTable.PENDING_UPDATE_AUTOMATIONS'), 'tableName', 'myTable'),
+   ((SELECT id FROM scheduled_job WHERE label = 'myTable.PENDING_UPDATE_AUTOMATIONS'), 'automationStatus', 'PENDING_UPDATE_AUTOMATIONS');
+
+-- A queue processor:
+INSERT INTO scheduled_job (label, scheduler_name, cron_expression, cron_time_zone_id, repeat_seconds, type, is_active) VALUES
+   ('mySqsQueue', 'QuartzScheduler', null, null, 60, 'QUEUE_PROCESSOR', 1);
+INSERT INTO scheduled_job_parameter (scheduled_job_id, `key`, value) VALUES
+   ((SELECT id FROM scheduled_job WHERE label = 'mySqsQueue'), 'queueName', 'mySqsQueue');
+----
+
+=== Running Scheduled Jobs
+In a server running QQQ, if you wish to start running scheduled jobs, you need to initialize
+the `QScheduleManger` singleton class, then call its `start()` method.
+
+Note that internally, this class will check for a system property of `qqq.scheduleManager.enabled`
+or an environment variable of `QQQ_SCHEDULE_MANAGER_ENABLED`, and if the first value found is
+`"false"`, then the scheduler will not actually run its jobs (but, in the case of the `QuartzSchdeuler`,
+it will be available for managing scheduled jobs).
+
+The method `QScheduleManager.initInstance` requires 2 parameters:  Your `QInstance`, and a
+`Supplier<QSession>` lambda, which returns the session that will be used for scheduled jobs when they
+are executed.
+
+[source,java]
+.Starting the Schedule Manager service
+----
+QScheduleManager.initInstance(qInstance, () -> systemUserSession).start();
+----
+
+=== Examples
+[source,java]
+.Attach a schedule in meta-data to a Process
+----
+QProcessMetaData myProcess = new QProcessMetaData()
+   // ...
+   .withSchedule(new QScheduleMetaData()
+      .withSchedulerName("myScheduler")
+      .withDescription("Run myProcess every five minutes")
+      .withRepeatSeconds(300))
+----
+
