@@ -77,6 +77,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -159,6 +160,18 @@ public class QInstanceEnricher
       }
 
       enrichJoins();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // if the instance DOES have 1 or more scheduler, but no schedulable types, //
+      // then go ahead and add the default set that qqq knows about               //
+      //////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(qInstance.getSchedulers()))
+      {
+         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
+         {
+            QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
+         }
+      }
    }
 
 

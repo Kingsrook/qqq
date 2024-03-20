@@ -102,15 +102,6 @@ public class QScheduleManager
       {
          qScheduleManager = new QScheduleManager(qInstance, systemUserSessionSupplier);
 
-         /////////////////////////////////////////////////////////////////
-         // if the instance doesn't have any schedulable types defined, //
-         // then go ahead and add the default set that qqq knows about  //
-         /////////////////////////////////////////////////////////////////
-         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
-         {
-            defineDefaultSchedulableTypesInInstance(qInstance);
-         }
-
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // initialize the scheduler(s) we're configured to use                                                                     //
          // do this, even if we won't start them - so, for example, a web server can still be aware of schedules in the application //
