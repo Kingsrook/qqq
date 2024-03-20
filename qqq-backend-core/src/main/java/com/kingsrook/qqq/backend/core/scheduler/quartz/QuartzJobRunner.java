@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableRunner;
 import org.apache.logging.log4j.Level;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -40,6 +41,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  **
  *******************************************************************************/
+@DisallowConcurrentExecution
 public class QuartzJobRunner implements Job
 {
    private static final QLogger LOG = QLogger.getLogger(QuartzJobRunner.class);
