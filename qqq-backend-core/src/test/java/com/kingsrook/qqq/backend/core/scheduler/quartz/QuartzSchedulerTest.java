@@ -156,7 +156,6 @@ class QuartzSchedulerTest extends BaseTest
    void testRemovingNoLongerNeededJobsDuringSetupSchedules() throws SchedulerException
    {
       QInstance qInstance = QContext.getQInstance();
-      QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
       QuartzTestUtils.setupInstanceForQuartzTests();
 
       ////////////////////////////
@@ -167,7 +166,7 @@ class QuartzSchedulerTest extends BaseTest
       qInstance.addProcess(test1);
       qInstance.addProcess(test2);
 
-      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.getId());
+      SchedulableType schedulableType = qInstance.getSchedulableType(ScheduledJobType.PROCESS.name());
 
       QuartzScheduler quartzScheduler = QuartzScheduler.initInstance(qInstance, QuartzTestUtils.QUARTZ_SCHEDULER_NAME, QuartzTestUtils.getQuartzProperties(), () -> QContext.getQSession());
       quartzScheduler.start();

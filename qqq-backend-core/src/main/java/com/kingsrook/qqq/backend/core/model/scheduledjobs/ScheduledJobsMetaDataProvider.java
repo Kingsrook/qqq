@@ -64,7 +64,7 @@ public class ScheduledJobsMetaDataProvider
    {
       defineStandardTables(instance, backendName, backendDetailEnricher);
       instance.addPossibleValueSource(QPossibleValueSource.newForTable(ScheduledJob.TABLE_NAME));
-      instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ScheduledJobType.NAME, ScheduledJobType.values()));
+      instance.addPossibleValueSource(defineScheduledJobTypePossibleValueSource());
       instance.addPossibleValueSource(defineSchedulersPossibleValueSource());
       defineStandardJoins(instance);
       defineStandardWidgets(instance);
@@ -215,6 +215,19 @@ public class ScheduledJobsMetaDataProvider
 
 
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QPossibleValueSource defineScheduledJobTypePossibleValueSource()
+   {
+      return (new QPossibleValueSource()
+         .withName(ScheduledJobTypePossibleValueSource.NAME)
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withCustomCodeReference(new QCodeReference(ScheduledJobTypePossibleValueSource.class)));
+   }
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -224,7 +237,6 @@ public class ScheduledJobsMetaDataProvider
          .withName(SchedulersPossibleValueSource.NAME)
          .withType(QPossibleValueSourceType.CUSTOM)
          .withCustomCodeReference(new QCodeReference(SchedulersPossibleValueSource.class)));
-
    }
 
 }

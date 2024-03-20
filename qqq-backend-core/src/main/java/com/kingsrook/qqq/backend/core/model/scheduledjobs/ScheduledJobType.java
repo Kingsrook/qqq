@@ -22,102 +22,16 @@
 package com.kingsrook.qqq.backend.core.model.scheduledjobs;
 
 
-import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
-import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
-
-
 /*******************************************************************************
+ ** enum of core schedulable types that QQQ schedule manager directly knows about.
  **
+ ** note though, that applications can define their own schedulable types,
+ ** by adding SchedulableType meta-data to the QInstance, and providing classes
+ ** that implement SchedulableRunner.
  *******************************************************************************/
-public enum ScheduledJobType implements PossibleValueEnum<String>
+public enum ScheduledJobType
 {
    PROCESS,
    QUEUE_PROCESSOR,
-   TABLE_AUTOMATIONS,
-   // todo - future - USER_REPORT
-   ;
-
-   public static final String NAME = "scheduledJobType";
-
-   private final String label;
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   ScheduledJobType()
-   {
-      this.label = QInstanceEnricher.nameToLabel(QInstanceEnricher.inferNameFromBackendName(name()));
-   }
-
-
-
-   /*******************************************************************************
-    ** Get instance by id
-    **
-    *******************************************************************************/
-   public static ScheduledJobType getById(String id)
-   {
-      if(id == null)
-      {
-         return (null);
-      }
-
-      for(ScheduledJobType value : ScheduledJobType.values())
-      {
-         if(value.name().equals(id))
-         {
-            return (value);
-         }
-      }
-
-      return (null);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for id
-    **
-    *******************************************************************************/
-   public String getId()
-   {
-      return name();
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for label
-    **
-    *******************************************************************************/
-   public String getLabel()
-   {
-      return label;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String getPossibleValueId()
-   {
-      return name();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String getPossibleValueLabel()
-   {
-      return (label);
-   }
-
+   TABLE_AUTOMATIONS
 }

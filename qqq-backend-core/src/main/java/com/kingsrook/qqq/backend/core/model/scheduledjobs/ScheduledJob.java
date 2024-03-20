@@ -73,7 +73,7 @@ public class ScheduledJob extends QRecordEntity
    @QField(displayFormat = DisplayFormat.COMMAS)
    private Integer repeatSeconds;
 
-   @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = ScheduledJobType.NAME)
+   @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = ScheduledJobTypePossibleValueSource.NAME)
    private String type;
 
    @QField(isRequired = true)

@@ -29,7 +29,6 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
-import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.runner.SchedulableRunner;
 
@@ -45,19 +44,18 @@ public class SchedulableIdentityFactory
     *******************************************************************************/
    public static BasicSchedulableIdentity of(ScheduledJob scheduledJob)
    {
-      String           description      = "";
-      ScheduledJobType scheduledJobType = ScheduledJobType.getById(scheduledJob.getType());
-      if(scheduledJobType != null)
+      String          description     = "";
+      SchedulableType schedulableType = QContext.getQInstance().getSchedulableType(scheduledJob.getType());
+      if(schedulableType != null)
       {
          try
          {
-            SchedulableType   schedulableType = QContext.getQInstance().getSchedulableType(scheduledJob.getType());
-            SchedulableRunner runner          = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
+            SchedulableRunner runner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
             description = runner.getDescription(new HashMap<>(scheduledJob.getJobParametersMap()));
          }
          catch(Exception e)
          {
-            description = "type: " + scheduledJobType;
+            description = "type: " + schedulableType.getName();
          }
       }
 
