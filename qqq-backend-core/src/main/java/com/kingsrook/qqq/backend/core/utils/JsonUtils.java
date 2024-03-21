@@ -362,6 +362,7 @@ public class JsonUtils
             switch(metaData.getType())
             {
                case INTEGER -> record.setValue(fieldName, jsonObjectToUse.optInt(backendName));
+               case LONG -> record.setValue(fieldName, jsonObjectToUse.optLong(backendName));
                case DECIMAL -> record.setValue(fieldName, jsonObjectToUse.optBigDecimal(backendName, null));
                case BOOLEAN -> record.setValue(fieldName, jsonObjectToUse.optBoolean(backendName));
                case DATE_TIME ->

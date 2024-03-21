@@ -73,6 +73,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.LongAggregates;
 
 
 /*******************************************************************************
@@ -552,6 +553,12 @@ public class GenerateReportAction
             @SuppressWarnings("unchecked")
             AggregatesInterface<Integer> fieldAggregates = (AggregatesInterface<Integer>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new IntegerAggregates());
             fieldAggregates.add(record.getValueInteger(field.getName()));
+         }
+         else if(field.getType().equals(QFieldType.LONG))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<Long> fieldAggregates = (AggregatesInterface<Long>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new LongAggregates());
+            fieldAggregates.add(record.getValueLong(field.getName()));
          }
          else if(field.getType().equals(QFieldType.DECIMAL))
          {

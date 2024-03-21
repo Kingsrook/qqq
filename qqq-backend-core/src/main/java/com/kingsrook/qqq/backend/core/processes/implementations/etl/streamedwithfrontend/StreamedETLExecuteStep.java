@@ -136,7 +136,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             asyncRecordPipeLoop.setMinRecordsToConsume(overrideRecordPipeCapacity);
          }
 
-         int recordCount = asyncRecordPipeLoop.run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
+         int recordCount = asyncRecordPipeLoop.run("StreamedETLExecute>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
             {
                extractStep.run(runBackendStepInput, runBackendStepOutput);
                return (runBackendStepOutput);

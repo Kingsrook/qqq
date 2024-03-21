@@ -34,15 +34,18 @@ import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithName;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -333,9 +336,25 @@ public class PermissionsHelper
          QPermissionRules rules    = getEffectivePermissionRules(tableMetaData, instance);
          String           baseName = getEffectivePermissionBaseName(rules, tableMetaData.getName());
 
-         for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
+         QBackendMetaData backend = instance.getBackend(tableMetaData.getBackendName());
+         if(tableMetaData.isCapabilityEnabled(backend, Capability.TABLE_INSERT))
          {
-            addEffectiveAvailablePermission(rules, permissionSubType, rs, baseName, tableMetaData, "Table");
+            addEffectiveAvailablePermission(rules, TablePermissionSubType.INSERT, rs, baseName, tableMetaData, "Table");
+         }
+
+         if(tableMetaData.isCapabilityEnabled(backend, Capability.TABLE_UPDATE))
+         {
+            addEffectiveAvailablePermission(rules, TablePermissionSubType.EDIT, rs, baseName, tableMetaData, "Table");
+         }
+
+         if(tableMetaData.isCapabilityEnabled(backend, Capability.TABLE_DELETE))
+         {
+            addEffectiveAvailablePermission(rules, TablePermissionSubType.DELETE, rs, baseName, tableMetaData, "Table");
+         }
+
+         if(tableMetaData.isCapabilityEnabled(backend, Capability.TABLE_QUERY) || tableMetaData.isCapabilityEnabled(backend, Capability.TABLE_GET))
+         {
+            addEffectiveAvailablePermission(rules, TablePermissionSubType.READ, rs, baseName, tableMetaData, "Table");
          }
       }
 
@@ -369,7 +388,10 @@ public class PermissionsHelper
       {
          QPermissionRules rules    = getEffectivePermissionRules(widgetMetaData, instance);
          String           baseName = getEffectivePermissionBaseName(rules, widgetMetaData.getName());
-         addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, widgetMetaData, "Widget");
+         if(!rules.getLevel().equals(PermissionLevel.NOT_PROTECTED))
+         {
+            addEffectiveAvailablePermission(rules, PrivatePermissionSubType.HAS_ACCESS, rs, baseName, widgetMetaData, "Widget");
+         }
       }
 
       return (rs);

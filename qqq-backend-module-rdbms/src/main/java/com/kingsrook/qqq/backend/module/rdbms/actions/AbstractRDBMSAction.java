@@ -153,7 +153,7 @@ public abstract class AbstractRDBMSAction
       if("".equals(value))
       {
          QFieldType type = field.getType();
-         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
+         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.LONG) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
          {
             value = null;
          }
@@ -852,6 +852,10 @@ public abstract class AbstractRDBMSAction
          case INTEGER:
          {
             return (QueryManager.getInteger(resultSet, i));
+         }
+         case LONG:
+         {
+            return (QueryManager.getLong(resultSet, i));
          }
          case DECIMAL:
          {

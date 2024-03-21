@@ -519,6 +519,24 @@ public class CollectionUtils
 
 
    /*******************************************************************************
+    ** Convert a collection of QRecords to a map, from one field's values out of
+    ** those records, to the records themselves.
+    *******************************************************************************/
+   public static <T extends Serializable> Map<T, QRecord> recordsToMap(Collection<QRecord> records, String keyFieldName, Class<T> type)
+   {
+      Map<T, QRecord> rs = new HashMap<>();
+
+      for(QRecord record : nonNullCollection(records))
+      {
+         rs.put(ValueUtils.getValueAsType(type, record.getValue(keyFieldName)), record);
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public static Map objectToMap(Object o)

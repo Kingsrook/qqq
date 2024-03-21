@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.scheduler;
+package com.kingsrook.qqq.backend.core.scheduler.simple;
 
 
 import java.util.concurrent.Executors;
@@ -32,8 +32,10 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
 /*******************************************************************************
- ** Standard class ran by ScheduleManager.  Takes a Runnable in its constructor -
- ** that's the code that actually executes.
+ ** Standard class ran by SimpleScheduler.  Takes a Runnable in its constructor -
+ ** that's the code that actually executes.  Internally, this class will launch
+ ** a newSingleThreadScheduledExecutor / ScheduledExecutorService to run the
+ ** runnable on a repeating delay.
  **
  *******************************************************************************/
 public class StandardScheduledExecutor

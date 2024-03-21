@@ -462,6 +462,16 @@ public class QRecord implements Serializable
    }
 
 
+   /*******************************************************************************
+    ** Getter for a single field's value
+    **
+    *******************************************************************************/
+   public Long getValueLong(String fieldName)
+   {
+      return (ValueUtils.getValueAsLong(values.get(fieldName)));
+   }
+
+
 
    /*******************************************************************************
     **

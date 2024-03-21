@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -70,6 +71,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMeta
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -372,6 +374,127 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void test_validateSchedules()
+   {
+      String processName = TestUtils.PROCESS_NAME_GREET_PEOPLE;
+      Supplier<QScheduleMetaData> baseScheduleMetaData = () -> new QScheduleMetaData()
+         .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
+
+      ////////////////////////////////////////////////////
+      // do our basic schedule validations on a process //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()),
+         "either repeatMillis or repeatSeconds or cronExpression must be set");
+
+      String validCronString = "* * * * * ?";
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(1)
+            .withRepeatMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelaySeconds(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelayMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelaySeconds(1)
+            .withInitialDelayMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression(validCronString)),
+         "must specify a cronTimeZoneId");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("foobar")),
+         "unrecognized cronTimeZoneId: foobar");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression("* * * * * *")
+            .withCronTimeZoneId("UTC")),
+         "invalid cron expression: Support for specifying both");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression("x")
+            .withCronTimeZoneId("UTC")),
+         "invalid cron expression: Illegal cron expression format");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(10)
+            .withCronTimeZoneId("UTC")),
+         "non-cron schedule must not specify a cronTimeZoneId");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName("not-a-scheduler")
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "referencing an unknown scheduler name: not-a-scheduler");
+
+      /////////////////////////////////
+      // validate some success cases //
+      /////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withRepeatSeconds(1)));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withRepeatMillis(1)));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("UTC")));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("America/New_York")));
+
+      ///////////////////////////////////////////////////////////////
+      // make sure table automations get their schedules validated //
+      ///////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+      ////////////////////////////////////////////////////
+      // make sure queues get their schedules validated //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> (qInstance.getQueue(TestUtils.TEST_SQS_QUEUE)).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void test_validatorPlugins()
    {
       try
@@ -387,7 +510,7 @@ public class QInstanceValidatorTest extends BaseTest
       finally
       {
          QInstanceValidator.removeAllValidatorPlugins();
-         
+
          ////////////////////////////////////////////////////
          // make sure if remove all plugins, we don't fail //
          ////////////////////////////////////////////////////

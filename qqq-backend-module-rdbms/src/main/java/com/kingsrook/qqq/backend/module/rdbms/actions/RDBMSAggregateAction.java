@@ -143,7 +143,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      QFieldType fieldType = aggregate.getFieldType();
                      if(fieldType == null)
                      {
-                        if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
+                        if((field.getType().equals(QFieldType.INTEGER) || field.getType().equals(QFieldType.LONG)) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
                         {
                            fieldType = QFieldType.DECIMAL;
                         }

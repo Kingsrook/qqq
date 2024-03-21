@@ -163,6 +163,19 @@
          <version>1.12.321</version>
       </dependency>
 
+      <dependency>
+         <groupId>org.quartz-scheduler</groupId>
+         <artifactId>quartz</artifactId>
+         <version>2.3.2</version>
+      </dependency>
+
+      <!-- Many of the deps we bring in use slf4j.  This dep maps slf4j to our logger, log4j -->
+      <dependency>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-slf4j-impl</artifactId>
+         <version>2.23.0</version>
+      </dependency>
+
       <!-- Common deps for all qqq modules -->
       <dependency>
          <groupId>org.apache.maven.plugins</groupId>

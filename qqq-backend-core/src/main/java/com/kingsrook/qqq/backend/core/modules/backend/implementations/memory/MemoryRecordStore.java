@@ -372,7 +372,7 @@ public class MemoryRecordStore
          /////////////////////////////////////////////////
          // set the next serial in the record if needed //
          /////////////////////////////////////////////////
-         if(recordToInsert.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
+         if(recordToInsert.getValue(primaryKeyField.getName()) == null && (primaryKeyField.getType().equals(QFieldType.INTEGER) || primaryKeyField.getType().equals(QFieldType.LONG)))
          {
             recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
          }
@@ -382,6 +382,13 @@ public class MemoryRecordStore
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          if(primaryKeyField.getType().equals(QFieldType.INTEGER) && recordToInsert.getValueInteger(primaryKeyField.getName()) > nextSerial)
          {
+            nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
+         }
+         else if(primaryKeyField.getType().equals(QFieldType.LONG) && recordToInsert.getValueLong(primaryKeyField.getName()) > nextSerial)
+         {
+            //////////////////////////////////////
+            // todo - mmm, could overflow here? //
+            //////////////////////////////////////
             nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
          }
 
@@ -773,7 +780,7 @@ public class MemoryRecordStore
       {
          // todo - joins probably?
          QFieldMetaData field = table.getField(fieldName);
-         if(field.getType().equals(QFieldType.INTEGER) && (operator.equals(AggregateOperator.AVG)))
+         if((field.getType().equals(QFieldType.INTEGER) || field.getType().equals(QFieldType.LONG)) && (operator.equals(AggregateOperator.AVG)))
          {
             fieldType = QFieldType.DECIMAL;
          }
@@ -809,6 +816,10 @@ public class MemoryRecordStore
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
                .sum();
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
+               .sum();
             case DECIMAL -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .map(r -> r.getValueBigDecimal(fieldName))
@@ -821,6 +832,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .min()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .min()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -839,7 +855,12 @@ public class MemoryRecordStore
          {
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
-               .mapToInt(r -> r.getValueInteger(fieldName))
+               .mapToLong(r -> r.getValueInteger(fieldName))
+               .max()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .max()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -859,6 +880,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .average()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .average()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL -> records.stream()

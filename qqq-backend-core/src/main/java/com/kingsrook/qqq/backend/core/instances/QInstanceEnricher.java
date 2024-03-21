@@ -77,6 +77,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -159,6 +160,18 @@ public class QInstanceEnricher
       }
 
       enrichJoins();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // if the instance DOES have 1 or more scheduler, but no schedulable types, //
+      // then go ahead and add the default set that qqq knows about               //
+      //////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(qInstance.getSchedulers()))
+      {
+         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
+         {
+            QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
+         }
+      }
    }
 
 
@@ -1026,6 +1039,50 @@ public class QInstanceEnricher
       }
 
       return (String.join("_", words).toLowerCase(Locale.ROOT));
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a default mapping from an underscore_style field name to a camelCase name.
+    **
+    ** Examples:
+    ** <ul>
+    **   <li>word_another_word_more_words -> wordAnotherWordMoreWords</li>
+    **   <li>l_ul_ul_ul -> lUlUlUl</li>
+    **   <li>tla_first -> tlaFirst</li>
+    **   <li>word_then_tla_in_middle -> wordThenTlaInMiddle</li>
+    **   <li>end_with_tla -> endWithTla</li>
+    **   <li>tla_and_another_tla -> tlaAndAnotherTla</li>
+    **   <li>ALL_CAPS -> allCaps</li>
+    ** </ul>
+    *******************************************************************************/
+   public static String inferNameFromBackendName(String backendName)
+   {
+      StringBuilder rs = new StringBuilder();
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // build a list of words in the name, then join them with _ and lower-case the result //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      String[] words = backendName.toLowerCase(Locale.ROOT).split("_");
+      for(int i = 0; i < words.length; i++)
+      {
+         String word = words[i];
+         if(i == 0)
+         {
+            rs.append(word);
+         }
+         else
+         {
+            rs.append(word.substring(0, 1).toUpperCase());
+            if(word.length() > 1)
+            {
+               rs.append(word.substring(1));
+            }
+         }
+      }
+
+      return (rs.toString());
    }
 
 

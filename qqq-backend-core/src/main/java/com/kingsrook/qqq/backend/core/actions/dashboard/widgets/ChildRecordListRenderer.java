@@ -137,7 +137,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
        *******************************************************************************/
       public Builder withCanAddChildRecord(boolean b)
       {
-         widgetMetaData.withDefaultValue("canAddChildRecord", true);
+         widgetMetaData.withDefaultValue("canAddChildRecord", b);
          return (this);
       }
 
@@ -149,6 +149,17 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       public Builder withDisabledFieldsForNewChildRecords(Set<String> disabledFieldsForNewChildRecords)
       {
          widgetMetaData.withDefaultValue("disabledFieldsForNewChildRecords", new HashSet<>(disabledFieldsForNewChildRecords));
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withManageAssociationName(String manageAssociationName)
+      {
+         widgetMetaData.withDefaultValue("manageAssociationName", manageAssociationName);
          return (this);
       }
    }
@@ -178,52 +189,60 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"));
       }
 
-      ////////////////////////////////////////////////////////
-      // fetch the record that we're getting children for.  //
-      // e.g., the left-side of the join, with the input id //
-      ////////////////////////////////////////////////////////
-      GetInput getInput = new GetInput();
-      getInput.setTableName(join.getLeftTable());
-      getInput.setPrimaryKey(id);
-      GetOutput getOutput = new GetAction().execute(getInput);
-      QRecord   record    = getOutput.getRecord();
-
-      if(record == null)
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // fetch the record that we're getting children for. e.g., the left-side of the join, with the input id                                     //
+      // but - only try this if we were given an id.  note, this widget could be called for on an INSERT screen, where we don't have a record yet //
+      // but we still want to be able to return all the other data in here that otherwise comes from the widget meta data, join, etc.             //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      int          totalRows     = 0;
+      QRecord      primaryRecord = null;
+      QQueryFilter filter        = null;
+      QueryOutput  queryOutput   = new QueryOutput(new QueryInput());
+      if(StringUtils.hasContent(id))
       {
-         throw (new QNotFoundException("Could not find " + (leftTable == null ? "" : leftTable.getLabel()) + " with primary key " + id));
-      }
+         GetInput getInput = new GetInput();
+         getInput.setTableName(join.getLeftTable());
+         getInput.setPrimaryKey(id);
+         GetOutput getOutput = new GetAction().execute(getInput);
+         primaryRecord = getOutput.getRecord();
 
-      ////////////////////////////////////////////////////////////////////
-      // set up the query - for the table on the right side of the join //
-      ////////////////////////////////////////////////////////////////////
-      QQueryFilter filter = new QQueryFilter();
-      for(JoinOn joinOn : join.getJoinOns())
-      {
-         filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(record.getValue(joinOn.getLeftField()))));
-      }
-      filter.setOrderBys(join.getOrderBys());
-      filter.setLimit(maxRows);
+         if(primaryRecord == null)
+         {
+            throw (new QNotFoundException("Could not find " + (leftTable == null ? "" : leftTable.getLabel()) + " with primary key " + id));
+         }
 
-      QueryInput queryInput = new QueryInput();
-      queryInput.setTableName(join.getRightTable());
-      queryInput.setShouldTranslatePossibleValues(true);
-      queryInput.setShouldGenerateDisplayValues(true);
-      queryInput.setFilter(filter);
-      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         ////////////////////////////////////////////////////////////////////
+         // set up the query - for the table on the right side of the join //
+         ////////////////////////////////////////////////////////////////////
+         filter = new QQueryFilter();
+         for(JoinOn joinOn : join.getJoinOns())
+         {
+            filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(primaryRecord.getValue(joinOn.getLeftField()))));
+         }
+         filter.setOrderBys(join.getOrderBys());
+         filter.setLimit(maxRows);
 
-      QValueFormatter.setBlobValuesToDownloadUrls(rightTable, queryOutput.getRecords());
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(join.getRightTable());
+         queryInput.setShouldTranslatePossibleValues(true);
+         queryInput.setShouldGenerateDisplayValues(true);
+         queryInput.setFilter(filter);
+         queryOutput = new QueryAction().execute(queryInput);
 
-      int totalRows = queryOutput.getRecords().size();
-      if(maxRows != null && (queryOutput.getRecords().size() == maxRows))
-      {
-         /////////////////////////////////////////////////////////////////////////////////////
-         // if the input said to only do some max, and the # of results we got is that max, //
-         // then do a count query, for displaying 1-n of <count>                            //
-         /////////////////////////////////////////////////////////////////////////////////////
-         CountInput countInput = new CountInput();
-         countInput.setTableName(join.getRightTable());
-         countInput.setFilter(filter);
-         totalRows = new CountAction().execute(countInput).getCount();
+         QValueFormatter.setBlobValuesToDownloadUrls(rightTable, queryOutput.getRecords());
+
+         totalRows = queryOutput.getRecords().size();
+         if(maxRows != null && (queryOutput.getRecords().size() == maxRows))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////
+            // if the input said to only do some max, and the # of results we got is that max, //
+            // then do a count query, for displaying 1-n of <count>                            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            CountInput countInput = new CountInput();
+            countInput.setTableName(join.getRightTable());
+            countInput.setFilter(filter);
+            totalRows = new CountAction().execute(countInput).getCount();
+         }
       }
 
       String tablePath   = input.getInstance().getTablePath(rightTable.getName());
@@ -239,16 +258,36 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          // new child records must have values from the join-ons //
          //////////////////////////////////////////////////////////
          Map<String, Serializable> defaultValuesForNewChildRecords = new HashMap<>();
-         for(JoinOn joinOn : join.getJoinOns())
+         if(primaryRecord != null)
          {
-            defaultValuesForNewChildRecords.put(joinOn.getRightField(), record.getValue(joinOn.getLeftField()));
+            for(JoinOn joinOn : join.getJoinOns())
+            {
+               defaultValuesForNewChildRecords.put(joinOn.getRightField(), primaryRecord.getValue(joinOn.getLeftField()));
+            }
          }
+
          widgetData.setDefaultValuesForNewChildRecords(defaultValuesForNewChildRecords);
 
          Map<String, Serializable> widgetValues = input.getWidgetMetaData().getDefaultValues();
          if(widgetValues.containsKey("disabledFieldsForNewChildRecords"))
          {
             widgetData.setDisabledFieldsForNewChildRecords((Set<String>) widgetValues.get("disabledFieldsForNewChildRecords"));
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if there are no disabled fields specified - then normally any fields w/ a default value get implicitly disabled //
+            // but - if we didn't look-up the primary record, then we'll want to explicit disable fields from joins            //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(primaryRecord == null)
+            {
+               Set<String> implicitlyDisabledFields = new HashSet<>();
+               widgetData.setDisabledFieldsForNewChildRecords(implicitlyDisabledFields);
+               for(JoinOn joinOn : join.getJoinOns())
+               {
+                  implicitlyDisabledFields.add(joinOn.getRightField());
+               }
+            }
          }
       }
 

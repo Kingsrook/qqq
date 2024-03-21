@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,9 +38,9 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
@@ -168,13 +169,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       //////////////////////////////////////////////////////////////
       // finally, run the post-insert customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
+      Optional<TableCustomizerInterface> postInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
          try
          {
-            postInsertCustomizer.get().setInsertInput(insertInput);
-            insertOutput.setRecords(postInsertCustomizer.get().apply(insertOutput.getRecords()));
+            insertOutput.setRecords(postInsertCustomizer.get().postInsert(insertInput, insertOutput.getRecords()));
          }
          catch(Exception e)
          {
@@ -232,31 +232,29 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       // load the pre-insert customizer and set it up, if there is one //
       // then we'll run it based on its WhenToRun value                //
       ///////////////////////////////////////////////////////////////////
-      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      Optional<TableCustomizerInterface> preInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
-         preInsertCustomizer.get().setInsertInput(insertInput);
-         preInsertCustomizer.get().setIsPreview(isPreview);
-         runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
+         runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
       }
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
       ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords(), null);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
       setErrorsIfUniqueKeyErrors(insertInput, table);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_REQUIRED_FIELD_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_REQUIRED_FIELD_CHECKS);
       if(insertInput.getInputSource().shouldValidateRequiredFields())
       {
          validateRequiredFields(insertInput);
       }
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
    }
 
 
@@ -290,13 +288,13 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runPreInsertCustomizerIfItIsTime(InsertInput insertInput, Optional<AbstractPreInsertCustomizer> preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun whenToRun) throws QException
+   private void runPreInsertCustomizerIfItIsTime(InsertInput insertInput, boolean isPreview, Optional<TableCustomizerInterface> preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun whenToRun) throws QException
    {
       if(preInsertCustomizer.isPresent())
       {
-         if(whenToRun.equals(preInsertCustomizer.get().getWhenToRun()))
+         if(whenToRun.equals(preInsertCustomizer.get().whenToRunPreInsert(insertInput, isPreview)))
          {
-            insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+            insertInput.setRecords(preInsertCustomizer.get().preInsert(insertInput, insertInput.getRecords(), isPreview));
          }
       }
    }
@@ -321,7 +319,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             {
                if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
                {
-                  record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
+                  record.addError(new BadInputStatusMessage("Missing value in required field: " + Objects.requireNonNullElse(requiredField.getLabel(), requiredField.getName())));
                }
             }
          }

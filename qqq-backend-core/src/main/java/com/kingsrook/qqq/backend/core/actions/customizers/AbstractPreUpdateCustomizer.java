@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -53,13 +54,27 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** available (if the backend supports it) - both as a list (`getOldRecordList`)
  ** and as a memoized (by this class) map of primaryKey to record (`getOldRecordMap`).
  *******************************************************************************/
-public abstract class AbstractPreUpdateCustomizer
+public abstract class AbstractPreUpdateCustomizer implements TableCustomizerInterface
 {
    protected UpdateInput   updateInput;
    protected List<QRecord> oldRecordList;
    protected boolean       isPreview = false;
 
    private Map<Serializable, QRecord> oldRecordMap = null;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
+   {
+      this.updateInput = updateInput;
+      this.isPreview = isPreview;
+      this.oldRecordList = oldRecordList.orElse(null);
+      return apply(records);
+   }
 
 
 

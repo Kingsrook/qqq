@@ -159,7 +159,7 @@ public class AsyncJobManager
    private <T extends Serializable> T runAsyncJob(String jobName, AsyncJob<T> asyncJob, UUIDAndTypeStateKey uuidAndTypeStateKey, AsyncJobStatus asyncJobStatus)
    {
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName("Job:" + jobName + ":" + uuidAndTypeStateKey.getUuid().toString().substring(0, 8));
+      Thread.currentThread().setName("Job:" + jobName);
       try
       {
          LOG.debug("Starting job " + uuidAndTypeStateKey.getUuid());

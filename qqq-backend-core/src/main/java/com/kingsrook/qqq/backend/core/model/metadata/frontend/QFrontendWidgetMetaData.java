@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -60,6 +61,7 @@ public class QFrontendWidgetMetaData
 
    protected Map<String, QIcon>        icons;
    protected Map<String, QHelpContent> helpContent;
+   protected Map<String, Serializable> defaultValues;
 
    private final boolean hasPermission;
 
@@ -95,6 +97,7 @@ public class QFrontendWidgetMetaData
       }
 
       this.helpContent = widgetMetaData.getHelpContent();
+      this.defaultValues = widgetMetaData.getDefaultValues();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -274,4 +277,16 @@ public class QFrontendWidgetMetaData
    {
       return helpContent;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValues()
+   {
+      return defaultValues;
+   }
+
 }

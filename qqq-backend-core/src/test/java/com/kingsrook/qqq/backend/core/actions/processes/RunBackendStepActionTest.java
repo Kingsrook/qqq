@@ -103,6 +103,7 @@ public class RunBackendStepActionTest extends BaseTest
                {
                   case STRING -> "ABC";
                   case INTEGER -> 42;
+                  case LONG -> 42L;
                   case DECIMAL -> new BigDecimal("47");
                   case BOOLEAN -> true;
                   case DATE, TIME, DATE_TIME -> null;

@@ -135,6 +135,11 @@ public class PollingAutomationPerTableRunner implements Runnable
       /*******************************************************************************
        **
        *******************************************************************************/
+      QTableAutomationDetails tableAutomationDetails();
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
       AutomationStatus status();
    }
 
@@ -143,7 +148,7 @@ public class PollingAutomationPerTableRunner implements Runnable
    /*******************************************************************************
     ** Wrapper for a pair of (tableName, automationStatus)
     *******************************************************************************/
-   public record TableActions(String tableName, AutomationStatus status) implements TableActionsInterface
+   public record TableActions(String tableName, QTableAutomationDetails tableAutomationDetails, AutomationStatus status) implements TableActionsInterface
    {
       /*******************************************************************************
        **
@@ -159,7 +164,7 @@ public class PollingAutomationPerTableRunner implements Runnable
     ** extended version of TableAction, for sharding use-case - adds the shard
     ** details.
     *******************************************************************************/
-   public record ShardedTableActions(String tableName, AutomationStatus status, String shardByFieldName, Serializable shardValue, String shardLabel) implements TableActionsInterface
+   public record ShardedTableActions(String tableName, QTableAutomationDetails tableAutomationDetails, AutomationStatus status, String shardByFieldName, Serializable shardValue, String shardLabel) implements TableActionsInterface
    {
       /*******************************************************************************
        **
@@ -198,8 +203,8 @@ public class PollingAutomationPerTableRunner implements Runnable
                   {
                      Serializable shardId = record.getValue(automationDetails.getShardIdFieldName());
                      String       label   = record.getValueString(automationDetails.getShardLabelFieldName());
-                     tableActionList.add(new ShardedTableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
-                     tableActionList.add(new ShardedTableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
+                     tableActionList.add(new ShardedTableActions(table.getName(), automationDetails, AutomationStatus.PENDING_INSERT_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
+                     tableActionList.add(new ShardedTableActions(table.getName(), automationDetails, AutomationStatus.PENDING_UPDATE_AUTOMATIONS, automationDetails.getShardByFieldName(), shardId, label));
                   }
                }
                catch(Exception e)
@@ -209,11 +214,11 @@ public class PollingAutomationPerTableRunner implements Runnable
             }
             else
             {
-               ///////////////////////////////////////////////////////////////////
-               // for non-sharded, we just need tabler name & automation status //
-               ///////////////////////////////////////////////////////////////////
-               tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_INSERT_AUTOMATIONS));
-               tableActionList.add(new TableActions(table.getName(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS));
+               //////////////////////////////////////////////////////////////////
+               // for non-sharded, we just need table name & automation status //
+               //////////////////////////////////////////////////////////////////
+               tableActionList.add(new TableActions(table.getName(), automationDetails, AutomationStatus.PENDING_INSERT_AUTOMATIONS));
+               tableActionList.add(new TableActions(table.getName(), automationDetails, AutomationStatus.PENDING_UPDATE_AUTOMATIONS));
             }
          }
       }

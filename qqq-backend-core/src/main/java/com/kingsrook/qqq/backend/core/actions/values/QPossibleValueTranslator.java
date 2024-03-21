@@ -269,6 +269,10 @@ public class QPossibleValueTranslator
          {
             value = ValueUtils.getValueAsInteger(value);
          }
+         if(field.getType().equals(QFieldType.LONG) && !(value instanceof Long))
+         {
+            value = ValueUtils.getValueAsLong(value);
+         }
       }
       catch(QValueException e)
       {
@@ -366,6 +370,14 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private String translatePossibleValueCustom(Serializable value, QPossibleValueSource possibleValueSource)
    {
+      /////////////////////////////////
+      // null input gets null output //
+      /////////////////////////////////
+      if(value == null)
+      {
+         return (null);
+      }
+
       try
       {
          QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);

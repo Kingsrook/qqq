@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -104,6 +106,7 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.quartz.CronExpression;
 
 
 /*******************************************************************************
@@ -430,6 +433,11 @@ public class QInstanceValidator
             if(assertCondition(StringUtils.hasContent(queue.getProcessName()), "Missing processName for queue: " + name))
             {
                assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
+            }
+
+            if(queue.getSchedule() != null)
+            {
+               validateScheduleMetaData(queue.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
             }
 
             runPlugins(QQueueMetaData.class, queue, qInstance);
@@ -1013,6 +1021,11 @@ public class QInstanceValidator
          assertCondition(qInstance.getAutomationProvider(providerName) != null, " has an unrecognized providerName: " + providerName);
       }
 
+      if(automationDetails.getSchedule() != null)
+      {
+         validateScheduleMetaData(automationDetails.getSchedule(), qInstance, prefix + " automationDetails, schedule: ");
+      }
+
       //////////////////////////////////
       // validate the status tracking //
       //////////////////////////////////
@@ -1400,13 +1413,17 @@ public class QInstanceValidator
             if(process.getSchedule() != null)
             {
                QScheduleMetaData schedule = process.getSchedule();
-               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+               validateScheduleMetaData(schedule, qInstance, "Process " + processName + ", schedule: ");
+            }
 
-               if(schedule.getVariantBackend() != null)
-               {
-                  assertCondition(qInstance.getBackend(schedule.getVariantBackend()) != null, "A variant backend was not found for " + schedule.getVariantBackend());
-                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant run strategy was not set for " + schedule.getVariantBackend() + " on schedule in process " + processName);
-               }
+            if(process.getVariantBackend() != null)
+            {
+               assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
+               assertCondition(process.getVariantRunStrategy() != null, "A variant run strategy was not set for process " + processName + " (which does specify a variant backend)");
+            }
+            else
+            {
+               assertCondition(process.getVariantRunStrategy() == null, "A variant run strategy was set for process " + processName + " (which isn't allowed, since it does not specify a variant backend)");
             }
 
             for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
@@ -1416,6 +1433,50 @@ public class QInstanceValidator
 
             runPlugins(QProcessMetaData.class, process, qInstance);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateScheduleMetaData(QScheduleMetaData schedule, QInstance qInstance, String prefix)
+   {
+      boolean isRepeat = schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null;
+      boolean isCron = StringUtils.hasContent(schedule.getCronExpression());
+      assertCondition(isRepeat || isCron, prefix + " either repeatMillis or repeatSeconds or cronExpression must be set");
+      assertCondition(!(isRepeat && isCron), prefix + " both a repeat time and cronExpression may not be set");
+
+      if(isCron)
+      {
+         boolean hasDelay = schedule.getInitialDelayMillis() != null || schedule.getInitialDelaySeconds() != null;
+         assertCondition(!hasDelay, prefix + " a cron schedule may not have an initial delay");
+
+         try
+         {
+            CronExpression.validateExpression(schedule.getCronExpression());
+         }
+         catch(ParseException pe)
+         {
+            errors.add(prefix + " invalid cron expression: " + pe.getMessage());
+         }
+
+         if(assertCondition(StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a cron schedule must specify a cronTimeZoneId"))
+         {
+            String[] availableIDs = TimeZone.getAvailableIDs();
+            Optional<String> first = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
+            assertCondition(first.isPresent(), prefix + " unrecognized cronTimeZoneId: " + schedule.getCronTimeZoneId());
+         }
+      }
+      else
+      {
+         assertCondition(!StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a non-cron schedule must not specify a cronTimeZoneId");
+      }
+
+      if(assertCondition(StringUtils.hasContent(schedule.getSchedulerName()), prefix + " is missing a scheduler name"))
+      {
+         assertCondition(qInstance.getScheduler(schedule.getSchedulerName()) != null, prefix + " is referencing an unknown scheduler name: " + schedule.getSchedulerName());
       }
    }
 

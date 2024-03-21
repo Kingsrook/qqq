@@ -37,6 +37,7 @@ public enum QFieldType
 {
    STRING,
    INTEGER,
+   LONG,
    DECIMAL,
    BOOLEAN,
    DATE,
@@ -64,6 +65,10 @@ public enum QFieldType
       if(c.equals(Integer.class) || c.equals(int.class))
       {
          return (INTEGER);
+      }
+      if(c.equals(Long.class) || c.equals(long.class))
+      {
+         return (LONG);
       }
       if(c.equals(BigDecimal.class))
       {
@@ -110,7 +115,7 @@ public enum QFieldType
     *******************************************************************************/
    public boolean isNumeric()
    {
-      return this == QFieldType.INTEGER || this == QFieldType.DECIMAL;
+      return this == QFieldType.INTEGER || this == QFieldType.LONG || this == QFieldType.DECIMAL;
    }
 
 
