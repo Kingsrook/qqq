@@ -23,26 +23,42 @@ package com.kingsrook.qqq.backend.module.rdbms.reporting;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,6 +209,164 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          "10","QD-1","3","QDepot"
          "11","QD-1","3","QDepot"
          """, csv);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<String> runSavedReportForCSV(SavedReport newSavedReport) throws Exception
+   {
+      newSavedReport.setLabel("Test Report");
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, null);
+
+      QRecord savedReport = new InsertAction().execute(new InsertInput(SavedReport.TABLE_NAME).withRecordEntity(newSavedReport)).getRecords().get(0);
+
+      RunProcessInput input = new RunProcessInput();
+      input.setProcessName(RenderSavedReportMetaDataProducer.NAME);
+      input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+      input.setCallback(QProcessCallbackFactory.forRecord(savedReport));
+      input.addValue("reportFormat", ReportFormatPossibleValueEnum.CSV.getPossibleValueId());
+      RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
+
+      return (FileUtils.readLines(new File(runProcessOutput.getValueString("serverFilePath")), StandardCharsets.UTF_8));
+   }
+
+
+
+   /*******************************************************************************
+    ** in here, by potentially ambiguous, we mean where there are possible joins
+    ** between the order and orderInstructions tables.
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithPotentiallyAmbiguousExposedJoinSelections() throws Exception
+   {
+      List<String> lines = runSavedReportForCSV(new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "storeId"},
+               {"name": "orderInstructions.instructions"}
+            ]}""")
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
+
+      assertEquals("""
+         "Id","Store","Instructions"
+         """.trim(), lines.get(0));
+      assertEquals("""
+         "1","Q-Mart","order 1 v2"
+         """.trim(), lines.get(1));
+   }
+
+
+   /*******************************************************************************
+    ** in here, by potentially ambiguous, we mean where there are possible joins
+    ** between the order and orderInstructions tables.
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithPotentiallyAmbiguousExposedJoinSelectedAndOrdered() throws Exception
+   {
+      List<String> lines = runSavedReportForCSV(new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "storeId"},
+               {"name": "orderInstructions.instructions"}
+            ]}""")
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
+            .withOrderBy(new QFilterOrderBy("orderInstructions.id", false))
+         )));
+
+      assertEquals("""
+         "Id","Store","Instructions"
+         """.trim(), lines.get(0));
+      assertEquals("""
+         "8","QDepot","order 8 v1"
+         """.trim(), lines.get(1));
+   }
+
+
+   /*******************************************************************************
+    ** in here, by potentially ambiguous, we mean where there are possible joins
+    ** between the order and orderInstructions tables.
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithPotentiallyAmbiguousExposedJoinCriteria() throws Exception
+   {
+      List<String> lines = runSavedReportForCSV(new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "storeId"}
+            ]}""")
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
+            .withCriteria(new QFilterCriteria("orderInstructions.instructions", QCriteriaOperator.CONTAINS, "v3"))
+         )));
+
+      assertEquals("""
+         "Id","Store"
+         """.trim(), lines.get(0));
+      assertEquals("""
+         "2","Q-Mart"
+         """.trim(), lines.get(1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithExposedJoinMultipleTablesAwaySelected() throws Exception
+   {
+      List<String> lines = runSavedReportForCSV(new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "storeId"},
+               {"name": "item.description"}
+            ]}""")
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
+
+      assertEquals("""
+         "Id","Store","Description"
+         """.trim(), lines.get(0));
+      assertEquals("""
+         "1","Q-Mart","Q-Mart Item 1"
+         """.trim(), lines.get(1));
+   }
+
+   // todo - similar to above, but w/o selecting, only filtering
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithExposedJoinMultipleTablesAwayAsCriteria() throws Exception
+   {
+      List<String> lines = runSavedReportForCSV(new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "storeId"}
+            ]}""")
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
+            .withCriteria(new QFilterCriteria("item.description", QCriteriaOperator.CONTAINS, "Item 7"))
+         )));
+
+      assertEquals("""
+         "Id","Store"
+         """.trim(), lines.get(0));
+      assertEquals("""
+         "6","QDepot"
+         """.trim(), lines.get(1));
    }
 
 

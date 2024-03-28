@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -32,14 +34,17 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -63,6 +68,8 @@ public class SavedReportToReportMetaDataAdapter
    {
       try
       {
+         QInstance qInstance = QContext.getQInstance();
+
          QReportMetaData reportMetaData = new QReportMetaData();
          reportMetaData.setLabel(savedReport.getLabel());
 
@@ -73,14 +80,10 @@ public class SavedReportToReportMetaDataAdapter
          reportMetaData.setDataSources(List.of(dataSource));
          dataSource.setName("main");
 
-         QTableMetaData table = QContext.getQInstance().getTable(savedReport.getTableName());
+         QTableMetaData table = qInstance.getTable(savedReport.getTableName());
          dataSource.setSourceTable(savedReport.getTableName());
 
          dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class));
-
-         // todo!!! oh my.
-         List<QueryJoin> queryJoins = null;
-         dataSource.setQueryJoins(queryJoins);
 
          //////////////////////////
          // set up the main view //
@@ -103,10 +106,13 @@ public class SavedReportToReportMetaDataAdapter
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////
          // columns in the saved-report look like a JSON object, w/ a key "columns", which is an array of objects //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Set<String> neededJoinTables = new HashSet<>();
+
+         List<QReportField> reportColumns = new ArrayList<>();
+         view.setColumns(reportColumns);
+
          Map<String, Object>       columnsObject = JsonUtils.toObject(savedReport.getColumnsJson(), new TypeReference<>() {});
          List<Map<String, Object>> columns       = (List<Map<String, Object>>) columnsObject.get("columns");
-         List<QReportField>        reportColumns = new ArrayList<>();
-
          for(Map<String, Object> column : columns)
          {
             if(column.containsKey("isVisible") && !"true".equals(ValueUtils.getValueAsString(column.get("isVisible"))))
@@ -114,11 +120,28 @@ public class SavedReportToReportMetaDataAdapter
                continue;
             }
 
-            QFieldMetaData field = null;
-            String fieldName = ValueUtils.getValueAsString(column.get("name"));
+            QFieldMetaData field;
+            String         fieldName = ValueUtils.getValueAsString(column.get("name"));
             if(fieldName.contains("."))
             {
-               // todo - join!
+               String joinTableName = fieldName.replaceAll("\\..*", "");
+               String joinFieldName = fieldName.replaceAll(".*\\.", "");
+
+               QTableMetaData joinTable = qInstance.getTable(joinTableName);
+               if(joinTable == null)
+               {
+                  LOG.warn("Saved Report has an unrecognized join table name", logPair("savedReportId", savedReport.getId()), logPair("joinTable", joinTable), logPair("fieldName", fieldName));
+                  continue;
+               }
+
+               neededJoinTables.add(joinTableName);
+
+               field = joinTable.getFields().get(joinFieldName);
+               if(field == null)
+               {
+                  LOG.warn("Saved Report has an unrecognized join field name", logPair("savedReportId", savedReport.getId()), logPair("fieldName", fieldName));
+                  continue;
+               }
             }
             else
             {
@@ -148,7 +171,40 @@ public class SavedReportToReportMetaDataAdapter
             }
          }
 
-         view.setColumns(reportColumns);
+         ///////////////////////////////////////////////////////////////////////////////////////////
+         // set up joins, if we need any                                                          //
+         // note - test coverage here is provided by RDBMS module's GenerateReportActionRDBMSTest //
+         ///////////////////////////////////////////////////////////////////////////////////////////
+         if(!neededJoinTables.isEmpty())
+         {
+            List<QueryJoin> queryJoins = new ArrayList<>();
+            dataSource.setQueryJoins(queryJoins);
+
+            for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+            {
+               if(neededJoinTables.contains(exposedJoin.getJoinTable()))
+               {
+                  QueryJoin queryJoin = new QueryJoin(exposedJoin.getJoinTable())
+                     .withSelect(true)
+                     .withType(QueryJoin.Type.LEFT)
+                     .withBaseTableOrAlias(null)
+                     .withAlias(null);
+
+                  if(exposedJoin.getJoinPath().size() == 1)
+                  {
+                     // this is similar logic that QFMD has
+
+                     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // todo - what about a join with a longer path?  it would be nice to pass such joinNames through there too, //
+                     // but what, that would actually be multiple queryJoins?  needs a fair amount of thought.                   //
+                     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     queryJoin.setJoinMetaData(qInstance.getJoin(exposedJoin.getJoinPath().get(0)));
+                  }
+
+                  queryJoins.add(queryJoin);
+               }
+            }
+         }
 
          ///////////////////////////////////////////////
          // if it's a pivot report, add that view too //
