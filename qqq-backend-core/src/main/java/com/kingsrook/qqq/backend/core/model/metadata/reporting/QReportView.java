@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.reporting.pivottable.PivotTableDefinition;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 

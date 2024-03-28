@@ -19,13 +19,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
+package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
 /*******************************************************************************
- ** How a group-by (rows or columns) should be sorted.
+ ** Functions that can be applied to Values in a pivot table.
  *******************************************************************************/
-public class PivotTableOrderBy
+public enum PivotTableFunction
 {
-   // todo - implement, but only if POI supports (or we build our own support...)
+   AVERAGE("Average"),
+   COUNT("Count Numbers (COUNTA)"),
+   COUNT_NUMS("Count Values (COUNT)"),
+   MAX("Max"),
+   MIN("Min"),
+   PRODUCT("Product"),
+   STD_DEV("StdDev"),
+   STD_DEVP("StdDevp"),
+   SUM("Sum"),
+   VAR("Var"),
+   VARP("Varp");
+
+
+   private final String label;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   PivotTableFunction(String label)
+   {
+      this.label = label;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for label
+    **
+    *******************************************************************************/
+   public String getLabel()
+   {
+      return label;
+   }
 }

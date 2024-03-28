@@ -19,16 +19,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
+package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
 /*******************************************************************************
- ** a value (e.g., field name + function) used in a pivot table
+ ** Either a row or column grouping in a pivot table.  e.g., a field plus
+ ** sorting details, plus showTotals boolean.
  *******************************************************************************/
-public class PivotTableValue implements Cloneable
+public class PivotTableGroupBy implements Cloneable
 {
-   private String             fieldName;
-   private PivotTableFunction function;
+   private String            fieldName;
+   private PivotTableOrderBy orderBy;
+   private boolean           showTotals;
 
 
 
@@ -55,7 +57,7 @@ public class PivotTableValue implements Cloneable
    /*******************************************************************************
     ** Fluent setter for fieldName
     *******************************************************************************/
-   public PivotTableValue withFieldName(String fieldName)
+   public PivotTableGroupBy withFieldName(String fieldName)
    {
       this.fieldName = fieldName;
       return (this);
@@ -64,31 +66,62 @@ public class PivotTableValue implements Cloneable
 
 
    /*******************************************************************************
-    ** Getter for function
+    ** Getter for orderBy
     *******************************************************************************/
-   public PivotTableFunction getFunction()
+   public PivotTableOrderBy getOrderBy()
    {
-      return (this.function);
+      return (this.orderBy);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for function
+    ** Setter for orderBy
     *******************************************************************************/
-   public void setFunction(PivotTableFunction function)
+   public void setOrderBy(PivotTableOrderBy orderBy)
    {
-      this.function = function;
+      this.orderBy = orderBy;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for function
+    ** Fluent setter for orderBy
     *******************************************************************************/
-   public PivotTableValue withFunction(PivotTableFunction function)
+   public PivotTableGroupBy withOrderBy(PivotTableOrderBy orderBy)
    {
-      this.function = function;
+      this.orderBy = orderBy;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for showTotals
+    *******************************************************************************/
+   public boolean getShowTotals()
+   {
+      return (this.showTotals);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for showTotals
+    *******************************************************************************/
+   public void setShowTotals(boolean showTotals)
+   {
+      this.showTotals = showTotals;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for showTotals
+    *******************************************************************************/
+   public PivotTableGroupBy withShowTotals(boolean showTotals)
+   {
+      this.showTotals = showTotals;
       return (this);
    }
 
@@ -98,9 +131,9 @@ public class PivotTableValue implements Cloneable
     **
     *******************************************************************************/
    @Override
-   public PivotTableValue clone() throws CloneNotSupportedException
+   public PivotTableGroupBy clone() throws CloneNotSupportedException
    {
-      PivotTableValue clone = (PivotTableValue) super.clone();
+      PivotTableGroupBy clone = (PivotTableGroupBy) super.clone();
       return clone;
    }
 

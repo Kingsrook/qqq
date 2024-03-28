@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
+package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
 import java.util.ArrayList;
