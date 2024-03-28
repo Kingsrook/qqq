@@ -90,7 +90,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    private OutputStream         outputStream;
    private ZipOutputStream      zipOutputStream;
 
-   private PoiExcelStylerInterface poiExcelStylerInterface = new PlainPoiExcelStyler();
+   private PoiExcelStylerInterface poiExcelStylerInterface = getStylerInterface();
    private Map<String, String>     excelCellFormats;
 
    private int rowNo      = 0;
@@ -335,7 +335,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    {
       CreationHelper createHelper = workbook.getCreationHelper();
 
-      XSSFCellStyle  dateStyle    = workbook.createCellStyle();
+      XSSFCellStyle dateStyle = workbook.createCellStyle();
       dateStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd"));
       styles.put("date", dateStyle);
 
@@ -508,8 +508,8 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    {
       sheetWriter.insertRow(rowNo++);
 
-      int styleIndex = -1;
-      int dateStyleIndex = styles.get("date").getIndex();
+      int styleIndex         = -1;
+      int dateStyleIndex     = styles.get("date").getIndex();
       int dateTimeStyleIndex = styles.get("datetime").getIndex();
       if(isFooter)
       {
@@ -748,4 +748,15 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          throw (new QReportingException("Error writing pivot table", e));
       }
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected PoiExcelStylerInterface getStylerInterface()
+   {
+      return (new PlainPoiExcelStyler());
+   }
+
 }

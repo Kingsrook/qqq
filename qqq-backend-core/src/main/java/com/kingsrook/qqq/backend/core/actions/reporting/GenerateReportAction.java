@@ -130,7 +130,15 @@ public class GenerateReportAction
       {
          throw new QException("Report format was not specified.");
       }
-      reportStreamer = reportFormat.newReportStreamer();
+
+      if(reportInput.getOverrideExportStreamerSupplier() != null)
+      {
+         reportStreamer = reportInput.getOverrideExportStreamerSupplier().get();
+      }
+      else
+      {
+         reportStreamer = reportFormat.newReportStreamer();
+      }
 
       reportStreamer.preRun(reportInput.getReportDestination(), views);
 

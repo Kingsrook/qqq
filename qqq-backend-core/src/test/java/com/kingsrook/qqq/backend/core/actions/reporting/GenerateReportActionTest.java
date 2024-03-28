@@ -35,6 +35,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.fastexcel.ExcelFastexcelExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.BoldHeaderAndFooterPoiExcelStyler;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiBasedStreamingExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.PoiExcelStylerInterface;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -379,6 +383,76 @@ public class GenerateReportActionTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Keep some test coverage on the fastexcel library (as long as we keep it around)
+    *******************************************************************************/
+   @Test
+   void runTableToXlsxFastexcel() throws Exception
+   {
+      ReportFormat format = ReportFormat.XLSX;
+      String       name   = "/tmp/report-fastexcel.xlsx";
+      try(FileOutputStream fileOutputStream = new FileOutputStream(name))
+      {
+         QInstance qInstance = QContext.getQInstance();
+         qInstance.addReport(defineTableOnlyReport());
+         insertPersonRecords(qInstance);
+
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportName(REPORT_NAME);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
+         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         reportInput.setOverrideExportStreamerSupplier(ExcelFastexcelExportStreamer::new);
+         new GenerateReportAction().execute(reportInput);
+         System.out.println("Wrote File: " + name);
+
+         LocalMacDevUtils.mayOpenFiles = true;
+         LocalMacDevUtils.openFile(name);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Imagine if we used the boldHeaderAndFooter styler
+    *******************************************************************************/
+   @Test
+   void runTableToXlsxWithOverrideStyles() throws Exception
+   {
+      ReportFormat format = ReportFormat.XLSX;
+      String       name   = "/tmp/report-fastexcel.xlsx";
+      try(FileOutputStream fileOutputStream = new FileOutputStream(name))
+      {
+         QInstance qInstance = QContext.getQInstance();
+         QReportMetaData reportMetaData = defineTableOnlyReport();
+         reportMetaData.getViews().get(0).withTitleFormat("My Title");
+
+         qInstance.addReport(reportMetaData);
+         insertPersonRecords(qInstance);
+
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportName(REPORT_NAME);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
+         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+
+         reportInput.setOverrideExportStreamerSupplier(() -> new ExcelPoiBasedStreamingExportStreamer()
+         {
+            @Override
+            protected PoiExcelStylerInterface getStylerInterface()
+            {
+               return new BoldHeaderAndFooterPoiExcelStyler();
+            }
+         });
+
+         new GenerateReportAction().execute(reportInput);
+         System.out.println("Wrote File: " + name);
+
+         LocalMacDevUtils.mayOpenFiles = true;
+         LocalMacDevUtils.openFile(name);
+      }
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test
@@ -488,7 +562,7 @@ public class GenerateReportActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void insertPersonRecords(QInstance qInstance) throws QException
+   public static void insertPersonRecords(QInstance qInstance) throws QException
    {
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new PersonQRecord().withFirstName("Darin").withLastName("Jonson").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(null).withHomeStateId(1).withPrice(null).withCost(new BigDecimal("0.50")), // wrong last initial

@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
@@ -40,6 +42,8 @@ public class ReportInput extends AbstractTableActionInput
    private Map<String, Serializable> inputValues;
 
    private ReportDestination reportDestination;
+
+   private Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier;
 
 
 
@@ -140,6 +144,7 @@ public class ReportInput extends AbstractTableActionInput
    }
 
 
+
    /*******************************************************************************
     ** Getter for reportMetaData
     *******************************************************************************/
@@ -169,5 +174,38 @@ public class ReportInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for overrideExportStreamerSupplier
+    **
+    *******************************************************************************/
+   public Supplier<? extends ExportStreamerInterface> getOverrideExportStreamerSupplier()
+   {
+      return overrideExportStreamerSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideExportStreamerSupplier
+    **
+    *******************************************************************************/
+   public void setOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   {
+      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideExportStreamerSupplier
+    **
+    *******************************************************************************/
+   public ReportInput withOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   {
+      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+      return (this);
+   }
 
 }

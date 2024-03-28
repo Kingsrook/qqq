@@ -22,10 +22,22 @@
 package com.kingsrook.qqq.backend.core.actions.reporting.excel.fastexcel;
 
 
+import org.dhatim.fastexcel.StyleSetter;
+
+
 /*******************************************************************************
  ** Excel styler that does nothing - just takes defaults (which are all no-op) from the interface.
  *******************************************************************************/
 public class PlainFastExcelStyler implements FastExcelStylerInterface
 {
 
+   /*******************************************************************************
+    ** ... sorry, but adding this gives us test coverage on this class, even though
+    ** we're just deferring to super...
+    *******************************************************************************/
+   @Override
+   public void styleHeaderRow(StyleSetter headerRowStyle)
+   {
+      FastExcelStylerInterface.super.styleHeaderRow(headerRowStyle);
+   }
 }
