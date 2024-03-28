@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,152 +22,109 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import java.io.OutputStream;
 
 
 /*******************************************************************************
- ** Input for an Export action
+ **
  *******************************************************************************/
-public class ReportInput extends AbstractTableActionInput
+public class ReportDestination
 {
-   private String          reportName;
-   private QReportMetaData reportMetaData;
-
-   private Map<String, Serializable> inputValues;
-
-   private ReportDestination reportDestination;
+   private String       filename;
+   private ReportFormat reportFormat;
+   private OutputStream reportOutputStream;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for filename
     *******************************************************************************/
-   public ReportInput()
+   public String getFilename()
    {
+      return (this.filename);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for reportName
-    **
+    ** Setter for filename
     *******************************************************************************/
-   public String getReportName()
+   public void setFilename(String filename)
    {
-      return reportName;
+      this.filename = filename;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportName
-    **
+    ** Fluent setter for filename
     *******************************************************************************/
-   public void setReportName(String reportName)
+   public ReportDestination withFilename(String filename)
    {
-      this.reportName = reportName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for inputValues
-    **
-    *******************************************************************************/
-   public Map<String, Serializable> getInputValues()
-   {
-      return inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputValues
-    **
-    *******************************************************************************/
-   public void setInputValues(Map<String, Serializable> inputValues)
-   {
-      this.inputValues = inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addInputValue(String key, Serializable value)
-   {
-      if(this.inputValues == null)
-      {
-         this.inputValues = new HashMap<>();
-      }
-      this.inputValues.put(key, value);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for reportDestination
-    *******************************************************************************/
-   public ReportDestination getReportDestination()
-   {
-      return (this.reportDestination);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for reportDestination
-    *******************************************************************************/
-   public void setReportDestination(ReportDestination reportDestination)
-   {
-      this.reportDestination = reportDestination;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for reportDestination
-    *******************************************************************************/
-   public ReportInput withReportDestination(ReportDestination reportDestination)
-   {
-      this.reportDestination = reportDestination;
+      this.filename = filename;
       return (this);
    }
 
 
+
    /*******************************************************************************
-    ** Getter for reportMetaData
+    ** Getter for reportFormat
     *******************************************************************************/
-   public QReportMetaData getReportMetaData()
+   public ReportFormat getReportFormat()
    {
-      return (this.reportMetaData);
+      return (this.reportFormat);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportMetaData
+    ** Setter for reportFormat
     *******************************************************************************/
-   public void setReportMetaData(QReportMetaData reportMetaData)
+   public void setReportFormat(ReportFormat reportFormat)
    {
-      this.reportMetaData = reportMetaData;
+      this.reportFormat = reportFormat;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for reportMetaData
+    ** Fluent setter for reportFormat
     *******************************************************************************/
-   public ReportInput withReportMetaData(QReportMetaData reportMetaData)
+   public ReportDestination withReportFormat(ReportFormat reportFormat)
    {
-      this.reportMetaData = reportMetaData;
+      this.reportFormat = reportFormat;
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for reportOutputStream
+    *******************************************************************************/
+   public OutputStream getReportOutputStream()
+   {
+      return (this.reportOutputStream);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reportOutputStream
+    *******************************************************************************/
+   public void setReportOutputStream(OutputStream reportOutputStream)
+   {
+      this.reportOutputStream = reportOutputStream;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for reportOutputStream
+    *******************************************************************************/
+   public ReportDestination withReportOutputStream(OutputStream reportOutputStream)
+   {
+      this.reportOutputStream = reportOutputStream;
+      return (this);
+   }
 
 }

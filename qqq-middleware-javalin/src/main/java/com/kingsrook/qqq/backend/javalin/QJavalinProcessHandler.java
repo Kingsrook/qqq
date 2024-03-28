@@ -60,6 +60,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -203,10 +204,12 @@ public class QJavalinProcessHandler
          QJavalinImplementation.setupSession(context, reportInput);
          PermissionsHelper.checkReportPermissionThrowing(reportInput, reportName);
 
-         reportInput.setReportFormat(reportFormat);
          reportInput.setReportName(reportName);
          reportInput.setInputValues(null); // todo!
-         reportInput.setFilename(filename);
+
+         reportInput.setReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename));
 
          //////////////////////////////////////////////////////////////
          // process the report's input fields, from the query string //
@@ -239,7 +242,7 @@ public class QJavalinProcessHandler
 
          UnsafeFunction<PipedOutputStream, GenerateReportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
-            reportInput.setReportOutputStream(pos);
+            reportInput.getReportDestination().setReportOutputStream(pos);
 
             GenerateReportAction reportAction = new GenerateReportAction();
             // any pre-action??  export uses this for "too many rows" checks...

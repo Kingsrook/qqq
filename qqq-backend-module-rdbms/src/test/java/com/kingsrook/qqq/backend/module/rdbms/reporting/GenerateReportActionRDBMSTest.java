@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -204,9 +205,12 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
       ReportInput reportInput = new ReportInput();
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       reportInput.setReportName(TEST_REPORT);
-      reportInput.setReportFormat(ReportFormat.CSV);
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      reportInput.setReportOutputStream(outputStream);
+
+      reportInput.setReportDestination(new ReportDestination()
+         .withReportFormat(ReportFormat.CSV)
+         .withReportOutputStream(outputStream));
+
       new GenerateReportAction().execute(reportInput);
       return (outputStream.toString());
    }

@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.customizers.DataSourceQu
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportViewCustomizer;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
@@ -108,9 +109,9 @@ public class GenerateReportAction
    Map<String, AggregatesInterface<?>> totalAggregates         = new HashMap<>();
    Map<String, AggregatesInterface<?>> varianceTotalAggregates = new HashMap<>();
 
-   private QReportMetaData         report;
-   private ReportFormat            reportFormat;
    private ExportStreamerInterface reportStreamer;
+   private List<QReportDataSource> dataSources;
+   private List<QReportView>       views;
 
 
 
@@ -119,33 +120,39 @@ public class GenerateReportAction
     *******************************************************************************/
    public void execute(ReportInput reportInput) throws QException
    {
-      report = reportInput.getInstance().getReport(reportInput.getReportName());
-      reportFormat = reportInput.getReportFormat();
+      QReportMetaData report = getReportMetaData(reportInput);
+
+      this.views = report.getViews();
+      this.dataSources = report.getDataSources();
+
+      ReportFormat reportFormat = reportInput.getReportDestination().getReportFormat();
       if(reportFormat == null)
       {
          throw new QException("Report format was not specified.");
       }
       reportStreamer = reportFormat.newReportStreamer();
 
+      reportStreamer.preRun(reportInput.getReportDestination(), views);
+
       ////////////////////////////////////////////////////////////////////////////////////////////////
       // foreach data source, do a query (possibly more than 1, if it goes to multiple table views) //
       ////////////////////////////////////////////////////////////////////////////////////////////////
-      for(QReportDataSource dataSource : report.getDataSources())
+      for(QReportDataSource dataSource : dataSources)
       {
          //////////////////////////////////////////////////////////////////////////////
          // make a list of the views that use this data source for various purposes. //
          //////////////////////////////////////////////////////////////////////////////
-         List<QReportView> dataSourceTableViews = report.getViews().stream()
+         List<QReportView> dataSourceTableViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.TABLE))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         List<QReportView> dataSourceSummaryViews = report.getViews().stream()
+         List<QReportView> dataSourceSummaryViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.SUMMARY))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         List<QReportView> dataSourceVariantViews = report.getViews().stream()
+         List<QReportView> dataSourceVariantViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.SUMMARY))
             .filter(v -> v.getVarianceDataSourceName() != null && v.getVarianceDataSourceName().equals(dataSource.getName()))
             .toList();
@@ -190,13 +197,29 @@ public class GenerateReportAction
          }
       }
 
+      ////////////////////////////////////////
+      // add pivot sheets                   //
+      // todo - but, only for Excel, right? //
+      ////////////////////////////////////////
+      for(QReportView view : views)
+      {
+         if(view.getType().equals(ReportType.PIVOT))
+         {
+            startTableView(reportInput, null, view);
+
+            //////////////////////////////////////////////////////////////////////////
+            // there's no data to add to a pivot table, so nothing else to do here. //
+            //////////////////////////////////////////////////////////////////////////
+         }
+      }
+
       outputSummaries(reportInput);
 
       reportStreamer.finish();
 
       try
       {
-         reportInput.getReportOutputStream().close();
+         reportInput.getReportDestination().getReportOutputStream().close();
       }
       catch(Exception e)
       {
@@ -209,28 +232,47 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private QReportMetaData getReportMetaData(ReportInput reportInput) throws QException
+   {
+      if(reportInput.getReportMetaData() != null)
+      {
+         return reportInput.getReportMetaData();
+      }
+
+      if(StringUtils.hasContent(reportInput.getReportName()))
+      {
+         return QContext.getQInstance().getReport(reportInput.getReportName());
+      }
+
+      throw (new QReportingException("ReportInput did not contain required parameters to identify the report being generated"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView) throws QException
    {
-      QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
-
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
 
       ExportInput exportInput = new ExportInput();
-      exportInput.setReportFormat(reportFormat);
-      exportInput.setFilename(reportInput.getFilename());
+      exportInput.setReportDestination(reportInput.getReportDestination());
       exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
       exportInput.setIncludeHeaderRow(reportView.getIncludeHeaderRow());
-      exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
       JoinsContext joinsContext = null;
-      if(StringUtils.hasContent(dataSource.getSourceTable()))
+      if(dataSource != null)
       {
-         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+         if(StringUtils.hasContent(dataSource.getSourceTable()))
+         {
+            joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+         }
       }
 
       List<QFieldMetaData> fields = new ArrayList<>();
-      for(QReportField column : reportView.getColumns())
+      for(QReportField column : CollectionUtils.nonNullList(reportView.getColumns()))
       {
          if(column.getIsVirtual())
          {
@@ -256,7 +298,7 @@ public class GenerateReportAction
       }
 
       reportStreamer.setDisplayFormats(getDisplayFormatMap(fields));
-      reportStreamer.start(exportInput, fields, reportView.getLabel());
+      reportStreamer.start(exportInput, fields, reportView.getLabel(), reportView);
    }
 
 
@@ -307,6 +349,7 @@ public class GenerateReportAction
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
+            queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
 
             queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
@@ -371,7 +414,7 @@ public class GenerateReportAction
    {
       Set<String> fieldsToTranslatePossibleValues = new HashSet<>();
 
-      for(QReportView view : report.getViews())
+      for(QReportView view : views)
       {
          for(QReportField column : CollectionUtils.nonNullList(view.getColumns()))
          {
@@ -577,22 +620,20 @@ public class GenerateReportAction
     *******************************************************************************/
    private void outputSummaries(ReportInput reportInput) throws QReportingException, QFormulaException
    {
-      List<QReportView> reportViews = report.getViews().stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
+      List<QReportView> reportViews = views.stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
-         QReportDataSource dataSource    = report.getDataSource(view.getDataSourceName());
+         QReportDataSource dataSource    = getDataSource(view.getDataSourceName());
          QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
          SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
          ExportInput exportInput = new ExportInput();
-         exportInput.setReportFormat(reportFormat);
-         exportInput.setFilename(reportInput.getFilename());
+         exportInput.setReportDestination(reportInput.getReportDestination());
          exportInput.setTitleRow(summaryOutput.titleRow);
          exportInput.setIncludeHeaderRow(view.getIncludeHeaderRow());
-         exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
          reportStreamer.setDisplayFormats(getDisplayFormatMap(view));
-         reportStreamer.start(exportInput, getFields(table, view), view.getLabel());
+         reportStreamer.start(exportInput, getFields(table, view), view.getLabel(), view);
 
          reportStreamer.addRecords(summaryOutput.summaryRows); // todo - what if this set is huge?
 
@@ -601,6 +642,24 @@ public class GenerateReportAction
             reportStreamer.addTotalsRow(summaryOutput.totalRow);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QReportDataSource getDataSource(String dataSourceName)
+   {
+      for(QReportDataSource dataSource : CollectionUtils.nonNullList(dataSources))
+      {
+         if(dataSource.getName().equals(dataSourceName))
+         {
+            return (dataSource);
+         }
+      }
+
+      return (null);
    }
 
 
