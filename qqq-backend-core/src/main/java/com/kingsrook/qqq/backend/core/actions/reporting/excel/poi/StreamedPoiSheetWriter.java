@@ -56,9 +56,11 @@ public class StreamedPoiSheetWriter
     *******************************************************************************/
    public void beginSheet() throws IOException
    {
-      writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-         "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">");
-      writer.write("<sheetData>\n");
+      writer.write("""
+         <?xml version="1.0" encoding="UTF-8"?>
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+               <sheetData>""");
+
    }
 
 
@@ -68,8 +70,9 @@ public class StreamedPoiSheetWriter
     *******************************************************************************/
    public void endSheet() throws IOException
    {
-      writer.write("</sheetData>");
-      writer.write("</worksheet>");
+      writer.write("""
+         </sheetData>
+      </worksheet>""");
    }
 
 
