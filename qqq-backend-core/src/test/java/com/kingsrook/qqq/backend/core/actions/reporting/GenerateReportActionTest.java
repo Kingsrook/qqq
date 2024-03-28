@@ -23,19 +23,27 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableFunction;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableGroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -51,7 +59,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.testutils.PersonQRecord;
+import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFPivotTable;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,10 +100,10 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testPivot1() throws QException
+   void testSummary1() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
-      qInstance.addReport(definePersonShoesPivotReport(true));
+      qInstance.addReport(definePersonShoesSummaryReport(true));
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1), "endDate", LocalDate.of(1980, Month.DECEMBER, 31)));
 
@@ -140,10 +155,10 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testPivot2() throws QException
+   void testSummary2() throws QException
    {
       QInstance       qInstance = QContext.getQInstance();
-      QReportMetaData report    = definePersonShoesPivotReport(false);
+      QReportMetaData report    = definePersonShoesSummaryReport(false);
 
       //////////////////////////////////////////////
       // change from the default to sort reversed //
@@ -172,10 +187,10 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testPivot3() throws QException
+   void testSummary3() throws QException
    {
       QInstance       qInstance = QContext.getQInstance();
-      QReportMetaData report    = definePersonShoesPivotReport(false);
+      QReportMetaData report    = definePersonShoesSummaryReport(false);
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       // remove the filters, change to sort by personCount (to get some ties), then sumPrice desc //
@@ -224,16 +239,16 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testPivot4() throws QException
+   void testSummary4() throws QException
    {
       QInstance       qInstance = QContext.getQInstance();
-      QReportMetaData report    = definePersonShoesPivotReport(false);
+      QReportMetaData report    = definePersonShoesSummaryReport(false);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // remove the filter, change to have 2 pivot columns - homeStateId and lastName - we should get no roll-up like this. //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       report.getDataSources().get(0).getQueryFilter().setCriteria(null);
-      report.getViews().get(0).setPivotFields(List.of(
+      report.getViews().get(0).setSummaryFields(List.of(
          "homeStateId",
          "lastName"
       ));
@@ -282,16 +297,16 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testPivot5() throws QException
+   void testSummary5() throws QException
    {
       QInstance       qInstance = QContext.getQInstance();
-      QReportMetaData report    = definePersonShoesPivotReport(false);
+      QReportMetaData report    = definePersonShoesSummaryReport(false);
 
       /////////////////////////////////////////////////////////////////////////////////////
       // remove the filter, and just pivot on homeStateId - should aggregate differently //
       /////////////////////////////////////////////////////////////////////////////////////
       report.getDataSources().get(0).getQueryFilter().setCriteria(null);
-      report.getViews().get(0).setPivotFields(List.of("homeStateId"));
+      report.getViews().get(0).setSummaryFields(List.of("homeStateId"));
       qInstance.addReport(report);
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.now(), "endDate", LocalDate.now()));
@@ -322,13 +337,12 @@ public class GenerateReportActionTest extends BaseTest
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
          QInstance qInstance = QContext.getQInstance();
-         qInstance.addReport(definePersonShoesPivotReport(true));
+         qInstance.addReport(definePersonShoesSummaryReport(true));
          insertPersonRecords(qInstance);
 
          ReportInput reportInput = new ReportInput();
          reportInput.setReportName(REPORT_NAME);
-         reportInput.setReportFormat(ReportFormat.CSV);
-         reportInput.setReportOutputStream(fileOutputStream);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.CSV).withReportOutputStream(fileOutputStream));
          reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
@@ -341,23 +355,118 @@ public class GenerateReportActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void runToXlsx() throws Exception
+   void runSummaryToXlsx() throws Exception
    {
-      String name = "/tmp/report.xlsx";
+      ReportFormat format = ReportFormat.XLSX;
+      String       name   = "/tmp/report-" + format + ".xlsx";
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
          QInstance qInstance = QContext.getQInstance();
-         qInstance.addReport(definePersonShoesPivotReport(true));
+         qInstance.addReport(definePersonShoesSummaryReport(true));
          insertPersonRecords(qInstance);
 
          ReportInput reportInput = new ReportInput();
          reportInput.setReportName(REPORT_NAME);
-         reportInput.setReportFormat(ReportFormat.XLSX);
-         reportInput.setReportOutputStream(fileOutputStream);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
          reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
+
+         LocalMacDevUtils.openFile(name);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void runTableToXlsx() throws Exception
+   {
+      ReportFormat format = ReportFormat.XLSX;
+      String       name   = "/tmp/report-" + format + ".xlsx";
+      try(FileOutputStream fileOutputStream = new FileOutputStream(name))
+      {
+         QInstance qInstance = QContext.getQInstance();
+         qInstance.addReport(defineTableOnlyReport());
+         insertPersonRecords(qInstance);
+
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportName(REPORT_NAME);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
+         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         new GenerateReportAction().execute(reportInput);
+         System.out.println("Wrote File: " + name);
+
+         LocalMacDevUtils.openFile(name);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void runPivotToXlsx() throws Exception
+   {
+      String name = "/tmp/pivot-test.xlsx";
+      try(FileOutputStream fileOutputStream = new FileOutputStream(name))
+      {
+         QInstance qInstance = QContext.getQInstance();
+         qInstance.addReport(definePivotReport());
+         insertPersonRecords(qInstance);
+
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportName(REPORT_NAME);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.XLSX).withReportOutputStream(fileOutputStream));
+         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         new GenerateReportAction().execute(reportInput);
+         System.out.println("Wrote File: " + name);
+
+         // LocalMacDevUtils.mayOpenFiles = true;
+         LocalMacDevUtils.openFile(name);
+      }
+
+      ///////////////////////////////////////////////////////////
+      // read the file we wrote, and assert about its contents //
+      ///////////////////////////////////////////////////////////
+      FileInputStream file     = new FileInputStream(name);
+      XSSFWorkbook    workbook = new XSSFWorkbook(file);
+
+      XSSFSheet sheet = workbook.getSheetAt(1);
+      List<XSSFPivotTable> pivotTables = sheet.getPivotTables();
+      XSSFPivotTable xssfPivotTable = pivotTables.get(0);
+      List<Integer> rowLabelColumns = xssfPivotTable.getRowLabelColumns();
+      List<Integer> colLabelColumns = xssfPivotTable.getColLabelColumns();
+      Sheet dataSheet = xssfPivotTable.getDataSheet();
+      Sheet parentSheet = xssfPivotTable.getParentSheet();
+      System.out.println();
+
+      Map<Integer, List<Object>> data = new HashMap<>();
+      int                        i    = 0;
+      for(Row row : sheet)
+      {
+         data.put(i, new ArrayList<>());
+
+         for(Cell cell : row)
+         {
+            data.get(i).add(switch(cell.getCellType())
+            {
+               case _NONE -> "<_NONE>";
+               case NUMERIC -> cell.getNumericCellValue();
+               case STRING -> cell.getStringCellValue();
+               case FORMULA -> cell.getCellFormula();
+               case BLANK -> "<BLANK>";
+               case BOOLEAN -> cell.getBooleanCellValue();
+               case ERROR -> cell.getErrorCellValue();
+            });
+         }
+         i++;
+      }
+
+      System.out.println(data);
    }
 
 
@@ -369,8 +478,7 @@ public class GenerateReportActionTest extends BaseTest
    {
       ReportInput reportInput = new ReportInput();
       reportInput.setReportName(REPORT_NAME);
-      reportInput.setReportFormat(ReportFormat.LIST_OF_MAPS);
-      reportInput.setReportOutputStream(new ByteArrayOutputStream());
+      reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.LIST_OF_MAPS).withReportOutputStream(new ByteArrayOutputStream()));
       reportInput.setInputValues(inputValues);
       new GenerateReportAction().execute(reportInput);
    }
@@ -383,12 +491,12 @@ public class GenerateReportActionTest extends BaseTest
    private void insertPersonRecords(QInstance qInstance) throws QException
    {
       TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
-         new PersonQRecord().withLastName("Jonson").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(null).withHomeStateId(1).withPrice(null).withCost(new BigDecimal("0.50")), // wrong last initial
-         new PersonQRecord().withLastName("Jones").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(3).withHomeStateId(1).withPrice(new BigDecimal("1.00")).withCost(new BigDecimal("0.50")), // wrong last initial
-         new PersonQRecord().withLastName("Kelly").withBirthDate(LocalDate.of(1979, Month.DECEMBER, 30)).withNoOfShoes(4).withHomeStateId(1).withPrice(new BigDecimal("1.20")).withCost(new BigDecimal("0.50")), // bad birthdate
-         new PersonQRecord().withLastName("Keller").withBirthDate(LocalDate.of(1980, Month.JANUARY, 7)).withNoOfShoes(5).withHomeStateId(1).withPrice(new BigDecimal("2.40")).withCost(new BigDecimal("3.50")),
-         new PersonQRecord().withLastName("Kelkhoff").withBirthDate(LocalDate.of(1980, Month.FEBRUARY, 15)).withNoOfShoes(6).withHomeStateId(1).withPrice(new BigDecimal("3.60")).withCost(new BigDecimal("3.50")),
-         new PersonQRecord().withLastName("Kelkhoff").withBirthDate(LocalDate.of(1980, Month.MARCH, 20)).withNoOfShoes(7).withHomeStateId(2).withPrice(new BigDecimal("4.80")).withCost(new BigDecimal("3.50"))
+         new PersonQRecord().withFirstName("Darin").withLastName("Jonson").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(null).withHomeStateId(1).withPrice(null).withCost(new BigDecimal("0.50")), // wrong last initial
+         new PersonQRecord().withFirstName("Darin").withLastName("Jones").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(3).withHomeStateId(1).withPrice(new BigDecimal("1.00")).withCost(new BigDecimal("0.50")), // wrong last initial
+         new PersonQRecord().withFirstName("Darin").withLastName("Kelly").withBirthDate(LocalDate.of(1979, Month.DECEMBER, 30)).withNoOfShoes(4).withHomeStateId(1).withPrice(new BigDecimal("1.20")).withCost(new BigDecimal("0.50")), // bad birthdate
+         new PersonQRecord().withFirstName("Trevor").withLastName("Keller").withBirthDate(LocalDate.of(1980, Month.JANUARY, 7)).withNoOfShoes(5).withHomeStateId(1).withPrice(new BigDecimal("2.40")).withCost(new BigDecimal("3.50")),
+         new PersonQRecord().withFirstName("Trevor").withLastName("Kelkhoff").withBirthDate(LocalDate.of(1980, Month.FEBRUARY, 15)).withNoOfShoes(6).withHomeStateId(1).withPrice(new BigDecimal("3.60")).withCost(new BigDecimal("3.50")),
+         new PersonQRecord().withFirstName("Kelly").withLastName("Kelkhoff").withBirthDate(LocalDate.of(1980, Month.MARCH, 20)).withNoOfShoes(7).withHomeStateId(2).withPrice(new BigDecimal("4.80")).withCost(new BigDecimal("3.50"))
       ));
    }
 
@@ -397,7 +505,7 @@ public class GenerateReportActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QReportMetaData definePersonShoesPivotReport(boolean includeTotalRow)
+   public static QReportMetaData definePersonShoesSummaryReport(boolean includeTotalRow)
    {
       return new QReportMetaData()
          .withName(REPORT_NAME)
@@ -420,7 +528,7 @@ public class GenerateReportActionTest extends BaseTest
                .withLabel("pivot")
                .withDataSourceName("persons")
                .withType(ReportType.SUMMARY)
-               .withPivotFields(List.of("lastName"))
+               .withSummaryFields(List.of("lastName"))
                .withIncludeTotalRow(includeTotalRow)
                .withTitleFormat("Number of shoes - people born between %s and %s - pivot on LastName, sort by Quantity, Revenue DESC")
                .withTitleFields(List.of("${input.startDate}", "${input.endDate}"))
@@ -452,33 +560,8 @@ public class GenerateReportActionTest extends BaseTest
    @Test
    void testTableOnlyReport() throws QException
    {
-      QInstance qInstance = QContext.getQInstance();
-      QReportMetaData report = new QReportMetaData()
-         .withName(REPORT_NAME)
-         .withDataSources(List.of(
-            new QReportDataSource()
-               .withName("persons")
-               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-               .withQueryFilter(new QQueryFilter()
-                  .withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, List.of("${input.startDate}")))
-               )
-         ))
-         .withInputFields(List.of(
-            new QFieldMetaData("startDate", QFieldType.DATE_TIME)
-         ))
-         .withViews(List.of(
-            new QReportView()
-               .withName("table1")
-               .withLabel("table1")
-               .withDataSourceName("persons")
-               .withType(ReportType.TABLE)
-               .withColumns(List.of(
-                  new QReportField().withName("id"),
-                  new QReportField().withName("firstName"),
-                  new QReportField().withName("lastName")
-               ))
-         ));
-
+      QInstance       qInstance = QContext.getQInstance();
+      QReportMetaData report    = defineTableOnlyReport();
       qInstance.addReport(report);
 
       insertPersonRecords(qInstance);
@@ -489,6 +572,86 @@ public class GenerateReportActionTest extends BaseTest
       Map<String, String>           row      = iterator.next();
       assertEquals(5, list.size());
       assertThat(row).containsOnlyKeys("Id", "First Name", "Last Name");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData defineTableOnlyReport()
+   {
+      QReportMetaData report = new QReportMetaData()
+         .withName(REPORT_NAME)
+         .withDataSources(List.of(
+            new QReportDataSource()
+               .withName("persons")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withQueryFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, List.of("${input.startDate}"))))))
+
+         .withInputFields(List.of(
+            new QFieldMetaData("startDate", QFieldType.DATE_TIME)))
+
+         .withViews(List.of(
+            new QReportView()
+               .withName("table1")
+               .withLabel("table1")
+               .withDataSourceName("persons")
+               .withType(ReportType.TABLE)
+               .withColumns(List.of(
+                  new QReportField().withName("id"),
+                  new QReportField().withName("firstName"),
+                  new QReportField().withName("lastName")))));
+
+      return report;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData definePivotReport()
+   {
+      QReportMetaData report = new QReportMetaData()
+         .withName(REPORT_NAME)
+         .withDataSources(List.of(
+            new QReportDataSource()
+               .withName("persons")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withQueryFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, List.of("${input.startDate}"))))))
+
+         .withInputFields(List.of(
+            new QFieldMetaData("startDate", QFieldType.DATE_TIME)))
+
+         .withViews(List.of(
+
+            new QReportView()
+               .withName("table1")
+               .withLabel("table1")
+               .withDataSourceName("persons")
+               .withType(ReportType.TABLE)
+               .withColumns(List.of(
+                  new QReportField().withName("id"),
+                  new QReportField().withName("firstName"),
+                  new QReportField().withName("lastName"))),
+
+            new QReportView()
+               .withName("pivotTable1")
+               .withLabel("My Pivot Table")
+
+               .withType(ReportType.PIVOT)
+               .withPivotTableSourceViewName("table1")
+               .withPivotTableDefinition(new PivotTableDefinition()
+                  .withRow(new PivotTableGroupBy().withFieldName("firstName"))
+                  .withRow(new PivotTableGroupBy().withFieldName("lastName"))
+                  // .withColumn(new PivotTableGroupBy().withFieldName("firstName"))
+                  .withValue(new PivotTableValue().withFunction(PivotTableFunction.COUNT).withFieldName("id")))
+         ));
+
+      return report;
    }
 
 
@@ -566,8 +729,7 @@ public class GenerateReportActionTest extends BaseTest
 
       ReportInput reportInput = new ReportInput();
       reportInput.setReportName(TestUtils.REPORT_NAME_PERSON_SIMPLE);
-      reportInput.setReportFormat(ReportFormat.LIST_OF_MAPS);
-      reportInput.setReportOutputStream(new ByteArrayOutputStream());
+      reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.LIST_OF_MAPS).withReportOutputStream(new ByteArrayOutputStream()));
       new GenerateReportAction().execute(reportInput);
 
       List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("Simple Report");
