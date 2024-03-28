@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.scheduler;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -31,6 +33,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobParameter;
+import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 
 
 /*******************************************************************************
@@ -55,6 +61,28 @@ public class SchedulerTestUtils
             .withCode(new QCodeReference(BasicStep.class))));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ScheduledJob newScheduledJob(ScheduledJobType type, Map<String, String> params)
+   {
+      ScheduledJob scheduledJob = new ScheduledJob()
+         .withId(1)
+         .withIsActive(true)
+         .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME)
+         .withType(type.name())
+         .withRepeatSeconds(1)
+         .withJobParameters(new ArrayList<>());
+
+      for(Map.Entry<String, String> entry : params.entrySet())
+      {
+         scheduledJob.getJobParameters().add(new ScheduledJobParameter().withKey(entry.getKey()).withValue(entry.getValue()));
+      }
+
+      return (scheduledJob);
+   }
 
 
 

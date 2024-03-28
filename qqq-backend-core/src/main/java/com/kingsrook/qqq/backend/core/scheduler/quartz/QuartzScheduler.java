@@ -722,7 +722,7 @@ public class QuartzScheduler implements QSchedulerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   List<QuartzJobAndTriggerWrapper> queryQuartz() throws SchedulerException
+   public List<QuartzJobAndTriggerWrapper> queryQuartz() throws SchedulerException
    {
       return queryQuartzMemoization.getResultThrowing(AnyKey.getInstance(), (x) ->
       {
