@@ -168,7 +168,11 @@ public class SavedReportToReportMetaDataAdapter
          /////////////////////////////////////////////////////
          if(StringUtils.hasContent(savedReport.getInputFieldsJson()))
          {
-            reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}));
+            ////////////////////////////////////
+            // todo turn on when implementing //
+            ////////////////////////////////////
+            // reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}));
+            throw (new IllegalStateException("Input Fields are not yet implemented"));
          }
 
          return (reportMetaData);

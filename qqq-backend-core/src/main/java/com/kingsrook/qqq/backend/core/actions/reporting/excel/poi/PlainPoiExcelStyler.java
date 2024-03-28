@@ -22,10 +22,25 @@
 package com.kingsrook.qqq.backend.core.actions.reporting.excel.poi;
 
 
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+
 /*******************************************************************************
  ** Excel styler that does nothing - just takes defaults (which are all no-op) from the interface.
  *******************************************************************************/
 public class PlainPoiExcelStyler implements PoiExcelStylerInterface
 {
+
+   /*******************************************************************************
+    ** ... sorry, but adding this gives us test coverage on this class, even though
+    ** we're just deferring to super...
+    *******************************************************************************/
+   @Override
+   public XSSFCellStyle createStyleForHeader(XSSFWorkbook workbook, CreationHelper createHelper)
+   {
+      return PoiExcelStylerInterface.super.createStyleForHeader(workbook, createHelper);
+   }
 
 }

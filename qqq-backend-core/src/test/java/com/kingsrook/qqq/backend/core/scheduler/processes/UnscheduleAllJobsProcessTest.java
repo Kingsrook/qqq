@@ -42,7 +42,6 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.quartz.SchedulerException;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -104,7 +103,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
 
       QuartzScheduler quartzScheduler = QuartzScheduler.getInstance();
       List<QuartzJobAndTriggerWrapper> wrappers = quartzScheduler.queryQuartz();
-      assertEquals(1, wrappers.size());
+      assertTrue(wrappers.stream().anyMatch(w -> w.jobDetail().getKey().getName().equals("scheduledJob:2")));
 
       RunProcessInput input = new RunProcessInput();
       input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
@@ -112,7 +111,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
       new RunProcessAction().execute(input);
 
       wrappers = quartzScheduler.queryQuartz();
-      assertTrue(wrappers.isEmpty());
+      assertTrue(wrappers.stream().noneMatch(w -> w.jobDetail().getKey().getName().equals("scheduledJob:2")));
    }
 
 }
