@@ -14,7 +14,9 @@
 . ~/.bashrc
 . $QQQ_DEV_TOOLS_DIR/.env
 
-FILE=/tmp/cci.$$
+DIR=/tmp/xbar-circleci-latest
+mkdir -p $DIR
+FILE=$DIR/cci.$$
 JQ=/opt/homebrew/bin/jq
 curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v1.1/recent-builds?limit=10&shallow=true" > $FILE
 NOW=$(date +%s)
@@ -38,11 +40,11 @@ checkBuild()
    fi
    endDate=$($JQ ".[$i].stop_time" < $FILE | sed 's/"//g;s/null//;')
 
-   curl $avatarUrl > /tmp/avatar.jpg
-   sips -s dpiHeight 96 -s dpiWidth 96 /tmp/avatar.jpg -o /tmp/avatar-96dpi.jpg > /dev/null
-   sips -z 20 20 /tmp/avatar-96dpi.jpg -o /tmp/avatar-20.jpg > /dev/null
-   base64 -i /tmp/avatar-20.jpg > /tmp/avatar.b64
-   avatarB64=$(cat /tmp/avatar.b64)
+   curl $avatarUrl > $DIR/avatar.jpg
+   sips -s dpiHeight 96 -s dpiWidth 96 $DIR/avatar.jpg -o $DIR/avatar-96dpi.jpg > /dev/null
+   sips -z 20 20 $DIR/avatar-96dpi.jpg -o $DIR/avatar-20.jpg > /dev/null
+   base64 -i $DIR/avatar-20.jpg > $DIR/avatar.b64
+   avatarB64=$(cat $DIR/avatar.b64)
 
    shortRepo="$repo"
    case $repo in
@@ -124,5 +126,5 @@ echo
 
 echo -e "$details"
 
-cp $FILE /tmp/cci-latest.json
+cp $FILE $DIR/cci-latest.json
 rm $FILE
