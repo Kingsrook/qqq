@@ -39,21 +39,22 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public enum ReportFormat
 {
-   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
 
    /////////////////////////////////////////////////////////////////////////
    // if we need to fall back to Fastexcel, this was its version of this. //
    /////////////////////////////////////////////////////////////////////////
-   // XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelFastexcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+   // XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelFastexcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
 
-   JSON(null, null, JsonExportStreamer::new, "application/json"),
-   CSV(null, null, CsvExportStreamer::new, "text/csv"),
-   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null);
+   JSON(null, null, JsonExportStreamer::new, "application/json", "json"),
+   CSV(null, null, CsvExportStreamer::new, "text/csv", "csv"),
+   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null, null);
 
 
    private final Integer maxRows;
    private final Integer maxCols;
    private final String  mimeType;
+   private final String  extension;
 
    private final Supplier<? extends ExportStreamerInterface> streamerConstructor;
 
@@ -62,12 +63,13 @@ public enum ReportFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType)
+   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType, String extension)
    {
       this.maxRows = maxRows;
       this.maxCols = maxCols;
       this.mimeType = mimeType;
       this.streamerConstructor = streamerConstructor;
+      this.extension = extension;
    }
 
 
@@ -133,5 +135,16 @@ public enum ReportFormat
    public ExportStreamerInterface newReportStreamer()
    {
       return (streamerConstructor.get());
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for extension
+    **
+    *******************************************************************************/
+   public String getExtension()
+   {
+      return extension;
    }
 }

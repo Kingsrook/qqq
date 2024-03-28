@@ -24,8 +24,11 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
@@ -45,6 +48,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
    public static final String NAME = "renderSavedReport";
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -62,7 +66,10 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
             .withCode(new QCodeReference(RenderSavedReportPreStep.class)))
          .addStep(new QFrontendStepMetaData()
             .withName("input")
-            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM)))
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
+            .withFormField(new QFieldMetaData("reportFormat", QFieldType.STRING)
+               .withPossibleValueSourceName(ReportFormatPossibleValueEnum.NAME)
+               .withIsRequired(true)))
          .addStep(new QBackendStepMetaData()
             .withName("execute")
             .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()

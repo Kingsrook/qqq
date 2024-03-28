@@ -32,6 +32,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -47,6 +48,9 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class RenderSavedReportExecuteStep implements BackendStep
 {
+   private static final QLogger LOG = QLogger.getLogger(RenderSavedReportExecuteStep.class);
+
+
 
    /*******************************************************************************
     **
@@ -56,8 +60,10 @@ public class RenderSavedReportExecuteStep implements BackendStep
    {
       try
       {
+         ReportFormat reportFormat = ReportFormat.fromString(runBackendStepInput.getValueString("reportFormat"));
+
          SavedReport savedReport = new SavedReport(runBackendStepInput.getRecords().get(0));
-         File tmpFile = File.createTempFile("SavedReport" + savedReport.getId(), ".xlsx", new File("/tmp/"));
+         File        tmpFile     = File.createTempFile("SavedReport" + savedReport.getId(), "." + reportFormat.getExtension(), new File("/tmp/"));
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
@@ -68,7 +74,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
             ReportInput reportInput = new ReportInput();
             reportInput.setReportMetaData(reportMetaData);
             reportInput.setReportDestination(new ReportDestination()
-               .withReportFormat(ReportFormat.XLSX) // todo - variable
+               .withReportFormat(reportFormat)
                .withReportOutputStream(reportOutputStream));
 
             Map<String, Serializable> values = runBackendStepInput.getValues();
@@ -78,12 +84,14 @@ public class RenderSavedReportExecuteStep implements BackendStep
          }
 
          String downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
-         runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + ".xlsx");
+         runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
          runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
       }
       catch(Exception e)
       {
          // todo - render error screen?
+
+         LOG.warn("Error rendering saved report", e);
       }
    }
 

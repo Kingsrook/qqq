@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
@@ -49,7 +50,8 @@ public class SavedReportsMetaDataProvider
    public void defineAll(QInstance instance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       instance.addTable(defineSavedReportTable(backendName, backendDetailEnricher));
-      instance.addPossibleValueSource(defineSavedReportPossibleValueSource());
+      instance.addPossibleValueSource(QPossibleValueSource.newForTable(SavedReport.TABLE_NAME));
+      instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ReportFormatPossibleValueEnum.NAME, ReportFormatPossibleValueEnum.values()));
       instance.addProcess(new RenderSavedReportMetaDataProducer().produce(instance));
    }
 
@@ -86,16 +88,6 @@ public class SavedReportsMetaDataProvider
       }
 
       return (table);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private QPossibleValueSource defineSavedReportPossibleValueSource()
-   {
-      return QPossibleValueSource.newForTable(SavedReport.TABLE_NAME);
    }
 
 }
