@@ -69,6 +69,7 @@ public class SavedViewsMetaDataProvider
       QTableMetaData table = new QTableMetaData()
          .withName(SavedView.TABLE_NAME)
          .withLabel("Saved View")
+         .withIcon(new QIcon().withName("table_view"))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withBackendName(backendName)
