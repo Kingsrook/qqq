@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,41 +19,76 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
-
-
-import org.dhatim.fastexcel.StyleSetter;
+package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
 
 
 /*******************************************************************************
- ** Interface for classes that know how to apply styles to an Excel stream being
- ** built by fastexcel.
+ ** a value (e.g., field name + function) used in a pivot table
  *******************************************************************************/
-public interface ExcelStylerInterface
+public class PivotTableValue
 {
+   private String             fieldName;
+   private PivotTableFunction function;
+
 
    /*******************************************************************************
-    **
+    ** Getter for fieldName
     *******************************************************************************/
-   default void styleTitleRow(StyleSetter titleRowStyle)
+   public String getFieldName()
    {
-
+      return (this.fieldName);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void styleHeaderRow(StyleSetter headerRowStyle)
-   {
 
+
+   /*******************************************************************************
+    ** Setter for fieldName
+    *******************************************************************************/
+   public void setFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void styleTotalsRow(StyleSetter totalsRowStyle)
-   {
 
+
+   /*******************************************************************************
+    ** Fluent setter for fieldName
+    *******************************************************************************/
+   public PivotTableValue withFieldName(String fieldName)
+   {
+      this.fieldName = fieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for function
+    *******************************************************************************/
+   public PivotTableFunction getFunction()
+   {
+      return (this.function);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for function
+    *******************************************************************************/
+   public void setFunction(PivotTableFunction function)
+   {
+      this.function = function;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for function
+    *******************************************************************************/
+   public PivotTableValue withFunction(PivotTableFunction function)
+   {
+      this.function = function;
+      return (this);
    }
 
 }

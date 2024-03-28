@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,53 +19,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
-
-
-import org.dhatim.fastexcel.BorderSide;
-import org.dhatim.fastexcel.BorderStyle;
-import org.dhatim.fastexcel.StyleSetter;
+package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
 
 
 /*******************************************************************************
- ** Version of excel styler that does bold headers and footers, with basic borders.
+ ** Functions that can be applied to Values in a pivot table.
  *******************************************************************************/
-public class BoldHeaderAndFooterExcelStyler implements ExcelStylerInterface
+public enum PivotTableFunction
 {
+   AVERAGE("Average"),
+   COUNT("Count Numbers (COUNTA)"),
+   COUNT_NUMS("Count Values (COUNT)"),
+   MAX("Max"),
+   MIN("Min"),
+   PRODUCT("Product"),
+   STD_DEV("StdDev"),
+   STD_DEVP("StdDevp"),
+   SUM("Sum"),
+   VAR("Var"),
+   VARP("Varp");
+
+
+   private final String label;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public void styleTitleRow(StyleSetter titleRowStyle)
+   PivotTableFunction(String label)
    {
-      titleRowStyle
-         .bold()
-         .fontSize(14)
-         .horizontalAlignment("center");
+      this.label = label;
    }
 
 
 
    /*******************************************************************************
+    ** Getter for label
     **
     *******************************************************************************/
-   @Override
-   public void styleHeaderRow(StyleSetter headerRowStyle)
+   public String getLabel()
    {
-      headerRowStyle
-         .bold()
-         .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN);
-   }
-
-
-
-   @Override
-   public void styleTotalsRow(StyleSetter totalsRowStyle)
-   {
-      totalsRowStyle
-         .bold()
-         .borderStyle(BorderSide.TOP, BorderStyle.THIN)
-         .borderStyle(BorderSide.BOTTOM, BorderStyle.DOUBLE);
+      return label;
    }
 }
