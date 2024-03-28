@@ -29,11 +29,51 @@ import java.util.List;
 /*******************************************************************************
  ** Full definition of a pivot table - its rows, columns, and values.
  *******************************************************************************/
-public class PivotTableDefinition
+public class PivotTableDefinition implements Cloneable
 {
    private List<PivotTableGroupBy> rows;
    private List<PivotTableGroupBy> columns;
    private List<PivotTableValue>   values;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   protected PivotTableDefinition clone() throws CloneNotSupportedException
+   {
+      PivotTableDefinition clone = (PivotTableDefinition) super.clone();
+
+      if(rows != null)
+      {
+         clone.rows = new ArrayList<>();
+         for(PivotTableGroupBy row : rows)
+         {
+            clone.rows.add(row.clone());
+         }
+      }
+
+      if(columns != null)
+      {
+         clone.columns = new ArrayList<>();
+         for(PivotTableGroupBy column : columns)
+         {
+            clone.columns.add(column.clone());
+         }
+      }
+
+      if(values != null)
+      {
+         clone.values = new ArrayList<>();
+         for(PivotTableValue value : values)
+         {
+            clone.values.add(value.clone());
+         }
+      }
+
+      return (clone);
+   }
 
 
 

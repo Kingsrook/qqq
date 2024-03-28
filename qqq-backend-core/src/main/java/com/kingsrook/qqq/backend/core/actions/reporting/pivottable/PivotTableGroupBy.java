@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
  ** Either a row or column grouping in a pivot table.  e.g., a field plus
  ** sorting details, plus showTotals boolean.
  *******************************************************************************/
-public class PivotTableGroupBy
+public class PivotTableGroupBy implements Cloneable
 {
    private String            fieldName;
    private PivotTableOrderBy orderBy;
@@ -123,6 +123,18 @@ public class PivotTableGroupBy
    {
       this.showTotals = showTotals;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public PivotTableGroupBy clone() throws CloneNotSupportedException
+   {
+      PivotTableGroupBy clone = (PivotTableGroupBy) super.clone();
+      return clone;
    }
 
 }

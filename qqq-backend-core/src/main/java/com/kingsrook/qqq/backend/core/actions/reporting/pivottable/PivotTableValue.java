@@ -25,10 +25,11 @@ package com.kingsrook.qqq.backend.core.actions.reporting.pivottable;
 /*******************************************************************************
  ** a value (e.g., field name + function) used in a pivot table
  *******************************************************************************/
-public class PivotTableValue
+public class PivotTableValue implements Cloneable
 {
    private String             fieldName;
    private PivotTableFunction function;
+
 
 
    /*******************************************************************************
@@ -89,6 +90,18 @@ public class PivotTableValue
    {
       this.function = function;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public PivotTableValue clone() throws CloneNotSupportedException
+   {
+      PivotTableValue clone = (PivotTableValue) super.clone();
+      return clone;
    }
 
 }

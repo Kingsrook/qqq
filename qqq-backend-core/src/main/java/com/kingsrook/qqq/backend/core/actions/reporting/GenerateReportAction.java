@@ -428,7 +428,7 @@ public class GenerateReportAction
             }
          }
 
-         for(String summaryField : CollectionUtils.nonNullList(view.getPivotFields()))
+         for(String summaryField : CollectionUtils.nonNullList(view.getSummaryFields()))
          {
             ///////////////////////////////////////////////////////////////////////////////
             // all pivotFields that are possible value sources are implicitly translated //
@@ -545,7 +545,7 @@ public class GenerateReportAction
       for(QRecord record : records)
       {
          SummaryKey key = new SummaryKey();
-         for(String summaryField : view.getPivotFields())
+         for(String summaryField : view.getSummaryFields())
          {
             Serializable summaryValue = record.getValue(summaryField);
             if(table.getField(summaryField).getPossibleValueSourceName() != null)
@@ -557,7 +557,7 @@ public class GenerateReportAction
             }
             key.add(summaryField, summaryValue);
 
-            if(view.getIncludePivotSubTotals() && key.getKeys().size() < view.getPivotFields().size())
+            if(view.getIncludeSummarySubTotals() && key.getKeys().size() < view.getSummaryFields().size())
             {
                /////////////////////////////////////////////////////////////////////////////////////////
                // be careful here, with these key objects, and their identity, being used as map keys //
@@ -694,10 +694,10 @@ public class GenerateReportAction
    private List<QFieldMetaData> getFields(QTableMetaData table, QReportView view)
    {
       List<QFieldMetaData> fields = new ArrayList<>();
-      for(String pivotField : view.getPivotFields())
+      for(String summaryField : view.getSummaryFields())
       {
-         QFieldMetaData field = table.getField(pivotField);
-         fields.add(new QFieldMetaData(pivotField, field.getType()).withLabel(field.getLabel())); // todo do we need the type?  if so need table as input here
+         QFieldMetaData field = table.getField(summaryField);
+         fields.add(new QFieldMetaData(summaryField, field.getType()).withLabel(field.getLabel())); // todo do we need the type?  if so need table as input here
       }
       for(QReportField column : view.getColumns())
       {
@@ -761,7 +761,7 @@ public class GenerateReportAction
          ///////////////////////////////////////////////////////////////////////////////
          // for summary subtotals, add the text "Total" to the last field in this key //
          ///////////////////////////////////////////////////////////////////////////////
-         if(summaryKey.getKeys().size() < view.getPivotFields().size())
+         if(summaryKey.getKeys().size() < view.getSummaryFields().size())
          {
             String fieldName = summaryKey.getKeys().get(summaryKey.getKeys().size() - 1).getA();
             summaryRow.setValue(fieldName, summaryRow.getValueString(fieldName) + " Total");
@@ -799,11 +799,11 @@ public class GenerateReportAction
       {
          totalRow = new QRecord();
 
-         for(String pivotField : view.getPivotFields())
+         for(String summaryField : view.getSummaryFields())
          {
             if(totalRow.getValues().isEmpty())
             {
-               totalRow.setValue(pivotField, "Totals");
+               totalRow.setValue(summaryField, "Totals");
             }
          }
 

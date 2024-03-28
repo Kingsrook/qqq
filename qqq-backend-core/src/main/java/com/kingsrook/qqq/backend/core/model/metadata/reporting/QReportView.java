@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.reporting.pivottable.PivotTableDefinition;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
@@ -40,17 +41,20 @@ public class QReportView implements Cloneable
    private ReportType   type;
    private String       titleFormat;
    private List<String> titleFields;
-   private List<String> pivotFields;
+   private List<String> summaryFields;
 
-   private boolean includeHeaderRow      = true;
-   private boolean includeTotalRow       = false;
-   private boolean includePivotSubTotals = false;
+   private boolean includeHeaderRow        = true;
+   private boolean includeTotalRow         = false;
+   private boolean includeSummarySubTotals = false;
 
    private List<QReportField>   columns;
    private List<QFilterOrderBy> orderByFields;
 
    private QCodeReference recordTransformStep;
    private QCodeReference viewCustomizer;
+
+   private String               pivotTableSourceViewName;
+   private PivotTableDefinition pivotTableDefinition;
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // Note:  This class is Cloneable - think about if new fields added here need deep-copied in the clone method! //
@@ -297,34 +301,34 @@ public class QReportView implements Cloneable
 
 
    /*******************************************************************************
-    ** Getter for pivotFields
+    ** Getter for summaryFields
     **
     *******************************************************************************/
-   public List<String> getPivotFields()
+   public List<String> getSummaryFields()
    {
-      return pivotFields;
+      return summaryFields;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for pivotFields
+    ** Setter for summaryFields
     **
     *******************************************************************************/
-   public void setPivotFields(List<String> pivotFields)
+   public void setSummaryFields(List<String> summaryFields)
    {
-      this.pivotFields = pivotFields;
+      this.summaryFields = summaryFields;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for pivotFields
+    ** Fluent setter for summaryFields
     **
     *******************************************************************************/
-   public QReportView withPivotFields(List<String> pivotFields)
+   public QReportView withSummaryFields(List<String> summaryFields)
    {
-      this.pivotFields = pivotFields;
+      this.summaryFields = summaryFields;
       return (this);
    }
 
@@ -399,34 +403,34 @@ public class QReportView implements Cloneable
 
 
    /*******************************************************************************
-    ** Getter for pivotSubTotals
+    ** Getter for summarySubTotals
     **
     *******************************************************************************/
-   public boolean getIncludePivotSubTotals()
+   public boolean getIncludeSummarySubTotals()
    {
-      return includePivotSubTotals;
+      return includeSummarySubTotals;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for pivotSubTotals
+    ** Setter for summarySubTotals
     **
     *******************************************************************************/
-   public void setIncludePivotSubTotals(boolean includePivotSubTotals)
+   public void setIncludeSummarySubTotals(boolean includeSummarySubTotals)
    {
-      this.includePivotSubTotals = includePivotSubTotals;
+      this.includeSummarySubTotals = includeSummarySubTotals;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for pivotSubTotals
+    ** Fluent setter for summarySubTotals
     **
     *******************************************************************************/
-   public QReportView withIncludePivotSubTotals(boolean pivotSubTotals)
+   public QReportView withIncludeSummarySubTotals(boolean summarySubTotals)
    {
-      this.includePivotSubTotals = pivotSubTotals;
+      this.includeSummarySubTotals = summarySubTotals;
       return (this);
    }
 
@@ -602,9 +606,9 @@ public class QReportView implements Cloneable
             clone.setTitleFields(new ArrayList<>(titleFields));
          }
 
-         if(pivotFields != null)
+         if(summaryFields != null)
          {
-            clone.setPivotFields(new ArrayList<>(pivotFields));
+            clone.setSummaryFields(new ArrayList<>(summaryFields));
          }
 
          if(columns != null)
@@ -624,4 +628,67 @@ public class QReportView implements Cloneable
          throw new AssertionError();
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for pivotTableSourceViewName
+    *******************************************************************************/
+   public String getPivotTableSourceViewName()
+   {
+      return (this.pivotTableSourceViewName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pivotTableSourceViewName
+    *******************************************************************************/
+   public void setPivotTableSourceViewName(String pivotTableSourceViewName)
+   {
+      this.pivotTableSourceViewName = pivotTableSourceViewName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pivotTableSourceViewName
+    *******************************************************************************/
+   public QReportView withPivotTableSourceViewName(String pivotTableSourceViewName)
+   {
+      this.pivotTableSourceViewName = pivotTableSourceViewName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pivotTableDefinition
+    *******************************************************************************/
+   public PivotTableDefinition getPivotTableDefinition()
+   {
+      return (this.pivotTableDefinition);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pivotTableDefinition
+    *******************************************************************************/
+   public void setPivotTableDefinition(PivotTableDefinition pivotTableDefinition)
+   {
+      this.pivotTableDefinition = pivotTableDefinition;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pivotTableDefinition
+    *******************************************************************************/
+   public QReportView withPivotTableDefinition(PivotTableDefinition pivotTableDefinition)
+   {
+      this.pivotTableDefinition = pivotTableDefinition;
+      return (this);
+   }
+
 }
