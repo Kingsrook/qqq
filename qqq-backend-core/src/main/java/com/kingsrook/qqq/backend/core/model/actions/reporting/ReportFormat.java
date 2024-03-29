@@ -39,22 +39,23 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public enum ReportFormat
 {
-   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", true),
 
    /////////////////////////////////////////////////////////////////////////
    // if we need to fall back to Fastexcel, this was its version of this. //
    /////////////////////////////////////////////////////////////////////////
    // XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelFastexcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
 
-   JSON(null, null, JsonExportStreamer::new, "application/json", "json"),
-   CSV(null, null, CsvExportStreamer::new, "text/csv", "csv"),
-   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null, null);
+   JSON(null, null, JsonExportStreamer::new, "application/json", "json", false),
+   CSV(null, null, CsvExportStreamer::new, "text/csv", "csv", false),
+   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null, null, false);
 
 
    private final Integer maxRows;
    private final Integer maxCols;
    private final String  mimeType;
    private final String  extension;
+   private final boolean isBinary;
 
    private final Supplier<? extends ExportStreamerInterface> streamerConstructor;
 
@@ -63,13 +64,14 @@ public enum ReportFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType, String extension)
+   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType, String extension, boolean isBinary)
    {
       this.maxRows = maxRows;
       this.maxCols = maxCols;
       this.mimeType = mimeType;
       this.streamerConstructor = streamerConstructor;
       this.extension = extension;
+      this.isBinary = isBinary;
    }
 
 
@@ -146,5 +148,16 @@ public enum ReportFormat
    public String getExtension()
    {
       return extension;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isBinary
+    **
+    *******************************************************************************/
+   public boolean getIsBinary()
+   {
+      return isBinary;
    }
 }
