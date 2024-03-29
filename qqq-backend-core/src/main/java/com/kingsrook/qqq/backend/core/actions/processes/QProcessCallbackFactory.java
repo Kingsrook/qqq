@@ -98,10 +98,20 @@ public class QProcessCallbackFactory
       Serializable primaryKeyValue = record.getValue(primaryKeyField);
       if(primaryKeyValue == null)
       {
-         throw (new QRuntimeException("Record did not have value in its priary key field [" + primaryKeyField + "]"));
+         throw (new QRuntimeException("Record did not have value in its primary key field [" + primaryKeyField + "]"));
       }
 
-      return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.EQUALS, primaryKeyValue))));
+      return (forPrimaryKey(primaryKeyField, primaryKeyValue));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forPrimaryKey(String fieldName, Serializable value)
+   {
+      return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, value))));
    }
 
 }
