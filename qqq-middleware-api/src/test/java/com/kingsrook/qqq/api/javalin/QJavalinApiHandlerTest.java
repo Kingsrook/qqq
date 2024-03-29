@@ -36,7 +36,6 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -51,6 +50,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
@@ -66,6 +67,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.api.TestUtils.insertPersonRecord;
+import static com.kingsrook.qqq.api.TestUtils.insertSavedReport;
 import static com.kingsrook.qqq.api.TestUtils.insertSimpsons;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -95,7 +97,7 @@ class QJavalinApiHandlerTest extends BaseTest
     **
     *******************************************************************************/
    @BeforeAll
-   static void beforeAll() throws QInstanceValidationException
+   static void beforeAll() throws Exception
    {
       QInstance qInstance = TestUtils.defineInstance();
 
@@ -1400,6 +1402,54 @@ class QJavalinApiHandlerTest extends BaseTest
       response = Unirest.get(BASE_URL + "/api/" + VERSION + "/person/getPersonInfo?age=43&partnerPersonId=1&heightInches=72&weightPounds=220&homeTown=Chester").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());
       JSONObject jsonObject = new JSONObject(response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetProcessRenderSavedReport() throws QException
+   {
+      insertSimpsons();
+      Integer reportId = insertSavedReport(new SavedReport()
+         .withLabel("Person Report")
+         .withTableName(TestUtils.TABLE_NAME_PERSON)
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()))
+         .withColumnsJson("""
+            {"columns":[
+               {"name": "id"},
+               {"name": "firstName"},
+               {"name": "lastName"}
+            ]}
+            """));
+
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/savedReport/renderSavedReport/" + reportId + "?reportFormat=CSV").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      assertThat(response.getHeaders().getFirst("content-type")).contains("csv");
+      assertEquals("""
+         "Id","First Name","Last Name"
+         "1","Homer","Simpson"
+         "2","Marge","Simpson"
+         "3","Bart","Simpson"
+         "4","Lisa","Simpson"
+         "5","Maggie","Simpson"
+         """, response.getBody());
+
+      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/savedReport/renderSavedReport/" + reportId + "?reportFormat=JSON").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      assertThat(response.getHeaders().getFirst("content-type")).contains("json");
+      JSONArray jsonArray = new JSONArray(response.getBody());
+      assertEquals(5, jsonArray.length());
+      assertThat(jsonArray.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("id", 1)
+         .hasFieldOrPropertyWithValue("firstName", "Homer")
+         .hasFieldOrPropertyWithValue("lastName", "Simpson");
+
+      response = Unirest.get(BASE_URL + "/api/" + VERSION + "/savedReport/renderSavedReport/" + reportId + "?reportFormat=XLSX").asString();
+      assertEquals(HttpStatus.OK_200, response.getStatus());
+      assertThat(response.getHeaders().getFirst("content-type")).contains("openxmlformats-officedocument.spreadsheetml");
    }
 
 

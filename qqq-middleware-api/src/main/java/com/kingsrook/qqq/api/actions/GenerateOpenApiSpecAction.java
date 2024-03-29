@@ -816,7 +816,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       openAPI.getPaths().put(basePath + processApiPath, path);
 
       ///////////////////////////////////////////////////////////////////////
-      // if the process can run async, then do the status checkin endpoitn //
+      // if the process can run async, then do the status checkin endpoint //
       ///////////////////////////////////////////////////////////////////////
       if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
       {
@@ -900,12 +900,27 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       String          apiName         = apiInstanceMetaData.getName();
       if(apiProcessInput != null)
       {
+         /////////////////
+         // path params //
+         /////////////////
+         ApiProcessInputFieldsContainer pathParams = apiProcessInput.getPathParams();
+         if(pathParams != null)
+         {
+            for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
+            {
+               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+            }
+         }
+
+         /////////////////////////
+         // query string params //
+         /////////////////////////
          ApiProcessInputFieldsContainer queryStringParams = apiProcessInput.getQueryStringParams();
          if(queryStringParams != null)
          {
             if(queryStringParams.getRecordIdsField() != null)
             {
-               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("query"));
+               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("path"));
             }
 
             for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
@@ -914,6 +929,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             }
          }
 
+         /////////////////////
+         // Body as content //
+         /////////////////////
          QFieldMetaData bodyField = apiProcessInput.getBodyField();
          if(bodyField != null)
          {
@@ -939,8 +957,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                content.withSchema(new Schema()
                   .withDescription(bodyDescription)
                   .withType("string")
-                  .withExample(exampleWithSingleValue.getValue())
-               );
+                  .withExample(exampleWithSingleValue.getValue()));
             }
 
             methodForProcess.withRequestBody(new RequestBody()
@@ -963,8 +980,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withIn("query")
             .withDescription("""
                Indicates if the job should be ran asynchronously.
-               If false, or not specified, job is ran synchronously, and returns with response status of 207 (Multi-Status) or 204 (No Content).
-               If true, request returns immediately with response status of 202 (Accepted).
+               If false or not specified, then the job is ran synchronously and returns with an appropriate response status when completed.
+               If true, then the request returns immediately with response status of 202 (Accepted), and a jobId in the response body,
+               which can then be sent to the corresponding .../status/{jobId} endpoint to follow-up on the status of the job.
                """)
             .withExamples(MapBuilder.of(
                "false", new ExampleWithSingleValue().withValue(false).withSummary("Run the job synchronously."),
@@ -988,6 +1006,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          responses.putAll(output.getSpecResponses(apiName));
       }
+
       if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
       {
          responses.put(HttpStatus.ACCEPTED.getCode(), new Response()
@@ -1046,16 +1065,28 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withDescription("Get the status for a previous asynchronous call to the process named " + processMetaData.getLabel())
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
-      ////////////////////////////////////////////////////////
-      // add the async input for optionally-async processes //
-      ////////////////////////////////////////////////////////
-      methodForProcess.setParameters(ListBuilder.of(new Parameter()
+      List<Parameter>                parameters      = new ArrayList<>();
+      ApiProcessInput                apiProcessInput = apiProcessMetaData.getInput();
+      ApiProcessInputFieldsContainer pathParams      = apiProcessInput.getPathParams();
+      if(pathParams != null)
+      {
+         for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
+         {
+            parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+         }
+      }
+
+      parameters.add(new Parameter()
          .withName("jobId")
          .withIn("path")
          .withRequired(true)
          .withDescription("Id of the job, as returned by the API call that started it.")
-         .withSchema(new Schema().withType("string").withFormat("uuid"))
-      ));
+         .withSchema(new Schema().withType("string").withFormat("uuid")));
+
+      ////////////////////////////////////////////////////////
+      // add the async input for optionally-async processes //
+      ////////////////////////////////////////////////////////
+      methodForProcess.setParameters(parameters);
 
       //////////////////////////////////
       // build all possible responses //
@@ -1126,7 +1157,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          if(apiFieldMetaData.getExample() != null)
          {
-            parameter.withExample(apiFieldMetaData.getExample());
+            parameter.withExamples(Map.of("example", apiFieldMetaData.getExample()));
          }
          else if(apiFieldMetaData.getExamples() != null)
          {

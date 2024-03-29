@@ -25,7 +25,6 @@ package com.kingsrook.qqq.api.javalin;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
-import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -61,7 +60,7 @@ class QJavalinApiHandlerPermissionsTest extends BaseTest
     **
     *******************************************************************************/
    @BeforeAll
-   static void beforeAll() throws QInstanceValidationException
+   static void beforeAll() throws Exception
    {
       QInstance qInstance = TestUtils.defineInstance();
 
