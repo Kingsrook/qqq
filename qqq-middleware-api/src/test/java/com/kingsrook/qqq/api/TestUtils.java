@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api;
 
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.api.implementations.savedreports.RenderSavedReportProcessApiMetaDataEnricher;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
@@ -45,6 +46,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -71,7 +73,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMeta
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
@@ -79,6 +84,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.Mem
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -112,7 +118,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QInstance defineInstance()
+   public static QInstance defineInstance() throws QException
    {
       QInstance qInstance = new QInstance();
 
@@ -132,6 +138,8 @@ public class TestUtils
       qInstance.addProcess(defineProcessTransformPeople());
 
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
+
+      addSavedReports(qInstance);
 
       qInstance.withSupplementalMetaData(new ApiInstanceMetaDataContainer()
          .withApiInstanceMetaData(new ApiInstanceMetaData()
@@ -157,6 +165,18 @@ public class TestUtils
       );
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void addSavedReports(QInstance qInstance) throws QException
+   {
+      qInstance.add(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(qInstance));
+      new SavedReportsMetaDataProvider().defineAll(qInstance, MEMORY_BACKEND_NAME, null);
+      RenderSavedReportProcessApiMetaDataEnricher.setupProcessForApi(qInstance.getProcess(RenderSavedReportMetaDataProducer.NAME), API_NAME, V2022_Q4);
    }
 
 
@@ -528,6 +548,19 @@ public class TestUtils
       }
       insertInput.setRecords(List.of(record));
       new InsertAction().execute(insertInput);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Integer insertSavedReport(SavedReport savedReport) throws QException
+   {
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(SavedReport.TABLE_NAME);
+      insertInput.setRecords(List.of(savedReport.toQRecord()));
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
+      return insertOutput.getRecords().get(0).getValueInteger("id");
    }
 
 
