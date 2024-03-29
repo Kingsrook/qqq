@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumns;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
@@ -1417,13 +1418,10 @@ class QJavalinApiHandlerTest extends BaseTest
          .withLabel("Person Report")
          .withTableName(TestUtils.TABLE_NAME_PERSON)
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()))
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "firstName"},
-               {"name": "lastName"}
-            ]}
-            """));
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("firstName")
+            .withColumn("lastName"))));
 
       HttpResponse<String> response = Unirest.get(BASE_URL + "/api/" + VERSION + "/savedReport/renderSavedReport/" + reportId + "?reportFormat=CSV").asString();
       assertEquals(HttpStatus.OK_200, response.getStatus());

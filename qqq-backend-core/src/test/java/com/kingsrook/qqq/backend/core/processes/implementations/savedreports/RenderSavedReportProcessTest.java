@@ -64,19 +64,24 @@ class RenderSavedReportProcessTest extends BaseTest
 
       String label = "Test Report";
 
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // do columns json as a string, rather than a toJson'ed ReportColumns object,           //
+      // to help verify that we don't choke on un-recognized properties (e.g., as QFMD sends) //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      String columnsJson = """
+         {"columns":[
+               {"name": "k"},
+               {"name": "id"},
+               {"name": "firstName", "isVisible": true},
+               {"name": "lastName", "pinned": "left"},
+               {"name": "createDate", "isVisible": false}
+         ]}
+         """;
+
       QRecord savedReport = new InsertAction().execute(new InsertInput(SavedReport.TABLE_NAME).withRecordEntity(new SavedReport()
          .withLabel(label)
          .withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withColumnsJson("""
-            {
-               "columns":
-               [
-                  {"name": "id"},
-                  {"name": "firstName"},
-                  {"name": "lastName"}
-               ]
-            }
-            """)
+         .withColumnsJson(columnsJson)
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()))
       )).getRecords().get(0);
 

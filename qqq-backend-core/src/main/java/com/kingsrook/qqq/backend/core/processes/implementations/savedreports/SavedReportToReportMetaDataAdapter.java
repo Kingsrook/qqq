@@ -25,9 +25,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -43,12 +42,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumn;
+import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumns;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -73,16 +75,15 @@ public class SavedReportToReportMetaDataAdapter
          QReportMetaData reportMetaData = new QReportMetaData();
          reportMetaData.setLabel(savedReport.getLabel());
 
-         ////////////////////////////
-         // set up the data-source //
-         ////////////////////////////
+         /////////////////////////////////////////////////////
+         // set up the data-source - e.g., table and filter //
+         /////////////////////////////////////////////////////
          QReportDataSource dataSource = new QReportDataSource();
          reportMetaData.setDataSources(List.of(dataSource));
          dataSource.setName("main");
 
          QTableMetaData table = qInstance.getTable(savedReport.getTableName());
          dataSource.setSourceTable(savedReport.getTableName());
-
          dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class));
 
          //////////////////////////
@@ -96,69 +97,41 @@ public class SavedReportToReportMetaDataAdapter
          view.setLabel(savedReport.getLabel()); // todo eh?
          view.setIncludeHeaderRow(true);
 
-         // don't need:
-         // view.setOrderByFields(); - only used for summary reports
-         // view.setTitleFormat(); - not using at this time
-         // view.setTitleFields(); - not using at this time
-         // view.setRecordTransformStep();
-         // view.setViewCustomizer();
-
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // columns in the saved-report look like a JSON object, w/ a key "columns", which is an array of objects //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-         Set<String> neededJoinTables = new HashSet<>();
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         // columns in the saved-report should look  like a serialized version of ReportColumns object //
+         // map them to a list of QReportField objects                                                 //
+         // also keep track of what joinTables we find that we need to select                          //
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         ReportColumns columnsObject = JsonUtils.toObject(savedReport.getColumnsJson(), ReportColumns.class, om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
 
          List<QReportField> reportColumns = new ArrayList<>();
          view.setColumns(reportColumns);
 
-         Map<String, Object>       columnsObject = JsonUtils.toObject(savedReport.getColumnsJson(), new TypeReference<>() {});
-         List<Map<String, Object>> columns       = (List<Map<String, Object>>) columnsObject.get("columns");
-         for(Map<String, Object> column : columns)
+         Set<String> neededJoinTables = new HashSet<>();
+
+         for(ReportColumn column : columnsObject.getColumns())
          {
-            if(column.containsKey("isVisible") && !"true".equals(ValueUtils.getValueAsString(column.get("isVisible"))))
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if isVisible is missing, we assume it to be true - so only if it isFalse do we skip the column //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(BooleanUtils.isFalse(column.getIsVisible()))
             {
                continue;
             }
 
-            QFieldMetaData field;
-            String         fieldName = ValueUtils.getValueAsString(column.get("name"));
-            if(fieldName.contains("."))
+            ////////////////////////////////////////////////////
+            // figure out the field being named by the column //
+            ////////////////////////////////////////////////////
+            String         fieldName = ValueUtils.getValueAsString(column.getName());
+            QFieldMetaData field     = getField(savedReport, fieldName, qInstance, neededJoinTables, table);
+            if(field == null)
             {
-               String joinTableName = fieldName.replaceAll("\\..*", "");
-               String joinFieldName = fieldName.replaceAll(".*\\.", "");
-
-               QTableMetaData joinTable = qInstance.getTable(joinTableName);
-               if(joinTable == null)
-               {
-                  LOG.warn("Saved Report has an unrecognized join table name", logPair("savedReportId", savedReport.getId()), logPair("joinTable", joinTable), logPair("fieldName", fieldName));
-                  continue;
-               }
-
-               neededJoinTables.add(joinTableName);
-
-               field = joinTable.getFields().get(joinFieldName);
-               if(field == null)
-               {
-                  LOG.warn("Saved Report has an unrecognized join field name", logPair("savedReportId", savedReport.getId()), logPair("fieldName", fieldName));
-                  continue;
-               }
-            }
-            else
-            {
-               field = table.getFields().get(fieldName);
-               if(field == null)
-               {
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // frontend may often pass __checked__ (or maybe other __ prefixes in the future - so - don't warn that. //
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  if(!fieldName.startsWith("__"))
-                  {
-                     LOG.warn("Saved Report has an unexpected unrecognized field name", logPair("savedReportId", savedReport.getId()), logPair("table", table.getName()), logPair("fieldName", fieldName));
-                  }
-                  continue;
-               }
+               continue;
             }
 
+            //////////////////////////////////////////////////
+            // make a QReportField based on the table field //
+            //////////////////////////////////////////////////
             QReportField reportField = new QReportField();
             reportColumns.add(reportField);
 
@@ -192,9 +165,8 @@ public class SavedReportToReportMetaDataAdapter
 
                   if(exposedJoin.getJoinPath().size() == 1)
                   {
-                     // this is similar logic that QFMD has
-
                      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // Note, this is similar logic (and comment) in QFMD ...                                                    //
                      // todo - what about a join with a longer path?  it would be nice to pass such joinNames through there too, //
                      // but what, that would actually be multiple queryJoins?  needs a fair amount of thought.                   //
                      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,7 +185,7 @@ public class SavedReportToReportMetaDataAdapter
          {
             QReportView pivotView = new QReportView();
             reportMetaData.getViews().add(pivotView);
-            pivotView.setName("pivot"); // does this appear?
+            pivotView.setName("pivot");
             pivotView.setType(ReportType.PIVOT);
             pivotView.setPivotTableSourceViewName(view.getName());
             pivotView.setPivotTableDefinition(JsonUtils.toObject(savedReport.getPivotTableJson(), PivotTableDefinition.class));
@@ -238,6 +210,53 @@ public class SavedReportToReportMetaDataAdapter
          LOG.warn("Error adapting savedReport to reportMetaData", e, logPair("savedReportId", savedReport.getId()));
          throw (new QException("Error adapting savedReport to reportMetaData", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QFieldMetaData getField(SavedReport savedReport, String fieldName, QInstance qInstance, Set<String> neededJoinTables, QTableMetaData table)
+   {
+      QFieldMetaData field;
+      if(fieldName.contains("."))
+      {
+         String joinTableName = fieldName.replaceAll("\\..*", "");
+         String joinFieldName = fieldName.replaceAll(".*\\.", "");
+
+         QTableMetaData joinTable = qInstance.getTable(joinTableName);
+         if(joinTable == null)
+         {
+            LOG.warn("Saved Report has an unrecognized join table name", logPair("savedReportId", savedReport.getId()), logPair("joinTable", joinTable), logPair("fieldName", fieldName));
+            return null;
+         }
+
+         neededJoinTables.add(joinTableName);
+
+         field = joinTable.getFields().get(joinFieldName);
+         if(field == null)
+         {
+            LOG.warn("Saved Report has an unrecognized join field name", logPair("savedReportId", savedReport.getId()), logPair("fieldName", fieldName));
+            return null;
+         }
+      }
+      else
+      {
+         field = table.getFields().get(fieldName);
+         if(field == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // frontend may often pass __checked__ (or maybe other __ prefixes in the future - so - don't warn that. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!fieldName.startsWith("__"))
+            {
+               LOG.warn("Saved Report has an unexpected unrecognized field name", logPair("savedReportId", savedReport.getId()), logPair("table", table.getName()), logPair("fieldName", fieldName));
+            }
+            return null;
+         }
+      }
+      return field;
    }
 
 }

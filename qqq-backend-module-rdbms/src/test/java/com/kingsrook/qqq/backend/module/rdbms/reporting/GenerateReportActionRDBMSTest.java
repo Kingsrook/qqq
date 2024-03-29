@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumns;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -244,12 +245,10 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       List<String> lines = runSavedReportForCSV(new SavedReport()
          .withTableName(TestUtils.TABLE_NAME_ORDER)
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "storeId"},
-               {"name": "orderInstructions.instructions"}
-            ]}""")
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("storeId")
+            .withColumn("orderInstructions.instructions")))
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
 
       assertEquals("""
@@ -261,6 +260,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    }
 
 
+
    /*******************************************************************************
     ** in here, by potentially ambiguous, we mean where there are possible joins
     ** between the order and orderInstructions tables.
@@ -270,12 +270,10 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       List<String> lines = runSavedReportForCSV(new SavedReport()
          .withTableName(TestUtils.TABLE_NAME_ORDER)
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "storeId"},
-               {"name": "orderInstructions.instructions"}
-            ]}""")
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("storeId")
+            .withColumn("orderInstructions.instructions")))
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
             .withOrderBy(new QFilterOrderBy("orderInstructions.id", false))
          )));
@@ -298,11 +296,9 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       List<String> lines = runSavedReportForCSV(new SavedReport()
          .withTableName(TestUtils.TABLE_NAME_ORDER)
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "storeId"}
-            ]}""")
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("storeId")))
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
             .withCriteria(new QFilterCriteria("orderInstructions.instructions", QCriteriaOperator.CONTAINS, "v3"))
          )));
@@ -325,12 +321,10 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       List<String> lines = runSavedReportForCSV(new SavedReport()
          .withTableName(TestUtils.TABLE_NAME_ORDER)
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "storeId"},
-               {"name": "item.description"}
-            ]}""")
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("storeId")
+            .withColumn("item.description")))
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
 
       assertEquals("""
@@ -352,11 +346,9 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       List<String> lines = runSavedReportForCSV(new SavedReport()
          .withTableName(TestUtils.TABLE_NAME_ORDER)
-         .withColumnsJson("""
-            {"columns":[
-               {"name": "id"},
-               {"name": "storeId"}
-            ]}""")
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("storeId")))
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()
             .withCriteria(new QFilterCriteria("item.description", QCriteriaOperator.CONTAINS, "Item 7"))
          )));
