@@ -52,8 +52,10 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
    {
       try
       {
-         S3BackendMetaData    backend              = (S3BackendMetaData) storageInput.getBackend();
-         AmazonS3             amazonS3             = buildAmazonS3ClientFromBackendMetaData(backend);
+         S3BackendMetaData backend = (S3BackendMetaData) storageInput.getBackend();
+         preAction(backend);
+
+         AmazonS3             amazonS3             = getS3Utils().getAmazonS3();
          String               fullPath             = getFullPath(storageInput);
          S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(amazonS3, backend.getBucketName(), fullPath);
          return (s3UploadOutputStream);
@@ -96,8 +98,10 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
    {
       try
       {
-         S3BackendMetaData   backend          = (S3BackendMetaData) storageInput.getBackend();
-         AmazonS3            amazonS3         = buildAmazonS3ClientFromBackendMetaData(backend);
+         S3BackendMetaData backend = (S3BackendMetaData) storageInput.getBackend();
+         preAction(backend);
+
+         AmazonS3            amazonS3         = getS3Utils().getAmazonS3();
          String              fullPath         = getFullPath(storageInput);
          GetObjectRequest    getObjectRequest = new GetObjectRequest(backend.getBucketName(), fullPath);
          S3Object            s3Object         = amazonS3.getObject(getObjectRequest);

@@ -52,9 +52,12 @@ public class FilesystemStorageAction extends AbstractFilesystemAction implements
       {
          String fullPath = getFullPath(storageInput);
          File file = new File(fullPath);
-         if(!file.getParentFile().mkdirs())
+         if(!file.getParentFile().exists())
          {
-            throw(new QException("Could not make directory required for storing file: " + fullPath));
+            if(!file.getParentFile().mkdirs())
+            {
+               throw (new QException("Could not make directory required for storing file: " + fullPath));
+            }
          }
 
          return (new FileOutputStream(fullPath));
