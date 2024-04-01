@@ -67,7 +67,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
-         QReportMetaData reportMetaData = new SavedReportToReportMetaDataAdapter().adapt(savedReport);
+         QReportMetaData reportMetaData = new SavedReportToReportMetaDataAdapter().adapt(savedReport, reportFormat);
 
          try(FileOutputStream reportOutputStream = new FileOutputStream(tmpFile))
          {
