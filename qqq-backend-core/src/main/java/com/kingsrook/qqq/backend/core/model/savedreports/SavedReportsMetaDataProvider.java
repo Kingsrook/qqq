@@ -127,7 +127,7 @@ public class SavedReportsMetaDataProvider
          .withFieldsFromEntity(SavedReport.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label")))
          .withSection(new QFieldSection("settings", new QIcon().withName("settings"), Tier.T2, List.of("tableName")))
-         .withSection(new QFieldSection("reportSetup", new QIcon().withName("table_chart"), Tier.T2).withWidgetName("reportSetupWidget"))
+         // todo - turn on when building UI .withSection(new QFieldSection("reportSetup", new QIcon().withName("table_chart"), Tier.T2).withWidgetName("reportSetupWidget"))
          .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("queryFilterJson", "columnsJson", "pivotTableJson")))
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
