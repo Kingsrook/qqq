@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
@@ -65,12 +67,15 @@ import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.Mem
 import com.kingsrook.qqq.backend.core.testutils.PersonQRecord;
 import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFPivotTable;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -111,7 +116,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1), "endDate", LocalDate.of(1980, Month.DECEMBER, 31)));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("pivot");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("summary");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(3, list.size());
@@ -172,7 +177,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1), "endDate", LocalDate.of(1980, Month.DECEMBER, 31)));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("pivot");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("summary");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(2, list.size());
@@ -206,7 +211,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.now(), "endDate", LocalDate.now()));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("pivot");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("summary");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
 
@@ -260,7 +265,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.now(), "endDate", LocalDate.now()));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("pivot");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("summary");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(6, list.size());
@@ -315,7 +320,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.now(), "endDate", LocalDate.now()));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("pivot");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("summary");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(2, list.size());
@@ -334,22 +339,18 @@ public class GenerateReportActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Test
-   void runToCsv() throws Exception
+   private String runToString(ReportFormat reportFormat, String reportName) throws Exception
    {
-      String name = "/tmp/report.csv";
+      String name = "/tmp/report." + reportFormat.getExtension();
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
-         QInstance qInstance = QContext.getQInstance();
-         qInstance.addReport(definePersonShoesSummaryReport(true));
-         insertPersonRecords(qInstance);
-
          ReportInput reportInput = new ReportInput();
-         reportInput.setReportName(REPORT_NAME);
-         reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.CSV).withReportOutputStream(fileOutputStream));
+         reportInput.setReportName(reportName);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(reportFormat).withReportOutputStream(fileOutputStream));
          reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
+         return (FileUtils.readFileToString(new File(name), StandardCharsets.UTF_8));
       }
    }
 
@@ -404,7 +405,6 @@ public class GenerateReportActionTest extends BaseTest
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
 
-         LocalMacDevUtils.mayOpenFiles = true;
          LocalMacDevUtils.openFile(name);
       }
    }
@@ -421,7 +421,7 @@ public class GenerateReportActionTest extends BaseTest
       String       name   = "/tmp/report-fastexcel.xlsx";
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
-         QInstance qInstance = QContext.getQInstance();
+         QInstance       qInstance      = QContext.getQInstance();
          QReportMetaData reportMetaData = defineTableOnlyReport();
          reportMetaData.getViews().get(0).withTitleFormat("My Title");
 
@@ -445,7 +445,6 @@ public class GenerateReportActionTest extends BaseTest
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
 
-         LocalMacDevUtils.mayOpenFiles = true;
          LocalMacDevUtils.openFile(name);
       }
    }
@@ -499,8 +498,7 @@ public class GenerateReportActionTest extends BaseTest
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
 
-         // LocalMacDevUtils.mayOpenFiles = true;
-         LocalMacDevUtils.openFile(name);
+         LocalMacDevUtils.openFile(name, "/Applications/Numbers.app");
       }
 
       ///////////////////////////////////////////////////////////
@@ -509,13 +507,13 @@ public class GenerateReportActionTest extends BaseTest
       FileInputStream file     = new FileInputStream(name);
       XSSFWorkbook    workbook = new XSSFWorkbook(file);
 
-      XSSFSheet sheet = workbook.getSheetAt(1);
-      List<XSSFPivotTable> pivotTables = sheet.getPivotTables();
-      XSSFPivotTable xssfPivotTable = pivotTables.get(0);
-      List<Integer> rowLabelColumns = xssfPivotTable.getRowLabelColumns();
-      List<Integer> colLabelColumns = xssfPivotTable.getColLabelColumns();
-      Sheet dataSheet = xssfPivotTable.getDataSheet();
-      Sheet parentSheet = xssfPivotTable.getParentSheet();
+      XSSFSheet            sheet           = workbook.getSheetAt(1);
+      List<XSSFPivotTable> pivotTables     = sheet.getPivotTables();
+      XSSFPivotTable       xssfPivotTable  = pivotTables.get(0);
+      List<Integer>        rowLabelColumns = xssfPivotTable.getRowLabelColumns();
+      List<Integer>        colLabelColumns = xssfPivotTable.getColLabelColumns();
+      Sheet                dataSheet       = xssfPivotTable.getDataSheet();
+      Sheet                parentSheet     = xssfPivotTable.getParentSheet();
       System.out.println();
 
       Map<Integer, List<Object>> data = new HashMap<>();
@@ -598,8 +596,8 @@ public class GenerateReportActionTest extends BaseTest
          ))
          .withViews(List.of(
             new QReportView()
-               .withName("pivot")
-               .withLabel("pivot")
+               .withName("summary")
+               .withLabel("summary")
                .withDataSourceName("persons")
                .withType(ReportType.SUMMARY)
                .withSummaryFields(List.of("lastName"))
@@ -641,7 +639,7 @@ public class GenerateReportActionTest extends BaseTest
       insertPersonRecords(qInstance);
       runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1)));
 
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("table1");
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("Table 1");
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(5, list.size());
@@ -670,7 +668,7 @@ public class GenerateReportActionTest extends BaseTest
          .withViews(List.of(
             new QReportView()
                .withName("table1")
-               .withLabel("table1")
+               .withLabel("Table 1")
                .withDataSourceName("persons")
                .withType(ReportType.TABLE)
                .withColumns(List.of(
@@ -704,13 +702,15 @@ public class GenerateReportActionTest extends BaseTest
 
             new QReportView()
                .withName("table1")
-               .withLabel("table1")
+               .withLabel("Table 1")
                .withDataSourceName("persons")
                .withType(ReportType.TABLE)
                .withColumns(List.of(
                   new QReportField().withName("id"),
                   new QReportField().withName("firstName"),
-                  new QReportField().withName("lastName"))),
+                  new QReportField().withName("lastName"),
+                  new QReportField().withName("homeStateId")
+               )),
 
             new QReportView()
                .withName("pivotTable1")
@@ -719,8 +719,8 @@ public class GenerateReportActionTest extends BaseTest
                .withType(ReportType.PIVOT)
                .withPivotTableSourceViewName("table1")
                .withPivotTableDefinition(new PivotTableDefinition()
-                  .withRow(new PivotTableGroupBy().withFieldName("firstName"))
-                  .withRow(new PivotTableGroupBy().withFieldName("lastName"))
+                  .withRow(new PivotTableGroupBy().withFieldName("homeStateId"))
+                  // .withRow(new PivotTableGroupBy().withFieldName("lastName"))
                   // .withColumn(new PivotTableGroupBy().withFieldName("firstName"))
                   .withValue(new PivotTableValue().withFunction(PivotTableFunction.COUNT).withFieldName("id")))
          ));
@@ -737,6 +737,180 @@ public class GenerateReportActionTest extends BaseTest
    void testTwoTableViewsOneDataSourceReport() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
+      defineTwoViewsOneDataSourceReport(qInstance);
+
+      insertPersonRecords(qInstance);
+      runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1)));
+
+      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("Table 1");
+      Iterator<Map<String, String>> iterator = list.iterator();
+      Map<String, String>           row      = iterator.next();
+      assertEquals(5, list.size());
+      assertThat(row).containsOnlyKeys("Id", "First Name", "Last Name");
+
+      list = ListOfMapsExportStreamer.getList("Table 2");
+      iterator = list.iterator();
+      row = iterator.next();
+      assertEquals(5, list.size());
+      assertThat(row).containsOnlyKeys("Birth Date");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOneTableViewsOneDataSourceJsonReport() throws Exception
+   {
+      QInstance       qInstance = QContext.getQInstance();
+      QReportMetaData report    = defineTableOnlyReport();
+      qInstance.addReport(report);
+
+      insertPersonRecords(qInstance);
+      String json = runToString(ReportFormat.JSON, report.getName());
+      // System.out.println(json);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // for a one-view report, we should just have an array of the report's records //
+      /////////////////////////////////////////////////////////////////////////////////
+      JSONArray jsonArray = new JSONArray(json);
+      assertEquals(6, jsonArray.length());
+      assertThat(jsonArray.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("id", 1)
+         .hasFieldOrPropertyWithValue("firstName", "Darin")
+         .hasFieldOrPropertyWithValue("lastName", "Jonson");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTwoTableViewsOneDataSourceJsonReport() throws Exception
+   {
+      QInstance       qInstance = QContext.getQInstance();
+      QReportMetaData report    = defineTwoViewsOneDataSourceReport(qInstance);
+
+      insertPersonRecords(qInstance);
+      String json = runToString(ReportFormat.JSON, report.getName());
+      // System.out.println(json);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // for a multi-view report, we should have an array with the views as elements //
+      /////////////////////////////////////////////////////////////////////////////////
+      JSONArray jsonArray = new JSONArray(json);
+      assertEquals(2, jsonArray.length());
+
+      JSONObject firstView = jsonArray.getJSONObject(0);
+      assertEquals("Table 1", firstView.getString("name"));
+      JSONArray firstViewData = firstView.getJSONArray("data");
+      assertEquals(6, firstViewData.length());
+      assertThat(firstViewData.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("id", 1)
+         .hasFieldOrPropertyWithValue("firstName", "Darin")
+         .hasFieldOrPropertyWithValue("lastName", "Jonson");
+
+      JSONObject secondView = jsonArray.getJSONObject(1);
+      assertEquals("Table 2", secondView.getString("name"));
+      JSONArray secondViewData = secondView.getJSONArray("data");
+      assertEquals(6, secondViewData.length());
+      assertThat(secondViewData.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("birthDate", "1980-01-31");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableViewsAndSummaryViewJsonReport() throws Exception
+   {
+      QInstance       qInstance = QContext.getQInstance();
+      QReportMetaData report    = defineSimplePersonTableAndSummaryByFirstNameReport();
+      qInstance.addReport(report);
+
+      insertPersonRecords(qInstance);
+      String json = runToString(ReportFormat.JSON, report.getName());
+      System.out.println(json);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // for a multi-view report, we should have an array with the views as elements //
+      /////////////////////////////////////////////////////////////////////////////////
+      JSONArray jsonArray = new JSONArray(json);
+      assertEquals(2, jsonArray.length());
+
+      JSONObject firstView = jsonArray.getJSONObject(0);
+      assertEquals("Table 1", firstView.getString("name"));
+      JSONArray firstViewData = firstView.getJSONArray("data");
+      assertEquals(6, firstViewData.length());
+      assertThat(firstViewData.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("id", 1)
+         .hasFieldOrPropertyWithValue("firstName", "Darin")
+         .hasFieldOrPropertyWithValue("lastName", "Jonson");
+
+      JSONObject secondView = jsonArray.getJSONObject(1);
+      assertEquals("Summary", secondView.getString("name"));
+      JSONArray secondViewData = secondView.getJSONArray("data");
+      assertEquals(4, secondViewData.length());
+      assertThat(secondViewData.getJSONObject(0).toMap())
+         .hasFieldOrPropertyWithValue("firstName", "Darin")
+         .hasFieldOrPropertyWithValue("personCount", 3);
+      assertThat(secondViewData.getJSONObject(3).toMap())
+         .hasFieldOrPropertyWithValue("firstName", "Totals")
+         .hasFieldOrPropertyWithValue("personCount", 6);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QReportMetaData defineSimplePersonTableAndSummaryByFirstNameReport()
+   {
+      return new QReportMetaData()
+         .withName(REPORT_NAME)
+         .withDataSources(List.of(
+            new QReportDataSource()
+               .withName("persons")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withQueryFilter(new QQueryFilter())
+         ))
+         .withViews(List.of(
+            new QReportView()
+               .withName("table1")
+               .withLabel("Table 1")
+               .withDataSourceName("persons")
+               .withType(ReportType.TABLE)
+               .withColumns(List.of(
+                  new QReportField().withName("id"),
+                  new QReportField().withName("firstName"),
+                  new QReportField().withName("lastName"),
+                  new QReportField().withName("homeStateId")
+               )),
+            new QReportView()
+               .withName("summary")
+               .withLabel("Summary")
+               .withDataSourceName("persons")
+               .withType(ReportType.SUMMARY)
+               .withSummaryFields(List.of("firstName"))
+               .withIncludeTotalRow(true)
+               .withOrderByFields(List.of(new QFilterOrderBy("personCount", false)))
+               .withColumns(List.of(
+                  new QReportField().withName("personCount").withLabel("Person Count").withFormula("${pivot.count.id}").withDisplayFormat(DisplayFormat.COMMAS)
+               ))
+         ));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QReportMetaData defineTwoViewsOneDataSourceReport(QInstance qInstance)
+   {
       QReportMetaData report = new QReportMetaData()
          .withName(REPORT_NAME)
          .withDataSources(List.of(
@@ -753,7 +927,7 @@ public class GenerateReportActionTest extends BaseTest
          .withViews(List.of(
             new QReportView()
                .withName("table1")
-               .withLabel("table1")
+               .withLabel("Table 1")
                .withDataSourceName("persons")
                .withType(ReportType.TABLE)
                .withColumns(List.of(
@@ -763,7 +937,7 @@ public class GenerateReportActionTest extends BaseTest
                )),
             new QReportView()
                .withName("table2")
-               .withLabel("table2")
+               .withLabel("Table 2")
                .withDataSourceName("persons")
                .withType(ReportType.TABLE)
                .withColumns(List.of(
@@ -772,21 +946,7 @@ public class GenerateReportActionTest extends BaseTest
          ));
 
       qInstance.addReport(report);
-
-      insertPersonRecords(qInstance);
-      runReport(qInstance, Map.of("startDate", LocalDate.of(1980, Month.JANUARY, 1)));
-
-      List<Map<String, String>>     list     = ListOfMapsExportStreamer.getList("table1");
-      Iterator<Map<String, String>> iterator = list.iterator();
-      Map<String, String>           row      = iterator.next();
-      assertEquals(5, list.size());
-      assertThat(row).containsOnlyKeys("Id", "First Name", "Last Name");
-
-      list = ListOfMapsExportStreamer.getList("table2");
-      iterator = list.iterator();
-      row = iterator.next();
-      assertEquals(5, list.size());
-      assertThat(row).containsOnlyKeys("Birth Date");
+      return (report);
    }
 
 
