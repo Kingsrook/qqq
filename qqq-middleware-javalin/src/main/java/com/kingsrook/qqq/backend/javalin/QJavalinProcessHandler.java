@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
@@ -67,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -285,12 +287,24 @@ public class QJavalinProcessHandler
          // todo context.contentType(reportFormat.getMimeType());
          context.header("Content-Disposition", "filename=" + context.pathParam("file"));
 
-         String filePath = context.queryParam("filePath");
-         if(filePath == null)
+         String filePath         = context.queryParam("filePath");
+         String storageTableName = context.queryParam("storageTableName");
+         String reference        = context.queryParam("storageReference");
+
+         if(filePath != null)
          {
-            throw (new QBadRequestException("A filePath was not provided."));
+            context.result(new FileInputStream(filePath));
          }
-         context.result(new FileInputStream(filePath));
+         else if(storageTableName != null && reference != null)
+         {
+            InputStream inputStream = new StorageAction().getInputStream(new StorageInput(storageTableName).withReference(reference));
+            context.result(inputStream);
+         }
+         else
+         {
+            throw (new QBadRequestException("Missing query parameters to identify file to download"));
+         }
+
       }
       catch(Exception e)
       {
