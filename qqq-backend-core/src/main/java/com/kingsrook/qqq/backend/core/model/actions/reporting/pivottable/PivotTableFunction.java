@@ -28,8 +28,8 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 public enum PivotTableFunction
 {
    AVERAGE("Average"),
-   COUNT("Count Numbers (COUNTA)"),
-   COUNT_NUMS("Count Values (COUNT)"),
+   COUNT("Count Values (COUNTA)"),
+   COUNT_NUMS("Count Numbers (COUNT)"),
    MAX("Max"),
    MIN("Min"),
    PRODUCT("Product"),
