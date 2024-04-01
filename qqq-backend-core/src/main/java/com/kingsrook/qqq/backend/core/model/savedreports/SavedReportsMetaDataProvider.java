@@ -24,14 +24,9 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 
 import java.util.List;
 import java.util.function.Consumer;
-import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -72,7 +67,7 @@ public class SavedReportsMetaDataProvider
          .findFirst()
          .ifPresent(f -> f.setDefaultValue(REPORT_STORAGE_TABLE_NAME));
 
-      instance.addWidget(defineReportSetupWidget());
+      // todo - when we build the UI instance.addWidget(defineReportSetupWidget());
    }
 
 
@@ -102,6 +97,7 @@ public class SavedReportsMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
+   /* todo - when we build the UI
    private QWidgetMetaDataInterface defineReportSetupWidget()
    {
       return new QWidgetMetaData()
@@ -111,6 +107,7 @@ public class SavedReportsMetaDataProvider
          .withType(WidgetType.REPORT_SETUP.getType())
          .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
    }
+   */
 
 
 
