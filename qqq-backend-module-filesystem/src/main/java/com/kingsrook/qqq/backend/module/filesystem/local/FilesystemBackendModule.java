@@ -26,6 +26,7 @@ import java.io.File;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QStorageInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -39,6 +40,7 @@ import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemCount
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemDeleteAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemInsertAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
+import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemStorageAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemUpdateAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -152,4 +154,14 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
       return (new FilesystemDeleteAction());
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QStorageInterface getStorageInterface()
+   {
+      return (new FilesystemStorageAction());
+   }
 }
