@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,7 +75,9 @@ import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.InstantAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.LocalDateAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.LongAggregates;
 
 
@@ -103,11 +107,11 @@ public class GenerateReportAction
    // Aggregates: (count:47;sum:10,000;max:2,000;min:15)                                                      //
    // salesSummaryReport > [(state:MO),(city:St.Louis)] > salePrice  > (count:47;sum:10,000;max:2,000;min:15) //
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> summaryAggregates  = new HashMap<>();
-   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> varianceAggregates = new HashMap<>();
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> summaryAggregates  = new HashMap<>();
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> varianceAggregates = new HashMap<>();
 
-   Map<String, AggregatesInterface<?>> totalAggregates         = new HashMap<>();
-   Map<String, AggregatesInterface<?>> varianceTotalAggregates = new HashMap<>();
+   Map<String, AggregatesInterface<?, ?>> totalAggregates         = new HashMap<>();
+   Map<String, AggregatesInterface<?, ?>> varianceTotalAggregates = new HashMap<>();
 
    private ExportStreamerInterface reportStreamer;
    private List<QReportDataSource> dataSources;
@@ -546,9 +550,9 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordsToSummaryAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> aggregatesMap)
+   private void addRecordsToSummaryAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> aggregatesMap)
    {
-      Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
+      Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
 
       for(QRecord record : records)
       {
@@ -584,9 +588,9 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates, SummaryKey key)
+   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates, SummaryKey key)
    {
-      Map<String, AggregatesInterface<?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
+      Map<String, AggregatesInterface<?, ?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
       addRecordToAggregatesMap(table, record, keyAggregates);
    }
 
@@ -595,29 +599,45 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?>> aggregatesMap)
+   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?, ?>> aggregatesMap)
    {
       for(QFieldMetaData field : table.getFields().values())
       {
+         if(StringUtils.hasContent(field.getPossibleValueSourceName()))
+         {
+            continue;
+         }
+
          if(field.getType().equals(QFieldType.INTEGER))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<Integer> fieldAggregates = (AggregatesInterface<Integer>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new IntegerAggregates());
+            AggregatesInterface<Integer, ?> fieldAggregates = (AggregatesInterface<Integer, ?>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new IntegerAggregates());
             fieldAggregates.add(record.getValueInteger(field.getName()));
          }
          else if(field.getType().equals(QFieldType.LONG))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<Long> fieldAggregates = (AggregatesInterface<Long>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new LongAggregates());
+            AggregatesInterface<Long, ?> fieldAggregates = (AggregatesInterface<Long, ?>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new LongAggregates());
             fieldAggregates.add(record.getValueLong(field.getName()));
          }
          else if(field.getType().equals(QFieldType.DECIMAL))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<BigDecimal> fieldAggregates = (AggregatesInterface<BigDecimal>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new BigDecimalAggregates());
+            AggregatesInterface<BigDecimal, ?> fieldAggregates = (AggregatesInterface<BigDecimal, ?>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new BigDecimalAggregates());
             fieldAggregates.add(record.getValueBigDecimal(field.getName()));
          }
-         // todo - more types (dates, at least?)
+         else if(field.getType().equals(QFieldType.DATE_TIME))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<Instant, ?> fieldAggregates = (AggregatesInterface<Instant, ?>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new InstantAggregates());
+            fieldAggregates.add(record.getValueInstant(field.getName()));
+         }
+         else if(field.getType().equals(QFieldType.DATE))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<LocalDate, ?> fieldAggregates = (AggregatesInterface<LocalDate, ?>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new LocalDateAggregates());
+            fieldAggregates.add(record.getValueLocalDate(field.getName()));
+         }
       }
    }
 
@@ -735,11 +755,11 @@ public class GenerateReportAction
       // create summary rows //
       /////////////////////////
       List<QRecord> summaryRows = new ArrayList<>();
-      for(Map.Entry<SummaryKey, Map<String, AggregatesInterface<?>>> entry : summaryAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
+      for(Map.Entry<SummaryKey, Map<String, AggregatesInterface<?, ?>>> entry : summaryAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
       {
-         SummaryKey                          summaryKey      = entry.getKey();
-         Map<String, AggregatesInterface<?>> fieldAggregates = entry.getValue();
-         Map<String, Serializable>           summaryValues   = getSummaryValuesForInterpreter(fieldAggregates);
+         SummaryKey                             summaryKey      = entry.getKey();
+         Map<String, AggregatesInterface<?, ?>> fieldAggregates = entry.getValue();
+         Map<String, Serializable>              summaryValues   = getSummaryValuesForInterpreter(fieldAggregates);
          variableInterpreter.addValueMap("pivot", summaryValues);
          variableInterpreter.addValueMap("summary", summaryValues);
 
@@ -748,9 +768,9 @@ public class GenerateReportAction
 
          if(!varianceAggregates.isEmpty())
          {
-            Map<SummaryKey, Map<String, AggregatesInterface<?>>> varianceMap    = varianceAggregates.getOrDefault(view.getName(), Collections.emptyMap());
-            Map<String, AggregatesInterface<?>>                  varianceSubMap = varianceMap.getOrDefault(summaryKey, Collections.emptyMap());
-            Map<String, Serializable>                            varianceValues = getSummaryValuesForInterpreter(varianceSubMap);
+            Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> varianceMap    = varianceAggregates.getOrDefault(view.getName(), Collections.emptyMap());
+            Map<String, AggregatesInterface<?, ?>>                  varianceSubMap = varianceMap.getOrDefault(summaryKey, Collections.emptyMap());
+            Map<String, Serializable>                               varianceValues = getSummaryValuesForInterpreter(varianceSubMap);
             variableInterpreter.addValueMap("variancePivot", varianceValues);
             variableInterpreter.addValueMap("variance", varianceValues);
          }
@@ -931,18 +951,24 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, Serializable> getSummaryValuesForInterpreter(Map<String, AggregatesInterface<?>> fieldAggregates)
+   private Map<String, Serializable> getSummaryValuesForInterpreter(Map<String, AggregatesInterface<?, ?>> fieldAggregates)
    {
       Map<String, Serializable> summaryValuesForInterpreter = new HashMap<>();
-      for(Map.Entry<String, AggregatesInterface<?>> subEntry : fieldAggregates.entrySet())
+      for(Map.Entry<String, AggregatesInterface<?, ?>> subEntry : fieldAggregates.entrySet())
       {
-         String                 fieldName  = subEntry.getKey();
-         AggregatesInterface<?> aggregates = subEntry.getValue();
+         String                    fieldName  = subEntry.getKey();
+         AggregatesInterface<?, ?> aggregates = subEntry.getValue();
          summaryValuesForInterpreter.put("sum." + fieldName, aggregates.getSum());
          summaryValuesForInterpreter.put("count." + fieldName, aggregates.getCount());
+         summaryValuesForInterpreter.put("count_nums." + fieldName, aggregates.getCount());
          summaryValuesForInterpreter.put("min." + fieldName, aggregates.getMin());
          summaryValuesForInterpreter.put("max." + fieldName, aggregates.getMax());
          summaryValuesForInterpreter.put("average." + fieldName, aggregates.getAverage());
+         summaryValuesForInterpreter.put("product." + fieldName, aggregates.getProduct());
+         summaryValuesForInterpreter.put("var." + fieldName, aggregates.getVariance());
+         summaryValuesForInterpreter.put("varp." + fieldName, aggregates.getVarP());
+         summaryValuesForInterpreter.put("std_dev." + fieldName, aggregates.getStandardDeviation());
+         summaryValuesForInterpreter.put("std_devp." + fieldName, aggregates.getStdDevP());
       }
       return summaryValuesForInterpreter;
    }

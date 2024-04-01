@@ -22,112 +22,48 @@
 package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
 
 
 /*******************************************************************************
- ** Integer version of data aggregator
+ ** Instant version of data aggregator
  *******************************************************************************/
-public class IntegerAggregates implements AggregatesInterface<Integer, BigDecimal>
+public class InstantAggregates implements AggregatesInterface<Instant, Instant>
 {
-   private int        count = 0;
+   private int     count = 0;
    // private Integer countDistinct;
-   private Integer    sum;
-   private Integer    min;
-   private Integer    max;
-   private BigDecimal product;
 
-   private VarianceCalculator varianceCalculator = new VarianceCalculator();
+   private BigInteger sumMillis = BigInteger.ZERO;
+
+   private Instant min;
+   private Instant max;
 
 
 
    /*******************************************************************************
     ** Add a new value to this aggregate set
     *******************************************************************************/
-   public void add(Integer input)
+   public void add(Instant input)
    {
       if(input == null)
       {
          return;
       }
 
-      BigDecimal inputBD = new BigDecimal(input);
-
       count++;
 
-      if(sum == null)
-      {
-         sum = input;
-      }
-      else
-      {
-         sum = sum + input;
-      }
+      sumMillis = sumMillis.add(new BigInteger(String.valueOf(input.toEpochMilli())));
 
-      if(product == null)
-      {
-         product = inputBD;
-      }
-      else
-      {
-         product = product.multiply(inputBD);
-      }
-
-      if(min == null || input < min)
+      if(min == null || input.compareTo(min) < 0)
       {
          min = input;
       }
 
-      if(max == null || input > max)
+      if(max == null || input.compareTo(max) > 0)
       {
          max = input;
       }
-
-      varianceCalculator.updateVariance(inputBD);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public BigDecimal getVariance()
-   {
-      return (varianceCalculator.getVariance());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public BigDecimal getVarP()
-   {
-      return (varianceCalculator.getVarP());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public BigDecimal getStandardDeviation()
-   {
-      return (varianceCalculator.getStandardDeviation());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public BigDecimal getStdDevP()
-   {
-      return (varianceCalculator.getStdDevP());
    }
 
 
@@ -147,9 +83,12 @@ public class IntegerAggregates implements AggregatesInterface<Integer, BigDecima
     **
     *******************************************************************************/
    @Override
-   public Integer getSum()
+   public Instant getSum()
    {
-      return (sum);
+      //////////////////////////////////////////
+      // sum of date-times doesn't make sense //
+      //////////////////////////////////////////
+      return (null);
    }
 
 
@@ -158,7 +97,7 @@ public class IntegerAggregates implements AggregatesInterface<Integer, BigDecima
     **
     *******************************************************************************/
    @Override
-   public Integer getMin()
+   public Instant getMin()
    {
       return (min);
    }
@@ -169,7 +108,7 @@ public class IntegerAggregates implements AggregatesInterface<Integer, BigDecima
     **
     *******************************************************************************/
    @Override
-   public Integer getMax()
+   public Instant getMax()
    {
       return (max);
    }
@@ -177,31 +116,21 @@ public class IntegerAggregates implements AggregatesInterface<Integer, BigDecima
 
 
    /*******************************************************************************
-    ** Getter for product
     **
     *******************************************************************************/
    @Override
-   public BigDecimal getProduct()
-   {
-      return product;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public BigDecimal getAverage()
+   public Instant getAverage()
    {
       if(this.count > 0)
       {
-         return (BigDecimal.valueOf(this.sum.doubleValue() / (double) this.count));
+         BigInteger averageMillis = this.sumMillis.divide(new BigInteger(String.valueOf(count)));
+         if(averageMillis.compareTo(new BigInteger(String.valueOf(Long.MAX_VALUE))) < 0)
+         {
+            return (Instant.ofEpochMilli(averageMillis.longValue()));
+         }
       }
-      else
-      {
-         return (null);
-      }
+
+      return (null);
    }
 
 }

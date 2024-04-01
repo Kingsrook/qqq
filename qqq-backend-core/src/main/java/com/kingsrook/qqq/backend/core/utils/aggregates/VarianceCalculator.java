@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,93 +22,96 @@
 package com.kingsrook.qqq.backend.core.utils.aggregates;
 
 
-import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 
 /*******************************************************************************
- ** Classes that support doing data aggregations (e.g., count, sum, min, max, average).
- ** Sub-classes should supply the type parameter.
+ ** see https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
  **
- ** The AVG_T parameter describes the type used for the average getAverage method
- ** which, e.g, for date types, might be a date, vs. numbers, they'd probably be
- ** BigDecimal.
  *******************************************************************************/
-public interface AggregatesInterface<T extends Serializable, AVG_T extends Serializable>
+public class VarianceCalculator
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void add(T t);
+   private int        n;
+   private BigDecimal runningMean = BigDecimal.ZERO;
+   private BigDecimal m2          = BigDecimal.ZERO;
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   int getCount();
+   public static int scaleForVarianceCalculations = 4;
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   T getSum();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   T getMin();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   T getMax();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   AVG_T getAverage();
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default BigDecimal getProduct()
+   public void updateVariance(BigDecimal newInput)
    {
-      return (null);
+      n++;
+      BigDecimal delta = newInput.subtract(runningMean);
+      runningMean = runningMean.add(delta.divide(new BigDecimal(n), scaleForVarianceCalculations, RoundingMode.HALF_UP));
+      BigDecimal delta2 = newInput.subtract(runningMean);
+      m2 = m2.add(delta.multiply(delta2));
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   default BigDecimal getVariance()
+   public BigDecimal getVariance()
    {
-      return (null);
+      if(n < 2)
+      {
+         return (null);
+      }
+
+      return m2.divide(new BigDecimal(n - 1), scaleForVarianceCalculations, RoundingMode.HALF_UP);
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   default BigDecimal getVarP()
+   public BigDecimal getVarP()
    {
-      return (null);
+      if(n < 2)
+      {
+         return (null);
+      }
+
+      return m2.divide(new BigDecimal(n), scaleForVarianceCalculations, RoundingMode.HALF_UP);
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   default BigDecimal getStandardDeviation()
+   public BigDecimal getStandardDeviation()
    {
-      return (null);
+      BigDecimal variance = getVariance();
+      if(variance == null)
+      {
+         return (null);
+      }
+
+      return BigDecimal.valueOf(Math.sqrt(variance.doubleValue())).setScale(scaleForVarianceCalculations, RoundingMode.HALF_UP);
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   default BigDecimal getStdDevP()
+   public BigDecimal getStdDevP()
    {
-      return (null);
+      BigDecimal varP = getVarP();
+      if(varP == null)
+      {
+         return (null);
+      }
+
+      return BigDecimal.valueOf(Math.sqrt(varP.doubleValue())).setScale(scaleForVarianceCalculations, RoundingMode.HALF_UP);
    }
 
 }
