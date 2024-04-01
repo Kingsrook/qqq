@@ -26,12 +26,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
@@ -47,13 +49,20 @@ public class JsonExportStreamer implements ExportStreamerInterface
 {
    private static final QLogger LOG = QLogger.getLogger(JsonExportStreamer.class);
 
+   private boolean prettyPrint = true;
+
    private ExportInput          exportInput;
    private QTableMetaData       table;
    private List<QFieldMetaData> fields;
    private OutputStream         outputStream;
 
-   private boolean needComma   = false;
-   private boolean prettyPrint = true;
+   private boolean multipleViews       = false;
+   private boolean haveStartedAnyViews = false;
+
+   private boolean needCommaBeforeRecord = false;
+
+   private byte[] indent       = new byte[0];
+   private String indentString = "";
 
 
 
@@ -70,21 +79,124 @@ public class JsonExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
+   public void preRun(ReportDestination reportDestination, List<QReportView> views) throws QReportingException
+   {
+      outputStream = reportDestination.getReportOutputStream();
+
+      if(views.size() > 1)
+      {
+         multipleViews = true;
+      }
+
+      if(multipleViews)
+      {
+         try
+         {
+            indentIfPretty(outputStream);
+            outputStream.write('[');
+            newlineIfPretty(outputStream);
+            increaseIndent();
+         }
+         catch(IOException e)
+         {
+            throw (new QReportingException("Error starting report output", e));
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
    public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label, QReportView view) throws QReportingException
    {
       this.exportInput = exportInput;
       this.fields = fields;
       table = exportInput.getTable();
-      outputStream = this.exportInput.getReportDestination().getReportOutputStream();
+
+      needCommaBeforeRecord = false;
 
       try
       {
+         if(multipleViews)
+         {
+            if(haveStartedAnyViews)
+            {
+               /////////////////////////
+               // close the last view //
+               /////////////////////////
+               newlineIfPretty(outputStream);
+
+               decreaseIndent();
+               indentIfPretty(outputStream);
+               outputStream.write(']');
+               newlineIfPretty(outputStream);
+
+               decreaseIndent();
+               indentIfPretty(outputStream);
+               outputStream.write('}');
+               outputStream.write(',');
+               newlineIfPretty(outputStream);
+            }
+
+            /////////////////////////////////////////////////////////////
+            // open a new view, as an object, with a name & data entry //
+            /////////////////////////////////////////////////////////////
+            indentIfPretty(outputStream);
+            outputStream.write('{');
+            newlineIfPretty(outputStream);
+            increaseIndent();
+
+            indentIfPretty(outputStream);
+            outputStream.write(String.format("""
+               "name":"%s",""", label).getBytes(StandardCharsets.UTF_8));
+            newlineIfPretty(outputStream);
+
+            indentIfPretty(outputStream);
+            outputStream.write("""
+               "data":""".getBytes(StandardCharsets.UTF_8));
+            newlineIfPretty(outputStream);
+         }
+
+         //////////////////////////////////////////////
+         // start the array of entries for this view //
+         //////////////////////////////////////////////
+         indentIfPretty(outputStream);
          outputStream.write('[');
+         increaseIndent();
       }
       catch(IOException e)
       {
          throw (new QReportingException("Error starting report output", e));
       }
+
+      haveStartedAnyViews = true;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void increaseIndent()
+   {
+      indent = new byte[indent.length + 3];
+      Arrays.fill(indent, (byte) ' ');
+      indentString = new String(indent);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void decreaseIndent()
+   {
+      indent = new byte[Math.max(0, indent.length - 3)];
+      Arrays.fill(indent, (byte) ' ');
+      indentString = new String(indent);
    }
 
 
@@ -112,7 +224,7 @@ public class JsonExportStreamer implements ExportStreamerInterface
    {
       try
       {
-         if(needComma)
+         if(needCommaBeforeRecord)
          {
             outputStream.write(',');
          }
@@ -125,16 +237,21 @@ public class JsonExportStreamer implements ExportStreamerInterface
          }
 
          String json = prettyPrint ? JsonUtils.toPrettyJson(mapForJson) : JsonUtils.toJson(mapForJson);
+         if(prettyPrint)
+         {
+            json = json.replaceAll("(?s)\n", "\n" + indentString);
+         }
 
          if(prettyPrint)
          {
             outputStream.write('\n');
          }
 
+         indentIfPretty(outputStream);
          outputStream.write(json.getBytes(StandardCharsets.UTF_8));
 
          outputStream.flush(); // todo - less often?
-         needComma = true;
+         needCommaBeforeRecord = true;
       }
       catch(Exception e)
       {
@@ -163,15 +280,64 @@ public class JsonExportStreamer implements ExportStreamerInterface
    {
       try
       {
-         if(prettyPrint)
-         {
-            outputStream.write('\n');
-         }
+         //////////////////////////////////////////////
+         // close the array of entries for this view //
+         //////////////////////////////////////////////
+         newlineIfPretty(outputStream);
+
+         decreaseIndent();
+         indentIfPretty(outputStream);
          outputStream.write(']');
+         newlineIfPretty(outputStream);
+
+         if(multipleViews)
+         {
+            ////////////////////////////////////////////
+            // close this view, if there are multiple //
+            ////////////////////////////////////////////
+            decreaseIndent();
+            indentIfPretty(outputStream);
+            outputStream.write('}');
+            newlineIfPretty(outputStream);
+
+            /////////////////////////////
+            // close the list of views //
+            /////////////////////////////
+            decreaseIndent();
+            indentIfPretty(outputStream);
+            outputStream.write(']');
+            newlineIfPretty(outputStream);
+         }
       }
       catch(IOException e)
       {
          throw (new QReportingException("Error ending report output", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void newlineIfPretty(OutputStream outputStream) throws IOException
+   {
+      if(prettyPrint)
+      {
+         outputStream.write('\n');
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void indentIfPretty(OutputStream outputStream) throws IOException
+   {
+      if(prettyPrint)
+      {
+         outputStream.write(indent);
       }
    }
 
