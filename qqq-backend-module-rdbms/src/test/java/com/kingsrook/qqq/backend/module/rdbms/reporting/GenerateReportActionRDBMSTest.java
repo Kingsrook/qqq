@@ -252,7 +252,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
 
       assertEquals("""
-         "Id","Store","Instructions"
+         "Id","Store","Order Instructions: Instructions"
          """.trim(), lines.get(0));
       assertEquals("""
          "1","Q-Mart","order 1 v2"
@@ -279,7 +279,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          )));
 
       assertEquals("""
-         "Id","Store","Instructions"
+         "Id","Store","Order Instructions: Instructions"
          """.trim(), lines.get(0));
       assertEquals("""
          "8","QDepot","order 8 v1"
@@ -328,7 +328,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter())));
 
       assertEquals("""
-         "Id","Store","Description"
+         "Id","Store","Item: Description"
          """.trim(), lines.get(0));
       assertEquals("""
          "1","Q-Mart","Q-Mart Item 1"
