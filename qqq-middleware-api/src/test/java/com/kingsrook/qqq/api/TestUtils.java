@@ -175,7 +175,7 @@ public class TestUtils
    private static void addSavedReports(QInstance qInstance) throws QException
    {
       qInstance.add(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(qInstance));
-      new SavedReportsMetaDataProvider().defineAll(qInstance, MEMORY_BACKEND_NAME, null);
+      new SavedReportsMetaDataProvider().defineAll(qInstance, MEMORY_BACKEND_NAME, MEMORY_BACKEND_NAME, null);
       RenderSavedReportProcessApiMetaDataEnricher.setupProcessForApi(qInstance.getProcess(RenderSavedReportMetaDataProducer.NAME), API_NAME, V2022_Q4);
    }
 

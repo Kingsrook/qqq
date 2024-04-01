@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.model.actions;
 
 
+import java.io.InputStream;
 import java.io.Serializable;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -36,6 +37,8 @@ public class HttpApiResponse
    private Serializable    responseBodyObject;
 
    private String  contentType;
+
+   private InputStream inputStream;
 
    ////////////////////////////////////////////////////////////////////////////////////////////////////////
    // by default - QJavalinApiHandler will format the responseBodyObject as JSON.                        //
@@ -188,5 +191,36 @@ public class HttpApiResponse
       this.contentType = contentType;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for inputStream
+    *******************************************************************************/
+   public InputStream getInputStream()
+   {
+      return (this.inputStream);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputStream
+    *******************************************************************************/
+   public void setInputStream(InputStream inputStream)
+   {
+      this.inputStream = inputStream;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputStream
+    *******************************************************************************/
+   public HttpApiResponse withInputStream(InputStream inputStream)
+   {
+      this.inputStream = inputStream;
+      return (this);
+   }
+
 
 }

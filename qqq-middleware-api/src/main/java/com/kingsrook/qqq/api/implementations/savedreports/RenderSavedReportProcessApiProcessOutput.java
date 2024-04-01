@@ -22,20 +22,19 @@
 package com.kingsrook.qqq.api.implementations.savedreports;
 
 
-import java.io.File;
 import java.io.Serializable;
-import java.nio.charset.Charset;
 import java.util.Map;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
 import com.kingsrook.qqq.api.model.openapi.Content;
 import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.api.model.openapi.Schema;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
-import org.apache.commons.io.FileUtils;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import org.eclipse.jetty.http.HttpStatus;
 
 
@@ -51,25 +50,10 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
    @Override
    public Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
    {
-      try
-      {
-         ReportFormat reportFormat = ReportFormat.fromString(runProcessOutput.getValueString("reportFormat"));
-
-         String filePath = runProcessOutput.getValueString("serverFilePath");
-         File   file     = new File(filePath);
-         if(reportFormat.getIsBinary())
-         {
-            return FileUtils.readFileToByteArray(file);
-         }
-         else
-         {
-            return FileUtils.readFileToString(file, Charset.defaultCharset());
-         }
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error streaming report contents", e);
-      }
+      //////////////////////////////////////////////////////////////////
+      // we don't use output like this - see customizeHttpApiResponse //
+      //////////////////////////////////////////////////////////////////
+      return (null);
    }
 
 
@@ -85,8 +69,18 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
       /////////////////////////////////////////////////////////////////////////////////////////////
       httpApiResponse.setNeedsFormattedAsJson(false);
 
+      /////////////////////////////////////////////
+      // set content type based on report format //
+      /////////////////////////////////////////////
       ReportFormat reportFormat = ReportFormat.fromString(runProcessOutput.getValueString("reportFormat"));
       httpApiResponse.setContentType(reportFormat.getMimeType());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // get an input stream from the backend where the report content is stored - send that down to the caller //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      String      storageTableName = runProcessOutput.getValueString("storageTableName");
+      String      storageReference = runProcessOutput.getValueString("storageReference");
+      httpApiResponse.setInputStream(new StorageAction().getInputStream(new StorageInput(storageTableName).withReference(storageReference)));
    }
 
 

@@ -380,25 +380,36 @@ public class QJavalinApiHandler
             context.contentType(response.getContentType());
          }
 
-         ////////////////////////////////////////////////////////////////////////////////////
-         // else, try to return it raw - as byte[], or String, or as a converted-to-String //
-         ////////////////////////////////////////////////////////////////////////////////////
-         Serializable result = Objects.requireNonNullElse(response.getResponseBodyObject(), "");
-         if(result instanceof byte[] ba)
+         ///////////////////////////////////////////////////////////////////////////////////
+         // if there's an input stream in the response, just send that down to the client //
+         ///////////////////////////////////////////////////////////////////////////////////
+         if(response.getInputStream() != null)
          {
-            context.result(ba);
-            storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody("Byte array of length: " + ba.length));
-         }
-         else if(result instanceof String s)
-         {
-            context.result(s);
-            storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(s));
+            context.result(response.getInputStream());
+            storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody("Streamed result"));
          }
          else
          {
-            String resultString = String.valueOf(result);
-            context.result(resultString);
-            storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+            ////////////////////////////////////////////////////////////////////////////////////
+            // else, try to return it raw - as byte[], or String, or as a converted-to-String //
+            ////////////////////////////////////////////////////////////////////////////////////
+            Serializable result = Objects.requireNonNullElse(response.getResponseBodyObject(), "");
+            if(result instanceof byte[] ba)
+            {
+               context.result(ba);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody("Byte array of length: " + ba.length));
+            }
+            else if(result instanceof String s)
+            {
+               context.result(s);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(s));
+            }
+            else
+            {
+               String resultString = String.valueOf(result);
+               context.result(resultString);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+            }
          }
       }
    }
