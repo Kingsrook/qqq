@@ -575,15 +575,15 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
 
 
    /*******************************************************************************
-    ** test calling download file with missing filePath
+    ** test calling download file without needed query-string params
     **
     *******************************************************************************/
    @Test
-   public void test_downloadFileMissingFilePath()
+   public void test_downloadFileMissingQueryStringParams()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/download/myTestFile.txt").asString();
       assertEquals(400, response.getStatus());
-      assertTrue(response.getBody().contains("A filePath was not provided"));
+      assertTrue(response.getBody().contains("Missing query parameters to identify file"));
    }
 
 
