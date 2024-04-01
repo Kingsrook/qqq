@@ -22,15 +22,16 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -38,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -60,32 +62,33 @@ public class RenderSavedReportExecuteStep implements BackendStep
    {
       try
       {
-         ReportFormat reportFormat = ReportFormat.fromString(runBackendStepInput.getValueString("reportFormat"));
+         String       storageTableName = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
+         ReportFormat reportFormat     = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
 
-         SavedReport savedReport = new SavedReport(runBackendStepInput.getRecords().get(0));
-         File        tmpFile     = File.createTempFile("SavedReport" + savedReport.getId(), "." + reportFormat.getExtension(), new File("/tmp/"));
+         SavedReport savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
+         String      downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
+         String      storageReference     = UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
+
+         OutputStream outputStream = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
          QReportMetaData reportMetaData = new SavedReportToReportMetaDataAdapter().adapt(savedReport, reportFormat);
 
-         try(FileOutputStream reportOutputStream = new FileOutputStream(tmpFile))
-         {
-            ReportInput reportInput = new ReportInput();
-            reportInput.setReportMetaData(reportMetaData);
-            reportInput.setReportDestination(new ReportDestination()
-               .withReportFormat(reportFormat)
-               .withReportOutputStream(reportOutputStream));
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportMetaData(reportMetaData);
+         reportInput.setReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withReportOutputStream(outputStream));
 
-            Map<String, Serializable> values = runBackendStepInput.getValues();
-            reportInput.setInputValues(values);
+         Map<String, Serializable> values = runBackendStepInput.getValues();
+         reportInput.setInputValues(values);
 
-            new GenerateReportAction().execute(reportInput);
-         }
+         new GenerateReportAction().execute(reportInput);
 
-         String downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
          runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
-         runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
+         runBackendStepOutput.addValue("storageTableName", storageTableName);
+         runBackendStepOutput.addValue("storageReference", storageReference);
       }
       catch(Exception e)
       {

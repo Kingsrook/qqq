@@ -47,6 +47,9 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
 {
    public static final String NAME = "renderSavedReport";
 
+   public static final String FIELD_NAME_STORAGE_TABLE_NAME = "storageTableName";
+   public static final String FIELD_NAME_REPORT_FORMAT      = "reportFormat";
+
 
 
    /*******************************************************************************
@@ -61,13 +64,14 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
          .withIcon(new QIcon().withName("print"))
          .addStep(new QBackendStepMetaData()
             .withName("pre")
-            .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()
-               .withTableName(SavedReport.TABLE_NAME)))
+            .withInputData(new QFunctionInputMetaData()
+               .withField(new QFieldMetaData(FIELD_NAME_STORAGE_TABLE_NAME, QFieldType.STRING))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(SavedReport.TABLE_NAME)))
             .withCode(new QCodeReference(RenderSavedReportPreStep.class)))
          .addStep(new QFrontendStepMetaData()
             .withName("input")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
-            .withFormField(new QFieldMetaData("reportFormat", QFieldType.STRING)
+            .withFormField(new QFieldMetaData(FIELD_NAME_REPORT_FORMAT, QFieldType.STRING)
                .withPossibleValueSourceName(ReportFormatPossibleValueEnum.NAME)
                .withIsRequired(true)))
          .addStep(new QBackendStepMetaData()

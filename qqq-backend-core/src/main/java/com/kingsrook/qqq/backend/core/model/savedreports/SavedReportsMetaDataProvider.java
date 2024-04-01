@@ -24,13 +24,21 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -42,17 +50,66 @@ import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.Ren
  *******************************************************************************/
 public class SavedReportsMetaDataProvider
 {
+   public static final String REPORT_STORAGE_TABLE_NAME = "reportStorage";
+
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void defineAll(QInstance instance, String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   public void defineAll(QInstance instance, String recordTablesBackendName, String reportStorageBackendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      instance.addTable(defineSavedReportTable(backendName, backendDetailEnricher));
+      instance.addTable(defineSavedReportTable(recordTablesBackendName, backendDetailEnricher));
       instance.addPossibleValueSource(QPossibleValueSource.newForTable(SavedReport.TABLE_NAME));
       instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ReportFormatPossibleValueEnum.NAME, ReportFormatPossibleValueEnum.values()));
-      instance.addProcess(new RenderSavedReportMetaDataProducer().produce(instance));
+
+      instance.addTable(defineReportStorageTable(reportStorageBackendName, backendDetailEnricher));
+
+      QProcessMetaData renderSavedReportProcess = new RenderSavedReportMetaDataProducer().produce(instance);
+      instance.addProcess(renderSavedReportProcess);
+      renderSavedReportProcess.getInputFields().stream()
+         .filter(f -> RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME.equals(f.getName()))
+         .findFirst()
+         .ifPresent(f -> f.setDefaultValue(REPORT_STORAGE_TABLE_NAME));
+
+      instance.addWidget(defineReportSetupWidget());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineReportStorageTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher)
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName(REPORT_STORAGE_TABLE_NAME)
+         .withBackendName(backendName)
+         .withPrimaryKeyField("reference")
+         .withField(new QFieldMetaData("reference", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB));
+
+      if(backendDetailEnricher != null)
+      {
+         backendDetailEnricher.accept(table);
+      }
+
+      return (table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QWidgetMetaDataInterface defineReportSetupWidget()
+   {
+      return new QWidgetMetaData()
+         .withName("reportSetupWidget")
+         .withLabel("Report Setup")
+         .withIsCard(true)
+         .withType(WidgetType.REPORT_SETUP.getType())
+         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
    }
 
 
@@ -73,6 +130,7 @@ public class SavedReportsMetaDataProvider
          .withFieldsFromEntity(SavedReport.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label")))
          .withSection(new QFieldSection("settings", new QIcon().withName("settings"), Tier.T2, List.of("tableName")))
+         .withSection(new QFieldSection("reportSetup", new QIcon().withName("table_chart"), Tier.T2).withWidgetName("reportSetupWidget"))
          .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("queryFilterJson", "columnsJson", "pivotTableJson")))
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));

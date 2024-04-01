@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -42,14 +45,17 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTa
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumns;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryStorageAction;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +63,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -71,7 +76,7 @@ class RenderSavedReportProcessTest extends BaseTest
    @BeforeEach
    void beforeEach() throws Exception
    {
-      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, null);
+      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
       GenerateReportActionTest.insertPersonRecords(QContext.getQInstance());
    }
 
@@ -131,17 +136,14 @@ class RenderSavedReportProcessTest extends BaseTest
       RunProcessOutput runProcessOutput = runRenderReportProcess(savedReport, ReportFormatPossibleValueEnum.CSV);
 
       String downloadFileName = runProcessOutput.getValueString("downloadFileName");
-      String serverFilePath   = runProcessOutput.getValueString("serverFilePath");
-
       assertThat(downloadFileName)
          .startsWith(label + " - ")
          .matches(".*\\d\\d\\d\\d-\\d\\d-\\d\\d-\\d\\d\\d\\d.*")
          .endsWith(".csv");
 
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
+      InputStream  inputStream = getInputStream(runProcessOutput);
+      List<String> lines       = IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
 
-      List<String> lines = FileUtils.readLines(serverFile);
       assertEquals("""
          "Id","First Name","Last Name"
          """.trim(), lines.get(0));
@@ -149,7 +151,41 @@ class RenderSavedReportProcessTest extends BaseTest
          "1","Darin","Jonson"
          """.trim(), lines.get(1));
 
-      LocalMacDevUtils.openFile(serverFilePath);
+      writeTmpFileAndOpen(inputStream, ".csv");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static InputStream getInputStream(RunProcessOutput runProcessOutput) throws QException
+   {
+      String      storageTableName = runProcessOutput.getValueString("storageTableName");
+      String      storageReference = runProcessOutput.getValueString("storageReference");
+      InputStream inputStream      = new MemoryStorageAction().getInputStream(new StorageInput(storageTableName).withReference(storageReference));
+      return inputStream;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void writeTmpFileAndOpen(InputStream inputStream, String suffix) throws IOException
+   {
+      // LocalMacDevUtils.mayOpenFiles = true;
+      if(LocalMacDevUtils.mayOpenFiles)
+      {
+         inputStream.reset();
+
+         File             tmpFile          = File.createTempFile(getClass().getName(), suffix, new File("/tmp/"));
+         FileOutputStream fileOutputStream = new FileOutputStream(tmpFile);
+         inputStream.transferTo(fileOutputStream);
+         fileOutputStream.close();
+
+         LocalMacDevUtils.openFile(tmpFile.getAbsolutePath());
+      }
    }
 
 
@@ -203,14 +239,8 @@ class RenderSavedReportProcessTest extends BaseTest
       QRecord          savedReport      = insertBasicSavedPivotReport(label);
       RunProcessOutput runProcessOutput = runRenderReportProcess(savedReport, ReportFormatPossibleValueEnum.XLSX);
 
-      String serverFilePath = runProcessOutput.getValueString("serverFilePath");
-      System.out.println(serverFilePath);
-
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
-
-      LocalMacDevUtils.mayOpenFiles = true;
-      LocalMacDevUtils.openFile(serverFilePath, "/Applications/Numbers.app");
+      InputStream inputStream = getInputStream(runProcessOutput);
+      writeTmpFileAndOpen(inputStream, ".xlsx");
    }
 
 
@@ -225,14 +255,9 @@ class RenderSavedReportProcessTest extends BaseTest
       QRecord          savedReport      = insertBasicSavedPivotReport(label);
       RunProcessOutput runProcessOutput = runRenderReportProcess(savedReport, ReportFormatPossibleValueEnum.JSON);
 
-      String serverFilePath = runProcessOutput.getValueString("serverFilePath");
-      System.out.println(serverFilePath);
-
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
-
-      String json = FileUtils.readFileToString(serverFile, StandardCharsets.UTF_8);
-      System.out.println(json);
+      InputStream inputStream = getInputStream(runProcessOutput);
+      String      json        = StringUtils.join("\n", IOUtils.readLines(inputStream, StandardCharsets.UTF_8));
+      printReport(json);
 
       JSONArray jsonArray = new JSONArray(json);
       assertEquals(2, jsonArray.length());
@@ -265,6 +290,16 @@ class RenderSavedReportProcessTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   private void printReport(String report)
+   {
+      // System.out.println(report);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Test
    void testPivotCSV() throws Exception
    {
@@ -272,13 +307,8 @@ class RenderSavedReportProcessTest extends BaseTest
       QRecord          savedReport      = insertBasicSavedPivotReport(label);
       RunProcessOutput runProcessOutput = runRenderReportProcess(savedReport, ReportFormatPossibleValueEnum.CSV);
 
-      String serverFilePath = runProcessOutput.getValueString("serverFilePath");
-      System.out.println(serverFilePath);
-
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
-
-      List<String> csv = FileUtils.readLines(serverFile, StandardCharsets.UTF_8);
+      InputStream  inputStream = getInputStream(runProcessOutput);
+      List<String> csv         = IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
       System.out.println(csv);
 
       assertEquals("""
@@ -316,6 +346,7 @@ class RenderSavedReportProcessTest extends BaseTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -329,12 +360,8 @@ class RenderSavedReportProcessTest extends BaseTest
       String serverFilePath = runProcessOutput.getValueString("serverFilePath");
       System.out.println(serverFilePath);
 
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
-
-      // LocalMacDevUtils.mayOpenFiles = true;
-      LocalMacDevUtils.openFile(serverFilePath, "/Applications/Numbers.app");
-      LocalMacDevUtils.openFile(serverFilePath);
+      InputStream inputStream = getInputStream(runProcessOutput);
+      writeTmpFileAndOpen(inputStream, ".xlsx");
    }
 
 
@@ -349,13 +376,8 @@ class RenderSavedReportProcessTest extends BaseTest
       QRecord          savedReport      = insertSavedPivotReportWithAllFunctions(label);
       RunProcessOutput runProcessOutput = runRenderReportProcess(savedReport, ReportFormatPossibleValueEnum.CSV);
 
-      String serverFilePath = runProcessOutput.getValueString("serverFilePath");
-      System.out.println(serverFilePath);
-
-      File serverFile = new File(serverFilePath);
-      assertTrue(serverFile.exists());
-
-      List<String> csv = FileUtils.readLines(serverFile, StandardCharsets.UTF_8);
+      InputStream  inputStream = getInputStream(runProcessOutput);
+      List<String> csv         = IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
       System.out.println(csv);
 
       assertEquals("""

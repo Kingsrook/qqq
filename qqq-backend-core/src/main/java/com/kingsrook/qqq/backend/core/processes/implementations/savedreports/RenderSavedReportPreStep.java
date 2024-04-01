@@ -22,10 +22,17 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -40,8 +47,30 @@ public class RenderSavedReportPreStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      // todo - verify ran on 1
-      // todo - load the SavedReport
+      String storageTableName = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
+      if(!StringUtils.hasContent(storageTableName))
+      {
+         throw (new QUserFacingException("Process configuration error:  Missing value for storageTableName."));
+      }
+
+      if(QContext.getQInstance().getTable(storageTableName) == null)
+      {
+         throw (new QUserFacingException("Process configuration error:  Unrecognized value for storageTableName - no table named [" + storageTableName + "] was found in the instance."));
+      }
+
+      List<QRecord> records = runBackendStepInput.getRecords();
+      if(!CollectionUtils.nullSafeHasContents(records))
+      {
+         throw (new QUserFacingException("No report was selected or found to be rendered."));
+      }
+
+      if(records.size() > 1)
+      {
+         throw (new QUserFacingException("You may only render 1 report at a time."));
+      }
+
+      SavedReport savedReport = new SavedReport(records.get(0));
+
       // todo - check for inputs - set up the input screen...
    }
 

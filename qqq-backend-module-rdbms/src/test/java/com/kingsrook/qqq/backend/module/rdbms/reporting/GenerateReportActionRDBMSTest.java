@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.reporting;
 
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
@@ -55,11 +56,12 @@ import com.kingsrook.qqq.backend.core.model.savedreports.ReportColumns;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryStorageAction;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -220,7 +222,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    {
       newSavedReport.setLabel("Test Report");
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
-      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, null);
+      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
       QRecord savedReport = new InsertAction().execute(new InsertInput(SavedReport.TABLE_NAME).withRecordEntity(newSavedReport)).getRecords().get(0);
 
@@ -231,7 +233,11 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
       input.addValue("reportFormat", ReportFormatPossibleValueEnum.CSV.getPossibleValueId());
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
 
-      return (FileUtils.readLines(new File(runProcessOutput.getValueString("serverFilePath")), StandardCharsets.UTF_8));
+      String      storageTableName = runProcessOutput.getValueString("storageTableName");
+      String      storageReference = runProcessOutput.getValueString("storageReference");
+      InputStream inputStream      = new MemoryStorageAction().getInputStream(new StorageInput(storageTableName).withReference(storageReference));
+
+      return (IOUtils.readLines(inputStream, StandardCharsets.UTF_8));
    }
 
 
