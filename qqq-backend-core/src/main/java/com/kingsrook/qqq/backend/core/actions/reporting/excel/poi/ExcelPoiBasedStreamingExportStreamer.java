@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -56,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTa
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
@@ -83,6 +85,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInterface
 {
    private static final QLogger LOG = QLogger.getLogger(ExcelPoiBasedStreamingExportStreamer.class);
+   public static final String EXCEL_DATE_FORMAT = "yyyy-MM-dd";
+   public static final String EXCEL_DATE_TIME_FORMAT = "yyyy-MM-dd H:mm:ss";
 
    private List<QReportView>    views;
    private ExportInput          exportInput;
@@ -102,9 +106,10 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    private Writer                 activeSheetWriter = null;
    private StreamedPoiSheetWriter sheetWriter       = null;
 
-   private QReportView                       currentView   = null;
-   private Map<String, List<QFieldMetaData>> fieldsPerView = new HashMap<>();
-   private Map<String, Integer>              rowsPerView   = new HashMap<>();
+   private QReportView                       currentView      = null;
+   private Map<String, List<QFieldMetaData>> fieldsPerView    = new HashMap<>();
+   private Map<String, Integer>              rowsPerView      = new HashMap<>();
+   private Map<String, String>               labelViewsByName = new HashMap<>();
 
 
 
@@ -145,7 +150,13 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          int sheetCounter = 1;
          for(QReportView view : views)
          {
-            String    label          = Objects.requireNonNullElse(view.getLabel(), "Sheet " + sheetCounter);
+            String label = Objects.requireNonNullElse(view.getLabel(), "Sheet " + sheetCounter);
+
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            // track the actually-used sheet labels (needed for referencing in pivot table generation) //
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            labelViewsByName.put(view.getName(), label);
+
             XSSFSheet sheet          = workbook.createSheet(label);
             String    sheetReference = sheet.getPackagePart().getPartName().getName().substring(1);
             sheetMapByExcelReference.put(sheetReference, sheet);
@@ -304,7 +315,38 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          // todo - some bug where, if use a group-by field here, then ... it doesn't get used for the grouping. //
          //  g-sheets does let me do this, so, maybe, download their file and see how it's different?           //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////
-         pivotTable.addColumnLabel(DataConsolidateFunction.valueOf(value.getFunction().name()), columnLabelColumnIndex);
+         String labelPrefix = value.getFunction().name() + " of ";
+         String label       = labelPrefix + QInstanceEnricher.nameToLabel(value.getFieldName());
+         String valueFormat = null;
+
+         Optional<QReportField> optSourceField = dataView.getColumns().stream().filter(c -> c.getName().equals(value.getFieldName())).findFirst();
+         if(optSourceField.isPresent())
+         {
+            QReportField sourceField = optSourceField.get();
+
+            if(StringUtils.hasContent(sourceField.getLabel()))
+            {
+               label = labelPrefix + sourceField.getLabel();
+            }
+
+            if(StringUtils.hasContent(sourceField.getDisplayFormat()))
+            {
+               valueFormat = DisplayFormat.getExcelFormat(sourceField.getDisplayFormat());
+            }
+            else
+            {
+               if(QFieldType.DATE.equals(sourceField.getType()))
+               {
+                  valueFormat = EXCEL_DATE_FORMAT;
+               }
+               else if(QFieldType.DATE_TIME.equals(sourceField.getType()))
+               {
+                  valueFormat = EXCEL_DATE_TIME_FORMAT;
+               }
+            }
+         }
+
+         pivotTable.addColumnLabel(DataConsolidateFunction.valueOf(value.getFunction().name()), columnLabelColumnIndex, label, valueFormat);
       }
    }
 
@@ -336,11 +378,11 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       CreationHelper createHelper = workbook.getCreationHelper();
 
       XSSFCellStyle dateStyle = workbook.createCellStyle();
-      dateStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd"));
+      dateStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_FORMAT));
       styles.put("date", dateStyle);
 
       XSSFCellStyle dateTimeStyle = workbook.createCellStyle();
-      dateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd H:mm:ss"));
+      dateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_TIME_FORMAT));
       styles.put("datetime", dateTimeStyle);
 
       styles.put("title", poiExcelStylerInterface.createStyleForTitle(workbook, createHelper));
@@ -348,11 +390,11 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       styles.put("footer", poiExcelStylerInterface.createStyleForFooter(workbook, createHelper));
 
       XSSFCellStyle footerDateStyle = poiExcelStylerInterface.createStyleForFooter(workbook, createHelper);
-      footerDateStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd"));
+      footerDateStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_FORMAT));
       styles.put("footer-date", footerDateStyle);
 
       XSSFCellStyle footerDateTimeStyle = poiExcelStylerInterface.createStyleForFooter(workbook, createHelper);
-      footerDateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat("yyyy-MM-dd H:mm:ss"));
+      footerDateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_TIME_FORMAT));
       styles.put("footer-datetime", footerDateTimeStyle);
    }
 
@@ -732,16 +774,21 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          /////////////////////////////////////////////////////////////////////////////////////
          activeSheetWriter = new OutputStreamWriter(zipOutputStream);
          activeSheetWriter.write(String.format("""
-            <?xml version="1.0" encoding="UTF-8"?>
-            <pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" createdVersion="3" minRefreshableVersion="3" refreshedVersion="3" refreshedBy="Apache POI" refreshedDate="1.7113>  95767702E12" refreshOnLoad="true" r:id="rId1">
-              <cacheSource type="worksheet">
-                <worksheetSource sheet="table1" ref="A1:%s%d"/>
-              </cacheSource>
-              <cacheFields count="%d">
-                %s
-              </cacheFields>
-            </pivotCacheDefinition>
-            """, CellReference.convertNumToColString(dataView.getColumns().size() - 1), rowsPerView.get(dataView.getName()), dataView.getColumns().size(), StringUtils.join("\n", cachedFieldElements)));
+               <?xml version="1.0" encoding="UTF-8"?>
+               <pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" createdVersion="3" minRefreshableVersion="3" refreshedVersion="3" refreshedBy="Apache POI" refreshedDate="1.7113>  95767702E12" refreshOnLoad="true" r:id="rId1">
+                 <cacheSource type="worksheet">
+                   <worksheetSource sheet="%s" ref="A1:%s%d"/>
+                 </cacheSource>
+                 <cacheFields count="%d">
+                   %s
+                 </cacheFields>
+               </pivotCacheDefinition>
+               """,
+            labelViewsByName.get(dataView.getName()),
+            CellReference.convertNumToColString(dataView.getColumns().size() - 1),
+            rowsPerView.get(dataView.getName()),
+            dataView.getColumns().size(),
+            StringUtils.join("\n", cachedFieldElements)));
       }
       catch(Exception e)
       {
