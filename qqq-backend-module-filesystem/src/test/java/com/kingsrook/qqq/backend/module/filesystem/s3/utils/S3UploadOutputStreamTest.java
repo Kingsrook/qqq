@@ -26,19 +26,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
  ** Unit test for S3UploadOutputStream 
  *******************************************************************************/
-class S3UploadOutputStreamTest extends BaseTest
+class S3UploadOutputStreamTest extends BaseS3Test
 {
 
    /*******************************************************************************
@@ -47,15 +42,7 @@ class S3UploadOutputStreamTest extends BaseTest
    @Test
    void test() throws IOException
    {
-      Dotenv dotenv = Dotenv.load();
-
-      BasicAWSCredentials credentials = new BasicAWSCredentials(dotenv.get("NFONE_S3_ACCESS_KEY"), dotenv.get("NFONE_S3_SECRET_KEY"));
-      AmazonS3 amazonS3 = AmazonS3ClientBuilder.standard()
-         .withCredentials(new AWSStaticCredentialsProvider(credentials))
-         .withRegion(dotenv.get("NFONE_S3_REGION"))
-         .build();
-
-      String bucketName = "bucket-upload-archive-nf-one-dev";
+      String bucketName = BaseS3Test.BUCKET_NAME;
       String key        = "uploader-tests/" + Instant.now().toString() + ".txt";
 
       // S3UploadOutputStream outputStream = new S3UploadOutputStream(amazonS3, bucketName, key);
@@ -70,7 +57,7 @@ class S3UploadOutputStreamTest extends BaseTest
       outputStream.write("\n]\n".getBytes(StandardCharsets.UTF_8));
       outputStream.close();
 
-      S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(amazonS3, bucketName, key);
+      S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(getS3Utils().getAmazonS3(), bucketName, key);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 5 * 1024 * 1024);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 3 * 1024 * 1024);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 3 * 1024 * 1024);
