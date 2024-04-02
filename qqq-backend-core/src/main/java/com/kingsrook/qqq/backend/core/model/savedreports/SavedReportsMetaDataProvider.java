@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -55,8 +56,10 @@ public class SavedReportsMetaDataProvider
    public void defineAll(QInstance instance, String recordTablesBackendName, String reportStorageBackendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       instance.addTable(defineSavedReportTable(recordTablesBackendName, backendDetailEnricher));
+      instance.addTable(defineRenderedReportTable(recordTablesBackendName, backendDetailEnricher));
       instance.addPossibleValueSource(QPossibleValueSource.newForTable(SavedReport.TABLE_NAME));
       instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ReportFormatPossibleValueEnum.NAME, ReportFormatPossibleValueEnum.values()));
+      instance.addPossibleValueSource(QPossibleValueSource.newForEnum(RenderedReportStatus.NAME, RenderedReportStatus.values()));
 
       instance.addTable(defineReportStorageTable(reportStorageBackendName, backendDetailEnricher));
 
@@ -92,8 +95,6 @@ public class SavedReportsMetaDataProvider
       return (table);
    }
 
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -118,7 +119,6 @@ public class SavedReportsMetaDataProvider
    {
       QTableMetaData table = new QTableMetaData()
          .withName(SavedReport.TABLE_NAME)
-         .withLabel("Saved Report")
          .withIcon(new QIcon().withName("article"))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
@@ -136,6 +136,40 @@ public class SavedReportsMetaDataProvider
       {
          table.getField(jsonFieldName).withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("json")));
       }
+
+      if(backendDetailEnricher != null)
+      {
+         backendDetailEnricher.accept(table);
+      }
+
+      return (table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineRenderedReportTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName(RenderedReport.TABLE_NAME)
+         .withIcon(new QIcon().withName("print"))
+         .withRecordLabelFormat("%s - %s")
+         .withRecordLabelFields("savedReportId", "startTime")
+         .withBackendName(backendName)
+         .withPrimaryKeyField("id")
+         .withFieldsFromEntity(RenderedReport.class)
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "savedReportId", "renderedReportStatusId")))
+         .withSection(new QFieldSection("input", new QIcon().withName("input"), Tier.T2, List.of("userId", "reportFormat")))
+         .withSection(new QFieldSection("output", new QIcon().withName("output"), Tier.T2, List.of("jobUuid", "resultPath", "rowCount", "errorMessage", "startTime", "endTime")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
+         .withoutCapabilities(Capability.allWriteCapabilities());
+
+      table.getField("renderedReportStatusId").setAdornments(List.of(new FieldAdornment(AdornmentType.CHIP)
+         .withValues(AdornmentType.ChipValues.iconAndColorValues(RenderedReportStatus.RUNNING.getId(), "pending", AdornmentType.ChipValues.COLOR_SECONDARY))
+         .withValues(AdornmentType.ChipValues.iconAndColorValues(RenderedReportStatus.COMPLETE.getId(), "check", AdornmentType.ChipValues.COLOR_SUCCESS))
+         .withValues(AdornmentType.ChipValues.iconAndColorValues(RenderedReportStatus.FAILED.getId(), "error", AdornmentType.ChipValues.COLOR_ERROR))));
 
       if(backendDetailEnricher != null)
       {

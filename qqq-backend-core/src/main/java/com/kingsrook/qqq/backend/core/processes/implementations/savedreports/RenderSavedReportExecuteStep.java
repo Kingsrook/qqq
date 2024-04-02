@@ -25,23 +25,35 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReport;
+import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReportStatus;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -60,22 +72,43 @@ public class RenderSavedReportExecuteStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      QRecord renderedReportRecord = null;
+
       try
       {
-         String       storageTableName = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
-         ReportFormat reportFormat     = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
-
-         SavedReport savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
-         String      downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
-         String      storageReference     = UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
-
-         OutputStream outputStream = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
+         ////////////////////////////////
+         // read inputs, set up params //
+         ////////////////////////////////
+         String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
+         ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
+         SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
+         String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
+         String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
+         OutputStream outputStream         = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
+         //////////////////////////////////////////////////////////////////
+         // insert a rendered-report record indicating that it's running //
+         //////////////////////////////////////////////////////////////////
+         renderedReportRecord = new InsertAction().execute(new InsertInput(RenderedReport.TABLE_NAME).withRecordEntity(new RenderedReport()
+            .withSavedReportId(savedReport.getId())
+            .withStartTime(Instant.now())
+            // todo .withJobUuid(runBackendStepInput.get)
+            .withRenderedReportStatusId(RenderedReportStatus.RUNNING.getId())
+            .withReportFormat(ReportFormatPossibleValueEnum.valueOf(reportFormat.name()).getPossibleValueId())
+         )).getRecords().get(0);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // convert the report record to report meta-data, which the GenerateReportAction works on //
+         ////////////////////////////////////////////////////////////////////////////////////////////
          QReportMetaData reportMetaData = new SavedReportToReportMetaDataAdapter().adapt(savedReport, reportFormat);
 
+         /////////////////////////////////////
+         // setup & run the generate action //
+         /////////////////////////////////////
          ReportInput reportInput = new ReportInput();
+         reportInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
          reportInput.setReportMetaData(reportMetaData);
          reportInput.setReportDestination(new ReportDestination()
             .withReportFormat(reportFormat)
@@ -84,7 +117,18 @@ public class RenderSavedReportExecuteStep implements BackendStep
          Map<String, Serializable> values = runBackendStepInput.getValues();
          reportInput.setInputValues(values);
 
-         new GenerateReportAction().execute(reportInput);
+         ReportOutput reportOutput = new GenerateReportAction().execute(reportInput);
+
+         ///////////////////////////////////
+         // update record to show success //
+         ///////////////////////////////////
+         new UpdateAction().execute(new UpdateInput(RenderedReport.TABLE_NAME).withRecord(new QRecord()
+            .withValue("id", renderedReportRecord.getValue("id"))
+            .withValue("resultPath", storageReference)
+            .withValue("renderedReportStatusId", RenderedReportStatus.COMPLETE.getPossibleValueId())
+            .withValue("endTime", Instant.now())
+            .withValue("rowCount", reportOutput.getTotalRecordCount())
+         ));
 
          runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
          runBackendStepOutput.addValue("storageTableName", storageTableName);
@@ -92,9 +136,18 @@ public class RenderSavedReportExecuteStep implements BackendStep
       }
       catch(Exception e)
       {
-         // todo - render error screen?
+         if(renderedReportRecord != null)
+         {
+            new UpdateAction().execute(new UpdateInput(RenderedReport.TABLE_NAME).withRecord(new QRecord()
+               .withValue("id", renderedReportRecord.getValue("id"))
+               .withValue("renderedReportStatusId", RenderedReportStatus.FAILED.getPossibleValueId())
+               .withValue("endTime", Instant.now())
+               .withValue("errorMessage", ExceptionUtils.concatenateMessagesFromChain(e))
+            ));
+         }
 
          LOG.warn("Error rendering saved report", e);
+         throw (e);
       }
    }
 
