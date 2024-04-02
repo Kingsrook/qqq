@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.reporting;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -38,6 +39,10 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableFunction;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableGroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -59,6 +64,8 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryStorageAction;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import org.apache.commons.io.IOUtils;
@@ -215,23 +222,39 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<String> runSavedReportForCSV(SavedReport newSavedReport) throws Exception
+   private RunProcessOutput runSavedReport(SavedReport savedReport, ReportFormatPossibleValueEnum reportFormat) throws Exception
    {
-      newSavedReport.setLabel("Test Report");
+      savedReport.setLabel("Test Report");
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
-      new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
 
-      QRecord savedReport = new InsertAction().execute(new InsertInput(SavedReport.TABLE_NAME).withRecordEntity(newSavedReport)).getRecords().get(0);
+      if(QContext.getQInstance().getTable(SavedReport.TABLE_NAME) == null)
+      {
+         new SavedReportsMetaDataProvider().defineAll(QContext.getQInstance(), TestUtils.MEMORY_BACKEND_NAME, TestUtils.MEMORY_BACKEND_NAME, null);
+      }
+
+      QRecord savedReportRecord = new InsertAction().execute(new InsertInput(SavedReport.TABLE_NAME).withRecordEntity(savedReport)).getRecords().get(0);
 
       RunProcessInput input = new RunProcessInput();
       input.setProcessName(RenderSavedReportMetaDataProducer.NAME);
       input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
-      input.setCallback(QProcessCallbackFactory.forRecord(savedReport));
-      input.addValue("reportFormat", ReportFormatPossibleValueEnum.CSV.getPossibleValueId());
+      input.setCallback(QProcessCallbackFactory.forRecord(savedReportRecord));
+      input.addValue("reportFormat", reportFormat);
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
+      return (runProcessOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<String> runSavedReportForCSV(SavedReport savedReport) throws Exception
+   {
+      RunProcessOutput runProcessOutput = runSavedReport(savedReport, ReportFormatPossibleValueEnum.CSV);
 
       String      storageTableName = runProcessOutput.getValueString("storageTableName");
       String      storageReference = runProcessOutput.getValueString("storageReference");
@@ -293,6 +316,7 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
    }
 
 
+
    /*******************************************************************************
     ** in here, by potentially ambiguous, we mean where there are possible joins
     ** between the order and orderInstructions tables.
@@ -341,7 +365,6 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
          """.trim(), lines.get(1));
    }
 
-   // todo - similar to above, but w/o selecting, only filtering
 
 
    /*******************************************************************************
@@ -365,6 +388,51 @@ public class GenerateReportActionRDBMSTest extends RDBMSActionTest
       assertEquals("""
          "6","QDepot"
          """.trim(), lines.get(1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSavedReportWithPivotsFromJoinTable() throws Exception
+   {
+      SavedReport savedReport = new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("item.storeId")
+            .withColumn("item.description")))
+         .withQueryFilterJson(JsonUtils.toJson(new QQueryFilter()))
+         .withPivotTableJson(JsonUtils.toJson(new PivotTableDefinition()
+            .withRow(new PivotTableGroupBy().withFieldName("item.storeId"))
+            .withValue(new PivotTableValue().withFieldName("item.description").withFunction(PivotTableFunction.COUNT))));
+
+      //////////////////////////////////////////////
+      // make sure we can render xlsx w/o a crash //
+      //////////////////////////////////////////////
+      RunProcessOutput runProcessOutput = runSavedReport(savedReport, ReportFormatPossibleValueEnum.XLSX);
+      String           storageTableName = runProcessOutput.getValueString("storageTableName");
+      String           storageReference = runProcessOutput.getValueString("storageReference");
+      InputStream      inputStream      = new MemoryStorageAction().getInputStream(new StorageInput(storageTableName).withReference(storageReference));
+
+      String path = "/tmp/pivot.xlsx";
+      inputStream.transferTo(new FileOutputStream(path));
+      // LocalMacDevUtils.mayOpenFiles = true;
+      LocalMacDevUtils.openFile(path);
+
+      ///////////////////////////////////////////////////////
+      // render as csv too - and assert about those values //
+      ///////////////////////////////////////////////////////
+      List<String> csv = runSavedReportForCSV(savedReport);
+      System.out.println(StringUtils.join("\n", csv));
+      assertEquals("""
+         "Store","Count Of Item: Description\"""", csv.get(0));
+      assertEquals("""
+         "Q-Mart","4\"""", csv.get(1));
+      assertEquals("""
+         "Totals","11\"""", csv.get(4));
    }
 
 

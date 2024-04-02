@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
- ** Input for an Export action
+ ** Input for a Report action
  *******************************************************************************/
 public class ReportInput extends AbstractTableActionInput
 {

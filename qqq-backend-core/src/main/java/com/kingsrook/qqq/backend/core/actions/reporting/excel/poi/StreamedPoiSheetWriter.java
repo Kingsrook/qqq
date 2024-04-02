@@ -121,7 +121,7 @@ public class StreamedPoiSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String cleanseValue(String value)
+   public static String cleanseValue(String value)
    {
       // todo - profile...
       if(xmlSpecialChars.matcher(value).find())

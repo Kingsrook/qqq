@@ -36,6 +36,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -45,15 +47,19 @@ import com.amazonaws.services.s3.model.UploadPartResult;
  *******************************************************************************/
 public class S3UploadOutputStream extends OutputStream
 {
+   private static final QLogger LOG = QLogger.getLogger(S3UploadOutputStream.class);
+
    private final AmazonS3 amazonS3;
    private final String   bucketName;
    private final String   key;
 
-   private       byte[]   buffer = new byte[5 * 1024 * 1024];
-   private       int      offset = 0;
+   private byte[] buffer = new byte[5 * 1024 * 1024];
+   private int    offset = 0;
 
    private InitiateMultipartUploadResult initiateMultipartUploadResult = null;
    private List<UploadPartResult>        uploadPartResultList          = null;
+
+   private boolean isClosed = false;
 
 
 
@@ -96,10 +102,12 @@ public class S3UploadOutputStream extends OutputStream
          //////////////////////////////////////////
          if(initiateMultipartUploadResult == null)
          {
+            LOG.info("Initiating a multipart upload", logPair("key", key));
             initiateMultipartUploadResult = amazonS3.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
             uploadPartResultList = new ArrayList<>();
          }
 
+         LOG.info("Uploading a part", logPair("key", key), logPair("partNumber", uploadPartResultList.size() + 1));
          UploadPartRequest uploadPartRequest = new UploadPartRequest()
             .withUploadId(initiateMultipartUploadResult.getUploadId())
             .withPartNumber(uploadPartResultList.size() + 1)
@@ -130,7 +138,6 @@ public class S3UploadOutputStream extends OutputStream
       while(bytesToWrite > buffer.length - offset)
       {
          int size = buffer.length - offset;
-         // System.out.println("A:copy " + size + " bytes from source[" + off + "] to dest[" + offset + "]");
          System.arraycopy(b, off, buffer, offset, size);
          offset = buffer.length;
          uploadIfNeeded();
@@ -139,7 +146,6 @@ public class S3UploadOutputStream extends OutputStream
       }
 
       int size = len - off;
-      // System.out.println("B:copy " + size + " bytes from source[" + off + "] to dest[" + offset + "]");
       System.arraycopy(b, off, buffer, offset, size);
       offset += size;
       uploadIfNeeded();
@@ -153,13 +159,20 @@ public class S3UploadOutputStream extends OutputStream
    @Override
    public void close() throws IOException
    {
+      if(isClosed)
+      {
+         LOG.debug("Redundant call to close an already-closed S3UploadOutputStream.  Returning with noop.", logPair("key", key));
+         return;
+      }
+
       if(initiateMultipartUploadResult != null)
       {
-         if (offset > 0)
+         if(offset > 0)
          {
             //////////////////////////////////////////////////
             // if there's a final part to upload, do it now //
             //////////////////////////////////////////////////
+            LOG.info("Uploading a part", logPair("key", key), logPair("isFinalPart", true), logPair("partNumber", uploadPartResultList.size() + 1));
             UploadPartRequest uploadPartRequest = new UploadPartRequest()
                .withUploadId(initiateMultipartUploadResult.getUploadId())
                .withPartNumber(uploadPartResultList.size() + 1)
@@ -179,10 +192,13 @@ public class S3UploadOutputStream extends OutputStream
       }
       else
       {
+         LOG.info("Putting object (non-multipart)", logPair("key", key), logPair("length", offset));
          ObjectMetadata objectMetadata = new ObjectMetadata();
          objectMetadata.setContentLength(offset);
          PutObjectResult putObjectResult = amazonS3.putObject(bucketName, key, new ByteArrayInputStream(buffer, 0, offset), objectMetadata);
       }
+
+      isClosed = true;
    }
 
 }

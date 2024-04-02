@@ -70,6 +70,7 @@ import org.apache.poi.ss.usermodel.DataConsolidateFunction;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFPivotTable;
@@ -151,6 +152,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          for(QReportView view : views)
          {
             String label = Objects.requireNonNullElse(view.getLabel(), "Sheet " + sheetCounter);
+            label = WorkbookUtil.createSafeSheetName(label);
 
             /////////////////////////////////////////////////////////////////////////////////////////////
             // track the actually-used sheet labels (needed for referencing in pivot table generation) //
@@ -637,18 +639,6 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       {
          throw (new QReportingException("Error adding totals row", e));
       }
-
-      /* todo
-      CellStyle totalsStyle = workbook.createCellStyle();
-      Font      font        = workbook.createFont();
-      font.setBold(true);
-      totalsStyle.setFont(font);
-      totalsStyle.setBorderTop(BorderStyle.THIN);
-      totalsStyle.setBorderTop(BorderStyle.THIN);
-      totalsStyle.setBorderBottom(BorderStyle.DOUBLE);
-
-      row.cellIterator().forEachRemaining(cell -> cell.setCellStyle(totalsStyle));
-       */
    }
 
 
@@ -666,9 +656,10 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          //////////////////////////////////////////////
          closeLastSheetIfOpen();
 
-         /////////////////////////////
-         // close the output stream //
-         /////////////////////////////
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // note - leave the zipOutputStream open.  It is a wrapper around the OutputStream we were given by the caller, //
+         // so it is their responsibility to close that stream (which implicitly closes the zip, it appears)             //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          zipOutputStream.close();
       }
       catch(Exception e)
@@ -784,7 +775,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
                  </cacheFields>
                </pivotCacheDefinition>
                """,
-            labelViewsByName.get(dataView.getName()),
+            StreamedPoiSheetWriter.cleanseValue(labelViewsByName.get(dataView.getName())),
             CellReference.convertNumToColString(dataView.getColumns().size() - 1),
             rowsPerView.get(dataView.getName()),
             dataView.getColumns().size(),

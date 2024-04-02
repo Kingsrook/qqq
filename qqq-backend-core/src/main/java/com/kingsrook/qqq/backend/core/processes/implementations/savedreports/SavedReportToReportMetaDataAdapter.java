@@ -77,6 +77,7 @@ public class SavedReportToReportMetaDataAdapter
          QInstance qInstance = QContext.getQInstance();
 
          QReportMetaData reportMetaData = new QReportMetaData();
+         reportMetaData.setName("savedReport:" + savedReport.getId());
          reportMetaData.setLabel(savedReport.getLabel());
 
          /////////////////////////////////////////////////////
