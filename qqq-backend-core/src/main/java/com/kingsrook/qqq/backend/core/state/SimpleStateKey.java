@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
+import java.time.Instant;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
@@ -92,5 +95,18 @@ public class SimpleStateKey<T> extends AbstractStateKey
    public int hashCode()
    {
       return key.hashCode();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for startTime
+    *******************************************************************************/
+   public Instant getStartTime()
+   {
+      //////////////////////////////////////////
+      // For now these will never get cleaned //
+      //////////////////////////////////////////
+      return (Instant.now());
    }
 }
