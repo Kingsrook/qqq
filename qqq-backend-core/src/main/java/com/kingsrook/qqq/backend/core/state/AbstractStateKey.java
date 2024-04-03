@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 
 
 /*******************************************************************************
@@ -56,5 +57,11 @@ public abstract class AbstractStateKey implements Serializable
     *******************************************************************************/
    @Override
    public abstract String toString();
+
+   /*******************************************************************************
+    ** Require all state keys to implement the getStartTime method
+    *
+    *******************************************************************************/
+   public abstract Instant getStartTime();
 
 }

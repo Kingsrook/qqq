@@ -23,9 +23,16 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -33,9 +40,14 @@ import java.util.Optional;
  *******************************************************************************/
 public class InMemoryStateProvider implements StateProviderInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(InMemoryStateProvider.class);
+
    private static InMemoryStateProvider instance;
 
    private final Map<AbstractStateKey, Object> map;
+
+   private int jobPeriodSeconds = 60 * 15;
+   private int jobInitialDelay  = 60 * 60 * 4;
 
 
 
@@ -45,6 +57,41 @@ public class InMemoryStateProvider implements StateProviderInterface
    private InMemoryStateProvider()
    {
       this.map = new HashMap<>();
+
+      ///////////////////////////////////////////////////////////
+      // Start a single thread executor to handle the cleaning //
+      ///////////////////////////////////////////////////////////
+      ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+      executorService.scheduleAtFixedRate(new InMemoryStateProvider.InMemoryStateProviderCleanJob(), jobInitialDelay, jobPeriodSeconds, TimeUnit.SECONDS);
+   }
+
+
+
+   /*******************************************************************************
+    ** Runnable that gets scheduled to periodically clean the InMemoryStateProvider
+    *******************************************************************************/
+   private static class InMemoryStateProviderCleanJob implements Runnable
+   {
+      private static final QLogger LOG = QLogger.getLogger(InMemoryStateProvider.InMemoryStateProviderCleanJob.class);
+
+
+
+      /*******************************************************************************
+       ** run
+       *******************************************************************************/
+      @Override
+      public void run()
+      {
+         try
+         {
+            Instant cleanTime = Instant.now().minus(4, ChronoUnit.HOURS);
+            getInstance().clean(cleanTime);
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error cleaning InMemoryStateProvider entries.", e);
+         }
+      }
    }
 
 
@@ -99,6 +146,26 @@ public class InMemoryStateProvider implements StateProviderInterface
    public void remove(AbstractStateKey key)
    {
       map.remove(key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Clean entries that started before the given Instant
+    *
+    *******************************************************************************/
+   @Override
+   public void clean(Instant cleanBeforeInstant)
+   {
+      long    jobStartTime = System.currentTimeMillis();
+      Integer beforeSize   = map.size();
+      LOG.info("Starting clean for InMemoryStateProvider.", logPair("beforeSize", beforeSize));
+
+      map.entrySet().removeIf(e -> e.getKey().getStartTime().isBefore(cleanBeforeInstant));
+
+      Integer afterSize = map.size();
+      long    endTime   = System.currentTimeMillis();
+      LOG.info("Completed clean for InMemoryStateProvider.", logPair("beforeSize", beforeSize), logPair("afterSize", afterSize), logPair("amountCleaned", (beforeSize - afterSize)), logPair("runTimeMillis", (endTime - jobStartTime)));
    }
 
 }
