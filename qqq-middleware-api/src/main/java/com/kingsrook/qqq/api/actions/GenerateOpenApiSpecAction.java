@@ -194,6 +194,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * Each input primary key will also be included in the corresponding response object.
       """;
 
+   private static final boolean LOG_OMITTED_TABLES = false;
+
    private Set<String> neededTableSchemas = new HashSet<>();
 
 
@@ -314,40 +316,40 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(input.getTableName() != null && !input.getTableName().equals(tableName))
          {
-            LOG.debug("Omitting table [" + tableName + "] because it is not the requested table [" + input.getTableName() + "]");
+            logOmittedTable("Omitting table [" + tableName + "] because it is not the requested table [" + input.getTableName() + "]");
             continue;
          }
 
          if(table.getIsHidden())
          {
-            LOG.debug("Omitting table [" + tableName + "] because it is marked as hidden");
+            logOmittedTable("Omitting table [" + tableName + "] because it is marked as hidden");
             continue;
          }
 
          ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
          if(apiTableMetaDataContainer == null)
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have an apiTableMetaDataContainer");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have an apiTableMetaDataContainer");
             continue;
          }
 
          ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiName);
          if(apiTableMetaData == null)
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any apiTableMetaData");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have any apiTableMetaData");
             continue;
          }
 
          if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
          {
-            LOG.debug("Omitting table [" + tableName + "] because its apiTableMetaData marks it as excluded");
+            logOmittedTable("Omitting table [" + tableName + "] because its apiTableMetaData marks it as excluded");
             continue;
          }
 
          APIVersionRange apiVersionRange = apiTableMetaData.getApiVersionRange();
          if(!apiVersionRange.includes(apiVersion))
          {
-            LOG.debug("Omitting table [" + tableName + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
+            logOmittedTable("Omitting table [" + tableName + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
             continue;
          }
 
@@ -374,7 +376,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(!getEnabled && !queryByQueryStringEnabled && !insertEnabled && !insertBulkEnabled && !updateEnabled && !updateBulkEnabled && !deleteEnabled && !deleteBulkEnabled && !CollectionUtils.nullSafeHasContents(apiProcessMetaDataList))
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations or processes");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations or processes");
             continue;
          }
 
@@ -1442,14 +1444,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             if(BooleanUtils.isTrue(apiAssociationMetaData.getIsExcluded()))
             {
-               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because it is marked as excluded.");
+               logOmittedTable("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because it is marked as excluded.");
                continue;
             }
 
             APIVersionRange apiVersionRange = apiAssociationMetaData.getApiVersionRange();
             if(!apiVersionRange.includes(new APIVersion(version)))
             {
-               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
+               logOmittedTable("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
                continue;
             }
          }
@@ -1802,6 +1804,19 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                ))
             )
          ));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void logOmittedTable(String message)
+   {
+      if(LOG_OMITTED_TABLES)
+      {
+         LOG.debug(message);
+      }
    }
 
 }
