@@ -957,6 +957,17 @@ public abstract class AbstractRDBMSAction
    /*******************************************************************************
     ** Make it easy (e.g., for tests) to turn on logging of SQL
     *******************************************************************************/
+   public static void setLogSQL(boolean on, boolean doReformat, String loggerOrSystemOut)
+   {
+      setLogSQL(on);
+      setLogSQLOutput(loggerOrSystemOut);
+      setLogSQLReformat(doReformat);
+   }
+
+
+   /*******************************************************************************
+    ** Make it easy (e.g., for tests) to turn on logging of SQL
+    *******************************************************************************/
    public static void setLogSQL(boolean on)
    {
       System.setProperty("qqq.rdbms.logSQL", String.valueOf(on));

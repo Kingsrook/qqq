@@ -221,9 +221,14 @@ public class QFieldMetaData implements Cloneable
                setMaxLength(fieldAnnotation.maxLength());
             }
 
-            if(fieldAnnotation.valueTooLongBehavior() != ValueTooLongBehavior.PASS_THROUGH)
+            if(fieldAnnotation.valueTooLongBehavior() != ValueTooLongBehavior.values()[0].getDefault())
             {
                withBehavior(fieldAnnotation.valueTooLongBehavior());
+            }
+
+            if(fieldAnnotation.dynamicDefaultValueBehavior() != DynamicDefaultValueBehavior.values()[0].getDefault())
+            {
+               withBehavior(fieldAnnotation.dynamicDefaultValueBehavior());
             }
 
             if(StringUtils.hasContent(fieldAnnotation.defaultValue()))

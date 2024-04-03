@@ -270,6 +270,25 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Test rules for process step names (must be set; must not be duplicated)
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessStepNames()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(0).setName(null),
+         "Missing name for a step at index");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(0).setName(""),
+         "Missing name for a step at index");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().forEach(s -> s.setName("myStep")),
+         "Duplicate step name [myStep]", "Duplicate step name [myStep]");
+   }
+
+
+
+   /*******************************************************************************
     ** Test that a process with a step that is a private class fails
     **
     *******************************************************************************/

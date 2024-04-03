@@ -77,14 +77,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    private ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
 
    private ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
-      .withMessageSuffix("because of this process' configuration.")
+      .withMessageSuffix("because this process is not configured to insert records.")
       .withSingularFutureMessage("will not be inserted ")
       .withPluralFutureMessage("will not be inserted ")
       .withSingularPastMessage("was not inserted ")
       .withPluralPastMessage("were not inserted ");
 
    private ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
-      .withMessageSuffix("because of this process' configuration.")
+      .withMessageSuffix("because this process is not configured to update records.")
       .withSingularFutureMessage("will not be updated ")
       .withPluralFutureMessage("will not be updated ")
       .withSingularPastMessage("was not updated ")

@@ -316,6 +316,7 @@ public class QJavalinApiHandler
          ApiProcessInput     input      = apiProcessMetaData.getInput();
          if(input != null)
          {
+            processProcessInputFieldsContainer(context, parameters, input.getPathParams(), Context::pathParam);
             processProcessInputFieldsContainer(context, parameters, input.getQueryStringParams(), Context::queryParam);
             processProcessInputFieldsContainer(context, parameters, input.getFormParams(), Context::formParam);
 
@@ -347,14 +348,69 @@ public class QJavalinApiHandler
          //////////////////
          QJavalinAccessLogger.logEndSuccess();
          context.status(response.getStatusCode().getCode());
-         String resultString = toJson(Objects.requireNonNullElse(response.getResponseBodyObject(), ""));
-         context.result(resultString);
-         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+         handleProcessResponse(context, response, apiLog);
       }
       catch(Exception e)
       {
          QJavalinAccessLogger.logEndFail(e);
          handleException(context, e, apiLog);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void handleProcessResponse(Context context, HttpApiResponse response, APILog apiLog)
+   {
+      if(response.getNeedsFormattedAsJson())
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////
+         // if the response object says that we should format the response as json, then do so. //
+         /////////////////////////////////////////////////////////////////////////////////////////
+         String resultString = toJson(Objects.requireNonNullElse(response.getResponseBodyObject(), ""));
+         context.result(resultString);
+         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+      }
+      else
+      {
+         if(StringUtils.hasContent(response.getContentType()))
+         {
+            context.contentType(response.getContentType());
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////////
+         // if there's an input stream in the response, just send that down to the client //
+         ///////////////////////////////////////////////////////////////////////////////////
+         if(response.getInputStream() != null)
+         {
+            context.result(response.getInputStream());
+            storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody("Streamed result"));
+         }
+         else
+         {
+            ////////////////////////////////////////////////////////////////////////////////////
+            // else, try to return it raw - as byte[], or String, or as a converted-to-String //
+            ////////////////////////////////////////////////////////////////////////////////////
+            Serializable result = Objects.requireNonNullElse(response.getResponseBodyObject(), "");
+            if(result instanceof byte[] ba)
+            {
+               context.result(ba);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody("Byte array of length: " + ba.length));
+            }
+            else if(result instanceof String s)
+            {
+               context.result(s);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(s));
+            }
+            else
+            {
+               String resultString = String.valueOf(result);
+               context.result(resultString);
+               storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+            }
+         }
       }
    }
 
@@ -381,9 +437,7 @@ public class QJavalinApiHandler
          //////////////////
          QJavalinAccessLogger.logEndSuccess();
          context.status(response.getStatusCode().getCode());
-         String resultString = toJson(Objects.requireNonNullElse(response.getResponseBodyObject(), ""));
-         context.result(resultString);
-         storeApiLog(apiLog.withStatusCode(context.statusCode()).withResponseBody(resultString));
+         handleProcessResponse(context, response, apiLog);
       }
       catch(Exception e)
       {

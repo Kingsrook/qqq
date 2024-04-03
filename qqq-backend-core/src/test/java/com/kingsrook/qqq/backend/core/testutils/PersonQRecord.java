@@ -40,6 +40,14 @@ public class PersonQRecord extends QRecord
 
 
 
+   public PersonQRecord withFirstName(String firstName)
+   {
+      setValue("firstName", firstName);
+      return (this);
+   }
+
+
+
    public PersonQRecord withBirthDate(LocalDate birthDate)
    {
       setValue("birthDate", birthDate);

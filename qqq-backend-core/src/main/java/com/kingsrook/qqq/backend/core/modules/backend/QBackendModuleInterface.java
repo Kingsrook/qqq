@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QStorageInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -126,6 +127,16 @@ public interface QBackendModuleInterface
    default AggregateInterface getAggregateInterface()
    {
       throwNotImplemented("Aggregate");
+      return null;
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default QStorageInterface getStorageInterface()
+   {
+      throwNotImplemented("StorageInterface");
       return null;
    }
 

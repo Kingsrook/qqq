@@ -139,4 +139,28 @@ public class ObjectUtils
       return (b);
    }
 
+
+
+   /*******************************************************************************
+    ** Utility to test a chained unsafe expression CAN get to the end and return true.
+    **
+    ** e.g., instead of:
+    **   if(a && a.b && a.b.c && a.b.c.d)
+    ** we can do:
+    **   if(ifCan(() -> a.b.c.d))
+    **
+    ** Note - if the supplier returns null, that counts as false!
+    *******************************************************************************/
+   public static boolean ifCan(UnsafeSupplier<Boolean, ? extends Throwable> supplier)
+   {
+      try
+      {
+         return supplier.get();
+      }
+      catch(Throwable t)
+      {
+         return (false);
+      }
+   }
+
 }

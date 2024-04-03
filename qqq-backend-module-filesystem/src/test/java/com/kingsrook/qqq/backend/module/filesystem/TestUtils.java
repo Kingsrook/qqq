@@ -63,16 +63,16 @@ public class TestUtils
    public static final String BACKEND_NAME_S3             = "s3";
    public static final String BACKEND_NAME_S3_SANS_PREFIX = "s3sansPrefix";
    public static final String BACKEND_NAME_MOCK           = "mock";
-   public static final String BACKEND_NAME_MEMORY = "memory";
+   public static final String BACKEND_NAME_MEMORY         = "memory";
 
    public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
    public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
    public static final String TABLE_NAME_BLOB_LOCAL_FS        = "local-blob";
-   public static final String TABLE_NAME_ARCHIVE_LOCAL_FS    = "local-archive";
+   public static final String TABLE_NAME_ARCHIVE_LOCAL_FS     = "local-archive";
    public static final String TABLE_NAME_PERSON_S3            = "person-s3";
    public static final String TABLE_NAME_BLOB_S3              = "s3-blob";
    public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
-   public static final String TABLE_NAME_BLOB_S3_SANS_PREFIX = "s3-blob-sans-prefix";
+   public static final String TABLE_NAME_BLOB_S3_SANS_PREFIX  = "s3-blob-sans-prefix";
 
    public static final String PROCESS_NAME_STREAMED_ETL                   = "etl.streamed";
    public static final String LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME = "localPersonCsvFileImporter";

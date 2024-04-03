@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 
 
 /*******************************************************************************
@@ -35,20 +37,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
  *******************************************************************************/
 public interface ExportStreamerInterface
 {
-   /*******************************************************************************
-    ** Called once, before any rows are available.  Meant to write a header, for example.
-    *******************************************************************************/
-   void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException;
 
    /*******************************************************************************
-    ** Called as records flow into the pipe.
-    ******************************************************************************/
-   void addRecords(List<QRecord> recordList) throws QReportingException;
-
-   /*******************************************************************************
-    ** Called once, after all rows are available.  Meant to write a footer, or close resources, for example.
+    ** Called once, before any sheets are actually being produced.
     *******************************************************************************/
-   void finish() throws QReportingException;
+   default void preRun(ReportDestination reportDestination, List<QReportView> views) throws QReportingException
+   {
+      // noop in base class
+   }
 
    /*******************************************************************************
     **
@@ -59,10 +55,31 @@ public interface ExportStreamerInterface
    }
 
    /*******************************************************************************
+    ** Called once per sheet, before any rows are available.  Meant to write a
+    ** header, for example.
+    **
+    ** If multiple sheets are being created, there is no separate end-sheet call.
+    ** Rather, a new one will just get started...
+    *******************************************************************************/
+   void start(ExportInput exportInput, List<QFieldMetaData> fields, String label, QReportView view) throws QReportingException;
+
+   /*******************************************************************************
+    ** Called as records flow into the pipe.
+    ******************************************************************************/
+   void addRecords(List<QRecord> recordList) throws QReportingException;
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    default void addTotalsRow(QRecord record) throws QReportingException
    {
       addRecords(List.of(record));
    }
+
+   /*******************************************************************************
+    ** Called after all sheets are complete.  Meant to do a final write, or close
+    ** resources, for example.
+    *******************************************************************************/
+   void finish() throws QReportingException;
+
 }

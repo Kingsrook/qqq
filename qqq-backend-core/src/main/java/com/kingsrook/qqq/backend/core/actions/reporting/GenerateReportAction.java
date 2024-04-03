@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.reporting;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,18 +34,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.DataSourceQueryInputCustomizer;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportViewCustomizer;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QFormulaException;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -51,6 +58,9 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -68,12 +78,17 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunInput;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunOutput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
 import com.kingsrook.qqq.backend.core.utils.aggregates.BigDecimalAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.InstantAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.IntegerAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.LocalDateAggregates;
 import com.kingsrook.qqq.backend.core.utils.aggregates.LongAggregates;
+import com.kingsrook.qqq.backend.core.utils.aggregates.StringAggregates;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -88,7 +103,7 @@ import com.kingsrook.qqq.backend.core.utils.aggregates.LongAggregates;
  ** - summaries (like pivot tables, but called summary to avoid confusion with "native" pivot tables),
  ** - native pivot tables (not initially supported, due to lack of support in fastexcel...).
  *******************************************************************************/
-public class GenerateReportAction
+public class GenerateReportAction extends AbstractQActionFunction<ReportInput, ReportOutput>
 {
    private static final QLogger LOG = QLogger.getLogger(GenerateReportAction.class);
 
@@ -102,50 +117,67 @@ public class GenerateReportAction
    // Aggregates: (count:47;sum:10,000;max:2,000;min:15)                                                      //
    // salesSummaryReport > [(state:MO),(city:St.Louis)] > salePrice  > (count:47;sum:10,000;max:2,000;min:15) //
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> summaryAggregates  = new HashMap<>();
-   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> varianceAggregates = new HashMap<>();
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> summaryAggregates  = new HashMap<>();
+   Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> varianceAggregates = new HashMap<>();
 
-   Map<String, AggregatesInterface<?>> totalAggregates         = new HashMap<>();
-   Map<String, AggregatesInterface<?>> varianceTotalAggregates = new HashMap<>();
+   Map<String, AggregatesInterface<?, ?>> totalAggregates         = new HashMap<>();
+   Map<String, AggregatesInterface<?, ?>> varianceTotalAggregates = new HashMap<>();
 
-   private QReportMetaData         report;
-   private ReportFormat            reportFormat;
    private ExportStreamerInterface reportStreamer;
+   private List<QReportDataSource> dataSources;
+   private List<QReportView>       views;
+
+   private Map<String, Integer> countByDataSource = new HashMap<>();
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void execute(ReportInput reportInput) throws QException
+   public ReportOutput execute(ReportInput reportInput) throws QException
    {
-      report = reportInput.getInstance().getReport(reportInput.getReportName());
-      reportFormat = reportInput.getReportFormat();
+      ReportOutput reportOutput = new ReportOutput();
+      QReportMetaData report = getReportMetaData(reportInput);
+
+      this.views = report.getViews();
+      this.dataSources = report.getDataSources();
+
+      ReportFormat reportFormat = reportInput.getReportDestination().getReportFormat();
       if(reportFormat == null)
       {
          throw new QException("Report format was not specified.");
       }
-      reportStreamer = reportFormat.newReportStreamer();
+
+      if(reportInput.getOverrideExportStreamerSupplier() != null)
+      {
+         reportStreamer = reportInput.getOverrideExportStreamerSupplier().get();
+      }
+      else
+      {
+         reportStreamer = reportFormat.newReportStreamer();
+      }
+
+      reportStreamer.preRun(reportInput.getReportDestination(), views);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////
       // foreach data source, do a query (possibly more than 1, if it goes to multiple table views) //
       ////////////////////////////////////////////////////////////////////////////////////////////////
-      for(QReportDataSource dataSource : report.getDataSources())
+      for(QReportDataSource dataSource : dataSources)
       {
          //////////////////////////////////////////////////////////////////////////////
          // make a list of the views that use this data source for various purposes. //
          //////////////////////////////////////////////////////////////////////////////
-         List<QReportView> dataSourceTableViews = report.getViews().stream()
+         List<QReportView> dataSourceTableViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.TABLE))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         List<QReportView> dataSourceSummaryViews = report.getViews().stream()
+         List<QReportView> dataSourceSummaryViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.SUMMARY))
             .filter(v -> v.getDataSourceName().equals(dataSource.getName()))
             .toList();
 
-         List<QReportView> dataSourceVariantViews = report.getViews().stream()
+         List<QReportView> dataSourceVariantViews = views.stream()
             .filter(v -> v.getType().equals(ReportType.SUMMARY))
             .filter(v -> v.getVarianceDataSourceName() != null && v.getVarianceDataSourceName().equals(dataSource.getName()))
             .toList();
@@ -184,24 +216,50 @@ public class GenerateReportAction
                ////////////////////////////////////////////////////////////////////////////////////
                // start the table-view (e.g., open this tab in xlsx) and then run the query-loop //
                ////////////////////////////////////////////////////////////////////////////////////
-               startTableView(reportInput, dataSource, dataSourceTableView);
+               startTableView(reportInput, dataSource, dataSourceTableView, reportFormat);
                gatherData(reportInput, dataSource, dataSourceTableView, dataSourceSummaryViews, dataSourceVariantViews);
             }
          }
       }
 
+      //////////////////////
+      // add pivot sheets //
+      //////////////////////
+      for(QReportView view : views)
+      {
+         if(view.getType().equals(ReportType.PIVOT))
+         {
+            if(reportFormat.getSupportsNativePivotTables())
+            {
+               startTableView(reportInput, null, view, reportFormat);
+            }
+            else
+            {
+               LOG.warn("Request to render a report with a PIVOT type view, for a format that does not support native pivot tables", logPair("reportFormat", reportFormat));
+            }
+
+            //////////////////////////////////////////////////////////////////////////
+            // there's no data to add to a pivot table, so nothing else to do here. //
+            //////////////////////////////////////////////////////////////////////////
+         }
+      }
+
       outputSummaries(reportInput);
+
+      reportOutput.setTotalRecordCount(countByDataSource.values().stream().mapToInt(Integer::intValue).sum());
 
       reportStreamer.finish();
 
       try
       {
-         reportInput.getReportOutputStream().close();
+         reportInput.getReportDestination().getReportOutputStream().close();
       }
       catch(Exception e)
       {
          throw (new QReportingException("Error completing report", e));
       }
+
+      return (reportOutput);
    }
 
 
@@ -209,28 +267,48 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView) throws QException
+   private QReportMetaData getReportMetaData(ReportInput reportInput) throws QException
    {
-      QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
+      if(reportInput.getReportMetaData() != null)
+      {
+         return reportInput.getReportMetaData();
+      }
 
+      if(StringUtils.hasContent(reportInput.getReportName()))
+      {
+         return QContext.getQInstance().getReport(reportInput.getReportName());
+      }
+
+      throw (new QReportingException("ReportInput did not contain required parameters to identify the report being generated"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void startTableView(ReportInput reportInput, QReportDataSource dataSource, QReportView reportView, ReportFormat reportFormat) throws QException
+   {
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
 
       ExportInput exportInput = new ExportInput();
-      exportInput.setReportFormat(reportFormat);
-      exportInput.setFilename(reportInput.getFilename());
+      exportInput.setReportDestination(reportInput.getReportDestination());
       exportInput.setTitleRow(getTitle(reportView, variableInterpreter));
       exportInput.setIncludeHeaderRow(reportView.getIncludeHeaderRow());
-      exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
       JoinsContext joinsContext = null;
-      if(StringUtils.hasContent(dataSource.getSourceTable()))
+      if(dataSource != null)
       {
-         joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+         if(StringUtils.hasContent(dataSource.getSourceTable()))
+         {
+            joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+            countDataSourceRecords(reportInput, dataSource, reportFormat);
+         }
       }
 
       List<QFieldMetaData> fields = new ArrayList<>();
-      for(QReportField column : reportView.getColumns())
+      for(QReportField column : CollectionUtils.nonNullList(reportView.getColumns()))
       {
          if(column.getIsVirtual())
          {
@@ -242,7 +320,7 @@ public class GenerateReportAction
             JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext == null ? null : joinsContext.getFieldAndTableNameOrAlias(effectiveFieldName);
             if(fieldAndTableNameOrAlias == null || fieldAndTableNameOrAlias.field() == null)
             {
-               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] in dataSource [" + dataSource.getName() + "]");
+               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] in dataSource [" + (dataSource == null ? null : dataSource.getName()) + "]");
             }
 
             QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
@@ -256,7 +334,7 @@ public class GenerateReportAction
       }
 
       reportStreamer.setDisplayFormats(getDisplayFormatMap(fields));
-      reportStreamer.start(exportInput, fields, reportView.getLabel());
+      reportStreamer.start(exportInput, fields, reportView.getLabel(), reportView);
    }
 
 
@@ -264,7 +342,36 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
+   private void countDataSourceRecords(ReportInput reportInput, QReportDataSource dataSource, ReportFormat reportFormat) throws QException
+   {
+      QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
+      setInputValuesInQueryFilter(reportInput, queryFilter);
+
+      CountInput countInput = new CountInput();
+      countInput.setTableName(dataSource.getSourceTable());
+      countInput.setFilter(queryFilter);
+      countInput.setQueryJoins(dataSource.getQueryJoins());
+      CountOutput countOutput = new CountAction().execute(countInput);
+
+      if(countOutput.getCount() != null)
+      {
+         countByDataSource.put(dataSource.getName(), countOutput.getCount());
+
+         if(reportFormat.getMaxRows() != null && countOutput.getCount() > reportFormat.getMaxRows())
+         {
+            throw (new QUserFacingException("The requested report would include more rows ("
+               + String.format("%,d", countOutput.getCount()) + ") than the maximum allowed ("
+               + String.format("%,d", reportFormat.getMaxRows()) + ") for the selected file format (" + reportFormat + ")."));
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Integer gatherData(ReportInput reportInput, QReportDataSource dataSource, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
    {
       ////////////////////////////////////////////////////////////////////////////////////////
       // check if this view has a transform step - if so, set it up now and run its pre-run //
@@ -291,6 +398,9 @@ public class GenerateReportAction
       RunBackendStepInput   finalTransformStepInput  = transformStepInput;
       RunBackendStepOutput  finalTransformStepOutput = transformStepOutput;
 
+      String tableLabel = ObjectUtils.tryElse(() -> QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel(), Objects.requireNonNullElse(dataSource.getSourceTable(), ""));
+      AtomicInteger consumedCount = new AtomicInteger(0);
+
       /////////////////////////////////////////////////////////////////
       // run a record pipe loop, over the query for this data source //
       /////////////////////////////////////////////////////////////////
@@ -307,6 +417,7 @@ public class GenerateReportAction
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
+            queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
 
             queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
@@ -350,6 +461,17 @@ public class GenerateReportAction
             records = finalTransformStepOutput.getRecords();
          }
 
+         Integer total = countByDataSource.get(dataSource.getName());
+         if(total != null)
+         {
+            reportInput.getAsyncJobCallback().updateStatus("Processing " + tableLabel + " records", consumedCount.get() + 1, total);
+         }
+         else
+         {
+            reportInput.getAsyncJobCallback().updateStatus("Processing " + tableLabel + " records (" + String.format("%,d", consumedCount.get() + 1) + ")");
+         }
+         consumedCount.getAndAdd(records.size());
+
          return (consumeRecords(reportInput, dataSource, records, tableView, summaryViews, variantViews));
       });
 
@@ -360,6 +482,8 @@ public class GenerateReportAction
       {
          transformStep.postRun(new BackendStepPostRunInput(transformStepInput), new BackendStepPostRunOutput(transformStepOutput));
       }
+
+      return consumedCount.get();
    }
 
 
@@ -367,11 +491,11 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Set<String> setupFieldsToTranslatePossibleValues(ReportInput reportInput, QReportDataSource dataSource, JoinsContext joinsContext)
+   private Set<String> setupFieldsToTranslatePossibleValues(ReportInput reportInput, QReportDataSource dataSource, JoinsContext joinsContext) throws QException
    {
       Set<String> fieldsToTranslatePossibleValues = new HashSet<>();
 
-      for(QReportView view : report.getViews())
+      for(QReportView view : views)
       {
          for(QReportField column : CollectionUtils.nonNullList(view.getColumns()))
          {
@@ -385,20 +509,47 @@ public class GenerateReportAction
             }
          }
 
-         for(String summaryField : CollectionUtils.nonNullList(view.getPivotFields()))
+         for(String summaryFieldName : CollectionUtils.nonNullList(view.getSummaryFields()))
          {
             ///////////////////////////////////////////////////////////////////////////////
             // all pivotFields that are possible value sources are implicitly translated //
             ///////////////////////////////////////////////////////////////////////////////
-            QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
-            if(table.getField(summaryField).getPossibleValueSourceName() != null)
+            QTableMetaData    mainTable         = QContext.getQInstance().getTable(dataSource.getSourceTable());
+            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(mainTable, summaryFieldName);
+            if(fieldAndJoinTable.field().getPossibleValueSourceName() != null)
             {
-               fieldsToTranslatePossibleValues.add(summaryField);
+               fieldsToTranslatePossibleValues.add(summaryFieldName);
             }
          }
       }
 
       return (fieldsToTranslatePossibleValues);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private FieldAndJoinTable getFieldAndJoinTable(QTableMetaData mainTable, String fieldName) throws QException
+   {
+      if(fieldName.indexOf('.') > -1)
+      {
+         String joinTableName = fieldName.replaceAll("\\..*", "");
+         String joinFieldName = fieldName.replaceAll(".*\\.", "");
+
+         QTableMetaData joinTable = QContext.getQInstance().getTable(joinTableName);
+         if(joinTable == null)
+         {
+            throw (new QException("Unrecognized join table name: " + joinTableName));
+         }
+
+         return new FieldAndJoinTable(joinTable.getField(joinFieldName), joinTable);
+      }
+      else
+      {
+         return new FieldAndJoinTable(mainTable.getField(fieldName), mainTable);
+      }
    }
 
 
@@ -495,26 +646,27 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordsToSummaryAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?>>>> aggregatesMap)
+   private void addRecordsToSummaryAggregates(QReportView view, QTableMetaData table, List<QRecord> records, Map<String, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>>> aggregatesMap) throws QException
    {
-      Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
+      Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates = aggregatesMap.computeIfAbsent(view.getName(), (name) -> new HashMap<>());
 
       for(QRecord record : records)
       {
          SummaryKey key = new SummaryKey();
-         for(String summaryField : view.getPivotFields())
+         for(String summaryFieldName : view.getSummaryFields())
          {
-            Serializable summaryValue = record.getValue(summaryField);
-            if(table.getField(summaryField).getPossibleValueSourceName() != null)
+            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, summaryFieldName);
+            Serializable      summaryValue      = record.getValue(summaryFieldName);
+            if(fieldAndJoinTable.field().getPossibleValueSourceName() != null)
             {
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // so, this is kinda a thing - where we implicitly use possible-value labels (e.g., display values) for pivot fields... //
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               summaryValue = record.getDisplayValue(summaryField);
+               summaryValue = record.getDisplayValue(summaryFieldName);
             }
-            key.add(summaryField, summaryValue);
+            key.add(summaryFieldName, summaryValue);
 
-            if(view.getIncludePivotSubTotals() && key.getKeys().size() < view.getPivotFields().size())
+            if(view.getIncludeSummarySubTotals() && key.getKeys().size() < view.getSummaryFields().size())
             {
                /////////////////////////////////////////////////////////////////////////////////////////
                // be careful here, with these key objects, and their identity, being used as map keys //
@@ -533,9 +685,9 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?>>> viewAggregates, SummaryKey key)
+   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates, SummaryKey key) throws QException
    {
-      Map<String, AggregatesInterface<?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
+      Map<String, AggregatesInterface<?, ?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
       addRecordToAggregatesMap(table, record, keyAggregates);
    }
 
@@ -544,29 +696,58 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?>> aggregatesMap)
+   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?, ?>> aggregatesMap) throws QException
    {
-      for(QFieldMetaData field : table.getFields().values())
+      //////////////////////////////////////////////////////////////////////////////////////
+      // todo - an optimization could be, to only compute aggregates that we'll need...   //
+      // Only if we measure and see this to be slow - it may be, lots of BigDecimal math? //
+      //////////////////////////////////////////////////////////////////////////////////////
+      for(String fieldName : record.getValues().keySet())
       {
-         if(field.getType().equals(QFieldType.INTEGER))
+         FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, fieldName);
+         QFieldMetaData    field             = fieldAndJoinTable.field();
+         if(StringUtils.hasContent(field.getPossibleValueSourceName()))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<Integer> fieldAggregates = (AggregatesInterface<Integer>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new IntegerAggregates());
-            fieldAggregates.add(record.getValueInteger(field.getName()));
+            AggregatesInterface<String, ?> fieldAggregates = (AggregatesInterface<String, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new StringAggregates());
+            fieldAggregates.add(record.getDisplayValue(fieldName));
+         }
+         else if(field.getType().equals(QFieldType.INTEGER))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<Integer, ?> fieldAggregates = (AggregatesInterface<Integer, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new IntegerAggregates());
+            fieldAggregates.add(record.getValueInteger(fieldName));
          }
          else if(field.getType().equals(QFieldType.LONG))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<Long> fieldAggregates = (AggregatesInterface<Long>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new LongAggregates());
-            fieldAggregates.add(record.getValueLong(field.getName()));
+            AggregatesInterface<Long, ?> fieldAggregates = (AggregatesInterface<Long, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new LongAggregates());
+            fieldAggregates.add(record.getValueLong(fieldName));
          }
          else if(field.getType().equals(QFieldType.DECIMAL))
          {
             @SuppressWarnings("unchecked")
-            AggregatesInterface<BigDecimal> fieldAggregates = (AggregatesInterface<BigDecimal>) aggregatesMap.computeIfAbsent(field.getName(), (name) -> new BigDecimalAggregates());
-            fieldAggregates.add(record.getValueBigDecimal(field.getName()));
+            AggregatesInterface<BigDecimal, ?> fieldAggregates = (AggregatesInterface<BigDecimal, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new BigDecimalAggregates());
+            fieldAggregates.add(record.getValueBigDecimal(fieldName));
          }
-         // todo - more types (dates, at least?)
+         else if(field.getType().equals(QFieldType.DATE_TIME))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<Instant, ?> fieldAggregates = (AggregatesInterface<Instant, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new InstantAggregates());
+            fieldAggregates.add(record.getValueInstant(fieldName));
+         }
+         else if(field.getType().equals(QFieldType.DATE))
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<LocalDate, ?> fieldAggregates = (AggregatesInterface<LocalDate, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new LocalDateAggregates());
+            fieldAggregates.add(record.getValueLocalDate(fieldName));
+         }
+         if(field.getType().isStringLike())
+         {
+            @SuppressWarnings("unchecked")
+            AggregatesInterface<String, ?> fieldAggregates = (AggregatesInterface<String, ?>) aggregatesMap.computeIfAbsent(fieldName, (name) -> new StringAggregates());
+            fieldAggregates.add(record.getValueString(fieldName));
+         }
       }
    }
 
@@ -575,24 +756,22 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void outputSummaries(ReportInput reportInput) throws QReportingException, QFormulaException
+   private void outputSummaries(ReportInput reportInput) throws QException
    {
-      List<QReportView> reportViews = report.getViews().stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
+      List<QReportView> reportViews = views.stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
-         QReportDataSource dataSource    = report.getDataSource(view.getDataSourceName());
+         QReportDataSource dataSource    = getDataSource(view.getDataSourceName());
          QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
          SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
          ExportInput exportInput = new ExportInput();
-         exportInput.setReportFormat(reportFormat);
-         exportInput.setFilename(reportInput.getFilename());
+         exportInput.setReportDestination(reportInput.getReportDestination());
          exportInput.setTitleRow(summaryOutput.titleRow);
          exportInput.setIncludeHeaderRow(view.getIncludeHeaderRow());
-         exportInput.setReportOutputStream(reportInput.getReportOutputStream());
 
          reportStreamer.setDisplayFormats(getDisplayFormatMap(view));
-         reportStreamer.start(exportInput, getFields(table, view), view.getLabel());
+         reportStreamer.start(exportInput, getFields(table, view), view.getLabel(), view);
 
          reportStreamer.addRecords(summaryOutput.summaryRows); // todo - what if this set is huge?
 
@@ -601,6 +780,24 @@ public class GenerateReportAction
             reportStreamer.addTotalsRow(summaryOutput.totalRow);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QReportDataSource getDataSource(String dataSourceName)
+   {
+      for(QReportDataSource dataSource : CollectionUtils.nonNullList(dataSources))
+      {
+         if(dataSource.getName().equals(dataSourceName))
+         {
+            return (dataSource);
+         }
+      }
+
+      return (null);
    }
 
 
@@ -632,13 +829,13 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QFieldMetaData> getFields(QTableMetaData table, QReportView view)
+   private List<QFieldMetaData> getFields(QTableMetaData table, QReportView view) throws QException
    {
       List<QFieldMetaData> fields = new ArrayList<>();
-      for(String pivotField : view.getPivotFields())
+      for(String summaryFieldName : view.getSummaryFields())
       {
-         QFieldMetaData field = table.getField(pivotField);
-         fields.add(new QFieldMetaData(pivotField, field.getType()).withLabel(field.getLabel())); // todo do we need the type?  if so need table as input here
+         FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, summaryFieldName);
+         fields.add(new QFieldMetaData(summaryFieldName, fieldAndJoinTable.field().getType()).withLabel(fieldAndJoinTable.field().getLabel())); // todo do we need the type?  if so need table as input here
       }
       for(QReportField column : view.getColumns())
       {
@@ -668,11 +865,11 @@ public class GenerateReportAction
       // create summary rows //
       /////////////////////////
       List<QRecord> summaryRows = new ArrayList<>();
-      for(Map.Entry<SummaryKey, Map<String, AggregatesInterface<?>>> entry : summaryAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
+      for(Map.Entry<SummaryKey, Map<String, AggregatesInterface<?, ?>>> entry : summaryAggregates.getOrDefault(view.getName(), Collections.emptyMap()).entrySet())
       {
-         SummaryKey                          summaryKey      = entry.getKey();
-         Map<String, AggregatesInterface<?>> fieldAggregates = entry.getValue();
-         Map<String, Serializable>           summaryValues   = getSummaryValuesForInterpreter(fieldAggregates);
+         SummaryKey                             summaryKey      = entry.getKey();
+         Map<String, AggregatesInterface<?, ?>> fieldAggregates = entry.getValue();
+         Map<String, Serializable>              summaryValues   = getSummaryValuesForInterpreter(fieldAggregates);
          variableInterpreter.addValueMap("pivot", summaryValues);
          variableInterpreter.addValueMap("summary", summaryValues);
 
@@ -681,9 +878,9 @@ public class GenerateReportAction
 
          if(!varianceAggregates.isEmpty())
          {
-            Map<SummaryKey, Map<String, AggregatesInterface<?>>> varianceMap    = varianceAggregates.getOrDefault(view.getName(), Collections.emptyMap());
-            Map<String, AggregatesInterface<?>>                  varianceSubMap = varianceMap.getOrDefault(summaryKey, Collections.emptyMap());
-            Map<String, Serializable>                            varianceValues = getSummaryValuesForInterpreter(varianceSubMap);
+            Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> varianceMap    = varianceAggregates.getOrDefault(view.getName(), Collections.emptyMap());
+            Map<String, AggregatesInterface<?, ?>>                  varianceSubMap = varianceMap.getOrDefault(summaryKey, Collections.emptyMap());
+            Map<String, Serializable>                               varianceValues = getSummaryValuesForInterpreter(varianceSubMap);
             variableInterpreter.addValueMap("variancePivot", varianceValues);
             variableInterpreter.addValueMap("variance", varianceValues);
          }
@@ -702,7 +899,7 @@ public class GenerateReportAction
          ///////////////////////////////////////////////////////////////////////////////
          // for summary subtotals, add the text "Total" to the last field in this key //
          ///////////////////////////////////////////////////////////////////////////////
-         if(summaryKey.getKeys().size() < view.getPivotFields().size())
+         if(summaryKey.getKeys().size() < view.getSummaryFields().size())
          {
             String fieldName = summaryKey.getKeys().get(summaryKey.getKeys().size() - 1).getA();
             summaryRow.setValue(fieldName, summaryRow.getValueString(fieldName) + " Total");
@@ -740,11 +937,11 @@ public class GenerateReportAction
       {
          totalRow = new QRecord();
 
-         for(String pivotField : view.getPivotFields())
+         for(String summaryField : view.getSummaryFields())
          {
             if(totalRow.getValues().isEmpty())
             {
-               totalRow.setValue(pivotField, "Totals");
+               totalRow.setValue(summaryField, "Totals");
             }
          }
 
@@ -864,18 +1061,24 @@ public class GenerateReportAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, Serializable> getSummaryValuesForInterpreter(Map<String, AggregatesInterface<?>> fieldAggregates)
+   private Map<String, Serializable> getSummaryValuesForInterpreter(Map<String, AggregatesInterface<?, ?>> fieldAggregates)
    {
       Map<String, Serializable> summaryValuesForInterpreter = new HashMap<>();
-      for(Map.Entry<String, AggregatesInterface<?>> subEntry : fieldAggregates.entrySet())
+      for(Map.Entry<String, AggregatesInterface<?, ?>> subEntry : fieldAggregates.entrySet())
       {
-         String                 fieldName  = subEntry.getKey();
-         AggregatesInterface<?> aggregates = subEntry.getValue();
+         String                    fieldName  = subEntry.getKey();
+         AggregatesInterface<?, ?> aggregates = subEntry.getValue();
          summaryValuesForInterpreter.put("sum." + fieldName, aggregates.getSum());
          summaryValuesForInterpreter.put("count." + fieldName, aggregates.getCount());
+         summaryValuesForInterpreter.put("count_nums." + fieldName, aggregates.getCount());
          summaryValuesForInterpreter.put("min." + fieldName, aggregates.getMin());
          summaryValuesForInterpreter.put("max." + fieldName, aggregates.getMax());
          summaryValuesForInterpreter.put("average." + fieldName, aggregates.getAverage());
+         summaryValuesForInterpreter.put("product." + fieldName, aggregates.getProduct());
+         summaryValuesForInterpreter.put("var." + fieldName, aggregates.getVariance());
+         summaryValuesForInterpreter.put("varp." + fieldName, aggregates.getVarP());
+         summaryValuesForInterpreter.put("std_dev." + fieldName, aggregates.getStandardDeviation());
+         summaryValuesForInterpreter.put("std_devp." + fieldName, aggregates.getStdDevP());
       }
       return summaryValuesForInterpreter;
    }
@@ -889,4 +1092,10 @@ public class GenerateReportAction
    {
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable) {}
 }
