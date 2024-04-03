@@ -922,7 +922,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             if(queryStringParams.getRecordIdsField() != null)
             {
-               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("path"));
+               parameters.add(processFieldToParameter(apiInstanceMetaData, queryStringParams.getRecordIdsField()).withIn("query"));
             }
 
             for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
