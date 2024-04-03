@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.actions.reporting.excel.poi;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.regex.Pattern;
 import org.apache.poi.ss.util.CellReference;
 
 
@@ -34,8 +33,6 @@ import org.apache.poi.ss.util.CellReference;
  *******************************************************************************/
 public class StreamedPoiSheetWriter
 {
-   private static Pattern xmlSpecialChars = Pattern.compile(".*[&<>'\"].*");
-
    private final Writer writer;
    private       int    rowNo;
 
@@ -71,8 +68,8 @@ public class StreamedPoiSheetWriter
    public void endSheet() throws IOException
    {
       writer.write("""
-         </sheetData>
-      </worksheet>""");
+            </sheetData>
+         </worksheet>""");
    }
 
 
@@ -111,8 +108,11 @@ public class StreamedPoiSheetWriter
       {
          writer.write(" s=\"" + styleIndex + "\"");
       }
+
+      String cleanValue = cleanseValue(value);
+
       writer.write(">");
-      writer.write("<is><t>" + cleanseValue(value) + "</t></is>");
+      writer.write("<is><t>" + cleanValue + "</t></is>");
       writer.write("</c>");
    }
 
@@ -123,15 +123,18 @@ public class StreamedPoiSheetWriter
     *******************************************************************************/
    public static String cleanseValue(String value)
    {
-      // todo - profile...
-      if(xmlSpecialChars.matcher(value).find())
+      if(value != null)
       {
-         value = value.replace("&", "&amp;");
-         value = value.replace("<", "&lt;");
-         value = value.replace(">", "&gt;");
-         value = value.replace("'", "&apos;");
-         value = value.replace("\"", "&quot;");
+         if(value.indexOf('&') > -1 || value.indexOf('<') > -1 || value.indexOf('>') > -1 || value.indexOf('\'') > -1 || value.indexOf('"') > -1)
+         {
+            value = value.replace("&", "&amp;");
+            value = value.replace("<", "&lt;");
+            value = value.replace(">", "&gt;");
+            value = value.replace("'", "&apos;");
+            value = value.replace("\"", "&quot;");
+         }
       }
+
       return (value);
    }
 
@@ -191,13 +194,16 @@ public class StreamedPoiSheetWriter
    public void createCell(int columnIndex, Boolean value, int styleIndex) throws IOException
    {
       String ref = new CellReference(rowNo, columnIndex).formatAsString();
-      writer.write("<c r=\"" + ref + "\" t=\"n\"");
+      writer.write("<c r=\"" + ref + "\" t=\"b\"");
       if(styleIndex != -1)
       {
          writer.write(" s=\"" + styleIndex + "\"");
       }
       writer.write(">");
-      writer.write("<v>" + value + "</v>");
+      if(value != null)
+      {
+         writer.write("<v>" + (value ? 1 : 0) + "</v>");
+      }
       writer.write("</c>");
    }
 
