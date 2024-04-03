@@ -78,6 +78,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunInput;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.BackendStepPostRunOutput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.aggregates.AggregatesInterface;
@@ -302,9 +303,8 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          if(StringUtils.hasContent(dataSource.getSourceTable()))
          {
             joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+            countDataSourceRecords(reportInput, dataSource, reportFormat);
          }
-
-         countDataSourceRecords(reportInput, dataSource, reportFormat);
       }
 
       List<QFieldMetaData> fields = new ArrayList<>();
@@ -320,7 +320,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext == null ? null : joinsContext.getFieldAndTableNameOrAlias(effectiveFieldName);
             if(fieldAndTableNameOrAlias == null || fieldAndTableNameOrAlias.field() == null)
             {
-               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] in dataSource [" + dataSource.getName() + "]");
+               throw new QReportingException("Could not find field named [" + effectiveFieldName + "] in dataSource [" + (dataSource == null ? null : dataSource.getName()) + "]");
             }
 
             QFieldMetaData field = fieldAndTableNameOrAlias.field().clone();
@@ -398,7 +398,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       RunBackendStepInput   finalTransformStepInput  = transformStepInput;
       RunBackendStepOutput  finalTransformStepOutput = transformStepOutput;
 
-      String tableLabel = QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel();
+      String tableLabel = ObjectUtils.tryElse(() -> QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel(), Objects.requireNonNullElse(dataSource.getSourceTable(), ""));
       AtomicInteger consumedCount = new AtomicInteger(0);
 
       /////////////////////////////////////////////////////////////////
