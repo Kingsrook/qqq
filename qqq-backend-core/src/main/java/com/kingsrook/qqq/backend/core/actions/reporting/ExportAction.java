@@ -232,6 +232,7 @@ public class ExportAction
       }
       queryInput.getFilter().setLimit(exportInput.getLimit());
       queryInput.setShouldTranslatePossibleValues(true);
+      queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
