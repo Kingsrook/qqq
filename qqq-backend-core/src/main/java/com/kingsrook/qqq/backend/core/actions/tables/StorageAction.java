@@ -79,7 +79,7 @@ public class StorageAction
 
       if(storageInput.getTableName() == null)
       {
-         throw (new QException("Table name was not specified in query input"));
+         throw (new QException("Table name was not specified in storage input"));
       }
 
       QTableMetaData table = storageInput.getTable();

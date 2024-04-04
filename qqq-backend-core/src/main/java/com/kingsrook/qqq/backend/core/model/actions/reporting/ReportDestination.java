@@ -26,7 +26,8 @@ import java.io.OutputStream;
 
 
 /*******************************************************************************
- **
+ ** Member of report & export Inputs, that wraps details about the destination of
+ ** where & how the report (or export) is being written.
  *******************************************************************************/
 public class ReportDestination
 {

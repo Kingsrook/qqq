@@ -55,10 +55,11 @@ import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReportStatus;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- **
+ ** Process step to actually execute rendering a saved report.
  *******************************************************************************/
 public class RenderSavedReportExecuteStep implements BackendStep
 {
@@ -86,6 +87,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
          OutputStream outputStream         = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
 
+         LOG.info("Starting to render a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference));
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
          //////////////////////////////////////////////////////////////////
@@ -133,6 +135,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
          runBackendStepOutput.addValue("storageTableName", storageTableName);
          runBackendStepOutput.addValue("storageReference", storageReference);
+         LOG.info("Completed rendering a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference), logPair("rowCount", reportOutput.getTotalRecordCount()));
       }
       catch(Exception e)
       {
@@ -167,7 +170,10 @@ public class RenderSavedReportExecuteStep implements BackendStep
          downloadFileBaseName = report.getLabel();
       }
 
-      downloadFileBaseName = downloadFileBaseName.replaceAll("/", "-");
+      //////////////////////////////////////////////////
+      // these chars have caused issues, so, disallow //
+      //////////////////////////////////////////////////
+      downloadFileBaseName = downloadFileBaseName.replaceAll("/", "-").replaceAll(",", "_");
 
       return (downloadFileBaseName + " - " + datePart);
    }

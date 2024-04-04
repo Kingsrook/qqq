@@ -59,7 +59,10 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
+ ** GenerateReportAction takes in ReportMetaData.
  **
+ ** This class knows how to adapt from a SavedReport to a ReportMetaData, so that
+ ** we can render a saved report.
  *******************************************************************************/
 public class SavedReportToReportMetaDataAdapter
 {
@@ -99,7 +102,7 @@ public class SavedReportToReportMetaDataAdapter
          view.setName("main");
          view.setType(ReportType.TABLE);
          view.setDataSourceName(dataSource.getName());
-         view.setLabel(savedReport.getLabel()); // todo eh?
+         view.setLabel(savedReport.getLabel());
          view.setIncludeHeaderRow(true);
 
          ///////////////////////////////////////////////////////////////////////////////////////////////

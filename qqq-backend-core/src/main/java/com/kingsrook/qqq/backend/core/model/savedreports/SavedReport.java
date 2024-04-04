@@ -52,7 +52,7 @@ public class SavedReport extends QRecordEntity
    private String label;
 
    @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
-   private String tableName; // todo - qqqTableId... ?
+   private String tableName;
 
    @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR, dynamicDefaultValueBehavior = DynamicDefaultValueBehavior.USER_ID)
    private String userId;

@@ -41,7 +41,7 @@ import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 
 
 /*******************************************************************************
- **
+ ** define process for rendering saved reports!
  *******************************************************************************/
 public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterface<QProcessMetaData>
 {
@@ -79,7 +79,6 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
             .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()
                .withTableName(SavedReport.TABLE_NAME)))
             .withCode(new QCodeReference(RenderSavedReportExecuteStep.class)))
-         // todo - no no, stream the damn thing... how to do that??
          .addStep(new QFrontendStepMetaData()
             .withName("output")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.DOWNLOAD_FORM)));

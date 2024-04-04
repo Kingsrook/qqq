@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.reporting.excel.poi;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.poi.ss.util.CellReference;
 
 
@@ -31,7 +33,7 @@ import org.apache.poi.ss.util.CellReference;
  ** Write excel formatted XML to a Writer.
  ** Originally from https://coderanch.com/t/548897/java/Generate-large-excel-POI
  *******************************************************************************/
-public class StreamedPoiSheetWriter
+public class StreamedSheetWriter
 {
    private final Writer writer;
    private       int    rowNo;
@@ -41,7 +43,7 @@ public class StreamedPoiSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public StreamedPoiSheetWriter(Writer writer)
+   public StreamedSheetWriter(Writer writer)
    {
       this.writer = writer;
    }
@@ -125,14 +127,44 @@ public class StreamedPoiSheetWriter
    {
       if(value != null)
       {
-         if(value.indexOf('&') > -1 || value.indexOf('<') > -1 || value.indexOf('>') > -1 || value.indexOf('\'') > -1 || value.indexOf('"') > -1)
+         StringBuilder rs = new StringBuilder();
+         for(int i = 0; i < value.length(); i++)
          {
-            value = value.replace("&", "&amp;");
-            value = value.replace("<", "&lt;");
-            value = value.replace(">", "&gt;");
-            value = value.replace("'", "&apos;");
-            value = value.replace("\"", "&quot;");
+            char c = value.charAt(i);
+            if(c == '&')
+            {
+               rs.append("&amp;");
+            }
+            else if(c == '<')
+            {
+               rs.append("&lt;");
+            }
+            else if(c == '>')
+            {
+               rs.append("&gt;");
+            }
+            else if(c == '\'')
+            {
+               rs.append("&apos;");
+            }
+            else if(c == '"')
+            {
+               rs.append("&quot;");
+            }
+            else if (c < 32 && c != '\t' && c != '\n')
+            {
+               rs.append(' ');
+            }
+            else
+            {
+               rs.append(c);
+            }
          }
+
+         Map<String, Integer> m = new HashMap();
+         m.computeIfAbsent("s", (s) -> 3);
+
+         value = rs.toString();
       }
 
       return (value);
@@ -207,8 +239,4 @@ public class StreamedPoiSheetWriter
       writer.write("</c>");
    }
 
-   // todo? public void createCell(int columnIndex, Calendar value, int styleIndex) throws IOException
-   // todo? {
-   // todo?    createCell(columnIndex, DateUtil.getExcelDate(value, false), styleIndex);
-   // todo? }
 }

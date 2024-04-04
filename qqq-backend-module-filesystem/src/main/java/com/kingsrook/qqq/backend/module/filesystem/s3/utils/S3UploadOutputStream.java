@@ -43,7 +43,8 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  ** OutputStream implementation that knows how to stream data into a new S3 file.
  **
- ** This will be done using a multipart-upload if the contents are > 5MB.
+ ** This will be done using a multipart-upload if the contents are > 5MB - else
+ ** just a 1-time-call to PutObject
  *******************************************************************************/
 public class S3UploadOutputStream extends OutputStream
 {

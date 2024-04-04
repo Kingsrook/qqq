@@ -31,8 +31,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValu
 public enum ReportFormatPossibleValueEnum implements PossibleValueEnum<String>
 {
    XLSX,
-   JSON,
-   CSV;
+   CSV,
+   JSON;
 
    public static final String NAME = "reportFormat";
 
