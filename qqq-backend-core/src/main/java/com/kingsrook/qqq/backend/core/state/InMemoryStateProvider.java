@@ -46,8 +46,9 @@ public class InMemoryStateProvider implements StateProviderInterface
 
    private final Map<AbstractStateKey, Object> map;
 
-   private int jobPeriodSeconds = 60 * 15;
-   private int jobInitialDelay  = 60 * 60 * 4;
+   private static int jobPeriodSeconds = 60 * 60; // 1 hour
+   private static int cleanHours       = 6;
+   private static int jobInitialDelay  = 60 * 60 * cleanHours;
 
 
 
@@ -84,7 +85,7 @@ public class InMemoryStateProvider implements StateProviderInterface
       {
          try
          {
-            Instant cleanTime = Instant.now().minus(4, ChronoUnit.HOURS);
+            Instant cleanTime = Instant.now().minus(cleanHours, ChronoUnit.HOURS);
             getInstance().clean(cleanTime);
          }
          catch(Exception e)
