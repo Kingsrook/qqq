@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -409,9 +410,20 @@ public class QQueryFilter implements Serializable, Cloneable
 
             for(Serializable value : criterion.getValues())
             {
-               String       valueAsString    = ValueUtils.getValueAsString(value);
-               Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
-               newValues.add(interpretedValue);
+               if(value instanceof AbstractFilterExpression<?>)
+               {
+                  /////////////////////////////////////////////////////////////////////////
+                  // todo - do we want to try to interpret values within the expression? //
+                  // e.g., greater than now minus ${input.noOfDays}                      //
+                  /////////////////////////////////////////////////////////////////////////
+                  newValues.add(value);
+               }
+               else
+               {
+                  String       valueAsString    = ValueUtils.getValueAsString(value);
+                  Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
+                  newValues.add(interpretedValue);
+               }
             }
             criterion.setValues(newValues);
          }

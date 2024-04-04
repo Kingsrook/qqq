@@ -36,7 +36,9 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- **
+ ** initial backend-step before rendering a saved report.  does some basic
+ ** validations, and then (in future) will set up input fields (how??) for the
+ ** input screen.
  *******************************************************************************/
 public class RenderSavedReportPreStep implements BackendStep
 {

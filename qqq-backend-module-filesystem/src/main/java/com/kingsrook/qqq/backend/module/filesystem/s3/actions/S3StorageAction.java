@@ -39,7 +39,7 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3UploadOutputStream
 
 
 /*******************************************************************************
- ** (mass, streamed) storage action for filesystem module
+ ** (mass, streamed) storage action for s3 module
  *******************************************************************************/
 public class S3StorageAction extends AbstractS3Action implements QStorageInterface
 {

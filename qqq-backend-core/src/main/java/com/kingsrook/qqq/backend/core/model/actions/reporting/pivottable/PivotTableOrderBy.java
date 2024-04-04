@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** How a group-by (rows or columns) should be sorted.
  *******************************************************************************/
-public class PivotTableOrderBy
+public class PivotTableOrderBy implements Serializable
 {
    // todo - implement, but only if POI supports (or we build our own support...)
 }

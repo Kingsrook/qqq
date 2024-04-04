@@ -82,12 +82,26 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 /*******************************************************************************
  ** Excel export format implementation using POI library, but with modifications
  ** to actually stream output rather than use any temp files.
+ **
+ ** For a rough outline:
+ ** - create a basically empty Excel workbook using POI - empty meaning, without
+ ** data rows.
+ ** - have POI write that workbook out into a byte[] - which will be a zip full
+ ** of xml (e.g., xlsx).
+ ** - then open a new ZipOutputStream wrapper around the OutputStream we took in
+ ** as the report destination (e.g., streamed into storage or http output)
+ ** - Copy over all entries from the xlsx into our new zip-output-stream, other than
+ ** ones that are the actual sheets that we want to put data into.
+ ** - For the sheet entries, use the StreamedPoiSheetWriter class to write the
+ ** report's data directly out as Excel XML (not using POI).
+ ** - Pivot tables require a bit of an additional hack - to write a "pivot cache
+ ** definition", which, while we won't put all the data in it (because we'll tell
+ ** it refreshOnLoad="true"), we will at least need to know how many cols & rows
+ ** are in the data-sheet (which we wouldn't know until we streamed that sheet!)
  *******************************************************************************/
 public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInterface
 {
    private static final QLogger LOG = QLogger.getLogger(ExcelPoiBasedStreamingExportStreamer.class);
-   public static final String EXCEL_DATE_FORMAT = "yyyy-MM-dd";
-   public static final String EXCEL_DATE_TIME_FORMAT = "yyyy-MM-dd H:mm:ss";
 
    private List<QReportView>    views;
    private ExportInput          exportInput;
@@ -95,17 +109,20 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    private OutputStream         outputStream;
    private ZipOutputStream      zipOutputStream;
 
-   private PoiExcelStylerInterface poiExcelStylerInterface = getStylerInterface();
-   private Map<String, String>     excelCellFormats;
+   public static final String EXCEL_DATE_FORMAT      = "yyyy-MM-dd";
+   public static final String EXCEL_DATE_TIME_FORMAT = "yyyy-MM-dd H:mm:ss";
+
+   private PoiExcelStylerInterface    poiExcelStylerInterface = getStylerInterface();
+   private Map<String, String>        excelCellFormats;
+   private Map<String, XSSFCellStyle> styles                  = new HashMap<>();
 
    private int rowNo      = 0;
    private int sheetIndex = 1;
 
-   private Map<String, String>        pivotViewToCacheDefinitionReferenceMap = new HashMap<>();
-   private Map<String, XSSFCellStyle> styles                                 = new HashMap<>();
+   private Map<String, String> pivotViewToCacheDefinitionReferenceMap = new HashMap<>();
 
-   private Writer                 activeSheetWriter = null;
-   private StreamedPoiSheetWriter sheetWriter       = null;
+   private Writer              activeSheetWriter = null;
+   private StreamedSheetWriter sheetWriter       = null;
 
    private QReportView                       currentView      = null;
    private Map<String, List<QFieldMetaData>> fieldsPerView    = new HashMap<>();
@@ -271,7 +288,6 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       for(QReportField column : dataView.getColumns())
       {
          XSSFCell cell = headerRow.createCell(columnNo++);
-         // todo ... not like this
          cell.setCellValue(QInstanceEnricher.nameToLabel(column.getName()));
       }
 
@@ -435,7 +451,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          //////////////////////////////////////////
          zipOutputStream.putNextEntry(new ZipEntry("xl/worksheets/sheet" + this.sheetIndex++ + ".xml"));
          activeSheetWriter = new OutputStreamWriter(zipOutputStream);
-         sheetWriter = new StreamedPoiSheetWriter(activeSheetWriter);
+         sheetWriter = new StreamedSheetWriter(activeSheetWriter);
 
          if(ReportType.PIVOT.equals(view.getType()))
          {
@@ -582,7 +598,13 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
                   String format = excelCellFormats.get(field.getName());
                   if(format != null)
                   {
-                     // todo - formats...
+                     ////////////////////////////////////////////////////////////////////////////////////////////
+                     // todo - so - for this streamed/zip approach, we need to know all styles before we start //
+                     // any sheets.  but, right now Report action only calls us with per-sheet styles when     //
+                     // it's starting individual sheets.  so, we can't quite support this at this time.        //
+                     // "just" need to change GenerateReportAction to look up all cell formats for all sheets  //
+                     // before preRun is called... and change all existing streamer classes to handle that too //
+                     ////////////////////////////////////////////////////////////////////////////////////////////
                      // worksheet.style(rowNo, col).format(format).set();
                   }
                }
@@ -609,7 +631,6 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
             }
             else if(value instanceof Instant i)
             {
-               // todo - what would be a better zone to use here?
                sheetWriter.createCell(col, DateUtil.getExcelDate(i.atZone(ZoneId.systemDefault()).toLocalDateTime()), dateTimeStyleIndex);
             }
             else
@@ -656,10 +677,11 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          //////////////////////////////////////////////
          closeLastSheetIfOpen();
 
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // note - leave the zipOutputStream open.  It is a wrapper around the OutputStream we were given by the caller, //
-         // so it is their responsibility to close that stream (which implicitly closes the zip, it appears)             //
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////////
+         // so, we DO need a close here, on the zipOutputStream, to finish its "zippiness". //
+         // even though, doing so also closes the outputStream from the caller that this    //
+         // zipOutputStream is wrapping (and the caller will likely call close on too)...   //
+         /////////////////////////////////////////////////////////////////////////////////////
          zipOutputStream.close();
       }
       catch(Exception e)
@@ -748,7 +770,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          zipOutputStream.putNextEntry(new ZipEntry(pivotViewToCacheDefinitionReferenceMap.get(pivotTableView.getName())));
 
          /////////////////////////////////////////////////////////
-         // prepare the xml for each field (e.g., w/ its labelO //
+         // prepare the xml for each field (e.g., w/ its label) //
          /////////////////////////////////////////////////////////
          List<String> cachedFieldElements = new ArrayList<>();
          for(QFieldMetaData column : this.fieldsPerView.get(dataView.getName()))
@@ -766,7 +788,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          activeSheetWriter = new OutputStreamWriter(zipOutputStream);
          activeSheetWriter.write(String.format("""
                <?xml version="1.0" encoding="UTF-8"?>
-               <pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" createdVersion="3" minRefreshableVersion="3" refreshedVersion="3" refreshedBy="Apache POI" refreshedDate="1.7113>  95767702E12" refreshOnLoad="true" r:id="rId1">
+               <pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" createdVersion="3" minRefreshableVersion="3" refreshedVersion="3" refreshedBy="Apache POI" refreshedDate="1.711395767702E12" refreshOnLoad="true" r:id="rId1">
                  <cacheSource type="worksheet">
                    <worksheetSource sheet="%s" ref="A1:%s%d"/>
                  </cacheSource>
@@ -775,7 +797,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
                  </cacheFields>
                </pivotCacheDefinition>
                """,
-            StreamedPoiSheetWriter.cleanseValue(labelViewsByName.get(dataView.getName())),
+            StreamedSheetWriter.cleanseValue(labelViewsByName.get(dataView.getName())),
             CellReference.convertNumToColString(dataView.getColumns().size() - 1),
             rowsPerView.get(dataView.getName()),
             dataView.getColumns().size(),

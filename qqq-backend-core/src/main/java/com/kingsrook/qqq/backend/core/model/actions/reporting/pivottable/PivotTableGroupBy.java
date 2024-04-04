@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** Either a row or column grouping in a pivot table.  e.g., a field plus
  ** sorting details, plus showTotals boolean.
  *******************************************************************************/
-public class PivotTableGroupBy implements Cloneable
+public class PivotTableGroupBy implements Cloneable, Serializable
 {
    private String            fieldName;
    private PivotTableOrderBy orderBy;

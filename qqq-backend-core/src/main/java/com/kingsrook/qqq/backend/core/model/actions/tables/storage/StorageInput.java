@@ -26,7 +26,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 
 
 /*******************************************************************************
- **
+ ** Input for Storage actions.
  *******************************************************************************/
 public class StorageInput extends AbstractTableActionInput
 {

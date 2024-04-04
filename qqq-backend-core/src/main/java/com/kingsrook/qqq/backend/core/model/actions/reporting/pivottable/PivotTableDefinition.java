@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +30,7 @@ import java.util.List;
 /*******************************************************************************
  ** Full definition of a pivot table - its rows, columns, and values.
  *******************************************************************************/
-public class PivotTableDefinition implements Cloneable
+public class PivotTableDefinition implements Cloneable, Serializable
 {
    private List<PivotTableGroupBy> rows;
    private List<PivotTableGroupBy> columns;

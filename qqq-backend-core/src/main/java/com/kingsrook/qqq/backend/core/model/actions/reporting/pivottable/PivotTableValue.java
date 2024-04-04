@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** a value (e.g., field name + function) used in a pivot table
  *******************************************************************************/
-public class PivotTableValue implements Cloneable
+public class PivotTableValue implements Cloneable, Serializable
 {
    private String             fieldName;
    private PivotTableFunction function;
