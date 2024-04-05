@@ -64,8 +64,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -1465,7 +1465,7 @@ public class QInstanceValidator
    private void validateScheduleMetaData(QScheduleMetaData schedule, QInstance qInstance, String prefix)
    {
       boolean isRepeat = schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null;
-      boolean isCron = StringUtils.hasContent(schedule.getCronExpression());
+      boolean isCron   = StringUtils.hasContent(schedule.getCronExpression());
       assertCondition(isRepeat || isCron, prefix + " either repeatMillis or repeatSeconds or cronExpression must be set");
       assertCondition(!(isRepeat && isCron), prefix + " both a repeat time and cronExpression may not be set");
 
@@ -1485,8 +1485,8 @@ public class QInstanceValidator
 
          if(assertCondition(StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a cron schedule must specify a cronTimeZoneId"))
          {
-            String[] availableIDs = TimeZone.getAvailableIDs();
-            Optional<String> first = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
+            String[]         availableIDs = TimeZone.getAvailableIDs();
+            Optional<String> first        = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
             assertCondition(first.isPresent(), prefix + " unrecognized cronTimeZoneId: " + schedule.getCronTimeZoneId());
          }
       }
