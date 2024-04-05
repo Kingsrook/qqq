@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api.implementations.savedreports;
 
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
@@ -104,7 +105,7 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
    {
       return Map.of(HttpStatus.Code.OK.getCode(), new Response()
          .withDescription("Report contents in the requested format.")
-         .withContent(Map.of(
+         .withContent(new LinkedHashMap<>(Map.of(
             ReportFormat.JSON.getMimeType(), new Content()
                .withSchema(new Schema()
                   .withDescription("JSON Report contents")
@@ -131,8 +132,7 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
                   .withDescription("Excel Report contents")
                   .withType("string")
                   .withFormat("binary"))
-         ))
-      );
+         ))));
    }
 
 }
