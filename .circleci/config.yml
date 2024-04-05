@@ -98,6 +98,31 @@ commands:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
+  install_asciidoctor:
+    steps:
+      - checkout
+      - run:
+          name: Install asciidoctor
+          command: |
+            sudo apt-get update
+            sudo apt install -y asciidoctor
+
+  run_asciidoctor:
+    steps:
+      - run:
+          name: Run asciidoctor
+          command: |
+            cd docs
+            asciidoctor -a docinfo=shared index.adoc
+
+  upload_docs_site:
+    steps:
+      - run:
+          name: scp html to justinsgotskinnylegs.com
+          command: |
+            cd docs
+            scp index.html dkelkhoff@45.79.44.221:/mnt/first-volume/dkelkhoff/nginx/html/justinsgotskinnylegs.com/qqq-docs.html
+
 jobs:
   mvn_test:
     executor: localstack/default
@@ -113,6 +138,13 @@ jobs:
       - install_java17
       - mvn_verify
       - mvn_jar_deploy
+
+  publish_asciidoc:
+    executor: localstack/default
+    steps:
+      - install_asciidoctor
+      - run_asciidoctor
+      - upload_docs_site
 
 workflows:
   test_only:
@@ -135,3 +167,9 @@ workflows:
             tags:
               only: /(version|snapshot)-.*/
 
+  publish-docs:
+    jobs:
+      - publish_asciidoc:
+          filters:
+            branches:
+              only: /(dev|CE-1072-update-how-we-display-imported)/
