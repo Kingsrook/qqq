@@ -172,4 +172,4 @@ workflows:
       - publish_asciidoc:
           filters:
             branches:
-              only: /(dev|CE-1072-update-how-we-display-imported)/
+              only: /dev/
