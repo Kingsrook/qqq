@@ -21,5 +21,96 @@ Used to set values in the `displayValues` map within a `QRecord`.
 * `possibleValueSourceName` - *String* - Reference to a {link-pvs} to be used for this field.
 Values in this field should correspond to ids from the referenced Possible Value Source.
 * `maxLength` - *Integer* - Maximum length (number of characters) allowed for values in this field.
-Only applicable for fields with `type=STRING`.
-* `
+Only applicable for fields with `type=STRING`.  Needs to be used with a `FieldBehavior` of type `ValueTooLongBehavior`.
+
+==== Field Behaviors
+Additional behaviors can be attached to fields through the use of the `behaviors` attribute,
+which is a `Set` of 0 or more instances of implementations of the `FieldBehavior` interface.
+Note that in some cases, these instances may be `enum` constants,
+but other times may be regular Objects.
+
+QQQ provides a set of common field behaviors.
+Applications can also define their own field behaviors by implementing the `FieldBehavior` interface,
+and attaching instances of their custom behavior classes to fields.
+
+===== ValueTooLongBehavior
+Used on String fields.  Requires the field to have a `maxLength` set.
+Depending on the chosen instance of this enum, before a record is Inserted or Updated,
+if the value in the field is longer than the `maxLength`, then one of the following actions can occur:
+
+* `TRUNCATE` - The value will be simply truncated to the `maxLength`.
+* `TRUNCATE_ELLIPSIS` - The value will be truncated to 3 characters less than the `maxLength`, and three periods (an ellipsis) will be placed at the end.
+* `ERROR` - An error will be reported, and the record will not be inserted or updated.
+* `PASS_THROUGH` - Nothing will happen.  This is the same as not having a `ValueTooLongBehavior` on the field.
+
+[source,java]
+.Examples of using ValueTooLongBehavior
+----
+   new QFieldMetaData("sku", QFieldType.STRING)
+      .withMaxLength(40),
+      .withBehavior(ValueTooLongBehavior.ERROR),
+
+   new QFieldMetaData("reason", QFieldType.STRING)
+      .withMaxLength(250),
+      .withBehavior(ValueTooLongBehavior.TRUNCATE_ELLIPSIS),
+
+----
+
+===== DynamicDefaultValueBehavior
+Used to set a dynamic default value to a field when it is being inserted or updated.
+For example, instead of having a hard-coded `defaultValue` specified in the field meta-data,
+and instead of having to add, for example, a pre-insert custom action.
+
+* `CREATE_DATE` - On inserts, sets the field's value to the current time.
+* `MODIFY_DATE` - On inserts and updates, sets the field's value to the current time.
+* `USER_ID` - On inserts and updates, sets the field's value to the current user's id (but only if the value is currently null).
+
+_Note that the `QInstanceEnricher` will, by default, add the `CREATE_DATE` and `MODIFY_DATE` `DynamicDefaultValueBehavior`
+options to any fields named `"createDate"` or `"modifyDate"`.
+This behavior can be disabled by setting the `configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate` property
+on the `QInstanceEnricher` instance used by the application to `false`._
+
+[source,java]
+.Examples of using DynamicDefaultValueBehavior
+----
+   new QFieldMetaData("createDate", QFieldType.DATE_TIME)
+      .withBehavior(DynamicDefaultValueBehavior.CREATE_DATE),
+
+   new QFieldMetaData("modifyDate", QFieldType.DATE_TIME)
+      .withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE),
+
+   new QFieldMetaData("createdByUserId", QFieldType.STRING)
+      .withBehavior(DynamicDefaultValueBehavior.USER_ID),
+----
+
+===== DateTimeDisplayValueBehavior
+By default, in QQQ, fields of type `DATE_TIME` are stored in UTC,
+and their values in a QRecord is a java `Instant` instance, which is always UTC.
+However, frontends will prefer to display date-time values in the user's local Time Zone whenever possible.
+
+Using `DateTimeDisplayValueBehavior` allows a `DATE_TIME` field to be displayed in a different Time Zone.
+An example use-case for this would be displaying airplane flight times,
+where you would want a flight from California to New York to display Pacific Time for its departure time,
+and Eastern Time for its arrival.
+
+An instance of `DateTimeDisplayValueBehavior` can be configured to either use a hard-coded time `ZoneId`
+(for example, to always show users UTC, or a business's home-office time zone).
+Or, it can be set up to get the time zone to use from another field in the table.
+
+[source,java]
+.Examples of using DateTimeDisplayValueBehavior
+----
+new QTableMetaData().withName("flights").withFields(List.of(
+   ...
+   new QFieldMetaData("departureTimeZoneId", QFieldType.STRING),
+   new QFieldMetaData("arrivaTimeZoneId", QFieldType.STRING),
+
+   new QFieldMetaData("departureTime", QFieldType.DATE_TIME)
+      .withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("departureTimeZoneId")),
+
+   new QFieldMetaData("arrivalTime", QFieldType.DATE_TIME)
+      .withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("arrivalTimeZoneId"))
+
+   new QFieldMetaData("ticketSaleStartDateTime", QFieldType.DATE_TIME)
+      .withBehavior(new DateTimeDisplayValueBehavior().withDefaultZoneId("UTC"))
+----
