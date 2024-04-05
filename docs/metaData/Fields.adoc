@@ -106,11 +106,14 @@ new QTableMetaData().withName("flights").withFields(List.of(
    new QFieldMetaData("arrivaTimeZoneId", QFieldType.STRING),
 
    new QFieldMetaData("departureTime", QFieldType.DATE_TIME)
-      .withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("departureTimeZoneId")),
+      .withBehavior(new DateTimeDisplayValueBehavior()
+         .withZoneIdFromFieldName("departureTimeZoneId")),
 
    new QFieldMetaData("arrivalTime", QFieldType.DATE_TIME)
-      .withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("arrivalTimeZoneId"))
+      .withBehavior(new DateTimeDisplayValueBehavior()
+         .withZoneIdFromFieldName("arrivalTimeZoneId"))
 
    new QFieldMetaData("ticketSaleStartDateTime", QFieldType.DATE_TIME)
-      .withBehavior(new DateTimeDisplayValueBehavior().withDefaultZoneId("UTC"))
+      .withBehavior(new DateTimeDisplayValueBehavior()
+         .withDefaultZoneId("UTC"))
 ----
