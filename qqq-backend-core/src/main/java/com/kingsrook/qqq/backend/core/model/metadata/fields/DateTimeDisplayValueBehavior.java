@@ -39,13 +39,16 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- **
+ ** Field Display Behavior class for customizing the display values used
+ ** in date-time fields
  *******************************************************************************/
 public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTimeDisplayValueBehavior>
 {
    private static final QLogger LOG = QLogger.getLogger(DateTimeDisplayValueBehavior.class);
 
    private String zoneIdFromFieldName;
+   private String fallbackZoneId;
+
    private String defaultZoneId;
 
    private static DateTimeDisplayValueBehavior NOOP = new DateTimeDisplayValueBehavior();
@@ -112,14 +115,35 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       {
          try
          {
-            Instant       instant       = record.getValueInstant(field.getName());
-            String        zoneId        = record.getValueString(zoneIdFromFieldName);
-            ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of(zoneId));
+            Instant instant    = record.getValueInstant(field.getName());
+            String  zoneString = record.getValueString(zoneIdFromFieldName);
+
+            ZoneId zoneId;
+            try
+            {
+               zoneId = ZoneId.of(zoneString);
+            }
+            catch(Exception e)
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // if the zone string from the other field isn't valid, and we have a fallback, try to use it //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               if(StringUtils.hasContent(fallbackZoneId))
+               {
+                  zoneId = ZoneId.of(fallbackZoneId);
+               }
+               else
+               {
+                  throw (e);
+               }
+            }
+
+            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
             record.setDisplayValue(field.getName(), QValueFormatter.formatDateTimeWithZone(zonedDateTime));
          }
          catch(Exception e)
          {
-            LOG.info("Error applying zoneIdFromFieldName DateTimeDisplayValueBehavior", logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
+            LOG.info("Error applying zoneIdFromFieldName DateTimeDisplayValueBehavior", e, logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
          }
       }
    }
@@ -132,16 +156,24 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
    @Override
    public List<String> validateBehaviorConfiguration(QTableMetaData tableMetaData, QFieldMetaData fieldMetaData)
    {
-      List<String> errors = new ArrayList<>();
-      String errorSuffix = " field [" + fieldMetaData.getName() + "] in table [" + tableMetaData.getName() + "]";
+      List<String> errors      = new ArrayList<>();
+      String       errorSuffix = " field [" + fieldMetaData.getName() + "] in table [" + tableMetaData.getName() + "]";
 
       if(!QFieldType.DATE_TIME.equals(fieldMetaData.getType()))
       {
          errors.add("A DateTimeDisplayValueBehavior was a applied to a non-DATE_TIME" + errorSuffix);
       }
 
+      //////////////////////////////////////////////////
+      // validate rules if zoneIdFromFieldName is set //
+      //////////////////////////////////////////////////
       if(StringUtils.hasContent(zoneIdFromFieldName))
       {
+         if(StringUtils.hasContent(defaultZoneId))
+         {
+            errors.add("You may not specify both zoneIdFromFieldName and defaultZoneId in DateTimeDisplayValueBehavior on" + errorSuffix);
+         }
+
          if(!tableMetaData.getFields().containsKey(zoneIdFromFieldName))
          {
             errors.add("Unrecognized field name [" + zoneIdFromFieldName + "] for [zoneIdFromFieldName] in DateTimeDisplayValueBehavior on" + errorSuffix);
@@ -153,6 +185,50 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
             {
                errors.add("A non-STRING type [" + zoneIdField.getType() + "] was specified as the zoneIdFromFieldName field [" + zoneIdFromFieldName + "] in DateTimeDisplayValueBehavior on" + errorSuffix);
             }
+         }
+      }
+
+      ////////////////////////////////////////////
+      // validate rules if defaultZoneId is set //
+      ////////////////////////////////////////////
+      if(StringUtils.hasContent(defaultZoneId))
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // would check that you didn't specify from zoneIdFromFieldName - but that's covered above //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+
+         if(StringUtils.hasContent(fallbackZoneId))
+         {
+            errors.add("You may not specify both defaultZoneId and fallbackZoneId in DateTimeDisplayValueBehavior on" + errorSuffix);
+         }
+
+         try
+         {
+            ZoneId.of(defaultZoneId);
+         }
+         catch(Exception e)
+         {
+            errors.add("Invalid ZoneId [" + defaultZoneId + "] for [defaultZoneId] in DateTimeDisplayValueBehavior on" + errorSuffix + "; " + e.getMessage());
+         }
+      }
+
+      /////////////////////////////////////////////
+      // validate rules if fallbackZoneId is set //
+      /////////////////////////////////////////////
+      if(StringUtils.hasContent(fallbackZoneId))
+      {
+         if(!StringUtils.hasContent(zoneIdFromFieldName))
+         {
+            errors.add("You may only set fallbackZoneId if using zoneIdFromFieldName in DateTimeDisplayValueBehavior on" + errorSuffix);
+         }
+
+         try
+         {
+            ZoneId.of(fallbackZoneId);
+         }
+         catch(Exception e)
+         {
+            errors.add("Invalid ZoneId [" + fallbackZoneId + "] for [fallbackZoneId] in DateTimeDisplayValueBehavior on" + errorSuffix + "; " + e.getMessage());
          }
       }
 
@@ -191,6 +267,7 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
    }
 
 
+
    /*******************************************************************************
     ** Getter for defaultZoneId
     *******************************************************************************/
@@ -220,5 +297,35 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for fallbackZoneId
+    *******************************************************************************/
+   public String getFallbackZoneId()
+   {
+      return (this.fallbackZoneId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fallbackZoneId
+    *******************************************************************************/
+   public void setFallbackZoneId(String fallbackZoneId)
+   {
+      this.fallbackZoneId = fallbackZoneId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fallbackZoneId
+    *******************************************************************************/
+   public DateTimeDisplayValueBehavior withFallbackZoneId(String fallbackZoneId)
+   {
+      this.fallbackZoneId = fallbackZoneId;
+      return (this);
+   }
 
 }
