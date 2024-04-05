@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -66,13 +65,9 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
     **
     *******************************************************************************/
    @Override
-   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field, Set<FieldBehavior<?>> behaviorsToOmit)
+   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field)
    {
       if(this.equals(NONE))
-      {
-         return;
-      }
-      if(behaviorsToOmit != null && behaviorsToOmit.contains(this))
       {
          return;
       }

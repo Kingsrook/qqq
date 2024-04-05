@@ -65,6 +65,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataIn
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -810,7 +811,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
+   private <T extends FieldBehavior<T>> void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -823,10 +824,30 @@ public class QInstanceValidator
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
 
+      ///////////////////////////////////////////////////
+      // validate things we know about field behaviors //
+      ///////////////////////////////////////////////////
       ValueTooLongBehavior behavior = field.getBehaviorOrDefault(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
+      }
+
+      Set<Class<FieldBehavior<T>>> usedFieldBehaviorTypes = new HashSet<>();
+      if(field.getBehaviors() != null)
+      {
+         for(FieldBehavior<?> fieldBehavior : field.getBehaviors())
+         {
+            Class<FieldBehavior<T>> behaviorClass = (Class<FieldBehavior<T>>) fieldBehavior.getClass();
+
+            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+
+            if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
+            {
+               assertCondition(!usedFieldBehaviorTypes.contains(behaviorClass), prefix + "has more than 1 fieldBehavior of type " + behaviorClass.getSimpleName() + ", which is not allowed for this type");
+            }
+            usedFieldBehaviorTypes.add(behaviorClass);
+         }
       }
 
       if(field.getMaxLength() != null)
