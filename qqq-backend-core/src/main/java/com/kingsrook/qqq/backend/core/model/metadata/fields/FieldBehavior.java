@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 import java.util.Collections;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -47,6 +48,7 @@ public interface FieldBehavior<T extends FieldBehavior<T>>
     ** In case a behavior of this type wasn't set on the field, what should the
     ** default of this type be?
     *******************************************************************************/
+   @JsonIgnore
    T getDefault();
 
    /*******************************************************************************

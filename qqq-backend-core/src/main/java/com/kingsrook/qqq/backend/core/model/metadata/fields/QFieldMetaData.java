@@ -720,7 +720,7 @@ public class QFieldMetaData implements Cloneable
       {
          try
          {
-            return behaviorType.getConstructor().newInstance().getDefault();
+            return (behaviorType.getConstructor().newInstance().getDefault());
          }
          catch(Exception e)
          {
