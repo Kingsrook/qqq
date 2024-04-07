@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
@@ -252,7 +253,7 @@ public class ColumnStatsStep implements BackendStep
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
          qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, queryJoin == null ? null : List.of(queryJoin), null);
-         QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "count", countField), valueCounts);
+         QValueFormatter.setDisplayValuesInRecords(table, Map.of(fieldName, field, "count", countField), valueCounts);
 
          runBackendStepOutput.addValue("valueCounts", valueCounts);
 
@@ -442,13 +443,13 @@ public class ColumnStatsStep implements BackendStep
             }
 
             QFieldMetaData percentField = new QFieldMetaData("percent", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.PERCENT_POINT2).withLabel("Percent");
-            QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "percent", percentField), valueCounts);
+            QValueFormatter.setDisplayValuesInRecords(table, Map.of(fieldName, field, "percent", percentField), valueCounts);
          }
 
          QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(null);
          fields.forEach(qInstanceEnricher::enrichField);
 
-         QValueFormatter.setDisplayValuesInRecord(fields, statsRecord);
+         QValueFormatter.setDisplayValuesInRecord(table, fields.stream().collect(Collectors.toMap(f -> f.getName(), f -> f)), statsRecord);
 
          runBackendStepOutput.addValue("statsFields", fields);
          runBackendStepOutput.addValue("statsRecord", statsRecord);

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -147,7 +148,7 @@ public class FieldValueListData extends QWidgetData
          }
       }
 
-      QValueFormatter.setDisplayValuesInRecord(fields, record);
+      QValueFormatter.setDisplayValuesInRecord(null, fields.stream().collect(Collectors.toMap(f -> f.getName(), f -> f)), record);
    }
 
 

@@ -721,6 +721,17 @@ public class QFieldMetaData implements Cloneable
       {
          return (behaviorType.getEnumConstants()[0].getDefault());
       }
+      else
+      {
+         try
+         {
+            return (behaviorType.getConstructor().newInstance().getDefault());
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error getting default behaviorType for [" + behaviorType.getSimpleName() + "]", e);
+         }
+      }
 
       return (null);
    }
