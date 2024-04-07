@@ -103,36 +103,39 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
    @Override
    public Map<Integer, Response> getSpecResponses(String apiName)
    {
+      Map<String, Content> contentMap = new LinkedHashMap<>();
+      contentMap.put(ReportFormat.JSON.getMimeType(), new Content()
+         .withSchema(new Schema()
+            .withDescription("JSON Report contents")
+            .withExample("""
+               [
+                  {"id": 1, "name": "James"},
+                  {"id": 2, "name": "Jean-Luc"}
+               ]
+               """)
+            .withType("string")
+            .withFormat("text")));
+
+      contentMap.put(ReportFormat.CSV.getMimeType(), new Content()
+         .withSchema(new Schema()
+            .withDescription("CSV Report contents")
+            .withExample("""
+               "id","name"
+               1,"James"
+               2,"Jean-Luc"
+               """)
+            .withType("string")
+            .withFormat("text")));
+
+      contentMap.put(ReportFormat.XLSX.getMimeType(), new Content()
+         .withSchema(new Schema()
+            .withDescription("Excel Report contents")
+            .withType("string")
+            .withFormat("binary")));
+
       return Map.of(HttpStatus.Code.OK.getCode(), new Response()
          .withDescription("Report contents in the requested format.")
-         .withContent(new LinkedHashMap<>(Map.of(
-            ReportFormat.JSON.getMimeType(), new Content()
-               .withSchema(new Schema()
-                  .withDescription("JSON Report contents")
-                  .withExample("""
-                     [
-                        {"id": 1, "name": "James"},
-                        {"id": 2, "name": "Jean-Luc"}
-                     ]
-                     """)
-                  .withType("string")
-                  .withFormat("text")),
-            ReportFormat.CSV.getMimeType(), new Content()
-               .withSchema(new Schema()
-                  .withDescription("CSV Report contents")
-                  .withExample("""
-                     "id","name"
-                     1,"James"
-                     2,"Jean-Luc"
-                     """)
-                  .withType("string")
-                  .withFormat("text")),
-            ReportFormat.XLSX.getMimeType(), new Content()
-               .withSchema(new Schema()
-                  .withDescription("Excel Report contents")
-                  .withType("string")
-                  .withFormat("binary"))
-         ))));
+         .withContent(contentMap));
    }
 
 }
