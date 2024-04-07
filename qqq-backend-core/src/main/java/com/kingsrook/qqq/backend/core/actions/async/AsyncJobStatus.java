@@ -31,6 +31,7 @@ import java.io.Serializable;
  *******************************************************************************/
 public class AsyncJobStatus implements Serializable
 {
+   private String        jobName;
    private AsyncJobState state;
    private String        message;
    private Integer       current;
@@ -187,4 +188,36 @@ public class AsyncJobStatus implements Serializable
    {
       this.cancelRequested = cancelRequested;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for jobName
+    *******************************************************************************/
+   public String getJobName()
+   {
+      return (this.jobName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for jobName
+    *******************************************************************************/
+   public void setJobName(String jobName)
+   {
+      this.jobName = jobName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for jobName
+    *******************************************************************************/
+   public AsyncJobStatus withJobName(String jobName)
+   {
+      this.jobName = jobName;
+      return (this);
+   }
+
 }
