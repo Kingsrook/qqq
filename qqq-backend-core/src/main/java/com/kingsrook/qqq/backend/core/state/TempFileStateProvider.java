@@ -128,6 +128,18 @@ public class TempFileStateProvider implements StateProviderInterface
 
 
    /*******************************************************************************
+    ** Get the current status
+    *
+    *******************************************************************************/
+   @Override
+   public String status()
+   {
+      return ("TempFileStateProvider status not supported");
+   }
+
+
+
+   /*******************************************************************************
     ** Clean entries that started before the given Instant
     *******************************************************************************/
    @Override

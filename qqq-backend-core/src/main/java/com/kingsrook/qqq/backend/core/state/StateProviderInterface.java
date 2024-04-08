@@ -60,6 +60,11 @@ public interface StateProviderInterface
    void remove(AbstractStateKey key);
 
    /*******************************************************************************
+    ** Get the current status
+    *******************************************************************************/
+   String status();
+
+   /*******************************************************************************
     ** Clean entries that started before the given Instant
     *******************************************************************************/
    void clean(Instant startTime);
