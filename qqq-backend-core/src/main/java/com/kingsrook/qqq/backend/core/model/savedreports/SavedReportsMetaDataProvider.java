@@ -24,9 +24,14 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -70,7 +75,8 @@ public class SavedReportsMetaDataProvider
          .findFirst()
          .ifPresent(f -> f.setDefaultValue(REPORT_STORAGE_TABLE_NAME));
 
-      // todo - when we build the UI instance.addWidget(defineReportSetupWidget());
+      instance.addWidget(defineReportSetupWidget());
+      instance.addWidget(definePivotTableSetupWidget());
    }
 
 
@@ -95,20 +101,35 @@ public class SavedReportsMetaDataProvider
       return (table);
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   /* todo - when we build the UI
    private QWidgetMetaDataInterface defineReportSetupWidget()
    {
       return new QWidgetMetaData()
          .withName("reportSetupWidget")
-         .withLabel("Report Setup")
+         .withLabel("Filters and Columns")
          .withIsCard(true)
          .withType(WidgetType.REPORT_SETUP.getType())
          .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
    }
-   */
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QWidgetMetaDataInterface definePivotTableSetupWidget()
+   {
+      return new QWidgetMetaData()
+         .withName("pivotTableSetupWidget")
+         .withLabel("Pivot Table")
+         .withIsCard(true)
+         .withType(WidgetType.PIVOT_TABLE_SETUP.getType())
+         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
+   }
 
 
 
@@ -125,10 +146,10 @@ public class SavedReportsMetaDataProvider
          .withBackendName(backendName)
          .withPrimaryKeyField("id")
          .withFieldsFromEntity(SavedReport.class)
-         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label")))
-         .withSection(new QFieldSection("settings", new QIcon().withName("settings"), Tier.T2, List.of("tableName")))
-         // todo - turn on when building UI .withSection(new QFieldSection("reportSetup", new QIcon().withName("table_chart"), Tier.T2).withWidgetName("reportSetupWidget"))
-         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("queryFilterJson", "columnsJson", "pivotTableJson")))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "tableName")))
+         .withSection(new QFieldSection("filtersAndColumns", new QIcon().withName("table_chart"), Tier.T2).withLabel("Filters and Columns").withWidgetName("reportSetupWidget"))
+         .withSection(new QFieldSection("pivotTable", new QIcon().withName("pivot_table_chart"), Tier.T2).withLabel("Pivot Table").withWidgetName("pivotTableSetupWidget"))
+         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("queryFilterJson", "columnsJson", "pivotTableJson")).withIsHidden(true))
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 

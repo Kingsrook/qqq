@@ -48,10 +48,10 @@ public class SavedReport extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
+   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS, label = "Report Name")
    private String label;
 
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR, label = "Table", isRequired = true)
    private String tableName;
 
    @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR, dynamicDefaultValueBehavior = DynamicDefaultValueBehavior.USER_ID)
