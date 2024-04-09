@@ -56,7 +56,7 @@ public class MockBackendStep implements BackendStep
 
       runBackendStepInput.getRecords().forEach(r ->
       {
-         LOG.info("We are mocking {}: {}", r.getValueString("firstName"), r.getValue(FIELD_MOCK_VALUE));
+         LOG.info("We are mocking " + r.getValueString("firstName") + ": " + r.getValue(FIELD_MOCK_VALUE));
          r.setValue(FIELD_MOCK_VALUE, "Ha ha!");
          r.setValue("greetingMessage", runBackendStepInput.getValueString(FIELD_GREETING_PREFIX) + " " + r.getValueString("firstName") + " " + runBackendStepInput.getValueString(FIELD_GREETING_SUFFIX));
       });

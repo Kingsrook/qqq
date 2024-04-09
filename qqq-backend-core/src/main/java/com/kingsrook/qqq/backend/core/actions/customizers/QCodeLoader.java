@@ -96,7 +96,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -135,7 +135,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -187,7 +187,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //

@@ -526,7 +526,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          // note - this method - will re-query the objects, so we should have confidence that their data is fresh... //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////
          List<QRecord> matchingQRecords = getRecordsMatchingActionFilter(table, records, action);
-         LOG.debug("Of the {} records that were pending automations, {} of them match the filter on the action {}", records.size(), matchingQRecords.size(), action);
+         LOG.debug("Of the [" + records.size() + "] records that were pending automations, [" + matchingQRecords.size() + "] of them match the filter on the action:" +  action);
          if(CollectionUtils.nullSafeHasContents(matchingQRecords))
          {
             LOG.debug("  Processing " + matchingQRecords.size() + " records in " + table + " for action " + action);
@@ -601,7 +601,7 @@ public class PollingAutomationPerTableRunner implements Runnable
 
    /*******************************************************************************
     ** Finally, actually run action code against a list of known matching records.
-    ** todo not commit - move to somewhere genericer
+    **
     *******************************************************************************/
    public static void applyActionToMatchingRecords(QTableMetaData table, List<QRecord> records, TableAutomationAction action) throws Exception
    {
