@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -68,6 +70,7 @@ public class SavedReportToReportMetaDataAdapter
 {
    private static final QLogger LOG = QLogger.getLogger(SavedReportToReportMetaDataAdapter.class);
 
+   private static Consumer<ObjectMapper> jsonMapperCustomizer = om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 
    /*******************************************************************************
@@ -92,7 +95,7 @@ public class SavedReportToReportMetaDataAdapter
 
          QTableMetaData table = qInstance.getTable(savedReport.getTableName());
          dataSource.setSourceTable(savedReport.getTableName());
-         dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class));
+         dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class, jsonMapperCustomizer));
 
          //////////////////////////
          // set up the main view //
@@ -110,7 +113,7 @@ public class SavedReportToReportMetaDataAdapter
          // map them to a list of QReportField objects                                                //
          // also keep track of what joinTables we find that we need to select                         //
          ///////////////////////////////////////////////////////////////////////////////////////////////
-         ReportColumns columnsObject = JsonUtils.toObject(savedReport.getColumnsJson(), ReportColumns.class, om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+         ReportColumns          columnsObject        = JsonUtils.toObject(savedReport.getColumnsJson(), ReportColumns.class, jsonMapperCustomizer);
 
          List<QReportField> reportColumns = new ArrayList<>();
          view.setColumns(reportColumns);
@@ -182,7 +185,7 @@ public class SavedReportToReportMetaDataAdapter
          /////////////////////////////////////////
          if(StringUtils.hasContent(savedReport.getPivotTableJson()))
          {
-            PivotTableDefinition pivotTableDefinition = JsonUtils.toObject(savedReport.getPivotTableJson(), PivotTableDefinition.class);
+            PivotTableDefinition pivotTableDefinition = JsonUtils.toObject(savedReport.getPivotTableJson(), PivotTableDefinition.class, jsonMapperCustomizer);
 
             QReportView pivotView = new QReportView();
             reportMetaData.getViews().add(pivotView);
@@ -274,7 +277,7 @@ public class SavedReportToReportMetaDataAdapter
             ////////////////////////////////////
             // todo turn on when implementing //
             ////////////////////////////////////
-            // reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}));
+            // reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}), objectMapperConsumer);
             throw (new IllegalStateException("Input Fields are not yet implemented"));
          }
 
