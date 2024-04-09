@@ -54,7 +54,7 @@ class QScheduleManagerTest extends BaseTest
    void afterEach()
    {
       QLogger.deactivateCollectingLoggerForClass(QuartzScheduler.class);
-      QuartzTestUtils.afterEach();
+      SchedulerTestUtils.afterEach();
    }
 
 

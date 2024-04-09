@@ -58,7 +58,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
    @BeforeEach
    void beforeEach()
    {
-      QuartzTestUtils.afterEach();
+      SchedulerTestUtils.afterEach();
    }
 
 
@@ -68,7 +68,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QuartzTestUtils.afterEach();
+      SchedulerTestUtils.afterEach();
    }
 
 

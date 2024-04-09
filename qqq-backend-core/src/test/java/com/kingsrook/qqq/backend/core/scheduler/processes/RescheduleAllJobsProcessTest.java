@@ -58,28 +58,7 @@ class RescheduleAllJobsProcessTest extends BaseTest
    void afterEach()
    {
       QLogger.deactivateCollectingLoggerForClass(QuartzScheduler.class);
-
-      try
-      {
-         QScheduleManager.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
-
-      try
-      {
-         QuartzScheduler.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
+      SchedulerTestUtils.afterEach();
    }
 
 
