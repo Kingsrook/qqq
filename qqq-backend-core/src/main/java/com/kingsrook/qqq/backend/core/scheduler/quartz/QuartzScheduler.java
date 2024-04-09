@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QSchedulerInterface;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.BasicSchedulableIdentity;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.AnyKey;
@@ -482,6 +483,26 @@ public class QuartzScheduler implements QSchedulerInterface
       }
 
       deleteJob(new JobKey(schedulableIdentity.getIdentity(), schedulableType.getName()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean isScheduled(BasicSchedulableIdentity schedulableIdentity, SchedulableType schedulableType)
+   {
+      try
+      {
+         JobKey jobKey = new JobKey(schedulableIdentity.getIdentity(), schedulableType.getName());
+         return (isJobAlreadyScheduled(jobKey));
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error checking if job is scheduled", logPair("identity", schedulableIdentity));
+         return (false);
+      }
    }
 
 

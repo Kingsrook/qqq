@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QSchedulerInterface;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.BasicSchedulableIdentity;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -199,6 +200,17 @@ public class SimpleScheduler implements QSchedulerInterface
          executors.remove(schedulableIdentity);
          executor.stop();
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean isScheduled(BasicSchedulableIdentity schedulableIdentity, SchedulableType schedulableType)
+   {
+      return (executors.containsKey(schedulableIdentity));
    }
 
 

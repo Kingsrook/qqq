@@ -27,6 +27,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.BasicSchedulableIdentity;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.identity.SchedulableIdentity;
 
 
@@ -64,6 +65,11 @@ public interface QSchedulerInterface
     **
     *******************************************************************************/
    void unscheduleSchedulable(SchedulableIdentity schedulableIdentity, SchedulableType schedulableType);
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   boolean isScheduled(BasicSchedulableIdentity schedulableIdentity, SchedulableType schedulableType);
 
    /*******************************************************************************
     **
