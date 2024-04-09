@@ -125,6 +125,7 @@ public class QuartzTestUtils
 
       try
       {
+         QuartzScheduler.getInstance().stop();
          QuartzScheduler.getInstance().unInit();
       }
       catch(IllegalStateException ise)

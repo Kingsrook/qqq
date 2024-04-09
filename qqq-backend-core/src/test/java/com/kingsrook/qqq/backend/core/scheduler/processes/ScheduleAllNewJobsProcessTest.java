@@ -66,10 +66,9 @@ class ScheduleAllNewJobsProcessTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QLogger.deactivateCollectingLoggerForClass(QuartzScheduler.class);
-
       try
       {
+         QScheduleManager.getInstance().stop();
          QScheduleManager.getInstance().unInit();
       }
       catch(IllegalStateException ise)
