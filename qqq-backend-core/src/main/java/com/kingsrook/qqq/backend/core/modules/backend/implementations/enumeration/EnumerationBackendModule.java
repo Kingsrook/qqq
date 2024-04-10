@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.enumerati
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
@@ -37,6 +38,10 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class EnumerationBackendModule implements QBackendModuleInterface
 {
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new EnumerationBackendModule());
+   }
 
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).

@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
@@ -48,6 +49,10 @@ public class S3BackendModule implements QBackendModuleInterface, FilesystemBacke
 {
    public static final String BACKEND_TYPE = "s3";
 
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new S3BackendModule());
+   }
 
    /*******************************************************************************
     ** For filesystem backends, get the module-specific action base-class, that helps
