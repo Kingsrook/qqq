@@ -59,9 +59,9 @@ public class QFrontendWidgetMetaData
    private boolean showReloadButton = false;
    private boolean showExportButton = false;
 
-   protected Map<String, QIcon>        icons;
-   protected Map<String, QHelpContent> helpContent;
-   protected Map<String, Serializable> defaultValues;
+   protected Map<String, QIcon>              icons;
+   protected Map<String, List<QHelpContent>> helpContent;
+   protected Map<String, Serializable>       defaultValues;
 
    private final boolean hasPermission;
 
@@ -273,7 +273,7 @@ public class QFrontendWidgetMetaData
     ** Getter for helpContent
     **
     *******************************************************************************/
-   public Map<String, QHelpContent> getHelpContent()
+   public Map<String, List<QHelpContent>> getHelpContent()
    {
       return helpContent;
    }
