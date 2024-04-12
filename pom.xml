@@ -255,7 +255,7 @@ else
    echo "xpath is not installed.  Jacoco coverage summary will not be produced here...";
 fi
 
-which xpath > /dev/null 2>&1
+which html2text > /dev/null 2>&1
 if [ "$?" == "0" ]; then
    echo "Untested classes, per Jacoco:"
    echo "-----------------------------"
