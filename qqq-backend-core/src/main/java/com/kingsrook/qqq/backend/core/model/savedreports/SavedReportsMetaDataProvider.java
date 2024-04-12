@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
@@ -153,10 +154,7 @@ public class SavedReportsMetaDataProvider
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
-      for(String jsonFieldName : List.of("queryFilterJson", "columnsJson", "inputFieldsJson", "pivotTableJson"))
-      {
-         table.getField(jsonFieldName).withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("json")));
-      }
+      table.withCustomizer(TableCustomizers.POST_QUERY_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
 
       if(backendDetailEnricher != null)
       {

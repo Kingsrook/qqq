@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -73,6 +74,7 @@ public class SavedReportToReportMetaDataAdapter
    private static Consumer<ObjectMapper> jsonMapperCustomizer = om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -95,7 +97,7 @@ public class SavedReportToReportMetaDataAdapter
 
          QTableMetaData table = qInstance.getTable(savedReport.getTableName());
          dataSource.setSourceTable(savedReport.getTableName());
-         dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class, jsonMapperCustomizer));
+         dataSource.setQueryFilter(getQQueryFilter(savedReport.getQueryFilterJson()));
 
          //////////////////////////
          // set up the main view //
@@ -113,7 +115,7 @@ public class SavedReportToReportMetaDataAdapter
          // map them to a list of QReportField objects                                                //
          // also keep track of what joinTables we find that we need to select                         //
          ///////////////////////////////////////////////////////////////////////////////////////////////
-         ReportColumns          columnsObject        = JsonUtils.toObject(savedReport.getColumnsJson(), ReportColumns.class, jsonMapperCustomizer);
+         ReportColumns columnsObject = getReportColumns(savedReport.getColumnsJson());
 
          List<QReportField> reportColumns = new ArrayList<>();
          view.setColumns(reportColumns);
@@ -185,7 +187,7 @@ public class SavedReportToReportMetaDataAdapter
          /////////////////////////////////////////
          if(StringUtils.hasContent(savedReport.getPivotTableJson()))
          {
-            PivotTableDefinition pivotTableDefinition = JsonUtils.toObject(savedReport.getPivotTableJson(), PivotTableDefinition.class, jsonMapperCustomizer);
+            PivotTableDefinition pivotTableDefinition = getPivotTableDefinition(savedReport.getPivotTableJson());
 
             QReportView pivotView = new QReportView();
             reportMetaData.getViews().add(pivotView);
@@ -295,6 +297,36 @@ public class SavedReportToReportMetaDataAdapter
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static PivotTableDefinition getPivotTableDefinition(String pivotTableJson) throws IOException
+   {
+      return JsonUtils.toObject(pivotTableJson, PivotTableDefinition.class, jsonMapperCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ReportColumns getReportColumns(String columnsJson) throws IOException
+   {
+      return JsonUtils.toObject(columnsJson, ReportColumns.class, jsonMapperCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QQueryFilter getQQueryFilter(String queryFilterJson) throws IOException
+   {
+      return JsonUtils.toObject(queryFilterJson, QQueryFilter.class, jsonMapperCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private static QReportField makeQReportField(String fieldName, FieldAndJoinTable fieldAndJoinTable)
    {
       QReportField reportField = new QReportField();
@@ -325,7 +357,6 @@ public class SavedReportToReportMetaDataAdapter
 
       return reportField;
    }
-
 
 
 
