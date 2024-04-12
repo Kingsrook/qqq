@@ -60,6 +60,8 @@ public class ParentWidgetRenderer extends AbstractWidgetRenderer
             widgetData.setChildWidgetNameList(metaData.getChildWidgetNameList());
          }
 
+         widgetData.setLayoutType(metaData.getLayoutType());
+
          return (new RenderWidgetOutput(widgetData));
       }
       catch(Exception e)

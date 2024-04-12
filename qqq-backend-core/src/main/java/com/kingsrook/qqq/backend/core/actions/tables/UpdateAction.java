@@ -34,9 +34,8 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostUpdateCustomizer;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
@@ -57,6 +56,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -72,6 +73,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -113,7 +115,6 @@ public class UpdateAction
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       ActionHelper.validateSession(updateInput);
-      setAutomationStatusField(updateInput);
 
       QTableMetaData table = updateInput.getTable();
 
@@ -130,12 +131,31 @@ public class UpdateAction
       ////////////////////////////////////////////////////////////////////////////////
       Optional<List<QRecord>> oldRecordList = fetchOldRecords(updateInput, updateInterface);
 
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // allow caller to specify that we don't want to trigger automations. this isn't     //
+      // isn't expected to be used much - by design, only for the process that is meant to //
+      // heal automation status, so that it can force us into status=Pending-inserts       //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      if(!updateInput.getOmitTriggeringAutomations())
+      {
+         setAutomationStatusField(updateInput, oldRecordList);
+      }
+
       performValidations(updateInput, oldRecordList, false);
 
       ////////////////////////////////////
       // have the backend do the update //
       ////////////////////////////////////
-      UpdateOutput updateOutput = updateInterface.execute(updateInput);
+      UpdateOutput updateOutput = runUpdateInBackend(updateInput, updateInterface);
+
+      if(updateOutput.getRecords() == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // in case the module failed to set record in the output, put an empty list there //
+         // to avoid so many downstream NPE's                                              //
+         ////////////////////////////////////////////////////////////////////////////////////
+         updateOutput.setRecords(new ArrayList<>());
+      }
 
       //////////////////////////////
       // log if there were errors //
@@ -171,14 +191,12 @@ public class UpdateAction
       //////////////////////////////////////////////////////////////
       // finally, run the post-update customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> postUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_UPDATE_RECORD.getRole());
       if(postUpdateCustomizer.isPresent())
       {
          try
          {
-            postUpdateCustomizer.get().setUpdateInput(updateInput);
-            oldRecordList.ifPresent(l -> postUpdateCustomizer.get().setOldRecordList(l));
-            updateOutput.setRecords(postUpdateCustomizer.get().apply(updateOutput.getRecords()));
+            updateOutput.setRecords(postUpdateCustomizer.get().postUpdate(updateInput, updateOutput.getRecords(), oldRecordList));
          }
          catch(Exception e)
          {
@@ -197,6 +215,28 @@ public class UpdateAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   private UpdateOutput runUpdateInBackend(UpdateInput updateInput, UpdateInterface updateInterface) throws QException
+   {
+      ///////////////////////////////////
+      // exit early if 0 input records //
+      ///////////////////////////////////
+      if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
+      {
+         LOG.debug("Update request called with 0 records.  Returning with no-op", logPair("tableName", updateInput.getTableName()));
+         UpdateOutput rs = new UpdateOutput();
+         rs.setRecords(new ArrayList<>());
+         return (rs);
+      }
+
+      UpdateOutput updateOutput = updateInterface.execute(updateInput);
+      return updateOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void performValidations(UpdateInput updateInput, Optional<List<QRecord>> oldRecordList, boolean isPreview) throws QException
    {
       QTableMetaData table = updateInput.getTable();
@@ -204,7 +244,13 @@ public class UpdateAction
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
-      ValueBehaviorApplier.applyFieldBehaviors(updateInput.getInstance(), table, updateInput.getRecords());
+      Set<FieldBehavior<?>> behaviorsToOmit = null;
+      if(BooleanUtils.isTrue(updateInput.getOmitModifyDateUpdate()))
+      {
+         behaviorsToOmit = Set.of(DynamicDefaultValueBehavior.MODIFY_DATE);
+      }
+
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, updateInput.getInstance(), table, updateInput.getRecords(), behaviorsToOmit);
       validatePrimaryKeysAreGiven(updateInput);
 
       if(oldRecordList.isPresent())
@@ -224,13 +270,10 @@ public class UpdateAction
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-update customizer, if there is one //
       ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> preUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
       if(preUpdateCustomizer.isPresent())
       {
-         preUpdateCustomizer.get().setUpdateInput(updateInput);
-         preUpdateCustomizer.get().setIsPreview(isPreview);
-         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
-         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+         updateInput.setRecords(preUpdateCustomizer.get().preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
       }
    }
 
@@ -530,9 +573,9 @@ public class UpdateAction
    /*******************************************************************************
     ** If the table being updated uses an automation-status field, populate it now.
     *******************************************************************************/
-   private void setAutomationStatusField(UpdateInput updateInput)
+   private void setAutomationStatusField(UpdateInput updateInput, Optional<List<QRecord>> oldRecordList)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getSession(), updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(updateInput.getTable(), updateInput.getRecords(), AutomationStatus.PENDING_UPDATE_AUTOMATIONS, updateInput.getTransaction(), oldRecordList.orElse(null));
    }
 
 }

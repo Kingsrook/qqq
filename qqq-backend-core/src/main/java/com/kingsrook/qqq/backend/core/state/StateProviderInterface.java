@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Optional;
 
 
@@ -52,4 +53,14 @@ public interface StateProviderInterface
     ** Get a block of data, under a key, from the state store.
     *******************************************************************************/
    <T extends Serializable> Optional<T> get(Class<? extends T> type, AbstractStateKey key);
+
+   /*******************************************************************************
+    ** Remove a block of data, under a key, from the state store.
+    *******************************************************************************/
+   void remove(AbstractStateKey key);
+
+   /*******************************************************************************
+    ** Clean entries that started before the given Instant
+    *******************************************************************************/
+   void clean(Instant startTime);
 }

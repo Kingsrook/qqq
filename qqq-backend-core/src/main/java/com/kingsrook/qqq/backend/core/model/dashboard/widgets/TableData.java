@@ -39,6 +39,8 @@ public class TableData extends QWidgetData
    private List<Map<String, Object>> rows;
    private Integer                   rowsPerPage;
    private Boolean                   hidePaginationDropdown;
+   private Boolean                   fixedStickyLastRow = false;
+   private Integer                   fixedHeight;
 
 
 
@@ -543,4 +545,67 @@ public class TableData extends QWidgetData
       }
 
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for fixedStickyLastRow
+    *******************************************************************************/
+   public Boolean getFixedStickyLastRow()
+   {
+      return (this.fixedStickyLastRow);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fixedStickyLastRow
+    *******************************************************************************/
+   public void setFixedStickyLastRow(Boolean fixedStickyLastRow)
+   {
+      this.fixedStickyLastRow = fixedStickyLastRow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fixedStickyLastRow
+    *******************************************************************************/
+   public TableData withFixedStickyLastRow(Boolean fixedStickyLastRow)
+   {
+      this.fixedStickyLastRow = fixedStickyLastRow;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fixedHeight
+    *******************************************************************************/
+   public Integer getFixedHeight()
+   {
+      return (this.fixedHeight);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fixedHeight
+    *******************************************************************************/
+   public void setFixedHeight(Integer fixedHeight)
+   {
+      this.fixedHeight = fixedHeight;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fixedHeight
+    *******************************************************************************/
+   public TableData withFixedHeight(Integer fixedHeight)
+   {
+      this.fixedHeight = fixedHeight;
+      return (this);
+   }
+
 }

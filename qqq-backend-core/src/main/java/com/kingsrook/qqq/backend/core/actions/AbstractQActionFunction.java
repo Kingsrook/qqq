@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.actions;
 
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -54,7 +53,7 @@ public abstract class AbstractQActionFunction<I extends AbstractActionInput, O e
    {
       CapturedContext      capturedContext   = QContext.capture();
       CompletableFuture<O> completableFuture = new CompletableFuture<>();
-      Executors.newCachedThreadPool().submit(() ->
+      ActionHelper.getExecutorService().submit(() ->
       {
          try
          {

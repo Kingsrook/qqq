@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
@@ -30,6 +32,8 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
 /*******************************************************************************
@@ -42,6 +46,7 @@ public class QFrontendWidgetMetaData
 {
    private final String                   name;
    private final String                   label;
+   private final String                   tooltip;
    private final String                   type;
    private final String                   icon;
    private final Integer                  gridColumns;
@@ -54,10 +59,15 @@ public class QFrontendWidgetMetaData
    private boolean showReloadButton = false;
    private boolean showExportButton = false;
 
+   protected Map<String, QIcon>        icons;
+   protected Map<String, QHelpContent> helpContent;
+   protected Map<String, Serializable> defaultValues;
+
    private final boolean hasPermission;
 
    //////////////////////////////////////////////////////////////////////////////////
-   // do not add setters.  take values from the source-object in the constructor!! //
+   // DO add getters for all fields - this tells Jackson to include them in JSON.  //
+   // do NOT add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -69,6 +79,7 @@ public class QFrontendWidgetMetaData
    {
       this.name = widgetMetaData.getName();
       this.label = widgetMetaData.getLabel();
+      this.tooltip = widgetMetaData.getTooltip();
       this.type = widgetMetaData.getType();
       this.icon = widgetMetaData.getIcon();
       this.gridColumns = widgetMetaData.getGridColumns();
@@ -82,7 +93,11 @@ public class QFrontendWidgetMetaData
       {
          this.showExportButton = qWidgetMetaData.getShowExportButton();
          this.showReloadButton = qWidgetMetaData.getShowReloadButton();
+         this.icons = qWidgetMetaData.getIcons();
       }
+
+      this.helpContent = widgetMetaData.getHelpContent();
+      this.defaultValues = widgetMetaData.getDefaultValues();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -229,4 +244,49 @@ public class QFrontendWidgetMetaData
    {
       return showExportButton;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for icons
+    **
+    *******************************************************************************/
+   public Map<String, QIcon> getIcons()
+   {
+      return icons;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tooltip
+    **
+    *******************************************************************************/
+   public String getTooltip()
+   {
+      return tooltip;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    **
+    *******************************************************************************/
+   public Map<String, QHelpContent> getHelpContent()
+   {
+      return helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValues()
+   {
+      return defaultValues;
+   }
+
 }

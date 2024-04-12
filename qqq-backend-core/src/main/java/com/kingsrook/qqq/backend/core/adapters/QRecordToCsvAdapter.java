@@ -80,8 +80,23 @@ public class QRecordToCsvAdapter
    /*******************************************************************************
     ** todo - kinda weak... can we find this in a CSV lib??
     *******************************************************************************/
-   private String sanitize(String value)
+   static String sanitize(String value)
    {
-      return (value.replaceAll("\"", "\"\"").replaceAll("\n", " "));
+      /////////////////////////////////////////////////////////////////////////////////////
+      // especially in big exports, we see a TON of memory allocated and CPU spent here, //
+      // if we just blindly replaceAll.  So, only do it if needed.                       //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(value.contains("\""))
+      {
+         value = value.replaceAll("\"", "\"\"");
+      }
+
+      if(value.contains("\n"))
+      {
+         value = value.replaceAll("\n", " ");
+      }
+
+      return (value);
    }
+
 }

@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QTableBackendDetailsDeserializer;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
@@ -98,6 +101,18 @@ public abstract class QTableBackendDetails
    {
       setBackendType(backendModuleClass);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QTableMetaData table, QInstanceValidator qInstanceValidator)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 }

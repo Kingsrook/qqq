@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -47,12 +48,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 
 
 /*******************************************************************************
@@ -64,6 +67,8 @@ public class RunAdHocRecordScriptAction
 
    private Map<Integer, ScriptRevision> scriptRevisionCacheByScriptRevisionId = new HashMap<>();
    private Map<Integer, ScriptRevision> scriptRevisionCacheByScriptId         = new HashMap<>();
+
+   private static Memoization<Integer, Script> scriptMemoizationById = new Memoization<>();
 
 
 
@@ -84,6 +89,12 @@ public class RunAdHocRecordScriptAction
          {
             throw (new QException("Script revision was not found."));
          }
+
+         Optional<Script> script = getScript(scriptRevision);
+
+         QContext.getQSession().setValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME, script.isPresent()
+            ? "via Script \"%s\"".formatted(script.get().getName())
+            : "via Script id " + scriptRevision.getScriptId());
 
          ////////////////////////////
          // figure out the records //
@@ -123,6 +134,10 @@ public class RunAdHocRecordScriptAction
       catch(Exception e)
       {
          output.setException(Optional.of(e));
+      }
+      finally
+      {
+         QContext.getQSession().removeValue(DMLAuditAction.AUDIT_CONTEXT_FIELD_NAME);
       }
    }
 
@@ -215,6 +230,46 @@ public class RunAdHocRecordScriptAction
       }
 
       throw (new QException("Code reference did not contain a scriptRevision, scriptRevisionId, or scriptId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Optional<Script> getScript(ScriptRevision scriptRevision)
+   {
+      if(scriptRevision == null || scriptRevision.getScriptId() == null)
+      {
+         return (Optional.empty());
+      }
+
+      try
+      {
+         return scriptMemoizationById.getResult(scriptRevision.getScriptId(), scriptId ->
+         {
+            try
+            {
+               QRecord scriptRecord = new GetAction().executeForRecord(new GetInput(Script.TABLE_NAME).withPrimaryKey(scriptRevision.getScriptId()));
+               if(scriptRecord != null)
+               {
+                  Script script = new Script(scriptRecord);
+                  scriptMemoizationById.storeResult(scriptRevision.getScriptId(), script);
+                  return (script);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.info("");
+            }
+
+            return (null);
+         });
+      }
+      catch(Exception e)
+      {
+         return (Optional.empty());
+      }
    }
 
 }

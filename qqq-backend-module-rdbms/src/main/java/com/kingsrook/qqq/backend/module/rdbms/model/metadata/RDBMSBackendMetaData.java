@@ -40,6 +40,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    private String  password;
 
    private String jdbcUrl;
+   private String jdbcDriverClassName;
 
 
 
@@ -313,5 +314,36 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       this.jdbcUrl = jdbcUrl;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for jdbcDriverClassName
+    *******************************************************************************/
+   public String getJdbcDriverClassName()
+   {
+      return (this.jdbcDriverClassName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for jdbcDriverClassName
+    *******************************************************************************/
+   public void setJdbcDriverClassName(String jdbcDriverClassName)
+   {
+      this.jdbcDriverClassName = jdbcDriverClassName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for jdbcDriverClassName
+    *******************************************************************************/
+   public RDBMSBackendMetaData withJdbcDriverClassName(String jdbcDriverClassName)
+   {
+      this.jdbcDriverClassName = jdbcDriverClassName;
+      return (this);
+   }
+
 
 }

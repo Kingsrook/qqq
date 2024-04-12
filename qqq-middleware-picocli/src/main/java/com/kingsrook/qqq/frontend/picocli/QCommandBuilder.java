@@ -415,6 +415,7 @@ public class QCommandBuilder
       {
          case STRING, TEXT, HTML, PASSWORD -> String.class;
          case INTEGER -> Integer.class;
+         case LONG -> Long.class;
          case DECIMAL -> BigDecimal.class;
          case DATE -> LocalDate.class;
          case TIME -> LocalTime.class;

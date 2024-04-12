@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 
 
 /*******************************************************************************
@@ -32,6 +33,9 @@ import java.util.List;
 public class ParentWidgetData extends QWidgetData
 {
    private List<String> childWidgetNameList;
+   private ParentWidgetMetaData.LayoutType layoutType = ParentWidgetMetaData.LayoutType.GRID;
+
+   private boolean isLabelPageTitle = false;
 
 
 
@@ -84,6 +88,68 @@ public class ParentWidgetData extends QWidgetData
    public ParentWidgetData withChildWidgetNameList(List<String> childWidgetNameList)
    {
       this.childWidgetNameList = childWidgetNameList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for layoutType
+    *******************************************************************************/
+   public ParentWidgetMetaData.LayoutType getLayoutType()
+   {
+      return (this.layoutType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for layoutType
+    *******************************************************************************/
+   public void setLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   {
+      this.layoutType = layoutType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for layoutType
+    *******************************************************************************/
+   public ParentWidgetData withLayoutType(ParentWidgetMetaData.LayoutType layoutType)
+   {
+      this.layoutType = layoutType;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isLabelPageTitle
+    *******************************************************************************/
+   public boolean getIsLabelPageTitle()
+   {
+      return (this.isLabelPageTitle);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isLabelPageTitle
+    *******************************************************************************/
+   public void setIsLabelPageTitle(boolean isLabelPageTitle)
+   {
+      this.isLabelPageTitle = isLabelPageTitle;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isLabelPageTitle
+    *******************************************************************************/
+   public ParentWidgetData withIsLabelPageTitle(boolean isLabelPageTitle)
+   {
+      this.isLabelPageTitle = isLabelPageTitle;
       return (this);
    }
 

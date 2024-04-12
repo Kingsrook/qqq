@@ -72,7 +72,7 @@ import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
- ** Action handler for running q-processes (which are a sequence of q-functions).
+ ** Action handler for running q-processes (which are a sequence of q-steps).
  *
  *******************************************************************************/
 public class RunProcessAction
@@ -82,6 +82,7 @@ public class RunProcessAction
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
+   public static final String BASEPULL_CONFIGURATION = "basepullConfiguration";
 
    ////////////////////////////////////////////////////////////////////////////////////////////////
    // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
@@ -496,10 +497,10 @@ public class RunProcessAction
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if backend specifies that it uses variants, look for that data in the session and append to our basepull key //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(process.getSchedule() != null && process.getSchedule().getVariantBackend() != null)
+      if(process.getSchedule() != null && process.getVariantBackend() != null)
       {
          QSession         session         = QContext.getQSession();
-         QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getSchedule().getVariantBackend());
+         QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getVariantBackend());
          if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
          {
             LOG.info("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
@@ -633,5 +634,6 @@ public class RunProcessAction
 
       runProcessInput.getValues().put(BASEPULL_LAST_RUNTIME_KEY, lastRunTime);
       runProcessInput.getValues().put(BASEPULL_TIMESTAMP_FIELD, basepullConfiguration.getTimestampField());
+      runProcessInput.getValues().put(BASEPULL_CONFIGURATION, basepullConfiguration);
    }
 }

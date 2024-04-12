@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +37,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -56,25 +54,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
       InsertOutput rs = new InsertOutput();
-
-      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
-      {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op", logPair("tableName", insertInput.getTableName()));
-         rs.setRecords(new ArrayList<>());
-         return (rs);
-      }
-
       QTableMetaData table = insertInput.getTable();
-      Instant        now   = Instant.now();
-
-      for(QRecord record : insertInput.getRecords())
-      {
-         ///////////////////////////////////////////
-         // todo .. better (not hard-coded names) //
-         ///////////////////////////////////////////
-         setValueIfTableHasField(record, table, "createDate", now);
-         setValueIfTableHasField(record, table, "modifyDate", now);
-      }
 
       try
       {
@@ -135,7 +115,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   for(QFieldMetaData field : insertableFields)
                   {
                      Serializable value = record.getValue(field.getName());
-                     value = scrubValue(field, value, true);
+                     value = scrubValue(field, value);
                      params.add(value);
                   }
                }

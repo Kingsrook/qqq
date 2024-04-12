@@ -129,7 +129,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       // }
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
+      new AsyncRecordPipeLoop().run("StreamedETLPreview>Extract>" + runBackendStepInput.getProcessName(), PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
          {
             runBackendStepInput.setAsyncJobCallback(status);
             extractStep.run(runBackendStepInput, runBackendStepOutput);

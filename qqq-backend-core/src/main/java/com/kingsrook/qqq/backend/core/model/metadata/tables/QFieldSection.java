@@ -22,7 +22,12 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 
@@ -43,6 +48,8 @@ public class QFieldSection
 
    private boolean isHidden = false;
    private Integer gridColumns;
+
+   private List<QHelpContent> helpContents;
 
 
 
@@ -362,6 +369,63 @@ public class QFieldSection
    {
       this.gridColumns = gridColumns;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    *******************************************************************************/
+   public List<QHelpContent> getHelpContents()
+   {
+      return (this.helpContents);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContents
+    *******************************************************************************/
+   public void setHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContents
+    *******************************************************************************/
+   public QFieldSection withHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent
+    *******************************************************************************/
+   public QFieldSection withHelpContent(QHelpContent helpContent)
+   {
+      if(this.helpContents == null)
+      {
+         this.helpContents = new ArrayList<>();
+      }
+
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, this.helpContents);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a single helpContent based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(Set<HelpRole> roles)
+   {
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
 
 }

@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -53,7 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -65,6 +66,19 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
    private ActionTimeoutHelper actionTimeoutHelper;
 
+   private static boolean mysqlResultSetOptimizationEnabled = false;
+
+   static
+   {
+      try
+      {
+         mysqlResultSetOptimizationEnabled = new QMetaDataVariableInterpreter().getBooleanFromPropertyOrEnvironment("qqq.rdbms.mysql.resultSetOptimizationEnabled", "QQQ_RDBMS_MYSQL_RESULT_SET_OPTIMIZATION_ENABLED", false);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error reading property/env for mysqlResultSetOptimizationEnabled", e);
+      }
+   }
 
 
    /*******************************************************************************
@@ -246,7 +260,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             throw (new QUserFacingException("Query was cancelled."));
          }
 
-         LOG.warn("Error executing query", e);
+         LOG.warn("Error executing query", e, logPair("tableName", queryInput.getTableName()), logPair("filter", queryInput.getFilter()));
          throw new QException("Error executing query", e);
       }
    }
@@ -342,23 +356,25 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
    {
-      RDBMSBackendMetaData backend = (RDBMSBackendMetaData) queryInput.getBackend();
-      PreparedStatement    statement;
-      if("mysql".equals(backend.getVendor()))
+      if(connection.getClass().getName().startsWith("com.mysql"))
       {
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-implementation-notes.html //
-         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                     //
-         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                                //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-         statement.setFetchSize(Integer.MIN_VALUE);
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're allowed to use the mysqlResultSetOptimization, and we have the query hint of "expected large result set", then do it. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(mysqlResultSetOptimizationEnabled && queryInput.getQueryHints() != null && queryInput.getQueryHints().contains(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
+            // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
+            // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            statement.setFetchSize(Integer.MIN_VALUE);
+            return (statement);
+         }
       }
-      else
-      {
-         statement = connection.prepareStatement(sql);
-      }
-      return (statement);
+
+      return (connection.prepareStatement(sql));
    }
 
 

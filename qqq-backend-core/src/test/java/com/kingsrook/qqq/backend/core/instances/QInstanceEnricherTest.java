@@ -29,6 +29,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -36,6 +37,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -45,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_GREETINGS;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_MISCELLANEOUS;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_PEOPLE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -228,6 +232,23 @@ class QInstanceEnricherTest extends BaseTest
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferNameFromBackendName()
+   {
+      assertEquals("id", QInstanceEnricher.inferNameFromBackendName("id"));
+      assertEquals("wordAnotherWordMoreWords", QInstanceEnricher.inferNameFromBackendName("word_another_word_more_words"));
+      assertEquals("lUlUlUl", QInstanceEnricher.inferNameFromBackendName("l_ul_ul_ul"));
+      assertEquals("tlaFirst", QInstanceEnricher.inferNameFromBackendName("tla_first"));
+      assertEquals("wordThenTlaInMiddle", QInstanceEnricher.inferNameFromBackendName("word_then_tla_in_middle"));
+      assertEquals("endWithTla", QInstanceEnricher.inferNameFromBackendName("end_with_tla"));
+      assertEquals("tlaAndAnotherTla", QInstanceEnricher.inferNameFromBackendName("tla_and_another_tla"));
+      assertEquals("allCaps", QInstanceEnricher.inferNameFromBackendName("ALL_CAPS"));
+   }
+
+
 
    /*******************************************************************************
     **
@@ -254,6 +275,50 @@ class QInstanceEnricherTest extends BaseTest
       assertEquals(1, qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getTables().size(), "Section should have one table");
       assertEquals(1, qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getProcesses().size(), "Section should have one process");
       assertEquals(qInstance.getApp(APP_NAME_MISCELLANEOUS).getName(), qInstance.getApp(APP_NAME_MISCELLANEOUS).getSections().get(0).getName(), "Section name should default to app's");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppSectionMembersBecomeAppChildren()
+   {
+      QInstance qInstance = new QInstance();
+      qInstance.addTable(new QTableMetaData().withName("table1"));
+      qInstance.addProcess(new QProcessMetaData().withName("process1"));
+      qInstance.addApp(new QAppMetaData().withName("app1")
+         .withSection(new QAppSection().withTable("table1").withProcess("process1")));
+
+      /////////////////////////////////////////////////////
+      // first, show that the list of children was empty //
+      /////////////////////////////////////////////////////
+      assertThat(qInstance.getApp("app1").getChildren()).isNullOrEmpty();
+
+      /////////////////////////////
+      // now enrich the instance //
+      /////////////////////////////
+      new QInstanceEnricher(qInstance).enrich();
+
+      ///////////////////////////////////////////////////////////////
+      // and now the table & process should be children of the app //
+      ///////////////////////////////////////////////////////////////
+      assertThat(qInstance.getApp("app1").getChildren())
+         .contains(qInstance.getTable("table1"), qInstance.getProcess("process1"));
+
+      //////////////////////////////////////////////////////////////////
+      // make sure that re-enhancement doesn't duplicate the children //
+      //////////////////////////////////////////////////////////////////
+      new QInstanceEnricher(qInstance).enrich();
+      assertThat(qInstance.getApp("app1").getChildren()).hasSize(2);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // add a non-existing table - make sure we don't blow up, and in this case, it won't be added as a child //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      qInstance.getApp("app1").getSections().get(0).withTable("notATable");
+      new QInstanceEnricher(qInstance).enrich();
+      assertThat(qInstance.getApp("app1").getChildren()).hasSize(2);
    }
 
 
@@ -444,6 +509,41 @@ class QInstanceEnricherTest extends BaseTest
       }
 
       return (tableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCreateDateAndModifyDateBehaviors()
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      qInstance.addTable(newTable("A", "id", "createDate", "modifyDate"));
+      QTableMetaData table = qInstance.getTable("A");
+
+      ////////////////////////////////////////////////
+      // make sure behavior wasn't there by default //
+      ////////////////////////////////////////////////
+      assertNull(table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertNull(table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+
+      //////////////////////////////////////////////////////////////////
+      // make sure if config'ing off the adding of the behavior works //
+      //////////////////////////////////////////////////////////////////
+      new QInstanceEnricher(qInstance)
+         .withConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(false)
+         .enrich();
+      assertNull(table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertNull(table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure default value for the config (e.g., in a new enricher) is to add the behavior //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new QInstanceEnricher(qInstance).enrich();
+      assertEquals(DynamicDefaultValueBehavior.CREATE_DATE, table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+      assertEquals(DynamicDefaultValueBehavior.MODIFY_DATE, table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
    }
 
 }

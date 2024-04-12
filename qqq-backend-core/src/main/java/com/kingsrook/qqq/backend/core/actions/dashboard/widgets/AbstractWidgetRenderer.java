@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
 /*******************************************************************************
@@ -123,7 +124,7 @@ public abstract class AbstractWidgetRenderer
          output.getResults().removeIf(pvs -> !exists.add(pvs.getLabel()));
          for(QPossibleValue<?> possibleValue : output.getResults())
          {
-            dropdownOptionList.add(Map.of(
+            dropdownOptionList.add(MapBuilder.of(
                "id", String.valueOf(possibleValue.getId()),
                "label", possibleValue.getLabel()
             ));

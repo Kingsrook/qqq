@@ -76,32 +76,47 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          loadStep.setTransformStep(transformStep);
 
-         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-         transformStep.preRun(runBackendStepInput, runBackendStepOutput);
-         loadStep.preRun(runBackendStepInput, runBackendStepOutput);
-
          /////////////////////////////////////////////////////////////////////////////
          // let the load step override the capacity for the record pipe.            //
          // this is useful for slower load steps - so that the extract step doesn't //
          // fill the pipe, then timeout waiting for all the records to be consumed, //
          // before it can put more records in.                                      //
          /////////////////////////////////////////////////////////////////////////////
-         Integer overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         RecordPipe recordPipe;
+         Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
          if(overrideRecordPipeCapacity != null)
          {
-            LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+            LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
          }
          else
          {
-            overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+            overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
             if(overrideRecordPipeCapacity != null)
             {
-               LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+               LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+            }
+            else
+            {
+               overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+               if(overrideRecordPipeCapacity != null)
+               {
+                  recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+                  LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               }
+               else
+               {
+                  recordPipe = new RecordPipe();
+               }
             }
          }
 
-         RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, overrideRecordPipeCapacity);
          extractStep.setRecordPipe(recordPipe);
+         extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+
+         transformStep.preRun(runBackendStepInput, runBackendStepOutput);
+         loadStep.preRun(runBackendStepInput, runBackendStepOutput);
 
          /////////////////////////////////////////////////////////////////////////////
          // open a transaction for the whole process, if that's the requested level //
@@ -121,7 +136,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             asyncRecordPipeLoop.setMinRecordsToConsume(overrideRecordPipeCapacity);
          }
 
-         int recordCount = asyncRecordPipeLoop.run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
+         int recordCount = asyncRecordPipeLoop.run("StreamedETLExecute>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
             {
                extractStep.run(runBackendStepInput, runBackendStepOutput);
                return (runBackendStepOutput);

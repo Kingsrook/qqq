@@ -24,6 +24,10 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.memory;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -66,6 +71,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -307,7 +313,10 @@ public class MemoryRecordStore
    {
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
-      queryInput.setFilter(input.getFilter());
+      if(input.getFilter() != null)
+      {
+         queryInput.setFilter(input.getFilter().clone().withSkip(null).withLimit(null));
+      }
       List<QRecord> queryResult = query(queryInput);
 
       return (queryResult.size());
@@ -362,7 +371,7 @@ public class MemoryRecordStore
          /////////////////////////////////////////////////
          // set the next serial in the record if needed //
          /////////////////////////////////////////////////
-         if(recordToInsert.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
+         if(recordToInsert.getValue(primaryKeyField.getName()) == null && (primaryKeyField.getType().equals(QFieldType.INTEGER) || primaryKeyField.getType().equals(QFieldType.LONG)))
          {
             recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
          }
@@ -372,6 +381,13 @@ public class MemoryRecordStore
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          if(primaryKeyField.getType().equals(QFieldType.INTEGER) && recordToInsert.getValueInteger(primaryKeyField.getName()) > nextSerial)
          {
+            nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
+         }
+         else if(primaryKeyField.getType().equals(QFieldType.LONG) && recordToInsert.getValueLong(primaryKeyField.getName()) > nextSerial)
+         {
+            //////////////////////////////////////
+            // todo - mmm, could overflow here? //
+            //////////////////////////////////////
             nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
          }
 
@@ -573,7 +589,11 @@ public class MemoryRecordStore
          for(GroupBy groupBy : groupBys)
          {
             Serializable groupByValue = record.getValue(groupBy.getFieldName());
-            if(groupBy.getType() != null)
+            if(StringUtils.hasContent(groupBy.getFormatString()))
+            {
+               groupByValue = applyFormatString(groupByValue, groupBy);
+            }
+            else if(groupBy.getType() != null)
             {
                groupByValue = ValueUtils.getValueAsFieldType(groupBy.getType(), groupByValue);
             }
@@ -625,7 +645,9 @@ public class MemoryRecordStore
       /////////////////////
       if(aggregateInput.getFilter() != null && CollectionUtils.nullSafeHasContents(aggregateInput.getFilter().getOrderBys()))
       {
-         Comparator<AggregateResult> comparator = null;
+         /////////////////////////////////////////////////////////////////////////////////////
+         // lambda to compare 2 serializables, as we'll assume (& cast) them to Comparables //
+         /////////////////////////////////////////////////////////////////////////////////////
          Comparator<Serializable> serializableComparator = (Serializable a, Serializable b) ->
          {
             if(a == null && b == null)
@@ -643,9 +665,15 @@ public class MemoryRecordStore
             return ((Comparable) a).compareTo(b);
          };
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // reverse of the lambda above (we had some errors calling .reversed() on the comparator we were building, so this seemed simpler & worked) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         Comparator<Serializable> reverseSerializableComparator = (Serializable a, Serializable b) -> -serializableComparator.compare(a, b);
+
          ////////////////////////////////////////////////
          // build a comparator out of all the orderBys //
          ////////////////////////////////////////////////
+         Comparator<AggregateResult> comparator = null;
          for(QFilterOrderBy orderBy : aggregateInput.getFilter().getOrderBys())
          {
             Function<AggregateResult, Serializable> keyExtractor = aggregateResult ->
@@ -666,16 +694,11 @@ public class MemoryRecordStore
 
             if(comparator == null)
             {
-               comparator = Comparator.comparing(keyExtractor, serializableComparator);
+               comparator = Comparator.comparing(keyExtractor, orderBy.getIsAscending() ? serializableComparator : reverseSerializableComparator);
             }
             else
             {
-               comparator = comparator.thenComparing(keyExtractor, serializableComparator);
-            }
-
-            if(!orderBy.getIsAscending())
-            {
-               comparator = comparator.reversed();
+               comparator = comparator.thenComparing(keyExtractor, orderBy.getIsAscending() ? serializableComparator : reverseSerializableComparator);
             }
          }
 
@@ -695,6 +718,57 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
+   private Serializable applyFormatString(Serializable value, GroupBy groupBy) throws QException
+   {
+      if(value == null)
+      {
+         return (null);
+      }
+
+      String formatString = groupBy.getFormatString();
+
+      try
+      {
+         if(formatString.startsWith("DATE_FORMAT"))
+         {
+            /////////////////////////////////////////////////////////////////////////////
+            // one known-use case we have here looks like this:                        //
+            // DATE_FORMAT(CONVERT_TZ(%s, 'UTC', 'UTC'), '%%Y-%%m-%%dT%%H')            //
+            // ... for now, let's just try to support the formatting bit at the end... //
+            // todo - support the CONVERT_TZ bit too!                                  //
+            /////////////////////////////////////////////////////////////////////////////
+            String            sqlDateTimeFormat = formatString.replaceFirst(".*'%%", "%%").replaceFirst("'.*", "");
+            DateTimeFormatter dateTimeFormatter = DateTimeGroupBy.sqlDateFormatToSelectedDateTimeFormatter(sqlDateTimeFormat);
+            if(dateTimeFormatter == null)
+            {
+               throw (new QException("Unsupported sql dateTime format string [" + sqlDateTimeFormat + "] for MemoryRecordStore"));
+            }
+
+            String        valueAsString  = ValueUtils.getValueAsString(value);
+            Instant       valueAsInstant = ValueUtils.getValueAsInstant(valueAsString);
+            ZonedDateTime zonedDateTime  = valueAsInstant.atZone(ZoneId.systemDefault());
+            return (dateTimeFormatter.format(zonedDateTime));
+         }
+         else
+         {
+            throw (new QException("Unsupported group-by format string [" + formatString + "] for MemoryRecordStore"));
+         }
+      }
+      catch(QException qe)
+      {
+         throw (qe);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error applying format string [" + formatString + "] to group by value [" + value + "]", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
    private static Serializable computeAggregate(List<QRecord> records, Aggregate aggregate, QTableMetaData table)
    {
@@ -705,7 +779,7 @@ public class MemoryRecordStore
       {
          // todo - joins probably?
          QFieldMetaData field = table.getField(fieldName);
-         if(field.getType().equals(QFieldType.INTEGER) && (operator.equals(AggregateOperator.AVG)))
+         if((field.getType().equals(QFieldType.INTEGER) || field.getType().equals(QFieldType.LONG)) && (operator.equals(AggregateOperator.AVG)))
          {
             fieldType = QFieldType.DECIMAL;
          }
@@ -741,6 +815,10 @@ public class MemoryRecordStore
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
                .sum();
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
+               .sum();
             case DECIMAL -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .map(r -> r.getValueBigDecimal(fieldName))
@@ -753,6 +831,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .min()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .min()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -771,7 +854,12 @@ public class MemoryRecordStore
          {
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
-               .mapToInt(r -> r.getValueInteger(fieldName))
+               .mapToLong(r -> r.getValueInteger(fieldName))
+               .max()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .max()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -791,6 +879,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .average()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .average()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL -> records.stream()

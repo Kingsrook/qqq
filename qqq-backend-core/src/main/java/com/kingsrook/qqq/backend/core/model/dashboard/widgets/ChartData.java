@@ -48,6 +48,8 @@ public class ChartData extends QWidgetData
    private boolean isCurrency = false;
    private int     height;
 
+   private ChartSubheaderData chartSubheaderData;
+
 
 
    /*******************************************************************************
@@ -387,6 +389,7 @@ public class ChartData extends QWidgetData
          private String       color;
          private String       backgroundColor;
          private List<String> urls;
+         private List<String> backgroundColors;
 
 
 
@@ -424,6 +427,17 @@ public class ChartData extends QWidgetData
 
 
          /*******************************************************************************
+          ** Getter for backgroundColors
+          **
+          *******************************************************************************/
+         public List<String> getBackgroundColors()
+         {
+            return backgroundColors;
+         }
+
+
+
+         /*******************************************************************************
           ** Setter for backgroundColor
           **
           *******************************************************************************/
@@ -435,12 +449,35 @@ public class ChartData extends QWidgetData
 
 
          /*******************************************************************************
+          ** Setter for backgroundColor
+          **
+          *******************************************************************************/
+         public void setBackgroundColors(List<String> backgroundColors)
+         {
+            this.backgroundColors = backgroundColors;
+         }
+
+
+
+         /*******************************************************************************
           ** Fluent setter for backgroundColor
           **
           *******************************************************************************/
          public Dataset withBackgroundColor(String backgroundColor)
          {
             this.backgroundColor = backgroundColor;
+            return (this);
+         }
+
+
+
+         /*******************************************************************************
+          ** Fluent setter for backgroundColor
+          **
+          *******************************************************************************/
+         public Dataset withBackgroundColors(List<String> backgroundColors)
+         {
+            this.backgroundColors = backgroundColors;
             return (this);
          }
 
@@ -559,4 +596,36 @@ public class ChartData extends QWidgetData
          }
       }
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for chartSubheaderData
+    *******************************************************************************/
+   public ChartSubheaderData getChartSubheaderData()
+   {
+      return (this.chartSubheaderData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for chartSubheaderData
+    *******************************************************************************/
+   public void setChartSubheaderData(ChartSubheaderData chartSubheaderData)
+   {
+      this.chartSubheaderData = chartSubheaderData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for chartSubheaderData
+    *******************************************************************************/
+   public ChartData withChartSubheaderData(ChartSubheaderData chartSubheaderData)
+   {
+      this.chartSubheaderData = chartSubheaderData;
+      return (this);
+   }
+
 }

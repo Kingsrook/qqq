@@ -83,6 +83,15 @@ public class AsyncRecordPipeLoop
       long    jobStartTime          = System.currentTimeMillis();
       boolean everCalledConsumer    = false;
 
+      ////////////////////////////////////////////////////////////////////////////
+      // in case the pipe capacity has been made very small (useful in tests!), //
+      // then make the minRecordsToConsume match it.                            //
+      ////////////////////////////////////////////////////////////////////////////
+      if(recordPipe.getCapacity() < minRecordsToConsume)
+      {
+         minRecordsToConsume = recordPipe.getCapacity();
+      }
+
       while(jobState.equals(AsyncJobState.RUNNING))
       {
          if(recordPipe.countAvailableRecords() < minRecordsToConsume)

@@ -460,4 +460,72 @@ public class QPossibleValueTranslatorTest extends BaseTest
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testClearingInternalCaches() throws QException
+   {
+      QInstance                qInstance               = QContext.getQInstance();
+      QTableMetaData           personTable             = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
+      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
+      QFieldMetaData           shapeField              = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("favoriteShapeId");
+
+      TestUtils.insertDefaultShapes(qInstance);
+      TestUtils.insertExtraShapes(qInstance);
+
+      List<QRecord> personRecords = List.of(
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 1),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 2),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 3),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 4),
+         new QRecord().withTableName(TestUtils.TABLE_NAME_PERSON).withValue("favoriteShapeId", 5)
+      );
+
+      MemoryRecordStore.setCollectStatistics(true);
+      MemoryRecordStore.resetStatistics();
+
+      possibleValueTranslator.primePvsCache(personTable, personRecords, null, null);
+      assertEquals("Triangle", possibleValueTranslator.translatePossibleValue(shapeField, 1));
+      assertEquals("Square", possibleValueTranslator.translatePossibleValue(shapeField, 2));
+      assertEquals("Circle", possibleValueTranslator.translatePossibleValue(shapeField, 3));
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran just 1 query");
+
+      possibleValueTranslator.primePvsCache(personTable, personRecords, null, null);
+      assertEquals("Triangle", possibleValueTranslator.translatePossibleValue(shapeField, 1));
+      assertEquals("Square", possibleValueTranslator.translatePossibleValue(shapeField, 2));
+      assertEquals("Circle", possibleValueTranslator.translatePossibleValue(shapeField, 3));
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should still just have ran just 1 query");
+
+      possibleValueTranslator.setMaxSizePerPvsCache(2);
+      possibleValueTranslator.primePvsCache(personTable, personRecords, null, null);
+
+      assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Now, should have ran another query");
+
+      assertEquals("Triangle", possibleValueTranslator.translatePossibleValue(shapeField, 1));
+      assertEquals("Square", possibleValueTranslator.translatePossibleValue(shapeField, 2));
+      assertEquals("Circle", possibleValueTranslator.translatePossibleValue(shapeField, 3));
+
+      ///////////////////////////
+      // reset and start again //
+      ///////////////////////////
+      possibleValueTranslator = new QPossibleValueTranslator(qInstance, new QSession());
+      MemoryRecordStore.resetStatistics();
+      possibleValueTranslator.translatePossibleValuesInRecords(personTable, personRecords);
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran just 1 query");
+      possibleValueTranslator.translatePossibleValuesInRecords(personTable, personRecords);
+      assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran just 1 query");
+
+      possibleValueTranslator.setMaxSizePerPvsCache(2);
+      possibleValueTranslator.translatePossibleValuesInRecords(personTable, personRecords);
+      assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran another query");
+
+      MemoryRecordStore.resetStatistics();
+      possibleValueTranslator.translatePossibleValuesInRecords(personTable, personRecords.subList(0, 3));
+      possibleValueTranslator.translatePossibleValuesInRecords(personTable, personRecords.subList(3, 5));
+      assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN), "Should have ran 2 more queries");
+   }
+
 }

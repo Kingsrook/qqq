@@ -99,7 +99,17 @@ public enum DateTimeGroupBy
    public String getSqlExpression()
    {
       ZoneId sessionOrInstanceZoneId = ValueUtils.getSessionOrInstanceZoneId();
-      String targetTimezone          = sessionOrInstanceZoneId.toString();
+      return (getSqlExpression(sessionOrInstanceZoneId));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getSqlExpression(ZoneId targetZoneId)
+   {
+      String targetTimezone = targetZoneId.toString();
 
       if("Z".equals(targetTimezone) || !StringUtils.hasContent(targetTimezone))
       {
@@ -158,7 +168,18 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public String makeSelectedString(Instant time)
    {
-      ZonedDateTime zoned = time.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (makeSelectedString(time, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make an Instant into a string that will match what came out of the database's
+    ** DATE_FORMAT() function
+    *******************************************************************************/
+   public String makeSelectedString(Instant time, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = time.atZone(zoneId);
 
       if(this == WEEK)
       {
@@ -182,7 +203,17 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public String makeHumanString(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (makeHumanString(instant, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Make a string to show to a user
+    *******************************************************************************/
+   public String makeHumanString(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       if(this.equals(WEEK))
       {
          DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("M'/'d");
@@ -215,25 +246,35 @@ public enum DateTimeGroupBy
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public Instant roundDown(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return roundDown(instant, ValueUtils.getSessionOrInstanceZoneId());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("checkstyle:indentation")
+   public Instant roundDown(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       return switch(this)
+      {
+         case YEAR -> zoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS).toInstant();
+         case MONTH -> zoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant();
+         case WEEK ->
          {
-            case YEAR -> zoned.with(TemporalAdjusters.firstDayOfYear()).truncatedTo(ChronoUnit.DAYS).toInstant();
-            case MONTH -> zoned.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant();
-            case WEEK ->
+            while(zoned.get(ChronoField.DAY_OF_WEEK) != DayOfWeek.SUNDAY.getValue())
             {
-               while(zoned.get(ChronoField.DAY_OF_WEEK) != DayOfWeek.SUNDAY.getValue())
-               {
-                  zoned = zoned.minusDays(1);
-               }
-               yield (zoned.truncatedTo(ChronoUnit.DAYS).toInstant());
+               zoned = zoned.minusDays(1);
             }
-            case DAY -> zoned.truncatedTo(ChronoUnit.DAYS).toInstant();
-            case HOUR -> zoned.truncatedTo(ChronoUnit.HOURS).toInstant();
-         };
+            yield (zoned.truncatedTo(ChronoUnit.DAYS).toInstant());
+         }
+         case DAY -> zoned.truncatedTo(ChronoUnit.DAYS).toInstant();
+         case HOUR -> zoned.truncatedTo(ChronoUnit.HOURS).toInstant();
+      };
    }
 
 
@@ -243,7 +284,34 @@ public enum DateTimeGroupBy
     *******************************************************************************/
    public Instant increment(Instant instant)
    {
-      ZonedDateTime zoned = instant.atZone(ValueUtils.getSessionOrInstanceZoneId());
+      return (increment(instant, ValueUtils.getSessionOrInstanceZoneId()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Instant increment(Instant instant, ZoneId zoneId)
+   {
+      ZonedDateTime zoned = instant.atZone(zoneId);
       return (zoned.plus(noOfChronoUnitsToAdd, chronoUnitToAdd).toInstant());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static DateTimeFormatter sqlDateFormatToSelectedDateTimeFormatter(String sqlDateFormat)
+   {
+      for(DateTimeGroupBy value : values())
+      {
+         if(value.sqlDateFormat.equals(sqlDateFormat))
+         {
+            return (value.selectedStringFormatter);
+         }
+      }
+      return null;
    }
 }

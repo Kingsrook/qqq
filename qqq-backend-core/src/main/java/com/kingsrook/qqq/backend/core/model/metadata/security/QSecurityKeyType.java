@@ -22,14 +22,19 @@
 package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+
+
 /*******************************************************************************
  ** Define a type of security key (e.g., a field associated with values), that
  ** can be used to control access to records and/or fields
  *******************************************************************************/
-public class QSecurityKeyType
+public class QSecurityKeyType implements TopLevelMetaDataInterface
 {
    private String name;
    private String allAccessKeyName;
+   private String nullValueBehaviorKeyName;
    private String possibleValueSourceName;
 
 
@@ -133,5 +138,47 @@ public class QSecurityKeyType
       this.possibleValueSourceName = possibleValueSourceName;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addSecurityKeyType(this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public String getNullValueBehaviorKeyName()
+   {
+      return (this.nullValueBehaviorKeyName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public void setNullValueBehaviorKeyName(String nullValueBehaviorKeyName)
+   {
+      this.nullValueBehaviorKeyName = nullValueBehaviorKeyName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for nullValueBehaviorKeyName
+    *******************************************************************************/
+   public QSecurityKeyType withNullValueBehaviorKeyName(String nullValueBehaviorKeyName)
+   {
+      this.nullValueBehaviorKeyName = nullValueBehaviorKeyName;
+      return (this);
+   }
+
 
 }

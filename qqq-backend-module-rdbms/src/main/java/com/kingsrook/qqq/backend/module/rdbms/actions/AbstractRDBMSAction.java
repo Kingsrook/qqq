@@ -40,8 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.interfaces.QActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -83,7 +81,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  ** Base class for all core actions in the RDBMS module.
  *******************************************************************************/
-public abstract class AbstractRDBMSAction implements QActionInterface
+public abstract class AbstractRDBMSAction
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractRDBMSAction.class);
 
@@ -132,7 +130,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     ** Get a database connection, per the backend in the request.
     *******************************************************************************/
-   protected Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
+   public static Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
    {
       ConnectionManager connectionManager = new ConnectionManager();
       return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());
@@ -145,12 +143,12 @@ public abstract class AbstractRDBMSAction implements QActionInterface
     ** and type conversions that we can do "better" than jdbc...
     **
     *******************************************************************************/
-   protected Serializable scrubValue(QFieldMetaData field, Serializable value, boolean isInsert)
+   protected Serializable scrubValue(QFieldMetaData field, Serializable value)
    {
       if("".equals(value))
       {
          QFieldType type = field.getType();
-         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
+         if(type.equals(QFieldType.INTEGER) || type.equals(QFieldType.LONG) || type.equals(QFieldType.DECIMAL) || type.equals(QFieldType.DATE) || type.equals(QFieldType.DATE_TIME) || type.equals(QFieldType.BOOLEAN))
          {
             value = null;
          }
@@ -189,8 +187,7 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    {
       try
       {
-         QFieldMetaData field = table.getField(fieldName);
-         if(field != null)
+         if(table.getFields().containsKey(fieldName))
          {
             record.setValue(fieldName, value);
          }
@@ -620,9 +617,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
             }
 
-            //////////////////////////////////////////////////////////////
-            // replace any expression-type values with their evaluation //
-            //////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // replace any expression-type values with their evaluation                                                                         //
+            // also, "scrub" non-expression values, which type-converts them (e.g., strings in various supported date formats become LocalDate) //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ListIterator<Serializable> valueListIterator = values.listIterator();
             while(valueListIterator.hasNext())
             {
@@ -630,6 +628,11 @@ public abstract class AbstractRDBMSAction implements QActionInterface
                if(value instanceof AbstractFilterExpression<?> expression)
                {
                   valueListIterator.set(expression.evaluate());
+               }
+               else
+               {
+                  Serializable scrubbedValue = scrubValue(field, value);
+                  valueListIterator.set(scrubbedValue);
                }
             }
          }
@@ -728,27 +731,6 @@ public abstract class AbstractRDBMSAction implements QActionInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public QBackendTransaction openTransaction(AbstractTableActionInput input) throws QException
-   {
-      try
-      {
-         LOG.debug("Opening transaction");
-         Connection connection = getConnection(input);
-
-         return (new RDBMSTransaction(connection));
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error opening transaction: " + e.getMessage(), e);
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    protected String escapeIdentifier(String id)
    {
       return ("`" + id + "`");
@@ -773,6 +755,10 @@ public abstract class AbstractRDBMSAction implements QActionInterface
          case INTEGER:
          {
             return (QueryManager.getInteger(resultSet, i));
+         }
+         case LONG:
+         {
+            return (QueryManager.getLong(resultSet, i));
          }
          case DECIMAL:
          {

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 import java.io.Serializable;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
@@ -35,6 +36,17 @@ public class GroupBy implements Serializable
    private QFieldType type;
    private String     fieldName;
    private String     formatString;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public GroupBy(QFieldMetaData field)
+   {
+      this.type = field.getType();
+      this.fieldName = field.getName();
+   }
 
 
 

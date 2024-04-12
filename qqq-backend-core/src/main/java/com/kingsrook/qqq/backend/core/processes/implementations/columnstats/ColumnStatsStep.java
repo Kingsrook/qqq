@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.processes.implementations.columnstats;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
@@ -57,9 +60,14 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -77,6 +85,21 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class ColumnStatsStep implements BackendStep
 {
    private static final QLogger LOG = QLogger.getLogger(ColumnStatsStep.class);
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessMetaData getProcessMetaData()
+   {
+      return (new QProcessMetaData()
+         .withName("columnStats")
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withStepList(List.of(new QBackendStepMetaData()
+            .withName("step")
+            .withCode(new QCodeReference(ColumnStatsStep.class)))));
+   }
 
 
 
@@ -153,11 +176,10 @@ public class ColumnStatsStep implements BackendStep
          Aggregate aggregate = new Aggregate(table.getPrimaryKeyField(), AggregateOperator.COUNT).withFieldType(QFieldType.DECIMAL);
          GroupBy   groupBy   = new GroupBy(field.getType(), fieldName);
 
-         // todo - something here about "by-date, not time"
+         // todo - something here about an input param to specify how you want dates & date-times grouped
          if(field.getType().equals(QFieldType.DATE_TIME))
          {
-            // groupBy = new GroupBy(field.getType(), fieldName, "DATE(%s)");
-            String sqlExpression = DateTimeGroupBy.HOUR.getSqlExpression();
+            String sqlExpression = DateTimeGroupBy.HOUR.getSqlExpression(ZoneId.systemDefault());
             groupBy = new GroupBy(QFieldType.STRING, fieldName, sqlExpression);
          }
 
@@ -210,6 +232,12 @@ public class ColumnStatsStep implements BackendStep
          for(AggregateResult result : aggregateOutput.getResults())
          {
             Serializable value = result.getGroupByValue(groupBy);
+
+            if(field.getType().equals(QFieldType.DATE_TIME) && value != null)
+            {
+               value = Instant.parse(value + ":00:00Z");
+            }
+
             Integer      count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
             valueCounts.add(new QRecord().withValue(fieldName, value).withValue("count", count));
          }
@@ -225,7 +253,7 @@ public class ColumnStatsStep implements BackendStep
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
          qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, queryJoin == null ? null : List.of(queryJoin), null);
-         QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "count", countField), valueCounts);
+         QValueFormatter.setDisplayValuesInRecords(table, Map.of(fieldName, field, "count", countField), valueCounts);
 
          runBackendStepOutput.addValue("valueCounts", valueCounts);
 
@@ -415,13 +443,13 @@ public class ColumnStatsStep implements BackendStep
             }
 
             QFieldMetaData percentField = new QFieldMetaData("percent", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.PERCENT_POINT2).withLabel("Percent");
-            QValueFormatter.setDisplayValuesInRecords(Map.of(fieldName, field, "percent", percentField), valueCounts);
+            QValueFormatter.setDisplayValuesInRecords(table, Map.of(fieldName, field, "percent", percentField), valueCounts);
          }
 
          QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(null);
          fields.forEach(qInstanceEnricher::enrichField);
 
-         QValueFormatter.setDisplayValuesInRecord(fields, statsRecord);
+         QValueFormatter.setDisplayValuesInRecord(table, fields.stream().collect(Collectors.toMap(f -> f.getName(), f -> f)), statsRecord);
 
          runBackendStepOutput.addValue("statsFields", fields);
          runBackendStepOutput.addValue("statsRecord", statsRecord);

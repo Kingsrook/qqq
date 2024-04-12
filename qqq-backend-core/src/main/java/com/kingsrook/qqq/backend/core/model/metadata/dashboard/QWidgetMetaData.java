@@ -27,7 +27,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
 
@@ -40,6 +43,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    protected String         name;
    protected String         icon;
    protected String         label;
+   protected String         tooltip;
    protected String         type;
    protected String         minHeight;
    protected String         footerHTML;
@@ -53,7 +57,11 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    private boolean                  storeDropdownSelections;
 
    private boolean showReloadButton = true;
-   private boolean showExportButton = true;
+   private boolean showExportButton = false;
+
+   protected Map<String, QIcon> icons;
+
+   protected Map<String, QHelpContent> helpContent;
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
@@ -213,6 +221,17 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public void setType(String type)
    {
       this.type = type;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // originally, showExportButton defaulted to true, and only a few frontend components knew how to render it. //
+      // but, with the advent of csvData that any widget type can export, then the generic frontend widget code    //
+      // became aware of the export button, so we wanted to flip the default for showExportButton to false, but    //
+      // still have it by-default be true for these 2 types                                                        //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(WidgetType.TABLE.getType().equals(type) || WidgetType.CHILD_RECORD_LIST.getType().equals(type))
+      {
+         setShowExportButton(true);
+      }
    }
 
 
@@ -223,7 +242,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
     *******************************************************************************/
    public QWidgetMetaData withType(String type)
    {
-      this.type = type;
+      setType(type);
       return (this);
    }
 
@@ -593,5 +612,113 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
       this.showExportButton = showExportButton;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for icons
+    *******************************************************************************/
+   public Map<String, QIcon> getIcons()
+   {
+      return (this.icons);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for icons
+    *******************************************************************************/
+   public void setIcons(Map<String, QIcon> icons)
+   {
+      this.icons = icons;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icons
+    *******************************************************************************/
+   public QWidgetMetaData withIcon(String role, QIcon icon)
+   {
+      if(this.icons == null)
+      {
+         this.icons = new LinkedHashMap<>();
+      }
+      this.icons.put(role, icon);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for icons
+    *******************************************************************************/
+   public QWidgetMetaData withIcons(Map<String, QIcon> icons)
+   {
+      this.icons = icons;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tooltip
+    *******************************************************************************/
+   public String getTooltip()
+   {
+      return (this.tooltip);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tooltip
+    *******************************************************************************/
+   public void setTooltip(String tooltip)
+   {
+      this.tooltip = tooltip;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tooltip
+    *******************************************************************************/
+   public QWidgetMetaData withTooltip(String tooltip)
+   {
+      this.tooltip = tooltip;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, QHelpContent> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, QHelpContent> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QWidgetMetaData withHelpContent(Map<String, QHelpContent> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
 
 }

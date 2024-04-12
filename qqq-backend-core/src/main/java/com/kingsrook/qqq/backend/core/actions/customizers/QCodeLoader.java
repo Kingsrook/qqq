@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
+import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -34,42 +35,35 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  ** Utility to load code for running QQQ customizers.
+ **
+ ** TODO - redo all to go through method that memoizes class & constructor
+ ** lookup.  That memoziation causes 1,000,000 such calls to go from ~500ms
+ ** to ~100ms.
  *******************************************************************************/
 public class QCodeLoader
 {
    private static final QLogger LOG = QLogger.getLogger(QCodeLoader.class);
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static <T, R> Optional<Function<T, R>> getTableCustomizerFunction(QTableMetaData table, String customizerName)
-   {
-      Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
-      if(codeReference.isPresent())
-      {
-         return (Optional.ofNullable(QCodeLoader.getFunction(codeReference.get())));
-      }
-      return (Optional.empty());
-   }
+   private static Memoization<String, Constructor<?>> constructorMemoization = new Memoization<>();
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static <T> Optional<T> getTableCustomizer(Class<T> expectedClass, QTableMetaData table, String customizerName)
+   public static Optional<TableCustomizerInterface> getTableCustomizer(QTableMetaData table, String customizerName)
    {
       Optional<QCodeReference> codeReference = table.getCustomizer(customizerName);
       if(codeReference.isPresent())
       {
-         return (Optional.ofNullable(QCodeLoader.getAdHoc(expectedClass, codeReference.get())));
+         return (Optional.ofNullable(QCodeLoader.getAdHoc(TableCustomizerInterface.class, codeReference.get())));
       }
       return (Optional.empty());
    }
@@ -102,7 +96,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -141,7 +135,7 @@ public class QCodeLoader
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //
@@ -175,12 +169,25 @@ public class QCodeLoader
 
       try
       {
-         Class<?> customizerClass = Class.forName(codeReference.getName());
-         return ((T) customizerClass.getConstructor().newInstance());
+         Optional<Constructor<?>> constructor = constructorMemoization.getResultThrowing(codeReference.getName(), (UnsafeFunction<String, Constructor<?>, Exception>) s ->
+         {
+            Class<?> customizerClass = Class.forName(codeReference.getName());
+            return customizerClass.getConstructor();
+         });
+
+         if(constructor.isPresent())
+         {
+            return ((T) constructor.get().newInstance());
+         }
+         else
+         {
+            LOG.error("Could not get constructor for code reference", logPair("codeReference", codeReference));
+            return (null);
+         }
       }
       catch(Exception e)
       {
-         LOG.error("Error initializing customizer", logPair("codeReference", codeReference), e);
+         LOG.error("Error initializing customizer", e, logPair("codeReference", codeReference));
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          // return null here - under the assumption that during normal run-time operations, we'll never hit here //

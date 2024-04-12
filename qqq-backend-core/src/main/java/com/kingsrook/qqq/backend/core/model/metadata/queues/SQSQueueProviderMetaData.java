@@ -22,9 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
-
-
 /*******************************************************************************
  ** Meta-data for an source of Amazon SQS queues (e.g, an aws account/credential
  ** set, with a common base URL).
@@ -38,8 +35,6 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
    private String secretKey;
    private String region;
    private String baseURL;
-
-   private QScheduleMetaData schedule;
 
 
 
@@ -198,40 +193,6 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
    public SQSQueueProviderMetaData withBaseURL(String baseURL)
    {
       this.baseURL = baseURL;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for schedule
-    **
-    *******************************************************************************/
-   public QScheduleMetaData getSchedule()
-   {
-      return schedule;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for schedule
-    **
-    *******************************************************************************/
-   public void setSchedule(QScheduleMetaData schedule)
-   {
-      this.schedule = schedule;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for schedule
-    **
-    *******************************************************************************/
-   public SQSQueueProviderMetaData withSchedule(QScheduleMetaData schedule)
-   {
-      this.schedule = schedule;
       return (this);
    }
 

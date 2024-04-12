@@ -230,6 +230,43 @@ class QMetaDataVariableInterpreterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testGetStringFromPropertyOrEnvironment()
+   {
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+
+      //////////////////////////////////////////////////////////
+      // if neither prop nor env is set, get back the default //
+      //////////////////////////////////////////////////////////
+      assertEquals("default", interpreter.getStringFromPropertyOrEnvironment("notSet", "NOT_SET", "default"));
+
+      /////////////////////////////////
+      // if only prop is set, get it //
+      /////////////////////////////////
+      assertEquals("default", interpreter.getStringFromPropertyOrEnvironment("foo.value", "FOO_VALUE", "default"));
+      System.setProperty("foo.value", "fooPropertyValue");
+      assertEquals("fooPropertyValue", interpreter.getStringFromPropertyOrEnvironment("foo.value", "FOO_VALUE", "default"));
+
+      ////////////////////////////////
+      // if only env is set, get it //
+      ////////////////////////////////
+      assertEquals("default", interpreter.getStringFromPropertyOrEnvironment("bar.value", "BAR_VALUE", "default"));
+      interpreter.setEnvironmentOverrides(Map.of("BAR_VALUE", "barEnvValue"));
+      assertEquals("barEnvValue", interpreter.getStringFromPropertyOrEnvironment("bar.value", "BAR_VALUE", "default"));
+
+      ///////////////////////////////////
+      // if both are set, get the prop //
+      ///////////////////////////////////
+      System.setProperty("baz.value", "bazPropertyValue");
+      interpreter.setEnvironmentOverrides(Map.of("BAZ_VALUE", "bazEnvValue"));
+      assertEquals("bazPropertyValue", interpreter.getStringFromPropertyOrEnvironment("baz.value", "BAZ_VALUE", "default"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testGetBooleanFromPropertyOrEnvironment()
    {
       QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();

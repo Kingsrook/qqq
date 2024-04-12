@@ -40,26 +40,51 @@ public class ConnectionManager
     *******************************************************************************/
    public Connection getConnection(RDBMSBackendMetaData backend) throws SQLException
    {
-      String jdbcURL;
+      String jdbcURL = getJdbcUrl(backend);
+      return DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getJdbcDriverClassName(RDBMSBackendMetaData backend)
+   {
+      if(StringUtils.hasContent(backend.getJdbcDriverClassName()))
+      {
+         return backend.getJdbcDriverClassName();
+      }
+
+      return switch(backend.getVendor())
+      {
+         case "mysql", "aurora" -> "com.mysql.cj.jdbc.Driver";
+         case "h2" -> "org.h2.Driver";
+         default -> throw (new IllegalStateException("We do not know what jdbc driver to use for vendor name [" + backend.getVendor() + "].  Try setting jdbcDriverClassName in your backend meta data."));
+      };
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getJdbcUrl(RDBMSBackendMetaData backend)
+   {
       if(StringUtils.hasContent(backend.getJdbcUrl()))
       {
-         jdbcURL = backend.getJdbcUrl();
-      }
-      else
-      {
-         switch(backend.getVendor())
-         {
-            // TODO aws-mysql-jdbc driver not working when running on AWS
-            // jdbcURL = "jdbc:mysql:aws://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=CONVERT_TO_NULL";
-            case "aurora" -> jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
-            case "mysql" -> jdbcURL = "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
-            case "h2" -> jdbcURL = "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
-            default -> throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
-         }
+         return backend.getJdbcUrl();
       }
 
-      return DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
+      return switch(backend.getVendor())
+      {
+         // TODO aws-mysql-jdbc driver not working when running on AWS
+         // jdbcURL = "jdbc:mysql:aws://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=CONVERT_TO_NULL";
+         case "aurora" -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
+         case "mysql" -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
+         case "h2" -> "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
+         default -> throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
+      };
    }
 
 }

@@ -859,6 +859,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
       }
+
+      apiProcessMetaDataList.sort(Comparator.comparing(apiProcessMetaDataQProcessMetaDataPair -> getProcessSummary(apiProcessMetaDataQProcessMetaDataPair.getA(), apiProcessMetaDataQProcessMetaDataPair.getB())));
+
       return (apiProcessMetaDataList);
    }
 
@@ -885,7 +888,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       Method methodForProcess = new Method()
          .withOperationId(apiProcessMetaData.getApiProcessName())
          .withTags(tags)
-         .withSummary(ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withSummary(getProcessSummary(apiProcessMetaData, processMetaData))
          .withDescription(description)
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
@@ -1021,6 +1024,16 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
+   private static String getProcessSummary(ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData)
+   {
+      return ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private Path generateProcessStatusSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
    {
       ////////////////////////////////
@@ -1029,7 +1042,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       Method methodForProcess = new Method()
          .withOperationId("getStatusFor" + StringUtils.ucFirst(apiProcessMetaData.getApiProcessName()))
          .withTags(tags)
-         .withSummary("Get Status of Job: " + ObjectUtils.requireConditionElse(apiProcessMetaData.getSummary(), StringUtils::hasContent, processMetaData.getLabel()))
+         .withSummary("Get Status of Job: " + getProcessSummary(apiProcessMetaData, processMetaData))
          .withDescription("Get the status for a previous asynchronous call to the process named " + processMetaData.getLabel())
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
@@ -1158,6 +1171,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          apiProcessMetaDataList.add(Pair.of(apiProcessMetaData, processMetaData));
       }
+
+      /////////////////////////////////////////////////////////////////////
+      // sort by process summary (for stability, and just to be better) //
+      /////////////////////////////////////////////////////////////////////
+      apiProcessMetaDataList.sort(Comparator.comparing(apiProcessMetaDataQProcessMetaDataPair -> getProcessSummary(apiProcessMetaDataQProcessMetaDataPair.getA(), apiProcessMetaDataQProcessMetaDataPair.getB())));
+
       return (apiProcessMetaDataList);
    }
 
@@ -1384,7 +1403,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          String           associatedTableName        = association.getAssociatedTableName();
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
-         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
+         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
 
          ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
@@ -1458,15 +1477,21 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
          {
-            List<String> enumValues  = new ArrayList<>();
-            List<String> enumMapping = new ArrayList<>();
-            for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // by default, we will list all enum values in the docs - but - a field's api-meta-data object can opt out //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(apiFieldMetaData == null || apiFieldMetaData.getListEnumPossibleValues())
             {
-               enumValues.add(String.valueOf(enumValue.getId()));
-               enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               List<String> enumValues  = new ArrayList<>();
+               List<String> enumMapping = new ArrayList<>();
+               for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+               {
+                  enumValues.add(String.valueOf(enumValue.getId()));
+                  enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               }
+               fieldSchema.setEnumValues(enumValues);
+               fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
             }
-            fieldSchema.setEnumValues(enumValues);
-            fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
          }
          else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
          {
@@ -1661,7 +1686,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       return switch(type)
       {
          case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
-         case INTEGER -> "integer";
+         case INTEGER, LONG -> "integer"; // todo - we could give 'format' w/ int32 & int64 to further specify
          case DECIMAL -> "number";
          case BOOLEAN -> "boolean";
       };

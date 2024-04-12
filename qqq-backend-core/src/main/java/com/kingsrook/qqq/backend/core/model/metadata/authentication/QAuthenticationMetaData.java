@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -33,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
  ** etc) within a qqq instance
  **
  *******************************************************************************/
-public class QAuthenticationMetaData
+public class QAuthenticationMetaData implements TopLevelMetaDataInterface
 {
    private String name;
    private QAuthenticationType type;
@@ -41,6 +44,7 @@ public class QAuthenticationMetaData
    @JsonFilter("secretsFilter")
    private Map<String, String> values;
 
+   private QCodeReference customizer;
 
 
    /*******************************************************************************
@@ -176,6 +180,48 @@ public class QAuthenticationMetaData
    public QAuthenticationMetaData withVales(Map<String, String> values)
    {
       this.values = values;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.setAuthentication(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for customizer
+    *******************************************************************************/
+   public QCodeReference getCustomizer()
+   {
+      return (this.customizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customizer
+    *******************************************************************************/
+   public void setCustomizer(QCodeReference customizer)
+   {
+      this.customizer = customizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customizer
+    *******************************************************************************/
+   public QAuthenticationMetaData withCustomizer(QCodeReference customizer)
+   {
+      this.customizer = customizer;
       return (this);
    }
 

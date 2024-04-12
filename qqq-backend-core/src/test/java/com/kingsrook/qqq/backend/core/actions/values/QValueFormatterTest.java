@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,10 +33,13 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -56,6 +60,10 @@ class QValueFormatterTest extends BaseTest
    void testFormatValue()
    {
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), null));
+
+      assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData(), 1));
+      assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat("%s"), 1));
+      assertEquals("Hello", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat("%s"), "Hello"));
 
       assertEquals("1", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), 1));
       assertEquals("1,000", QValueFormatter.formatValue(new QFieldMetaData().withDisplayFormat(DisplayFormat.COMMAS), 1000));
@@ -116,6 +124,12 @@ class QValueFormatterTest extends BaseTest
       ///////////////////////////////////////////////////////
       table = new QTableMetaData().withPrimaryKeyField("id");
       assertEquals("42", QValueFormatter.formatRecordLabel(table, new QRecord().withValue("id", 42)));
+
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // exceptional flow:  no recordLabelFormat specified, and record already had a label //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      table = new QTableMetaData().withPrimaryKeyField("id");
+      assertEquals("my label", QValueFormatter.formatRecordLabel(table, new QRecord().withRecordLabel("my label").withValue("id", 42)));
 
       /////////////////////////////////////////////////
       // exceptional flow:  no fields for the format //
@@ -198,6 +212,25 @@ class QValueFormatterTest extends BaseTest
       assertEquals("2023-02-01", QValueFormatter.formatDate(LocalDate.of(2023, Month.FEBRUARY, 1)));
       assertEquals("2023-02-01 07:15:00 PM", QValueFormatter.formatDateTime(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15, 0)));
       assertEquals("2023-02-01 07:15:47 PM CST", QValueFormatter.formatDateTimeWithZone(ZonedDateTime.of(LocalDateTime.of(2023, Month.FEBRUARY, 1, 19, 15, 47), ZoneId.of("US/Central"))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldDisplayBehaviors()
+   {
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      table.withField(new QFieldMetaData("timeZone", QFieldType.STRING));
+      table.getField("createDate").withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("timeZone"));
+
+      QRecord record = new QRecord().withValue("createDate", Instant.parse("2024-04-04T19:12:00Z")).withValue("timeZone", "America/Chicago");
+      QValueFormatter.setDisplayValuesInRecords(table, List.of(record));
+      assertEquals("2024-04-04 02:12:00 PM CDT", record.getDisplayValue("createDate"));
    }
 
 }

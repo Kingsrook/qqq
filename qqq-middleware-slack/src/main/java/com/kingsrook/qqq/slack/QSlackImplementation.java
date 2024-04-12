@@ -662,11 +662,11 @@ public class QSlackImplementation
          //////////////////////////////////////////////////////////////////////////
          // Print result, which includes information about the message (like TS) //
          //////////////////////////////////////////////////////////////////////////
-         LOG.info("Slack post result {}", result);
+         LOG.info("Slack post result: " + result);
       }
       catch(IOException | SlackApiException e)
       {
-         LOG.error("error: {}", e.getMessage(), e);
+         LOG.error("error", e);
       }
    }
 

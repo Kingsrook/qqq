@@ -68,6 +68,7 @@ public class RunAssociatedScriptAction
       new ExecuteCodeAction().run(executeCodeInput, executeCodeOutput);
 
       output.setOutput(executeCodeOutput.getOutput());
+      output.setScriptRevisionId(scriptRevision.getId());
    }
 
 

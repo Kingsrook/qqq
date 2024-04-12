@@ -22,10 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+
+
 /*******************************************************************************
  ** Define a provider of queues (e.g., an MQ system, or SQS)
  *******************************************************************************/
-public class QQueueProviderMetaData
+public class QQueueProviderMetaData implements TopLevelMetaDataInterface
 {
    private String    name;
    private QueueType type;
@@ -96,6 +100,17 @@ public class QQueueProviderMetaData
    {
       this.type = type;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addQueueProvider(this);
    }
 
 }

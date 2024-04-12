@@ -515,6 +515,42 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
    /*******************************************************************************
+    ** test an insert that returns a warning
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataInsertWithWarning()
+   {
+      Map<String, Serializable> body = new HashMap<>();
+      body.put("firstName", "Warning");
+      body.put("lastName", "Kelkhoff");
+      body.put("email", "warning@kelkhoff.com");
+
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
+         .header("Content-Type", "application/json")
+         .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertTrue(values0.has("id"));
+      assertEquals(7, values0.getInt("id"));
+
+      assertTrue(record0.has("warnings"));
+      JSONArray warnings = record0.getJSONArray("warnings");
+      assertEquals(1, warnings.length());
+      assertTrue(warnings.getJSONObject(0).has("message"));
+   }
+
+
+
+   /*******************************************************************************
     ** test an insert - posting a multipart form.
     **
     *******************************************************************************/
@@ -580,6 +616,52 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject values0 = record0.getJSONObject("values");
       assertEquals(4, values0.getInt("id"));
       assertEquals("Free", values0.getString("firstName"));
+
+      ///////////////////////////////////////////////////////////////////
+      // re-GET the record, and validate that birthDate was nulled out //
+      ///////////////////////////////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/data/person/4").asString();
+      assertEquals(200, response.getStatus());
+      jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("values"));
+      JSONObject values = jsonObject.getJSONObject("values");
+      assertFalse(values.has("birthDate"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test an update - with a warning returned
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataUpdateWithWarning()
+   {
+      Map<String, Serializable> body = new HashMap<>();
+      body.put("firstName", "Warning");
+      body.put("birthDate", "");
+
+      HttpResponse<String> response = Unirest.patch(BASE_URL + "/data/person/4")
+         .header("Content-Type", "application/json")
+         .body(body)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0 = records.getJSONObject(0);
+      assertTrue(record0.has("values"));
+      assertEquals("person", record0.getString("tableName"));
+      JSONObject values0 = record0.getJSONObject("values");
+      assertEquals(4, values0.getInt("id"));
+      assertEquals("Warning", values0.getString("firstName"));
+
+      assertTrue(record0.has("warnings"));
+      JSONArray warnings = record0.getJSONArray("warnings");
+      assertEquals(1, warnings.length());
+      assertTrue(warnings.getJSONObject(0).has("message"));
 
       ///////////////////////////////////////////////////////////////////
       // re-GET the record, and validate that birthDate was nulled out //

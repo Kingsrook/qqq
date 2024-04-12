@@ -49,14 +49,17 @@ public class LoadInitialRecordsStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      /////////////////////////////////////////////////////////////////////////////////////////////////
-      // basically this is a no-op... we Just need a backendStep to be the first step in the process //
-      // but, while we're here, go ahead and put the query filter in the payload as a value, in case //
-      // someone else wants it (see BulkDelete)                                                      //
-      /////////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // basically this is a no-op... sometimes we just need a backendStep to be the first step in a process. //
+      // While we're here, go ahead and put the query filter in the payload as a value - this is needed for   //
+      // processes that have a screen before their first backend step (why is this needed?  not sure, but is) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
       runBackendStepInput.getAsyncJobCallback().updateStatus("Loading records");
-      QQueryFilter queryFilter = runBackendStepInput.getCallback().getQueryFilter();
-      runBackendStepOutput.addValue("queryFilterJSON", JsonUtils.toJson(queryFilter));
+      if(runBackendStepInput.getCallback() != null)
+      {
+         QQueryFilter queryFilter = runBackendStepInput.getCallback().getQueryFilter();
+         runBackendStepOutput.addValue("queryFilterJson", JsonUtils.toJson(queryFilter));
+      }
    }
 
 

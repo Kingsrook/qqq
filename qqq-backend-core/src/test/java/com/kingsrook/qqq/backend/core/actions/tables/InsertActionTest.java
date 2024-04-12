@@ -26,13 +26,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
@@ -326,7 +334,7 @@ class InsertActionTest extends BaseTest
          // insert an order and lineItem with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 2);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
@@ -340,7 +348,7 @@ class InsertActionTest extends BaseTest
          assertEquals(4200, insertLineItemOutput.getRecords().get(0).getValueInteger("id"));
 
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertLineItemExtrinsicInput = new InsertInput();
          insertLineItemExtrinsicInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC);
          insertLineItemExtrinsicInput.setRecords(List.of(new QRecord().withValue("lineItemId", 4200).withValue("key", "kidsCanCallYou").withValue("value", "HoJu")));
@@ -350,7 +358,7 @@ class InsertActionTest extends BaseTest
 
       {
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
@@ -448,7 +456,7 @@ class InsertActionTest extends BaseTest
          // insert an order with storeId=2 - then, reset our session to only have storeId=1 in it - and try to insert an order-line referencing that order. //
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(2));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 2);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 42).withValue("storeId", 2)));
@@ -456,7 +464,7 @@ class InsertActionTest extends BaseTest
          assertEquals(42, insertOrderOutput.getRecords().get(0).getValueInteger("id"));
 
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertLineItemInput = new InsertInput();
          insertLineItemInput.setTableName(TestUtils.TABLE_NAME_LINE_ITEM);
          insertLineItemInput.setRecords(List.of(new QRecord().withValue("orderId", 42).withValue("sku", "BASIC1").withValue("quantity", 1)));
@@ -466,7 +474,7 @@ class InsertActionTest extends BaseTest
 
       {
          QContext.getQSession().withSecurityKeyValues(new HashMap<>());
-         QContext.getQSession().withSecurityKeyValues(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1));
+         QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
          InsertInput insertOrderInput = new InsertInput();
          insertOrderInput.setTableName(TestUtils.TABLE_NAME_ORDER);
          insertOrderInput.setRecords(List.of(new QRecord().withValue("id", 47).withValue("storeId", 1)));
@@ -751,4 +759,166 @@ class InsertActionTest extends BaseTest
 
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDefaultValues() throws QException
+   {
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .getField("noOfShoes").withDefaultValue(2);
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      insertInput.setRecords(List.of(
+         new QRecord().withValue("firstName", "Darin").withValue("lastName", "Kelkhoff").withValue("noOfShoes", 4),
+         new QRecord().withValue("firstName", "Tim").withValue("lastName", "Chamberlain")
+      ));
+      new InsertAction().execute(insertInput);
+
+      List<QRecord> records = new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON_MEMORY).withFilter(new QQueryFilter())).getRecords();
+      assertEquals(4, records.get(0).getValueInteger("noOfShoes"));
+      assertEquals(2, records.get(1).getValueInteger("noOfShoes"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCustomizers() throws QException
+   {
+      String tableName = TestUtils.TABLE_NAME_PERSON_MEMORY;
+
+      {
+         QContext.getQInstance().getTable(tableName).withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(TestPreInsertCustomizer.class));
+
+         List<QRecord> records = new InsertAction().execute(new InsertInput(tableName)
+               .withRecord(new QRecord().withValue("firstName", "Darin").withValue("lastName", "Kelkhoff")))
+            .getRecords();
+         assertEquals(1701, records.get(0).getValueInteger("noOfShoes"));
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // because this was a pre-action, the value should actually be inserted - so re-query and get it //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         assertEquals(1701, new GetAction().executeForRecord(new GetInput(tableName).withPrimaryKey(1)).getValueInteger("noOfShoes"));
+
+         QContext.getQInstance().getTable(tableName).withCustomizers(new HashMap<>());
+      }
+
+      {
+         QContext.getQInstance().getTable(tableName).withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(TestPostInsertCustomizer.class));
+
+         List<QRecord> records = new InsertAction().execute(new InsertInput(tableName)
+               .withRecord(new QRecord().withValue("firstName", "Thom").withValue("lastName", "Chutterloin")))
+            .getRecords();
+         assertEquals(47, records.get(0).getValueInteger("homeStateId"));
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // because this was a post-action, the value should NOT actually be inserted - so re-query and confirm null //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         assertNull(new GetAction().executeForRecord(new GetInput(tableName).withPrimaryKey(2)).getValueInteger("homeStateId"));
+
+         QContext.getQInstance().getTable(tableName).withCustomizers(new HashMap<>());
+      }
+
+      {
+         QContext.getQInstance().getTable(tableName).withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(TestTableCustomizer.class));
+         QContext.getQInstance().getTable(tableName).withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(TestTableCustomizer.class));
+
+         List<QRecord> records = new InsertAction().execute(new InsertInput(tableName)
+               .withRecord(new QRecord().withValue("firstName", "Thom").withValue("lastName", "Chutterloin")))
+            .getRecords();
+         assertEquals(1701, records.get(0).getValueInteger("noOfShoes"));
+         assertEquals(47, records.get(0).getValueInteger("homeStateId"));
+
+         //////////////////////////////////////////////////////////////////////
+         // merger of the two above - one pre, one post, so one set, one not //
+         //////////////////////////////////////////////////////////////////////
+         QRecord fetchedRecord = new GetAction().executeForRecord(new GetInput(tableName).withPrimaryKey(2));
+         assertEquals(1701, records.get(0).getValueInteger("noOfShoes"));
+         assertNull(fetchedRecord.getValueInteger("homeStateId"));
+
+         QContext.getQInstance().getTable(tableName).withCustomizers(new HashMap<>());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestPreInsertCustomizer extends AbstractPreInsertCustomizer
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         List<QRecord> rs = new ArrayList<>();
+         records.forEach(r -> rs.add(new QRecord(r).withValue("noOfShoes", 1701)));
+         return rs;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestPostInsertCustomizer extends AbstractPostInsertCustomizer
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> apply(List<QRecord> records) throws QException
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // grr, memory backend let's make sure to return a clone (so we don't edit what's stored!) //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         List<QRecord> rs = new ArrayList<>();
+         records.forEach(r -> rs.add(new QRecord(r).withValue("homeStateId", 47)));
+         return rs;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestTableCustomizer implements TableCustomizerInterface
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
+      {
+         List<QRecord> rs = new ArrayList<>();
+         records.forEach(r -> rs.add(new QRecord(r).withValue("noOfShoes", 1701)));
+         return rs;
+      }
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // grr, memory backend let's make sure to return a clone (so we don't edit what's stored!) //
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         List<QRecord> rs = new ArrayList<>();
+         records.forEach(r -> rs.add(new QRecord(r).withValue("homeStateId", 47)));
+         return rs;
+      }
+   }
 }

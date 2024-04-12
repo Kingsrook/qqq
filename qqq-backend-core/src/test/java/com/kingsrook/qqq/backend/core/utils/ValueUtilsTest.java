@@ -35,6 +35,7 @@ import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -68,6 +69,9 @@ class ValueUtilsTest extends BaseTest
       assertEquals("1", ValueUtils.getValueAsString(1));
       assertEquals("1", ValueUtils.getValueAsString(1));
       assertEquals("1.10", ValueUtils.getValueAsString(new BigDecimal("1.10")));
+      assertEquals("ABC", ValueUtils.getValueAsString(new byte[] { 65, 66, 67 }));
+
+      assertEquals(String.valueOf(AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId()), ValueUtils.getValueAsString(AutomationStatus.PENDING_INSERT_AUTOMATIONS));
    }
 
 
@@ -83,7 +87,15 @@ class ValueUtilsTest extends BaseTest
       assertTrue(ValueUtils.getValueAsBoolean("True"));
       assertTrue(ValueUtils.getValueAsBoolean("TRUE"));
       assertFalse(ValueUtils.getValueAsBoolean("false"));
-      assertFalse(ValueUtils.getValueAsBoolean("yes"));
+
+      ///////////////////////////////////////////////////////////////////////
+      // time used to be, that "yes" was false... changing that 2023-10-20 //
+      ///////////////////////////////////////////////////////////////////////
+      assertTrue(ValueUtils.getValueAsBoolean("yes"));
+      assertTrue(ValueUtils.getValueAsBoolean("Yes"));
+      assertTrue(ValueUtils.getValueAsBoolean("YES"));
+      assertTrue(ValueUtils.getValueAsBoolean("yES"));
+
       assertFalse(ValueUtils.getValueAsBoolean("t"));
       assertFalse(ValueUtils.getValueAsBoolean(new Object()));
       assertFalse(ValueUtils.getValueAsBoolean(1));
@@ -119,6 +131,8 @@ class ValueUtilsTest extends BaseTest
       assertEquals(1_000, ValueUtils.getValueAsInteger(1000L));
       assertEquals(1, ValueUtils.getValueAsInteger(1.0F));
       assertEquals(1, ValueUtils.getValueAsInteger(1.0D));
+
+      assertEquals(AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId(), ValueUtils.getValueAsInteger(AutomationStatus.PENDING_INSERT_AUTOMATIONS));
 
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger("a"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger("a,b"));

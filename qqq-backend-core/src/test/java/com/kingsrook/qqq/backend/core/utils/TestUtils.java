@@ -92,6 +92,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.simple.SimpleSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -173,7 +176,11 @@ public class TestUtils
 
    public static final String SECURITY_KEY_TYPE_STORE                = "store";
    public static final String SECURITY_KEY_TYPE_STORE_ALL_ACCESS     = "storeAllAccess";
+   public static final String SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR  = "storeNullBehavior";
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
+
+   public static final String SIMPLE_SCHEDULER_NAME = "simpleScheduler";
+   public static final String TEST_SQS_QUEUE        = "testSQSQueue";
 
 
 
@@ -236,7 +243,19 @@ public class TestUtils
       defineWidgets(qInstance);
       defineApps(qInstance);
 
+      qInstance.addScheduler(defineSimpleScheduler());
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QSchedulerMetaData defineSimpleScheduler()
+   {
+      return new SimpleSchedulerMetaData().withName(SIMPLE_SCHEDULER_NAME);
    }
 
 
@@ -471,6 +490,7 @@ public class TestUtils
       return new QSecurityKeyType()
          .withName(SECURITY_KEY_TYPE_STORE)
          .withAllAccessKeyName(SECURITY_KEY_TYPE_STORE_ALL_ACCESS)
+         .withNullValueBehaviorKeyName(SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR)
          .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STORE);
    }
 
@@ -549,7 +569,9 @@ public class TestUtils
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("ssn", QFieldType.STRING).withType(QFieldType.PASSWORD))
-         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true));
+         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
+         ;
    }
 
 
@@ -602,6 +624,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING).withLabel("SKU"))
@@ -717,10 +740,13 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableAutomationDetails defineStandardAutomationDetails()
+   public static QTableAutomationDetails defineStandardAutomationDetails()
    {
       return (new QTableAutomationDetails()
          .withProviderName(POLLING_AUTOMATION)
+         .withSchedule(new QScheduleMetaData()
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)
+            .withRepeatSeconds(60))
          .withStatusTracking(new AutomationStatusTracking()
             .withType(AutomationStatusTrackingType.FIELD_IN_TABLE)
             .withFieldName("qqqAutomationStatus")));
@@ -1225,46 +1251,28 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void insertExtraShapes(QInstance qInstance) throws QException
+   {
+      List<QRecord> shapeRecords = List.of(
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 4).withValue("name", "Rectangle"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 5).withValue("name", "Pentagon"),
+         new QRecord().withTableName(TABLE_NAME_SHAPE).withValue("id", 6).withValue("name", "Hexagon"));
+
+      InsertInput insertInput = new InsertInput();
+      insertInput.setTableName(TABLE_NAME_SHAPE);
+      insertInput.setRecords(shapeRecords);
+      new InsertAction().execute(insertInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static String getPersonCsvHeader()
    {
       return ("""
          "id","createDate","modifyDate","firstName","lastName","birthDate","email"
-         """);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String getPersonCsvHeaderUsingLabels()
-   {
-      return ("""
-         "Id","Create Date","Modify Date","First Name","Last Name","Birth Date","Email"
-         """);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String getPersonCsvRow1()
-   {
-      return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com"
-         """);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String getPersonCsvRow2()
-   {
-      return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com"
          """);
    }
 
@@ -1337,10 +1345,13 @@ public class TestUtils
    private static QQueueMetaData defineTestSqsQueue()
    {
       return (new QQueueMetaData()
-         .withName("testSQSQueue")
+         .withName(TEST_SQS_QUEUE)
          .withProviderName(DEFAULT_QUEUE_PROVIDER)
          .withQueueName("test-queue")
-         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
+         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE)
+         .withSchedule(new QScheduleMetaData()
+            .withRepeatSeconds(60)
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)));
    }
 
 

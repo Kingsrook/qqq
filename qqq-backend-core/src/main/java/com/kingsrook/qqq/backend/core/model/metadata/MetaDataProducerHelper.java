@@ -29,7 +29,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.google.common.reflect.ClassPath;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -43,18 +46,27 @@ public class MetaDataProducerHelper
 
 
    /*******************************************************************************
-    ** Recursively find all classes in the given package, that extend MetaDataProducer,
+    ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
     ** run them, and add their output to the given qInstance.
     **
     ** Note - they'll be sorted by the sortOrder they provide.
     *******************************************************************************/
-   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws IOException
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws QException
    {
-      ////////////////////////////////////////////////////////////
-      // find all the meta data producer classes in the package //
-      ////////////////////////////////////////////////////////////
-      List<Class<?>>            classesInPackage = getClassesInPackage(packageName);
-      List<MetaDataProducer<?>> producers        = new ArrayList<>();
+      List<Class<?>> classesInPackage;
+      try
+      {
+         ////////////////////////////////////////////////////////////////////////
+         // find all the meta data producer classes in (and under) the package //
+         ////////////////////////////////////////////////////////////////////////
+         classesInPackage = getClassesInPackage(packageName);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error getting classes in package [" + packageName + "]", e));
+      }
+      List<MetaDataProducerInterface<?>> producers = new ArrayList<>();
+
       for(Class<?> aClass : classesInPackage)
       {
          try
@@ -64,46 +76,86 @@ public class MetaDataProducerHelper
                continue;
             }
 
-            for(Constructor<?> constructor : aClass.getConstructors())
+            if(MetaDataProducerInterface.class.isAssignableFrom(aClass))
             {
-               if(constructor.getParameterCount() == 0)
+               boolean foundValidConstructor = false;
+               for(Constructor<?> constructor : aClass.getConstructors())
                {
-                  Object o = constructor.newInstance();
-                  if(o instanceof MetaDataProducer<?> metaDataProducer)
+                  if(constructor.getParameterCount() == 0)
                   {
-                     producers.add(metaDataProducer);
+                     Object o = constructor.newInstance();
+                     producers.add((MetaDataProducerInterface<?>) o);
+                     foundValidConstructor = true;
+                     break;
                   }
-                  break;
+               }
+
+               if(!foundValidConstructor)
+               {
+                  LOG.warn("Found a class which implements MetaDataProducerInterface, but it does not have a no-arg constructor, so it cannot be used.", logPair("class", aClass.getSimpleName()));
                }
             }
          }
          catch(Exception e)
          {
-            LOG.info("Error adding metaData from producer", logPair("producer", aClass.getSimpleName()), e);
+            LOG.warn("Error evaluating a possible meta-data producer class", e, logPair("class", aClass.getSimpleName()));
          }
       }
 
-      /////////////////////////////
-      // sort them by sort order //
-      /////////////////////////////
-      producers.sort(Comparator.comparing(p -> p.getSortOrder()));
-
-      //////////////////////////////////////////////////////////////
-      // execute each one, adding their meta data to the instance //
-      //////////////////////////////////////////////////////////////
-      for(MetaDataProducer<?> producer : producers)
-      {
-         try
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // sort them by sort order, then by the type that they return - specifically - doing apps //
+      // after all other types (as apps often try to get other types from the instance)         //
+      // also - do backends earlier than others (e.g., tables may expect backends to exist)     //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      producers.sort(Comparator
+         .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
+         .thenComparing((MetaDataProducerInterface<?> p) ->
          {
-            TopLevelMetaDataInterface metaData = producer.produce(instance);
-            if(metaData != null)
+            try
             {
-               metaData.addSelfToInstance(instance);
+               Class<?> outputType = p.getClass().getMethod("produce", QInstance.class).getReturnType();
+               if(outputType.equals(QAppMetaData.class))
+               {
+                  return (2);
+               }
+               else if(outputType.equals(QBackendMetaData.class))
+               {
+                  return (0);
+               }
+               else
+               {
+                  return (1);
+               }
+            }
+            catch(Exception e)
+            {
+               return (0);
+            }
+         }));
+
+      ///////////////////////////////////////////////////////////////////////////
+      // execute each one (if enabled), adding their meta data to the instance //
+      ///////////////////////////////////////////////////////////////////////////
+      for(MetaDataProducerInterface<?> producer : producers)
+      {
+         if(producer.isEnabled())
+         {
+            try
+            {
+               TopLevelMetaDataInterface metaData = producer.produce(instance);
+               if(metaData != null)
+               {
+                  metaData.addSelfToInstance(instance);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("error executing metaDataProducer", e, logPair("producer", producer.getClass().getSimpleName()));
             }
          }
-         catch(Exception e)
+         else
          {
-            LOG.warn("error executing metaDataProducer", logPair("producer", producer.getClass().getSimpleName()), e);
+            LOG.debug("Not using producer which is not enabled", logPair("producer", producer.getClass().getSimpleName()));
          }
       }
 

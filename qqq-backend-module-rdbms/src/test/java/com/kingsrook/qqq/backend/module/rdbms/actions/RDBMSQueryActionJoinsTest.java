@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -642,13 +643,13 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, null));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Collections.emptyMap()));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(2)
          .anyMatch(r -> r.getValueInteger("id").equals(1))
@@ -686,13 +687,13 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       QContext.setQSession(new QSession());
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Collections.emptyMap()));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(6)
          .allMatch(r -> r.getValueInteger("storeId").equals(1) || r.getValueInteger("storeId").equals(3));
@@ -752,19 +753,19 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       ////////////////////////////////////////////////
       // with null security key value, 0 rows found //
       ////////////////////////////////////////////////
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, null));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Collections.emptyMap()));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       //////////////////////////////////////////////////////
       // with empty-list security key value, 0 rows found //
       //////////////////////////////////////////////////////
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, Collections.emptyList()));
+      QContext.setQSession(new QSession().withSecurityKeyValues(Map.of(TestUtils.TABLE_NAME_STORE, Collections.emptyList())));
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       ////////////////////////////////
       // with 2 values, find 2 rows //
       ////////////////////////////////
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(2)
          .allMatch(r -> r.getValueInteger("storeId").equals(1) || r.getValueInteger("storeId").equals(3));
@@ -800,7 +801,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeId").equals(1));
@@ -880,7 +881,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       assertThat(new QueryAction().execute(queryInput).getRecords()).isEmpty();
 
       queryInput.setFilter(new QQueryFilter(new QFilterCriteria("storeId", QCriteriaOperator.IN, List.of(1, 2))));
-      QContext.setQSession(new QSession().withSecurityKeyValues(TestUtils.TABLE_NAME_STORE, List.of(1, 3)));
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1).withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 3));
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeId").equals(1));

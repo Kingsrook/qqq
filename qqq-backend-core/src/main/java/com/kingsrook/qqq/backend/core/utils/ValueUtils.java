@@ -42,6 +42,7 @@ import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
@@ -69,6 +70,14 @@ public class ValueUtils
       {
          return (s);
       }
+      else if(value instanceof byte[] ba)
+      {
+         return (new String(ba));
+      }
+      else if(value instanceof PossibleValueEnum<?> pve)
+      {
+         return getValueAsString(pve.getPossibleValueId());
+      }
       else
       {
          return (String.valueOf(value));
@@ -95,11 +104,118 @@ public class ValueUtils
       }
       else if(value instanceof String s)
       {
-         return (Boolean.parseBoolean(s));
+         return "true".equalsIgnoreCase(s) || "yes".equalsIgnoreCase(s);
       }
       else
       {
          return (Boolean.parseBoolean(String.valueOf(value)));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Type-safely make an Long from any Object.
+    ** null and empty-string inputs return null.
+    ** We try to strip away commas and decimals (as long as they are exactly equal to the int value)
+    ** We may throw if the input can't be converted to an integer.
+    *******************************************************************************/
+   public static Long getValueAsLong(Object value) throws QValueException
+   {
+      try
+      {
+         if(value == null)
+         {
+            return (null);
+         }
+         else if(value instanceof Integer i)
+         {
+            return Long.valueOf((i));
+         }
+         else if(value instanceof Long l)
+         {
+            return (l);
+         }
+         else if(value instanceof BigInteger b)
+         {
+            return (b.longValue());
+         }
+         else if(value instanceof Float f)
+         {
+            if(f.longValue() != f)
+            {
+               throw (new QValueException(f + " does not have an exact integer representation."));
+            }
+            return (f.longValue());
+         }
+         else if(value instanceof Double d)
+         {
+            if(d.longValue() != d)
+            {
+               throw (new QValueException(d + " does not have an exact integer representation."));
+            }
+            return (d.longValue());
+         }
+         else if(value instanceof BigDecimal bd)
+         {
+            return bd.longValueExact();
+         }
+         else if(value instanceof PossibleValueEnum<?> pve)
+         {
+            return getValueAsLong(pve.getPossibleValueId());
+         }
+         else if(value instanceof String s)
+         {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
+            try
+            {
+               return (Long.parseLong(s));
+            }
+            catch(NumberFormatException nfe)
+            {
+               if(s.contains(","))
+               {
+                  String sWithoutCommas = s.replaceAll(",", "");
+                  try
+                  {
+                     return (getValueAsLong(sWithoutCommas));
+                  }
+                  catch(Exception ignore)
+                  {
+                     throw (nfe);
+                  }
+               }
+               if(s.matches(".*\\.\\d+$"))
+               {
+                  String sWithoutDecimal = s.replaceAll("\\.\\d+$", "");
+                  try
+                  {
+                     return (getValueAsLong(sWithoutDecimal));
+                  }
+                  catch(Exception ignore)
+                  {
+                     throw (nfe);
+                  }
+               }
+               throw (nfe);
+            }
+         }
+         else
+         {
+            throw (new QValueException("Unsupported class " + value.getClass().getName() + " for converting to Long."));
+         }
+      }
+      catch(QValueException qve)
+      {
+         throw (qve);
+      }
+      catch(Exception e)
+      {
+         throw (new QValueException("Value [" + value + "] could not be converted to a Long.", e));
       }
    }
 
@@ -150,6 +266,10 @@ public class ValueUtils
          else if(value instanceof BigDecimal bd)
          {
             return bd.intValueExact();
+         }
+         else if(value instanceof PossibleValueEnum<?> pve)
+         {
+            return getValueAsInteger(pve.getPossibleValueId());
          }
          else if(value instanceof String s)
          {
@@ -496,6 +616,9 @@ public class ValueUtils
     *******************************************************************************/
    private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e)
    {
+      //////////////////////
+      // 1999-12-31T12:59 //
+      //////////////////////
       if(s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$"))
       {
          //////////////////////////
@@ -503,11 +626,34 @@ public class ValueUtils
          //////////////////////////
          return Instant.parse(s + ":00Z");
       }
+
+      ///////////////////////////
+      // 1999-12-31 12:59:59.0 //
+      ///////////////////////////
       else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.0$"))
       {
          s = s.replaceAll(" ", "T").replaceAll("\\..*$", "Z");
          return Instant.parse(s);
       }
+
+      /////////////////////////
+      // 1999-12-31 12:59:59 //
+      /////////////////////////
+      else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"))
+      {
+         s = s.replaceAll(" ", "T") + "Z";
+         return Instant.parse(s);
+      }
+
+      //////////////////////
+      // 1999-12-31 12:59 //
+      //////////////////////
+      else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$"))
+      {
+         s = s.replaceAll(" ", "T") + ":00Z";
+         return Instant.parse(s);
+      }
+
       else
       {
          try
@@ -535,7 +681,7 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static LocalTime getValueAsLocalTime(Serializable value)
+   public static LocalTime getValueAsLocalTime(Object value)
    {
       try
       {
@@ -576,7 +722,7 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static byte[] getValueAsByteArray(Serializable value)
+   public static byte[] getValueAsByteArray(Object value)
    {
       if(value == null)
       {
@@ -602,7 +748,7 @@ public class ValueUtils
     **
     *******************************************************************************/
    @SuppressWarnings("unchecked")
-   public static <T extends Serializable> T getValueAsType(Class<T> type, Serializable value)
+   public static <T extends Serializable> T getValueAsType(Class<T> type, Object value)
    {
       if(type.equals(Integer.class))
       {
@@ -648,12 +794,13 @@ public class ValueUtils
     **
     *******************************************************************************/
    @SuppressWarnings("checkstyle:indentation")
-   public static Serializable getValueAsFieldType(QFieldType type, Serializable value)
+   public static Serializable getValueAsFieldType(QFieldType type, Object value)
    {
       return switch(type)
       {
          case STRING, TEXT, HTML, PASSWORD -> getValueAsString(value);
          case INTEGER -> getValueAsInteger(value);
+         case LONG -> getValueAsLong(value);
          case DECIMAL -> getValueAsBigDecimal(value);
          case BOOLEAN -> getValueAsBoolean(value);
          case DATE -> getValueAsLocalDate(value);

@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -80,6 +81,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -94,6 +96,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.Level;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -186,12 +189,6 @@ public class BaseAPIActionUtil
    {
       InsertOutput insertOutput = new InsertOutput();
       insertOutput.setRecords(new ArrayList<>());
-
-      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
-      {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op");
-         return (insertOutput);
-      }
 
       try
       {
@@ -713,11 +710,11 @@ public class BaseAPIActionUtil
 
          if(backendMetaData.getAuthorizationType().equals(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD))
          {
-            request.addHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+            request.setHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
          }
          else if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_HEADER))
          {
-            request.addHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+            request.setHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
          }
          else
          {
@@ -731,10 +728,10 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-         case BASIC_AUTH_USERNAME_PASSWORD -> request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-         case API_KEY_HEADER -> request.addHeader("API-Key", backendMetaData.getApiKey());
-         case API_TOKEN -> request.addHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case BASIC_AUTH_API_KEY -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
+         case API_KEY_HEADER -> request.setHeader("API-Key", backendMetaData.getApiKey());
+         case API_TOKEN -> request.setHeader("Authorization", "Token " + backendMetaData.getApiKey());
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM ->
          {
@@ -786,13 +783,13 @@ public class BaseAPIActionUtil
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
             HttpPost request = new HttpPost(fullURL);
-            request.setEntity(new StringEntity(postBody));
+            request.setEntity(new StringEntity(postBody, getCharsetForEntity()));
 
             if(setCredentialsInHeader)
             {
-               request.addHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
+               request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
             }
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+            request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
 
             HttpResponse response     = executeOAuthTokenRequest(client, request);
             int          statusCode   = response.getStatusLine().getStatusCode();
@@ -830,6 +827,16 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** Let a subclass change what charset to use for entities (bodies) being posted/put/etc.
+    *******************************************************************************/
+   protected static Charset getCharsetForEntity()
+   {
+      return StandardCharsets.UTF_8;
+   }
+
+
+
+   /*******************************************************************************
     ** one-line method, factored out so mock/tests can override
     *******************************************************************************/
    protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
@@ -844,7 +851,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    protected void setupContentTypeInRequest(HttpRequestBase request)
    {
-      request.addHeader("Content-Type", backendMetaData.getContentType());
+      request.setHeader("Content-Type", backendMetaData.getContentType());
    }
 
 
@@ -866,7 +873,7 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public void setupAdditionalHeaders(HttpRequestBase request)
    {
-      request.addHeader("Accept", "application/json");
+      request.setHeader("Accept", "application/json");
    }
 
 
@@ -914,7 +921,7 @@ public class BaseAPIActionUtil
          body.put(wrapperObjectName, new JSONObject(json));
          json = body.toString();
       }
-      return (new StringEntity(json));
+      return (new StringEntity(json, getCharsetForEntity()));
    }
 
 
@@ -943,7 +950,7 @@ public class BaseAPIActionUtil
             body.put(wrapperObjectName, new JSONArray(json));
             json = body.toString();
          }
-         return (new StringEntity(json));
+         return (new StringEntity(json, getCharsetForEntity()));
       }
       catch(Exception e)
       {
@@ -1037,7 +1044,7 @@ public class BaseAPIActionUtil
          //////////////////////////////////////////////////////
          // make sure to use closeable client to avoid leaks //
          //////////////////////////////////////////////////////
-         try(CloseableHttpClient httpClient = HttpClientBuilder.create().build())
+         try(CloseableHttpClient httpClient = buildHttpClient())
          {
             ////////////////////////////////////////////////////////////
             // call utility methods that populate data in the request //
@@ -1075,7 +1082,7 @@ public class BaseAPIActionUtil
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // trim response body (just to keep logs smaller, or, in case someone consuming logs doesn't want such long lines) //
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               LOG.info("Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
+               LOG.log(getAPIResponseLogLevel(), "Received successful response with code [" + qResponse.getStatusCode() + "] and content [" + StringUtils.safeTruncate(qResponse.getContent(), getMaxResponseMessageLengthForLog(), "...") + "].");
                return (qResponse);
             }
          }
@@ -1138,6 +1145,25 @@ public class BaseAPIActionUtil
             throw (new QException(message, e));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Build the default HttpClient used by the makeRequest method
+    *******************************************************************************/
+   protected CloseableHttpClient buildHttpClient()
+   {
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // do we want this?? .setConnectionManager(new PoolingHttpClientConnectionManager()) //
+      // needs some good scrutiny.                                                         //
+      ///////////////////////////////////////////////////////////////////////////////////////
+      return HttpClientBuilder.create()
+         .setDefaultRequestConfig(RequestConfig.custom()
+            .setConnectTimeout(getConnectionTimeoutMillis())
+            .setConnectionRequestTimeout(getConnectionRequestTimeoutMillis())
+            .setSocketTimeout(getSocketTimeoutMillis()).build())
+         .build();
    }
 
 
@@ -1429,6 +1455,51 @@ public class BaseAPIActionUtil
 
 
    /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getConnectionTimeoutMillis()
+   {
+      //////////////
+      // 1 minute //
+      //////////////
+      return (60 * 1000);
+   }
+
+
+
+   /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionRequestTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getConnectionRequestTimeoutMillis()
+   {
+      //////////////
+      // 1 minute //
+      //////////////
+      return (60 * 1000);
+   }
+
+
+
+   /*******************************************************************************
+    ** For the HttpClientBuilder RequestConfig, specify its ConnectionRequestTimeout. See
+    ** - https://www.baeldung.com/httpclient-timeout
+    ** - https://hc.apache.org/httpcomponents-client-5.1.x/current/httpclient5/apidocs/org/apache/hc/client5/http/config/RequestConfig.Builder.html
+    *******************************************************************************/
+   protected int getSocketTimeoutMillis()
+   {
+      ///////////////
+      // 3 minutes //
+      ///////////////
+      return (3 * 60 * 1000);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    protected void handleCustomAuthorization(HttpRequestBase request) throws QException
@@ -1436,5 +1507,15 @@ public class BaseAPIActionUtil
       ///////////////////////////////////////////////////////////////////////
       // nothing to do at this layer, meant to be overridden by subclasses //
       ///////////////////////////////////////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected Level getAPIResponseLogLevel() throws QException
+   {
+      return (Level.DEBUG);
    }
 }

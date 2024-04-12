@@ -32,6 +32,8 @@ import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryRecordLink;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
@@ -310,7 +312,7 @@ class BulkEditTest extends BaseTest
       runProcessOutput = new RunProcessAction().execute(runProcessInput);
 
       @SuppressWarnings("unchecked")
-      List<ProcessSummaryLine> processSummaryLines = (List<ProcessSummaryLine>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
+      List<ProcessSummaryLineInterface> processSummaryLines = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
       assertThat(processSummaryLines).hasSize(1 + 50 + 1 + 30 + 1);
 
       int index = 0;
@@ -323,7 +325,7 @@ class BulkEditTest extends BaseTest
       {
          assertThat(processSummaryLines.get(index++))
             .hasFieldOrPropertyWithValue("status", Status.ERROR)
-            .hasFieldOrPropertyWithValue("count", 1)
+            .isInstanceOf(ProcessSummaryRecordLink.class) // this is because it's a singleton, so we get rid of the "1 had an error" thing (doReplaceSingletonCountLinesWithSuffixOnly)
             .matches(psl -> psl.getMessage().contains("less than 60 is error"), "expected message");
       }
 
@@ -336,7 +338,7 @@ class BulkEditTest extends BaseTest
       {
          assertThat(processSummaryLines.get(index++))
             .hasFieldOrPropertyWithValue("status", Status.WARNING)
-            .hasFieldOrPropertyWithValue("count", 1)
+            .isInstanceOf(ProcessSummaryRecordLink.class) // this is because it's a singleton, so we get rid of the "1 had an error" thing (doReplaceSingletonCountLinesWithSuffixOnly)
             .matches(psl -> psl.getMessage().contains("less than 90 is warning"), "expected message");
       }
 

@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
@@ -73,7 +73,7 @@ public class QueryAction
 {
    private static final QLogger LOG = QLogger.getLogger(QueryAction.class);
 
-   private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
+   private Optional<TableCustomizerInterface> postQueryRecordCustomizer;
 
    private QueryInput               queryInput;
    private QueryInterface           queryInterface;
@@ -100,7 +100,7 @@ public class QueryAction
       }
 
       QBackendMetaData backend = queryInput.getBackend();
-      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 
       if(queryInput.getRecordPipe() != null)
@@ -264,7 +264,7 @@ public class QueryAction
    {
       if(this.postQueryRecordCustomizer.isPresent())
       {
-         records = postQueryRecordCustomizer.get().apply(records);
+         records = postQueryRecordCustomizer.get().postQuery(queryInput, records);
       }
 
       if(queryInput.getShouldTranslatePossibleValues())

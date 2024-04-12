@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
@@ -72,26 +73,36 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
 
-   private ProcessSummaryLine okToInsert           = StandardProcessSummaryLineProducer.getOkToInsertLine();
-   private ProcessSummaryLine okToUpdate           = StandardProcessSummaryLineProducer.getOkToUpdateLine();
-   private ProcessSummaryLine willNotInsert        = new ProcessSummaryLine(Status.INFO)
+   private ProcessSummaryLine okToInsert = StandardProcessSummaryLineProducer.getOkToInsertLine();
+   private ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
+
+   private ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because of this process' configuration.")
       .withSingularFutureMessage("will not be inserted ")
       .withPluralFutureMessage("will not be inserted ")
       .withSingularPastMessage("was not inserted ")
       .withPluralPastMessage("were not inserted ");
-   private ProcessSummaryLine willNotUpdate        = new ProcessSummaryLine(Status.INFO)
+
+   private ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because of this process' configuration.")
       .withSingularFutureMessage("will not be updated ")
       .withPluralFutureMessage("will not be updated ")
       .withSingularPastMessage("was not updated ")
       .withPluralPastMessage("were not updated ");
+
    private ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("missing a value for the key field.")
       .withSingularFutureMessage("will not be synced, because it is ")
       .withPluralFutureMessage("will not be synced, because they are ")
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
+
+   private ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
+      .withMessageSuffix("of an unexpected error: ")
+      .withSingularFutureMessage("will not be synced, ")
+      .withPluralFutureMessage("will not be synced, ")
+      .withSingularPastMessage("was not synced, ")
+      .withPluralPastMessage("were not synced, ");
 
    protected RunBackendStepInput  runBackendStepInput  = null;
    protected RunBackendStepOutput runBackendStepOutput = null;
@@ -107,8 +118,17 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    @Override
    public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
    {
-      ArrayList<ProcessSummaryLineInterface> processSummaryLineList = StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField, willNotInsert, willNotUpdate);
-      return (processSummaryLineList);
+      return StandardProcessSummaryLineProducer.toArrayList(okToInsert, okToUpdate, errorMissingKeyField, unspecifiedError, willNotInsert, willNotUpdate);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected ArrayList<ProcessSummaryLineInterface> getErrorProcessSummaryLines(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+   {
+      return StandardProcessSummaryLineProducer.toArrayList(errorMissingKeyField, unspecifiedError);
    }
 
 
@@ -161,6 +181,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     *******************************************************************************/
    public record SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey, boolean performInserts, boolean performUpdates)
    {
+
+      /*******************************************************************************
+       ** Overloaded constructor - defaults both performInserts & performUpdates to true.
+       *******************************************************************************/
+      public SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+      {
+         this(sourceTable, sourceTableKeyField, destinationTable, destinationTableForeignKey, true, true);
+      }
 
       /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
@@ -224,6 +252,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
       }
+      else
+      {
+         reinitializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // query to see if we already have those records in the destination (to determine insert/update) //
@@ -237,7 +269,8 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       Set<Serializable> processedSourceKeys        = new HashSet<>();
       for(QRecord sourceRecord : runBackendStepInput.getRecords())
       {
-         Serializable sourceKeyValue = sourceRecord.getValue(sourceTableKeyField);
+         Serializable sourcePrimaryKey = sourceRecord.getValue(QContext.getQInstance().getTable(config.sourceTable).getPrimaryKeyField());
+         Serializable sourceKeyValue   = sourceRecord.getValue(sourceTableKeyField);
          if(processedSourceKeys.contains(sourceKeyValue))
          {
             LOG.info("Skipping duplicated source-key within page", logPair("key", sourceKeyValue));
@@ -247,7 +280,8 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
-            errorMissingKeyField.incrementCount();
+            LOG.debug("Skipping record without a value in the sourceKeyField", logPair("keyField", sourceTableKeyField));
+            errorMissingKeyField.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
 
             try
             {
@@ -266,48 +300,56 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          //////////////////////////////////////////////////////////////
          // look for the existing record, to determine insert/update //
          //////////////////////////////////////////////////////////////
-         QRecord existingRecord = getExistingRecord(existingRecordsByForeignKey, destinationForeignKeyField, sourceKeyValue);
+         try
+         {
+            QRecord existingRecord = getExistingRecord(existingRecordsByForeignKey, destinationForeignKeyField, sourceKeyValue);
 
-         QRecord recordToStore;
-         if(existingRecord != null && config.performUpdates)
-         {
-            recordToStore = existingRecord;
-         }
-         else if(existingRecord == null && config.performInserts)
-         {
-            recordToStore = new QRecord();
-         }
-         else
-         {
-            if(existingRecord != null)
+            QRecord recordToStore;
+            if(existingRecord != null && config.performUpdates)
             {
-               LOG.info("Skipping storing existing record because this sync process is set to not perform updates");
-               willNotInsert.incrementCount();
+               recordToStore = existingRecord;
+            }
+            else if(existingRecord == null && config.performInserts)
+            {
+               recordToStore = new QRecord();
             }
             else
             {
-               LOG.info("Skipping storing new record because this sync process is set to not perform inserts");
-               willNotUpdate.incrementCount();
+               if(existingRecord != null)
+               {
+                  LOG.info("Skipping storing existing record because this sync process is set to not perform updates");
+                  willNotInsert.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
+               }
+               else
+               {
+                  LOG.info("Skipping storing new record because this sync process is set to not perform inserts");
+                  willNotUpdate.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
+               }
+               continue;
             }
-            continue;
+
+            //////////////////////////////////////////////////////////////////////////////////
+            // if we received a record to store add to the output records and summary lines //
+            //////////////////////////////////////////////////////////////////////////////////
+            recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);
+            if(recordToStore != null)
+            {
+               if(existingRecord != null)
+               {
+                  okToUpdate.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
+               }
+               else
+               {
+                  okToInsert.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
+               }
+
+               runBackendStepOutput.addRecord(recordToStore);
+            }
          }
-
-         //////////////////////////////////////////////////////////////////////////////////
-         // if we received a record to store add to the output records and summary lines //
-         //////////////////////////////////////////////////////////////////////////////////
-         recordToStore = populateRecordToStore(runBackendStepInput, recordToStore, sourceRecord);
-         if(recordToStore != null)
+         catch(Exception e)
          {
-            if(existingRecord != null)
-            {
-               okToUpdate.incrementCount();
-            }
-            else
-            {
-               okToInsert.incrementCount();
-            }
-
-            runBackendStepOutput.addRecord(recordToStore);
+            unspecifiedError.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
+            unspecifiedError.setMessageSuffix(unspecifiedError.getMessageSuffix() + e.getMessage());
          }
       }
 
@@ -426,6 +468,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** for pages after the first, possibly load more records in the lookup helper.
+    *******************************************************************************/
+   protected void reinitializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 

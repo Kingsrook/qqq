@@ -22,11 +22,18 @@
 package com.kingsrook.qqq.backend.module.api.actions;
 
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -36,6 +43,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -63,14 +71,18 @@ import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILogMetaDataProvider;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
 /*******************************************************************************
@@ -78,6 +90,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class BaseAPIActionUtilTest extends BaseTest
 {
+   private static final QLogger LOG = QLogger.getLogger(BaseAPIActionUtilTest.class);
+
    private static MockApiUtilsHelper mockApiUtilsHelper = new MockApiUtilsHelper();
 
 
@@ -339,10 +353,32 @@ class BaseAPIActionUtilTest extends BaseTest
       mockApiUtilsHelper.enqueueMockResponse("""
          {"id": 6}
          """);
+      mockApiUtilsHelper.withMockRequestAsserter(httpRequestBase ->
+      {
+         HttpEntity entity      = ((HttpEntityEnclosingRequestBase) httpRequestBase).getEntity();
+         byte[]     bytes       = entity.getContent().readAllBytes();
+         String     requestBody = new String(bytes, StandardCharsets.UTF_8);
+
+         ///////////////////////////////////////
+         // default ISO-8559-1: ... a0 ...    //
+         // updated UTF-8:      ... c2 a0 ... //
+         ///////////////////////////////////////
+         byte previousByte = 0;
+         for(byte b : bytes)
+         {
+            if(b == (byte) 0xa0 && previousByte != (byte) 0xc2)
+            {
+               fail("Found byte 0xa0 (without being prefixed by 0xc2) - so this is invalid UTF-8!");
+            }
+            previousByte = b;
+         }
+
+         assertThat(requestBody).contains("van Houten");
+      });
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(TestUtils.MOCK_TABLE_NAME);
-      insertInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse")));
+      insertInput.setRecords(List.of(new QRecord().withValue("name", "Milhouse van Houten")));
       InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(6, insertOutput.getRecords().get(0).getValueInteger("id"));
    }
@@ -792,6 +828,108 @@ class BaseAPIActionUtilTest extends BaseTest
       GetOutput getOutput = runSimpleGetAction();
       assertEquals(3, getOutput.getRecord().getValueInteger("id"));
       assertEquals("Bart", getOutput.getRecord().getValueString("name"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTimeouts() throws QException
+   {
+      ShortTimeoutActionUtil shortTimeoutActionUtil = new ShortTimeoutActionUtil();
+      shortTimeoutActionUtil.setBackendMetaData((APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME));
+
+      /////////////////////////////////////////////////////////////
+      // make sure we work correctly with a large enough timeout //
+      /////////////////////////////////////////////////////////////
+      {
+         startSimpleHttpServer(8888);
+         HttpGet request = new HttpGet("http://localhost:8888");
+         shortTimeoutActionUtil.setTimeoutMillis(3000);
+
+         shortTimeoutActionUtil.makeRequest(QContext.getQInstance().getTable(TestUtils.MOCK_TABLE_NAME), request);
+      }
+
+      ////////////////////////////////////////////////
+      // make sure we fail with a too-small timeout //
+      ////////////////////////////////////////////////
+      {
+         startSimpleHttpServer(8889);
+         HttpGet request = new HttpGet("http://localhost:8889");
+         shortTimeoutActionUtil.setTimeoutMillis(1);
+
+         assertThatThrownBy(() -> shortTimeoutActionUtil.makeRequest(QContext.getQInstance().getTable(TestUtils.MOCK_TABLE_NAME), request))
+            .hasRootCauseInstanceOf(SocketTimeoutException.class)
+            .rootCause().hasMessageContaining("timed out");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void startSimpleHttpServer(int port)
+   {
+      Executors.newSingleThreadExecutor().submit(() ->
+      {
+         LOG.info("Listening on " + port);
+         try(ServerSocket serverSocket = new ServerSocket(port))
+         {
+            Socket         clientSocket = serverSocket.accept();
+            PrintWriter    out          = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader in           = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            String         greeting     = in.readLine();
+            LOG.info("Read: " + greeting);
+            SleepUtils.sleep(1, TimeUnit.SECONDS);
+            out.println("HTTP/1.1 200 OK");
+            out.close();
+            clientSocket.close();
+         }
+         catch(Exception e)
+         {
+            LOG.info("Exception in simple http server", e);
+         }
+      });
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // give time for the thread w/ the listening socket to start before returning control to the thread that's going to try to connect to it //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      SleepUtils.sleep(100, TimeUnit.MILLISECONDS);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static class ShortTimeoutActionUtil extends BaseAPIActionUtil
+   {
+      private int timeoutMillis = 1;
+
+
+
+      /*******************************************************************************
+       ** Setter for timeoutMillis
+       **
+       *******************************************************************************/
+      public void setTimeoutMillis(int timeoutMillis)
+      {
+         this.timeoutMillis = timeoutMillis;
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      protected int getSocketTimeoutMillis()
+      {
+         return (timeoutMillis);
+      }
    }
 
 

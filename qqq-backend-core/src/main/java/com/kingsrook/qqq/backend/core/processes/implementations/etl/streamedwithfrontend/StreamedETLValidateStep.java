@@ -85,25 +85,43 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////////
       // basically repeat the preview step, but with no limit //
       //////////////////////////////////////////////////////////
-      extractStep.setLimit(null);
-      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
 
-      //////////////////////////////////////////
-      // set up a record pipe for the process //
-      //////////////////////////////////////////
-      Integer overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+      //////////////////////////////////////////////////////////////////////
+      // let the transform step override the capacity for the record pipe //
+      //////////////////////////////////////////////////////////////////////
+      RecordPipe recordPipe;
+      Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
       if(overrideRecordPipeCapacity != null)
       {
-         LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+         recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+         LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+      }
+      else
+      {
+         overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         if(overrideRecordPipeCapacity != null)
+         {
+            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+         }
+         else
+         {
+            recordPipe = new RecordPipe();
+         }
       }
 
-      RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, null);
+      /////////////////////////////
+      // set up the extract step //
+      /////////////////////////////
+      extractStep.setLimit(null);
       extractStep.setRecordPipe(recordPipe);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Preview>ValidateStep", null, recordPipe, (status) ->
+      int recordCount = new AsyncRecordPipeLoop().run("StreamedETLValidate>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
          {
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);

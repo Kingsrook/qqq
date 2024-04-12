@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 
 
@@ -34,6 +35,17 @@ import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
  *******************************************************************************/
 public class LogUtils
 {
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   // This string will be used in regex, inside ()'s, so you can supply pipe-delimited packages //
+   // as in, com.kingsrook|com.yourdomain|org.some.other.package                                //
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   private static String packagesToKeep = ".";
+
+   static
+   {
+      packagesToKeep = new QMetaDataVariableInterpreter().getStringFromPropertyOrEnvironment("qqq.logger.packagesToKeep", "QQQ_LOGGER_PACKAGES_TO_KEEP", ".");
+   }
+
 
    /*******************************************************************************
     **
@@ -118,9 +130,8 @@ public class LogUtils
    {
       try
       {
-         String        packagesToKeep = "com.kingsrook|com.coldtrack"; // todo - parameterize!!
-         StringBuilder rs             = new StringBuilder();
-         String[]      lines          = stackTrace.split("\n");
+         StringBuilder rs    = new StringBuilder();
+         String[]      lines = stackTrace.split("\n");
 
          int    indexWithinSubStack = 0;
          int    skipsInThisPackage  = 0;
@@ -134,7 +145,13 @@ public class LogUtils
             {
                keepLine = false;
                indexWithinSubStack++;
-               if(line.matches("^\\s+at (" + packagesToKeep + ").*"))
+
+               /////////////////////////////////////////////////////////////////////////////
+               // avoid NPE on packages to keep (and keep all packages)                   //
+               // also, avoid the regex call if it's the default of "." (e.g., match all) //
+               // otherwise, check if the line matches "at (packagesToKeep).*"            //
+               /////////////////////////////////////////////////////////////////////////////
+               if(packagesToKeep == null || ".".equals(packagesToKeep) || line.matches("^\\s+at (" + packagesToKeep + ").*"))
                {
                   keepLine = true;
                }

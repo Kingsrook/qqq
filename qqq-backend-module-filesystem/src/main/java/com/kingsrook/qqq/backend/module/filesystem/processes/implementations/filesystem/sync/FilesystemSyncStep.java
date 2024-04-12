@@ -60,30 +60,44 @@ public class FilesystemSyncStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // defer to a private method here, so we can add a type-parameter for that method to use              //
+      // would think we could do that here, but get compiler error, since this method comes from base class //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      doRun(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <F> void doRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
       QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
       QTableMetaData archiveTable    = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
       QTableMetaData processingTable = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
 
-      QBackendMetaData                 sourceBackend    = runBackendStepInput.getInstance().getBackendForTable(sourceTable.getName());
-      FilesystemBackendModuleInterface sourceModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
-      AbstractBaseFilesystemAction     sourceActionBase = sourceModule.getActionBase();
+      QBackendMetaData                    sourceBackend    = runBackendStepInput.getInstance().getBackendForTable(sourceTable.getName());
+      FilesystemBackendModuleInterface<F> sourceModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
+      AbstractBaseFilesystemAction<F>     sourceActionBase = sourceModule.getActionBase();
       sourceActionBase.preAction(sourceBackend);
-      Map<String, Object> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
+      Map<String, F> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
 
-      QBackendMetaData                 archiveBackend    = runBackendStepInput.getInstance().getBackendForTable(archiveTable.getName());
-      FilesystemBackendModuleInterface archiveModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
-      AbstractBaseFilesystemAction     archiveActionBase = archiveModule.getActionBase();
+      QBackendMetaData                    archiveBackend    = runBackendStepInput.getInstance().getBackendForTable(archiveTable.getName());
+      FilesystemBackendModuleInterface<F> archiveModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
+      AbstractBaseFilesystemAction<F>     archiveActionBase = archiveModule.getActionBase();
       archiveActionBase.preAction(archiveBackend);
       Set<String> archiveFiles = getFileNames(archiveActionBase, archiveTable, archiveBackend).keySet();
 
-      QBackendMetaData                 processingBackend    = runBackendStepInput.getInstance().getBackendForTable(processingTable.getName());
-      FilesystemBackendModuleInterface processingModule     = (FilesystemBackendModuleInterface) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
-      AbstractBaseFilesystemAction     processingActionBase = processingModule.getActionBase();
+      QBackendMetaData                    processingBackend    = runBackendStepInput.getInstance().getBackendForTable(processingTable.getName());
+      FilesystemBackendModuleInterface<F> processingModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
+      AbstractBaseFilesystemAction<F>     processingActionBase = processingModule.getActionBase();
       processingActionBase.preAction(processingBackend);
 
       Integer maxFilesToSync  = runBackendStepInput.getValueInteger(FilesystemSyncProcess.FIELD_MAX_FILES_TO_ARCHIVE);
       int     syncedFileCount = 0;
-      for(Map.Entry<String, Object> sourceEntry : sourceFiles.entrySet())
+      for(Map.Entry<String, F> sourceEntry : sourceFiles.entrySet())
       {
          try
          {
@@ -91,20 +105,22 @@ public class FilesystemSyncStep implements BackendStep
             if(!archiveFiles.contains(sourceFileName))
             {
                LOG.info("Syncing file [" + sourceFileName + "] to [" + archiveTable + "] and [" + processingTable + "]");
-               InputStream inputStream = sourceActionBase.readFile(sourceEntry.getValue());
-               byte[]      bytes       = inputStream.readAllBytes();
-
-               String archivePath = archiveActionBase.getFullBasePath(archiveTable, archiveBackend);
-               archiveActionBase.writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
-
-               String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
-               processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
-               syncedFileCount++;
-
-               if(maxFilesToSync != null && syncedFileCount >= maxFilesToSync)
+               try(InputStream inputStream = sourceActionBase.readFile(sourceEntry.getValue()))
                {
-                  LOG.info("Breaking after syncing " + syncedFileCount + " files");
-                  break;
+                  byte[] bytes = inputStream.readAllBytes();
+
+                  String archivePath = archiveActionBase.getFullBasePath(archiveTable, archiveBackend);
+                  archiveActionBase.writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
+
+                  String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
+                  processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
+                  syncedFileCount++;
+
+                  if(maxFilesToSync != null && syncedFileCount >= maxFilesToSync)
+                  {
+                     LOG.info("Breaking after syncing " + syncedFileCount + " files");
+                     break;
+                  }
                }
             }
          }
@@ -120,12 +136,12 @@ public class FilesystemSyncStep implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<String, Object> getFileNames(AbstractBaseFilesystemAction actionBase, QTableMetaData table, QBackendMetaData backend)
+   private <F> Map<String, F> getFileNames(AbstractBaseFilesystemAction<F> actionBase, QTableMetaData table, QBackendMetaData backend) throws QException
    {
-      List<Object>        files = actionBase.listFiles(table, backend);
-      Map<String, Object> rs    = new LinkedHashMap<>();
+      List<F>        files = actionBase.listFiles(table, backend);
+      Map<String, F> rs    = new LinkedHashMap<>();
 
-      for(Object file : files)
+      for(F file : files)
       {
          String fileName = actionBase.stripBackendAndTableBasePathsFromFileName(actionBase.getFullPathForFile(file), backend, table);
          rs.put(fileName, file);

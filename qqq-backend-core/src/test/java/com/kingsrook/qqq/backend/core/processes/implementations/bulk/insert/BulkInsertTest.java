@@ -65,6 +65,42 @@ class BulkInsertTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static String getPersonCsvRow1()
+   {
+      return ("""
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvRow2()
+   {
+      return ("""
+         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String getPersonCsvHeaderUsingLabels()
+   {
+      return ("""
+         "Id","Create Date","Modify Date","First Name","Last Name","Birth Date","Email"
+         """);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @Test
    void test() throws QException
    {
@@ -77,7 +113,7 @@ class BulkInsertTest extends BaseTest
       // create an uploaded file, similar to how an http server may //
       ////////////////////////////////////////////////////////////////
       QUploadedFile qUploadedFile = new QUploadedFile();
-      qUploadedFile.setBytes((TestUtils.getPersonCsvHeaderUsingLabels() + TestUtils.getPersonCsvRow1() + TestUtils.getPersonCsvRow2()).getBytes());
+      qUploadedFile.setBytes((getPersonCsvHeaderUsingLabels() + getPersonCsvRow1() + getPersonCsvRow2()).getBytes());
       qUploadedFile.setFilename("test.csv");
       UUIDAndTypeStateKey uploadedFileKey = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
       TempFileStateProvider.getInstance().put(uploadedFileKey, qUploadedFile);

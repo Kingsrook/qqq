@@ -53,8 +53,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -90,6 +92,9 @@ public class QInstance
    private Map<String, QWidgetMetaDataInterface> widgets              = new LinkedHashMap<>();
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
+
+   private Map<String, QSchedulerMetaData> schedulers       = new LinkedHashMap<>();
+   private Map<String, SchedulableType>    schedulableTypes = new LinkedHashMap<>();
 
    private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
 
@@ -746,12 +751,22 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the hasBeenValidated field will be set to true.
     **
+    ** Else, if passed a null, hasBeenValidated will be reset to false - e.g., to
+    ** re-trigger validation (can be useful in tests).
     *******************************************************************************/
    public void setHasBeenValidated(QInstanceValidationKey key)
    {
-      this.hasBeenValidated = true;
+      if(key == null)
+      {
+         this.hasBeenValidated = false;
+      }
+      else
+      {
+         this.hasBeenValidated = true;
+      }
    }
 
 
@@ -1042,9 +1057,15 @@ public class QInstance
       for(QSecurityKeyType securityKeyType : CollectionUtils.nonNullMap(getSecurityKeyTypes()).values())
       {
          rs.add(securityKeyType.getName());
+
          if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
          {
             rs.add(securityKeyType.getAllAccessKeyName());
+         }
+
+         if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+         {
+            rs.add(securityKeyType.getNullValueBehaviorKeyName());
          }
       }
       return (rs);
@@ -1196,6 +1217,118 @@ public class QInstance
    {
       this.deploymentMode = deploymentMode;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void add(TopLevelMetaDataInterface metaData)
+   {
+      metaData.addSelfToInstance(this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addScheduler(QSchedulerMetaData scheduler)
+   {
+      String name = scheduler.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a scheduler without a name."));
+      }
+      if(this.schedulers.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second scheduler with name: " + name));
+      }
+      this.schedulers.put(name, scheduler);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QSchedulerMetaData getScheduler(String name)
+   {
+      return (this.schedulers.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulers
+    **
+    *******************************************************************************/
+   public Map<String, QSchedulerMetaData> getSchedulers()
+   {
+      return schedulers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulers
+    **
+    *******************************************************************************/
+   public void setSchedulers(Map<String, QSchedulerMetaData> schedulers)
+   {
+      this.schedulers = schedulers;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSchedulableType(SchedulableType schedulableType)
+   {
+      String name = schedulableType.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a schedulableType without a name."));
+      }
+      if(this.schedulableTypes.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second schedulableType with name: " + name));
+      }
+      this.schedulableTypes.put(name, schedulableType);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public SchedulableType getSchedulableType(String name)
+   {
+      return (this.schedulableTypes.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulableTypes
+    **
+    *******************************************************************************/
+   public Map<String, SchedulableType> getSchedulableTypes()
+   {
+      return schedulableTypes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulableTypes
+    **
+    *******************************************************************************/
+   public void setSchedulableTypes(Map<String, SchedulableType> schedulableTypes)
+   {
+      this.schedulableTypes = schedulableTypes;
    }
 
 }

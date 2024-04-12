@@ -63,7 +63,7 @@ public class BaseStreamedETLStep
    protected AbstractTransformStep getTransformStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_TRANSFORM_CODE);
-      return (QCodeLoader.getBackendStep(AbstractTransformStep.class, codeReference));
+      return (QCodeLoader.getAdHoc(AbstractTransformStep.class, codeReference));
    }
 
 
@@ -74,7 +74,7 @@ public class BaseStreamedETLStep
    protected AbstractLoadStep getLoadStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_LOAD_CODE);
-      return (QCodeLoader.getBackendStep(AbstractLoadStep.class, codeReference));
+      return (QCodeLoader.getAdHoc(AbstractLoadStep.class, codeReference));
    }
 
 
@@ -93,7 +93,7 @@ public class BaseStreamedETLStep
          qValueFormatter.setDisplayValuesInRecords(table, list);
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(input.getInstance(), input.getSession());
-         qPossibleValueTranslator.translatePossibleValuesInRecords(input.getTable(), list);
+         qPossibleValueTranslator.translatePossibleValuesInRecords(table, list);
       }
    }
 
@@ -104,12 +104,12 @@ public class BaseStreamedETLStep
     *******************************************************************************/
    protected void moveReviewStepAfterValidateStep(RunBackendStepOutput runBackendStepOutput)
    {
-      LOG.info("Skipping to validation step");
+      LOG.debug("Skipping to validation step");
       ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
-      LOG.debug("Step list pre: " + stepList);
+      LOG.trace("Step list pre: " + stepList);
       stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
       stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
       runBackendStepOutput.getProcessState().setStepList(stepList);
-      LOG.debug("Step list post: " + stepList);
+      LOG.trace("Step list post: " + stepList);
    }
 }

@@ -1,0 +1,284 @@
+[#Tables]
+== Tables
+include::../variables.adoc[]
+
+One of the most common types of object in a QQQ Instance is the Table.
+In the most common use-case, a QQQ Table may be the in-app representation of a Database table.
+That is, it is a collection of records (or rows) of data, each of which has a set of fields (or columns).
+
+QQQ also allows other types of data sources ({link-backends}) to be used as tables, such as File systems, API's, etc.
+All of these backend types present the same interfaces (both user-interfaces, and application programming interfaces), regardless of their backend type.
+
+=== QTableMetaData
+Tables are defined in a QQQ Instance in `*QTableMetaData*` objects.
+All tables must reference a {link-backend}, a list of fields that define the shape of records in the table, and additional data to describe how to work with the table within its backend.
+
+*QTableMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the table within the QQQ Instance.
+* `label` - *String* - User-facing label for the table, presented in User Interfaces.
+Inferred from `name` if not set.
+* `backendName` - *String, Required* - Name of a {link-backend} in which this table's data is managed.
+* `fields` - *Map of String → {link-field}, Required* - The columns of data that make up all records in this table.
+* `primaryKeyField` - *String, Conditional* - Name of a {link-field} that serves as the primary key (unique identifier) for records in this table.
+** Whether a primary key field is required or not depends on the backend type that the table belongs to.
+* `uniqueKeys` - *List of UniqueKey* - Definition of additional unique keys or constraints (from an RDBMS point of view) from the table.
+e.g., sets of columns which must have unique values for each record in the table.
+The properties of the `UniqueKey` object are:
+** `fieldNames` - *List of String, Required* - List of field names from this table.
+** `label` - *String* - Optional label to be shown to users with error messages (e.g., for violation of this unique key).
+* `backendDetails` - *QTableBackendDetails or subclass* - Additional data to configure the table within its {link-backend}.
+** For example, for an RDBMS-type backend, the name of the table within the database.
+** vs. a FileSystem backend, this may be the sub-path where files for the table are stored.
+** #todo - details on these#
+* `automationDetails` - *<<QTableAutomationDetails>>* - Configuration of automated jobs that run against records in the table, e.g., upon insert or update.
+* `customizers` - *Map of String → QCodeReference* - References to custom code that are injected into standard table actions, that allow applications to customize certain parts of how the table works.
+** Allowed values for keys in this map come from the `role` property of the `TableCustomizers` enum.
+** Based on the key in this map, the `QCodeReference` used as the value must be of the appropriate java type, as specified in the `expectedType` property of the `TableCustomizers` enum value corresponding to the key.
+** Example:
+
+[source,java]
+----
+// in defining a QTableMetaData, a customizer can be added as:
+.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(MyPreInsCustomizer.class))
+
+// where MyPreInsCustomizer would be defined as:
+public class MyPreInsCustomizer extends AbstractPreInsertCustomizer
+----
+
+
+* `isHidden` - *Boolean, default false* - Option to hide the table from all User Interfaces.
+* `parentAppName` - *String* - Name of a {link-app} that this table exists within.
+** This field generally does not need to be set on the table when it is defined, but rather, is set when the table gets placed within an app.
+* `icon` - *QIcon* - Icon associated with this table in certain user interfaces.  See {link-icons}.
+* `recordLabelFormat` - *String* - Java Format String, used with `recordLabelFields` to produce a label shown for records from the table.
+* `recordLabelFields` - *List of String, Conditional* - Used with `recordLabelFormat` to provide values for any format specifiers in the format string.
+These strings must be field names within the table.
+** Example of using `recordLabelFormat` and `recordLabelFields`:
+
+[source,java]
+----
+// given these fields in the table:
+new QFieldMetaData("name", QFieldType.STRING)
+new QFieldMetaData("birthDate", QFieldType.DATE)
+
+// We can produce a record label such as "Darin Kelkhoff (1980-05-31)" via:
+.withRecordLabelFormat("%s (%s)")
+.withRecordLabelFields(List.of("name", "birthDate"))
+----
+
+* `sections` - *List of <<QFieldSection>>* - Mechanism to organize fields within user interfaces, into logical sections.
+If any sections are present in the table meta data, then all fields in the table must be listed in exactly 1 section.
+If no sections are defined, then instance enrichment will define default sections.
+* `associatedScripts` - *List of <<AssociatedScript>>* - Definition of user-defined scripts that can be associated with records within the table.
+* `enabledCapabilities` and `disabledCapabilities` - *Set of Capability enum values* - Overrides from the backend level, for capabilities that this table does or does not possess.
+* `associations` - *List of <<Association>>* - tables whose records can be managed along with records from this table.  See below for details.
+* `recordSecurityLocks` - *List of <<RecordSecurityLock>>* - locks that apply to records in the table - e.g., to control what users can or cannot access records in the table.
+See RecordSecurityLock below for details.
+* `permissionRules` - *QPermissionRules object* - define the permission/access rules for the table.
+See {link-permissionRules} for details.
+* `auditRules` - *<<QAuditRules>> object* - define the audit rules for the table.
+See QAuditRules below for details.
+* `cacheOf` - *<<CacheOf>> object* - specify that this table serves as a "cache of" another table.
+See CacheOf object below for details.
+* `exposedJoins` - *List of <<ExposedJoin>> objects* - optional list of joined tables that are to be exposed in User Interfaces.
+See ExposedJoin object below for details.
+
+#todo: supplementalMetaData (API)#
+
+
+==== QFieldSection
+When users view records from a QQQ Table in a UI, fields are organized on the screen based on the `QFieldSection` objects in the table's meta-data.
+
+*QFieldSection Properties:*
+
+* `name` - *String, Required* - unique identifier for the section within its table.
+* `label` - *String* - User-facing label for the section, presented in User Interfaces.
+Inferred from `name` if not set.
+* `tier` - *enum* - importance of the fields in section for the table.
+Different tiers may be presented differently in UI's.
+Only a single `T1` section is allowed per-table.  Possible values are: `T1`, `T2`, and `T3`.
+* `icon` - *QIcon* - Icon associated with this section in certain user interfaces.  See {link-icons}.
+* `isHidden` - *Boolean, default false* - Option to hide the table from all User Interfaces.
+* `gridColumns` - *Integer* - Option to specify how many columns in a grid layout the section should use.
+For the Material-Dashboard frontend, this is a grid of 12.
+* `fieldNames` - *List of String, Conditional* - List of names of {link-fields} from this table to be included in this section.
+* `widgetName` - *String, Conditional* - Name of a {link-widget} to be displayed in this section.
+** Note that exactly one of `fieldNames` or `widgetName` must be used.
+
+==== QTableAutomationDetails
+Records in QQQ can have application-defined custom actions automatically asynchronously executed against them after they are inserted or updated.
+The configuration to enable this functionality is assigned to a table in a `QTableAutomationDetails` object.
+
+*QTableAutomationDetails Properties:*
+
+* `statusTracking` - *AutomationStatusTracking object, Required* - define how QQQ should keep track, per record, its status (e.g., pending-insert-automations, running-update-automations, etc).
+Properties of `AutomationStatusTracking` object are:
+** `type` - *enum, Required* - what type of tracking is used for the table.
+Possible values are:
+*** `FIELD_IN_TABLE` - specifies that the table has a field which stores an `AutomationStatus` id.
+*** _Additional types may be defined in the future, such as ONE_TO_ONE_TABLE or SHARED_TABLE._
+** `fieldName` - *String, Conditional* - for `type=FIELD_IN_TABLE`, this property specifies the name of the {link-field} in the table that stores the `AutomationStatus` id.
+* `providerName` - *String, Required* - name of an Automation Provider within the QQQ Instance, which is responsible for running the automations on this table.
+* `overrideBatchSize` - *Integer* - optional control over how many records from the table are processed in a single batch/page.
+For tables with "slow" actions (e.g., one that may need to make an API call per-record), using a smaller batch size (say, 50) may be required to avoid timeout errors.
+* `actions` - *List of TableAutomationAction* - list of the actions to perform on new and updated records in the table.
+Properties are:
+** `name` - *String, Required* - unique identifier for the action within its table.
+** `triggerEvent` - *enum, Required* - indicate which event type (`POST_INSERT`, `POST_UPDATE`, or `PRE_DELETE` (which is not yet implemented)) the action applies to.
+** `priority` - *Integer, default 500* - mechanism to control the order in which actions on a table are executed, if there are more than one.
+Actions with a smaller value for `priority` are executed first.  Ties are broken in an undefined manner.
+** `filter` - *QQueryFilter* - optional filter that gets applied to records when they match the `triggerEvent`, to control which records have the action ran against them.
+** `includeRecordAssociations` - *Boolean, default false* - for tables that have associations, control whether or not a record's associated records are loaded when records are fetched and passed into the action's custom code.
+** `values` - *Map of String → Serializable* - optional application-defined map of name=value pairs that can be passed into the action's custom code.
+** `processName` - *String, Conditional* - name of a {link-processes} in the QQQ Instance which is executed as the custom-code of the action.
+** `codeReference` - *QCodeReference, Conditional* - reference to a class that extends `RecordAutomationHandler`, to be executed as the custom-code of the action.
+*** Note, exactly one of `processName` or `codeReference` must be provided.
+
+
+
+==== Association
+An `Association` is a way to define a relationship between tables, that facilitates, for example, a parent record having a list of its child records included in it when it is returned from a Query.
+Similarly, associated records can automatically be inserted/updated/deleted if they are included in a parent record when it is stored.
+
+*Association Properties:*
+
+* `name` - *String, Required* - unique name for the association within this table.
+Used as the key in the `associatedRecords` map within `QRecord` objects for this table.
+* `associatedTableName` - *String, Required* - name of a {link-table}, which is the associated table.
+* `joinName` - *String, Required* - name of a {link-join} in the instance, which defines how the tables are joined.
+
+
+
+==== RecordSecurityLock
+A `RecordSecurityLock` is the mechanism through which users can be allowed or denied access to read and/or write records, based on values in the record, and values in the user's session.
+Record security locks must correspond to a {link-securityKeyType}.
+
+For example:
+
+* An instance may have a security key type called `clientId`.
+* Users may have 1 or more `clientId` values in their Session, or, they may have an "All Clients" key in their session (e.g., for internal/admin users).
+* For some tables, it may be required to limit visibility to records based on a user's `clientId` key.
+To do this. a *RecordSecurityLock* would be applied to the table, specifying the `clientId` field corresponds to the `clientId` security key.
+* With these settings in place, QQQ will prevent users from viewing records from this table that do not have a matching key, and will similarly prevent users from writing records with an invalid key value.
+** For example, in an RDBMS backend, all `SELECT` statements generated against such a table will have an implicit filter, such as `AND client_id = ?` based on the user's security key values.
+
+*RecordSecurityLock Properties:*
+
+* `securityKeyType` - *String, Required* - name of a {link-securityKeyType} in the Instance.
+* `fieldName` - *String, Required* - name of a {link-field} in this table (or a joined table, if `joinNameChain` is set), where the value for the lock is stored.
+* `joinNameChain` - *List of String* - if the lock value is not stored in this table, but rather comes from a joined table, then this property defines the path of joins from this table to the table with the lock field.
+* `nullValueBehavior` - *enum, default: DENY* - control how records with a `null` value in the lock field should behave.
+Possible values are:
+** `DENY` - deny all users access to a record with a `null` value in the lock field (unless the user has an all-access key - see {link-securityKeyType})
+** `ALLOW` - allow all users access to a record with a `null` value in the lock field.
+** `ALLOW_WRITE_ONLY` - allow all users to write records with `null` in the lock field, but deny reads on records with `null` in the lock field (also excepted by all-access keys).
+* `lockScope` - *enum, default: READ_AND_WRITE* - control what types of operations the lock applies to.
+Possible values are:
+** `READ_AND_WRITE` - control both reading and writing records based on the user having an appropriate security key.
+** `WRITE` - allow all users to read the record, but limit writes to users with an appropriate security key.
+
+
+
+==== QAuditRules
+The audit rules on a table define the level of detail that is automatically stored in the audit table (if any) for DML actions (Insert, Update, Delete).
+
+*QAuditRules Properties:*
+
+* `auditLevel` - *enum, Required* - level of details that are audited.
+Possible values are:
+** `NONE` - no automatic audits are stored for the table.
+** `RECORD` - only record-level audits are stored for the table (e.g., a message such as "record was edited", but without field-level details)
+** `FIELD` - full field-level audits are stored (e.g., including all old & new values as audit details).
+
+
+
+==== CacheOf
+One QQQ Table can be defined as a "cache of" another QQQ Table by assigning a `CacheOf` object to the table which will function as the cache.
+_Note, at this time, only limited use-cases are supported._
+
+*CacheOf Properties:*
+
+* `sourceTable` - *String, Required* - name of the other QQQ Table that is the source of data in this cache.
+* `expirationSeconds` - *Integer* - optional number of seconds that a cached record is allowed to exist before it is considered expired, and must be re-fetched from the source table.
+* `cachedDateFieldName` - *String, Conditional* - used with `expirationSeconds` to define the field in this table that is used for storing the timestamp for when the record was cached.
+* `useCases` - *List of CacheUseCase* - what caching use-cases are to be implemented.
+
+Properties of *CacheUseCase* are:
+
+* `type` - *Enum, Required* - the type of use-case.  Possible values are:
+** `PRIMARY_KEY_TO_PRIMARY_KEY` - the primary key in the cache table equals the primary key in the source table.
+** `UNIQUE_KEY_TO_PRIMARY_KEY` - a unique key in the cache table equals the primary key in the source table.
+** `UNIQUE_KEY_TO_UNIQUE_KEY` - a unique key in the cache table equals a unique key in the source table.
+* `cacheSourceMisses` - *Boolean, default false* - whether or not, if a "miss" happens in the source, if that fact gets cached.
+* `cacheUniqueKey` - *UniqueKey, conditional* - define the fields in the cache table that define the unique key being used as the cache key.
+* `sourceUniqueKey` - *UniqueKey, conditional* - define the fields in the source table that define the unique key being used as the cache key.
+* `doCopySourcePrimaryKeyToCache` - *Boolean, default false* - specify whether or not the value of the primary key in the source table should be copied into records built in the cache table.
+* `excludeRecordsMatching` - *List of QQueryFilter* - optional filter to be applied to records before they are cached.
+If a record matches the filter, then it will not be cached.
+
+
+==== ExposedJoin
+Query screens in QQQ applications can potentially allow users to both display fields from joined tables, and filter by fields from joined tables, for any {link-join} explicitly defined as an *Exposed Join*.
+
+_The reasoning why not all joins are implicitly exposed is that in many applications, the full join-graph can sometimes be overwhelming, surprisingly broad, and not necessarily practically useful.
+This could be subject to change in the future, e.g., given a UI that allowed users to more explicitly add additional join tables..._
+
+*ExposedJoin Properties:*
+
+* `label` - *String, Required* - how the joined table should be presented in the UI.
+* `joinTable` - *String, Required* - name of the QQQ Table that is joined to this table, and is being exposed as a join in the UI.
+* `joinPath` - *List of String, Required* - names of 1 or more QQQ Joins that describe how to get from this table to the join table.
+
+
+
+==== AssociatedScript
+A QQQ Table can have end-user defined Script records associated with individual records in the table by use of the `associatedScripts` property of the table's meta-data.
+
+The "types" of these scripts (e.g., how they are used in an application) are wholly application-designed & managed.
+QQQ provides the mechanism for UI's to present and manage such scripts (e.g., the *Developer Mode* screen in the Material Dashboard), as well as an interface to load & execute such scripts `RunAssociatedScriptAction`).
+
+*AssociatedScript Properties:*
+
+* `fieldName` - *String, Required* - name of a {link-field} in the table which stores the id of the associated script record.
+* `scriptTypeId` - *Serializable (typically Integer), Required* - primary key value from the `"scriptType"` table in the instance, to designate the type of the Script.
+* `scriptTester` - *QCodeReference* - reference to a class which implements `TestScriptActionInterface`, that can be used by UI's for running an associated script to test it.
+
+
+
+=== Supplemental Meta Data
+==== QQQ Frontend Material Dashboard
+When running a QQQ application with the QQQ Frontend Material Dashboard module (QFMD),
+there are various pieces of supplemental meta-data which can be assigned to a Table,
+to modify some behaviors for the table in this UI.
+
+===== Default Quick Filter Field Names
+QFMD's table query has a "Basic" mode, which will always display a subset of the table's fields as quick-access filters.
+By default, the "Tier 1" fields on a table (e.g., fields in a Section that is marked as T1) will be used for this purpose.
+
+However, you can customize which fields are shown as the default quick-filter fields, by providing a list of field names in a
+`MaterialDashboardTableMetaData` object, placed in the table's `supplementalMetaData`.
+
+[source,java]
+----
+table.withSupplementalMetaData(new MaterialDashboardTableMetaData()
+    .withDefaultQuickFilterFieldNames(List.of("id", "warehouseId", "statusId", "orderDate")));
+----
+
+===== Go To Field Names
+QFMD has a feature where a table's query screen can include a "Go To" button,
+which a user can hit to open a modal popup, into which the user can enter a record's identifier,
+to be brought directly to the record matching that identifier.
+
+To use this feature, the table must have a List of `GotoFieldNames` set in its
+`MaterialDashboardTableMetaData` object in the table's `supplementalMetaData`.
+
+Each entry in this list is actually a list of fields, e.g., to account for a multi-value unique-key.
+
+[source,java]
+----
+table.withSupplementalMetaData(new MaterialDashboardTableMetaData()
+    .withGotoFieldNames(List.of(
+        List.of("id"),
+        List.of("partnerName", "partnerOrderId"))));
+----

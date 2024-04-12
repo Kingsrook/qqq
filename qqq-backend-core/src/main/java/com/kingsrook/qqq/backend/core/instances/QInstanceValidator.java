@@ -24,23 +24,30 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -49,10 +56,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -60,21 +72,27 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
@@ -83,9 +101,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.quartz.CronExpression;
 
 
 /*******************************************************************************
@@ -103,6 +125,8 @@ public class QInstanceValidator
    private static final QLogger LOG = QLogger.getLogger(QInstanceValidator.class);
 
    private boolean printWarnings = false;
+
+   private static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> validatorPlugins = new ListingHash<>();
 
    private List<String> errors = new ArrayList<>();
 
@@ -150,11 +174,13 @@ public class QInstanceValidator
       try
       {
          validateBackends(qInstance);
+         validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
          validateTables(qInstance, joinGraph);
          validateProcesses(qInstance);
          validateReports(qInstance);
          validateApps(qInstance);
+         validateWidgets(qInstance);
          validatePossibleValueSources(qInstance);
          validateQueuesAndProviders(qInstance);
          validateJoins(qInstance);
@@ -162,6 +188,8 @@ public class QInstanceValidator
          validateSupplementalMetaData(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
+
+         runPlugins(QInstance.class, qInstance, qInstance);
       }
       catch(Exception e)
       {
@@ -183,11 +211,64 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static void addValidatorPlugin(QInstanceValidatorPluginInterface<?> plugin)
+   {
+      Optional<Method> validateMethod = Arrays.stream(plugin.getClass().getDeclaredMethods())
+         .filter(m -> m.getName().equals("validate")
+            && m.getParameterCount() == 3
+            && !m.getParameterTypes()[0].equals(Object.class)
+            && m.getParameterTypes()[1].equals(QInstance.class)
+            && m.getParameterTypes()[2].equals(QInstanceValidator.class)
+         ).findFirst();
+
+      if(validateMethod.isPresent())
+      {
+         Class<?> parameterType = validateMethod.get().getParameterTypes()[0];
+         validatorPlugins.add(parameterType, plugin);
+      }
+      else
+      {
+         LOG.warn("Could not find validate method on validator plugin [" + plugin.getClass().getName() + "] (to infer type being validated) - this plugin will not be used.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void removeAllValidatorPlugins()
+   {
+      validatorPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <T> void runPlugins(Class<T> c, T t, QInstance qInstance)
+   {
+      for(QInstanceValidatorPluginInterface<?> plugin : CollectionUtils.nonNullList(validatorPlugins.get(c)))
+      {
+         @SuppressWarnings("unchecked")
+         QInstanceValidatorPluginInterface<T> processPlugin = (QInstanceValidatorPluginInterface<T>) plugin;
+         processPlugin.validate(t, qInstance, this);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private void validateSupplementalMetaData(QInstance qInstance)
    {
       for(QSupplementalInstanceMetaData supplementalInstanceMetaData : CollectionUtils.nonNullMap(qInstance.getSupplementalMetaData()).values())
       {
          supplementalInstanceMetaData.validate(qInstance, this);
+
+         runPlugins(QSupplementalInstanceMetaData.class, supplementalInstanceMetaData, qInstance);
       }
    }
 
@@ -204,18 +285,29 @@ public class QInstanceValidator
          if(assertCondition(StringUtils.hasContent(securityKeyType.getName()), "Missing name for a securityKeyType"))
          {
             assertCondition(Objects.equals(name, securityKeyType.getName()), "Inconsistent naming for securityKeyType: " + name + "/" + securityKeyType.getName() + ".");
-            assertCondition(!usedNames.contains(name), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + name);
+
+            String duplicateNameMessagePrefix = "More than one SecurityKeyType with name (or allAccessKeyName or nullValueBehaviorKeyName) of: ";
+            assertCondition(!usedNames.contains(name), duplicateNameMessagePrefix + name);
             usedNames.add(name);
+
             if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
             {
-               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), "More than one SecurityKeyType with name (or allAccessKeyName) of: " + securityKeyType.getAllAccessKeyName());
+               assertCondition(!usedNames.contains(securityKeyType.getAllAccessKeyName()), duplicateNameMessagePrefix + securityKeyType.getAllAccessKeyName());
                usedNames.add(securityKeyType.getAllAccessKeyName());
+            }
+
+            if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+            {
+               assertCondition(!usedNames.contains(securityKeyType.getNullValueBehaviorKeyName()), duplicateNameMessagePrefix + securityKeyType.getNullValueBehaviorKeyName());
+               usedNames.add(securityKeyType.getNullValueBehaviorKeyName());
             }
 
             if(StringUtils.hasContent(securityKeyType.getPossibleValueSourceName()))
             {
                assertCondition(qInstance.getPossibleValueSource(securityKeyType.getPossibleValueSourceName()) != null, "Unrecognized possibleValueSourceName in securityKeyType: " + name);
             }
+
+            runPlugins(QSecurityKeyType.class, securityKeyType, qInstance);
          }
       });
    }
@@ -262,6 +354,8 @@ public class QInstanceValidator
                assertNoException(() -> qInstance.getTable(join.getRightTable()).getField(orderBy.getFieldName()), "Field name " + orderBy.getFieldName() + " in orderBy for join " + joinName + " is not a defined field in the right-table " + join.getRightTable());
             }
          }
+
+         runPlugins(QJoinMetaData.class, join, qInstance);
       });
    }
 
@@ -325,6 +419,8 @@ public class QInstanceValidator
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
             }
+
+            runPlugins(QQueueProviderMetaData.class, queueProvider, qInstance);
          });
       }
 
@@ -339,6 +435,13 @@ public class QInstanceValidator
             {
                assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
             }
+
+            if(queue.getSchedule() != null)
+            {
+               validateScheduleMetaData(queue.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
+            }
+
+            runPlugins(QQueueMetaData.class, queue, qInstance);
          });
       }
    }
@@ -357,6 +460,8 @@ public class QInstanceValidator
             assertCondition(Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
 
             backend.performValidation(this);
+
+            runPlugins(QBackendMetaData.class, backend, qInstance);
          });
       }
    }
@@ -374,7 +479,28 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(name, automationProvider.getName()), "Inconsistent naming for automationProvider: " + name + "/" + automationProvider.getName() + ".");
             assertCondition(automationProvider.getType() != null, "Missing type for automationProvider: " + name);
+
+            runPlugins(QAutomationProviderMetaData.class, automationProvider, qInstance);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateAuthentication(QInstance qInstance)
+   {
+      QAuthenticationMetaData authentication = qInstance.getAuthentication();
+      if(authentication != null)
+      {
+         if(authentication.getCustomizer() != null)
+         {
+            validateSimpleCodeReference("Instance Authentication meta data customizer ", authentication.getCustomizer(), QAuthenticationModuleCustomizerInterface.class);
+         }
+
+         runPlugins(QAuthenticationMetaData.class, authentication, qInstance);
       }
    }
 
@@ -480,6 +606,11 @@ public class QInstanceValidator
                validateTableCustomizer(tableName, entry.getKey(), entry.getValue());
             }
 
+            if(table.getBackendDetails() != null)
+            {
+               table.getBackendDetails().validate(qInstance, table, this);
+            }
+
             validateTableAutomationDetails(qInstance, table);
             validateTableUniqueKeys(table);
             validateAssociatedScripts(table);
@@ -487,6 +618,13 @@ public class QInstanceValidator
             validateTableRecordSecurityLocks(qInstance, table);
             validateTableAssociations(qInstance, table);
             validateExposedJoins(qInstance, joinGraph, table);
+
+            for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
+            {
+               supplementalTableMetaData.validate(qInstance, table, this);
+            }
+
+            runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
    }
@@ -673,7 +811,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
+   private <T extends FieldBehavior<T>> void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -686,10 +824,30 @@ public class QInstanceValidator
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
 
-      ValueTooLongBehavior behavior = field.getBehavior(qInstance, ValueTooLongBehavior.class);
+      ///////////////////////////////////////////////////
+      // validate things we know about field behaviors //
+      ///////////////////////////////////////////////////
+      ValueTooLongBehavior behavior = field.getBehaviorOrDefault(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
+      }
+
+      Set<Class<FieldBehavior<T>>> usedFieldBehaviorTypes = new HashSet<>();
+      if(field.getBehaviors() != null)
+      {
+         for(FieldBehavior<?> fieldBehavior : field.getBehaviors())
+         {
+            Class<FieldBehavior<T>> behaviorClass = (Class<FieldBehavior<T>>) fieldBehavior.getClass();
+
+            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+
+            if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
+            {
+               assertCondition(!usedFieldBehaviorTypes.contains(behaviorClass), prefix + "has more than 1 fieldBehavior of type " + behaviorClass.getSimpleName() + ", which is not allowed for this type");
+            }
+            usedFieldBehaviorTypes.add(behaviorClass);
+         }
       }
 
       if(field.getMaxLength() != null)
@@ -882,6 +1040,11 @@ public class QInstanceValidator
       if(assertCondition(StringUtils.hasContent(providerName), prefix + " is missing a providerName"))
       {
          assertCondition(qInstance.getAutomationProvider(providerName) != null, " has an unrecognized providerName: " + providerName);
+      }
+
+      if(automationDetails.getSchedule() != null)
+      {
+         validateScheduleMetaData(automationDetails.getSchedule(), qInstance, prefix + " automationDetails, schedule: ");
       }
 
       //////////////////////////////////
@@ -1239,7 +1402,25 @@ public class QInstanceValidator
                         {
                            if(fieldMetaData.getDefaultValue() != null && fieldMetaData.getDefaultValue() instanceof QCodeReference codeReference)
                            {
-                              validateSimpleCodeReference("Process " + processName + " backend step code reference: ", codeReference, BackendStep.class);
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              // by default, assume that any process field which is a QCodeReference should be a reference to a BackendStep... //
+                              // but... allow a secondary field name to be set, to tell us what class to *actually* expect here...             //
+                              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                              Class<?> expectedClass = BackendStep.class;
+                              try
+                              {
+                                 Optional<QFieldMetaData> expectedTypeField = backendStepMetaData.getInputMetaData().getField(fieldMetaData.getName() + "_expectedType");
+                                 if(expectedTypeField.isPresent() && expectedTypeField.get().getDefaultValue() != null)
+                                 {
+                                    expectedClass = Class.forName(ValueUtils.getValueAsString(expectedTypeField.get().getDefaultValue()));
+                                 }
+                              }
+                              catch(Exception e)
+                              {
+                                 warn("Error loading expectedType for field [" + fieldMetaData.getName() + "] in process [" + processName + "]: " + e.getMessage());
+                              }
+
+                              validateSimpleCodeReference("Process " + processName + " code reference: ", codeReference, expectedClass);
                            }
                         }
                      }
@@ -1253,13 +1434,17 @@ public class QInstanceValidator
             if(process.getSchedule() != null)
             {
                QScheduleMetaData schedule = process.getSchedule();
-               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+               validateScheduleMetaData(schedule, qInstance, "Process " + processName + ", schedule: ");
+            }
 
-               if(schedule.getVariantBackend() != null)
-               {
-                  assertCondition(qInstance.getBackend(schedule.getVariantBackend()) != null, "A variant backend was not found for " + schedule.getVariantBackend());
-                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant run strategy was not set for " + schedule.getVariantBackend() + " on schedule in process " + processName);
-               }
+            if(process.getVariantBackend() != null)
+            {
+               assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
+               assertCondition(process.getVariantRunStrategy() != null, "A variant run strategy was not set for process " + processName + " (which does specify a variant backend)");
+            }
+            else
+            {
+               assertCondition(process.getVariantRunStrategy() == null, "A variant run strategy was set for process " + processName + " (which isn't allowed, since it does not specify a variant backend)");
             }
 
             for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
@@ -1267,7 +1452,52 @@ public class QInstanceValidator
                supplementalProcessMetaData.validate(qInstance, process, this);
             }
 
+            runPlugins(QProcessMetaData.class, process, qInstance);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateScheduleMetaData(QScheduleMetaData schedule, QInstance qInstance, String prefix)
+   {
+      boolean isRepeat = schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null;
+      boolean isCron   = StringUtils.hasContent(schedule.getCronExpression());
+      assertCondition(isRepeat || isCron, prefix + " either repeatMillis or repeatSeconds or cronExpression must be set");
+      assertCondition(!(isRepeat && isCron), prefix + " both a repeat time and cronExpression may not be set");
+
+      if(isCron)
+      {
+         boolean hasDelay = schedule.getInitialDelayMillis() != null || schedule.getInitialDelaySeconds() != null;
+         assertCondition(!hasDelay, prefix + " a cron schedule may not have an initial delay");
+
+         try
+         {
+            CronExpression.validateExpression(schedule.getCronExpression());
+         }
+         catch(ParseException pe)
+         {
+            errors.add(prefix + " invalid cron expression: " + pe.getMessage());
+         }
+
+         if(assertCondition(StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a cron schedule must specify a cronTimeZoneId"))
+         {
+            String[]         availableIDs = TimeZone.getAvailableIDs();
+            Optional<String> first        = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
+            assertCondition(first.isPresent(), prefix + " unrecognized cronTimeZoneId: " + schedule.getCronTimeZoneId());
+         }
+      }
+      else
+      {
+         assertCondition(!StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a non-cron schedule must not specify a cronTimeZoneId");
+      }
+
+      if(assertCondition(StringUtils.hasContent(schedule.getSchedulerName()), prefix + " is missing a scheduler name"))
+      {
+         assertCondition(qInstance.getScheduler(schedule.getSchedulerName()) != null, prefix + " is referencing an unknown scheduler name: " + schedule.getSchedulerName());
       }
    }
 
@@ -1373,6 +1603,8 @@ public class QInstanceValidator
                   // view.getTitleFormat(); view.getTitleFields(); // validate these match?
                }
             }
+
+            runPlugins(QReportMetaData.class, report, qInstance);
          });
       }
    }
@@ -1493,9 +1725,9 @@ public class QInstanceValidator
                }
             }
 
-            //////////////////////////////////////////
-            // validate field sections in the table //
-            //////////////////////////////////////////
+            ////////////////////////////////////////
+            // validate field sections in the app //
+            ////////////////////////////////////////
             Set<String> childNamesInSections = new HashSet<>();
             if(app.getSections() != null)
             {
@@ -1515,7 +1747,52 @@ public class QInstanceValidator
                   }
                }
             }
+
+            //////////////////////
+            // validate widgets //
+            //////////////////////
+            for(String widgetName : CollectionUtils.nonNullList(app.getWidgets()))
+            {
+               assertCondition(qInstance.getWidget(widgetName) != null, "App " + appName + " widget " + widgetName + " is not a recognized widget.");
+            }
+
+            runPlugins(QAppMetaData.class, app, qInstance);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateWidgets(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getWidgets()))
+      {
+         qInstance.getWidgets().forEach((widgetName, widget) ->
+            {
+               assertCondition(Objects.equals(widgetName, widget.getName()), "Inconsistent naming for widget: " + widgetName + "/" + widget.getName() + ".");
+
+               if(assertCondition(widget.getCodeReference() != null, "Missing codeReference for widget: " + widgetName))
+               {
+                  validateSimpleCodeReference("Widget " + widgetName + " code reference: ", widget.getCodeReference(), AbstractWidgetRenderer.class);
+               }
+
+               if(widget instanceof ParentWidgetMetaData parentWidgetMetaData)
+               {
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(parentWidgetMetaData.getChildWidgetNameList()), "Missing child widgets for parent widget: " + widget.getName()))
+                  {
+                     for(String childWidgetName : parentWidgetMetaData.getChildWidgetNameList())
+                     {
+                        assertCondition(qInstance.getWidget(childWidgetName) != null, "Unrecognized child widget name [" + childWidgetName + "] in parent widget: " + widget.getName());
+                     }
+                  }
+               }
+
+               runPlugins(QWidgetMetaDataInterface.class, widget, qInstance);
+            }
+         );
       }
    }
 
@@ -1599,6 +1876,8 @@ public class QInstanceValidator
                   }
                   default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
                }
+
+               runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
             }
          });
       }
@@ -1756,20 +2035,6 @@ public class QInstanceValidator
          errors.add(message);
          return (false);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @FunctionalInterface
-   interface UnsafeLambda
-   {
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      void run() throws Exception;
    }
 
 

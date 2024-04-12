@@ -46,7 +46,8 @@ public class RecordPipe
    private static final long MAX_SLEEP_LOOP_MILLIS = 300_000; // 5 minutes
    private static final int  DEFAULT_CAPACITY      = 1_000;
 
-   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(DEFAULT_CAPACITY);
+   private int capacity = DEFAULT_CAPACITY;
+   private ArrayBlockingQueue<QRecord> queue = new ArrayBlockingQueue<>(capacity);
 
    private boolean isTerminated = false;
 
@@ -76,7 +77,8 @@ public class RecordPipe
     *******************************************************************************/
    public RecordPipe(Integer overrideCapacity)
    {
-      queue = new ArrayBlockingQueue<>(Objects.requireNonNullElse(overrideCapacity, DEFAULT_CAPACITY));
+      this.capacity = Objects.requireNonNullElse(overrideCapacity, DEFAULT_CAPACITY);
+      queue = new ArrayBlockingQueue<>(this.capacity);
    }
 
 
@@ -140,7 +142,7 @@ public class RecordPipe
          {
             if(now - sleepLoopStartTime > MAX_SLEEP_LOOP_MILLIS)
             {
-               LOG.warn("Giving up adding record to pipe, due to pipe being full for more than {} millis", MAX_SLEEP_LOOP_MILLIS);
+               LOG.warn("Giving up adding record to pipe, due to pipe being full for more than " + MAX_SLEEP_LOOP_MILLIS + " millis");
                throw (new IllegalStateException("Giving up adding record to pipe, due to pipe staying full too long."));
             }
             LOG.trace("Record pipe.add failed (due to full pipe).  Blocking.");
@@ -217,4 +219,14 @@ public class RecordPipe
       this.postRecordActions = postRecordActions;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for capacity
+    **
+    *******************************************************************************/
+   public int getCapacity()
+   {
+      return capacity;
+   }
 }

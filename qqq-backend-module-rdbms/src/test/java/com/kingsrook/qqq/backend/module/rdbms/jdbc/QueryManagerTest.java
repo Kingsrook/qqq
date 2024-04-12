@@ -38,6 +38,7 @@ import java.time.OffsetDateTime;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -126,6 +127,7 @@ class QueryManagerTest extends BaseTest
       QueryManager.bindParamObject(ps, 1, LocalDate.now());
       QueryManager.bindParamObject(ps, 1, OffsetDateTime.now());
       QueryManager.bindParamObject(ps, 1, LocalDateTime.now());
+      QueryManager.bindParamObject(ps, 1, AutomationStatus.PENDING_INSERT_AUTOMATIONS);
 
       assertThrows(SQLException.class, () ->
       {

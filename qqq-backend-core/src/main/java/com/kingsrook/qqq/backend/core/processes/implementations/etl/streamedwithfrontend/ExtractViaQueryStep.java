@@ -124,6 +124,10 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       {
          queryInput.setShouldFetchHeavyFields(true);
       }
+      if(runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_INCLUDE_ASSOCIATIONS))
+      {
+         queryInput.setIncludeAssociations(true);
+      }
 
       customizeInputPreQuery(queryInput);
 

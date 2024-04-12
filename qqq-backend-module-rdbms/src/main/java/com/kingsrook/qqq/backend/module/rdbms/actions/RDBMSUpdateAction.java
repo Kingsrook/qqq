@@ -25,19 +25,18 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.actions.tables.helpers.UpdateActionRecordSplitHelper;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
@@ -66,60 +65,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
     *******************************************************************************/
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
-      UpdateOutput rs = new UpdateOutput();
-
-      if(CollectionUtils.nullSafeIsEmpty(updateInput.getRecords()))
-      {
-         LOG.debug("Update request called with 0 records.  Returning with no-op");
-         rs.setRecords(new ArrayList<>());
-         return (rs);
-      }
-
       QTableMetaData table = updateInput.getTable();
-      Instant        now   = Instant.now();
 
-      List<QRecord> outputRecords = new ArrayList<>();
-      rs.setRecords(outputRecords);
+      UpdateActionRecordSplitHelper updateActionRecordSplitHelper = new UpdateActionRecordSplitHelper();
+      updateActionRecordSplitHelper.init(updateInput);
 
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      // we want to do batch updates.  But, since we only update the columns that                //
-      // are present in each record, it means we may have different update SQL for each          //
-      // record.  So, we will first "hash" up the records by their list of fields being updated. //
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = new ListingHash<>();
-      boolean                            haveAnyWithoutErorrs       = false;
-      for(QRecord record : updateInput.getRecords())
-      {
-         ////////////////////////////////////////////
-         // todo .. better (not a hard-coded name) //
-         ////////////////////////////////////////////
-         setValueIfTableHasField(record, table, "modifyDate", now);
+      UpdateOutput rs = new UpdateOutput();
+      rs.setRecords(updateActionRecordSplitHelper.getOutputRecords());
 
-         List<String> updatableFields = table.getFields().values().stream()
-            .map(QFieldMetaData::getName)
-            // todo - intent here is to avoid non-updateable fields - but this
-            //  should be like based on field.isUpdatable once that attribute exists
-            .filter(name -> !name.equals("id"))
-            .filter(name -> record.getValues().containsKey(name))
-            .toList();
-         recordsByFieldBeingUpdated.add(updatableFields, record);
-
-         if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
-         {
-            haveAnyWithoutErorrs = true;
-         }
-
-         //////////////////////////////////////////////////////////////////////////////
-         // go ahead and put the record into the output list at this point in time,  //
-         // so that the output list's order matches the input list order             //
-         // note that if we want to capture updated values (like modify dates), then //
-         // we may want a map of primary key to output record, for easy updating.    //
-         //////////////////////////////////////////////////////////////////////////////
-         QRecord outputRecord = new QRecord(record);
-         outputRecords.add(outputRecord);
-      }
-
-      if(!haveAnyWithoutErorrs)
+      if(!updateActionRecordSplitHelper.getHaveAnyWithoutErrors())
       {
          LOG.info("Exiting early - all records have some error.");
          return (rs);
@@ -144,9 +98,10 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
             /////////////////////////////////////////////////////////////////////////////////////////////
             // process each distinct list of fields being updated (e.g., each different SQL statement) //
             /////////////////////////////////////////////////////////////////////////////////////////////
-            for(List<String> fieldsBeingUpdated : recordsByFieldBeingUpdated.keySet())
+            ListingHash<List<String>, QRecord> recordsByFieldBeingUpdated = updateActionRecordSplitHelper.getRecordsByFieldBeingUpdated();
+            for(Map.Entry<List<String>, List<QRecord>> entry : recordsByFieldBeingUpdated.entrySet())
             {
-               updateRecordsWithMatchingListOfFields(updateInput, connection, table, recordsByFieldBeingUpdated.get(fieldsBeingUpdated), fieldsBeingUpdated);
+               updateRecordsWithMatchingListOfFields(updateInput, connection, table, entry.getValue(), entry.getKey());
             }
          }
          finally
@@ -177,16 +132,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       // check for an optimization - if all of the records have the same values for //
       // all fields being updated, just do 1 update, with an IN list on the ids.    //
       ////////////////////////////////////////////////////////////////////////////////
-      boolean allAreTheSame;
-      if(updateInput.getAreAllValuesBeingUpdatedTheSame() != null)
-      {
-         allAreTheSame = updateInput.getAreAllValuesBeingUpdatedTheSame();
-      }
-      else
-      {
-         allAreTheSame = areAllValuesBeingUpdatedTheSame(recordList, fieldsBeingUpdated);
-      }
-
+      boolean allAreTheSame = UpdateActionRecordSplitHelper.areAllValuesBeingUpdatedTheSame(updateInput, recordList, fieldsBeingUpdated);
       if(allAreTheSame)
       {
          updateRecordsWithMatchingValuesAndFields(updateInput, connection, table, recordList, fieldsBeingUpdated);
@@ -214,7 +160,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          for(String fieldName : fieldsBeingUpdated)
          {
             Serializable value = record.getValue(fieldName);
-            value = scrubValue(table.getField(fieldName), value, false);
+            value = scrubValue(table.getField(fieldName), value);
             rowValues.add(value);
          }
          rowValues.add(record.getValue(table.getPrimaryKeyField()));
@@ -286,7 +232,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          for(String fieldName : fieldsBeingUpdated)
          {
             Serializable value = record0.getValue(fieldName);
-            value = scrubValue(table.getField(fieldName), value, false);
+            value = scrubValue(table.getField(fieldName), value);
             params.add(value);
          }
 
@@ -308,43 +254,6 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
 
          logSQL(sql, params, mark);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private boolean areAllValuesBeingUpdatedTheSame(List<QRecord> recordList, List<String> fieldsBeingUpdated)
-   {
-      if(recordList.size() == 1)
-      {
-         return (true);
-      }
-
-      QRecord record0 = recordList.get(0);
-      for(int i = 1; i < recordList.size(); i++)
-      {
-         QRecord record = recordList.get(i);
-
-         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
-         {
-            ///////////////////////////////////////////////////////
-            // skip records w/ errors (that we won't be updating //
-            ///////////////////////////////////////////////////////
-            continue;
-         }
-
-         for(String fieldName : fieldsBeingUpdated)
-         {
-            if(!Objects.equals(record0.getValue(fieldName), record.getValue(fieldName)))
-            {
-               return (false);
-            }
-         }
-      }
-
-      return (true);
    }
 
 

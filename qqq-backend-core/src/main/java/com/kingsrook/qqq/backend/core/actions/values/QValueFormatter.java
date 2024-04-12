@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -112,6 +111,12 @@ public class QValueFormatter
          {
             return formatLocalTime(lt);
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////
+         // else, just return the value as a string, rather than going through String.formatted  //
+         // this saves some overhead incurred by String.formatted when called millions of times. //
+         //////////////////////////////////////////////////////////////////////////////////////////
+         return (ValueUtils.getValueAsString(value));
       }
 
       ////////////////////////////////////////////////////////
@@ -268,6 +273,14 @@ public class QValueFormatter
     *******************************************************************************/
    private static String formatRecordLabelExceptionalCases(QTableMetaData table, QRecord record)
    {
+      //////////////////////////////////////////////////////////////////////////////////////
+      // if the record already has a label (say, from a query-customizer), then return it //
+      //////////////////////////////////////////////////////////////////////////////////////
+      if(record.getRecordLabel() != null)
+      {
+         return (record.getRecordLabel());
+      }
+
       ///////////////////////////////////////////////////////////////////////////////////////
       // if there's no record label format, then just return the primary key display value //
       ///////////////////////////////////////////////////////////////////////////////////////
@@ -320,27 +333,39 @@ public class QValueFormatter
                         if(exposedJoin.getJoinTable().equals(nameParts[0]))
                         {
                            QTableMetaData joinTable = QContext.getQInstance().getTable(nameParts[0]);
-                           fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                           if(joinTable.getFields().containsKey(nameParts[1]))
+                           {
+                              fieldMap.put(fieldName, joinTable.getField(nameParts[1]));
+                           }
                         }
                      }
                   }
                   else
                   {
-                     fieldMap.put(fieldName, table.getField(fieldName));
+                     if(table.getFields().containsKey(fieldName))
+                     {
+                        fieldMap.put(fieldName, table.getField(fieldName));
+                     }
                   }
                }
                catch(Exception e)
                {
-                  ///////////////////////////////////////////////////////////
-                  // put an empty field in - so no formatting will be done //
-                  ///////////////////////////////////////////////////////////
-                  LOG.info("Error getting field for setting display value", e, logPair("fieldName", fieldName), logPair("tableName", table.getName()));
-                  fieldMap.put(fieldName, new QFieldMetaData());
+                  LOG.warn("Error getting field for setting display value", e, logPair("fieldName", fieldName), logPair("tableName", table.getName()));
                }
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if we didn't find the field definition, put an empty field in the map, so no formatting will be done //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!fieldMap.containsKey(fieldName))
+            {
+               fieldMap.put(fieldName, new QFieldMetaData());
             }
          }
 
-         setDisplayValuesInRecord(fieldMap, record);
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, records, null);
+
+         setDisplayValuesInRecord(table, fieldMap, record, true);
          record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
@@ -350,61 +375,49 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a list of records, set their recordLabels and display values
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(Collection<QFieldMetaData> fields, List<QRecord> records)
+   public static void setDisplayValuesInRecords(QTableMetaData table, Map<String, QFieldMetaData> fields, List<QRecord> records)
    {
       if(records == null)
       {
          return;
       }
 
+      if(table != null)
+      {
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, records, null);
+      }
+
       for(QRecord record : records)
       {
-         setDisplayValuesInRecord(fields, record);
+         setDisplayValuesInRecord(table, fields, record, true);
       }
    }
 
 
 
    /*******************************************************************************
-    ** For a list of records, set their recordLabels and display values
+    ** For a single record, set its display values - public version of this.
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(Map<String, QFieldMetaData> fields, List<QRecord> records)
+   public static void setDisplayValuesInRecord(QTableMetaData table, Map<String, QFieldMetaData> fields, QRecord record)
    {
-      if(records == null)
-      {
-         return;
-      }
-
-      for(QRecord record : records)
-      {
-         setDisplayValuesInRecord(fields, record);
-      }
+      setDisplayValuesInRecord(table, fields, record, false);
    }
 
 
-
    /*******************************************************************************
-    ** For a list of records, set their display values
+    ** For a single record, set its display values - where caller (meant to stay private)
+    ** can specify if they've already done fieldBehaviors (to avoid re-doing).
     *******************************************************************************/
-   public static void setDisplayValuesInRecord(Collection<QFieldMetaData> fields, QRecord record)
+   private static void setDisplayValuesInRecord(QTableMetaData table, Map<String, QFieldMetaData> fields, QRecord record, boolean alreadyAppliedFieldDisplayBehaviors)
    {
-      for(QFieldMetaData field : fields)
+      if(!alreadyAppliedFieldDisplayBehaviors)
       {
-         if(record.getDisplayValue(field.getName()) == null)
+         if(table != null)
          {
-            String formattedValue = formatValue(field, record.getValue(field.getName()));
-            record.setDisplayValue(field.getName(), formattedValue);
+            ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, List.of(record), null);
          }
       }
-   }
 
-
-
-   /*******************************************************************************
-    ** For a list of records, set their display values
-    *******************************************************************************/
-   public static void setDisplayValuesInRecord(Map<String, QFieldMetaData> fields, QRecord record)
-   {
       for(Map.Entry<String, QFieldMetaData> entry : fields.entrySet())
       {
          String         fieldName = entry.getKey();
@@ -465,6 +478,13 @@ public class QValueFormatter
             if(fileDownloadAdornment.isPresent())
             {
                adornmentValues = fileDownloadAdornment.get().getValues();
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////
+               // don't change blobs unless they are file-downloads //
+               ///////////////////////////////////////////////////////
+               continue;
             }
 
             String fileNameField    = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));

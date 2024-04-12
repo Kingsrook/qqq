@@ -47,7 +47,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  **
  ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
-public abstract class AbstractPreInsertCustomizer
+public abstract class AbstractPreInsertCustomizer implements TableCustomizerInterface
 {
    protected InsertInput insertInput;
 
@@ -55,10 +55,59 @@ public abstract class AbstractPreInsertCustomizer
 
 
 
+   /////////////////////////////////////////////////////////////////////////////////
+   // allow the customizer to specify when it should be executed as part of the   //
+   // insert action.  default (per method in this class) is AFTER_ALL_VALIDATIONS //
+   /////////////////////////////////////////////////////////////////////////////////
+   public enum WhenToRun
+   {
+      BEFORE_ALL_VALIDATIONS,
+      BEFORE_UNIQUE_KEY_CHECKS,
+      BEFORE_REQUIRED_FIELD_CHECKS,
+      BEFORE_SECURITY_CHECKS,
+      AFTER_ALL_VALIDATIONS
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
+   {
+      this.insertInput = insertInput;
+      this.isPreview = isPreview;
+      return (apply(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public WhenToRun whenToRunPreInsert(InsertInput insertInput, boolean isPreview)
+   {
+      return getWhenToRun();
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    public abstract List<QRecord> apply(List<QRecord> records) throws QException;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public WhenToRun getWhenToRun()
+   {
+      return (WhenToRun.AFTER_ALL_VALIDATIONS);
+   }
 
 
 
