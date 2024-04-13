@@ -27,6 +27,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldDisplayBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -44,7 +45,8 @@ public class ValueBehaviorApplier
    public enum Action
    {
       INSERT,
-      UPDATE
+      UPDATE,
+      FORMATTING
    }
 
 
@@ -63,7 +65,34 @@ public class ValueBehaviorApplier
       {
          for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(field.getBehaviors()))
          {
-            fieldBehavior.apply(action, recordList, instance, table, field, behaviorsToOmit);
+            boolean applyBehavior = true;
+            if(behaviorsToOmit != null && behaviorsToOmit.contains(fieldBehavior))
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////
+               // if we're given a set of behaviors to omit, and this behavior is in there, then skip //
+               /////////////////////////////////////////////////////////////////////////////////////////
+               applyBehavior = false;
+            }
+
+            if(Action.FORMATTING == action && !(fieldBehavior instanceof FieldDisplayBehavior<?>))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // for the formatting action, do not apply the behavior unless it is a field-display-behavior //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               applyBehavior = false;
+            }
+            else if(Action.FORMATTING != action && fieldBehavior instanceof FieldDisplayBehavior<?>)
+            {
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               // for non-formatting actions, do not apply the behavior IF it is a field-display-behavior //
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               applyBehavior = false;
+            }
+
+            if(applyBehavior)
+            {
+               fieldBehavior.apply(action, recordList, instance, table, field);
+            }
          }
       }
    }

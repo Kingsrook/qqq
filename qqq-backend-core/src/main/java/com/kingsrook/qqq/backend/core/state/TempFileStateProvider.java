@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.NoSuchFileException;
+import java.time.Instant;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -123,6 +124,19 @@ public class TempFileStateProvider implements StateProviderInterface
       {
          LOG.warn("Error deleting state-providing tempFile", logPair("file", file.getAbsolutePath()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Clean entries that started before the given Instant
+    *******************************************************************************/
+   @Override
+   public void clean(Instant startTime)
+   {
+      ////////////////////////////////
+      // Not supported at this time //
+      ////////////////////////////////
    }
 
 

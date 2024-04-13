@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -56,6 +58,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -1754,6 +1757,26 @@ public class QInstanceValidatorTest extends BaseTest
          },
          "has multiple columns named: id");
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldBehaviors()
+   {
+      BiFunction<QInstance, String, QFieldMetaData> fieldExtractor = (QInstance qInstance, String fieldName) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField(fieldName);
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance, "firstName").withBehaviors(Set.of(ValueTooLongBehavior.ERROR, ValueTooLongBehavior.TRUNCATE)).withMaxLength(1)),
+         "more than 1 fieldBehavior of type ValueTooLongBehavior, which is not allowed");
+
+      ///////////////////////////////////////////////////////////////////////////
+      // make sure a custom validation method in a field behavior gets applied //
+      // more tests for this particular behavior are in its own test class     //
+      ///////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance, "firstName").withBehavior(new DateTimeDisplayValueBehavior())),
+         "DateTimeDisplayValueBehavior was a applied to a non-DATE_TIME field");
    }
 
 
