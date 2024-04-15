@@ -303,7 +303,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          }
          else
          {
-            String formattedValue = getFormattedValueForAuditDetail(record, fieldName, field, value);
+            String formattedValue = getFormattedValueForAuditDetail(table, record, fieldName, field, value);
             detailRecord = new QRecord().withValue("message", "Set " + field.getLabel() + " to " + formattedValue);
             detailRecord.withValue("newValue", formattedValue);
          }
@@ -329,8 +329,8 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             }
             else
             {
-               String formattedValue    = getFormattedValueForAuditDetail(record, fieldName, field, value);
-               String formattedOldValue = getFormattedValueForAuditDetail(oldRecord, fieldName, field, oldValue);
+               String formattedValue    = getFormattedValueForAuditDetail(table, record, fieldName, field, value);
+               String formattedOldValue = getFormattedValueForAuditDetail(table, oldRecord, fieldName, field, oldValue);
 
                if(oldValue == null)
                {
@@ -464,7 +464,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static String getFormattedValueForAuditDetail(QRecord record, String fieldName, QFieldMetaData field, Serializable value)
+   private static String getFormattedValueForAuditDetail(QTableMetaData table, QRecord record, String fieldName, QFieldMetaData field, Serializable value)
    {
       String formattedValue = null;
       if(value != null)
@@ -479,7 +479,8 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          }
          else
          {
-            formattedValue = QValueFormatter.formatValue(field, value);
+            QValueFormatter.setDisplayValuesInRecord(table, table.getFields(), record);
+            formattedValue = record.getDisplayValue(fieldName);
          }
       }
 

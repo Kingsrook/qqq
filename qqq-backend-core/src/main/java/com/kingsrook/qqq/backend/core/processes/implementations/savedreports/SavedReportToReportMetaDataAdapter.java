@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
@@ -54,7 +57,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
-import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -67,6 +69,8 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class SavedReportToReportMetaDataAdapter
 {
    private static final QLogger LOG = QLogger.getLogger(SavedReportToReportMetaDataAdapter.class);
+
+   private static Consumer<ObjectMapper> jsonMapperCustomizer = om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 
 
@@ -92,7 +96,7 @@ public class SavedReportToReportMetaDataAdapter
 
          QTableMetaData table = qInstance.getTable(savedReport.getTableName());
          dataSource.setSourceTable(savedReport.getTableName());
-         dataSource.setQueryFilter(JsonUtils.toObject(savedReport.getQueryFilterJson(), QQueryFilter.class));
+         dataSource.setQueryFilter(getQQueryFilter(savedReport.getQueryFilterJson()));
 
          //////////////////////////
          // set up the main view //
@@ -110,23 +114,15 @@ public class SavedReportToReportMetaDataAdapter
          // map them to a list of QReportField objects                                                //
          // also keep track of what joinTables we find that we need to select                         //
          ///////////////////////////////////////////////////////////////////////////////////////////////
-         ReportColumns columnsObject = JsonUtils.toObject(savedReport.getColumnsJson(), ReportColumns.class, om -> om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+         ReportColumns columnsObject = getReportColumns(savedReport.getColumnsJson());
 
          List<QReportField> reportColumns = new ArrayList<>();
          view.setColumns(reportColumns);
 
          Set<String> neededJoinTables = new HashSet<>();
 
-         for(ReportColumn column : columnsObject.getColumns())
+         for(ReportColumn column : columnsObject.extractVisibleColumns())
          {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            // if isVisible is missing, we assume it to be true - so only if it isFalse do we skip the column //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(BooleanUtils.isFalse(column.getIsVisible()))
-            {
-               continue;
-            }
-
             ////////////////////////////////////////////////////
             // figure out the field being named by the column //
             ////////////////////////////////////////////////////
@@ -182,7 +178,7 @@ public class SavedReportToReportMetaDataAdapter
          /////////////////////////////////////////
          if(StringUtils.hasContent(savedReport.getPivotTableJson()))
          {
-            PivotTableDefinition pivotTableDefinition = JsonUtils.toObject(savedReport.getPivotTableJson(), PivotTableDefinition.class);
+            PivotTableDefinition pivotTableDefinition = getPivotTableDefinition(savedReport.getPivotTableJson());
 
             QReportView pivotView = new QReportView();
             reportMetaData.getViews().add(pivotView);
@@ -274,7 +270,7 @@ public class SavedReportToReportMetaDataAdapter
             ////////////////////////////////////
             // todo turn on when implementing //
             ////////////////////////////////////
-            // reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}));
+            // reportMetaData.setInputFields(JsonUtils.toObject(savedReport.getInputFieldsJson(), new TypeReference<>() {}), objectMapperConsumer);
             throw (new IllegalStateException("Input Fields are not yet implemented"));
          }
 
@@ -285,6 +281,36 @@ public class SavedReportToReportMetaDataAdapter
          LOG.warn("Error adapting savedReport to reportMetaData", e, logPair("savedReportId", savedReport.getId()));
          throw (new QException("Error adapting savedReport to reportMetaData", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static PivotTableDefinition getPivotTableDefinition(String pivotTableJson) throws IOException
+   {
+      return JsonUtils.toObject(pivotTableJson, PivotTableDefinition.class, jsonMapperCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ReportColumns getReportColumns(String columnsJson) throws IOException
+   {
+      return JsonUtils.toObject(columnsJson, ReportColumns.class, jsonMapperCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QQueryFilter getQQueryFilter(String queryFilterJson) throws IOException
+   {
+      return JsonUtils.toObject(queryFilterJson, QQueryFilter.class, jsonMapperCustomizer);
    }
 
 
@@ -322,7 +348,6 @@ public class SavedReportToReportMetaDataAdapter
 
       return reportField;
    }
-
 
 
 

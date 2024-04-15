@@ -27,6 +27,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -89,7 +90,7 @@ public class QBackendModuleDispatcher
          }
          catch(Exception e)
          {
-            LOG.debug("Backend module [{}] could not be loaded: {}", moduleClassName, e.getMessage());
+            LOG.debug("Backend module could not be loaded", e, logPair("moduleClassName", moduleClassName));
          }
       }
 

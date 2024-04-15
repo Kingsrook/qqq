@@ -150,7 +150,7 @@ public class MetaDataProducerHelper
             }
             catch(Exception e)
             {
-               LOG.warn("error executing metaDataProducer", logPair("producer", producer.getClass().getSimpleName()), e);
+               LOG.warn("error executing metaDataProducer", e, logPair("producer", producer.getClass().getSimpleName()));
             }
          }
          else

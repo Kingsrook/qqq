@@ -31,6 +31,8 @@
       </Logger>
       <Logger name="org.quartz" level="INFO">
       </Logger>
+      <Logger name="liquibase" level="INFO">
+      </Logger>
       <Root level="all">
          <AppenderRef ref="SystemOutAppender"/>
          <AppenderRef ref="SyslogAppender"/>

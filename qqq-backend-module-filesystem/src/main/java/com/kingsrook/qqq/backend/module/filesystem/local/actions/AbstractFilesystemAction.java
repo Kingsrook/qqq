@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractF
 import com.kingsrook.qqq.backend.module.filesystem.base.utils.SharedFilesystemBackendModuleUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.FileUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -183,7 +184,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
          // if the file doesn't exist, just exit with noop.  don't throw an error - that should only //
          // happen if the "contract" of the method is broken, and the file still exists              //
          //////////////////////////////////////////////////////////////////////////////////////////////
-         LOG.debug("Not deleting file [{}], because it does not exist.", file);
+         LOG.debug("Not deleting file, because it does not exist.", logPair("file", file));
          return;
       }
 
@@ -218,7 +219,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
       //////////////////////////////////////////////////////////////////////////////////////
       if(!destinationParent.exists())
       {
-         LOG.debug("Making destination directory {} for move", destinationParent.getAbsolutePath());
+         LOG.debug("Making destination directory for move", logPair("directory", destinationParent.getAbsolutePath()));
          if(!destinationParent.mkdirs())
          {
             throw (new FilesystemException("Failed to make destination directory " + destinationParent.getAbsolutePath() + " to move " + source + " into."));
