@@ -30,6 +30,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
@@ -147,6 +149,7 @@ public class SavedReportsMetaDataProvider
          .withBackendName(backendName)
          .withPrimaryKeyField("id")
          .withFieldsFromEntity(SavedReport.class)
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "tableName")))
          .withSection(new QFieldSection("filtersAndColumns", new QIcon().withName("table_chart"), Tier.T2).withLabel("Filters and Columns").withWidgetName("reportSetupWidget"))
          .withSection(new QFieldSection("pivotTable", new QIcon().withName("pivot_table_chart"), Tier.T2).withLabel("Pivot Table").withWidgetName("pivotTableSetupWidget"))
@@ -154,7 +157,12 @@ public class SavedReportsMetaDataProvider
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
-      table.withCustomizer(TableCustomizers.POST_QUERY_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
+      table.getField("queryFilterJson").withBehavior(SavedReportJsonFieldDisplayValueFormatter.getInstance());
+      table.getField("columnsJson").withBehavior(SavedReportJsonFieldDisplayValueFormatter.getInstance());
+      table.getField("pivotTableJson").withBehavior(SavedReportJsonFieldDisplayValueFormatter.getInstance());
+
+      table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
 
       if(backendDetailEnricher != null)
       {

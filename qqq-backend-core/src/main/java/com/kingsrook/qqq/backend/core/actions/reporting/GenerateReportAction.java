@@ -531,7 +531,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private FieldAndJoinTable getFieldAndJoinTable(QTableMetaData mainTable, String fieldName) throws QException
+   public static FieldAndJoinTable getFieldAndJoinTable(QTableMetaData mainTable, String fieldName) throws QException
    {
       if(fieldName.indexOf('.') > -1)
       {
@@ -1097,5 +1097,22 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable) {}
+   public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable)
+   {
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public String getLabel(QTableMetaData mainTable)
+      {
+         if(mainTable.getName().equals(joinTable.getName()))
+         {
+            return (field.getLabel());
+         }
+         else
+         {
+            return (joinTable.getLabel() + ": " + field.getLabel());
+         }
+      }
+   }
 }

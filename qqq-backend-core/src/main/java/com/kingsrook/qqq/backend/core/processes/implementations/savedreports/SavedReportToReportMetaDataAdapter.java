@@ -57,7 +57,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
-import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -122,16 +121,8 @@ public class SavedReportToReportMetaDataAdapter
 
          Set<String> neededJoinTables = new HashSet<>();
 
-         for(ReportColumn column : columnsObject.getColumns())
+         for(ReportColumn column : columnsObject.extractVisibleColumns())
          {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            // if isVisible is missing, we assume it to be true - so only if it isFalse do we skip the column //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(BooleanUtils.isFalse(column.getIsVisible()))
-            {
-               continue;
-            }
-
             ////////////////////////////////////////////////////
             // figure out the field being named by the column //
             ////////////////////////////////////////////////////

@@ -22,17 +22,26 @@
 package com.kingsrook.qqq.backend.core.model.savedreports;
 
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableGroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.SavedReportToReportMetaDataAdapter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -45,63 +54,229 @@ public class SavedReportTableCustomizer implements TableCustomizerInterface
     **
     *******************************************************************************/
    @Override
-   public List<QRecord> postQuery(QueryOrGetInputInterface queryInput, List<QRecord> records) throws QException
+   public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
+   {
+      return (preInsertOrUpdate(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
+   {
+      return (preInsertOrUpdate(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<QRecord> preInsertOrUpdate(List<QRecord> records)
    {
       for(QRecord record : CollectionUtils.nonNullList(records))
       {
+         preValidateRecord(record);
+      }
+      return (records);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   void preValidateRecord(QRecord record)
+   {
+      try
+      {
+         String tableName       = record.getValueString("tableName");
          String queryFilterJson = record.getValueString("queryFilterJson");
          String columnsJson     = record.getValueString("columnsJson");
          String pivotTableJson  = record.getValueString("pivotTableJson");
+
+         Set<String> usedColumns = new HashSet<>();
+
+         QTableMetaData table = QContext.getQInstance().getTable(tableName);
+         if(table == null)
+         {
+            record.addError(new BadInputStatusMessage("Unrecognized table name: " + tableName));
+         }
 
          if(StringUtils.hasContent(queryFilterJson))
          {
             try
             {
-               QQueryFilter qQueryFilter  = SavedReportToReportMetaDataAdapter.getQQueryFilter(queryFilterJson);
-               int          criteriaCount = CollectionUtils.nonNullList(qQueryFilter.getCriteria()).size();
-               record.setDisplayValue("queryFilterJson", criteriaCount + " Filter" + StringUtils.plural(criteriaCount));
+               ////////////////////////////////////////////////////////////////
+               // nothing to validate on filter, other than, we can parse it //
+               ////////////////////////////////////////////////////////////////
+               SavedReportToReportMetaDataAdapter.getQQueryFilter(queryFilterJson);
             }
-            catch(Exception e)
+            catch(IOException e)
             {
-               record.setDisplayValue("queryFilterJson", "Invalid Filter...");
+               record.addError(new BadInputStatusMessage("Unable to parse queryFilterJson: " + e.getMessage()));
             }
          }
 
+         boolean hadColumnParseError = false;
          if(StringUtils.hasContent(columnsJson))
          {
             try
             {
+               /////////////////////////////////////////////////////////////////////////
+               // make sure we can parse columns, and that we have at least 1 visible //
+               /////////////////////////////////////////////////////////////////////////
                ReportColumns reportColumns = SavedReportToReportMetaDataAdapter.getReportColumns(columnsJson);
-               long columnCount = CollectionUtils.nonNullList(reportColumns.getColumns())
-                  .stream().filter(rc -> BooleanUtils.isTrue(rc.getIsVisible()))
-                  .count();
-
-               record.setDisplayValue("columnsJson", columnCount + " Column" + StringUtils.plural((int) columnCount));
+               for(ReportColumn column : reportColumns.extractVisibleColumns())
+               {
+                  usedColumns.add(column.getName());
+               }
             }
-            catch(Exception e)
+            catch(IOException e)
             {
-               record.setDisplayValue("columnsJson", "Invalid Columns...");
+               record.addError(new BadInputStatusMessage("Unable to parse columnsJson: " + e.getMessage()));
+               hadColumnParseError = true;
             }
+         }
+
+         if(usedColumns.isEmpty() && !hadColumnParseError)
+         {
+            record.addError(new BadInputStatusMessage("A Report must contain at least 1 column"));
          }
 
          if(StringUtils.hasContent(pivotTableJson))
          {
             try
             {
-               PivotTableDefinition pivotTableDefinition = SavedReportToReportMetaDataAdapter.getPivotTableDefinition(pivotTableJson);
-               int                  rowCount             = CollectionUtils.nonNullList(pivotTableDefinition.getRows()).size();
-               int                  columnCount          = CollectionUtils.nonNullList(pivotTableDefinition.getColumns()).size();
-               int                  valueCount           = CollectionUtils.nonNullList(pivotTableDefinition.getValues()).size();
-               record.setDisplayValue("pivotTableJson", rowCount + " Row" + StringUtils.plural(rowCount) + ", " + columnCount + " Column" + StringUtils.plural(columnCount) + ", and " + valueCount + " Value" + StringUtils.plural(valueCount));
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // make sure we can parse pivot table, and we have ... at least 1 ... row?  maybe that's all that's needed //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               PivotTableDefinition pivotTableDefinition          = SavedReportToReportMetaDataAdapter.getPivotTableDefinition(pivotTableJson);
+               boolean              anyRows                       = false;
+               boolean              missingAnyFieldNamesInRows    = false;
+               boolean              missingAnyFieldNamesInColumns = false;
+               boolean              missingAnyFieldNamesInValues  = false;
+               boolean              missingAnyFunctionsInValues   = false;
+
+               //////////////////
+               // look at rows //
+               //////////////////
+               for(PivotTableGroupBy row : CollectionUtils.nonNullList(pivotTableDefinition.getRows()))
+               {
+                  anyRows = true;
+                  if(StringUtils.hasContent(row.getFieldName()))
+                  {
+                     if(!usedColumns.contains(row.getFieldName()) && !hadColumnParseError)
+                     {
+                        record.addError(new BadInputStatusMessage("A pivot table row is using field (" + getFieldLabelElseName(table, row.getFieldName()) + ") which is not an active column on this report."));
+                     }
+                  }
+                  else
+                  {
+                     missingAnyFieldNamesInRows = true;
+                  }
+               }
+
+               if(!anyRows)
+               {
+                  record.addError(new BadInputStatusMessage("A Pivot Table must contain at least 1 row"));
+               }
+
+               /////////////////////
+               // look at columns //
+               /////////////////////
+               for(PivotTableGroupBy column : CollectionUtils.nonNullList(pivotTableDefinition.getColumns()))
+               {
+                  if(StringUtils.hasContent(column.getFieldName()))
+                  {
+                     if(!usedColumns.contains(column.getFieldName()) && !hadColumnParseError)
+                     {
+                        record.addError(new BadInputStatusMessage("A pivot table column is using field (" + getFieldLabelElseName(table, column.getFieldName()) + ") which is not an active column on this report."));
+                     }
+                  }
+                  else
+                  {
+                     missingAnyFieldNamesInColumns = true;
+                  }
+               }
+
+               ////////////////////
+               // look at values //
+               ////////////////////
+               for(PivotTableValue value : CollectionUtils.nonNullList(pivotTableDefinition.getValues()))
+               {
+                  if(StringUtils.hasContent(value.getFieldName()))
+                  {
+                     if(!usedColumns.contains(value.getFieldName()) && !hadColumnParseError)
+                     {
+                        record.addError(new BadInputStatusMessage("A pivot table value is using field (" + getFieldLabelElseName(table, value.getFieldName()) + ") which is not an active column on this report."));
+                     }
+                  }
+                  else
+                  {
+                     missingAnyFieldNamesInValues = true;
+                  }
+
+                  if(value.getFunction() == null)
+                  {
+                     missingAnyFunctionsInValues = true;
+                  }
+               }
+
+               ////////////////////////////////////////////////
+               // errors based on missing things found above //
+               ////////////////////////////////////////////////
+               if(missingAnyFieldNamesInRows)
+               {
+                  record.addError(new BadInputStatusMessage("Missing field name for at least one pivot table row."));
+               }
+
+               if(missingAnyFieldNamesInColumns)
+               {
+                  record.addError(new BadInputStatusMessage("Missing field name for at least one pivot table column."));
+               }
+
+               if(missingAnyFieldNamesInValues)
+               {
+                  record.addError(new BadInputStatusMessage("Missing field name for at least one pivot table value."));
+               }
+
+               if(missingAnyFunctionsInValues)
+               {
+                  record.addError(new BadInputStatusMessage("Missing function for at least one pivot table value."));
+               }
             }
-            catch(Exception e)
+            catch(IOException e)
             {
-               record.setDisplayValue("pivotTableJson", "Invalid Pivot Table...");
+               record.addError(new BadInputStatusMessage("Unable to parse pivotTableJson: " + e.getMessage()));
             }
          }
       }
+      catch(Exception e)
+      {
+         LOG.warn("Error validating a savedReport");
+      }
+   }
 
-      return (records);
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFieldLabelElseName(QTableMetaData table, String fieldName)
+   {
+      try
+      {
+         GenerateReportAction.FieldAndJoinTable fieldAndJoinTable = GenerateReportAction.getFieldAndJoinTable(table, fieldName);
+         return (fieldAndJoinTable.getLabel(table));
+      }
+      catch(Exception e)
+      {
+         return (fieldName);
+      }
    }
 
 }

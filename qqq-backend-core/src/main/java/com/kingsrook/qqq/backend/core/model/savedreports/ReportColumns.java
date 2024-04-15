@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -35,12 +37,30 @@ public class ReportColumns implements Serializable
    private List<ReportColumn> columns;
 
 
+
    /*******************************************************************************
     ** Getter for columns
     *******************************************************************************/
    public List<ReportColumn> getColumns()
    {
       return (this.columns);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public List<ReportColumn> extractVisibleColumns()
+   {
+      return CollectionUtils.nonNullList(getColumns()).stream()
+         //////////////////////////////////////////////////////
+         // if isVisible is missing, we assume it to be true //
+         //////////////////////////////////////////////////////
+         .filter(rc -> rc.getIsVisible() == null || rc.getIsVisible())
+         .filter(rc -> StringUtils.hasContent(rc.getName()))
+         .filter(rc -> !rc.getName().startsWith("__check"))
+         .toList();
    }
 
 
@@ -65,6 +85,7 @@ public class ReportColumns implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter to add 1 column
     *******************************************************************************/
@@ -77,6 +98,7 @@ public class ReportColumns implements Serializable
       this.columns.add(column);
       return (this);
    }
+
 
 
    /*******************************************************************************
