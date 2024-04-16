@@ -23,7 +23,6 @@ package com.kingsrook.qqq.backend.core.actions.async;
 
 
 import java.util.UUID;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
 
 
 /*******************************************************************************
@@ -34,7 +33,6 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
  *******************************************************************************/
 public class NonPersistedAsyncJobCallback extends AsyncJobCallback
 {
-   private static final QLogger LOG = QLogger.getLogger(NonPersistedAsyncJobCallback.class);
    private final AsyncJobStatus asyncJobStatus;
 
 
@@ -56,10 +54,9 @@ public class NonPersistedAsyncJobCallback extends AsyncJobCallback
    @Override
    protected void storeUpdatedStatus()
    {
-      ///////////////////////////////////////////////////////////
-      // todo - downgrade or remove this before merging to dev //
-      ///////////////////////////////////////////////////////////
-      LOG.info("Not persisting status from a NonPersistedAsyncJobCallback: " + asyncJobStatus.getJobName() + " / " + asyncJobStatus.getMessage());
+      //////////
+      // noop //
+      //////////
    }
 
 }
