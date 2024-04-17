@@ -60,6 +60,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
    {
       QProcessMetaData process = new QProcessMetaData()
          .withName(NAME)
+         .withLabel("Render Report")
          .withTableName(SavedReport.TABLE_NAME)
          .withIcon(new QIcon().withName("print"))
          .addStep(new QBackendStepMetaData()
