@@ -143,6 +143,7 @@ public class SavedReportsMetaDataProvider
    {
       QTableMetaData table = new QTableMetaData()
          .withName(SavedReport.TABLE_NAME)
+         .withLabel("Report")
          .withIcon(new QIcon().withName("article"))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
