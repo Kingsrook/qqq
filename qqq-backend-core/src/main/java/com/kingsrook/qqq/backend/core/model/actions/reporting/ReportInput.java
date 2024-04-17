@@ -22,24 +22,28 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
- ** Input for an Export action
+ ** Input for a Report action
  *******************************************************************************/
 public class ReportInput extends AbstractTableActionInput
 {
-   private String                    reportName;
+   private String          reportName;
+   private QReportMetaData reportMetaData;
+
    private Map<String, Serializable> inputValues;
 
-   private String       filename;
-   private ReportFormat reportFormat;
-   private OutputStream reportOutputStream;
+   private ReportDestination reportDestination;
+
+   private Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier;
 
 
 
@@ -111,66 +115,97 @@ public class ReportInput extends AbstractTableActionInput
 
 
    /*******************************************************************************
-    ** Getter for filename
-    **
+    ** Getter for reportDestination
     *******************************************************************************/
-   public String getFilename()
+   public ReportDestination getReportDestination()
    {
-      return filename;
+      return (this.reportDestination);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filename
-    **
+    ** Setter for reportDestination
     *******************************************************************************/
-   public void setFilename(String filename)
+   public void setReportDestination(ReportDestination reportDestination)
    {
-      this.filename = filename;
+      this.reportDestination = reportDestination;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for reportFormat
-    **
+    ** Fluent setter for reportDestination
     *******************************************************************************/
-   public ReportFormat getReportFormat()
+   public ReportInput withReportDestination(ReportDestination reportDestination)
    {
-      return reportFormat;
+      this.reportDestination = reportDestination;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportFormat
-    **
+    ** Getter for reportMetaData
     *******************************************************************************/
-   public void setReportFormat(ReportFormat reportFormat)
+   public QReportMetaData getReportMetaData()
    {
-      this.reportFormat = reportFormat;
+      return (this.reportMetaData);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for reportOutputStream
-    **
+    ** Setter for reportMetaData
     *******************************************************************************/
-   public OutputStream getReportOutputStream()
+   public void setReportMetaData(QReportMetaData reportMetaData)
    {
-      return reportOutputStream;
+      this.reportMetaData = reportMetaData;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportOutputStream
+    ** Fluent setter for reportMetaData
+    *******************************************************************************/
+   public ReportInput withReportMetaData(QReportMetaData reportMetaData)
+   {
+      this.reportMetaData = reportMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideExportStreamerSupplier
     **
     *******************************************************************************/
-   public void setReportOutputStream(OutputStream reportOutputStream)
+   public Supplier<? extends ExportStreamerInterface> getOverrideExportStreamerSupplier()
    {
-      this.reportOutputStream = reportOutputStream;
+      return overrideExportStreamerSupplier;
    }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideExportStreamerSupplier
+    **
+    *******************************************************************************/
+   public void setOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   {
+      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideExportStreamerSupplier
+    **
+    *******************************************************************************/
+   public ReportInput withOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   {
+      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+      return (this);
+   }
+
 }

@@ -29,8 +29,12 @@ import java.math.BigDecimal;
 /*******************************************************************************
  ** Classes that support doing data aggregations (e.g., count, sum, min, max, average).
  ** Sub-classes should supply the type parameter.
+ **
+ ** The AVG_T parameter describes the type used for the average getAverage method
+ ** which, e.g, for date types, might be a date, vs. numbers, they'd probably be
+ ** BigDecimal.
  *******************************************************************************/
-public interface AggregatesInterface<T extends Serializable>
+public interface AggregatesInterface<T extends Serializable, AVG_T extends Serializable>
 {
    /*******************************************************************************
     **
@@ -60,5 +64,51 @@ public interface AggregatesInterface<T extends Serializable>
    /*******************************************************************************
     **
     *******************************************************************************/
-   BigDecimal getAverage();
+   AVG_T getAverage();
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default BigDecimal getProduct()
+   {
+      return (null);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default BigDecimal getVariance()
+   {
+      return (null);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default BigDecimal getVarP()
+   {
+      return (null);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default BigDecimal getStandardDeviation()
+   {
+      return (null);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default BigDecimal getStdDevP()
+   {
+      return (null);
+   }
+
 }

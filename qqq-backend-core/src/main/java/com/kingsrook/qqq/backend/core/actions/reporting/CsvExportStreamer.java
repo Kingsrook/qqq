@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -65,12 +66,12 @@ public class CsvExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label, QReportView view) throws QReportingException
    {
       this.exportInput = exportInput;
       this.fields = fields;
       table = exportInput.getTable();
-      outputStream = this.exportInput.getReportOutputStream();
+      outputStream = this.exportInput.getReportDestination().getReportOutputStream();
 
       writeTitleAndHeader();
    }

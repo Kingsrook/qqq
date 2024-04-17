@@ -216,7 +216,7 @@ class QInstanceHelpContentManagerTest extends BaseTest
       // now - post-insert customizer should have automatically added help content to the instance //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       assertTrue(widget.getHelpContent().containsKey("label"));
-      assertEquals("i need somebody", widget.getHelpContent().get("label").getContent());
+      assertEquals("i need somebody", widget.getHelpContent().get("label").get(0).getContent());
    }
 
 

@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
@@ -60,12 +61,14 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -203,10 +206,12 @@ public class QJavalinProcessHandler
          QJavalinImplementation.setupSession(context, reportInput);
          PermissionsHelper.checkReportPermissionThrowing(reportInput, reportName);
 
-         reportInput.setReportFormat(reportFormat);
          reportInput.setReportName(reportName);
          reportInput.setInputValues(null); // todo!
-         reportInput.setFilename(filename);
+
+         reportInput.setReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename));
 
          //////////////////////////////////////////////////////////////
          // process the report's input fields, from the query string //
@@ -239,7 +244,7 @@ public class QJavalinProcessHandler
 
          UnsafeFunction<PipedOutputStream, GenerateReportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
-            reportInput.setReportOutputStream(pos);
+            reportInput.getReportDestination().setReportOutputStream(pos);
 
             GenerateReportAction reportAction = new GenerateReportAction();
             // any pre-action??  export uses this for "too many rows" checks...
@@ -282,12 +287,24 @@ public class QJavalinProcessHandler
          // todo context.contentType(reportFormat.getMimeType());
          context.header("Content-Disposition", "filename=" + context.pathParam("file"));
 
-         String filePath = context.queryParam("filePath");
-         if(filePath == null)
+         String filePath         = context.queryParam("filePath");
+         String storageTableName = context.queryParam("storageTableName");
+         String reference        = context.queryParam("storageReference");
+
+         if(filePath != null)
          {
-            throw (new QBadRequestException("A filePath was not provided."));
+            context.result(new FileInputStream(filePath));
          }
-         context.result(new FileInputStream(filePath));
+         else if(storageTableName != null && reference != null)
+         {
+            InputStream inputStream = new StorageAction().getInputStream(new StorageInput(storageTableName).withReference(reference));
+            context.result(inputStream);
+         }
+         else
+         {
+            throw (new QBadRequestException("Missing query parameters to identify file to download"));
+         }
+
       }
       catch(Exception e)
       {

@@ -34,9 +34,11 @@ import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.BooleanUtils;
@@ -162,9 +164,18 @@ public class ApiProcessUtils
     *******************************************************************************/
    public static String getProcessApiPath(QInstance qInstance, QProcessMetaData process, ApiProcessMetaData apiProcessMetaData, ApiInstanceMetaData apiInstanceMetaData)
    {
+      StringBuilder pathParams = new StringBuilder();
+      if(ObjectUtils.ifCan(() -> CollectionUtils.nullSafeHasContents(apiProcessMetaData.getInput().getPathParams().getFields())))
+      {
+         for(QFieldMetaData field : apiProcessMetaData.getInput().getPathParams().getFields())
+         {
+            pathParams.append("/{").append(field.getName()).append("}");
+         }
+      }
+
       if(StringUtils.hasContent(apiProcessMetaData.getPath()))
       {
-         return apiProcessMetaData.getPath() + "/" + apiProcessMetaData.getApiProcessName();
+         return apiProcessMetaData.getPath() + "/" + apiProcessMetaData.getApiProcessName() + pathParams;
       }
       else if(StringUtils.hasContent(process.getTableName()))
       {
@@ -182,11 +193,11 @@ public class ApiProcessUtils
                }
             }
          }
-         return tablePathPart + "/" + apiProcessMetaData.getApiProcessName();
+         return tablePathPart + "/" + apiProcessMetaData.getApiProcessName() + pathParams;
       }
       else
       {
-         return apiProcessMetaData.getApiProcessName();
+         return apiProcessMetaData.getApiProcessName() + pathParams;
       }
    }
 

@@ -1383,12 +1383,17 @@ public class QInstanceValidator
             ///////////////////////////////////
             // validate steps in the process //
             ///////////////////////////////////
+            Set<String> usedStepNames = new HashSet<>();
             if(assertCondition(CollectionUtils.nullSafeHasContents(process.getStepList()), "At least 1 step must be defined in process " + processName + "."))
             {
                int index = 0;
                for(QStepMetaData step : process.getStepList())
                {
-                  assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName);
+                  if(assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName))
+                  {
+                     assertCondition(!usedStepNames.contains(step.getName()), "Duplicate step name [" + step.getName() + "] in process " + processName);
+                     usedStepNames.add(step.getName());
+                  }
                   index++;
 
                   ////////////////////////////////////////////

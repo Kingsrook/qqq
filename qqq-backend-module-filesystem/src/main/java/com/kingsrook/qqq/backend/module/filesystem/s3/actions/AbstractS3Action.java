@@ -113,7 +113,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
    /*******************************************************************************
     ** Internal accessor for the s3Utils object - should always use this, not the field.
     *******************************************************************************/
-   private S3Utils getS3Utils()
+   protected S3Utils getS3Utils()
    {
       if(s3Utils == null)
       {
@@ -256,5 +256,6 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
       getS3Utils().moveObject(bucketName, source, destination);
    }
+
 
 }

@@ -78,6 +78,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -1503,10 +1504,11 @@ public class QJavalinImplementation
          setupSession(context, exportInput);
 
          exportInput.setTableName(tableName);
-         exportInput.setReportFormat(reportFormat);
 
          String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
-         exportInput.setFilename(filename);
+         exportInput.withReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename));
 
          Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
          exportInput.setLimit(limit);
@@ -1537,7 +1539,7 @@ public class QJavalinImplementation
 
          UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
-            exportInput.setReportOutputStream(pos);
+            exportInput.getReportDestination().setReportOutputStream(pos);
 
             ExportAction exportAction = new ExportAction();
             exportAction.preExecute(exportInput);
