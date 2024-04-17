@@ -1919,4 +1919,12 @@ public class QJavalinImplementation
       MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static long getStartTimeMillis()
+   {
+      return (startTime);
+   }
 }
