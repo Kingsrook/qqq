@@ -211,6 +211,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
 
          /////////////////////////////////////////////////////////////////////////////////////////////
          // open up a zipOutputStream around the output stream that the report is to be written to. //
+         // note:  this stream is closed in the finish method - see more comments there.            //
          /////////////////////////////////////////////////////////////////////////////////////////////
          this.zipOutputStream = new ZipOutputStream(this.outputStream);
 
@@ -329,10 +330,6 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       {
          int columnLabelColumnIndex = getColumnIndex(dataView.getColumns(), value.getFieldName());
 
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // todo - some bug where, if use a group-by field here, then ... it doesn't get used for the grouping. //
-         //  g-sheets does let me do this, so, maybe, download their file and see how it's different?           //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////
          String labelPrefix = value.getFunction().name() + " of ";
          String label       = labelPrefix + QInstanceEnricher.nameToLabel(value.getFieldName());
          String valueFormat = null;
