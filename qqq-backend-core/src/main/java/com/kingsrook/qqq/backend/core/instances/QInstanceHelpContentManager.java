@@ -149,8 +149,7 @@ public class QInstanceHelpContentManager
          }
          else if(StringUtils.hasContent(widgetName))
          {
-            processHelpContentForWidget(key, widgetName, slotName, helpContent);
-
+            processHelpContentForWidget(key, widgetName, slotName, roles, helpContent);
          }
       }
       catch(Exception e)
@@ -252,7 +251,7 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForWidget(String key, String widgetName, String slotName, QHelpContent helpContent)
+   private static void processHelpContentForWidget(String key, String widgetName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
    {
       QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(widgetName);
       if(!StringUtils.hasContent(slotName))
@@ -265,22 +264,14 @@ public class QInstanceHelpContentManager
       }
       else
       {
-         Map<String, QHelpContent> widgetHelpContent = widget.getHelpContent();
-         if(widgetHelpContent == null)
-         {
-            widgetHelpContent = new HashMap<>();
-         }
-
          if(helpContent != null)
          {
-            widgetHelpContent.put(slotName, helpContent);
+            widget.withHelpContent(slotName, helpContent);
          }
          else
          {
-            widgetHelpContent.remove(slotName);
+            widget.removeHelpContent(slotName, roles);
          }
-
-         widget.setHelpContent(widgetHelpContent);
       }
    }
 

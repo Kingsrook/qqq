@@ -28,13 +28,16 @@ import java.math.BigDecimal;
 /*******************************************************************************
  ** Long version of data aggregator
  *******************************************************************************/
-public class LongAggregates implements AggregatesInterface<Long>
+public class LongAggregates implements AggregatesInterface<Long, BigDecimal>
 {
    private int  count = 0;
    // private Long countDistinct;
    private Long sum;
    private Long min;
    private Long max;
+   private BigDecimal product;
+
+   private VarianceCalculator varianceCalculator = new VarianceCalculator();
 
 
 
@@ -48,6 +51,8 @@ public class LongAggregates implements AggregatesInterface<Long>
          return;
       }
 
+      BigDecimal inputBD = new BigDecimal(input);
+
       count++;
 
       if(sum == null)
@@ -59,6 +64,15 @@ public class LongAggregates implements AggregatesInterface<Long>
          sum = sum + input;
       }
 
+      if(product == null)
+      {
+         product = inputBD;
+      }
+      else
+      {
+         product = product.multiply(inputBD);
+      }
+
       if(min == null || input < min)
       {
          min = input;
@@ -68,6 +82,52 @@ public class LongAggregates implements AggregatesInterface<Long>
       {
          max = input;
       }
+
+      varianceCalculator.updateVariance(inputBD);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getVariance()
+   {
+      return (varianceCalculator.getVariance());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getVarP()
+   {
+      return (varianceCalculator.getVarP());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getStandardDeviation()
+   {
+      return (varianceCalculator.getStandardDeviation());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getStdDevP()
+   {
+      return (varianceCalculator.getStdDevP());
    }
 
 
@@ -112,6 +172,18 @@ public class LongAggregates implements AggregatesInterface<Long>
    public Long getMax()
    {
       return (max);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for product
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getProduct()
+   {
+      return product;
    }
 
 

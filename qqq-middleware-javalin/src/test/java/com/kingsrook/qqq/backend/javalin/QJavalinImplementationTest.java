@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import kong.unirest.HttpResponse;
@@ -964,7 +965,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
          Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
          {
             QInstance newInstance = new QInstance();
-            newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType("mock"));
+            newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType(MockBackendModule.class));
 
             if(!"invalid".equals(backendName))
             {

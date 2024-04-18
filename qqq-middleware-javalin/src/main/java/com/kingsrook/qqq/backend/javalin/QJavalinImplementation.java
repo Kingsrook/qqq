@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +78,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -427,7 +429,17 @@ public class QJavalinImplementation
          QSession session = authenticationModule.createSession(qInstance, authContext);
 
          context.cookie(SESSION_UUID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
-         context.result(JsonUtils.toJson(MapBuilder.of("uuid", session.getUuid())));
+
+         Map<String, Serializable> resultMap = new HashMap<>();
+         resultMap.put("uuid", session.getUuid());
+
+         if(session.getValuesForFrontend() != null)
+         {
+            LinkedHashMap<String, Serializable> valuesForFrontend = new LinkedHashMap<>(session.getValuesForFrontend());
+            resultMap.put("values", valuesForFrontend);
+         }
+
+         context.result(JsonUtils.toJson(resultMap));
       }
       catch(Exception e)
       {
@@ -1492,10 +1504,11 @@ public class QJavalinImplementation
          setupSession(context, exportInput);
 
          exportInput.setTableName(tableName);
-         exportInput.setReportFormat(reportFormat);
 
          String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
-         exportInput.setFilename(filename);
+         exportInput.withReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename));
 
          Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
          exportInput.setLimit(limit);
@@ -1526,7 +1539,7 @@ public class QJavalinImplementation
 
          UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
-            exportInput.setReportOutputStream(pos);
+            exportInput.getReportDestination().setReportOutputStream(pos);
 
             ExportAction exportAction = new ExportAction();
             exportAction.preExecute(exportInput);
@@ -1908,4 +1921,12 @@ public class QJavalinImplementation
       MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static long getStartTimeMillis()
+   {
+      return (startTime);
+   }
 }

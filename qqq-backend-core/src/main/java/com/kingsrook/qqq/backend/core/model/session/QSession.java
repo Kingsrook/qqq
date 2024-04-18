@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,8 +53,15 @@ public class QSession implements Serializable
    private Map<String, List<Serializable>> securityKeyValues;
    private Map<String, Serializable>       backendVariants;
 
-   // implementation-specific custom values
+   ///////////////////////////////////////////
+   // implementation-specific custom values //
+   ///////////////////////////////////////////
    private Map<String, String> values;
+
+   /////////////////////////////////////////////
+   // values meant to be passed to a frontend //
+   /////////////////////////////////////////////
+   private Map<String, Serializable> valuesForFrontend;
 
    public static final String VALUE_KEY_USER_TIMEZONE                = "UserTimezone";
    public static final String VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES = "UserTimezoneOffsetMinutes";
@@ -499,5 +507,50 @@ public class QSession implements Serializable
       this.backendVariants = backendVariants;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for valuesForFrontend
+    *******************************************************************************/
+   public Map<String, Serializable> getValuesForFrontend()
+   {
+      return (this.valuesForFrontend);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valuesForFrontend
+    *******************************************************************************/
+   public void setValuesForFrontend(Map<String, Serializable> valuesForFrontend)
+   {
+      this.valuesForFrontend = valuesForFrontend;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valuesForFrontend
+    *******************************************************************************/
+   public QSession withValuesForFrontend(Map<String, Serializable> valuesForFrontend)
+   {
+      this.valuesForFrontend = valuesForFrontend;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for a single valuesForFrontend
+    *******************************************************************************/
+   public QSession withValueForFrontend(String key, Serializable value)
+   {
+      if(this.valuesForFrontend == null)
+      {
+         this.valuesForFrontend = new LinkedHashMap<>();
+      }
+      this.valuesForFrontend.put(key, value);
+      return (this);
+   }
+
 
 }

@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -138,7 +139,7 @@ public class ExportAction
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check if this report format has a max-rows limit -- if so, do a count to verify we're under the limit //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat reportFormat = exportInput.getReportFormat();
+      ReportFormat reportFormat = exportInput.getReportDestination().getReportFormat();
       verifyCountUnderMax(exportInput, backendModule, reportFormat);
 
       preExecuteRan = true;
@@ -243,10 +244,19 @@ public class ExportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up a report streamer, which will read rows from the pipe, and write formatted report rows to the output stream //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat            reportFormat   = exportInput.getReportFormat();
+      ReportFormat            reportFormat   = exportInput.getReportDestination().getReportFormat();
       ExportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
       List<QFieldMetaData>    fields         = getFields(exportInput);
-      reportStreamer.start(exportInput, fields, "Sheet 1");
+
+      //////////////////////////////////////////////////////////
+      // it seems we can pass a view with just a name in here //
+      //////////////////////////////////////////////////////////
+      List<QReportView> views = new ArrayList<>();
+      views.add(new QReportView()
+         .withName("export"));
+
+      reportStreamer.preRun(exportInput.getReportDestination(), views);
+      reportStreamer.start(exportInput, fields, "Sheet 1", views.get(0));
 
       //////////////////////////////////////////
       // run the query action as an async job //
@@ -335,7 +345,7 @@ public class ExportAction
 
       try
       {
-         exportInput.getReportOutputStream().close();
+         exportInput.getReportDestination().getReportOutputStream().close();
       }
       catch(Exception e)
       {

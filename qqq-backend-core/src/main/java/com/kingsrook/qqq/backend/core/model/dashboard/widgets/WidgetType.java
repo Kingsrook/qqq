@@ -50,7 +50,9 @@ public enum WidgetType
    USA_MAP("usaMap"),
    COMPOSITE("composite"),
    DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer");
+   SCRIPT_VIEWER("scriptViewer"),
+   REPORT_SETUP("reportSetup"),
+   PIVOT_TABLE_SETUP("pivotTableSetup");
 
 
    private final String type;

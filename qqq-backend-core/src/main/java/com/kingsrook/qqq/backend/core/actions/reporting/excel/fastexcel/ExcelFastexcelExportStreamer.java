@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting;
+package com.kingsrook.qqq.backend.core.actions.reporting.excel.fastexcel;
 
 
 import java.io.OutputStream;
@@ -34,8 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.ExcelStylerInterface;
-import com.kingsrook.qqq.backend.core.actions.reporting.excelformatting.PlainExcelStyler;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
@@ -43,7 +43,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.dhatim.fastexcel.StyleSetter;
@@ -52,19 +54,19 @@ import org.dhatim.fastexcel.Worksheet;
 
 
 /*******************************************************************************
- ** Excel export format implementation
+ ** Excel export format implementation - built using fastexcel library
  *******************************************************************************/
-public class ExcelExportStreamer implements ExportStreamerInterface
+public class ExcelFastexcelExportStreamer implements ExportStreamerInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(ExcelExportStreamer.class);
+   private static final QLogger LOG = QLogger.getLogger(ExcelFastexcelExportStreamer.class);
 
    private ExportInput          exportInput;
    private QTableMetaData       table;
    private List<QFieldMetaData> fields;
    private OutputStream         outputStream;
 
-   private ExcelStylerInterface excelStylerInterface = new PlainExcelStyler();
-   private Map<String, String>  excelCellFormats;
+   private FastExcelStylerInterface fastExcelStylerInterface = new PlainFastExcelStyler();
+   private Map<String, String>      excelCellFormats;
 
    private Workbook  workbook;
    private Worksheet worksheet;
@@ -76,7 +78,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public ExcelExportStreamer()
+   public ExcelFastexcelExportStreamer()
    {
    }
 
@@ -105,14 +107,14 @@ public class ExcelExportStreamer implements ExportStreamerInterface
     ** Starts a new worksheet in the current workbook.  Can be called multiple times.
     *******************************************************************************/
    @Override
-   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label, QReportView view) throws QReportingException
    {
       try
       {
          this.exportInput = exportInput;
          this.fields = fields;
          table = exportInput.getTable();
-         outputStream = this.exportInput.getReportOutputStream();
+         outputStream = this.exportInput.getReportDestination().getReportOutputStream();
          this.row = 0;
          this.sheetCount++;
 
@@ -121,7 +123,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          if(workbook == null)
          {
-            String    appName  = "QQQ";
+            String    appName = ObjectUtils.tryAndRequireNonNullElse(() -> QContext.getQInstance().getBranding().getAppName(), "QQQ");
             QInstance instance = exportInput.getInstance();
             if(instance != null && instance.getBranding() != null && instance.getBranding().getCompanyName() != null)
             {
@@ -167,7 +169,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             worksheet.range(row, 0, row, fields.size() - 1).merge();
 
             StyleSetter titleStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
-            excelStylerInterface.styleTitleRow(titleStyle);
+            fastExcelStylerInterface.styleTitleRow(titleStyle);
             titleStyle.set();
 
             row++;
@@ -187,7 +189,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
             }
 
             StyleSetter headerStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
-            excelStylerInterface.styleHeaderRow(headerStyle);
+            fastExcelStylerInterface.styleHeaderRow(headerStyle);
             headerStyle.set();
 
             row++;
@@ -315,7 +317,7 @@ public class ExcelExportStreamer implements ExportStreamerInterface
       writeRecord(record);
 
       StyleSetter totalsRowStyle = worksheet.range(row, 0, row, fields.size() - 1).style();
-      excelStylerInterface.styleTotalsRow(totalsRowStyle);
+      fastExcelStylerInterface.styleTotalsRow(totalsRowStyle);
       totalsRowStyle.set();
    }
 

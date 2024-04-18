@@ -89,7 +89,7 @@ class EnumerationCountActionTest extends BaseTest
       QInstance instance = QContext.getQInstance();
       instance.addBackend(new QBackendMetaData()
          .withName("enum")
-         .withBackendType("enum")
+         .withBackendType(EnumerationBackendModule.class)
       );
 
       instance.addTable(new QTableMetaData()

@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
@@ -66,8 +67,9 @@ public class ExecuteReportStep implements BackendStep
          {
             ReportInput reportInput = new ReportInput();
             reportInput.setReportName(reportName);
-            reportInput.setReportFormat(ReportFormat.XLSX); // todo - variable
-            reportInput.setReportOutputStream(reportOutputStream);
+            reportInput.setReportDestination(new ReportDestination()
+               .withReportFormat(ReportFormat.XLSX) // todo - variable
+               .withReportOutputStream(reportOutputStream));
 
             Map<String, Serializable> values = runBackendStepInput.getValues();
             reportInput.setInputValues(values);
