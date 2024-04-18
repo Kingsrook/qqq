@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QStorageInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
@@ -43,6 +44,12 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  *******************************************************************************/
 public class MemoryBackendModule implements QBackendModuleInterface
 {
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new MemoryBackendModule());
+   }
+
+
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).
     *******************************************************************************/

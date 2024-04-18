@@ -40,7 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails
 /*******************************************************************************
  ** Interface that a QBackendModule must implement.
  **
- ** Note, some methods all have a default version, which throws a 'not implemented'
+ ** Note, all methods have a default version, which throws a 'not implemented'
  ** exception.
  **
  *******************************************************************************/

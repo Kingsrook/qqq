@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
@@ -403,7 +404,7 @@ public class TestUtils
    public static QBackendMetaData defineMockBackend()
    {
       return (new QBackendMetaData()
-         .withBackendType("mock")
+         .withBackendType(MockBackendModule.class)
          .withName(BACKEND_NAME_MOCK));
    }
 

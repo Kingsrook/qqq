@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.api.actions.APICountAction;
 import com.kingsrook.qqq.backend.module.api.actions.APIDeleteAction;
@@ -44,6 +45,11 @@ import com.kingsrook.qqq.backend.module.api.actions.APIUpdateAction;
  *******************************************************************************/
 public class APIBackendModule implements QBackendModuleInterface
 {
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new APIBackendModule());
+   }
+
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).
     *******************************************************************************/

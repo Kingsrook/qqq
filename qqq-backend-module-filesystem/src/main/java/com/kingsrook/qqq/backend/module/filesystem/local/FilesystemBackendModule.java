@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
@@ -55,6 +56,10 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
 
    public static final String BACKEND_TYPE = "filesystem";
 
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new FilesystemBackendModule());
+   }
 
    /*******************************************************************************
     ** For filesystem backends, get the module-specific action base-class, that helps
