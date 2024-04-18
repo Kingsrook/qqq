@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -79,9 +80,11 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
 
       try
       {
-         QTableMetaData table           = input.getTable();
-         UniqueKey      uniqueKey       = input.getKey();
-         String         primaryKeyField = table.getPrimaryKeyField();
+         QTableMetaData table                     = input.getTable();
+         UniqueKey      uniqueKey                 = input.getKey();
+         String         primaryKeyField           = table.getPrimaryKeyField();
+         boolean        allowNullKeyValuesToEqual = BooleanUtils.isTrue(input.getAllowNullKeyValuesToEqual());
+
          if(transaction == null)
          {
             transaction = QBackendTransaction.openFor(new InsertInput(input.getTableName()));
@@ -98,10 +101,11 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
             // originally it was thought that we'd need to pass the filter in here           //
             // but, it's been decided not to.  the filter only applies to what we can delete //
             ///////////////////////////////////////////////////////////////////////////////////
-            Map<List<Serializable>, Serializable> existingKeys = UniqueKeyHelper.getExistingKeys(transaction, table, page, uniqueKey);
+            Map<List<Serializable>, Serializable> existingKeys = UniqueKeyHelper.getExistingKeys(transaction, table, page, uniqueKey, allowNullKeyValuesToEqual);
+
             for(QRecord record : page)
             {
-               Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
+               Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record, allowNullKeyValuesToEqual);
                if(keyValues.isPresent())
                {
                   if(existingKeys.containsKey(keyValues.get()))
