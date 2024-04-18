@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -40,8 +39,10 @@ import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzTestUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.quartz.SchedulerException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -54,32 +55,20 @@ class UnscheduleAllJobsProcessTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @BeforeEach
+   void beforeEach()
+   {
+      SchedulerTestUtils.afterEach();
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @AfterEach
    void afterEach()
    {
-      QLogger.deactivateCollectingLoggerForClass(QuartzScheduler.class);
-
-      try
-      {
-         QScheduleManager.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
-
-      try
-      {
-         QuartzScheduler.getInstance().unInit();
-      }
-      catch(IllegalStateException ise)
-      {
-         /////////////////////////////////////////////////////////////////
-         // ok, might just mean that this test didn't init the instance //
-         /////////////////////////////////////////////////////////////////
-      }
+      SchedulerTestUtils.afterEach();
    }
 
 
@@ -103,7 +92,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
 
       QuartzScheduler quartzScheduler = QuartzScheduler.getInstance();
       List<QuartzJobAndTriggerWrapper> wrappers = quartzScheduler.queryQuartz();
-      assertTrue(wrappers.stream().anyMatch(w -> w.jobDetail().getKey().getName().equals("scheduledJob:2")));
+      assertEquals(1, wrappers.size());
 
       RunProcessInput input = new RunProcessInput();
       input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
@@ -111,7 +100,7 @@ class UnscheduleAllJobsProcessTest extends BaseTest
       new RunProcessAction().execute(input);
 
       wrappers = quartzScheduler.queryQuartz();
-      assertTrue(wrappers.stream().noneMatch(w -> w.jobDetail().getKey().getName().equals("scheduledJob:2")));
+      assertTrue(wrappers.isEmpty());
    }
 
 }

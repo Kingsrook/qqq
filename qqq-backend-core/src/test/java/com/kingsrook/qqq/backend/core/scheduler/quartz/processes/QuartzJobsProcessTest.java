@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
+import com.kingsrook.qqq.backend.core.scheduler.SchedulerTestUtils;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzJobAndTriggerWrapper;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzTestUtils;
@@ -92,7 +93,7 @@ class QuartzJobsProcessTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QuartzTestUtils.afterEach();
+      SchedulerTestUtils.afterEach();
    }
 
 

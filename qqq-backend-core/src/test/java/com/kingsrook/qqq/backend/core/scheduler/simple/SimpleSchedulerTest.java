@@ -53,7 +53,7 @@ class SimpleSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QScheduleManager.getInstance().unInit();
+      SchedulerTestUtils.afterEach();
    }
 
 
