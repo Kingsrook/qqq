@@ -136,8 +136,8 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
     *******************************************************************************/
    public ReportOutput execute(ReportInput reportInput) throws QException
    {
-      ReportOutput reportOutput = new ReportOutput();
-      QReportMetaData report = getReportMetaData(reportInput);
+      ReportOutput    reportOutput = new ReportOutput();
+      QReportMetaData report       = getReportMetaData(reportInput);
 
       this.views = report.getViews();
       this.dataSources = report.getDataSources();
@@ -398,7 +398,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       RunBackendStepInput   finalTransformStepInput  = transformStepInput;
       RunBackendStepOutput  finalTransformStepOutput = transformStepOutput;
 
-      String tableLabel = ObjectUtils.tryElse(() -> QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel(), Objects.requireNonNullElse(dataSource.getSourceTable(), ""));
+      String        tableLabel    = ObjectUtils.tryElse(() -> QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel(), Objects.requireNonNullElse(dataSource.getSourceTable(), ""));
       AtomicInteger consumedCount = new AtomicInteger(0);
 
       /////////////////////////////////////////////////////////////////
@@ -704,8 +704,24 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       //////////////////////////////////////////////////////////////////////////////////////
       for(String fieldName : record.getValues().keySet())
       {
-         FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, fieldName);
-         QFieldMetaData    field             = fieldAndJoinTable.field();
+         QFieldMetaData field = null;
+         try
+         {
+            //////////////////////////////////////////////////////
+            // todo - memoize this, if we ever need to optimize //
+            //////////////////////////////////////////////////////
+            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, fieldName);
+            field = fieldAndJoinTable.field();
+         }
+         catch(Exception e)
+         {
+            //////////////////////////////////////////////////////////////////////////////////////
+            // for non-real-fields... let's skip for now - but maybe treat as string in future? //
+            //////////////////////////////////////////////////////////////////////////////////////
+            LOG.debug("Couldn't find field in table qInstance - won't compute aggregates for it", logPair("fieldName", fieldName));
+            continue;
+         }
+
          if(StringUtils.hasContent(field.getPossibleValueSourceName()))
          {
             @SuppressWarnings("unchecked")
