@@ -93,7 +93,13 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       {
          try
          {
-            Instant       instant       = record.getValueInstant(field.getName());
+            Instant instant = record.getValueInstant(field.getName());
+
+            if(instant == null)
+            {
+               continue;
+            }
+
             ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of(defaultZoneId));
             record.setDisplayValue(field.getName(), QValueFormatter.formatDateTimeWithZone(zonedDateTime));
          }
@@ -115,8 +121,13 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       {
          try
          {
-            Instant instant    = record.getValueInstant(field.getName());
-            String  zoneString = record.getValueString(zoneIdFromFieldName);
+            Instant instant = record.getValueInstant(field.getName());
+            if(instant == null)
+            {
+               continue;
+            }
+
+            String zoneString = record.getValueString(zoneIdFromFieldName);
 
             ZoneId zoneId = null;
             if(StringUtils.hasContent(zoneString))
@@ -131,7 +142,7 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
                   // we probably(?) don't need a stack trace here (and it could get noisy?), so just info w/ the exception message... //
                   // and we expect this might be somewhat frequent, if you might have invalid values in your zoneId field...          //
                   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  LOG.info("Exception applying zoneIdFromFieldName behavior", logPair("message", e.getMessage()),  logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
+                  LOG.info("Exception applying zoneIdFromFieldName behavior", logPair("message", e.getMessage()), logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
                }
             }
 
