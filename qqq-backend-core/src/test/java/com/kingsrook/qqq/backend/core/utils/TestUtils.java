@@ -138,6 +138,7 @@ public class TestUtils
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
+   public static final String TABLE_NAME_TWO_KEYS            = "twoKeys";
    public static final String TABLE_NAME_PERSON              = "person";
    public static final String TABLE_NAME_SHAPE               = "shape";
    public static final String TABLE_NAME_SHAPE_CACHE         = "shapeCache";
@@ -196,6 +197,7 @@ public class TestUtils
       qInstance.addBackend(defineMemoryBackend());
 
       qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTableTwoKeys());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(definePersonMemoryTable());
       qInstance.addTable(definePersonMemoryCacheTable());
@@ -546,6 +548,24 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the 'two key' table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableTwoKeys()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_TWO_KEYS)
+         .withLabel("Two Keys")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withUniqueKey(new UniqueKey("key1", "key2"))
+         .withField(new QFieldMetaData("key1", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("key2", QFieldType.INTEGER));
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -787,6 +807,26 @@ public class TestUtils
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withFields(TestUtils.defineTablePerson().getFields()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a table with unique key where one is nullable
+    *******************************************************************************/
+   public static QTableMetaData defineTwoKeyTable()
+   {
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_BASEPULL)
+         .withLabel("Basepull Test")
+         .withPrimaryKeyField("id")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withFields(TestUtils.defineTablePerson().getFields()))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
+         .withField(new QFieldMetaData(BASEPULL_KEY_FIELD_NAME, QFieldType.STRING).withBackendName("process_name").withIsRequired(true))
+         .withField(new QFieldMetaData(BASEPULL_LAST_RUN_TIME_FIELD_NAME, QFieldType.DATE_TIME).withBackendName("last_run_time").withIsRequired(true));
    }
 
 

@@ -54,7 +54,7 @@ public class UniqueKeyHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Map<List<Serializable>, Serializable> getExistingKeys(QBackendTransaction transaction, QTableMetaData table, List<QRecord> recordList, UniqueKey uniqueKey) throws QException
+   public static Map<List<Serializable>, Serializable> getExistingKeys(QBackendTransaction transaction, QTableMetaData table, List<QRecord> recordList, UniqueKey uniqueKey, boolean allowNullKeyValuesToEqual) throws QException
    {
       List<String>                          ukFieldNames    = uniqueKey.getFieldNames();
       Map<List<Serializable>, Serializable> existingRecords = new HashMap<>();
@@ -112,7 +112,7 @@ public class UniqueKeyHelper
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
          for(QRecord record : queryOutput.getRecords())
          {
-            Optional<List<Serializable>> keyValues = getKeyValues(table, uniqueKey, record);
+            Optional<List<Serializable>> keyValues = getKeyValues(table, uniqueKey, record, allowNullKeyValuesToEqual);
             if(keyValues.isPresent())
             {
                existingRecords.put(keyValues.get(), record.getValue(table.getPrimaryKeyField()));
@@ -128,7 +128,17 @@ public class UniqueKeyHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Optional<List<Serializable>> getKeyValues(QTableMetaData table, UniqueKey uniqueKey, QRecord record)
+   public static Map<List<Serializable>, Serializable> getExistingKeys(QBackendTransaction transaction, QTableMetaData table, List<QRecord> recordList, UniqueKey uniqueKey) throws QException
+   {
+      return (getExistingKeys(transaction, table, recordList, uniqueKey, false));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<List<Serializable>> getKeyValues(QTableMetaData table, UniqueKey uniqueKey, QRecord record, boolean allowNullKeyValuesToEqual)
    {
       try
       {
@@ -138,7 +148,19 @@ public class UniqueKeyHelper
             QFieldMetaData field      = table.getField(fieldName);
             Serializable   value      = record.getValue(fieldName);
             Serializable   typedValue = ValueUtils.getValueAsFieldType(field.getType(), value);
-            keyValues.add(typedValue == null ? new NullUniqueKeyValue() : typedValue);
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // if null value, look at flag to determine if a null should be used (which will //
+            // allow keys to match), or a NullUniqueKeyValue, (which will never match)       //
+            ///////////////////////////////////////////////////////////////////////////////////
+            if(typedValue == null)
+            {
+               keyValues.add(allowNullKeyValuesToEqual ? null : new NullUniqueKeyValue());
+            }
+            else
+            {
+               keyValues.add(typedValue);
+            }
          }
          return (Optional.of(keyValues));
       }
@@ -146,6 +168,16 @@ public class UniqueKeyHelper
       {
          return (Optional.empty());
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Optional<List<Serializable>> getKeyValues(QTableMetaData table, UniqueKey uniqueKey, QRecord record)
+   {
+      return (getKeyValues(table, uniqueKey, record, false));
    }
 
 
