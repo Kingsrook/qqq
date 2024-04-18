@@ -18,10 +18,11 @@ DIR=/tmp/xbar-circleci-latest
 mkdir -p $DIR
 FILE=$DIR/cci.$$
 JQ=/opt/homebrew/bin/jq
-curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v1.1/recent-builds?limit=10&shallow=true" > $FILE
+curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v1.1/recent-builds?limit=50&shallow=true" > $FILE
 NOW=$(date +%s)
 
 needPipe=0
+displayedAny=0
 
 checkBuild()
 {
@@ -52,8 +53,10 @@ checkBuild()
     qqq-frontend-core)               shortRepo="fc";;
     qqq-frontend-material-dashboard) shortRepo="qfmd";;
     ColdTrack-Live)                  shortRepo="ctl";;
-    ColdTrack-Live-Scripts)          shortRepo="cls";;
-    Infoplus-Scripts)                shortRepo="ips";;
+    ## ColdTrack-Live-Scripts)          shortRepo="cls";;
+    ## Infoplus-Scripts)                shortRepo="ips";;
+    ColdTrack-Live-Scripts)          return;;
+    Infoplus-Scripts)                return;;
    esac
 
    timestamp=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" $(echo "$startDate" | sed 's/\....Z/+0000/') +%s)
@@ -95,7 +98,9 @@ checkBuild()
    ####################################################################################################
    ## if this is the 1st build, or it was less than some-short-time ago, then put it in the menu bar ##
    ####################################################################################################
-   if [ $index -lt 1 -o $seconds -lt 600 ]; then
+   if [ $displayedAny -eq 0 -o $seconds -lt 600 -o "$buildStatus" == "running" ]; then
+
+      displayedAny=1
 
       ###########################################################################################
       ## put a pipe (unicode special pipe, to not break things) before all but the first build ##
@@ -117,9 +122,13 @@ checkBuild()
 details="---"
 details="$details\n🔄 Refresh | refresh=true"
 
-for i in $(seq 0 9); do
+for i in $(seq 0 19); do
    checkBuild $i
 done
+
+if [ $displayedAny -eq 0 ]; then
+   echo "🤷"
+fi
 
 ## echo "@$(date +%M:%S)"
 echo
