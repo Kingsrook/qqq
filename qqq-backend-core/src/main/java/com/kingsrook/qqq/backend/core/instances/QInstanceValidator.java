@@ -749,6 +749,10 @@ public class QInstanceValidator
             {
                if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
                {
+                  String[] split = fieldName.split("\\.");
+                  String joinTableName = split[0];
+                  String joinFieldName = split[1];
+
                   List<QueryJoin> joins = new ArrayList<>();
 
                   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -789,6 +793,8 @@ public class QInstanceValidator
                         continue RECORD_SECURITY_LOCKS_LOOP;
                      }
                   }
+
+                  assertCondition(Objects.equals(tmpTable.getName(), joinTableName), prefix + "has a joinNameChain doesn't end in the expected table [" + joinTableName + "]");
 
                   assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
                }

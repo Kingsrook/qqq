@@ -55,10 +55,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -1902,6 +1902,7 @@ public class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(new ArrayList<>())), "looks like a join (has a dot), but no joinNameChain was given");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("storeId")), "does not look like a join (does not have a dot), but a joinNameChain was given");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("order.wrongId")), "unrecognized fieldName: order.wrongId");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("lineItem.id")), "joinNameChain doesn't end in the expected table [lineItem]");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("notAJoin"))), "an unrecognized join");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("orderLineItem"))), "joinNameChain could not be followed through join");
    }
