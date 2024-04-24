@@ -28,6 +28,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
  *******************************************************************************/
 public class WidgetDropdownData
 {
+   private String  name;
    private String  possibleValueSourceName;
    private String  foreignKeyFieldName;
    private String  label;
@@ -43,6 +44,9 @@ public class WidgetDropdownData
    // an option to put at the top of the dropdown, that represents a value of "null" (e.g., All) //
    ////////////////////////////////////////////////////////////////////////////////////////////////
    private String labelForNullValue;
+
+   private WidgetDropdownType type = WidgetDropdownType.POSSIBLE_VALUE_SOURCE;
+
 
 
    /*******************************************************************************
@@ -365,5 +369,66 @@ public class WidgetDropdownData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for type
+    *******************************************************************************/
+   public WidgetDropdownType getType()
+   {
+      return (this.type);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for type
+    *******************************************************************************/
+   public void setType(WidgetDropdownType type)
+   {
+      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for type
+    *******************************************************************************/
+   public WidgetDropdownData withType(WidgetDropdownType type)
+   {
+      this.type = type;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for name
+    *******************************************************************************/
+   public String getName()
+   {
+      return (this.name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public WidgetDropdownData withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
 
 }

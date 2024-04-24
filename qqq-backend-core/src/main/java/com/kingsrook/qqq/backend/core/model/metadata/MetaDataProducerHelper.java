@@ -27,11 +27,15 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -42,6 +46,29 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class MetaDataProducerHelper
 {
    private static final QLogger LOG = QLogger.getLogger(MetaDataProducerHelper.class);
+
+   private static Map<Class<?>, Integer> comparatorValuesByType = new HashMap<>();
+   private static Integer                defaultComparatorValue;
+
+   static
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // define how we break ties in sort-order based on the meta-dta type.  e.g., do apps  //
+      // after all other types (as apps often try to get other types from the instance)     //
+      // also - do backends earlier than others (e.g., tables may expect backends to exist) //
+      // any types not in the map get the default value.                                    //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      comparatorValuesByType.put(QBackendMetaData.class, 1);
+
+      /////////////////////////////////////
+      // unspecified ones will come here //
+      /////////////////////////////////////
+      defaultComparatorValue = 10;
+
+      comparatorValuesByType.put(QJoinMetaData.class, 21);
+      comparatorValuesByType.put(QWidgetMetaData.class, 22);
+      comparatorValuesByType.put(QAppMetaData.class, 23);
+   }
 
 
 
@@ -102,11 +129,9 @@ public class MetaDataProducerHelper
          }
       }
 
-      ////////////////////////////////////////////////////////////////////////////////////////////
-      // sort them by sort order, then by the type that they return - specifically - doing apps //
-      // after all other types (as apps often try to get other types from the instance)         //
-      // also - do backends earlier than others (e.g., tables may expect backends to exist)     //
-      ////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // sort them by sort order, then by the type that they return, as set up in the static map //
+      /////////////////////////////////////////////////////////////////////////////////////////////
       producers.sort(Comparator
          .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
          .thenComparing((MetaDataProducerInterface<?> p) ->
@@ -114,18 +139,7 @@ public class MetaDataProducerHelper
             try
             {
                Class<?> outputType = p.getClass().getMethod("produce", QInstance.class).getReturnType();
-               if(outputType.equals(QAppMetaData.class))
-               {
-                  return (2);
-               }
-               else if(outputType.equals(QBackendMetaData.class))
-               {
-                  return (0);
-               }
-               else
-               {
-                  return (1);
-               }
+               return comparatorValuesByType.getOrDefault(outputType, defaultComparatorValue);
             }
             catch(Exception e)
             {

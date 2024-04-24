@@ -62,7 +62,7 @@ class QuartzSchedulerTest extends BaseTest
    @AfterEach
    void afterEach()
    {
-      QuartzTestUtils.afterEach();
+      SchedulerTestUtils.afterEach();
    }
 
 

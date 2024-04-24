@@ -24,11 +24,15 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
@@ -61,7 +65,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
    protected Map<String, QIcon> icons;
 
-   protected Map<String, QHelpContent> helpContent;
+   protected Map<String, List<QHelpContent>> helpContent;
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
@@ -691,10 +695,11 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    }
 
 
+
    /*******************************************************************************
     ** Getter for helpContent
     *******************************************************************************/
-   public Map<String, QHelpContent> getHelpContent()
+   public Map<String, List<QHelpContent>> getHelpContent()
    {
       return (this.helpContent);
    }
@@ -704,7 +709,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    /*******************************************************************************
     ** Setter for helpContent
     *******************************************************************************/
-   public void setHelpContent(Map<String, QHelpContent> helpContent)
+   public void setHelpContent(Map<String, List<QHelpContent>> helpContent)
    {
       this.helpContent = helpContent;
    }
@@ -714,11 +719,49 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for helpContent
     *******************************************************************************/
-   public QWidgetMetaData withHelpContent(Map<String, QHelpContent> helpContent)
+   public QWidgetMetaData withHelpContent(Map<String, List<QHelpContent>> helpContent)
    {
       this.helpContent = helpContent;
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent (for a slot)
+    *******************************************************************************/
+   public QWidgetMetaData withHelpContent(String slot, QHelpContent helpContent)
+   {
+      if(this.helpContent == null)
+      {
+         this.helpContent = new HashMap<>();
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.computeIfAbsent(slot, (k) -> new ArrayList<>());
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, listForSlot);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      if(this.helpContent == null)
+      {
+         return;
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.get(slot);
+      if(listForSlot == null)
+      {
+         return;
+      }
+
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
+   }
 
 }

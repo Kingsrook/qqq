@@ -74,6 +74,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedViewsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -226,7 +227,7 @@ public class TestUtils
    public static QBackendMetaData defineMemoryBackend()
    {
       return new QBackendMetaData()
-         .withBackendType("memory")
+         .withBackendType(MemoryBackendModule.class)
          .withName(BACKEND_NAME_MEMORY);
    }
 
@@ -272,6 +273,7 @@ public class TestUtils
 
       return (qTableMetaData);
    }
+
 
 
    /*******************************************************************************

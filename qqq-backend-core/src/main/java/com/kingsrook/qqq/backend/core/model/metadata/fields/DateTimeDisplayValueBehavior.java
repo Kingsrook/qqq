@@ -93,7 +93,13 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       {
          try
          {
-            Instant       instant       = record.getValueInstant(field.getName());
+            Instant instant = record.getValueInstant(field.getName());
+
+            if(instant == null)
+            {
+               continue;
+            }
+
             ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of(defaultZoneId));
             record.setDisplayValue(field.getName(), QValueFormatter.formatDateTimeWithZone(zonedDateTime));
          }
@@ -115,35 +121,57 @@ public class DateTimeDisplayValueBehavior implements FieldDisplayBehavior<DateTi
       {
          try
          {
-            Instant instant    = record.getValueInstant(field.getName());
-            String  zoneString = record.getValueString(zoneIdFromFieldName);
-
-            ZoneId zoneId;
-            try
+            Instant instant = record.getValueInstant(field.getName());
+            if(instant == null)
             {
-               zoneId = ZoneId.of(zoneString);
+               continue;
             }
-            catch(Exception e)
+
+            String zoneString = record.getValueString(zoneIdFromFieldName);
+
+            ZoneId zoneId = null;
+            if(StringUtils.hasContent(zoneString))
+            {
+               try
+               {
+                  zoneId = ZoneId.of(zoneString);
+               }
+               catch(Exception e)
+               {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // we probably(?) don't need a stack trace here (and it could get noisy?), so just info w/ the exception message... //
+                  // and we expect this might be somewhat frequent, if you might have invalid values in your zoneId field...          //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  LOG.info("Exception applying zoneIdFromFieldName behavior", logPair("message", e.getMessage()), logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
+               }
+            }
+
+            if(zoneId == null)
             {
                ////////////////////////////////////////////////////////////////////////////////////////////////
                // if the zone string from the other field isn't valid, and we have a fallback, try to use it //
                ////////////////////////////////////////////////////////////////////////////////////////////////
                if(StringUtils.hasContent(fallbackZoneId))
                {
+                  ////////////////////////////////////////////////////////////////////////////////////////////
+                  // assume that validation has confirmed this is a valid zone - so no try-catch right here //
+                  ////////////////////////////////////////////////////////////////////////////////////////////
                   zoneId = ZoneId.of(fallbackZoneId);
-               }
-               else
-               {
-                  throw (e);
                }
             }
 
-            ZonedDateTime zonedDateTime = instant.atZone(zoneId);
-            record.setDisplayValue(field.getName(), QValueFormatter.formatDateTimeWithZone(zonedDateTime));
+            if(zoneId != null)
+            {
+               ZonedDateTime zonedDateTime = instant.atZone(zoneId);
+               record.setDisplayValue(field.getName(), QValueFormatter.formatDateTimeWithZone(zonedDateTime));
+            }
          }
          catch(Exception e)
          {
-            LOG.info("Error applying zoneIdFromFieldName DateTimeDisplayValueBehavior", e, logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
+            ///////////////////////////////////////////////////////////////////////
+            // we don't expect this to ever hit - so warn it w/ stack if it does //
+            ///////////////////////////////////////////////////////////////////////
+            LOG.warn("Unexpected error applying zoneIdFromFieldName behavior", e, logPair("table", table.getName()), logPair("field", field.getName()), logPair("id", record.getValue(table.getPrimaryKeyField())));
          }
       }
    }

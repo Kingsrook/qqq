@@ -194,6 +194,41 @@ public class QScheduleManager
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void setupAllNewSchedules() throws QException
+   {
+      if(QContext.getQInstance().getTables().containsKey(ScheduledJob.TABLE_NAME))
+      {
+         List<ScheduledJob> scheduledJobList = new QueryAction()
+            .execute(new QueryInput(ScheduledJob.TABLE_NAME)
+               .withIncludeAssociations(true))
+            .getRecordEntities(ScheduledJob.class);
+
+         for(ScheduledJob scheduledJob : scheduledJobList)
+         {
+            try
+            {
+               QSchedulerInterface      scheduler           = getScheduler(scheduledJob.getSchedulerName());
+               BasicSchedulableIdentity schedulableIdentity = SchedulableIdentityFactory.of(scheduledJob);
+               SchedulableType          schedulableType     = qInstance.getSchedulableType(scheduledJob.getType());
+
+               if(!scheduler.isScheduled(schedulableIdentity, schedulableType))
+               {
+                  setupScheduledJob(scheduledJob);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error evaluating scheduled job", logPair("id", scheduledJob.getId()));
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void setupAllSchedules() throws QException
    {
       /////////////////////////////////////////////

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.api.model.actions;
 
 
+import java.io.InputStream;
 import java.io.Serializable;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -34,6 +35,16 @@ public class HttpApiResponse
 {
    private HttpStatus.Code statusCode;
    private Serializable    responseBodyObject;
+
+   private String  contentType;
+
+   private InputStream inputStream;
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // by default - QJavalinApiHandler will format the responseBodyObject as JSON.                        //
+   // set this field to false if you don't want it to do that (e.g., if your response is, say, a byte[]) //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private boolean needsFormattedAsJson = true;
 
 
 
@@ -118,5 +129,98 @@ public class HttpApiResponse
       this.responseBodyObject = responseBodyObject;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for needsFormattedAsJson
+    *******************************************************************************/
+   public boolean getNeedsFormattedAsJson()
+   {
+      return (this.needsFormattedAsJson);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for needsFormattedAsJson
+    *******************************************************************************/
+   public void setNeedsFormattedAsJson(boolean needsFormattedAsJson)
+   {
+      this.needsFormattedAsJson = needsFormattedAsJson;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for needsFormattedAsJson
+    *******************************************************************************/
+   public HttpApiResponse withNeedsFormattedAsJson(boolean needsFormattedAsJson)
+   {
+      this.needsFormattedAsJson = needsFormattedAsJson;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contentType
+    *******************************************************************************/
+   public String getContentType()
+   {
+      return (this.contentType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentType
+    *******************************************************************************/
+   public void setContentType(String contentType)
+   {
+      this.contentType = contentType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentType
+    *******************************************************************************/
+   public HttpApiResponse withContentType(String contentType)
+   {
+      this.contentType = contentType;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for inputStream
+    *******************************************************************************/
+   public InputStream getInputStream()
+   {
+      return (this.inputStream);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inputStream
+    *******************************************************************************/
+   public void setInputStream(InputStream inputStream)
+   {
+      this.inputStream = inputStream;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inputStream
+    *******************************************************************************/
+   public HttpApiResponse withInputStream(InputStream inputStream)
+   {
+      this.inputStream = inputStream;
+      return (this);
+   }
+
 
 }

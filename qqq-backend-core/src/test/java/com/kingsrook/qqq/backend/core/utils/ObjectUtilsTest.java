@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.utils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -77,6 +79,22 @@ class ObjectUtilsTest
       assertEquals("tried", ObjectUtils.tryAndRequireNonNullElse(() -> "tried".toString(), "else"));
       assertEquals("else", ObjectUtils.tryAndRequireNonNullElse(() -> nullString.toString(), "else"));
       assertEquals("else", ObjectUtils.tryAndRequireNonNullElse(() -> null, "else"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIfCan()
+   {
+      Object nullObject = null;
+      assertTrue(ObjectUtils.ifCan(() -> true));
+      assertTrue(ObjectUtils.ifCan(() -> "a".equals("a")));
+      assertFalse(ObjectUtils.ifCan(() -> 1 == 2));
+      assertFalse(ObjectUtils.ifCan(() -> nullObject.equals("a")));
+      assertFalse(ObjectUtils.ifCan(() -> null));
    }
 
 }

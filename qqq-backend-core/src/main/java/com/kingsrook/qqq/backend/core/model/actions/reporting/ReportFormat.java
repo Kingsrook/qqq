@@ -25,13 +25,13 @@ package com.kingsrook.qqq.backend.core.model.actions.reporting;
 import java.util.Locale;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.reporting.CsvExportStreamer;
-import com.kingsrook.qqq.backend.core.actions.reporting.ExcelExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.JsonExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ListOfMapsExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiBasedStreamingExportStreamer;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.dhatim.fastexcel.Worksheet;
+import org.apache.poi.ss.SpreadsheetVersion;
 
 
 /*******************************************************************************
@@ -39,15 +39,24 @@ import org.dhatim.fastexcel.Worksheet;
  *******************************************************************************/
 public enum ReportFormat
 {
-   XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-   JSON(null, null, JsonExportStreamer::new, "application/json"),
-   CSV(null, null, CsvExportStreamer::new, "text/csv"),
-   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null);
+   /////////////////////////////////////////////////////////////////////////
+   // if we need to fall back to Fastexcel, this was its version of this. //
+   /////////////////////////////////////////////////////////////////////////
+   // XLSX(Worksheet.MAX_ROWS, Worksheet.MAX_COLS, ExcelFastexcelExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", true, false, true),
+
+   XLSX(SpreadsheetVersion.EXCEL2007.getMaxRows(), SpreadsheetVersion.EXCEL2007.getMaxColumns(), ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", true, true, true),
+   JSON(null, null, JsonExportStreamer::new, "application/json", "json", false, false, true),
+   CSV(null, null, CsvExportStreamer::new, "text/csv", "csv", false, false, false),
+   LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null, null, false, false, true);
 
 
    private final Integer maxRows;
    private final Integer maxCols;
    private final String  mimeType;
+   private final String  extension;
+   private final boolean isBinary;
+   private final boolean supportsNativePivotTables;
+   private final boolean supportsMultipleViews;
 
    private final Supplier<? extends ExportStreamerInterface> streamerConstructor;
 
@@ -56,12 +65,16 @@ public enum ReportFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType)
+   ReportFormat(Integer maxRows, Integer maxCols, Supplier<? extends ExportStreamerInterface> streamerConstructor, String mimeType, String extension, boolean isBinary, boolean supportsNativePivotTables, boolean supportsMultipleViews)
    {
       this.maxRows = maxRows;
       this.maxCols = maxCols;
       this.mimeType = mimeType;
       this.streamerConstructor = streamerConstructor;
+      this.extension = extension;
+      this.isBinary = isBinary;
+      this.supportsNativePivotTables = supportsNativePivotTables;
+      this.supportsMultipleViews = supportsMultipleViews;
    }
 
 
@@ -127,5 +140,49 @@ public enum ReportFormat
    public ExportStreamerInterface newReportStreamer()
    {
       return (streamerConstructor.get());
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for extension
+    **
+    *******************************************************************************/
+   public String getExtension()
+   {
+      return extension;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isBinary
+    **
+    *******************************************************************************/
+   public boolean getIsBinary()
+   {
+      return isBinary;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supportsNativePivotTables
+    **
+    *******************************************************************************/
+   public boolean getSupportsNativePivotTables()
+   {
+      return supportsNativePivotTables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supportsMultipleViews
+    **
+    *******************************************************************************/
+   public boolean getSupportsMultipleViews()
+   {
+      return supportsMultipleViews;
    }
 }

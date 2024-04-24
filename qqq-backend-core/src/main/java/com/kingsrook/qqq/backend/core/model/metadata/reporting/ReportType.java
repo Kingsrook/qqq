@@ -28,6 +28,6 @@ package com.kingsrook.qqq.backend.core.model.metadata.reporting;
 public enum ReportType
 {
    TABLE, // e.g., raw data in tabular form.
-   SUMMARY, // e.g., summaries computed within QQQ
-   PIVOT // e.g., a true spreadsheet pivot.  Not initially supported...
+   SUMMARY, // e.g., summaries computed within QQQ.
+   PIVOT // e.g., a true spreadsheet pivot.
 }

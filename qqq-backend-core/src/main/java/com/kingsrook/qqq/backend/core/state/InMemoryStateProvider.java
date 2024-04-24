@@ -46,8 +46,8 @@ public class InMemoryStateProvider implements StateProviderInterface
 
    private final Map<AbstractStateKey, Object> map;
 
-   private static int jobPeriodSeconds = 60 * 60; // 1 hour
-   private static int cleanHours       = 6;
+   private static int jobPeriodSeconds = 60 * 30; // 30 minutes
+   private static int cleanHours       = 5;
    private static int jobInitialDelay  = 60 * 60 * cleanHours;
 
 
@@ -147,6 +147,18 @@ public class InMemoryStateProvider implements StateProviderInterface
    public void remove(AbstractStateKey key)
    {
       map.remove(key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the current status
+    *
+    *******************************************************************************/
+   @Override
+   public String status()
+   {
+      return ("InMemoryStateProvider map size: " + map.size());
    }
 
 

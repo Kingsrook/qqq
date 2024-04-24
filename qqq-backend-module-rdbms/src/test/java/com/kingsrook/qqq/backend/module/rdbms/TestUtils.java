@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -46,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -61,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class TestUtils
 {
    public static final String DEFAULT_BACKEND_NAME = "default";
+   public static final String MEMORY_BACKEND_NAME  = "memory";
 
    public static final String TABLE_NAME_PERSON              = "personTable";
    public static final String TABLE_NAME_PERSONAL_ID_CARD    = "personalIdCard";
@@ -107,6 +110,7 @@ public class TestUtils
    {
       QInstance qInstance = new QInstance();
       qInstance.addBackend(defineBackend());
+      qInstance.addBackend(defineMemoryBackend());
       qInstance.addTable(defineTablePerson());
       qInstance.addPossibleValueSource(definePvsPerson());
       qInstance.addTable(defineTablePersonalIdCard());
@@ -114,6 +118,18 @@ public class TestUtils
       addOmsTablesAndJoins(qInstance);
       qInstance.setAuthentication(defineAuthentication());
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the in-memory backend used in standard tests
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return new QBackendMetaData()
+         .withName(MEMORY_BACKEND_NAME)
+         .withBackendType(MemoryBackendModule.class);
    }
 
 
@@ -243,7 +259,7 @@ public class TestUtils
          .withRecordSecurityLock(new RecordSecurityLock().withSecurityKeyType(TABLE_NAME_STORE).withFieldName("storeId"))
          .withAssociation(new Association().withName("orderLine").withAssociatedTableName(TABLE_NAME_ORDER_LINE).withJoinName("orderJoinOrderLine"))
          .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ITEM).withJoinPath(List.of("orderJoinOrderLine", "orderLineJoinItem")))
-         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER_INSTRUCTIONS).withJoinPath(List.of("orderJoinCurrentOrderInstructions")))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER_INSTRUCTIONS).withJoinPath(List.of("orderJoinCurrentOrderInstructions")).withLabel("Current Order Instructions"))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER).withBackendName("store_id").withPossibleValueSourceName(TABLE_NAME_STORE))
          .withField(new QFieldMetaData("billToPersonId", QFieldType.INTEGER).withBackendName("bill_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))
          .withField(new QFieldMetaData("shipToPersonId", QFieldType.INTEGER).withBackendName("ship_to_person_id").withPossibleValueSourceName(TABLE_NAME_PERSON))

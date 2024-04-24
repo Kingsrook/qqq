@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateInpu
 import com.kingsrook.qqq.backend.core.model.actions.templates.RenderTemplateOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.templates.TemplateType;
+import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
 import org.junit.jupiter.api.Test;
 
 
@@ -107,8 +108,8 @@ class ConvertHtmlToPdfActionTest extends BaseTest
       /////////////////////////////////////////////////////////////////////////
       // for local dev on a mac, turn this on to auto-open the generated PDF //
       /////////////////////////////////////////////////////////////////////////
-      // todo not commit
-      // Runtime.getRuntime().exec(new String[] { "/usr/bin/open", "/tmp/file.pdf" });
+      // LocalMacDevUtils.mayOpenFiles = true;
+      LocalMacDevUtils.openFile("/tmp/file.pdf");
    }
 
 }

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,53 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
+package com.kingsrook.qqq.backend.core.actions.interfaces;
 
 
-import org.dhatim.fastexcel.BorderSide;
-import org.dhatim.fastexcel.BorderStyle;
-import org.dhatim.fastexcel.StyleSetter;
+import java.io.InputStream;
+import java.io.OutputStream;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 
 
 /*******************************************************************************
- ** Version of excel styler that does bold headers and footers, with basic borders.
+ ** Interface for actions that a backend can perform, based on streaming data
+ ** into the backend's storage. 
  *******************************************************************************/
-public class BoldHeaderAndFooterExcelStyler implements ExcelStylerInterface
+public interface QStorageInterface
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public void styleTitleRow(StyleSetter titleRowStyle)
-   {
-      titleRowStyle
-         .bold()
-         .fontSize(14)
-         .horizontalAlignment("center");
-   }
-
+   OutputStream createOutputStream(StorageInput storageInput) throws QException;
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Override
-   public void styleHeaderRow(StyleSetter headerRowStyle)
-   {
-      headerRowStyle
-         .bold()
-         .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN);
-   }
+   InputStream getInputStream(StorageInput storageInput) throws QException;
 
-
-
-   @Override
-   public void styleTotalsRow(StyleSetter totalsRowStyle)
-   {
-      totalsRowStyle
-         .bold()
-         .borderStyle(BorderSide.TOP, BorderStyle.THIN)
-         .borderStyle(BorderSide.BOTTOM, BorderStyle.DOUBLE);
-   }
 }

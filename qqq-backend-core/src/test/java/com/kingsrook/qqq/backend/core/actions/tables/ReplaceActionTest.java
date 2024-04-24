@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Unit test for ReplaceAction 
+ ** Unit test for ReplaceAction
  *******************************************************************************/
 class ReplaceActionTest extends BaseTest
 {
@@ -153,6 +153,134 @@ class ReplaceActionTest extends BaseTest
       //////////////////////////////////////
       assertEquals(1, countByFirstName("Ned"));
       assertEquals(1, countByFirstName("Maude"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTwoKeysWithNullsNotMatchingAllowingDelete() throws QException
+   {
+      String tableName = TestUtils.TABLE_NAME_TWO_KEYS;
+
+      ////////////////////////////////
+      // start with these 2 records //
+      ////////////////////////////////
+      new InsertAction().execute(new InsertInput(tableName).withRecords(List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      )));
+
+      ////////////////////////////////////////////////////
+      // now do a replace action that just updates them //
+      ////////////////////////////////////////////////////
+      List<QRecord> newThings = List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      );
+
+      //////////////////////////////
+      // replace allowing deletes //
+      //////////////////////////////
+      ReplaceInput replaceInput = new ReplaceInput();
+      replaceInput.setTableName(tableName);
+      replaceInput.setKey(new UniqueKey("key1", "key2"));
+      replaceInput.setOmitDmlAudit(true);
+      replaceInput.setRecords(newThings);
+      replaceInput.setFilter(null);
+      ReplaceOutput replaceOutput = new ReplaceAction().execute(replaceInput);
+
+      assertEquals(1, replaceOutput.getInsertOutput().getRecords().size());
+      assertEquals(1, replaceOutput.getUpdateOutput().getRecords().size());
+      assertEquals(1, replaceOutput.getDeleteOutput().getDeletedRecordCount());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTwoKeysWithNullsNotMatchingNotAllowingDelete() throws QException
+   {
+      String tableName = TestUtils.TABLE_NAME_TWO_KEYS;
+
+      ////////////////////////////////
+      // start with these 2 records //
+      ////////////////////////////////
+      new InsertAction().execute(new InsertInput(tableName).withRecords(List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      )));
+
+      ////////////////////////////////////////////////////
+      // now do a replace action that just updates them //
+      ////////////////////////////////////////////////////
+      List<QRecord> newThings = List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      );
+
+      /////////////////////////////////
+      // replace disallowing deletes //
+      /////////////////////////////////
+      ReplaceInput replaceInput = new ReplaceInput();
+      replaceInput.setTableName(tableName);
+      replaceInput.setKey(new UniqueKey("key1", "key2"));
+      replaceInput.setOmitDmlAudit(true);
+      replaceInput.setRecords(newThings);
+      replaceInput.setFilter(null);
+      replaceInput.setPerformDeletes(false);
+      ReplaceOutput replaceOutput = new ReplaceAction().execute(replaceInput);
+
+      assertEquals(1, replaceOutput.getInsertOutput().getRecords().size());
+      assertEquals(1, replaceOutput.getUpdateOutput().getRecords().size());
+      assertNull(replaceOutput.getDeleteOutput());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTwoKeysWithNullMatching() throws QException
+   {
+      String tableName = TestUtils.TABLE_NAME_TWO_KEYS;
+
+      ////////////////////////////////
+      // start with these 2 records //
+      ////////////////////////////////
+      new InsertAction().execute(new InsertInput(tableName).withRecords(List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      )));
+
+      ////////////////////////////////////////////////////
+      // now do a replace action that just updates them //
+      ////////////////////////////////////////////////////
+      List<QRecord> newThings = List.of(
+         new QRecord().withValue("key1", 1).withValue("key2", 2),
+         new QRecord().withValue("key1", 3)
+      );
+
+      ///////////////////////////////////////////////
+      // replace treating null key values as equal //
+      ///////////////////////////////////////////////
+      ReplaceInput replaceInput = new ReplaceInput();
+      replaceInput.setTableName(tableName);
+      replaceInput.setKey(new UniqueKey("key1", "key2"));
+      replaceInput.setOmitDmlAudit(true);
+      replaceInput.setRecords(newThings);
+      replaceInput.setFilter(null);
+      replaceInput.setAllowNullKeyValuesToEqual(true);
+      ReplaceOutput replaceOutput = new ReplaceAction().execute(replaceInput);
+
+      assertEquals(0, replaceOutput.getInsertOutput().getRecords().size());
+      assertEquals(2, replaceOutput.getUpdateOutput().getRecords().size());
+      assertEquals(0, replaceOutput.getDeleteOutput().getDeletedRecordCount());
    }
 
 

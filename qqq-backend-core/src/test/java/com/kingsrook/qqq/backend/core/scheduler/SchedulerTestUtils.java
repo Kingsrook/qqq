@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobParameter;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
+import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 
 
@@ -82,6 +83,38 @@ public class SchedulerTestUtils
       }
 
       return (scheduledJob);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void afterEach()
+   {
+      try
+      {
+         QScheduleManager.getInstance().stop();
+         QScheduleManager.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
+
+      try
+      {
+         QuartzScheduler.getInstance().stop();
+         QuartzScheduler.getInstance().unInit();
+      }
+      catch(IllegalStateException ise)
+      {
+         /////////////////////////////////////////////////////////////////
+         // ok, might just mean that this test didn't init the instance //
+         /////////////////////////////////////////////////////////////////
+      }
    }
 
 

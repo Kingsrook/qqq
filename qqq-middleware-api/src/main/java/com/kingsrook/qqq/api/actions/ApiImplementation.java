@@ -1000,6 +1000,7 @@ public class ApiImplementation
       ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
       if(apiProcessInput != null)
       {
+         processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getPathParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getQueryStringParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getFormParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getObjectBodyParams());
@@ -1143,7 +1144,10 @@ public class ApiImplementation
       ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
       if(output != null)
       {
-         return (new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), output.getOutputForProcess(runProcessInput, runProcessOutput)));
+         Serializable outputForProcess = output.getOutputForProcess(runProcessInput, runProcessOutput);
+         HttpApiResponse httpApiResponse = new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), outputForProcess);
+         output.customizeHttpApiResponse(httpApiResponse, runProcessInput, runProcessOutput);
+         return httpApiResponse;
       }
       else
       {

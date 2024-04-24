@@ -27,21 +27,18 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
-import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  ** This class is responsible for loading a backend module, by its name, and 
  ** returning an instance.
  **
- ** TODO - make this mapping runtime-bound, not pre-compiled in.
- **
  *******************************************************************************/
 public class QBackendModuleDispatcher
 {
    private static final QLogger LOG = QLogger.getLogger(QBackendModuleDispatcher.class);
 
-   private static Map<String, String> backendTypeToModuleClassNameMap;
+   private static Map<String, String> backendTypeToModuleClassNameMap = new HashMap<>();
 
 
 
@@ -50,51 +47,6 @@ public class QBackendModuleDispatcher
     *******************************************************************************/
    public QBackendModuleDispatcher()
    {
-      initBackendTypeToModuleClassNameMap();
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void initBackendTypeToModuleClassNameMap()
-   {
-      if(backendTypeToModuleClassNameMap != null)
-      {
-         return;
-      }
-
-      Map<String, String> newMap = new HashMap<>();
-
-      String[] moduleClassNames = new String[]
-         {
-            // todo - let modules somehow "export" their types here?
-            //  e.g., backend-core shouldn't need to "know" about the modules.
-            "com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule",
-            "com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule",
-            "com.kingsrook.qqq.backend.core.modules.backend.implementations.enumeration.EnumerationBackendModule",
-            "com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule",
-            "com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule",
-            "com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule",
-            "com.kingsrook.qqq.backend.module.api.APIBackendModule"
-         };
-
-      for(String moduleClassName : moduleClassNames)
-      {
-         try
-         {
-            Class<?>                moduleClass = Class.forName(moduleClassName);
-            QBackendModuleInterface module      = (QBackendModuleInterface) moduleClass.getConstructor().newInstance();
-            newMap.put(module.getBackendType(), moduleClassName);
-         }
-         catch(Exception e)
-         {
-            LOG.debug("Backend module could not be loaded", e, logPair("moduleClassName", moduleClassName));
-         }
-      }
-
-      backendTypeToModuleClassNameMap = newMap;
    }
 
 
@@ -104,7 +56,6 @@ public class QBackendModuleDispatcher
     *******************************************************************************/
    public static void registerBackendModule(QBackendModuleInterface moduleInstance)
    {
-      initBackendTypeToModuleClassNameMap();
       String backendType = moduleInstance.getBackendType();
       if(backendTypeToModuleClassNameMap.containsKey(backendType))
       {

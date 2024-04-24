@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -105,11 +106,53 @@ class DateTimeDisplayValueBehaviorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testBadZoneIdFromOtherField()
+   {
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      table.withField(new QFieldMetaData("timeZone", QFieldType.STRING));
+      table.getField("createDate").withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("timeZone"));
+
+      QRecord record = new QRecord().withValue("createDate", Instant.parse("2024-04-04T19:12:00Z")).withValue("timeZone", "fail");
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, qInstance, table, List.of(record), null);
+      assertNull(record.getDisplayValue("createDate"));
+
+      record = new QRecord().withValue("createDate", Instant.parse("2024-04-04T19:12:00Z")).withValue("timeZone", null);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, qInstance, table, List.of(record), null);
+      assertNull(record.getDisplayValue("createDate"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullValue()
+   {
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+
+      table.withField(new QFieldMetaData("timeZone", QFieldType.STRING));
+      table.getField("createDate").withBehavior(new DateTimeDisplayValueBehavior().withZoneIdFromFieldName("timeZone"));
+
+      QRecord record = new QRecord().withValue("createDate", null).withValue("timeZone", "UTC");
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, qInstance, table, List.of(record), null);
+      assertNull(record.getDisplayValue("createDate"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testValidation()
    {
       QInstance      qInstance = QContext.getQInstance();
-      QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
-      QFieldMetaData field = table.getField("createDate");
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      QFieldMetaData field     = table.getField("createDate");
       table.withField(new QFieldMetaData("timeZone", QFieldType.STRING));
 
       Function<Consumer<DateTimeDisplayValueBehavior>, List<String>> testOne = setup ->

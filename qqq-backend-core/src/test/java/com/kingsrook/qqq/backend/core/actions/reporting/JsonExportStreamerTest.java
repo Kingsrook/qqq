@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,41 +19,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.reporting.excelformatting;
+package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
-import org.dhatim.fastexcel.StyleSetter;
+import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Interface for classes that know how to apply styles to an Excel stream being
- ** built by fastexcel.
+ ** Unit test for JsonExportStreamer 
  *******************************************************************************/
-public interface ExcelStylerInterface
+class JsonExportStreamerTest extends BaseTest
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void styleTitleRow(StyleSetter titleRowStyle)
+   @Test
+   void test()
    {
-
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void styleHeaderRow(StyleSetter headerRowStyle)
-   {
-
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void styleTotalsRow(StyleSetter totalsRowStyle)
-   {
-
+      Function<String, String> runOne = label -> new JsonExportStreamer().getLabelForJson(new QFieldMetaData("test", QFieldType.STRING).withLabel(label));
+      assertEquals("sku", runOne.apply("SKU"));
+      assertEquals("clientName", runOne.apply("Client Name"));
+      assertEquals("slaStatus", runOne.apply("SLA Status"));
+      assertEquals("lineItem:sku", runOne.apply("Line Item: SKU"));
+      assertEquals("parcel:slaStatus", runOne.apply("Parcel: SLA Status"));
+      assertEquals("order:client", runOne.apply("Order: Client"));
    }
 
 }

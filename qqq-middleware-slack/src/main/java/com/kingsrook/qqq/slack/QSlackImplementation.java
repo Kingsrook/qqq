@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
@@ -429,8 +430,11 @@ public class QSlackImplementation
          ExportInput exportInput = new ExportInput();
          exportInput.setLimit(1000);
          exportInput.setTableName(tableName);
-         exportInput.setReportFormat(ReportFormat.valueOf(format));
-         exportInput.setReportOutputStream(baos);
+
+         exportInput.setReportDestination(new ReportDestination()
+            .withReportFormat(ReportFormat.valueOf(format))
+            .withReportOutputStream(baos));
+
          setupSession(context, exportInput);
          ExportOutput output = new ExportAction().execute(exportInput);
 

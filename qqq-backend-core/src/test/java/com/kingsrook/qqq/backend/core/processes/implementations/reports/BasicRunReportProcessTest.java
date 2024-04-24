@@ -50,7 +50,7 @@ class BasicRunReportProcessTest extends BaseTest
    void testRunReport() throws QException
    {
       QInstance        instance         = TestUtils.defineInstance();
-      QReportMetaData  report           = GenerateReportActionTest.definePersonShoesPivotReport(true);
+      QReportMetaData  report           = GenerateReportActionTest.definePersonShoesSummaryReport(true);
       QProcessMetaData runReportProcess = BasicRunReportProcess.defineProcessMetaData();
 
       instance.addReport(report);
