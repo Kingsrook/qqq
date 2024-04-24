@@ -57,4 +57,13 @@ public interface QStorageInterface
       //////////
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default String getDownloadURL(StorageInput storageInput) throws QException
+   {
+      return (null);
+   }
+
 }

@@ -47,6 +47,9 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
 {
    public static final String NAME = "renderSavedReport";
 
+   public static final String SES_PROVIDER_NAME             = "sesProviderName";
+   public static final String FROM_EMAIL_ADDRESS            = "fromEmailAddress";
+   public static final String REPLY_TO_EMAIL_ADDRESS        = "replyToEmailAddress";
    public static final String FIELD_NAME_STORAGE_TABLE_NAME = "storageTableName";
    public static final String FIELD_NAME_REPORT_FORMAT      = "reportFormat";
    public static final String FIELD_NAME_EMAIL_ADDRESS      = "reportDestinationEmailAddress";
@@ -67,6 +70,9 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
          .addStep(new QBackendStepMetaData()
             .withName("pre")
             .withInputData(new QFunctionInputMetaData()
+               .withField(new QFieldMetaData(SES_PROVIDER_NAME, QFieldType.STRING))
+               .withField(new QFieldMetaData(FROM_EMAIL_ADDRESS, QFieldType.STRING))
+               .withField(new QFieldMetaData(REPLY_TO_EMAIL_ADDRESS, QFieldType.STRING))
                .withField(new QFieldMetaData(FIELD_NAME_STORAGE_TABLE_NAME, QFieldType.STRING))
                .withRecordListMetaData(new QRecordListMetaData().withTableName(SavedReport.TABLE_NAME)))
             .withCode(new QCodeReference(RenderSavedReportPreStep.class)))

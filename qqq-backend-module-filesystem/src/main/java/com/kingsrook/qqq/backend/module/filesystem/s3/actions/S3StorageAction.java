@@ -112,7 +112,30 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
       }
       catch(Exception e)
       {
-         throw (new QException("Exception getting s3 input stream for file", e));
+         throw (new QException("Exception getting s3 input stream for file.", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getDownloadURL(StorageInput storageInput) throws QException
+   {
+      try
+      {
+         S3BackendMetaData backend = (S3BackendMetaData) storageInput.getBackend();
+         preAction(backend);
+
+         AmazonS3 amazonS3 = getS3Utils().getAmazonS3();
+         String   fullPath = getFullPath(storageInput);
+         return (amazonS3.getUrl(backend.getBucketName(), fullPath).toString());
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Exception getting the S3 download URL.", e));
       }
    }
 
@@ -135,7 +158,7 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
       }
       catch(Exception e)
       {
-         throw (new QException("Exception making s3 file publicly available", e));
+         throw (new QException("Exception making s3 file publicly available.", e));
       }
    }
 

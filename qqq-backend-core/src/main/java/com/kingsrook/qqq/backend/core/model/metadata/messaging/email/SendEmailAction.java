@@ -28,20 +28,25 @@ import java.util.List;
 import java.util.Properties;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.Content;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.MultiParty;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.Party;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.PartyRole;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageInput;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageOutput;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailContentRole;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailPartyRole;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import jakarta.mail.Address;
 import jakarta.mail.Message;
+import jakarta.mail.Multipart;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 
 
 /*******************************************************************************
@@ -60,10 +65,10 @@ public class SendEmailAction
       /////////////////////////////////////////
       // set up properties to make a session //
       /////////////////////////////////////////
-      Properties properties = System.getProperties();
+      Properties properties = new Properties();
       properties.setProperty("mail.smtp.host", messagingProvider.getSmtpServer());
       properties.setProperty("mail.smtp.port", messagingProvider.getSmtpPort());
-      Session session = Session.getDefaultInstance(properties);
+      Session session = Session.getInstance(properties);
 
       try
       {
@@ -72,7 +77,6 @@ public class SendEmailAction
          ////////////////////////////////////////////
          MimeMessage emailMessage = new MimeMessage(session);
          emailMessage.setSubject(sendMessageInput.getSubject());
-         emailMessage.setText(sendMessageInput.getContentList().get(0).getBody());
 
          Party to = sendMessageInput.getTo();
          if(to instanceof MultiParty toMultiParty)
@@ -99,6 +103,25 @@ public class SendEmailAction
          {
             addSender(emailMessage, from);
          }
+
+         Multipart multipart = new MimeMultipart();
+         for(Content content : sendMessageInput.getContentList())
+         {
+            if(EmailContentRole.HTML.equals(content.getContentRole()))
+            {
+               MimeBodyPart mimeBodyPart = new MimeBodyPart();
+               mimeBodyPart.setContent(content.getBody(), "text/html; charset=utf-8");
+               multipart.addBodyPart(mimeBodyPart);
+            }
+            else if(EmailContentRole.TEXT.equals(content.getContentRole()))
+            {
+               MimeBodyPart mimeBodyPart = new MimeBodyPart();
+               mimeBodyPart.setContent(content.getBody(), "text/plain; charset=utf-8");
+               multipart.addBodyPart(mimeBodyPart);
+            }
+         }
+
+         emailMessage.setContent(multipart);
 
          /////////////
          // send it //
@@ -132,7 +155,6 @@ public class SendEmailAction
          else
          {
             List<Address> replyToList = Arrays.asList(replyTo);
-            replyToList.add(internetAddress);
             emailMessage.setReplyTo(replyToList.toArray(new Address[0]));
          }
       }
