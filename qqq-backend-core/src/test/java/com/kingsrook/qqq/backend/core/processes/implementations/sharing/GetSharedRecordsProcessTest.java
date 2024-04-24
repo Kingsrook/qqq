@@ -88,7 +88,7 @@ class GetSharedRecordsProcessTest extends BaseTest
       assertEquals(1, resultList.size());
 
       QRecord outputRecord = resultList.get(0);
-      assertEquals(1, outputRecord.getValueInteger("id"));
+      assertEquals(1, outputRecord.getValueInteger("shareId"));
       assertEquals(ShareScope.READ_WRITE.getPossibleValueId(), outputRecord.getValueString("scopeId"));
       assertEquals("user", outputRecord.getValueString("audienceType"));
       assertEquals("007", outputRecord.getValueString("audienceId"));
