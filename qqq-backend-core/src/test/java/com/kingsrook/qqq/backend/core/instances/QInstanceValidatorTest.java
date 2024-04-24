@@ -78,6 +78,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -2004,7 +2005,21 @@ public class QInstanceValidatorTest extends BaseTest
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
       });
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testShareableTableMetaData()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // just make sure we call this class's validator - the rest of its conditions are covered in its own test //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons(qInstance -> qInstance.addTable(newTable("A", "id").withShareableTableMetaData(new ShareableTableMetaData())),
+         "missing sharedRecordTableName");
    }
 
 
@@ -2113,7 +2128,7 @@ public class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QTableMetaData newTable(String tableName, String... fieldNames)
+   protected QTableMetaData newTable(String tableName, String... fieldNames)
    {
       QTableMetaData tableMetaData = new QTableMetaData()
          .withName(tableName)
@@ -2207,7 +2222,7 @@ public class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     ** Assert that an instance is valid!
     *******************************************************************************/
-   private void assertValidationSuccess(Consumer<QInstance> setup)
+   public static void assertValidationSuccess(Consumer<QInstance> setup)
    {
       try
       {

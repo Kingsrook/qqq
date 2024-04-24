@@ -624,6 +624,11 @@ public class QInstanceValidator
                supplementalTableMetaData.validate(qInstance, table, this);
             }
 
+            if(table.getShareableTableMetaData() != null)
+            {
+               table.getShareableTableMetaData().validate(qInstance, table, this);
+            }
+
             runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
