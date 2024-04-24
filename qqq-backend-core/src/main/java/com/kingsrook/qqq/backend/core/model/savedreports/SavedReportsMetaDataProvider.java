@@ -42,10 +42,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareScopePossibleValueMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableAudienceType;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
 
 
@@ -80,6 +84,15 @@ public class SavedReportsMetaDataProvider
 
       instance.addWidget(defineReportSetupWidget());
       instance.addWidget(definePivotTableSetupWidget());
+
+      /////////////////////////////////////
+      // todo - param to enable sharing? //
+      /////////////////////////////////////
+      instance.addTable(defineSharedSavedReportTable(recordTablesBackendName, backendDetailEnricher));
+      if(instance.getPossibleValueSource(ShareScopePossibleValueMetaDataProducer.NAME) == null)
+      {
+         instance.addPossibleValueSource(new ShareScopePossibleValueMetaDataProducer().produce(new QInstance()));
+      }
    }
 
 
@@ -164,6 +177,44 @@ public class SavedReportsMetaDataProvider
 
       table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
       table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
+
+      table.withShareableTableMetaData(new ShareableTableMetaData()
+         .withSharedRecordTableName(SharedSavedReport.TABLE_NAME)
+         .withAssetIdFieldName("savedReportId")
+         .withScopeFieldName("scope")
+         .withThisTableOwnerIdFieldName("userId")
+         .withAudienceType(new ShareableAudienceType().withName("user").withFieldName("userId")));
+
+      if(backendDetailEnricher != null)
+      {
+         backendDetailEnricher.accept(table);
+      }
+
+      return (table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QTableMetaData defineSharedSavedReportTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName(SharedSavedReport.TABLE_NAME)
+         .withLabel("Shared Report")
+         .withIcon(new QIcon().withName("share"))
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("savedReportId")
+         .withBackendName(backendName)
+         .withUniqueKey(new UniqueKey("savedReportId", "userId"))
+         .withPrimaryKeyField("id")
+         .withFieldsFromEntity(SharedSavedReport.class)
+         // todo - security key
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD))
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "savedReportId", "userId")))
+         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("scope")))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       if(backendDetailEnricher != null)
       {
