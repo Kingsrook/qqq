@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
@@ -112,6 +113,29 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
       catch(Exception e)
       {
          throw (new QException("Exception getting s3 input stream for file", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void makePublic(StorageInput storageInput) throws QException
+   {
+      try
+      {
+         S3BackendMetaData backend = (S3BackendMetaData) storageInput.getBackend();
+         preAction(backend);
+
+         AmazonS3 amazonS3 = getS3Utils().getAmazonS3();
+         String   fullPath = getFullPath(storageInput);
+         amazonS3.setObjectAcl(backend.getBucketName(), fullPath, CannedAccessControlList.PublicRead);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Exception making s3 file publicly available", e));
       }
    }
 

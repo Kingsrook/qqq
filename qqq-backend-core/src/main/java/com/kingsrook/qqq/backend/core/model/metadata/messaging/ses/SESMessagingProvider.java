@@ -19,42 +19,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.interfaces;
+package com.kingsrook.qqq.backend.core.model.metadata.messaging.ses;
 
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageInput;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageOutput;
+import com.kingsrook.qqq.backend.core.modules.messaging.MessagingProviderInterface;
 
 
 /*******************************************************************************
- ** Interface for actions that a backend can perform, based on streaming data
- ** into the backend's storage.
+ **
  *******************************************************************************/
-public interface QStorageInterface
+public class SESMessagingProvider implements MessagingProviderInterface
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   OutputStream createOutputStream(StorageInput storageInput) throws QException;
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   InputStream getInputStream(StorageInput storageInput) throws QException;
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void makePublic(StorageInput storageInput) throws QException
+   @Override
+   public String getType()
    {
-      //////////
-      // noop //
-      //////////
+      return (SESMessagingProviderMetaData.TYPE);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public SendMessageOutput sendMessage(SendMessageInput sendMessageInput) throws QException
+   {
+      return new SendSESAction().sendMessage(sendMessageInput);
+   }
 }

@@ -87,7 +87,7 @@ public class SendEmailAction
             addRecipient(emailMessage, to);
          }
 
-         Party from = sendMessageInput.getTo();
+         Party from = sendMessageInput.getFrom();
          if(from instanceof MultiParty fromMultiParty)
          {
             for(Party party : fromMultiParty.getPartyList())

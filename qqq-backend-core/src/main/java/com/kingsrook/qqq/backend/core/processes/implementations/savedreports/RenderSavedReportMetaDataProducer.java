@@ -49,6 +49,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
 
    public static final String FIELD_NAME_STORAGE_TABLE_NAME = "storageTableName";
    public static final String FIELD_NAME_REPORT_FORMAT      = "reportFormat";
+   public static final String FIELD_NAME_EMAIL_ADDRESS      = "reportDestinationEmailAddress";
 
 
 
@@ -74,7 +75,8 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
             .withFormField(new QFieldMetaData(FIELD_NAME_REPORT_FORMAT, QFieldType.STRING)
                .withPossibleValueSourceName(ReportFormatPossibleValueEnum.NAME)
-               .withIsRequired(true)))
+               .withIsRequired(true))
+            .withFormField(new QFieldMetaData(FIELD_NAME_EMAIL_ADDRESS, QFieldType.STRING).withLabel("Send To Email Address")))
          .addStep(new QBackendStepMetaData()
             .withName("execute")
             .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()

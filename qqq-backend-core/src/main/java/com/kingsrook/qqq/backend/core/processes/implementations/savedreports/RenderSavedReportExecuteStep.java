@@ -31,13 +31,21 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.messaging.SendMessageAction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.Content;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.MultiParty;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.Party;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageInput;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailContentRole;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailPartyRole;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -53,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReportStatus;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -82,10 +91,14 @@ public class RenderSavedReportExecuteStep implements BackendStep
          ////////////////////////////////
          String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
          ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
+         String       sendToEmailAddress   = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
          SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
          String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
          String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
-         OutputStream outputStream         = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
+
+         StorageAction storageAction = new StorageAction();
+         StorageInput  storageInput  = new StorageInput(storageTableName).withReference(storageReference);
+         OutputStream  outputStream  = storageAction.createOutputStream(storageInput);
 
          LOG.info("Starting to render a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference));
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
@@ -120,6 +133,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          reportInput.setInputValues(values);
 
          ReportOutput reportOutput = new GenerateReportAction().execute(reportInput);
+         storageAction.makePublic(storageInput);
 
          ///////////////////////////////////
          // update record to show success //
@@ -132,10 +146,28 @@ public class RenderSavedReportExecuteStep implements BackendStep
             .withValue("rowCount", reportOutput.getTotalRecordCount())
          ));
 
-         runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
+         String downloadFileName = downloadFileBaseName + "." + reportFormat.getExtension();
+         runBackendStepOutput.addValue("downloadFileName", downloadFileName);
          runBackendStepOutput.addValue("storageTableName", storageTableName);
          runBackendStepOutput.addValue("storageReference", storageReference);
          LOG.info("Completed rendering a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference), logPair("rowCount", reportOutput.getTotalRecordCount()));
+
+         if(sendToEmailAddress != null && CollectionUtils.nullSafeHasContents(QContext.getQInstance().getMessagingProviders()))
+         {
+            String s3Url = "https://bucket-ctlive-reports-dev.s3.us-east-2.amazonaws.com/saved-reports/" + storageReference; // TODO: derp
+
+            new SendMessageAction().execute(new SendMessageInput()
+               .withMessagingProviderName("defaultMessagingProvider") // TODO: derp
+               .withTo(new Party().withAddress(sendToEmailAddress).withRole(EmailPartyRole.TO))
+               .withFrom(new MultiParty()
+                  .withParty(new Party().withAddress("reports@coldtrack-dev.com").withRole(EmailPartyRole.FROM)) // TODO: derp
+                  .withParty(new Party().withAddress("noreply@coldtrack-dev.com").withRole(EmailPartyRole.REPLY_TO)) // TODO: derp
+               )
+               .withSubject(downloadFileBaseName)
+               .withContent(new Content().withContentRole(EmailContentRole.TEXT).withBody("To download your report, open this URL in your browser: " + s3Url))
+               .withContent(new Content().withContentRole(EmailContentRole.HTML).withBody("Link: <a target=\"_blank\" href=\"" + s3Url + "\">" + downloadFileName + "</a>"))
+            );
+         }
       }
       catch(Exception e)
       {

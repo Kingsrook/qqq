@@ -76,6 +76,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.messaging.QMessagingProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.messaging.email.EmailMessagingProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.ses.SESMessagingProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
@@ -183,6 +184,7 @@ public class TestUtils
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
 
    public static final String EMAIL_MESSAGING_PROVIDER_NAME = "email";
+   public static final String SES_MESSAGING_PROVIDER_NAME   = "ses";
 
    public static final String SIMPLE_SCHEDULER_NAME = "simpleScheduler";
    public static final String TEST_SQS_QUEUE        = "testSQSQueue";
@@ -247,6 +249,7 @@ public class TestUtils
       qInstance.addQueue(defineTestSqsQueue());
 
       qInstance.addMessagingProvider(defineEmailMessagingProvider());
+      qInstance.addMessagingProvider(defineSESMessagingProvider());
 
       defineWidgets(qInstance);
       defineApps(qInstance);
@@ -254,6 +257,24 @@ public class TestUtils
       qInstance.addScheduler(defineSimpleScheduler());
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QMessagingProviderMetaData defineSESMessagingProvider()
+   {
+      String accessKey = "MOCK"; // interpreter.interpret("${env.SES_ACCESS_KEY}");
+      String secretKey = "MOCK"; // interpreter.interpret("${env.SES_SECRET_KEY}");
+      String region    = "MOCK"; // interpreter.interpret("${env.SES_REGION}");
+
+      return (new SESMessagingProviderMetaData()
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withRegion(region)
+         .withName(SES_MESSAGING_PROVIDER_NAME));
    }
 
 
