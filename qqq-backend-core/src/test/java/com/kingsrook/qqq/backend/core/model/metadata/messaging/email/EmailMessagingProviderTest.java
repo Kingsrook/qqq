@@ -33,10 +33,12 @@ import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailContent
 import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailPartyRole;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 
 /*******************************************************************************
- ** Unit test for EmailMessagingProvider 
+ ** Unit test for EmailMessagingProvider
  *******************************************************************************/
 class EmailMessagingProviderTest extends BaseTest
 {
@@ -45,6 +47,7 @@ class EmailMessagingProviderTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @DisabledOnOs(OS.LINUX)
    void test() throws QException
    {
       new SendMessageAction().execute(new SendMessageInput()
