@@ -423,25 +423,22 @@ public abstract class AbstractRDBMSAction
          Integer            expectedNoOfParams = null;
          switch(criterion.getOperator())
          {
-            case EQUALS:
+            case EQUALS ->
             {
                clause += " = ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_EQUALS:
+            case NOT_EQUALS ->
             {
                clause += " != ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_EQUALS_OR_IS_NULL:
+            case NOT_EQUALS_OR_IS_NULL ->
             {
                clause += " != ? OR " + column + " IS NULL ";
                expectedNoOfParams = 1;
-               break;
             }
-            case IN:
+            case IN ->
             {
                if(values.isEmpty())
                {
@@ -454,9 +451,8 @@ public abstract class AbstractRDBMSAction
                {
                   clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
                }
-               break;
             }
-            case IS_NULL_OR_IN:
+            case IS_NULL_OR_IN ->
             {
                clause += " IS NULL ";
 
@@ -464,9 +460,8 @@ public abstract class AbstractRDBMSAction
                {
                   clause += " OR " + column + " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
                }
-               break;
             }
-            case NOT_IN:
+            case NOT_IN ->
             {
                if(values.isEmpty())
                {
@@ -479,87 +474,74 @@ public abstract class AbstractRDBMSAction
                {
                   clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
                }
-               break;
             }
-            case LIKE:
+            case LIKE ->
             {
                clause += " LIKE ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_LIKE:
+            case NOT_LIKE ->
             {
                clause += " NOT LIKE ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case STARTS_WITH:
+            case STARTS_WITH ->
             {
                clause += " LIKE ?";
                ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
-               break;
             }
-            case ENDS_WITH:
+            case ENDS_WITH ->
             {
                clause += " LIKE ?";
                ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
-               break;
             }
-            case CONTAINS:
+            case CONTAINS ->
             {
                clause += " LIKE ?";
                ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_STARTS_WITH:
+            case NOT_STARTS_WITH ->
             {
                clause += " NOT LIKE ?";
                ActionHelper.editFirstValue(values, (s -> s + "%"));
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_ENDS_WITH:
+            case NOT_ENDS_WITH ->
             {
                clause += " NOT LIKE ?";
                ActionHelper.editFirstValue(values, (s -> "%" + s));
                expectedNoOfParams = 1;
-               break;
             }
-            case NOT_CONTAINS:
+            case NOT_CONTAINS ->
             {
                clause += " NOT LIKE ?";
                ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
                expectedNoOfParams = 1;
-               break;
             }
-            case LESS_THAN:
+            case LESS_THAN ->
             {
                clause += " < ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case LESS_THAN_OR_EQUALS:
+            case LESS_THAN_OR_EQUALS ->
             {
                clause += " <= ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case GREATER_THAN:
+            case GREATER_THAN ->
             {
                clause += " > ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case GREATER_THAN_OR_EQUALS:
+            case GREATER_THAN_OR_EQUALS ->
             {
                clause += " >= ?";
                expectedNoOfParams = 1;
-               break;
             }
-            case IS_BLANK:
+            case IS_BLANK ->
             {
                clause += " IS NULL";
                if(field.getType().isStringLike())
@@ -567,9 +549,8 @@ public abstract class AbstractRDBMSAction
                   clause += " OR " + column + " = ''";
                }
                expectedNoOfParams = 0;
-               break;
             }
-            case IS_NOT_BLANK:
+            case IS_NOT_BLANK ->
             {
                clause += " IS NOT NULL";
                if(field.getType().isStringLike())
@@ -577,35 +558,26 @@ public abstract class AbstractRDBMSAction
                   clause += " AND " + column + " != ''";
                }
                expectedNoOfParams = 0;
-               break;
             }
-            case BETWEEN:
+            case BETWEEN ->
             {
                clause += " BETWEEN ? AND ?";
                expectedNoOfParams = 2;
-               break;
             }
-            case NOT_BETWEEN:
+            case NOT_BETWEEN ->
             {
                clause += " NOT BETWEEN ? AND ?";
                expectedNoOfParams = 2;
-               break;
             }
-            case TRUE:
+            case TRUE ->
             {
                clause = " 1 = 1 ";
                expectedNoOfParams = 0;
-               break;
             }
-            case FALSE:
+            case FALSE ->
             {
                clause = " 0 = 1 ";
                expectedNoOfParams = 0;
-               break;
-            }
-            default:
-            {
-               throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
             }
          }
 
