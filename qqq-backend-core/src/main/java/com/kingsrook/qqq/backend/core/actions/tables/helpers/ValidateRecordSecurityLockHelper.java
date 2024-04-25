@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.NullValueBehaviorUtil;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -273,6 +274,13 @@ public class ValidateRecordSecurityLockHelper
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       for(RecordSecurityLock recordSecurityLock : recordSecurityLocks)
       {
+         if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
+         {
+            // todo do do!
+            LOG.warn("Totally not ready to handle multiRecordSecurityLock in here!!", new Throwable());
+            continue;
+         }
+
          QSecurityKeyType securityKeyType = QContext.getQInstance().getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
          if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()) && QContext.getQSession().hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
          {
