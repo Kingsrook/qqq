@@ -103,6 +103,34 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   public void testTrueQuery() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.TRUE)));
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(5, queryOutput.getRecords().size(), "'TRUE' query should find all rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testFalseQuery() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.FALSE)));
+      QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
+      assertEquals(0, queryOutput.getRecords().size(), "'FALSE' query should find no rows");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testEqualsQuery() throws QException
    {
       String email = "darin.kelkhoff@gmail.com";

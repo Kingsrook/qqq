@@ -179,6 +179,8 @@ public class BackendQueryFilterUtils
             boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
             yield !between;
          }
+         case TRUE -> true;
+         case FALSE -> false;
       };
       return criterionMatches;
    }
