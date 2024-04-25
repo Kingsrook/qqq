@@ -579,6 +579,7 @@ public abstract class AbstractRDBMSAction
                clause = " 0 = 1 ";
                expectedNoOfParams = 0;
             }
+            default -> throw new IllegalStateException("Unexpected operator: " + criterion.getOperator());
          }
 
          if(expectedNoOfParams != null)
