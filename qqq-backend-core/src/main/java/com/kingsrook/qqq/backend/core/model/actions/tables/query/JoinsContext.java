@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
@@ -67,6 +68,11 @@ public class JoinsContext
 
    private final QQueryFilter securityFilter;
 
+   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // pointer either at securityFilter, or at a sub-filter within it, for when we're doing a recursive build-out of multi-locks //
+   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private QQueryFilter securityFilterCursor;
+
    ////////////////////////////////////////////////////////////////
    // note - will have entries for all tables, not just aliases. //
    ////////////////////////////////////////////////////////////////
@@ -76,6 +82,7 @@ public class JoinsContext
    // we will get a TON of more output if this gets turned up, so be cautious //
    /////////////////////////////////////////////////////////////////////////////
    private Level logLevel = Level.OFF;
+   private Level logLevelForFilter = Level.OFF;
 
 
 
@@ -89,6 +96,7 @@ public class JoinsContext
       this.mainTableName = tableName;
       this.queryJoins = new MutableList<>(queryJoins);
       this.securityFilter = new QQueryFilter();
+      this.securityFilterCursor = this.securityFilter;
 
       // log("--- START ----------------------------------------------------------------------", logPair("mainTable", tableName));
       dumpDebug(true, false);
@@ -102,13 +110,16 @@ public class JoinsContext
       // make sure that all tables specified in filter columns are being brought into the query as joins //
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       ensureFilterIsRepresented(filter);
+      logFilter("After ensureFilterIsRepresented:", securityFilter);
 
       ///////////////////////////////////////////////////////////////////////////////////////
       // ensure that any record locks on the main table, which require a join, are present //
       ///////////////////////////////////////////////////////////////////////////////////////
-      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks())))
+      MultiRecordSecurityLock multiRecordSecurityLock = RecordSecurityLockFilters.filterForReadLockTree(CollectionUtils.nonNullList(instance.getTable(tableName).getRecordSecurityLocks()));
+      for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
       {
-         ensureRecordSecurityLockIsRepresented(tableName, tableName, recordSecurityLock, null);
+         ensureRecordSecurityLockIsRepresented(tableName, tableName, lock, null);
+         logFilter("After ensureRecordSecurityLockIsRepresented[fieldName=" + lock.getFieldName() + "]:", securityFilter);
       }
 
       ///////////////////////////////////////////////////////////////////////////////////
@@ -117,11 +128,13 @@ public class JoinsContext
       // or a join implicitly added from a filter may also not have its join meta data //
       ///////////////////////////////////////////////////////////////////////////////////
       fillInMissingJoinMetaData();
+      logFilter("After fillInMissingJoinMetaData:", securityFilter);
 
       ///////////////////////////////////////////////////////////////
       // ensure any joins that contribute a recordLock are present //
       ///////////////////////////////////////////////////////////////
       ensureAllJoinRecordSecurityLocksAreRepresented(instance);
+      logFilter("After ensureAllJoinRecordSecurityLocksAreRepresented:", securityFilter);
 
       ////////////////////////////////////////////////////////////////////////////////////
       // if there were any security filters built, then put those into the input filter //
@@ -168,10 +181,7 @@ public class JoinsContext
          filter.addSubFilter(replacementFilter);
       }
 
-      for(QQueryFilter subFilter : securityFilter.getSubFilters())
-      {
-         filter.addSubFilter(subFilter);
-      }
+      filter.addSubFilter(securityFilter);
    }
 
 
@@ -196,10 +206,11 @@ public class JoinsContext
          {
             boolean addedAnyForThisJoin = false;
 
-            /////////////////////////////////////////////////
-            // avoid double-processing the same query join //
-            /////////////////////////////////////////////////
-            if(processedQueryJoins.contains(queryJoin))
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // avoid double-processing the same query join                                                                                            //
+            // or adding security filters for a join who was only added to the query so that we could add locks (an ImplicitQueryJoinForSecurityLock) //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(processedQueryJoins.contains(queryJoin) || queryJoin instanceof ImplicitQueryJoinForSecurityLock)
             {
                continue;
             }
@@ -209,9 +220,11 @@ public class JoinsContext
             // process all locks on this join's join-table.  keep track if any new joins were added //
             //////////////////////////////////////////////////////////////////////////////////////////
             QTableMetaData joinTable = instance.getTable(queryJoin.getJoinTable());
-            for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks())))
+
+            MultiRecordSecurityLock multiRecordSecurityLock = RecordSecurityLockFilters.filterForReadLockTree(CollectionUtils.nonNullList(joinTable.getRecordSecurityLocks()));
+            for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
             {
-               List<QueryJoin> addedQueryJoins = ensureRecordSecurityLockIsRepresented(joinTable.getName(), queryJoin.getJoinTableOrItsAlias(), recordSecurityLock, queryJoin);
+               List<QueryJoin> addedQueryJoins = ensureRecordSecurityLockIsRepresented(joinTable.getName(), queryJoin.getJoinTableOrItsAlias(), lock, queryJoin);
 
                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // if any joins were added by this call, add them to the set of processed ones, so they don't get re-processed. //
@@ -257,6 +270,43 @@ public class JoinsContext
    private List<QueryJoin> ensureRecordSecurityLockIsRepresented(String tableName, String tableNameOrAlias, RecordSecurityLock recordSecurityLock, QueryJoin sourceQueryJoin) throws QException
    {
       List<QueryJoin> addedQueryJoins = new ArrayList<>();
+
+      ////////////////////////////////////////////////////////////////////////////
+      // if this lock is a multi-lock, then recursively process its child-locks //
+      ////////////////////////////////////////////////////////////////////////////
+      if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
+      {
+         log("Processing MultiRecordSecurityLock...");
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make a new level in the filter-tree - storing old cursor, and updating cursor to point at new level //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QQueryFilter oldSecurityFilterCursor = this.securityFilterCursor;
+         QQueryFilter nextLevelSecurityFilter = new QQueryFilter();
+         this.securityFilterCursor.addSubFilter(nextLevelSecurityFilter);
+         this.securityFilterCursor = nextLevelSecurityFilter;
+
+         ///////////////////////////////////////
+         // set the boolean operator to match //
+         ///////////////////////////////////////
+         nextLevelSecurityFilter.setBooleanOperator(multiRecordSecurityLock.getOperator().toFilterOperator());
+
+         //////////////////////
+         // process children //
+         //////////////////////
+         for(RecordSecurityLock childLock : CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks()))
+         {
+            log(" - Recursive call for childLock: " + childLock);
+            addedQueryJoins.addAll(ensureRecordSecurityLockIsRepresented(tableName, tableNameOrAlias, childLock, sourceQueryJoin));
+         }
+
+         ////////////////////
+         // restore cursor //
+         ////////////////////
+         this.securityFilterCursor = oldSecurityFilterCursor;
+
+         return addedQueryJoins;
+      }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       // A join name chain is going to look like this:                                                 //
@@ -347,6 +397,12 @@ public class JoinsContext
                .withBaseTableOrAlias(baseTableOrAlias)
                .withAlias(securityFieldTableAlias);
 
+            if(securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.OR)
+            {
+               queryJoin.withType(QueryJoin.Type.LEFT);
+               chainIsInner = false;
+            }
+
             addQueryJoin(queryJoin, "forRecordSecurityLock (non-flipped)", "- ");
             addedQueryJoins.add(queryJoin);
             tmpTable = instance.getTable(join.getRightTable());
@@ -359,6 +415,12 @@ public class JoinsContext
                .withType(chainIsInner ? QueryJoin.Type.INNER : QueryJoin.Type.LEFT)
                .withBaseTableOrAlias(baseTableOrAlias)
                .withAlias(securityFieldTableAlias);
+
+            if(securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.OR)
+            {
+               queryJoin.withType(QueryJoin.Type.LEFT);
+               chainIsInner = false;
+            }
 
             addQueryJoin(queryJoin, "forRecordSecurityLock (flipped)", "- ");
             addedQueryJoins.add(queryJoin);
@@ -404,13 +466,16 @@ public class JoinsContext
       // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       QSecurityKeyType securityKeyType = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+      boolean haveAllAccessKey = false;
       if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
       {
-         ///////////////////////////////////////////////////////////////////////////////
-         // if we have all-access on this key, then we don't need a criterion for it. //
-         ///////////////////////////////////////////////////////////////////////////////
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we have all-access on this key, then we don't need a criterion for it (as long as we're in an AND filter) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          if(session.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
          {
+            haveAllAccessKey = true;
+
             if(sourceQueryJoin != null)
             {
                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -420,7 +485,14 @@ public class JoinsContext
                sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
             }
 
-            return;
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            boolean inAnAndFilter = securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.AND;
+            if(inAnAndFilter)
+            {
+               return;
+            }
          }
       }
 
@@ -462,45 +534,58 @@ public class JoinsContext
          LOG.debug("Error getting field type...  Trying Integer", e);
       }
 
-      List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
-      if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
+      if(haveAllAccessKey)
       {
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
-         {
-            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
-         }
-         else
-         {
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // else, if no user/session values, and null-value behavior is deny, then setup a FALSE condition, to allow no rows.           //
-            // todo - make some explicit contradiction here - maybe even avoid running the whole query - as you're not allowed ANY records //
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, Collections.emptyList()));
-         }
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // if we have an all access key (but we got here because we're part of an OR query), then //
+         // write a criterion that will always be true - e.g., field=field                         //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.TRUE));
       }
       else
       {
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // else, if user/session has some values, build an IN rule -                                                //
-         // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+         List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
+         if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
          {
-            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // handle user with no values -- they can only see null values, and only iff the lock's null-value behavior is ALLOW //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+            {
+               lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // else, if no user/session values, and null-value behavior is deny, then setup a FALSE condition, to allow no rows.         //
+               // todo - maybe avoid running the whole query - as you're not allowed ANY records (based on boolean tree down to this point) //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.FALSE));
+            }
          }
          else
          {
-            lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // else, if user/session has some values, build an IN rule -                                                //
+            // noting that if the lock's null-value behavior is ALLOW, then we actually want IS_NULL_OR_IN, not just IN //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(RecordSecurityLock.NullValueBehavior.ALLOW.equals(recordSecurityLock.getNullValueBehavior()))
+            {
+               lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IS_NULL_OR_IN, securityKeyValues));
+            }
+            else
+            {
+               lockCriteria.add(new QFilterCriteria(fieldName, QCriteriaOperator.IN, securityKeyValues));
+            }
          }
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if there's a sourceQueryJoin, then set the lockCriteria on that join - so it gets written into the JOIN ... ON clause //
+      // ... unless we're writing an OR filter.  then we need the condition in the WHERE clause                                //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(sourceQueryJoin != null)
+      boolean doNotPutCriteriaInJoinOn = securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.OR;
+      if(sourceQueryJoin != null && !doNotPutCriteriaInJoinOn)
       {
          sourceQueryJoin.withSecurityCriteria(lockCriteria);
       }
@@ -518,6 +603,11 @@ public class JoinsContext
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             if(isOuter)
             {
+               if(table == null)
+               {
+                  table = QContext.getQInstance().getTable(aliasToTableNameMap.get(tableNameOrAlias));
+               }
+
                lockFilter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
                lockFilter.addCriteria(new QFilterCriteria(tableNameOrAlias + "." + table.getPrimaryKeyField(), QCriteriaOperator.IS_BLANK));
             }
@@ -526,7 +616,7 @@ public class JoinsContext
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          // If this filter isn't for a queryJoin, then just add it to the main list of security sub-filters //
          /////////////////////////////////////////////////////////////////////////////////////////////////////
-         this.securityFilter.addSubFilter(lockFilter);
+         this.securityFilterCursor.addSubFilter(lockFilter);
       }
    }
 
@@ -1068,6 +1158,19 @@ public class JoinsContext
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void logFilter(String message, QQueryFilter filter)
+   {
+      if(logLevelForFilter.equals(Level.OFF))
+      {
+         return;
+      }
+      System.out.println(message + "\n" + filter);
+   }
+
+
 
    /*******************************************************************************
     ** Print (to stdout, for easier reading) the object in a big table format for
@@ -1117,6 +1220,9 @@ public class JoinsContext
       }
 
       System.out.print(rs);
+
+      System.out.println(securityFilter);
+
       if(isEnd)
       {
          System.out.println(StringUtils.safeTruncate("--- End " + "-".repeat(full), full) + "\n");
