@@ -603,6 +603,10 @@ public abstract class AbstractRDBMSAction
                expectedNoOfParams = 0;
                break;
             }
+            default:
+            {
+               throw new IllegalArgumentException("Unexpected operator: " + criterion.getOperator());
+            }
          }
 
          if(expectedNoOfParams != null)

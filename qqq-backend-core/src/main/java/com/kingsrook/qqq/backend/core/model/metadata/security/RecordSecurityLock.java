@@ -51,6 +51,8 @@ public class RecordSecurityLock implements Cloneable
 
    private LockScope lockScope = LockScope.READ_AND_WRITE;
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -294,13 +296,13 @@ public class RecordSecurityLock implements Cloneable
    @Override
    public String toString()
    {
-      return "RecordSecurityLock{" +
-         "securityKeyType='" + securityKeyType + '\'' +
-         ", fieldName='" + fieldName + '\'' +
-         ", joinNameChain=" + joinNameChain +
-         ", nullValueBehavior=" + nullValueBehavior +
-         ", lockScope=" + lockScope +
-         '}';
+      return "RecordSecurityLock{"
+         + "securityKeyType='" + securityKeyType + '\''
+         + ", fieldName='" + fieldName + '\''
+         + ", joinNameChain=" + joinNameChain
+         + ", nullValueBehavior=" + nullValueBehavior
+         + ", lockScope=" + lockScope
+         + '}';
    }
 
 }
