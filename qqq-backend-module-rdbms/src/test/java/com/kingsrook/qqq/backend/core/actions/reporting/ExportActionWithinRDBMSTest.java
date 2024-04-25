@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -68,8 +69,9 @@ public class ExportActionWithinRDBMSTest extends RDBMSActionTest
       ExportInput           exportInput = new ExportInput();
       exportInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
-      exportInput.setReportFormat(ReportFormat.CSV);
-      exportInput.setReportOutputStream(baos);
+      exportInput.setReportDestination(new ReportDestination()
+         .withReportFormat(ReportFormat.CSV)
+         .withReportOutputStream(baos));
       exportInput.setQueryFilter(new QQueryFilter());
       exportInput.setFieldNames(List.of("id", "storeId", "billToPersonId", "currentOrderInstructionsId", TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS + ".id", TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS + ".instructions"));
       ExportOutput exportOutput = new ExportAction().execute(exportInput);
