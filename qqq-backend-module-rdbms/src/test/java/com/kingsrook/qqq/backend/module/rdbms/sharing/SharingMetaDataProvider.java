@@ -111,11 +111,9 @@ public class SharingMetaDataProvider
             .withOperator(MultiRecordSecurityLock.BooleanOperator.OR)
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(USER_ID_KEY_TYPE)
-               .withHint(RecordSecurityLock.QueryHint.DO_NOT_PUT_CRITERIA_IN_JOIN_ON)
                .withFieldName("userId"))
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(GROUP_ID_KEY_TYPE)
-               .withHint(RecordSecurityLock.QueryHint.DO_NOT_PUT_CRITERIA_IN_JOIN_ON)
                .withFieldName("groupId"))
          ));
       QInstanceEnricher.setInferredFieldBackendNames(qInstance.getTable(SharedAsset.TABLE_NAME));
