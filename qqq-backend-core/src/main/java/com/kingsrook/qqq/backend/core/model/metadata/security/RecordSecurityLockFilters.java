@@ -47,6 +47,41 @@ public class RecordSecurityLockFilters
 
 
    /*******************************************************************************
+    ** filter a list of locks so that we only see the ones that apply to reads.
+    *******************************************************************************/
+   public static MultiRecordSecurityLock filterForReadLockTree(List<RecordSecurityLock> recordSecurityLocks)
+   {
+      if(recordSecurityLocks == null)
+      {
+         return (null);
+      }
+
+      MultiRecordSecurityLock result = new MultiRecordSecurityLock();
+      result.setOperator(MultiRecordSecurityLock.BooleanOperator.AND);
+
+      for(RecordSecurityLock recordSecurityLock : recordSecurityLocks)
+      {
+         if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
+         {
+            MultiRecordSecurityLock filteredSubLock = filterForReadLockTree(multiRecordSecurityLock.getLocks());
+            filteredSubLock.setOperator(multiRecordSecurityLock.getOperator());
+            result.withLock(filteredSubLock);
+         }
+         else
+         {
+            if(RecordSecurityLock.LockScope.READ_AND_WRITE.equals(recordSecurityLock.getLockScope()))
+            {
+               result.withLock(recordSecurityLock);
+            }
+         }
+      }
+
+      return (result);
+   }
+
+
+
+   /*******************************************************************************
     ** filter a list of locks so that we only see the ones that apply to writes.
     *******************************************************************************/
    public static List<RecordSecurityLock> filterForWriteLocks(List<RecordSecurityLock> recordSecurityLocks)

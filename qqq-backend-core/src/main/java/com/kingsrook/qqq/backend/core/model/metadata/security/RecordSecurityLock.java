@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ import java.util.Map;
  ** - READ_AND_WRITE means that users cannot read or write records without a valid key.
  ** - WRITE means that users cannot write records without a valid key (but they can read them).
  *******************************************************************************/
-public class RecordSecurityLock
+public class RecordSecurityLock implements Cloneable
 {
    private String            securityKeyType;
    private String            fieldName;
@@ -49,6 +50,26 @@ public class RecordSecurityLock
    private NullValueBehavior nullValueBehavior = NullValueBehavior.DENY;
 
    private LockScope lockScope = LockScope.READ_AND_WRITE;
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   protected RecordSecurityLock clone() throws CloneNotSupportedException
+   {
+      RecordSecurityLock clone = (RecordSecurityLock) super.clone();
+
+      /////////////////////////
+      // deep-clone the list //
+      /////////////////////////
+      if(joinNameChain != null)
+      {
+         clone.joinNameChain = new ArrayList<>();
+         clone.joinNameChain.addAll(joinNameChain);
+      }
+
+      return (clone);
+   }
 
 
 
@@ -265,4 +286,22 @@ public class RecordSecurityLock
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "RecordSecurityLock{" +
+         "securityKeyType='" + securityKeyType + '\'' +
+         ", fieldName='" + fieldName + '\'' +
+         ", joinNameChain=" + joinNameChain +
+         ", nullValueBehavior=" + nullValueBehavior +
+         ", lockScope=" + lockScope +
+         '}';
+   }
+
 }
+
