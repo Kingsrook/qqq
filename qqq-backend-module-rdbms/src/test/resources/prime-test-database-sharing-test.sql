@@ -22,64 +22,53 @@
 DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user`
 (
-   id INTEGER AUTO_INCREMENT PRIMARY KEY,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   username VARCHAR(100)
+   id          INTEGER AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT NOW(),
+   modify_date TIMESTAMP DEFAULT NOW(),
+   username    VARCHAR(100)
 );
 
 
 DROP TABLE IF EXISTS `group`;
 CREATE TABLE `group`
 (
-   id INTEGER AUTO_INCREMENT PRIMARY KEY,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   name VARCHAR(100),
-   client_id INTEGER
+   id          INTEGER AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT NOW(),
+   modify_date TIMESTAMP DEFAULT NOW(),
+   name        VARCHAR(100),
+   client_id   INTEGER
 );
 
 
 DROP TABLE IF EXISTS `client`;
 CREATE TABLE `client`
 (
-   id INTEGER AUTO_INCREMENT PRIMARY KEY,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   name VARCHAR(100)
-);
-
-
-DROP TABLE IF EXISTS audience;
-CREATE TABLE audience
-(
-   id INT AUTO_INCREMENT primary key ,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   type VARCHAR(50),
-   name VARCHAR(100),
-   security_key VARCHAR(100)
+   id          INTEGER AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT NOW(),
+   modify_date TIMESTAMP DEFAULT NOW(),
+   name        VARCHAR(100)
 );
 
 
 DROP TABLE IF EXISTS asset;
 CREATE TABLE asset
 (
-   id INT AUTO_INCREMENT primary key ,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   name VARCHAR(100),
-   user_id INTEGER
+   id          INT AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT NOW(),
+   modify_date TIMESTAMP DEFAULT NOW(),
+   name        VARCHAR(100),
+   user_id     INTEGER
 );
 
 
-DROP TABLE IF EXISTS asset_audience_int;
-CREATE TABLE asset_audience_int
+DROP TABLE IF EXISTS shared_asset;
+CREATE TABLE shared_asset
 (
-   id INT AUTO_INCREMENT primary key ,
-   create_date TIMESTAMP DEFAULT now(),
-   modify_date TIMESTAMP DEFAULT now(),
-   asset_id INTEGER,
-   audience_id INTEGER
+   id          INT AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT NOW(),
+   modify_date TIMESTAMP DEFAULT NOW(),
+   asset_id    INTEGER,
+   user_id     INTEGER,
+   group_id    INTEGER
 );
 

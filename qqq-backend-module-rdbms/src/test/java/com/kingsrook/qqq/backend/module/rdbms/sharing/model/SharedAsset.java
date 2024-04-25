@@ -29,11 +29,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** QRecord Entity for AssetAudienceInt table
+ ** QRecord Entity for SharedAsset table
  *******************************************************************************/
-public class AssetAudienceInt extends QRecordEntity
+public class SharedAsset extends QRecordEntity
 {
-   public static final String TABLE_NAME = "AssetAudienceInt";
+   public static final String TABLE_NAME = "SharedAsset";
 
    @QField(isEditable = false)
    private Integer id;
@@ -47,14 +47,17 @@ public class AssetAudienceInt extends QRecordEntity
    @QField(possibleValueSourceName = Asset.TABLE_NAME)
    private Integer assetId;
 
-   @QField(possibleValueSourceName = Audience.TABLE_NAME)
-   private Integer audienceId;
+   @QField(possibleValueSourceName = User.TABLE_NAME)
+   private Integer userId;
+
+   @QField(possibleValueSourceName = Group.TABLE_NAME)
+   private Integer groupId;
 
 
    /*******************************************************************************
     ** Default constructor
     *******************************************************************************/
-   public AssetAudienceInt()
+   public SharedAsset()
    {
    }
 
@@ -63,7 +66,7 @@ public class AssetAudienceInt extends QRecordEntity
    /*******************************************************************************
     ** Constructor that takes a QRecord
     *******************************************************************************/
-   public AssetAudienceInt(QRecord record)
+   public SharedAsset(QRecord record)
    {
       populateFromQRecord(record);
    }
@@ -92,7 +95,7 @@ public class AssetAudienceInt extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for id
     *******************************************************************************/
-   public AssetAudienceInt withId(Integer id)
+   public SharedAsset withId(Integer id)
    {
       this.id = id;
       return (this);
@@ -123,7 +126,7 @@ public class AssetAudienceInt extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for createDate
     *******************************************************************************/
-   public AssetAudienceInt withCreateDate(Instant createDate)
+   public SharedAsset withCreateDate(Instant createDate)
    {
       this.createDate = createDate;
       return (this);
@@ -154,7 +157,7 @@ public class AssetAudienceInt extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for modifyDate
     *******************************************************************************/
-   public AssetAudienceInt withModifyDate(Instant modifyDate)
+   public SharedAsset withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
       return (this);
@@ -185,7 +188,7 @@ public class AssetAudienceInt extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for assetId
     *******************************************************************************/
-   public AssetAudienceInt withAssetId(Integer assetId)
+   public SharedAsset withAssetId(Integer assetId)
    {
       this.assetId = assetId;
       return (this);
@@ -193,32 +196,64 @@ public class AssetAudienceInt extends QRecordEntity
 
 
 
+
    /*******************************************************************************
-    ** Getter for audienceId
+    ** Getter for userId
     *******************************************************************************/
-   public Integer getAudienceId()
+   public Integer getUserId()
    {
-      return (this.audienceId);
+      return (this.userId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for audienceId
+    ** Setter for userId
     *******************************************************************************/
-   public void setAudienceId(Integer audienceId)
+   public void setUserId(Integer userId)
    {
-      this.audienceId = audienceId;
+      this.userId = userId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for audienceId
+    ** Fluent setter for userId
     *******************************************************************************/
-   public AssetAudienceInt withAudienceId(Integer audienceId)
+   public SharedAsset withUserId(Integer userId)
    {
-      this.audienceId = audienceId;
+      this.userId = userId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for groupId
+    *******************************************************************************/
+   public Integer getGroupId()
+   {
+      return (this.groupId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for groupId
+    *******************************************************************************/
+   public void setGroupId(Integer groupId)
+   {
+      this.groupId = groupId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for groupId
+    *******************************************************************************/
+   public SharedAsset withGroupId(Integer groupId)
+   {
+      this.groupId = groupId;
       return (this);
    }
 
