@@ -68,6 +68,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -393,7 +394,12 @@ public class UpdateAction
                   QRecord      oldRecord = lookedUpRecords.get(value);
                   QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
                   Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
-                  ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, record, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE);
+
+                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE);
+                  if(CollectionUtils.nullSafeHasContents(errors))
+                  {
+                     errors.forEach(e -> record.addError(e));
+                  }
                }
             }
          }
