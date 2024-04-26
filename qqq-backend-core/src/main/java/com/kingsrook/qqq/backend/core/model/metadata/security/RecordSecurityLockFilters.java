@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
 import java.util.List;
+import java.util.Set;
 
 
 /*******************************************************************************
@@ -51,11 +52,35 @@ public class RecordSecurityLockFilters
     *******************************************************************************/
    public static MultiRecordSecurityLock filterForReadLockTree(List<RecordSecurityLock> recordSecurityLocks)
    {
+      return filterForLockTree(recordSecurityLocks, Set.of(RecordSecurityLock.LockScope.READ_AND_WRITE));
+   }
+
+
+
+   /*******************************************************************************
+    ** filter a list of locks so that we only see the ones that apply to writes.
+    *******************************************************************************/
+   public static MultiRecordSecurityLock filterForWriteLockTree(List<RecordSecurityLock> recordSecurityLocks)
+   {
+      return filterForLockTree(recordSecurityLocks, Set.of(RecordSecurityLock.LockScope.READ_AND_WRITE, RecordSecurityLock.LockScope.WRITE));
+   }
+
+
+
+   /*******************************************************************************
+    ** filter a list of locks so that we only see the ones that apply to any of the
+    ** input set of scopes.
+    *******************************************************************************/
+   private static MultiRecordSecurityLock filterForLockTree(List<RecordSecurityLock> recordSecurityLocks, Set<RecordSecurityLock.LockScope> allowedScopes)
+   {
       if(recordSecurityLocks == null)
       {
          return (null);
       }
 
+      //////////////////////////////////////////////////////////////
+      // at the top-level we build a multi-lock with AND operator //
+      //////////////////////////////////////////////////////////////
       MultiRecordSecurityLock result = new MultiRecordSecurityLock();
       result.setOperator(MultiRecordSecurityLock.BooleanOperator.AND);
 
@@ -69,7 +94,7 @@ public class RecordSecurityLockFilters
          }
          else
          {
-            if(RecordSecurityLock.LockScope.READ_AND_WRITE.equals(recordSecurityLock.getLockScope()))
+            if(allowedScopes.contains(recordSecurityLock.getLockScope()))
             {
                result.withLock(recordSecurityLock);
             }
