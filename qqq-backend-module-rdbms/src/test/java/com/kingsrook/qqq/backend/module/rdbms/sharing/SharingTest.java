@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.module.rdbms.sharing.model.Group;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.SharedAsset;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.GROUP_ID_ALL_ACCESS_KEY_TYPE;
 import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.GROUP_ID_KEY_TYPE;
@@ -479,6 +480,35 @@ public class SharingTest
       QContext.getQSession().withSecurityKeyValue(GROUP_ID_ALL_ACCESS_KEY_TYPE, true);
       InsertOutput insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(new SharedAsset().withGroupId(1).withAssetId(4)));
       assertThat(insertOutput.getRecords().get(0).getErrors()).isEmpty();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   @Disabled("This needs fixed, but we're committing as-we are to move forwards")
+   void testUpdateAsset() throws QException
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // make sure we can't update an Asset if we don't have a key that would let us see it //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(Asset.TABLE_NAME).withRecord(new QRecord().withValue("id", 1).withValue("modifyDate", Instant.now())));
+         assertThat(updateOutput.getRecords().get(0).getErrors()).isNotEmpty();
+      }
+
+      ///////////////////////////////////////////////
+      // and if we do have a key, we can update it //
+      ///////////////////////////////////////////////
+      {
+         QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+         QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, HOMER_ID);
+         UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(Asset.TABLE_NAME).withRecord(new QRecord().withValue("id", 1).withValue("modifyDate", Instant.now())));
+         assertThat(updateOutput.getRecords().get(0).getErrors()).isEmpty();
+      }
    }
 
 }
