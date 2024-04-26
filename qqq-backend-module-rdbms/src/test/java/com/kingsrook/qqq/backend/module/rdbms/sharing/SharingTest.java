@@ -22,30 +22,46 @@
 package com.kingsrook.qqq.backend.module.rdbms.sharing;
 
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.Asset;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.Group;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.SharedAsset;
 import com.kingsrook.qqq.backend.module.rdbms.sharing.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.GROUP_ID_ALL_ACCESS_KEY_TYPE;
 import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.GROUP_ID_KEY_TYPE;
 import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.USER_ID_ALL_ACCESS_KEY_TYPE;
 import static com.kingsrook.qqq.backend.module.rdbms.sharing.SharingMetaDataProvider.USER_ID_KEY_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -57,11 +73,11 @@ public class SharingTest
    //////////////
    // user ids //
    //////////////
-   public static final int HOMER_ID       = 1;
-   public static final int MARGE_ID       = 2;
-   public static final int BART_ID        = 3;
-   public static final int LISA_ID        = 4;
-   public static final int BURNS_ID       = 5;
+   public static final int HOMER_ID = 1;
+   public static final int MARGE_ID = 2;
+   public static final int BART_ID  = 3;
+   public static final int LISA_ID  = 4;
+   public static final int BURNS_ID = 5;
 
    ///////////////
    // group ids //
@@ -137,7 +153,7 @@ public class SharingTest
     **
     *******************************************************************************/
    @Test
-   void testAssetWithUserIdOnlySecurityKey() throws QException
+   void testQueryAssetWithUserIdOnlySecurityKey() throws QException
    {
       ////////////////////////////////////////////////////////////////////
       // update the asset table to change its lock to only be on userId //
@@ -183,7 +199,7 @@ public class SharingTest
     ** but this test is here as we build up making a more complex lock like that.
     *******************************************************************************/
    @Test
-   void testSharedAssetDirectly() throws QException
+   void testQuerySharedAssetDirectly() throws QException
    {
       ////////////////////////////////////////////////////////
       // with nothing in session, make sure we find nothing //
@@ -209,12 +225,13 @@ public class SharingTest
    }
 
 
+
    /*******************************************************************************
     ** real-world use-case (e.g., why sharing concept exists) - query the asset table
     **
     *******************************************************************************/
    @Test
-   void testAssetsWithLockThroughSharing() throws QException, SQLException
+   void testQueryAssetsWithLockThroughSharing() throws QException, SQLException
    {
       ////////////////////////////////////////////////////////
       // with nothing in session, make sure we find nothing //
@@ -250,7 +267,7 @@ public class SharingTest
     **
     *******************************************************************************/
    @Test
-   void testAllAccessKeys() throws QException
+   void testQueryAllAccessKeys() throws QException
    {
       ///////////////////////////////////////////////////////////////
       // with user-id all access key, should get all asset records //
@@ -258,6 +275,210 @@ public class SharingTest
       QContext.getQSession().withSecurityKeyValues(new HashMap<>());
       QContext.getQSession().withSecurityKeyValue(USER_ID_ALL_ACCESS_KEY_TYPE, true);
       assertEquals(7, new QueryAction().execute(new QueryInput(Asset.TABLE_NAME)).getRecords().size());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // with group-id all access key...                                                          //
+      // the original thought was, that we should get all assets which are shared to any group    //
+      // but the code that we first wrote generates SQL w/ an OR (1=1) clause, meaning we get all //
+      // assets, which makes some sense too, so we'll go with that for now...                     //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      QContext.getQSession().withSecurityKeyValue(GROUP_ID_ALL_ACCESS_KEY_TYPE, true);
+      assertEquals(7, new QueryAction().execute(new QueryInput(Asset.TABLE_NAME)).getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    ** if I'm only able to access user 1 and 2, I shouldn't be able to share to user 3
+    *******************************************************************************/
+   @Test
+   void testInsertUpdateDeleteShareUserIdKey() throws QException, SQLException
+   {
+      SharedAsset recordToInsert = new SharedAsset().withUserId(3).withAssetId(6);
+
+      /////////////////////////////////////////
+      // empty set of keys should give error //
+      /////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(recordToInsert));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isNotEmpty();
+
+      /////////////////////////////////////////////
+      // mis-matched keys should give same error //
+      /////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 1);
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 2);
+      insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(recordToInsert));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isNotEmpty();
+
+      /////////////////////////////////////////////////////////
+      // then if I get user 3, I can insert the share for it //
+      /////////////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 3);
+      insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(recordToInsert));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isEmpty();
+
+      /////////////////////////////////////////
+      // get ready for a sequence of updates //
+      /////////////////////////////////////////
+      Integer           shareId            = insertOutput.getRecords().get(0).getValueInteger("id");
+      Supplier<QRecord> makeRecordToUpdate = () -> new QRecord().withValue("id", shareId).withValue("modifyDate", Instant.now());
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // now w/o user 3 in my session, I shouldn't be allowed to update that share //
+      // start w/ empty security keys                                              //
+      ///////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get()));
+      assertThat(updateOutput.getRecords().get(0).getErrors())
+         .anyMatch(e -> e.getMessage().contains("No record was found")); // because w/o the key, you can't even see it.
+
+      /////////////////////////////////////////////
+      // mis-matched keys should give same error //
+      /////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 1);
+      updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get()));
+      assertThat(updateOutput.getRecords().get(0).getErrors())
+         .anyMatch(e -> e.getMessage().contains("No record was found")); // because w/o the key, you can't even see it.
+
+      //////////////////////////////////////////////////
+      // now with user id 3, should be able to update //
+      //////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 3);
+      updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get()));
+      assertThat(updateOutput.getRecords().get(0).getErrors()).isEmpty();
+
+      //////////////////////////////////////////////////////////////////////////
+      // now see if you can update to a user that you don't have (you can't!) //
+      //////////////////////////////////////////////////////////////////////////
+      updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get().withValue("userId", 2)));
+      assertThat(updateOutput.getRecords().get(0).getErrors()).isNotEmpty();
+
+      ///////////////////////////////////////////////////////////////////////
+      // Add that user (2) to the session - then the update should succeed //
+      ///////////////////////////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 2);
+      updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get().withValue("userId", 2)));
+      assertThat(updateOutput.getRecords().get(0).getErrors()).isEmpty();
+
+      ///////////////////////////////////////////////
+      // now move on to deletes - first empty keys //
+      ///////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(SharedAsset.TABLE_NAME).withPrimaryKey(shareId));
+      assertEquals(0, deleteOutput.getDeletedRecordCount()); // can't even find it, so no error to be reported.
+
+      ///////////////////////
+      // next mismatch key //
+      ///////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 1);
+      deleteOutput = new DeleteAction().execute(new DeleteInput(SharedAsset.TABLE_NAME).withPrimaryKey(shareId));
+      assertEquals(0, deleteOutput.getDeletedRecordCount()); // can't even find it, so no error to be reported.
+
+      ///////////////////
+      // next success! //
+      ///////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_KEY_TYPE, 2);
+      deleteOutput = new DeleteAction().execute(new DeleteInput(SharedAsset.TABLE_NAME).withPrimaryKey(shareId));
+      assertEquals(1, deleteOutput.getDeletedRecordCount());
+   }
+
+
+
+   /*******************************************************************************
+    ** useful to debug (e.g., to see inside h2). add calls as needed.
+    *******************************************************************************/
+   private void printSQL(String sql) throws SQLException
+   {
+      Connection                connection = new ConnectionManager().getConnection((RDBMSBackendMetaData) QContext.getQInstance().getBackend(TestUtils.DEFAULT_BACKEND_NAME));
+      List<Map<String, Object>> maps       = QueryManager.executeStatementForRows(connection, sql);
+      System.out.println(sql);
+      maps.forEach(System.out::println);
+   }
+
+
+
+   /*******************************************************************************
+    ** if I only have access to group 1, make sure I can't share to group 2
+    *******************************************************************************/
+   @Test
+   void testInsertShareGroupIdKey() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      QContext.getQSession().withSecurityKeyValue(GROUP_ID_KEY_TYPE, 1);
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(new SharedAsset().withGroupId(2).withAssetId(6)));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isNotEmpty();
+
+      //////////////////////////////////////////
+      // add group 2, then we can share to it //
+      //////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(GROUP_ID_KEY_TYPE, 2);
+      insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(new SharedAsset().withGroupId(2).withAssetId(6)));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isEmpty();
+   }
+
+
+
+   /*******************************************************************************
+    ** w/ user-all-access key, can insert shares for any user
+    *******************************************************************************/
+   @Test
+   void testInsertUpdateDeleteShareUserAllAccessKey() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      QContext.getQSession().withSecurityKeyValue(USER_ID_ALL_ACCESS_KEY_TYPE, true);
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(new SharedAsset().withUserId(1).withAssetId(4)));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isEmpty();
+
+      /////////////////////////////////////////
+      // get ready for a sequence of updates //
+      /////////////////////////////////////////
+      Integer           shareId            = insertOutput.getRecords().get(0).getValueInteger("id");
+      Supplier<QRecord> makeRecordToUpdate = () -> new QRecord().withValue("id", shareId).withValue("modifyDate", Instant.now());
+
+      //////////////////////////////////
+      // now w/o all-access key, fail //
+      //////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get()));
+      assertThat(updateOutput.getRecords().get(0).getErrors())
+         .anyMatch(e -> e.getMessage().contains("No record was found")); // because w/o the key, you can't even see it.
+
+      ///////////////////////////////////////////////////////
+      // now with all-access key, should be able to update //
+      ///////////////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_ALL_ACCESS_KEY_TYPE, true);
+      updateOutput = new UpdateAction().execute(new UpdateInput(SharedAsset.TABLE_NAME).withRecord(makeRecordToUpdate.get().withValue("userId", 2)));
+      assertThat(updateOutput.getRecords().get(0).getErrors()).isEmpty();
+
+      ///////////////////////////////////////////////
+      // now move on to deletes - first empty keys //
+      ///////////////////////////////////////////////
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(SharedAsset.TABLE_NAME).withPrimaryKey(shareId));
+      assertEquals(0, deleteOutput.getDeletedRecordCount()); // can't even find it, so no error to be reported.
+
+      ///////////////////
+      // next success! //
+      ///////////////////
+      QContext.getQSession().withSecurityKeyValue(USER_ID_ALL_ACCESS_KEY_TYPE, true);
+      deleteOutput = new DeleteAction().execute(new DeleteInput(SharedAsset.TABLE_NAME).withPrimaryKey(shareId));
+      assertEquals(1, deleteOutput.getDeletedRecordCount());
+   }
+
+
+
+   /*******************************************************************************
+    ** w/ group-all-access key, can insert shares for any group
+    *******************************************************************************/
+   @Test
+   void testInsertShareGroupAllAccessKey() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValues(new HashMap<>());
+      QContext.getQSession().withSecurityKeyValue(GROUP_ID_ALL_ACCESS_KEY_TYPE, true);
+      InsertOutput insertOutput = new InsertAction().execute(new InsertInput(SharedAsset.TABLE_NAME).withRecordEntity(new SharedAsset().withGroupId(1).withAssetId(4)));
+      assertThat(insertOutput.getRecords().get(0).getErrors()).isEmpty();
    }
 
 }
