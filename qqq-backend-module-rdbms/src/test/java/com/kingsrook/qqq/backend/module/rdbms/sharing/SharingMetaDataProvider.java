@@ -55,6 +55,7 @@ public class SharingMetaDataProvider
    public static final String GROUP_ID_ALL_ACCESS_KEY_TYPE = "groupIdAllAccessKey";
 
    private static final String ASSET_JOIN_SHARED_ASSET = "assetJoinSharedAsset";
+   private static final String SHARED_ASSET_JOIN_ASSET = "sharedAssetJoinAsset";
 
 
 
@@ -93,11 +94,11 @@ public class SharingMetaDataProvider
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(USER_ID_KEY_TYPE)
                .withFieldName("sharedAsset.userId")
-               .withJoinNameChain(List.of(ASSET_JOIN_SHARED_ASSET)))
+               .withJoinNameChain(List.of(SHARED_ASSET_JOIN_ASSET)))
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(GROUP_ID_KEY_TYPE)
                .withFieldName("sharedAsset.groupId")
-               .withJoinNameChain(List.of(ASSET_JOIN_SHARED_ASSET)))
+               .withJoinNameChain(List.of(SHARED_ASSET_JOIN_ASSET)))
          ));
       QInstanceEnricher.setInferredFieldBackendNames(qInstance.getTable(Asset.TABLE_NAME));
 
@@ -153,6 +154,14 @@ public class SharingMetaDataProvider
          .withRightTable(SharedAsset.TABLE_NAME)
          .withType(JoinType.ONE_TO_MANY)
          .withJoinOn(new JoinOn("id", "assetId"))
+      );
+
+      qInstance.addJoin(new QJoinMetaData()
+         .withName(SHARED_ASSET_JOIN_ASSET)
+         .withLeftTable(SharedAsset.TABLE_NAME)
+         .withRightTable(Asset.TABLE_NAME)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("assetId", "id"))
       );
    }
 
