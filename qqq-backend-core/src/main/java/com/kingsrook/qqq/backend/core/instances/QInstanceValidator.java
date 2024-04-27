@@ -787,11 +787,11 @@ public class QInstanceValidator
          {
             if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
             {
-               String[] split = fieldName.split("\\.");
-                  String joinTableName = split[0];
-                  String joinFieldName = split[1];
+               String[] split         = fieldName.split("\\.");
+               String   joinTableName = split[0];
+               String   joinFieldName = split[1];
 
-                  List<QueryJoin> joins = new ArrayList<>();
+               List<QueryJoin> joins = new ArrayList<>();
 
                ///////////////////////////////////////////////////////////////////////////////////////////////////
                // ok - so - the join name chain is going to be like this:                                       //
@@ -834,20 +834,21 @@ public class QInstanceValidator
 
                assertCondition(Objects.equals(tmpTable.getName(), joinTableName), prefix + "has a joinNameChain doesn't end in the expected table [" + joinTableName + "]");
 
-                  assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
-               }
-            }
-            else
-            {
-               if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
-               {
-                  assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
-               }
+               assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
             }
          }
+         else
+         {
+            if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
+            {
+               assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+            }
+         }
+      }
 
       assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
    }
+
 
 
    /*******************************************************************************
