@@ -626,6 +626,8 @@ public class AbstractMongoDBAction
             case IS_NOT_BLANK -> Filters.nor(filterIsBlank(fieldBackendName));
             case BETWEEN -> filterBetween(fieldBackendName, values);
             case NOT_BETWEEN -> Filters.nor(filterBetween(fieldBackendName, values));
+            case TRUE -> Filters.or(Filters.eq(fieldBackendName, "true"), Filters.ne(fieldBackendName, "true"), Filters.eq(fieldBackendName, null)); // todo test!!
+            case FALSE -> Filters.and(Filters.eq(fieldBackendName, "true"), Filters.ne(fieldBackendName, "true"), Filters.eq(fieldBackendName, null));
          });
       }
 

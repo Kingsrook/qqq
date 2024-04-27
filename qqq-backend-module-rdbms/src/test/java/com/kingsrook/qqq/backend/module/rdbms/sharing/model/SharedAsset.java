@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,280 +19,243 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
+package com.kingsrook.qqq.backend.module.rdbms.sharing.model;
 
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
+import java.time.Instant;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Input for a Delete action.
- **
+ ** QRecord Entity for SharedAsset table
  *******************************************************************************/
-public class DeleteInput extends AbstractTableActionInput
+public class SharedAsset extends QRecordEntity
 {
-   private QBackendTransaction transaction;
-   private List<Serializable>  primaryKeys;
-   private QQueryFilter        queryFilter;
-   private InputSource         inputSource = QInputSource.SYSTEM;
+   public static final String TABLE_NAME = "SharedAsset";
 
-   private boolean omitDmlAudit = false;
-   private String  auditContext = null;
+   @QField(isEditable = false)
+   private Integer id;
 
+   @QField(isEditable = false)
+   private Instant createDate;
+
+   @QField(isEditable = false)
+   private Instant modifyDate;
+
+   @QField(possibleValueSourceName = Asset.TABLE_NAME)
+   private Integer assetId;
+
+   @QField(possibleValueSourceName = User.TABLE_NAME)
+   private Integer userId;
+
+   @QField(possibleValueSourceName = Group.TABLE_NAME)
+   private Integer groupId;
 
 
    /*******************************************************************************
-    **
+    ** Default constructor
     *******************************************************************************/
-   public DeleteInput()
+   public SharedAsset()
    {
    }
 
 
 
    /*******************************************************************************
-    ** Constructor
-    **
+    ** Constructor that takes a QRecord
     *******************************************************************************/
-   public DeleteInput(String tableName)
+   public SharedAsset(QRecord record)
    {
-      setTableName(tableName);
+      populateFromQRecord(record);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for id
+    *******************************************************************************/
+   public Integer getId()
+   {
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for id
     *******************************************************************************/
-   @Override
-   public DeleteInput withTableName(String tableName)
+   public void setId(Integer id)
    {
-      super.withTableName(tableName);
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    *******************************************************************************/
+   public SharedAsset withId(Integer id)
+   {
+      this.id = id;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for transaction
-    **
+    ** Getter for createDate
     *******************************************************************************/
-   public QBackendTransaction getTransaction()
+   public Instant getCreateDate()
    {
-      return transaction;
+      return (this.createDate);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for transaction
-    **
+    ** Setter for createDate
     *******************************************************************************/
-   public void setTransaction(QBackendTransaction transaction)
+   public void setCreateDate(Instant createDate)
    {
-      this.transaction = transaction;
+      this.createDate = createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for transaction
-    **
+    ** Fluent setter for createDate
     *******************************************************************************/
-   public DeleteInput withTransaction(QBackendTransaction transaction)
+   public SharedAsset withCreateDate(Instant createDate)
    {
-      this.transaction = transaction;
+      this.createDate = createDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for ids
-    **
+    ** Getter for modifyDate
     *******************************************************************************/
-   public List<Serializable> getPrimaryKeys()
+   public Instant getModifyDate()
    {
-      return primaryKeys;
+      return (this.modifyDate);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for ids
-    **
+    ** Setter for modifyDate
     *******************************************************************************/
-   public void setPrimaryKeys(List<Serializable> primaryKeys)
+   public void setModifyDate(Instant modifyDate)
    {
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      // the action may edit this list (e.g., to remove keys w/ errors), so wrap it in MutableList //
-      ///////////////////////////////////////////////////////////////////////////////////////////////
-      this.primaryKeys = new MutableList<>(primaryKeys);
+      this.modifyDate = modifyDate;
    }
 
 
 
    /*******************************************************************************
-    ** Fluently add 1 primary key to the delete input
-    **
+    ** Fluent setter for modifyDate
     *******************************************************************************/
-   public DeleteInput withPrimaryKey(Serializable primaryKey)
+   public SharedAsset withModifyDate(Instant modifyDate)
    {
-      if(primaryKeys == null)
-      {
-         primaryKeys = new ArrayList<>();
-      }
-
-      primaryKeys.add(primaryKey);
-
+      this.modifyDate = modifyDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for ids
-    **
+    ** Getter for assetId
     *******************************************************************************/
-   public DeleteInput withPrimaryKeys(List<Serializable> primaryKeys)
+   public Integer getAssetId()
    {
-      setPrimaryKeys(primaryKeys);
+      return (this.assetId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for assetId
+    *******************************************************************************/
+   public void setAssetId(Integer assetId)
+   {
+      this.assetId = assetId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for assetId
+    *******************************************************************************/
+   public SharedAsset withAssetId(Integer assetId)
+   {
+      this.assetId = assetId;
+      return (this);
+   }
+
+
+
+
+   /*******************************************************************************
+    ** Getter for userId
+    *******************************************************************************/
+   public Integer getUserId()
+   {
+      return (this.userId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for userId
+    *******************************************************************************/
+   public void setUserId(Integer userId)
+   {
+      this.userId = userId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for userId
+    *******************************************************************************/
+   public SharedAsset withUserId(Integer userId)
+   {
+      this.userId = userId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queryFilter
-    **
+    ** Getter for groupId
     *******************************************************************************/
-   public QQueryFilter getQueryFilter()
+   public Integer getGroupId()
    {
-      return queryFilter;
+      return (this.groupId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryFilter
-    **
+    ** Setter for groupId
     *******************************************************************************/
-   public void setQueryFilter(QQueryFilter queryFilter)
+   public void setGroupId(Integer groupId)
    {
-      this.queryFilter = queryFilter;
+      this.groupId = groupId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryFilter
-    **
+    ** Fluent setter for groupId
     *******************************************************************************/
-   public DeleteInput withQueryFilter(QQueryFilter queryFilter)
+   public SharedAsset withGroupId(Integer groupId)
    {
-      this.queryFilter = queryFilter;
-      return this;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for inputSource
-    *******************************************************************************/
-   public InputSource getInputSource()
-   {
-      return (this.inputSource);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputSource
-    *******************************************************************************/
-   public void setInputSource(InputSource inputSource)
-   {
-      this.inputSource = inputSource;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for inputSource
-    *******************************************************************************/
-   public DeleteInput withInputSource(InputSource inputSource)
-   {
-      this.inputSource = inputSource;
+      this.groupId = groupId;
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for omitDmlAudit
-    *******************************************************************************/
-   public boolean getOmitDmlAudit()
-   {
-      return (this.omitDmlAudit);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for omitDmlAudit
-    *******************************************************************************/
-   public void setOmitDmlAudit(boolean omitDmlAudit)
-   {
-      this.omitDmlAudit = omitDmlAudit;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for omitDmlAudit
-    *******************************************************************************/
-   public DeleteInput withOmitDmlAudit(boolean omitDmlAudit)
-   {
-      this.omitDmlAudit = omitDmlAudit;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for auditContext
-    *******************************************************************************/
-   public String getAuditContext()
-   {
-      return (this.auditContext);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for auditContext
-    *******************************************************************************/
-   public void setAuditContext(String auditContext)
-   {
-      this.auditContext = auditContext;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for auditContext
-    *******************************************************************************/
-   public DeleteInput withAuditContext(String auditContext)
-   {
-      this.auditContext = auditContext;
-      return (this);
-   }
 
 }

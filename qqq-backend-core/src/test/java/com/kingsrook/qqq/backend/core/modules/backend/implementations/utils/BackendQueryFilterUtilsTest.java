@@ -23,11 +23,16 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -36,6 +41,182 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class BackendQueryFilterUtilsTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_emptyFilters()
+   {
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(null, new QRecord().withValue("a", 1)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(new QQueryFilter(), new QRecord().withValue("a", 1)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(new QQueryFilter().withSubFilters(ListBuilder.of(null)), new QRecord().withValue("a", 1)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(new QQueryFilter().withSubFilters(List.of(new QQueryFilter())), new QRecord().withValue("a", 1)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_singleAnd()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_singleOr()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2)));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Test
+   void testDoesRecordMatch_multipleAnd()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1))
+         .withCriteria(new QFilterCriteria("b", QCriteriaOperator.EQUALS, 2));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 2)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2).withValue("b", 2)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Test
+   void testDoesRecordMatch_multipleOr()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1))
+         .withCriteria(new QFilterCriteria("b", QCriteriaOperator.EQUALS, 2));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 2)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2).withValue("b", 2)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 3).withValue("b", 4)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Test
+   void testDoesRecordMatch_subFilterAnd()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withSubFilters(List.of(
+            new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+               .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1)),
+            new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+               .withCriteria(new QFilterCriteria("b", QCriteriaOperator.EQUALS, 2))
+         ));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 2)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2).withValue("b", 2)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Test
+   void testDoesRecordMatch_subFilterOr()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+         .withSubFilters(List.of(
+            new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR)
+               .withCriteria(new QFilterCriteria("a", QCriteriaOperator.EQUALS, 1)),
+            new QQueryFilter()
+               .withCriteria(new QFilterCriteria("b", QCriteriaOperator.EQUALS, 2))
+         ));
+
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 2)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 2).withValue("b", 2)));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("b", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 3).withValue("b", 4)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_criteriaHasTableNameNoFieldsDo()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withCriteria(new QFilterCriteria("t.a", QCriteriaOperator.EQUALS, 1));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_criteriaHasTableNameSomeFieldsDo()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withCriteria(new QFilterCriteria("t.a", QCriteriaOperator.EQUALS, 1));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // shouldn't find the "a", because "some" fields in here have a prefix (e.g., 's' was a join table, selected with 't' as the main table, which didn't prefix) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("a", 1).withValue("s.b", 2)));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // but this case (contrasted with above) set the record's tableName to "t", so criteria on "t.a" should find field "a" //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withTableName("t").withValue("a", 1).withValue("s.b", 2)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesRecordMatch_criteriaHasTableNameMatchingField()
+   {
+      QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.AND)
+         .withCriteria(new QFilterCriteria("t.a", QCriteriaOperator.EQUALS, 1));
+      assertTrue(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("t.a", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("t.b", 1)));
+      assertFalse(BackendQueryFilterUtils.doesRecordMatch(filter, new QRecord().withValue("s.a", 1)));
+   }
+
+
 
    /*******************************************************************************
     **
@@ -184,4 +365,94 @@ class BackendQueryFilterUtilsTest
       assertFalse("Not Darin".matches(pattern));
       assertFalse("David".matches(pattern));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testApplyBooleanOperator()
+   {
+      /////////////////////////////
+      // tests for operator: AND //
+      /////////////////////////////
+      {
+         /////////////////////////////////////////////////////////////////////////////////////
+         // old value was true; new value is true.                                          //
+         // result should be true, and we should not be short-circuited (return value null) //
+         /////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(true);
+         assertNull(BackendQueryFilterUtils.applyBooleanOperator(accumulator, true, QQueryFilter.BooleanOperator.AND));
+         assertTrue(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was true; new value is false.                                          //
+         // result should be false, and we should be short-circuited (return value not-null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(true);
+         assertEquals(Boolean.FALSE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, false, QQueryFilter.BooleanOperator.AND));
+         assertFalse(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was false; new value is true.                                          //
+         // result should be false, and we should be short-circuited (return value not-null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(false);
+         assertEquals(Boolean.FALSE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, true, QQueryFilter.BooleanOperator.AND));
+         assertFalse(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was false; new value is false.                                         //
+         // result should be false, and we should be short-circuited (return value not-null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(false);
+         assertEquals(Boolean.FALSE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, false, QQueryFilter.BooleanOperator.AND));
+         assertFalse(accumulator.getPlain());
+      }
+
+      ////////////////////////////
+      // tests for operator: OR //
+      ////////////////////////////
+      {
+         /////////////////////////////////////////////////////////////////////////////////////
+         // old value was true; new value is true.                                          //
+         // result should be true, and we should be short-circuited (return value not-null) //
+         /////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(true);
+         assertEquals(Boolean.TRUE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, true, QQueryFilter.BooleanOperator.OR));
+         assertTrue(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was true; new value is false.                                          //
+         // result should be true, and we should be short-circuited (return value not-null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(true);
+         assertEquals(Boolean.TRUE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, false, QQueryFilter.BooleanOperator.OR));
+         assertTrue(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was false; new value is true.                                          //
+         // result should be false, and we should be short-circuited (return value not-null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(false);
+         assertEquals(Boolean.TRUE, BackendQueryFilterUtils.applyBooleanOperator(accumulator, true, QQueryFilter.BooleanOperator.OR));
+         assertTrue(accumulator.getPlain());
+      }
+      {
+         //////////////////////////////////////////////////////////////////////////////////////
+         // old value was false; new value is false.                                         //
+         // result should be false, and we should not be short-circuited (return value null) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         AtomicBoolean accumulator = new AtomicBoolean(false);
+         assertNull(BackendQueryFilterUtils.applyBooleanOperator(accumulator, false, QQueryFilter.BooleanOperator.OR));
+         assertFalse(accumulator.getPlain());
+      }
+   }
+
 }
