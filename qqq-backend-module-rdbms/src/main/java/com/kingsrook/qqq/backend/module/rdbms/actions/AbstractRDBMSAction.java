@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -70,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
@@ -88,6 +91,9 @@ public abstract class AbstractRDBMSAction
 
    protected PreparedStatement statement;
    protected boolean           isCancelled = false;
+
+   private static Memoization<String, Boolean> doesSelectClauseRequireDistinctMemoization = new Memoization<String, Boolean>()
+      .withTimeout(Duration.ofDays(365));
 
 
 
@@ -852,6 +858,7 @@ public abstract class AbstractRDBMSAction
    }
 
 
+
    /*******************************************************************************
     ** Make it easy (e.g., for tests) to turn on logging of SQL
     *******************************************************************************/
@@ -938,25 +945,52 @@ public abstract class AbstractRDBMSAction
    /*******************************************************************************
     ** method that looks at security lock joins, and if a one-to-many is found where
     ** the specified field name is on the 'right side' of the join, then a distinct
-    ** needs added to select clause
+    ** needs added to select clause.
+    **
+    ** Memoized because it's a lot of gyrations, and it never ever changes for a
+    ** running server.
     *******************************************************************************/
    protected boolean doesSelectClauseRequireDistinct(QTableMetaData table)
    {
-      if(table != null)
+      if(table == null)
       {
-         for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
+         return (false);
+      }
+
+      return doesSelectClauseRequireDistinctMemoization.getResult(table.getName(), (name) ->
+      {
+         MultiRecordSecurityLock multiRecordSecurityLock = RecordSecurityLockFilters.filterForReadLockTree(CollectionUtils.nonNullList(table.getRecordSecurityLocks()));
+         return doesMultiLockRequireDistinct(multiRecordSecurityLock, table);
+      }).orElse(false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private boolean doesMultiLockRequireDistinct(MultiRecordSecurityLock multiRecordSecurityLock, QTableMetaData table)
+   {
+      for(RecordSecurityLock recordSecurityLock : multiRecordSecurityLock.getLocks())
+      {
+         if(recordSecurityLock instanceof MultiRecordSecurityLock childMultiLock)
          {
-            for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+            if(doesMultiLockRequireDistinct(childMultiLock, table))
             {
-               QJoinMetaData joinMetaData = QContext.getQInstance().getJoin(joinName);
-               if(JoinType.ONE_TO_MANY.equals(joinMetaData.getType()) && !joinMetaData.getRightTable().equals(table.getName()))
-               {
-                  return (true);
-               }
-               else if(JoinType.MANY_TO_ONE.equals(joinMetaData.getType()) && !joinMetaData.getLeftTable().equals(table.getName()))
-               {
-                  return (true);
-               }
+               return (true);
+            }
+         }
+
+         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+         {
+            QJoinMetaData joinMetaData = QContext.getQInstance().getJoin(joinName);
+            if(JoinType.ONE_TO_MANY.equals(joinMetaData.getType()) && !joinMetaData.getRightTable().equals(table.getName()))
+            {
+               return (true);
+            }
+            else if(JoinType.MANY_TO_ONE.equals(joinMetaData.getType()) && !joinMetaData.getLeftTable().equals(table.getName()))
+            {
+               return (true);
             }
          }
       }
