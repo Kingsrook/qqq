@@ -77,13 +77,15 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       moveReviewStepAfterValidateStep(runBackendStepOutput);
 
+      AbstractExtractStep   extractStep   = getExtractStep(runBackendStepInput);
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
+
       //////////////////////////////////////////////////////////
       // basically repeat the preview step, but with no limit //
       //////////////////////////////////////////////////////////
       runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
-
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
 
       //////////////////////////////////////////////////////////////////////
       // let the transform step override the capacity for the record pipe //

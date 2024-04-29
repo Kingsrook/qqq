@@ -560,20 +560,47 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private void primePvsCache(String tableName, List<QPossibleValueSource> possibleValueSources, Collection<Serializable> values)
    {
+      String idField = null;
       for(QPossibleValueSource possibleValueSource : possibleValueSources)
       {
          possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
+         String thisPvsIdField;
+         if(StringUtils.hasContent(possibleValueSource.getOverrideIdField()))
+         {
+            thisPvsIdField = possibleValueSource.getOverrideIdField();
+         }
+         else
+         {
+            thisPvsIdField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
+         }
+
+         if(idField == null)
+         {
+            idField = thisPvsIdField;
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // does this ever happen?  maybe not... because, like, the list of values probably wouldn't make sense for //
+            // more than one field in the table...                                                                     //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!idField.equals(thisPvsIdField))
+            {
+               for(QPossibleValueSource valueSource : possibleValueSources)
+               {
+                  primePvsCache(tableName, List.of(valueSource), values);
+               }
+            }
+         }
       }
 
       try
       {
-         String primaryKeyField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
-
          for(List<Serializable> page : CollectionUtils.getPages(values, 1000))
          {
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
-            queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
+            queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(idField, QCriteriaOperator.IN, page)));
             queryInput.setTransaction(getTransaction(tableName));
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -618,7 +645,7 @@ public class QPossibleValueTranslator
             ///////////////////////////////////////////////////////////////////////////////////
             for(QRecord record : queryOutput.getRecords())
             {
-               Serializable pkeyValue = record.getValue(primaryKeyField);
+               Serializable pkeyValue = record.getValue(idField);
                for(QPossibleValueSource possibleValueSource : possibleValueSources)
                {
                   QPossibleValue<?> possibleValue = new QPossibleValue<>(pkeyValue, record.getRecordLabel());

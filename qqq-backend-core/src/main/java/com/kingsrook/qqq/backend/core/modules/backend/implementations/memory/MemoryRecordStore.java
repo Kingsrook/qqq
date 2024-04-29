@@ -177,6 +177,14 @@ public class MemoryRecordStore
 
       for(QRecord qRecord : tableData)
       {
+         if(qRecord.getTableName() == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            // internally, doesRecordMatch likes to know table names on records, so, set if missing. //
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            qRecord.setTableName(input.getTableName());
+         }
+
          boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), qRecord);
 
          if(recordMatches)
@@ -232,16 +240,7 @@ public class MemoryRecordStore
       {
          QTableMetaData      nextTable        = qInstance.getTable(queryJoin.getJoinTable());
          Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
-
-         QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
-         {
-            QJoinMetaData found = joinsContext.findJoinMetaData(qInstance, input.getTableName(), queryJoin.getJoinTable());
-            if(found == null)
-            {
-               throw (new RuntimeException("Could not find a join between tables [" + input.getTableName() + "][" + queryJoin.getJoinTable() + "]"));
-            }
-            return (found);
-         });
+         QJoinMetaData       joinMetaData     = Objects.requireNonNull(queryJoin.getJoinMetaData(), () -> "Could not find a join between tables [" + leftTable + "][" + queryJoin.getJoinTable() + "]");
 
          List<QRecord> nextLevelProduct = new ArrayList<>();
          for(QRecord productRecord : crossProduct)
