@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -58,6 +59,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public class ScheduledJobTableCustomizer implements TableCustomizerInterface
 {
+   private QBackendTransaction transaction = null;
 
    /*******************************************************************************
     **
@@ -65,6 +67,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
    {
+      transaction = insertInput.getTransaction();
       validateConditionalFields(records, Collections.emptyMap());
       return (records);
    }
@@ -77,6 +80,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
    {
+      transaction = insertInput.getTransaction();
       scheduleJobsForRecordList(records);
       return (records);
    }
@@ -89,6 +93,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
    {
+      transaction = updateInput.getTransaction();
       Map<Integer, QRecord> freshOldRecordsWithAssociationsMap = CollectionUtils.recordsToMap(freshlyQueryForRecordsWithAssociations(oldRecordList.get()), "id", Integer.class);
 
       validateConditionalFields(records, freshOldRecordsWithAssociationsMap);
@@ -169,6 +174,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> postUpdate(UpdateInput updateInput, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
+      transaction = updateInput.getTransaction();
       if(oldRecordList.isPresent())
       {
          Set<Integer> idsWithErrors = getRecordIdsWithErrors(records);
@@ -201,6 +207,7 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> postDelete(DeleteInput deleteInput, List<QRecord> records) throws QException
    {
+      transaction = deleteInput.getTransaction();
       Set<Integer> idsWithErrors = getRecordIdsWithErrors(records);
       unscheduleJobsForRecordList(records, idsWithErrors);
       return (records);
@@ -262,12 +269,13 @@ public class ScheduledJobTableCustomizer implements TableCustomizerInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static List<QRecord> freshlyQueryForRecordsWithAssociations(List<QRecord> records) throws QException
+   private List<QRecord> freshlyQueryForRecordsWithAssociations(List<QRecord> records) throws QException
    {
       List<Integer> idList = records.stream().map(r -> r.getValueInteger("id")).toList();
 
       return new QueryAction().execute(new QueryInput(ScheduledJob.TABLE_NAME)
             .withIncludeAssociations(true)
+            .withTransaction(transaction)
             .withFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, idList))))
          .getRecords();
    }
