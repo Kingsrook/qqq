@@ -169,6 +169,7 @@ public class QueryAction
             nextLevelQueryInput.setTableName(association.getAssociatedTableName());
             nextLevelQueryInput.setIncludeAssociations(true);
             nextLevelQueryInput.setAssociationNamesToInclude(buildNextLevelAssociationNamesToInclude(association.getName(), queryInput.getAssociationNamesToInclude()));
+            nextLevelQueryInput.setTransaction(queryInput.getTransaction());
 
             QQueryFilter filter = new QQueryFilter();
             nextLevelQueryInput.setFilter(filter);
