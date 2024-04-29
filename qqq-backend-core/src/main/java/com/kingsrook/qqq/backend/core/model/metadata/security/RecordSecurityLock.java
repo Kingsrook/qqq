@@ -129,8 +129,9 @@ public class RecordSecurityLock implements Cloneable
     *******************************************************************************/
    public enum LockScope
    {
-      READ_AND_WRITE,
-      WRITE
+      READ_AND_WRITE, // lock both reads and writes
+      WRITE, // only lock writes
+      READ // only lock reads
    }
 
 

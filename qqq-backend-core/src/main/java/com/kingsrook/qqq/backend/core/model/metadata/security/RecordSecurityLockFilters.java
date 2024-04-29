@@ -52,7 +52,7 @@ public class RecordSecurityLockFilters
     *******************************************************************************/
    public static MultiRecordSecurityLock filterForReadLockTree(List<RecordSecurityLock> recordSecurityLocks)
    {
-      return filterForLockTree(recordSecurityLocks, Set.of(RecordSecurityLock.LockScope.READ_AND_WRITE));
+      return filterForLockTree(recordSecurityLocks, Set.of(RecordSecurityLock.LockScope.READ_AND_WRITE, RecordSecurityLock.LockScope.READ));
    }
 
 
@@ -88,7 +88,7 @@ public class RecordSecurityLockFilters
       {
          if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
          {
-            MultiRecordSecurityLock filteredSubLock = filterForReadLockTree(multiRecordSecurityLock.getLocks());
+            MultiRecordSecurityLock filteredSubLock = filterForLockTree(multiRecordSecurityLock.getLocks(), allowedScopes);
             filteredSubLock.setOperator(multiRecordSecurityLock.getOperator());
             result.withLock(filteredSubLock);
          }
