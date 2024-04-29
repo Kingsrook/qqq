@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,16 @@ public class QProcessCallbackFactory
    public static QProcessCallback forPrimaryKey(String fieldName, Serializable value)
    {
       return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, value))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forPrimaryKeys(String fieldName, Collection<? extends Serializable> values)
+   {
+      return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.IN, values))));
    }
 
 }
