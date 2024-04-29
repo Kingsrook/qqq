@@ -79,6 +79,12 @@ public class ScheduledJob extends QRecordEntity
    @QField(isRequired = true)
    private Boolean isActive;
 
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String foreignKeyType;
+
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String foreignKeyValue;
+
    @QAssociation(name = ScheduledJobParameter.TABLE_NAME)
    private List<ScheduledJobParameter> jobParameters;
 
@@ -492,5 +498,66 @@ public class ScheduledJob extends QRecordEntity
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for foreignKeyType
+    *******************************************************************************/
+   public String getForeignKeyType()
+   {
+      return (this.foreignKeyType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for foreignKeyType
+    *******************************************************************************/
+   public void setForeignKeyType(String foreignKeyType)
+   {
+      this.foreignKeyType = foreignKeyType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for foreignKeyType
+    *******************************************************************************/
+   public ScheduledJob withForeignKeyType(String foreignKeyType)
+   {
+      this.foreignKeyType = foreignKeyType;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for foreignKeyValue
+    *******************************************************************************/
+   public String getForeignKeyValue()
+   {
+      return (this.foreignKeyValue);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for foreignKeyValue
+    *******************************************************************************/
+   public void setForeignKeyValue(String foreignKeyValue)
+   {
+      this.foreignKeyValue = foreignKeyValue;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for foreignKeyValue
+    *******************************************************************************/
+   public ScheduledJob withForeignKeyValue(String foreignKeyValue)
+   {
+      this.foreignKeyValue = foreignKeyValue;
+      return (this);
+   }
 
 }

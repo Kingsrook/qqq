@@ -169,7 +169,7 @@ public class ScheduledJobsMetaDataProvider
          .withRecordLabelFields("label")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "description")))
          .withSection(new QFieldSection("schedule", new QIcon().withName("alarm"), Tier.T2, List.of("cronExpression", "cronTimeZoneId", "repeatSeconds")))
-         .withSection(new QFieldSection("settings", new QIcon().withName("tune"), Tier.T2, List.of("type", "isActive", "schedulerName")))
+         .withSection(new QFieldSection("settings", new QIcon().withName("tune"), Tier.T2, List.of("type", "isActive", "schedulerName", "foreignKeyType", "foreignKeyValue")))
          .withSection(new QFieldSection("parameters", new QIcon().withName("list"), Tier.T2).withWidgetName(JOB_PARAMETER_JOIN_NAME))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
