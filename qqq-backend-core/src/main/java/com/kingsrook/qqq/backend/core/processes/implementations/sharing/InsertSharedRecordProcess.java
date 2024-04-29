@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.sharing;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -54,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.DuplicateKeyBadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -113,6 +115,7 @@ public class InsertSharedRecordProcess implements BackendStep, MetaDataProducerI
       Objects.requireNonNull(audienceIdString, "Missing required input: audienceId");
       Objects.requireNonNull(scopeId, "Missing required input: scopeId");
 
+      String assetTableLabel = tableName;
       try
       {
          SharedRecordProcessUtils.AssetTableAndRecord assetTableAndRecord = SharedRecordProcessUtils.getAssetTableAndRecord(tableName, recordIdString);
@@ -120,6 +123,7 @@ public class InsertSharedRecordProcess implements BackendStep, MetaDataProducerI
          ShareableTableMetaData shareableTableMetaData = assetTableAndRecord.shareableTableMetaData();
          QRecord                assetRecord            = assetTableAndRecord.record();
          Serializable           recordId               = assetTableAndRecord.recordId();
+         assetTableLabel = assetTableAndRecord.table().getLabel();
 
          SharedRecordProcessUtils.assertRecordOwnership(shareableTableMetaData, assetRecord, "share");
 
@@ -135,12 +139,26 @@ public class InsertSharedRecordProcess implements BackendStep, MetaDataProducerI
          ///////////////////////////////////////////////////////////////////////////////////////////////
          // if we know the audience source-table, then fetch & validate security-wise the audience id //
          ///////////////////////////////////////////////////////////////////////////////////////////////
-         Serializable audienceId = audienceIdString;
+         Serializable audienceId         = audienceIdString;
+         String       audienceTableLabel = "audience";
          if(StringUtils.hasContent(shareableAudienceType.getSourceTableName()))
          {
             QTableMetaData audienceTable = QContext.getQInstance().getTable(shareableAudienceType.getSourceTableName());
-            audienceId = ValueUtils.getValueAsFieldType(audienceTable.getField(audienceTable.getPrimaryKeyField()).getType(), audienceIdString);
-            QRecord audienceRecord = new GetAction().executeForRecord(new GetInput(audienceTable.getName()).withPrimaryKey(audienceId));
+            audienceTableLabel = audienceTable.getLabel();
+
+            GetInput getInput = new GetInput(audienceTable.getName());
+            if(StringUtils.hasContent(shareableAudienceType.getSourceTableKeyFieldName()))
+            {
+               audienceId = ValueUtils.getValueAsFieldType(audienceTable.getField(shareableAudienceType.getSourceTableKeyFieldName()).getType(), audienceIdString);
+               getInput.withUniqueKey(Map.of(shareableAudienceType.getSourceTableKeyFieldName(), audienceId));
+            }
+            else
+            {
+               audienceId = ValueUtils.getValueAsFieldType(audienceTable.getField(audienceTable.getPrimaryKeyField()).getType(), audienceIdString);
+               getInput.withPrimaryKey(audienceId);
+            }
+
+            QRecord audienceRecord = new GetAction().executeForRecord(getInput);
             if(audienceRecord == null)
             {
                throw (new QException("A record could not be found for audience type " + audienceType + ", audience id: " + audienceIdString));
@@ -166,11 +184,15 @@ public class InsertSharedRecordProcess implements BackendStep, MetaDataProducerI
          if(CollectionUtils.nullSafeHasContents(insertOutput.getRecords().get(0).getErrors()))
          {
             QErrorMessage errorMessage = insertOutput.getRecords().get(0).getErrors().get(0);
-            if(errorMessage instanceof BadInputStatusMessage)
+            if(errorMessage instanceof DuplicateKeyBadInputStatusMessage)
+            {
+               throw (new QUserFacingException("This " + assetTableLabel + " has already been shared with this " + audienceTableLabel));
+            }
+            else if(errorMessage instanceof BadInputStatusMessage)
             {
                throw (new QUserFacingException(errorMessage.getMessage()));
             }
-            throw (new QException("Error inserting shared record: " + errorMessage.getMessage()));
+            throw (new QException("Error sharing " + assetTableLabel + ": " + errorMessage.getMessage()));
          }
       }
       catch(QException qe)
@@ -179,7 +201,7 @@ public class InsertSharedRecordProcess implements BackendStep, MetaDataProducerI
       }
       catch(Exception e)
       {
-         throw (new QException("Error inserting shared record", e));
+         throw (new QException("Error sharing " + assetTableLabel, e));
       }
    }
 
