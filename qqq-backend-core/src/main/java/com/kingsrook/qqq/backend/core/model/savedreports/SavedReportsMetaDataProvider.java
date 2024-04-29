@@ -112,8 +112,7 @@ public class SavedReportsMetaDataProvider
          .withLeftTable(SharedSavedReport.TABLE_NAME)
          .withRightTable(SavedReport.TABLE_NAME)
          .withType(JoinType.MANY_TO_ONE)
-         .withJoinOn(new JoinOn("savedReportId", "id"))
-      );
+         .withJoinOn(new JoinOn("savedReportId", "id")));
    }
 
 
