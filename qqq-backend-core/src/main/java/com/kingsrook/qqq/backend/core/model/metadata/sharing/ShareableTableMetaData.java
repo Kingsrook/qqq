@@ -66,6 +66,11 @@ public class ShareableTableMetaData implements Serializable
    /////////////////////////////////////////////////
    private String audienceTypesPossibleValueSourceName;
 
+   ///////////////////////////////////////////////////
+   // PVS that lists the available audience records //
+   ///////////////////////////////////////////////////
+   private String audiencePossibleValueSourceName;
+
    //////////////////////////////////////////////////////////////
    // name of a field in "this" table, that has the owner's id //
    //////////////////////////////////////////////////////////////
@@ -297,6 +302,37 @@ public class ShareableTableMetaData implements Serializable
 
 
    /*******************************************************************************
+    ** Getter for audiencePossibleValueSourceName
+    *******************************************************************************/
+   public String getAudiencePossibleValueSourceName()
+   {
+      return (this.audiencePossibleValueSourceName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for audiencePossibleValueSourceName
+    *******************************************************************************/
+   public void setAudiencePossibleValueSourceName(String audiencePossibleValueSourceName)
+   {
+      this.audiencePossibleValueSourceName = audiencePossibleValueSourceName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for audiencePossibleValueSourceName
+    *******************************************************************************/
+   public ShareableTableMetaData withAudiencePossibleValueSourceName(String audiencePossibleValueSourceName)
+   {
+      this.audiencePossibleValueSourceName = audiencePossibleValueSourceName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void validate(QInstance qInstance, QTableMetaData tableMetaData, QInstanceValidator qInstanceValidator)
@@ -331,6 +367,8 @@ public class ShareableTableMetaData implements Serializable
                   qInstanceValidator.assertCondition(sharedRecordTable.getFields().containsKey(audienceType.getFieldName()), prefix + "unrecognized fieldName [" + audienceType.getFieldName() + "] for shareableAudienceType [" + entry.getKey() + "] in sharedRecordTable [" + sharedRecordTableName + "]");
                }
 
+               // todo - validate this audienceType.getSourceTableKeyFieldName() is a field, and it is a UKey
+
                /* todo - make these optional i guess, because i didn't put user table in qqq
                boolean hasSourceTableKeyFieldName = qInstanceValidator.assertCondition(StringUtils.hasContent(audienceType.getSourceTableKeyFieldName()), prefix + "missing sourceTableKeyFieldName for shareableAudienceType [" + entry.getKey() + "]");
                if(qInstanceValidator.assertCondition(qInstance.getTable(audienceType.getSourceTableName()) != null, prefix + "unrecognized sourceTableName [" + audienceType.getSourceTableName() + "] for shareableAudienceType [" + entry.getKey() + "] in sharedRecordTable [" + sharedRecordTableName + "]") && hasSourceTableKeyFieldName)
@@ -351,6 +389,10 @@ public class ShareableTableMetaData implements Serializable
       {
          qInstanceValidator.assertCondition(qInstance.getPossibleValueSource(audienceTypesPossibleValueSourceName) != null, prefix + "unrecognized audienceTypesPossibleValueSourceName [" + audienceTypesPossibleValueSourceName + "]");
       }
-   }
 
+      if(StringUtils.hasContent(audiencePossibleValueSourceName))
+      {
+         qInstanceValidator.assertCondition(qInstance.getPossibleValueSource(audiencePossibleValueSourceName) != null, prefix + "unrecognized audiencePossibleValueSourceName [" + audiencePossibleValueSourceName + "]");
+      }
+   }
 }
