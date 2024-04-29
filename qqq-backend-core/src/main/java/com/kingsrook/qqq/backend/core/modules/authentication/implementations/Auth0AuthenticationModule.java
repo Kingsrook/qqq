@@ -230,6 +230,14 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                }
             }
 
+            //////////////////////////////////////////////////////////////
+            // allow customizer to do custom things here, if so desired //
+            //////////////////////////////////////////////////////////////
+            if(getCustomizer() != null)
+            {
+               getCustomizer().finalCustomizeSession(qInstance, qSession);
+            }
+
             return (qSession);
          }
          else if(CollectionUtils.containsKeyWithNonNullValue(context, BASIC_AUTH_KEY))
@@ -284,7 +292,17 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // try to build session to see if still valid      //
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
-         return buildAndValidateSession(qInstance, accessToken);
+         QSession qSession = buildAndValidateSession(qInstance, accessToken);
+
+         //////////////////////////////////////////////////////////////
+         // allow customizer to do custom things here, if so desired //
+         //////////////////////////////////////////////////////////////
+         if(getCustomizer() != null)
+         {
+            getCustomizer().finalCustomizeSession(qInstance, qSession);
+         }
+
+         return (qSession);
       }
       catch(QAuthenticationException qae)
       {

@@ -52,4 +52,14 @@ public interface QAuthenticationModuleCustomizerInterface
       //////////
    }
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void finalCustomizeSession(QInstance qInstance, QSession qSession)
+   {
+      //////////
+      // noop //
+      //////////
+   }
+
 }
