@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListR
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.common.TimeZonePossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
@@ -97,6 +98,11 @@ public class SavedReportsMetaDataProvider
       instance.addWidget(defineScheduledReportJoinSavedReportWidget(join));
       QProcessMetaData scheduledReportSyncToScheduledJobProcess = new ScheduledReportSyncToScheduledJobProcess().produce(instance);
       instance.addProcess(scheduledReportSyncToScheduledJobProcess);
+
+      if(instance.getPossibleValueSource(TimeZonePossibleValueSourceMetaDataProvider.NAME) == null)
+      {
+         instance.addPossibleValueSource(new TimeZonePossibleValueSourceMetaDataProvider().produce());
+      }
    }
 
 
