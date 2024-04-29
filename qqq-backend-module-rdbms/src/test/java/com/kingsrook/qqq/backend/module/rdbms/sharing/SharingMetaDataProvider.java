@@ -93,11 +93,11 @@ public class SharingMetaDataProvider
                .withFieldName("userId"))
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(USER_ID_KEY_TYPE)
-               .withFieldName("sharedAsset.userId")
+               .withFieldName(SharedAsset.TABLE_NAME + ".userId")
                .withJoinNameChain(List.of(SHARED_ASSET_JOIN_ASSET)))
             .withLock(new RecordSecurityLock()
                .withSecurityKeyType(GROUP_ID_KEY_TYPE)
-               .withFieldName("sharedAsset.groupId")
+               .withFieldName(SharedAsset.TABLE_NAME + ".groupId")
                .withJoinNameChain(List.of(SHARED_ASSET_JOIN_ASSET)))
          ));
       QInstanceEnricher.setInferredFieldBackendNames(qInstance.getTable(Asset.TABLE_NAME));
