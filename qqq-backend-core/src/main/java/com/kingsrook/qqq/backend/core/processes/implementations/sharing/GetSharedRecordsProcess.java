@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.sharing;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -144,7 +145,7 @@ public class GetSharedRecordsProcess implements BackendStep, MetaDataProducerInt
             boolean foundAudienceType = false;
             for(ShareableAudienceType audienceType : shareableTableMetaData.getAudienceTypes().values())
             {
-               Serializable audienceId = record.getValueString(audienceType.getFieldName());
+               Serializable audienceId = record.getValue(audienceType.getFieldName());
                if(audienceId != null)
                {
                   outputRecord.setValue("audienceType", audienceType.getName());
@@ -227,6 +228,11 @@ public class GetSharedRecordsProcess implements BackendStep, MetaDataProducerInt
                }
             }
          }
+
+         ////////////////////////////
+         // sort results by labels //
+         ////////////////////////////
+         resultList.sort(Comparator.comparing(r -> r.getValueString("audienceLabel")));
 
          runBackendStepOutput.addValue("resultList", resultList);
       }
