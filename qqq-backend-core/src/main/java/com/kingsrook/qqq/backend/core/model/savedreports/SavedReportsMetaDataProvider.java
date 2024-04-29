@@ -39,6 +39,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -60,6 +63,7 @@ public class SavedReportsMetaDataProvider
 {
    public static final String REPORT_STORAGE_TABLE_NAME = "reportStorage";
 
+   public static final String SHARED_SAVED_REPORT_JOIN_SAVED_REPORT = "sharedSavedReportJoinSavedReport";
 
 
    /*******************************************************************************
@@ -89,10 +93,27 @@ public class SavedReportsMetaDataProvider
       // todo - param to enable sharing? //
       /////////////////////////////////////
       instance.addTable(defineSharedSavedReportTable(recordTablesBackendName, backendDetailEnricher));
+      instance.addJoin(defineSharedSavedReportJoinSavedReport());
       if(instance.getPossibleValueSource(ShareScopePossibleValueMetaDataProducer.NAME) == null)
       {
          instance.addPossibleValueSource(new ShareScopePossibleValueMetaDataProducer().produce(new QInstance()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QJoinMetaData defineSharedSavedReportJoinSavedReport()
+   {
+      return (new QJoinMetaData()
+         .withName(SHARED_SAVED_REPORT_JOIN_SAVED_REPORT)
+         .withLeftTable(SharedSavedReport.TABLE_NAME)
+         .withRightTable(SavedReport.TABLE_NAME)
+         .withType(JoinType.MANY_TO_ONE)
+         .withJoinOn(new JoinOn("savedReportId", "id"))
+      );
    }
 
 
