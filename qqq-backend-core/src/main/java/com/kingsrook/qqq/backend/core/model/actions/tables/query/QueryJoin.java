@@ -417,4 +417,20 @@ public class QueryJoin
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "QueryJoin{base="
+         + baseTableOrAlias + ", joinTable='"
+         + joinTable + ", joinMetaData="
+         + (joinMetaData == null ? null : joinMetaData.getName()) + ", alias='"
+         + alias + ", select="
+         + select + ", type="
+         + type + '}';
+   }
 }
