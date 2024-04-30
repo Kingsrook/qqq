@@ -41,7 +41,7 @@ import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobParameter;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobType;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
-import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RunScheduledReportMetaDataProducer;
 import com.kingsrook.qqq.backend.core.processes.implementations.tablesync.AbstractTableSyncTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.tablesync.TableSyncProcess;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -121,7 +121,7 @@ public class ScheduledReportSyncToScheduledJobProcess extends AbstractTableSyncT
          scheduledJob.setForeignKeyValue(String.valueOf(scheduledReport.getId()));
          scheduledJob.setJobParameters(List.of(
             new ScheduledJobParameter().withKey("processName").withValue(getProcessNameScheduledJobParameter()),
-            new ScheduledJobParameter().withKey("scheduledReportId").withValue(ValueUtils.getValueAsString(scheduledReport.getId()))
+            new ScheduledJobParameter().withKey("recordId").withValue(ValueUtils.getValueAsString(scheduledReport.getId()))
          ));
       }
       else
@@ -160,7 +160,7 @@ public class ScheduledReportSyncToScheduledJobProcess extends AbstractTableSyncT
     *******************************************************************************/
    private static String getProcessNameScheduledJobParameter()
    {
-      return RenderSavedReportMetaDataProducer.NAME;
+      return RunScheduledReportMetaDataProducer.NAME;
    }
 
 

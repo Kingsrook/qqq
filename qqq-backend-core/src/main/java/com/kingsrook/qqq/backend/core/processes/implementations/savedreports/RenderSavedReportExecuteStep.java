@@ -100,6 +100,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
          ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
          String       sendToEmailAddress   = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
+         String emailSubject = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
          SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
          String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
          String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
@@ -108,7 +109,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          // if sending an email (or emails), validate the addresses before doing anything so user gets error and can fix //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          List<String> toEmailAddressList = new ArrayList<>();
-         if(sendToEmailAddress != null)
+         if(StringUtils.hasContent(sendToEmailAddress))
          {
             toEmailAddressList = validateEmailAddresses(sendToEmailAddress);
          }
@@ -145,6 +146,10 @@ public class RenderSavedReportExecuteStep implements BackendStep
          reportInput.setReportDestination(new ReportDestination()
             .withReportFormat(reportFormat)
             .withReportOutputStream(outputStream));
+
+         //////////////////////////
+         // todo variable-values //
+         //////////////////////////
 
          Map<String, Serializable> values = runBackendStepInput.getValues();
          reportInput.setInputValues(values);
@@ -192,7 +197,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
                   .withParty(new Party().withAddress(fromEmailAddress).withRole(EmailPartyRole.FROM))
                   .withParty(new Party().withAddress(replyToEmailAddress).withRole(EmailPartyRole.REPLY_TO))
                )
-               .withSubject(downloadFileBaseName)
+               .withSubject(StringUtils.hasContent(emailSubject) ? emailSubject : downloadFileBaseName)
                .withContent(new Content().withContentRole(EmailContentRole.TEXT).withBody("To download your report, open this URL in your browser: " + downloadURL))
                .withContent(new Content().withContentRole(EmailContentRole.HTML).withBody("Link: <a target=\"_blank\" href=\"" + downloadURL + "\" download>" + downloadFileName + "</a>"))
             );
