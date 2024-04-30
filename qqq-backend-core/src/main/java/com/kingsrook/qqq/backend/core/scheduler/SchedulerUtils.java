@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -43,8 +44,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.VariantRunStrategy;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
@@ -138,12 +141,26 @@ public class SchedulerUtils
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(process.getName());
 
+      Serializable recordId = null;
       for(Map.Entry<String, Serializable> entry : CollectionUtils.nonNullMap(processInputValues).entrySet())
       {
          runProcessInput.withValue(entry.getKey(), entry.getValue());
+         if(entry.getKey().equals("recordId"))
+         {
+            recordId = entry.getValue();
+         }
       }
 
       runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there was a "recordId" input value, and this table is for a process, then set up a callback to get the record //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(recordId != null && StringUtils.hasContent(process.getTableName()))
+      {
+         QTableMetaData table = QContext.getQInstance().getTable(process.getTableName());
+         runProcessInput.setCallback(QProcessCallbackFactory.forPrimaryKey(table.getPrimaryKeyField(), recordId));
+      }
 
       QContext.pushAction(runProcessInput);
 
