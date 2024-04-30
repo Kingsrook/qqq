@@ -25,9 +25,11 @@ package com.kingsrook.qqq.backend.core.model.savedreports;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DefaultWidgetRenderer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.common.TimeZonePossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
@@ -54,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RenderSavedReportMetaDataProducer;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.RunScheduledReportMetaDataProducer;
 
 
 /*******************************************************************************
@@ -63,7 +66,11 @@ public class SavedReportsMetaDataProvider
 {
    public static final String REPORT_STORAGE_TABLE_NAME = "reportStorage";
 
+   public static final String SAVED_REPORT_JOIN_SCHEDULED_REPORT    = "scheduledReportJoinSavedReport";
    public static final String SHARED_SAVED_REPORT_JOIN_SAVED_REPORT = "sharedSavedReportJoinSavedReport";
+
+   public static final String SCHEDULED_REPORT_VALUES_WIDGET      = "scheduledReportValuesWidget";
+   public static final String RENDER_REPORT_PROCESS_VALUES_WIDGET = "renderReportProcessValuesWidget";
 
 
    /*******************************************************************************
@@ -73,6 +80,7 @@ public class SavedReportsMetaDataProvider
    {
       instance.addTable(defineSavedReportTable(recordTablesBackendName, backendDetailEnricher));
       instance.addTable(defineRenderedReportTable(recordTablesBackendName, backendDetailEnricher));
+
       instance.addPossibleValueSource(QPossibleValueSource.newForTable(SavedReport.TABLE_NAME));
       instance.addPossibleValueSource(QPossibleValueSource.newForEnum(ReportFormatPossibleValueEnum.NAME, ReportFormatPossibleValueEnum.values()));
       instance.addPossibleValueSource(QPossibleValueSource.newForEnum(RenderedReportStatus.NAME, RenderedReportStatus.values()));
@@ -85,9 +93,29 @@ public class SavedReportsMetaDataProvider
          .filter(f -> RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME.equals(f.getName()))
          .findFirst()
          .ifPresent(f -> f.setDefaultValue(REPORT_STORAGE_TABLE_NAME));
+      instance.addWidget(defineRenderReportProcessValuesWidget());
 
       instance.addWidget(defineReportSetupWidget());
       instance.addWidget(definePivotTableSetupWidget());
+
+      ////////////////////////////////////////
+      // todo - param to enable scheduling? //
+      ////////////////////////////////////////
+      instance.addTable(defineScheduledReportTable(recordTablesBackendName, backendDetailEnricher));
+      QJoinMetaData join = defineSavedReportJoinScheduledReport();
+      instance.addJoin(join);
+      instance.addWidget(defineScheduledReportJoinSavedReportWidget(join));
+      QProcessMetaData scheduledReportSyncToScheduledJobProcess = new ScheduledReportSyncToScheduledJobProcess().produce(instance);
+      instance.addProcess(scheduledReportSyncToScheduledJobProcess);
+      instance.addWidget(defineScheduledReportValuesWidget());
+
+      QProcessMetaData runScheduledReportProcess = new RunScheduledReportMetaDataProducer().produce(instance);
+      instance.addProcess(runScheduledReportProcess);
+
+      if(instance.getPossibleValueSource(TimeZonePossibleValueSourceMetaDataProvider.NAME) == null)
+      {
+         instance.addPossibleValueSource(new TimeZonePossibleValueSourceMetaDataProvider().produce());
+      }
 
       /////////////////////////////////////
       // todo - param to enable sharing? //
@@ -98,6 +126,64 @@ public class SavedReportsMetaDataProvider
       {
          instance.addPossibleValueSource(new ShareScopePossibleValueMetaDataProducer().produce(new QInstance()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QWidgetMetaDataInterface defineScheduledReportValuesWidget()
+   {
+      return new QWidgetMetaData()
+         .withName(SCHEDULED_REPORT_VALUES_WIDGET)
+         .withType(WidgetType.DYNAMIC_FORM.getType())
+         .withIsCard(true)
+         .withLabel("Variable Values")
+         .withCodeReference(new QCodeReference(ReportValuesDynamicFormWidgetRenderer.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QWidgetMetaDataInterface defineRenderReportProcessValuesWidget()
+   {
+      return new QWidgetMetaData()
+         .withName(RENDER_REPORT_PROCESS_VALUES_WIDGET)
+         .withType(WidgetType.DYNAMIC_FORM.getType())
+         .withIsCard(false)
+         .withDefaultValue("isEditable", true)
+         .withCodeReference(new QCodeReference(ReportValuesDynamicFormWidgetRenderer.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QJoinMetaData defineSavedReportJoinScheduledReport()
+   {
+      return (new QJoinMetaData()
+         .withName(SAVED_REPORT_JOIN_SCHEDULED_REPORT)
+         .withLeftTable(SavedReport.TABLE_NAME)
+         .withRightTable(ScheduledReport.TABLE_NAME)
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "savedReportId")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QWidgetMetaDataInterface defineScheduledReportJoinSavedReportWidget(QJoinMetaData join)
+   {
+      return ChildRecordListRenderer.widgetMetaDataBuilder(join)
+         .withLabel("Schedules")
+         .withCanAddChildRecord(true)
+         .getWidgetMetaData();
    }
 
 
@@ -187,6 +273,7 @@ public class SavedReportsMetaDataProvider
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "tableName")))
          .withSection(new QFieldSection("filtersAndColumns", new QIcon().withName("table_chart"), Tier.T2).withLabel("Filters and Columns").withWidgetName("reportSetupWidget"))
          .withSection(new QFieldSection("pivotTable", new QIcon().withName("pivot_table_chart"), Tier.T2).withLabel("Pivot Table").withWidgetName("pivotTableSetupWidget"))
+         .withSection(new QFieldSection("schedule", new QIcon().withName("schedule"), Tier.T2).withWidgetName(SAVED_REPORT_JOIN_SCHEDULED_REPORT))
          .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("queryFilterJson", "columnsJson", "pivotTableJson")).withIsHidden(true))
          .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("inputFieldsJson", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
@@ -274,6 +361,42 @@ public class SavedReportsMetaDataProvider
       {
          backendDetailEnricher.accept(table);
       }
+
+      return (table);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private QTableMetaData defineScheduledReportTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withName(ScheduledReport.TABLE_NAME)
+         .withIcon(new QIcon().withName("schedule_send"))
+         .withRecordLabelFormat("%s (Schedule %s)")
+         .withRecordLabelFields("savedReportId", "id")
+         .withBackendName(backendName)
+         .withPrimaryKeyField("id")
+         .withFieldsFromEntity(ScheduledReport.class)
+         .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "savedReportId")))
+         .withSection(new QFieldSection("settings", new QIcon().withName("settings"), Tier.T2, List.of("cronExpression", "cronTimeZoneId", "isActive", "format")))
+         .withSection(new QFieldSection("recipient", new QIcon().withName("email"), Tier.T2, List.of("toAddresses", "subject")))
+         .withSection(new QFieldSection("variableValues", new QIcon().withName("data_object"), Tier.T2).withWidgetName(SCHEDULED_REPORT_VALUES_WIDGET))
+         .withSection(new QFieldSection("hidden", new QIcon().withName("visibility_off"), Tier.T2, List.of("inputValues")).withIsHidden(true))
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      if(backendDetailEnricher != null)
+      {
+         backendDetailEnricher.accept(table);
+      }
+
+      table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(ScheduledReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(ScheduledReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(ScheduledReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(ScheduledReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.POST_DELETE_RECORD, new QCodeReference(ScheduledReportTableCustomizer.class));
 
       return (table);
    }

@@ -19,32 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.scheduledjobs;
+package com.kingsrook.qqq.backend.core.model.savedreports;
 
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.common.TimeZonePossibleValueSourceMetaDataProvider;
-import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
 
 
 /*******************************************************************************
- **
+ ** Entity bean for the scheduled report table
  *******************************************************************************/
-public class ScheduledJob extends QRecordEntity
+public class ScheduledReport extends QRecordEntity
 {
-   public static final String TABLE_NAME = "scheduledJob";
+   public static final String TABLE_NAME = "scheduledReport";
 
    @QField(isEditable = false)
    private Integer id;
@@ -55,38 +48,29 @@ public class ScheduledJob extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE)
-   private String label;
+   @QField(isRequired = true, possibleValueSourceName = SavedReport.TABLE_NAME)
+   private Integer savedReportId;
 
-   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.TRUNCATE_ELLIPSIS)
-   private String description;
-
-   @QField(isRequired = true, label = "Scheduler", maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = SchedulersPossibleValueSource.NAME)
-   private String schedulerName;
-
-   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, isRequired = true)
    private String cronExpression;
 
-   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = TimeZonePossibleValueSourceMetaDataProvider.NAME)
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = TimeZonePossibleValueSourceMetaDataProvider.NAME, isRequired = true)
    private String cronTimeZoneId;
 
-   @QField(displayFormat = DisplayFormat.COMMAS)
-   private Integer repeatSeconds;
-
-   @QField(isRequired = true, maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = ScheduledJobTypePossibleValueSource.NAME)
-   private String type;
-
-   @QField(isRequired = true)
+   @QField(isRequired = true, defaultValue = "true")
    private Boolean isActive;
 
-   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
-   private String foreignKeyType;
+   @QField(isRequired = true)
+   private String toAddresses;
 
-   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
-   private String foreignKeyValue;
+   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String subject;
 
-   @QAssociation(name = ScheduledJobParameter.TABLE_NAME)
-   private List<ScheduledJobParameter> jobParameters;
+   @QField(isRequired = true, maxLength = 20, valueTooLongBehavior = ValueTooLongBehavior.ERROR, possibleValueSourceName = ReportFormatPossibleValueEnum.NAME)
+   private String format;
+
+   @QField()
+   private String inputValues;
 
 
 
@@ -94,7 +78,7 @@ public class ScheduledJob extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public ScheduledJob()
+   public ScheduledReport()
    {
    }
 
@@ -104,7 +88,7 @@ public class ScheduledJob extends QRecordEntity
     ** Constructor
     **
     *******************************************************************************/
-   public ScheduledJob(QRecord qRecord) throws QException
+   public ScheduledReport(QRecord qRecord) throws QException
    {
       populateFromQRecord(qRecord);
    }
@@ -113,16 +97,18 @@ public class ScheduledJob extends QRecordEntity
 
    /*******************************************************************************
     ** Getter for id
+    **
     *******************************************************************************/
    public Integer getId()
    {
-      return (this.id);
+      return id;
    }
 
 
 
    /*******************************************************************************
     ** Setter for id
+    **
     *******************************************************************************/
    public void setId(Integer id)
    {
@@ -132,28 +118,19 @@ public class ScheduledJob extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Fluent setter for id
-    *******************************************************************************/
-   public ScheduledJob withId(Integer id)
-   {
-      this.id = id;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for createDate
+    **
     *******************************************************************************/
    public Instant getCreateDate()
    {
-      return (this.createDate);
+      return createDate;
    }
 
 
 
    /*******************************************************************************
     ** Setter for createDate
+    **
     *******************************************************************************/
    public void setCreateDate(Instant createDate)
    {
@@ -163,28 +140,19 @@ public class ScheduledJob extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Fluent setter for createDate
-    *******************************************************************************/
-   public ScheduledJob withCreateDate(Instant createDate)
-   {
-      this.createDate = createDate;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for modifyDate
+    **
     *******************************************************************************/
    public Instant getModifyDate()
    {
-      return (this.modifyDate);
+      return modifyDate;
    }
 
 
 
    /*******************************************************************************
     ** Setter for modifyDate
+    **
     *******************************************************************************/
    public void setModifyDate(Instant modifyDate)
    {
@@ -194,9 +162,31 @@ public class ScheduledJob extends QRecordEntity
 
 
    /*******************************************************************************
+    ** Fluent setter for id
+    *******************************************************************************/
+   public ScheduledReport withId(Integer id)
+   {
+      this.id = id;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for createDate
+    *******************************************************************************/
+   public ScheduledReport withCreateDate(Instant createDate)
+   {
+      this.createDate = createDate;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Fluent setter for modifyDate
     *******************************************************************************/
-   public ScheduledJob withModifyDate(Instant modifyDate)
+   public ScheduledReport withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
       return (this);
@@ -205,62 +195,31 @@ public class ScheduledJob extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for label
+    ** Getter for savedReportId
     *******************************************************************************/
-   public String getLabel()
+   public Integer getSavedReportId()
    {
-      return (this.label);
+      return (this.savedReportId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for label
+    ** Setter for savedReportId
     *******************************************************************************/
-   public void setLabel(String label)
+   public void setSavedReportId(Integer savedReportId)
    {
-      this.label = label;
+      this.savedReportId = savedReportId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for label
+    ** Fluent setter for savedReportId
     *******************************************************************************/
-   public ScheduledJob withLabel(String label)
+   public ScheduledReport withSavedReportId(Integer savedReportId)
    {
-      this.label = label;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for description
-    *******************************************************************************/
-   public String getDescription()
-   {
-      return (this.description);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for description
-    *******************************************************************************/
-   public void setDescription(String description)
-   {
-      this.description = description;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for description
-    *******************************************************************************/
-   public ScheduledJob withDescription(String description)
-   {
-      this.description = description;
+      this.savedReportId = savedReportId;
       return (this);
    }
 
@@ -289,7 +248,7 @@ public class ScheduledJob extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for cronExpression
     *******************************************************************************/
-   public ScheduledJob withCronExpression(String cronExpression)
+   public ScheduledReport withCronExpression(String cronExpression)
    {
       this.cronExpression = cronExpression;
       return (this);
@@ -320,7 +279,7 @@ public class ScheduledJob extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for cronTimeZoneId
     *******************************************************************************/
-   public ScheduledJob withCronTimeZoneId(String cronTimeZoneId)
+   public ScheduledReport withCronTimeZoneId(String cronTimeZoneId)
    {
       this.cronTimeZoneId = cronTimeZoneId;
       return (this);
@@ -351,7 +310,7 @@ public class ScheduledJob extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for isActive
     *******************************************************************************/
-   public ScheduledJob withIsActive(Boolean isActive)
+   public ScheduledReport withIsActive(Boolean isActive)
    {
       this.isActive = isActive;
       return (this);
@@ -360,203 +319,124 @@ public class ScheduledJob extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for schedulerName
+    ** Getter for toAddresses
     *******************************************************************************/
-   public String getSchedulerName()
+   public String getToAddresses()
    {
-      return (this.schedulerName);
+      return (this.toAddresses);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for schedulerName
+    ** Setter for toAddresses
     *******************************************************************************/
-   public void setSchedulerName(String schedulerName)
+   public void setToAddresses(String toAddresses)
    {
-      this.schedulerName = schedulerName;
+      this.toAddresses = toAddresses;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for schedulerName
+    ** Fluent setter for toAddresses
     *******************************************************************************/
-   public ScheduledJob withSchedulerName(String schedulerName)
+   public ScheduledReport withToAddresses(String toAddresses)
    {
-      this.schedulerName = schedulerName;
+      this.toAddresses = toAddresses;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for type
+    ** Getter for subject
     *******************************************************************************/
-   public String getType()
+   public String getSubject()
    {
-      return (this.type);
+      return (this.subject);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for type
+    ** Setter for subject
     *******************************************************************************/
-   public void setType(String type)
+   public void setSubject(String subject)
    {
-      this.type = type;
+      this.subject = subject;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for type
+    ** Fluent setter for subject
     *******************************************************************************/
-   public ScheduledJob withType(String type)
+   public ScheduledReport withSubject(String subject)
    {
-      this.type = type;
+      this.subject = subject;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for jobParameters
+    ** Getter for format
     *******************************************************************************/
-   public List<ScheduledJobParameter> getJobParameters()
+   public String getFormat()
    {
-      return (this.jobParameters);
+      return (this.format);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for jobParameters - but a map of just the key=value pairs.
+    ** Setter for format
     *******************************************************************************/
-   public Map<String, String> getJobParametersMap()
+   public void setFormat(String format)
    {
-      if(CollectionUtils.nullSafeIsEmpty(this.jobParameters))
-      {
-         return (new HashMap<>());
-      }
-
-      ///////////////////////////////////////////////////////////////////////////////////////
-      // wrap in mutable map, just to avoid any immutable or other bs from toMap's default //
-      ///////////////////////////////////////////////////////////////////////////////////////
-      return new MutableMap<>(jobParameters.stream().collect(Collectors.toMap(ScheduledJobParameter::getKey, ScheduledJobParameter::getValue)));
+      this.format = format;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for jobParameters
+    ** Fluent setter for format
     *******************************************************************************/
-   public void setJobParameters(List<ScheduledJobParameter> jobParameters)
+   public ScheduledReport withFormat(String format)
    {
-      this.jobParameters = jobParameters;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for jobParameters
-    *******************************************************************************/
-   public ScheduledJob withJobParameters(List<ScheduledJobParameter> jobParameters)
-   {
-      this.jobParameters = jobParameters;
-      return (this);
-   }
-
-
-   /*******************************************************************************
-    ** Getter for repeatSeconds
-    *******************************************************************************/
-   public Integer getRepeatSeconds()
-   {
-      return (this.repeatSeconds);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for repeatSeconds
-    *******************************************************************************/
-   public void setRepeatSeconds(Integer repeatSeconds)
-   {
-      this.repeatSeconds = repeatSeconds;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for repeatSeconds
-    *******************************************************************************/
-   public ScheduledJob withRepeatSeconds(Integer repeatSeconds)
-   {
-      this.repeatSeconds = repeatSeconds;
+      this.format = format;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for foreignKeyType
+    ** Getter for inputValues
     *******************************************************************************/
-   public String getForeignKeyType()
+   public String getInputValues()
    {
-      return (this.foreignKeyType);
+      return (this.inputValues);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for foreignKeyType
+    ** Setter for inputValues
     *******************************************************************************/
-   public void setForeignKeyType(String foreignKeyType)
+   public void setInputValues(String inputValues)
    {
-      this.foreignKeyType = foreignKeyType;
+      this.inputValues = inputValues;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for foreignKeyType
+    ** Fluent setter for inputValues
     *******************************************************************************/
-   public ScheduledJob withForeignKeyType(String foreignKeyType)
+   public ScheduledReport withInputValues(String inputValues)
    {
-      this.foreignKeyType = foreignKeyType;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for foreignKeyValue
-    *******************************************************************************/
-   public String getForeignKeyValue()
-   {
-      return (this.foreignKeyValue);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for foreignKeyValue
-    *******************************************************************************/
-   public void setForeignKeyValue(String foreignKeyValue)
-   {
-      this.foreignKeyValue = foreignKeyValue;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for foreignKeyValue
-    *******************************************************************************/
-   public ScheduledJob withForeignKeyValue(String foreignKeyValue)
-   {
-      this.foreignKeyValue = foreignKeyValue;
+      this.inputValues = inputValues;
       return (this);
    }
 
