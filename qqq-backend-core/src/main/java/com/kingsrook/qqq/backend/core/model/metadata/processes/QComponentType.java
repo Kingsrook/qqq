@@ -36,6 +36,7 @@ public enum QComponentType
    RECORD_LIST,
    PROCESS_SUMMARY_RESULTS,
    GOOGLE_DRIVE_SELECT_FOLDER,
+   WIDGET,
    HTML;
    ///////////////////////////////////////////////////////////////////////////
    // keep these values in sync with QComponentType.ts in qqq-frontend-core //
