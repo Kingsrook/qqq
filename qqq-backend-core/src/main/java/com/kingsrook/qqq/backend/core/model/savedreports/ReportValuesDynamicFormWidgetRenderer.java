@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -57,6 +58,7 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
 {
    private static final QLogger LOG = QLogger.getLogger(ReportValuesDynamicFormWidgetRenderer.class);
 
+   private QPossibleValueTranslator qPossibleValueTranslator;
 
 
    /*******************************************************************************
@@ -104,6 +106,8 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
             return new RenderWidgetOutput(widgetData);
          }
 
+         QRecord recordOfFieldValues = new QRecord();
+
          if(StringUtils.hasContent(savedReport.getQueryFilterJson()))
          {
             QQueryFilter   queryFilter = SavedReportToReportMetaDataAdapter.getQQueryFilter(savedReport.getQueryFilterJson());
@@ -144,7 +148,23 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
 
                if(defaultValues.containsKey(fieldName))
                {
-                  fieldMetaData.setDefaultValue(defaultValues.get(fieldName));
+                  String value = defaultValues.get(fieldName);
+
+                  fieldMetaData.setDefaultValue(value);
+                  recordOfFieldValues.setValue(fieldName, value);
+
+                  //////////////////////////////////////////////////////
+                  // look up display values for possible value fields //
+                  //////////////////////////////////////////////////////
+                  if(StringUtils.hasContent(fieldMetaData.getPossibleValueSourceName()))
+                  {
+                     if(qPossibleValueTranslator == null)
+                     {
+                        qPossibleValueTranslator = new QPossibleValueTranslator();
+                     }
+                     String displayValue = qPossibleValueTranslator.translatePossibleValue(fieldMetaData, value);
+                     recordOfFieldValues.setDisplayValue(fieldName, displayValue);
+                  }
                }
 
                fieldList.add(fieldMetaData);
@@ -156,6 +176,7 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
          ///////////////////////////////////
          DynamicFormWidgetData widgetData = new DynamicFormWidgetData();
          widgetData.setFieldList(fieldList);
+         widgetData.setRecordOfFieldValues(recordOfFieldValues);
          widgetData.setMergedDynamicFormValuesIntoFieldName("inputValues");
 
          if(CollectionUtils.nullSafeIsEmpty(fieldList))

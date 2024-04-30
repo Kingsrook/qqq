@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
@@ -32,6 +33,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 public class DynamicFormWidgetData extends QWidgetData
 {
    private List<QFieldMetaData> fieldList;
+
+   /////////////////////////////////////////////////////////////////////
+   // values for the fields -                                         //
+   // use a QRecord, so we can do "richer" things, like DisplayValues //
+   /////////////////////////////////////////////////////////////////////
+   private QRecord recordOfFieldValues;
 
    /////////////////////////////////////////////////////
    // if there are no fields, what message to display //
@@ -144,6 +151,37 @@ public class DynamicFormWidgetData extends QWidgetData
    public DynamicFormWidgetData withMergedDynamicFormValuesIntoFieldName(String mergedDynamicFormValuesIntoFieldName)
    {
       this.mergedDynamicFormValuesIntoFieldName = mergedDynamicFormValuesIntoFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for recordOfFieldValues
+    *******************************************************************************/
+   public QRecord getRecordOfFieldValues()
+   {
+      return (this.recordOfFieldValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for recordOfFieldValues
+    *******************************************************************************/
+   public void setRecordOfFieldValues(QRecord recordOfFieldValues)
+   {
+      this.recordOfFieldValues = recordOfFieldValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for recordOfFieldValues
+    *******************************************************************************/
+   public DynamicFormWidgetData withRecordOfFieldValues(QRecord recordOfFieldValues)
+   {
+      this.recordOfFieldValues = recordOfFieldValues;
       return (this);
    }
 
