@@ -49,5 +49,7 @@ public enum QCriteriaOperator
    IS_BLANK,
    IS_NOT_BLANK,
    BETWEEN,
-   NOT_BETWEEN
+   NOT_BETWEEN,
+   TRUE,
+   FALSE
 }

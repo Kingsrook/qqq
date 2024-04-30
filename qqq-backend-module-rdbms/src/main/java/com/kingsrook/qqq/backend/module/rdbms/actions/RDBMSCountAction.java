@@ -62,7 +62,8 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       {
          QTableMetaData table = countInput.getTable();
 
-         JoinsContext                          joinsContext             = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), countInput.getFilter());
+         QQueryFilter                          filter                   = clonedOrNewFilter(countInput.getFilter());
+         JoinsContext                          joinsContext             = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), filter);
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(table.getPrimaryKeyField());
 
          boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
@@ -74,12 +75,10 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
             clausePrefix = "SELECT COUNT(DISTINCT (" + primaryKeyColumn + ")) AS distinct_count, COUNT(*)";
          }
 
-         String sql = clausePrefix + " AS record_count FROM "
-            + makeFromClause(countInput.getInstance(), table.getName(), joinsContext);
-
-         QQueryFilter       filter = countInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-         sql += " WHERE " + makeWhereClause(countInput.getInstance(), countInput.getSession(), table, joinsContext, filter, params);
+         String sql = clausePrefix + " AS record_count "
+            + " FROM " + makeFromClause(countInput.getInstance(), table.getName(), joinsContext, params)
+            + " WHERE " + makeWhereClause(joinsContext, filter, params);
          // todo sql customization - can edit sql and/or param list
 
          setSqlAndJoinsInQueryStat(sql, joinsContext);

@@ -138,7 +138,7 @@ public class QQueryFilter implements Serializable, Cloneable
 
 
    /*******************************************************************************
-    **
+    ** recursively look at both this filter, and any sub-filters it may have.
     *******************************************************************************/
    public boolean hasAnyCriteria()
    {
@@ -151,7 +151,7 @@ public class QQueryFilter implements Serializable, Cloneable
       {
          for(QQueryFilter subFilter : subFilters)
          {
-            if(subFilter.hasAnyCriteria())
+            if(subFilter != null && subFilter.hasAnyCriteria())
             {
                return (true);
             }
@@ -361,23 +361,44 @@ public class QQueryFilter implements Serializable, Cloneable
       StringBuilder rs = new StringBuilder("(");
       try
       {
+         int criteriaIndex = 0;
          for(QFilterCriteria criterion : CollectionUtils.nonNullList(criteria))
          {
-            rs.append(criterion).append(" ").append(getBooleanOperator()).append(" ");
+            if(criteriaIndex > 0)
+            {
+               rs.append(" ").append(getBooleanOperator()).append(" ");
+            }
+            rs.append(criterion);
+            criteriaIndex++;
          }
 
-         for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))
+         if(CollectionUtils.nullSafeHasContents(subFilters))
          {
-            rs.append(subFilter);
+            rs.append("Sub:{");
+            int subIndex = 0;
+            for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))
+            {
+               if(subIndex > 0)
+               {
+                  rs.append(" ").append(getBooleanOperator()).append(" ");
+               }
+               rs.append(subFilter);
+               subIndex++;
+            }
+            rs.append("}");
          }
+
          rs.append(")");
 
-         rs.append("OrderBy[");
-         for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(orderBys))
+         if(CollectionUtils.nullSafeHasContents(orderBys))
          {
-            rs.append(orderBy).append(",");
+            rs.append("OrderBy[");
+            for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(orderBys))
+            {
+               rs.append(orderBy).append(",");
+            }
+            rs.append("]");
          }
-         rs.append("]");
       }
       catch(Exception e)
       {

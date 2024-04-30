@@ -149,7 +149,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
             // sort the field names by their labels //
             //////////////////////////////////////////
             List<String> sortedFieldNames = table.getFields().keySet().stream()
-               .sorted(Comparator.comparing(fieldName -> table.getFields().get(fieldName).getLabel()))
+               .sorted(Comparator.comparing(fieldName -> Objects.requireNonNullElse(table.getFields().get(fieldName).getLabel(), fieldName)))
                .toList();
 
             QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());

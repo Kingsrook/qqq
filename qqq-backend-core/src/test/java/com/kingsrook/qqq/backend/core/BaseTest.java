@@ -40,6 +40,8 @@ public class BaseTest
 {
    private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
 
+   public static final String DEFAULT_USER_ID = "001";
+
 
 
    /*******************************************************************************
@@ -50,11 +52,30 @@ public class BaseTest
    {
       System.setProperty("qqq.logger.logSessionId.disabled", "true");
 
-      QContext.init(TestUtils.defineInstance(), new QSession()
-         .withUser(new QUser()
-            .withIdReference("001")
-            .withFullName("Anonymous")));
+      QContext.init(TestUtils.defineInstance(), newSession());
       resetMemoryRecordStore();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected QSession newSession()
+   {
+      return newSession(DEFAULT_USER_ID);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected QSession newSession(String userId)
+   {
+      return new QSession().withUser(new QUser()
+         .withIdReference(userId)
+         .withFullName("Anonymous"));
    }
 
 
