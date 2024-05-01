@@ -30,7 +30,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +41,6 @@ import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.Content;
 import com.kingsrook.qqq.backend.core.model.actions.messaging.MultiParty;
@@ -68,7 +66,7 @@ import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import org.apache.commons.validator.EmailValidator;
+import com.kingsrook.qqq.backend.core.utils.ValidationUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -111,7 +109,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          List<String> toEmailAddressList = new ArrayList<>();
          if(StringUtils.hasContent(sendToEmailAddress))
          {
-            toEmailAddressList = validateEmailAddresses(sendToEmailAddress);
+            toEmailAddressList = ValidationUtils.parseAndValidateEmailAddresses(sendToEmailAddress);
          }
 
          StorageAction storageAction = new StorageAction();
@@ -218,42 +216,6 @@ public class RenderSavedReportExecuteStep implements BackendStep
          LOG.warn("Error rendering saved report", e);
          throw (e);
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private List<String> validateEmailAddresses(String sendToEmailAddress) throws QUserFacingException
-   {
-      ////////////////////////////////////////////////////////////////
-      // split email address string on spaces, comma, and semicolon //
-      ////////////////////////////////////////////////////////////////
-      List<String> toEmailAddressList = Arrays.asList(sendToEmailAddress.split("[\\s,;]+"));
-
-      //////////////////////////////////////////////////////
-      // check each address keeping track of any bad ones //
-      //////////////////////////////////////////////////////
-      List<String>   invalidEmails = new ArrayList<>();
-      EmailValidator validator     = EmailValidator.getInstance();
-      for(String emailAddress : toEmailAddressList)
-      {
-         if(!validator.isValid(emailAddress))
-         {
-            invalidEmails.add(emailAddress);
-         }
-      }
-
-      ///////////////////////////////////////
-      // if bad one found, throw exception //
-      ///////////////////////////////////////
-      if(!invalidEmails.isEmpty())
-      {
-         throw (new QUserFacingException("The following email addresses were invalid: " + StringUtils.join(",", invalidEmails)));
-      }
-
-      return (toEmailAddressList);
    }
 
 

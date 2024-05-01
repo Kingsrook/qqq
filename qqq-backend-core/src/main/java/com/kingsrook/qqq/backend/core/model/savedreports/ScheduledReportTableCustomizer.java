@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
@@ -46,6 +47,8 @@ import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValidationUtils;
 import org.quartz.CronScheduleBuilder;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -98,6 +101,23 @@ public class ScheduledReportTableCustomizer implements TableCustomizerInterface
          catch(ParseException e)
          {
             record.addError(new BadInputStatusMessage("Cron Expression [" + cronExpression + "] is not valid: " + e.getMessage()));
+         }
+
+         try
+         {
+            String toAddresses = record.getValueString("toAddresses");
+            if(StringUtils.hasContent(toAddresses))
+            {
+               ValidationUtils.parseAndValidateEmailAddresses(toAddresses);
+            }
+         }
+         catch(QUserFacingException ufe)
+         {
+            record.addError(new BadInputStatusMessage(ufe.getMessage()));
+         }
+         catch(Exception e)
+         {
+            record.addError(new BadInputStatusMessage("To Addresses is not valid: " + e.getMessage()));
          }
       }
    }
