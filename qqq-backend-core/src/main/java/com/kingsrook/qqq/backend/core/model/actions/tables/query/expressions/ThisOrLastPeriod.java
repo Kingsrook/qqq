@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -95,7 +96,7 @@ public class ThisOrLastPeriod extends AbstractFilterExpression<Instant>
     **
     *******************************************************************************/
    @Override
-   public Instant evaluate()
+   public Instant evaluate() throws QException
    {
       ZoneId zoneId = ValueUtils.getSessionOrInstanceZoneId();
 

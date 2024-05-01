@@ -189,7 +189,7 @@ public class AbstractMongoDBAction
       Map<String, Serializable> values = record.getValues();
       for(QFieldMetaData field : table.getFields().values())
       {
-         String fieldName = field.getName();
+         String fieldName        = field.getName();
          String fieldBackendName = getFieldBackendName(field);
 
          if(fieldBackendName.contains("."))
@@ -554,7 +554,14 @@ public class AbstractMongoDBAction
             Serializable value = valueListIterator.next();
             if(value instanceof AbstractFilterExpression<?> expression)
             {
-               valueListIterator.set(expression.evaluate());
+               try
+               {
+                  valueListIterator.set(expression.evaluate());
+               }
+               catch(QException qe)
+               {
+                  LOG.warn("Unexpected exception caught evaluating expression", qe);
+               }
             }
             /*
             todo - is this needed??

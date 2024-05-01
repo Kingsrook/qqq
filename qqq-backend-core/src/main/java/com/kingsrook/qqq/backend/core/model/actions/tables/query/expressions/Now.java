@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
 import java.time.Instant;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
@@ -35,7 +36,7 @@ public class Now extends AbstractFilterExpression<Instant>
     **
     *******************************************************************************/
    @Override
-   public Instant evaluate()
+   public Instant evaluate() throws QException
    {
       return (Instant.now());
    }

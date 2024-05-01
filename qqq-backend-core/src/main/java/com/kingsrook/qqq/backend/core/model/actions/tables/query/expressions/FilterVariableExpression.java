@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2023.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,36 +19,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
+package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import java.io.Serializable;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class DynamicFormWidgetData extends QWidgetData
+public class FilterVariableExpression extends AbstractFilterExpression<Serializable>
 {
-   private List<QFieldMetaData> fieldList;
-
-   /////////////////////////////////////////////////////////////////////
-   // values for the fields -                                         //
-   // use a QRecord, so we can do "richer" things, like DisplayValues //
-   /////////////////////////////////////////////////////////////////////
-   private QRecord recordOfFieldValues;
-
-   /////////////////////////////////////////////////////
-   // if there are no fields, what message to display //
-   /////////////////////////////////////////////////////
-   private String noFieldsMessage;
-
-   ///////////////////////////////////////////////////////////////////////////////////
-   // what 1 field do we want to combine the dynamic fields into (as a JSON string) //
-   ///////////////////////////////////////////////////////////////////////////////////
-   private String mergedDynamicFormValuesIntoFieldName;
+   private String variableName;
+   private String fieldName;
+   private String operator;
+   private int    valueIndex = 0;
 
 
 
@@ -56,132 +44,169 @@ public class DynamicFormWidgetData extends QWidgetData
     **
     *******************************************************************************/
    @Override
-   public String getType()
+   public Serializable evaluate() throws QException
    {
-      return WidgetType.DYNAMIC_FORM.getType();
+      throw (new QUserFacingException("Missing variable value."));
    }
 
 
 
    /*******************************************************************************
-    ** Getter for fieldList
+    **
     *******************************************************************************/
-   public List<QFieldMetaData> getFieldList()
+   @Override
+   public Serializable evaluateInputValues(Map<String, Serializable> inputValues) throws QException
    {
-      return (this.fieldList);
+      if(!inputValues.containsKey(variableName))
+      {
+         throw (new QUserFacingException("Missing variable value."));
+      }
+      return (inputValues.get(variableName));
    }
 
 
 
    /*******************************************************************************
-    ** Setter for fieldList
+    ** Constructor
+    **
     *******************************************************************************/
-   public void setFieldList(List<QFieldMetaData> fieldList)
+   public FilterVariableExpression()
    {
-      this.fieldList = fieldList;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for fieldList
+    ** Constructor
+    **
     *******************************************************************************/
-   public DynamicFormWidgetData withFieldList(List<QFieldMetaData> fieldList)
+   private FilterVariableExpression(String fieldName, int valueIndex)
    {
-      this.fieldList = fieldList;
+      this.fieldName = fieldName;
+      this.valueIndex = valueIndex;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for valueIndex
+    *******************************************************************************/
+   public int getValueIndex()
+   {
+      return (this.valueIndex);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueIndex
+    *******************************************************************************/
+   public void setValueIndex(int valueIndex)
+   {
+      this.valueIndex = valueIndex;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueIndex
+    *******************************************************************************/
+   public FilterVariableExpression withValueIndex(int valueIndex)
+   {
+      this.valueIndex = valueIndex;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for noFieldsMessage
+    ** Getter for fieldName
     *******************************************************************************/
-   public String getNoFieldsMessage()
+   public String getFieldName()
    {
-      return (this.noFieldsMessage);
+      return (this.fieldName);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for noFieldsMessage
+    ** Setter for fieldName
     *******************************************************************************/
-   public void setNoFieldsMessage(String noFieldsMessage)
+   public void setFieldName(String fieldName)
    {
-      this.noFieldsMessage = noFieldsMessage;
+      this.fieldName = fieldName;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for noFieldsMessage
+    ** Fluent setter for fieldName
     *******************************************************************************/
-   public DynamicFormWidgetData withNoFieldsMessage(String noFieldsMessage)
+   public FilterVariableExpression withFieldName(String fieldName)
    {
-      this.noFieldsMessage = noFieldsMessage;
+      this.fieldName = fieldName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for mergedDynamicFormValuesIntoFieldName
+    ** Getter for variableName
     *******************************************************************************/
-   public String getMergedDynamicFormValuesIntoFieldName()
+   public String getVariableName()
    {
-      return (this.mergedDynamicFormValuesIntoFieldName);
+      return (this.variableName);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for mergedDynamicFormValuesIntoFieldName
+    ** Setter for variableName
     *******************************************************************************/
-   public void setMergedDynamicFormValuesIntoFieldName(String mergedDynamicFormValuesIntoFieldName)
+   public void setVariableName(String variableName)
    {
-      this.mergedDynamicFormValuesIntoFieldName = mergedDynamicFormValuesIntoFieldName;
+      this.variableName = variableName;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for mergedDynamicFormValuesIntoFieldName
+    ** Fluent setter for variableName
     *******************************************************************************/
-   public DynamicFormWidgetData withMergedDynamicFormValuesIntoFieldName(String mergedDynamicFormValuesIntoFieldName)
+   public FilterVariableExpression withVariableName(String variableName)
    {
-      this.mergedDynamicFormValuesIntoFieldName = mergedDynamicFormValuesIntoFieldName;
+      this.variableName = variableName;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for recordOfFieldValues
+    ** Getter for operator
     *******************************************************************************/
-   public QRecord getRecordOfFieldValues()
+   public String getOperator()
    {
-      return (this.recordOfFieldValues);
+      return (this.operator);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for recordOfFieldValues
+    ** Setter for operator
     *******************************************************************************/
-   public void setRecordOfFieldValues(QRecord recordOfFieldValues)
+   public void setOperator(String operator)
    {
-      this.recordOfFieldValues = recordOfFieldValues;
+      this.operator = operator;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for recordOfFieldValues
+    ** Fluent setter for operator
     *******************************************************************************/
-   public DynamicFormWidgetData withRecordOfFieldValues(QRecord recordOfFieldValues)
+   public FilterVariableExpression withOperator(String operator)
    {
-      this.recordOfFieldValues = recordOfFieldValues;
+      this.operator = operator;
       return (this);
    }
 

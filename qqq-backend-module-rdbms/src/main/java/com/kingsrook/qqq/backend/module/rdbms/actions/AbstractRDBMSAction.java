@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -617,7 +618,14 @@ public abstract class AbstractRDBMSAction
                Serializable value = valueListIterator.next();
                if(value instanceof AbstractFilterExpression<?> expression)
                {
-                  valueListIterator.set(expression.evaluate());
+                  try
+                  {
+                     valueListIterator.set(expression.evaluate());
+                  }
+                  catch(QException qe)
+                  {
+                     LOG.warn("Unexpected exception caught evaluating expression", qe);
+                  }
                }
                else
                {

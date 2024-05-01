@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTa
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -110,10 +111,12 @@ public class SavedReportTableCustomizer implements TableCustomizerInterface
          {
             try
             {
-               ////////////////////////////////////////////////////////////////
-               // nothing to validate on filter, other than, we can parse it //
-               ////////////////////////////////////////////////////////////////
-               SavedReportToReportMetaDataAdapter.getQQueryFilter(queryFilterJson);
+               /////////////////////////////////////////////////////////////////////////
+               // validate that we can parse the filter, then prep it for the backend //
+               /////////////////////////////////////////////////////////////////////////
+               QQueryFilter filter = SavedReportToReportMetaDataAdapter.getQQueryFilter(queryFilterJson);
+               filter.prepForBackend();
+               record.setValue("queryFilterJson", filter);
             }
             catch(IOException e)
             {

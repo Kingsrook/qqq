@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1244,7 +1245,9 @@ public class QJavalinImplementation
          }
          if(filter != null)
          {
-            queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            QQueryFilter qQueryFilter = JsonUtils.toObject(filter, QQueryFilter.class);
+            queryInput.setFilter(qQueryFilter);
+            qQueryFilter.interpretValues(Collections.emptyMap());
          }
 
          Integer skip  = QJavalinUtils.integerQueryParam(context, "skip");
@@ -1960,6 +1963,7 @@ public class QJavalinImplementation
    {
       MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
+
 
 
    /*******************************************************************************

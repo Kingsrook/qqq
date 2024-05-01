@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
- ** Unit test for NowWithOffset 
+ ** Unit test for NowWithOffset
  *******************************************************************************/
 class NowWithOffsetTest extends BaseTest
 {
@@ -42,7 +42,7 @@ class NowWithOffsetTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void test()
+   void test() throws Exception
    {
       long now = System.currentTimeMillis();
 
