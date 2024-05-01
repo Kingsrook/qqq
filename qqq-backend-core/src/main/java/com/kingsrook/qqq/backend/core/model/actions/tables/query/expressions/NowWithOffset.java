@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 
 /*******************************************************************************
@@ -119,7 +120,7 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     **
     *******************************************************************************/
    @Override
-   public Instant evaluate()
+   public Instant evaluate() throws QException
    {
       /////////////////////////////////////////////////////////////////////////////
       // Instant doesn't let us plus/minus WEEK, MONTH, or YEAR...               //

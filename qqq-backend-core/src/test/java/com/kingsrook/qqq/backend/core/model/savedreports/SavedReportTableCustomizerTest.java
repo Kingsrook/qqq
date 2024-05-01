@@ -37,7 +37,9 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTa
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.FilterVariableExpression;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -45,11 +47,12 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 /*******************************************************************************
- ** Unit test for SavedReportTableCustomizer 
+ ** Unit test for SavedReportTableCustomizer
  *******************************************************************************/
 class SavedReportTableCustomizerTest extends BaseTest
 {
@@ -94,6 +97,31 @@ class SavedReportTableCustomizerTest extends BaseTest
       ////////////////////////////////
       UpdateOutput updateOutput = new UpdateAction().execute(new UpdateInput(SavedReport.TABLE_NAME).withRecordEntity(badRecord));
       asserter.accept(updateOutput.getRecords().get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPrepareFilterVariable()
+   {
+      QQueryFilter qQueryFilter = new QQueryFilter(new QFilterCriteria("id", EQUALS, new FilterVariableExpression()));
+
+      QRecord record = new SavedReport()
+         .withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withQueryFilterJson(JsonUtils.toJson(qQueryFilter))
+         .withColumnsJson(JsonUtils.toJson(new ReportColumns()
+            .withColumn("id")
+            .withColumn("firstName")
+            .withColumn("lastName")
+            .withColumn("birthDate")))
+         .toQRecord();
+
+      new SavedReportTableCustomizer().preValidateRecord(record);
+
+      assertThat(record.getValueString("queryFilterJson").contains("idEquals"));
    }
 
 
@@ -223,6 +251,5 @@ class SavedReportTableCustomizerTest extends BaseTest
             .withValue(new PivotTableValue().withFieldName("firstName")),
          List.of("Missing function for at least one pivot table value"));
    }
-
 
 }

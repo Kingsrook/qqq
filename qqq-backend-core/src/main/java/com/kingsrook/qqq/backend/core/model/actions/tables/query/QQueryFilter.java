@@ -25,13 +25,17 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.FilterVariableExpression;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -412,6 +416,83 @@ public class QQueryFilter implements Serializable, Cloneable
 
 
    /*******************************************************************************
+    ** Replaces any FilterVariables' variableNames with one constructed from the field
+    ** name, criteria, and index, camel style
+    **
+    *******************************************************************************/
+   public void prepForBackend()
+   {
+      Map<String, Integer> fieldOperatorMap = new HashMap<>();
+      for(QFilterCriteria criterion : getCriteria())
+      {
+         if(criterion.getValues() != null)
+         {
+            int criteriaIndex = 1;
+            int valueIndex    = 0;
+            for(Serializable value : criterion.getValues())
+            {
+               ///////////////////////////////////////////////////////////////////////////////
+               // keep track of what the index is for this criterion, this way if there are //
+               // more than one with the same id/operator values, we can differentiate      //
+               ///////////////////////////////////////////////////////////////////////////////
+               String backendName = getBackendName(criterion, valueIndex);
+               if(!fieldOperatorMap.containsKey(backendName))
+               {
+                  fieldOperatorMap.put(backendName, criteriaIndex);
+               }
+               else
+               {
+                  criteriaIndex = fieldOperatorMap.get(backendName) + 1;
+                  fieldOperatorMap.put(backendName, criteriaIndex);
+               }
+
+               if(value instanceof FilterVariableExpression fve)
+               {
+                  if(criteriaIndex > 1)
+                  {
+                     backendName += criteriaIndex;
+                  }
+                  fve.setVariableName(backendName);
+               }
+
+               valueIndex++;
+            }
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** builds up a backend name for a field variable expression
+    **
+    *******************************************************************************/
+   private String getBackendName(QFilterCriteria criterion, int valueIndex)
+   {
+      StringBuilder backendName = new StringBuilder(criterion.getFieldName());
+      for(String operatorParts : criterion.getOperator().name().split("_"))
+      {
+         backendName.append(StringUtils.ucFirst(operatorParts.toLowerCase()));
+      }
+
+      if(criterion.getOperator().equals(QCriteriaOperator.BETWEEN) || criterion.getOperator().equals(QCriteriaOperator.NOT_BETWEEN))
+      {
+         if(valueIndex == 0)
+         {
+            backendName.append("From");
+         }
+         else
+         {
+            backendName.append("To");
+         }
+      }
+
+      return (backendName.toString());
+   }
+
+
+
+   /*******************************************************************************
     ** Replace any criteria values that look like ${input.XXX} with the value of XXX
     ** from the supplied inputValues map.
     **
@@ -419,7 +500,7 @@ public class QQueryFilter implements Serializable, Cloneable
     ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
     ** want to be (permanently) changed!!
     *******************************************************************************/
-   public void interpretValues(Map<String, Serializable> inputValues)
+   public void interpretValues(Map<String, Serializable> inputValues) throws QException
    {
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", inputValues);
@@ -433,11 +514,18 @@ public class QQueryFilter implements Serializable, Cloneable
             {
                if(value instanceof AbstractFilterExpression<?>)
                {
-                  /////////////////////////////////////////////////////////////////////////
-                  // todo - do we want to try to interpret values within the expression? //
-                  // e.g., greater than now minus ${input.noOfDays}                      //
-                  /////////////////////////////////////////////////////////////////////////
-                  newValues.add(value);
+                  ///////////////////////////////////////////////////////////////////////
+                  // if a filter variable expression, evaluate the input values, which //
+                  // will replace the variables with the corresponding actual values   //
+                  ///////////////////////////////////////////////////////////////////////
+                  if(value instanceof FilterVariableExpression filterVariableExpression)
+                  {
+                     newValues.add(filterVariableExpression.evaluateInputValues(inputValues));
+                  }
+                  else
+                  {
+                     newValues.add(value);
+                  }
                }
                else
                {

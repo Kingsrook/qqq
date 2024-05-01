@@ -32,6 +32,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -50,6 +52,9 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class BackendQueryFilterUtils
 {
+   private static final QLogger LOG = QLogger.getLogger(BackendQueryFilterUtils.class);
+
+
 
    /*******************************************************************************
     ** Test if record matches filter.
@@ -138,7 +143,14 @@ public class BackendQueryFilterUtils
          Serializable criteriaValue = valueListIterator.next();
          if(criteriaValue instanceof AbstractFilterExpression<?> expression)
          {
-            valueListIterator.set(expression.evaluate());
+            try
+            {
+               valueListIterator.set(expression.evaluate());
+            }
+            catch(QException qe)
+            {
+               LOG.warn("Unexpected exception caught evaluating expression", qe);
+            }
          }
       }
 
