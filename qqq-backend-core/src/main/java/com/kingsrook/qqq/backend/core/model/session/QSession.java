@@ -42,7 +42,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QSession implements Serializable
+public class QSession implements Serializable, Cloneable
 {
    private String idReference;
    private QUser  user;
@@ -65,6 +65,58 @@ public class QSession implements Serializable
 
    public static final String VALUE_KEY_USER_TIMEZONE                = "UserTimezone";
    public static final String VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES = "UserTimezoneOffsetMinutes";
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QSession clone() throws CloneNotSupportedException
+   {
+      QSession clone = (QSession) super.clone();
+
+      if(user != null)
+      {
+         clone.user = user.clone();
+      }
+
+      if(permissions != null)
+      {
+         clone.permissions = new HashSet<>();
+         clone.permissions.addAll(permissions);
+      }
+
+      if(securityKeyValues != null)
+      {
+         clone.securityKeyValues = new HashMap<>();
+         for(Map.Entry<String, List<Serializable>> entry : securityKeyValues.entrySet())
+         {
+            List<Serializable> cloneValues = entry.getValue() == null ? null : new ArrayList<>(entry.getValue());
+            clone.securityKeyValues.put(entry.getKey(), cloneValues);
+         }
+      }
+
+      if(backendVariants != null)
+      {
+         clone.backendVariants = new HashMap<>();
+         clone.backendVariants.putAll(backendVariants);
+      }
+
+      if(values != null)
+      {
+         clone.values = new HashMap<>();
+         clone.values.putAll(values);
+      }
+
+      if(valuesForFrontend != null)
+      {
+         clone.valuesForFrontend = new HashMap<>();
+         clone.valuesForFrontend.putAll(valuesForFrontend);
+      }
+
+      return (clone);
+   }
 
 
 

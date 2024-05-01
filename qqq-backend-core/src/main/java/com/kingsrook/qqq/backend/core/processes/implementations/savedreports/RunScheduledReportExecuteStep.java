@@ -26,6 +26,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -34,7 +35,11 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.savedreports.ScheduledReport;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -68,6 +73,11 @@ public class RunScheduledReportExecuteStep implements BackendStep
 
          ScheduledReport scheduledReport = new ScheduledReport(records.get(0));
          scheduledReportId = scheduledReport.getId();
+
+         ////////////////////////////////////////////////////////////////////////////////////
+         // get the schedule's user - as that will drive the security key we need to apply //
+         ////////////////////////////////////////////////////////////////////////////////////
+         updateSessionForUser(scheduledReport.getUserId());
 
          /////////////////////////////////////////////
          // run the process that renders the report //
@@ -107,6 +117,36 @@ public class RunScheduledReportExecuteStep implements BackendStep
       {
          LOG.warn("Error running scheduled report", e, logPair("id", scheduledReportId));
          throw (new QException("Error running scheduled report", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void updateSessionForUser(String userId) throws QException
+   {
+      try
+      {
+         QInstance                       qInstance                       = QContext.getQInstance();
+         QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
+         QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
+
+         ///////////////////////////////////////
+         // create automated-session for user //
+         ///////////////////////////////////////
+         QSession session = authenticationModule.createAutomatedSessionForUser(qInstance, userId);
+
+         /////////////////////////////////////////////
+         // set that session in the current context //
+         /////////////////////////////////////////////
+         QContext.setQSession(session);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error setting up user session for running scheduled report", e, logPair("userId", userId));
+         throw (new QException("Error setting up user session for running scheduled report", e));
       }
    }
 
