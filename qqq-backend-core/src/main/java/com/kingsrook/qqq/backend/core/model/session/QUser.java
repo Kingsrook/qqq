@@ -25,10 +25,21 @@ package com.kingsrook.qqq.backend.core.model.session;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QUser
+public class QUser implements Cloneable
 {
    private String idReference;
    private String fullName;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QUser clone() throws CloneNotSupportedException
+   {
+      return (QUser) super.clone();
+   }
 
 
 

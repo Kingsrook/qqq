@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 
 import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
@@ -56,6 +57,16 @@ public interface QAuthenticationModuleCustomizerInterface
     **
     *******************************************************************************/
    default void finalCustomizeSession(QInstance qInstance, QSession qSession)
+   {
+      //////////
+      // noop //
+      //////////
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void customizeAutomatedSessionForUser(QInstance qInstance, QSession automatedSessionForUser, Serializable userId) throws QAuthenticationException
    {
       //////////
       // noop //

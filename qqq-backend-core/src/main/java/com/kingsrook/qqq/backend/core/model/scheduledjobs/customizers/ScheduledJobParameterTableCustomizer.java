@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -42,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJob;
 import com.kingsrook.qqq.backend.core.model.scheduledjobs.ScheduledJobParameter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -206,6 +208,17 @@ public class ScheduledJobParameterTableCustomizer implements TableCustomizerInte
             if(!ScheduledJobParameter.TABLE_NAME.equals(tableActionInput.getTableName()))
             {
                return (false);
+            }
+         }
+         else if(firstActionInStack.get() instanceof RunProcessInput runProcessInput)
+         {
+            String tableName = runProcessInput.getValueString("tableName");
+            if(StringUtils.hasContent(tableName))
+            {
+               if(!ScheduledJobParameter.TABLE_NAME.equals(tableName))
+               {
+                  return (false);
+               }
             }
          }
       }
