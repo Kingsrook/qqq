@@ -147,10 +147,10 @@ public class RenderSavedReportExecuteStep implements BackendStep
             .withReportFormat(reportFormat)
             .withReportOutputStream(outputStream));
 
-         //////////////////////////
-         // todo variable-values //
-         //////////////////////////
-
+         //////////////////////////////////////////////////////////
+         // todo variable-values                                 //
+         // actually, looks like they're coming in right here... //
+         //////////////////////////////////////////////////////////
          Map<String, Serializable> values = runBackendStepInput.getValues();
          reportInput.setInputValues(values);
 

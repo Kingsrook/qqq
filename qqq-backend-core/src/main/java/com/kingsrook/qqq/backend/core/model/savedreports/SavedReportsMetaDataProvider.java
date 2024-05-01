@@ -284,6 +284,7 @@ public class SavedReportsMetaDataProvider
 
       table.withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
       table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(SavedReportTableCustomizer.class));
 
       table.withShareableTableMetaData(new ShareableTableMetaData()
          .withSharedRecordTableName(SharedSavedReport.TABLE_NAME)

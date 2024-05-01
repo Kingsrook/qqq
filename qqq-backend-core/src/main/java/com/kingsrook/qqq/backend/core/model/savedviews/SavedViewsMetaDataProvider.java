@@ -24,10 +24,12 @@ package com.kingsrook.qqq.backend.core.model.savedviews;
 
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -98,6 +100,9 @@ public class SavedViewsMetaDataProvider
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       table.getField("viewJson").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("json")));
+
+      table.withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(SavedViewTableCustomizer.class));
+      table.withCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(SavedViewTableCustomizer.class));
 
       if(backendDetailEnricher != null)
       {
