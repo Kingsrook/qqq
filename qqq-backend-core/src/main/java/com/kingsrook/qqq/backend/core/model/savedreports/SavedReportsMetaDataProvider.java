@@ -383,9 +383,9 @@ public class SavedReportsMetaDataProvider
          .withFieldsFromEntity(ScheduledReport.class)
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "savedReportId")))
          .withSection(new QFieldSection("settings", new QIcon().withName("settings"), Tier.T2, List.of("cronExpression", "cronTimeZoneId", "isActive", "format")))
-         .withSection(new QFieldSection("recipient", new QIcon().withName("email"), Tier.T2, List.of("toAddresses", "subject")))
+         .withSection(new QFieldSection("email", new QIcon().withName("email"), Tier.T2, List.of("toAddresses", "subject")))
          .withSection(new QFieldSection("variableValues", new QIcon().withName("data_object"), Tier.T2).withWidgetName(SCHEDULED_REPORT_VALUES_WIDGET))
-         .withSection(new QFieldSection("hidden", new QIcon().withName("visibility_off"), Tier.T2, List.of("inputValues")).withIsHidden(true))
+         .withSection(new QFieldSection("hidden", new QIcon().withName("visibility_off"), Tier.T2, List.of("inputValues", "userId")).withIsHidden(true))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       if(backendDetailEnricher != null)
