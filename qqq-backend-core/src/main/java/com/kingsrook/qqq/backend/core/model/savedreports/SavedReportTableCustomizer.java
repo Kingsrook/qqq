@@ -34,14 +34,17 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableValue;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.SavedReportToReportMetaDataAdapter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -68,7 +71,41 @@ public class SavedReportTableCustomizer implements TableCustomizerInterface
    @Override
    public List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
    {
+      validateOwner(records, SavedReport.TABLE_NAME, "edit");
       return (preInsertOrUpdate(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preDelete(DeleteInput deleteInput, List<QRecord> records, boolean isPreview) throws QException
+   {
+      validateOwner(records, SavedReport.TABLE_NAME, "delete");
+      return (preInsertOrUpdate(records));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void validateOwner(List<QRecord> records, String tableName, String verb)
+   {
+      QTableMetaData tableMetaData = QContext.getQInstance().getTable(tableName);
+      String         currentUserId = ObjectUtils.tryElse(() -> QContext.getQSession().getUser().getIdReference(), null);
+      for(QRecord record : records)
+      {
+         if(record.getValue("userId") != null)
+         {
+            if(!record.getValue("userId").equals(currentUserId))
+            {
+               record.addError(new PermissionDeniedMessage("Only the owner of a " + tableMetaData.getLabel() + " may " + verb + " it."));
+            }
+         }
+      }
    }
 
 

@@ -244,6 +244,7 @@ public class JsonUtils
          .registerModule(new JavaTimeModule())
          .setSerializationInclusion(JsonInclude.Include.NON_NULL)
          .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
          .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
       /* todo - some future version we may need to do inclusion/exclusion lists like this:
