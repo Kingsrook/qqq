@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -57,9 +58,9 @@ public class FilterVariableExpression extends AbstractFilterExpression<Serializa
    @Override
    public Serializable evaluateInputValues(Map<String, Serializable> inputValues) throws QException
    {
-      if(!inputValues.containsKey(variableName))
+      if(!inputValues.containsKey(variableName) || "".equals(ValueUtils.getValueAsString(inputValues.get(variableName))))
       {
-         throw (new QUserFacingException("Missing variable value."));
+         throw (new QUserFacingException("Missing value for variable: " + variableName));
       }
       return (inputValues.get(variableName));
    }

@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.BETWEEN;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IS_BLANK;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -69,6 +72,43 @@ class QQueryFilterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   public void testInterpretValuesNotInMap() throws QException
+   {
+      AbstractFilterExpression<Serializable> expression = new FilterVariableExpression()
+         .withVariableName("clientIdEquals1");
+
+      QQueryFilter qQueryFilter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+      assertThatThrownBy(() -> qQueryFilter.interpretValues(Collections.emptyMap()))
+         .isInstanceOf(QUserFacingException.class)
+         .hasMessageContaining("Missing value for variable: clientIdEquals1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testInterpretValuesEmptyString() throws QException
+   {
+      Map<String, Serializable> inputValues = new HashMap<>();
+      inputValues.put("clientIdEquals1", "");
+
+      AbstractFilterExpression<Serializable> expression = new FilterVariableExpression()
+         .withVariableName("clientIdEquals1");
+
+      QQueryFilter qQueryFilter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+      assertThatThrownBy(() -> qQueryFilter.interpretValues(inputValues))
+         .isInstanceOf(QUserFacingException.class)
+         .hasMessageContaining("Missing value for variable: clientIdEquals1");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testPrepForBackend() throws QException
    {
       FilterVariableExpression fve0 = new FilterVariableExpression();
@@ -78,13 +118,15 @@ class QQueryFilterTest extends BaseTest
       FilterVariableExpression fve4 = new FilterVariableExpression();
       FilterVariableExpression fve5 = new FilterVariableExpression();
       FilterVariableExpression fve6 = new FilterVariableExpression();
+      FilterVariableExpression fve7 = new FilterVariableExpression();
 
       QQueryFilter qQueryFilter = new QQueryFilter(
          new QFilterCriteria("id", EQUALS, fve0),
          new QFilterCriteria("value", IS_BLANK, fve1),
          new QFilterCriteria("id", EQUALS, fve2),
          new QFilterCriteria("id", BETWEEN, fve3, fve4),
-         new QFilterCriteria("id", BETWEEN, fve5, fve6)
+         new QFilterCriteria("id", BETWEEN, fve5, fve6),
+         new QFilterCriteria("joinTable.someFieldId", EQUALS, fve7)
       );
       qQueryFilter.prepForBackend();
 
@@ -95,6 +137,7 @@ class QQueryFilterTest extends BaseTest
       assertEquals("idBetweenTo", fve4.getVariableName());
       assertEquals("idBetweenFrom2", fve5.getVariableName());
       assertEquals("idBetweenTo2", fve6.getVariableName());
+      assertEquals("joinTableSomeFieldIdEquals", fve7.getVariableName());
    }
 
 }

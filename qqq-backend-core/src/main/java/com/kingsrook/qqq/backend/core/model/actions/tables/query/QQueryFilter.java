@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
@@ -469,7 +470,12 @@ public class QQueryFilter implements Serializable, Cloneable
     *******************************************************************************/
    private String getBackendName(QFilterCriteria criterion, int valueIndex)
    {
-      StringBuilder backendName = new StringBuilder(criterion.getFieldName());
+      StringBuilder backendName = new StringBuilder();
+      for(String fieldNameParts : criterion.getFieldName().split("\\."))
+      {
+         backendName.append(StringUtils.ucFirst(fieldNameParts));
+      }
+
       for(String operatorParts : criterion.getOperator().name().split("_"))
       {
          backendName.append(StringUtils.ucFirst(operatorParts.toLowerCase()));
@@ -487,7 +493,7 @@ public class QQueryFilter implements Serializable, Cloneable
          }
       }
 
-      return (backendName.toString());
+      return (StringUtils.lcFirst(backendName.toString()));
    }
 
 
@@ -502,6 +508,8 @@ public class QQueryFilter implements Serializable, Cloneable
     *******************************************************************************/
    public void interpretValues(Map<String, Serializable> inputValues) throws QException
    {
+      List<Exception> caughtExceptions = new ArrayList<>();
+
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", inputValues);
       for(QFilterCriteria criterion : getCriteria())
@@ -512,30 +520,44 @@ public class QQueryFilter implements Serializable, Cloneable
 
             for(Serializable value : criterion.getValues())
             {
-               if(value instanceof AbstractFilterExpression<?>)
+               try
                {
-                  ///////////////////////////////////////////////////////////////////////
-                  // if a filter variable expression, evaluate the input values, which //
-                  // will replace the variables with the corresponding actual values   //
-                  ///////////////////////////////////////////////////////////////////////
-                  if(value instanceof FilterVariableExpression filterVariableExpression)
+                  if(value instanceof AbstractFilterExpression<?>)
                   {
-                     newValues.add(filterVariableExpression.evaluateInputValues(inputValues));
+                     ///////////////////////////////////////////////////////////////////////
+                     // if a filter variable expression, evaluate the input values, which //
+                     // will replace the variables with the corresponding actual values   //
+                     ///////////////////////////////////////////////////////////////////////
+                     if(value instanceof FilterVariableExpression filterVariableExpression)
+                     {
+                        newValues.add(filterVariableExpression.evaluateInputValues(inputValues));
+                     }
+                     else
+                     {
+                        newValues.add(value);
+                     }
                   }
                   else
                   {
-                     newValues.add(value);
+                     String       valueAsString    = ValueUtils.getValueAsString(value);
+                     Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
+                     newValues.add(interpretedValue);
                   }
                }
-               else
+               catch(Exception e)
                {
-                  String       valueAsString    = ValueUtils.getValueAsString(value);
-                  Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
-                  newValues.add(interpretedValue);
+                  caughtExceptions.add(e);
                }
             }
             criterion.setValues(newValues);
          }
+      }
+
+      if(!caughtExceptions.isEmpty())
+      {
+         String  message       = "Error interpreting filter values: " + StringUtils.joinWithCommasAndAnd(caughtExceptions.stream().map(e -> e.getMessage()).toList());
+         boolean allUserFacing = caughtExceptions.stream().allMatch(QUserFacingException.class::isInstance);
+         throw (allUserFacing ? new QUserFacingException(message) : new QException(message));
       }
    }
 
