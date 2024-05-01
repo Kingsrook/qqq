@@ -74,9 +74,11 @@ public class RenderSavedReportPreStep implements BackendStep
       ///////////////////////////////////////////////////////////////////////////////////////
       // put the savedReportId in values - this'll get passed into the widget, so it knows //
       // what report we're working with, and thus what inputs to prompt for                //
+      // also put a value in just to help it know we're running the process                //
       ///////////////////////////////////////////////////////////////////////////////////////
       SavedReport savedReport = new SavedReport(records.get(0));
       runBackendStepOutput.addValue("savedReportId", savedReport.getId());
+      runBackendStepOutput.addValue("processName", runBackendStepInput.getProcessName());
    }
 
 }

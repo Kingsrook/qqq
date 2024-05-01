@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -126,10 +127,8 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
                {
                   if(criteriaValue instanceof FilterVariableExpression filterVariableExpression)
                   {
-                     //////////////////////////
-                     // todo - join fields!! //
-                     //////////////////////////
-                     QFieldMetaData fieldMetaData = table.getField(criteria.getFieldName()).clone();
+                     GenerateReportAction.FieldAndJoinTable fieldAndJoinTable = GenerateReportAction.getFieldAndJoinTable(table, criteria.getFieldName());
+                     QFieldMetaData                         fieldMetaData     = fieldAndJoinTable.field().clone();
 
                      /////////////////////////////////
                      // make name & label for field //
@@ -185,7 +184,13 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
 
          if(CollectionUtils.nullSafeIsEmpty(fieldList))
          {
-            widgetData.setNoFieldsMessage("This Report does not use any Variable Values");
+            ///////////////////////////////////////////////
+            // actually don't show this for process mode //
+            ///////////////////////////////////////////////
+            if(!input.getQueryParams().containsKey("processName"))
+            {
+               widgetData.setNoFieldsMessage("This Report does not use any Variable Values");
+            }
          }
 
          return new RenderWidgetOutput(widgetData);
