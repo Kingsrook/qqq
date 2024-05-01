@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.SavedReportToReportMetaDataAdapter;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -116,7 +117,7 @@ public class SavedReportTableCustomizer implements TableCustomizerInterface
                /////////////////////////////////////////////////////////////////////////
                QQueryFilter filter = SavedReportToReportMetaDataAdapter.getQQueryFilter(queryFilterJson);
                filter.prepForBackend();
-               record.setValue("queryFilterJson", filter);
+               record.setValue("queryFilterJson", JsonUtils.toJson(filter));
             }
             catch(IOException e)
             {
