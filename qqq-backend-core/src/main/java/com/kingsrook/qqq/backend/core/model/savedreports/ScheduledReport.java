@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.common.TimeZonePossibleValueSourceMe
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
@@ -71,6 +72,9 @@ public class ScheduledReport extends QRecordEntity
 
    @QField()
    private String inputValues;
+
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR, dynamicDefaultValueBehavior = DynamicDefaultValueBehavior.USER_ID, label = "Owner")
+   private String userId;
 
 
 
@@ -437,6 +441,37 @@ public class ScheduledReport extends QRecordEntity
    public ScheduledReport withInputValues(String inputValues)
    {
       this.inputValues = inputValues;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for userId
+    *******************************************************************************/
+   public String getUserId()
+   {
+      return (this.userId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for userId
+    *******************************************************************************/
+   public void setUserId(String userId)
+   {
+      this.userId = userId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for userId
+    *******************************************************************************/
+   public ScheduledReport withUserId(String userId)
+   {
+      this.userId = userId;
       return (this);
    }
 
