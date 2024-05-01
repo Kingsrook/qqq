@@ -36,7 +36,9 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.savedreports.ScheduledReport;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import org.json.JSONObject;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -83,9 +85,15 @@ public class RunScheduledReportExecuteStep implements BackendStep
 
          if(StringUtils.hasContent(scheduledReport.getInputValues()))
          {
-            //////////////////////////
-            // todo variable-values //
-            //////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////
+            // if there are input values, pass them along on report input...                   //
+            // this could maybe be better (e.g., some object?), but, this is working initially //
+            /////////////////////////////////////////////////////////////////////////////////////
+            JSONObject jsonObject = JsonUtils.toJSONObject(scheduledReport.getInputValues());
+            for(String name : jsonObject.keySet())
+            {
+               renderProcessInput.addValue(name, jsonObject.optString(name));
+            }
          }
 
          RunProcessOutput renderProcessOutput = runProcessAction.execute(renderProcessInput);

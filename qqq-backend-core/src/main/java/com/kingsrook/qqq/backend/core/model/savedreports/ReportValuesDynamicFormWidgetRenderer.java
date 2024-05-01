@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.savedreports;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,10 +32,12 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.FilterVariableExpression;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.DynamicFormWidgetData;
@@ -59,6 +62,7 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
    private static final QLogger LOG = QLogger.getLogger(ReportValuesDynamicFormWidgetRenderer.class);
 
    private QPossibleValueTranslator qPossibleValueTranslator;
+
 
 
    /*******************************************************************************
@@ -118,56 +122,56 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
             ///////////////////////////////////////////////////////////////////////////////////////////////
             for(QFilterCriteria criteria : CollectionUtils.nonNullList(queryFilter.getCriteria()))
             {
-               /////////////////////////////////
-               // todo - only variable fields //
-               /////////////////////////////////
-
-               ////////////////////////////////
-               // todo - twice for "between" //
-               ////////////////////////////////
-
-               //////////////////////////
-               // todo - join fields!! //
-               //////////////////////////
-               QFieldMetaData fieldMetaData = table.getField(criteria.getFieldName()).clone();
-
-               /////////////////////////////////
-               // make name & label for field //
-               /////////////////////////////////
-               String operatorHumanish = StringUtils.allCapsToMixedCase(criteria.getOperator().name()); // todo match frontend..?
-               String fieldName        = criteria.getFieldName() + operatorHumanish.replaceAll("_", "");
-               String label            = fieldMetaData.getLabel() + " " + operatorHumanish.replaceAll("_", " ");
-               fieldMetaData.setName(fieldName);
-               fieldMetaData.setLabel(label);
-
-               ////////////////////////////////////////////////////////////
-               // in this use case, every field is required and editable //
-               ////////////////////////////////////////////////////////////
-               fieldMetaData.setIsRequired(true);
-               fieldMetaData.setIsEditable(true);
-
-               if(defaultValues.containsKey(fieldName))
+               for(Serializable criteriaValue : CollectionUtils.nonNullList(criteria.getValues()))
                {
-                  String value = defaultValues.get(fieldName);
-
-                  fieldMetaData.setDefaultValue(value);
-                  recordOfFieldValues.setValue(fieldName, value);
-
-                  //////////////////////////////////////////////////////
-                  // look up display values for possible value fields //
-                  //////////////////////////////////////////////////////
-                  if(StringUtils.hasContent(fieldMetaData.getPossibleValueSourceName()))
+                  if(criteriaValue instanceof FilterVariableExpression filterVariableExpression)
                   {
-                     if(qPossibleValueTranslator == null)
+                     //////////////////////////
+                     // todo - join fields!! //
+                     //////////////////////////
+                     QFieldMetaData fieldMetaData = table.getField(criteria.getFieldName()).clone();
+
+                     /////////////////////////////////
+                     // make name & label for field //
+                     /////////////////////////////////
+                     String fieldName = filterVariableExpression.getVariableName();
+                     fieldMetaData.setName(fieldName);
+                     fieldMetaData.setLabel(QInstanceEnricher.nameToLabel(filterVariableExpression.getVariableName()));
+
+                     ////////////////////////////////////////////////////////////
+                     // in this use case, every field is required and editable //
+                     ////////////////////////////////////////////////////////////
+                     fieldMetaData.setIsRequired(true);
+                     fieldMetaData.setIsEditable(true);
+
+                     ///////////////////////////////////////////////////////////////////////
+                     // if we're in a context where there are values, then populate those //
+                     // e.g., a view screen instead of an edit screen, i think            //
+                     ///////////////////////////////////////////////////////////////////////
+                     if(defaultValues.containsKey(fieldName))
                      {
-                        qPossibleValueTranslator = new QPossibleValueTranslator();
+                        String value = defaultValues.get(fieldName);
+
+                        fieldMetaData.setDefaultValue(value);
+                        recordOfFieldValues.setValue(fieldName, value);
+
+                        //////////////////////////////////////////////////////
+                        // look up display values for possible value fields //
+                        //////////////////////////////////////////////////////
+                        if(StringUtils.hasContent(fieldMetaData.getPossibleValueSourceName()))
+                        {
+                           if(qPossibleValueTranslator == null)
+                           {
+                              qPossibleValueTranslator = new QPossibleValueTranslator();
+                           }
+                           String displayValue = qPossibleValueTranslator.translatePossibleValue(fieldMetaData, value);
+                           recordOfFieldValues.setDisplayValue(fieldName, displayValue);
+                        }
                      }
-                     String displayValue = qPossibleValueTranslator.translatePossibleValue(fieldMetaData, value);
-                     recordOfFieldValues.setDisplayValue(fieldName, displayValue);
+
+                     fieldList.add(fieldMetaData);
                   }
                }
-
-               fieldList.add(fieldMetaData);
             }
          }
 
