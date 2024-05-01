@@ -25,11 +25,15 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.WidgetHtmlLine;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -86,7 +90,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
             .withFormField(new QFieldMetaData(FIELD_NAME_REPORT_FORMAT, QFieldType.STRING)
                .withPossibleValueSourceName(ReportFormatPossibleValueEnum.NAME)
                .withIsRequired(true))
-            .withFormField(new QFieldMetaData(FIELD_NAME_EMAIL_ADDRESS, QFieldType.STRING).withLabel("Send To Email Address"))
+            .withFormField(new QFieldMetaData(FIELD_NAME_EMAIL_ADDRESS, QFieldType.STRING).withLabel("Email To"))
             .withFormField(new QFieldMetaData(FIELD_NAME_EMAIL_SUBJECT, QFieldType.STRING).withLabel("Email Subject"))
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.WIDGET)
                .withValue("widgetName", SavedReportsMetaDataProvider.RENDER_REPORT_PROCESS_VALUES_WIDGET)))
@@ -99,7 +103,12 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
 
          .addStep(new QFrontendStepMetaData()
             .withName("output")
-            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.DOWNLOAD_FORM)));
+            .withComponent(new QFrontendComponentMetaData().withType(QComponentType.DOWNLOAD_FORM))
+            .withComponent(new NoCodeWidgetFrontendComponentMetaData()
+               .withOutput(new WidgetHtmlLine()
+                  .withCondition(new QFilterCriteria(FIELD_NAME_EMAIL_ADDRESS, QCriteriaOperator.IS_NOT_BLANK))
+                  .withVelocityTemplate(String.format("Report has been emailed to: ${%s}", FIELD_NAME_EMAIL_ADDRESS))))
+         );
 
       return (process);
    }
