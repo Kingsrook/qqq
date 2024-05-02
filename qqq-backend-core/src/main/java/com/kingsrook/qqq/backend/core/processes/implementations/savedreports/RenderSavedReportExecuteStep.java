@@ -98,7 +98,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
          String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
          ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
          String       sendToEmailAddress   = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
-         String emailSubject = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
+         String       emailSubject         = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
          SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
          String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
          String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
@@ -173,6 +173,16 @@ public class RenderSavedReportExecuteStep implements BackendStep
 
          if(!toEmailAddressList.isEmpty() && CollectionUtils.nullSafeHasContents(QContext.getQInstance().getMessagingProviders()))
          {
+            ///////////////////////////////////////////
+            // error if no from address was provided //
+            ///////////////////////////////////////////
+            if(!StringUtils.hasContent(fromEmailAddress))
+            {
+               String message = "Could not send an email because no from email address was provided.";
+               LOG.error(message);
+               throw (new QException(message));
+            }
+
             ///////////////////////////////////////////////////////////
             // since sending email, make s3 file publicly accessible //
             ///////////////////////////////////////////////////////////
@@ -187,14 +197,21 @@ public class RenderSavedReportExecuteStep implements BackendStep
                recipients.addParty(new Party().withAddress(toAddress).withRole(EmailPartyRole.TO));
             }
 
+            ///////////////
+            // add froms //
+            ///////////////
+            MultiParty froms = new MultiParty();
+            froms.addParty(new Party().withAddress(fromEmailAddress).withRole(EmailPartyRole.FROM));
+            if(StringUtils.hasContent(replyToEmailAddress))
+            {
+               froms.addParty(new Party().withAddress(replyToEmailAddress).withRole(EmailPartyRole.REPLY_TO));
+            }
+
             String downloadURL = storageAction.getDownloadURL(storageInput);
             new SendMessageAction().execute(new SendMessageInput()
                .withMessagingProviderName(sesProviderName)
                .withTo(recipients)
-               .withFrom(new MultiParty()
-                  .withParty(new Party().withAddress(fromEmailAddress).withRole(EmailPartyRole.FROM))
-                  .withParty(new Party().withAddress(replyToEmailAddress).withRole(EmailPartyRole.REPLY_TO))
-               )
+               .withFrom(froms)
                .withSubject(StringUtils.hasContent(emailSubject) ? emailSubject : downloadFileBaseName)
                .withContent(new Content().withContentRole(EmailContentRole.TEXT).withBody("To download your report, open this URL in your browser: " + downloadURL))
                .withContent(new Content().withContentRole(EmailContentRole.HTML).withBody("Link: <a target=\"_blank\" href=\"" + downloadURL + "\" download>" + downloadFileName + "</a>"))
