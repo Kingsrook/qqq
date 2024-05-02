@@ -51,7 +51,7 @@ public class FilesystemStorageAction extends AbstractFilesystemAction implements
       try
       {
          String fullPath = getFullPath(storageInput);
-         File file = new File(fullPath);
+         File   file     = new File(fullPath);
          if(!file.getParentFile().exists())
          {
             if(!file.getParentFile().mkdirs())
@@ -98,6 +98,17 @@ public class FilesystemStorageAction extends AbstractFilesystemAction implements
       {
          throw (new QException("IOException getting input stream for file", e));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String getDownloadURL(StorageInput storageInput) throws QException
+   {
+      return ("file://" + getFullPath(storageInput));
    }
 
 }

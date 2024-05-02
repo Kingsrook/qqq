@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
@@ -230,6 +231,14 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                }
             }
 
+            //////////////////////////////////////////////////////////////
+            // allow customizer to do custom things here, if so desired //
+            //////////////////////////////////////////////////////////////
+            if(getCustomizer() != null)
+            {
+               getCustomizer().finalCustomizeSession(qInstance, qSession);
+            }
+
             return (qSession);
          }
          else if(CollectionUtils.containsKeyWithNonNullValue(context, BASIC_AUTH_KEY))
@@ -284,7 +293,17 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // try to build session to see if still valid      //
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
-         return buildAndValidateSession(qInstance, accessToken);
+         QSession qSession = buildAndValidateSession(qInstance, accessToken);
+
+         //////////////////////////////////////////////////////////////
+         // allow customizer to do custom things here, if so desired //
+         //////////////////////////////////////////////////////////////
+         if(getCustomizer() != null)
+         {
+            getCustomizer().finalCustomizeSession(qInstance, qSession);
+         }
+
+         return (qSession);
       }
       catch(QAuthenticationException qae)
       {
@@ -604,7 +623,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       // set security keys in the session from the JWT //
       ///////////////////////////////////////////////////
       setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
-      
+
       //////////////////////////////////////////////////////////////
       // allow customizer to do custom things here, if so desired //
       //////////////////////////////////////////////////////////////
@@ -1089,5 +1108,21 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          LOG.warn("Error getting customizer.", e);
          return (null);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., if a scheduled job needs to run as a user (say, a report)...
+    *******************************************************************************/
+   @Override
+   public QSession createAutomatedSessionForUser(QInstance qInstance, Serializable userId) throws QAuthenticationException
+   {
+      QSession automatedSessionForUser = QAuthenticationModuleInterface.super.createAutomatedSessionForUser(qInstance, userId);
+      if(getCustomizer() != null)
+      {
+         getCustomizer().customizeAutomatedSessionForUser(qInstance, automatedSessionForUser, userId);
+      }
+      return (automatedSessionForUser);
    }
 }

@@ -86,6 +86,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
@@ -624,6 +625,11 @@ public class QInstanceValidator
                supplementalTableMetaData.validate(qInstance, table, this);
             }
 
+            if(table.getShareableTableMetaData() != null)
+            {
+               table.getShareableTableMetaData().validate(qInstance, table, this);
+            }
+
             runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
@@ -711,7 +717,6 @@ public class QInstanceValidator
    {
       String prefix = "Table " + table.getName() + " ";
 
-      RECORD_SECURITY_LOCKS_LOOP:
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
       {
          if(!assertCondition(recordSecurityLock != null, prefix + "has a null recordSecurityLock (did you mean to give it a null list of locks?)"))
@@ -719,91 +724,129 @@ public class QInstanceValidator
             continue;
          }
 
-         String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
-         if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
+         if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
          {
-            assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a recordSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+            validateMultiRecordSecurityLock(qInstance, table, multiRecordSecurityLock, prefix);
          }
-
-         prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
-
-         assertCondition(recordSecurityLock.getLockScope() != null, prefix + " is missing its lockScope");
-
-         boolean hasAnyBadJoins = false;
-         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+         else
          {
-            if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
-            {
-               hasAnyBadJoins = true;
-            }
+            validateRecordSecurityLock(qInstance, table, recordSecurityLock, prefix);
          }
+      }
+   }
 
-         String fieldName = recordSecurityLock.getFieldName();
 
-         ////////////////////////////////////////////////////////////////////////////////
-         // don't bother trying to validate field names if we know we have a bad join. //
-         ////////////////////////////////////////////////////////////////////////////////
-         if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateMultiRecordSecurityLock(QInstance qInstance, QTableMetaData table, MultiRecordSecurityLock multiRecordSecurityLock, String prefix)
+   {
+      assertCondition(multiRecordSecurityLock.getOperator() != null, prefix + "has a MultiRecordSecurityLock that is missing an operator");
+
+      for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
+      {
+         validateRecordSecurityLock(qInstance, table, lock, prefix);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateRecordSecurityLock(QInstance qInstance, QTableMetaData table, RecordSecurityLock recordSecurityLock, String prefix)
+   {
+      String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
+      if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
+      {
+         assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a recordSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+      }
+
+      prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
+
+      assertCondition(recordSecurityLock.getLockScope() != null, prefix + " is missing its lockScope");
+
+      boolean hasAnyBadJoins = false;
+      for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+      {
+         if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
          {
-            if(fieldName.contains("."))
+            hasAnyBadJoins = true;
+         }
+      }
+
+      String fieldName = recordSecurityLock.getFieldName();
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // don't bother trying to validate field names if we know we have a bad join. //
+      ////////////////////////////////////////////////////////////////////////////////
+      if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
+      {
+         if(fieldName.contains("."))
+         {
+            if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
             {
-               if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
+               String[] split         = fieldName.split("\\.");
+               String   joinTableName = split[0];
+               String   joinFieldName = split[1];
+
+               List<QueryJoin> joins = new ArrayList<>();
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // ok - so - the join name chain is going to be like this:                                       //
+               // for a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is): //
+               // - securityFieldName = order.clientId                                                          //
+               // - joinNameChain = orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic             //
+               // so - to navigate from the table to the security field, we need to reverse the joinNameChain,  //
+               // and step (via tmpTable variable) back to the securityField                                    //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               ArrayList<String> joinNameChain = new ArrayList<>(CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()));
+               Collections.reverse(joinNameChain);
+
+               QTableMetaData tmpTable = table;
+
+               for(String joinName : joinNameChain)
                {
-                  List<QueryJoin> joins = new ArrayList<>();
-
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////
-                  // ok - so - the join name chain is going to be like this:                                       //
-                  // for a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is): //
-                  // - securityFieldName = order.clientId                                                          //
-                  // - joinNameChain = orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic             //
-                  // so - to navigate from the table to the security field, we need to reverse the joinNameChain,  //
-                  // and step (via tmpTable variable) back to the securityField                                    //
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////
-                  ArrayList<String> joinNameChain = new ArrayList<>(CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()));
-                  Collections.reverse(joinNameChain);
-
-                  QTableMetaData tmpTable = table;
-
-                  for(String joinName : joinNameChain)
+                  QJoinMetaData join = qInstance.getJoin(joinName);
+                  if(join == null)
                   {
-                     QJoinMetaData join = qInstance.getJoin(joinName);
-                     if(join == null)
-                     {
-                        errors.add(prefix + "joinNameChain contained an unrecognized join: " + joinName);
-                        continue RECORD_SECURITY_LOCKS_LOOP;
-                     }
-
-                     if(join.getLeftTable().equals(tmpTable.getName()))
-                     {
-                        joins.add(new QueryJoin(join));
-                        tmpTable = qInstance.getTable(join.getRightTable());
-                     }
-                     else if(join.getRightTable().equals(tmpTable.getName()))
-                     {
-                        joins.add(new QueryJoin(join.flip()));
-                        tmpTable = qInstance.getTable(join.getLeftTable());
-                     }
-                     else
-                     {
-                        errors.add(prefix + "joinNameChain could not be followed through join: " + joinName);
-                        continue RECORD_SECURITY_LOCKS_LOOP;
-                     }
+                     errors.add(prefix + "joinNameChain contained an unrecognized join: " + joinName);
+                     return;
                   }
 
-                  assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+                  if(join.getLeftTable().equals(tmpTable.getName()))
+                  {
+                     joins.add(new QueryJoin(join));
+                     tmpTable = qInstance.getTable(join.getRightTable());
+                  }
+                  else if(join.getRightTable().equals(tmpTable.getName()))
+                  {
+                     joins.add(new QueryJoin(join.flip()));
+                     tmpTable = qInstance.getTable(join.getLeftTable());
+                  }
+                  else
+                  {
+                     errors.add(prefix + "joinNameChain could not be followed through join: " + joinName);
+                     return;
+                  }
                }
-            }
-            else
-            {
-               if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
-               {
-                  assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
-               }
+
+               assertCondition(Objects.equals(tmpTable.getName(), joinTableName), prefix + "has a joinNameChain doesn't end in the expected table [" + joinTableName + "] (was: " + tmpTable.getName() + ")");
+
+               assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
             }
          }
-
-         assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
+         else
+         {
+            if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
+            {
+               assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+            }
+         }
       }
+
+      assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
    }
 
 

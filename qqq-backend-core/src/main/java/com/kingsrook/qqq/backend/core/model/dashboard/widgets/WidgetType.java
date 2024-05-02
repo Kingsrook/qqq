@@ -27,10 +27,12 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  *******************************************************************************/
 public enum WidgetType
 {
+   ///////////////////////////////////
+   // (generally) dashboard widgets //
+   ///////////////////////////////////
    ALERT("alert"),
    BAR_CHART("barChart"),
    CHART("chart"),
-   CHILD_RECORD_LIST("childRecordList"),
    DIVIDER("divider"),
    FIELD_VALUE_LIST("fieldValueList"),
    GENERIC("generic"),
@@ -40,20 +42,34 @@ public enum WidgetType
    SMALL_LINE_CHART("smallLineChart"),
    LOCATION("location"),
    MULTI_STATISTICS("multiStatistics"),
-   PARENT_WIDGET("parentWidget"),
    PIE_CHART("pieChart"),
-   PROCESS("process"),
    QUICK_SIGHT_CHART("quickSightChart"),
    STATISTICS("statistics"),
    STACKED_BAR_CHART("stackedBarChart"),
    STEPPER("stepper"),
    TABLE("table"),
    USA_MAP("usaMap"),
+
+   ///////////////////////////////
+   // widget to house a process //
+   ///////////////////////////////
+   PROCESS("process"),
+
+   ///////////////////////
+   // container widgets //
+   ///////////////////////
+   PARENT_WIDGET("parentWidget"),
    COMPOSITE("composite"),
+
+   //////////////////////////////
+   // record view/edit widgets //
+   //////////////////////////////
+   CHILD_RECORD_LIST("childRecordList"),
+   DYNAMIC_FORM("dynamicForm"),
    DATA_BAG_VIEWER("dataBagViewer"),
-   SCRIPT_VIEWER("scriptViewer"),
+   PIVOT_TABLE_SETUP("pivotTableSetup"),
    REPORT_SETUP("reportSetup"),
-   PIVOT_TABLE_SETUP("pivotTableSetup");
+   SCRIPT_VIEWER("scriptViewer");
 
 
    private final String type;

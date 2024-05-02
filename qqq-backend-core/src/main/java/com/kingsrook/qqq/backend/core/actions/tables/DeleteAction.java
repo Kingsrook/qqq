@@ -470,7 +470,7 @@ public class DeleteAction
                QRecord recordWithError = new QRecord();
                recordsWithErrors.add(recordWithError);
                recordWithError.setValue(primaryKeyField.getName(), primaryKeyValue);
-               recordWithError.addError(new NotFoundStatusMessage("No record was found to delete for " + primaryKeyField.getLabel() + " = " + primaryKeyValue));
+               recordWithError.addError(new NotFoundStatusMessage("No record was found to delete for " + Objects.requireNonNullElse(primaryKeyField.getLabel(), primaryKeyField.getName()) + " = " + primaryKeyValue));
             }
          }
       }

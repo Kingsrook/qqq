@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.QMessagingProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -78,6 +79,7 @@ public class QInstance
    private QAuthenticationMetaData                  authentication      = null;
    private QBrandingMetaData                        branding            = null;
    private Map<String, QAutomationProviderMetaData> automationProviders = new HashMap<>();
+   private Map<String, QMessagingProviderMetaData> messagingProviders = new HashMap<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
@@ -735,6 +737,53 @@ public class QInstance
    public void setAutomationProviders(Map<String, QAutomationProviderMetaData> automationProviders)
    {
       this.automationProviders = automationProviders;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addMessagingProvider(QMessagingProviderMetaData messagingProvider)
+   {
+      String name = messagingProvider.getName();
+      if(this.messagingProviders.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second messagingProvider with name: " + name));
+      }
+      this.messagingProviders.put(name, messagingProvider);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QMessagingProviderMetaData getMessagingProvider(String name)
+   {
+      return (this.messagingProviders.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for messagingProviders
+    **
+    *******************************************************************************/
+   public Map<String, QMessagingProviderMetaData> getMessagingProviders()
+   {
+      return messagingProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for messagingProviders
+    **
+    *******************************************************************************/
+   public void setMessagingProviders(Map<String, QMessagingProviderMetaData> messagingProviders)
+   {
+      this.messagingProviders = messagingProviders;
    }
 
 

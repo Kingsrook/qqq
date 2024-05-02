@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.modules.authentication;
 
 
+import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
 
 
@@ -47,6 +50,27 @@ public interface QAuthenticationModuleInterface
     **
     *******************************************************************************/
    boolean isSessionValid(QInstance instance, QSession session);
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default QSession createAutomatedSessionForUser(QInstance qInstance, Serializable userId) throws QAuthenticationException
+   {
+      try
+      {
+         QSession clone = QContext.getQSession().clone();
+         if(clone.getUser() != null)
+         {
+            clone.getUser().setIdReference(ValueUtils.getValueAsString(userId));
+         }
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw (new QAuthenticationException("Cloning session failed", e));
+      }
+   }
 
 
    /*******************************************************************************

@@ -557,7 +557,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void setInputValuesInQueryFilter(ReportInput reportInput, QQueryFilter queryFilter)
+   private void setInputValuesInQueryFilter(ReportInput reportInput, QQueryFilter queryFilter) throws QException
    {
       if(queryFilter == null || queryFilter.getCriteria() == null)
       {

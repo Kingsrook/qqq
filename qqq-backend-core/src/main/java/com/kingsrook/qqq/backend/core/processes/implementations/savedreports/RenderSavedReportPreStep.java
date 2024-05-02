@@ -63,17 +63,22 @@ public class RenderSavedReportPreStep implements BackendStep
       List<QRecord> records = runBackendStepInput.getRecords();
       if(!CollectionUtils.nullSafeHasContents(records))
       {
-         throw (new QUserFacingException("No report was selected or found to be rendered."));
+         throw (new QUserFacingException("No report was selected or found."));
       }
 
       if(records.size() > 1)
       {
-         throw (new QUserFacingException("You may only render 1 report at a time."));
+         throw (new QUserFacingException("You may only run 1 report at a time."));
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////
+      // put the savedReportId in values - this'll get passed into the widget, so it knows //
+      // what report we're working with, and thus what inputs to prompt for                //
+      // also put a value in just to help it know we're running the process                //
+      ///////////////////////////////////////////////////////////////////////////////////////
       SavedReport savedReport = new SavedReport(records.get(0));
-
-      // todo - check for inputs - set up the input screen...
+      runBackendStepOutput.addValue("savedReportId", savedReport.getId());
+      runBackendStepOutput.addValue("processName", runBackendStepInput.getProcessName());
    }
 
 }

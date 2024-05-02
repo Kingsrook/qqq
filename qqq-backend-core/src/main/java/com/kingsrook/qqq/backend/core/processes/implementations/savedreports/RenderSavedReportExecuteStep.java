@@ -29,15 +29,25 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.actions.messaging.SendMessageAction;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.Content;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.MultiParty;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.Party;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.SendMessageInput;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailContentRole;
+import com.kingsrook.qqq.backend.core.model.actions.messaging.email.EmailPartyRole;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -53,8 +63,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.RenderedReportStatus;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValidationUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -80,12 +92,29 @@ public class RenderSavedReportExecuteStep implements BackendStep
          ////////////////////////////////
          // read inputs, set up params //
          ////////////////////////////////
+         String       sesProviderName      = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.SES_PROVIDER_NAME);
+         String       fromEmailAddress     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FROM_EMAIL_ADDRESS);
+         String       replyToEmailAddress  = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.REPLY_TO_EMAIL_ADDRESS);
          String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
          ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
+         String       sendToEmailAddress   = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
+         String emailSubject = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
          SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
          String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
          String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
-         OutputStream outputStream         = new StorageAction().createOutputStream(new StorageInput(storageTableName).withReference(storageReference));
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if sending an email (or emails), validate the addresses before doing anything so user gets error and can fix //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         List<String> toEmailAddressList = new ArrayList<>();
+         if(StringUtils.hasContent(sendToEmailAddress))
+         {
+            toEmailAddressList = ValidationUtils.parseAndValidateEmailAddresses(sendToEmailAddress);
+         }
+
+         StorageAction storageAction = new StorageAction();
+         StorageInput  storageInput  = new StorageInput(storageTableName).withReference(storageReference);
+         OutputStream  outputStream  = storageAction.createOutputStream(storageInput);
 
          LOG.info("Starting to render a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference));
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
@@ -116,6 +145,10 @@ public class RenderSavedReportExecuteStep implements BackendStep
             .withReportFormat(reportFormat)
             .withReportOutputStream(outputStream));
 
+         //////////////////////////////////////////////////////////
+         // todo variable-values                                 //
+         // actually, looks like they're coming in right here... //
+         //////////////////////////////////////////////////////////
          Map<String, Serializable> values = runBackendStepInput.getValues();
          reportInput.setInputValues(values);
 
@@ -132,10 +165,41 @@ public class RenderSavedReportExecuteStep implements BackendStep
             .withValue("rowCount", reportOutput.getTotalRecordCount())
          ));
 
-         runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
+         String downloadFileName = downloadFileBaseName + "." + reportFormat.getExtension();
+         runBackendStepOutput.addValue("downloadFileName", downloadFileName);
          runBackendStepOutput.addValue("storageTableName", storageTableName);
          runBackendStepOutput.addValue("storageReference", storageReference);
          LOG.info("Completed rendering a report", logPair("savedReportId", savedReport.getId()), logPair("tableName", savedReport.getTableName()), logPair("storageReference", storageReference), logPair("rowCount", reportOutput.getTotalRecordCount()));
+
+         if(!toEmailAddressList.isEmpty() && CollectionUtils.nullSafeHasContents(QContext.getQInstance().getMessagingProviders()))
+         {
+            ///////////////////////////////////////////////////////////
+            // since sending email, make s3 file publicly accessible //
+            ///////////////////////////////////////////////////////////
+            storageAction.makePublic(storageInput);
+
+            ////////////////////////////////////////////////
+            // add multiparty in case multiple recipients //
+            ////////////////////////////////////////////////
+            MultiParty recipients = new MultiParty();
+            for(String toAddress : toEmailAddressList)
+            {
+               recipients.addParty(new Party().withAddress(toAddress).withRole(EmailPartyRole.TO));
+            }
+
+            String downloadURL = storageAction.getDownloadURL(storageInput);
+            new SendMessageAction().execute(new SendMessageInput()
+               .withMessagingProviderName(sesProviderName)
+               .withTo(recipients)
+               .withFrom(new MultiParty()
+                  .withParty(new Party().withAddress(fromEmailAddress).withRole(EmailPartyRole.FROM))
+                  .withParty(new Party().withAddress(replyToEmailAddress).withRole(EmailPartyRole.REPLY_TO))
+               )
+               .withSubject(StringUtils.hasContent(emailSubject) ? emailSubject : downloadFileBaseName)
+               .withContent(new Content().withContentRole(EmailContentRole.TEXT).withBody("To download your report, open this URL in your browser: " + downloadURL))
+               .withContent(new Content().withContentRole(EmailContentRole.HTML).withBody("Link: <a target=\"_blank\" href=\"" + downloadURL + "\" download>" + downloadFileName + "</a>"))
+            );
+         }
       }
       catch(Exception e)
       {

@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 
 /*******************************************************************************
  ** Interface for actions that a backend can perform, based on streaming data
- ** into the backend's storage. 
+ ** into the backend's storage.
  *******************************************************************************/
 public interface QStorageInterface
 {
@@ -45,5 +45,25 @@ public interface QStorageInterface
     **
     *******************************************************************************/
    InputStream getInputStream(StorageInput storageInput) throws QException;
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void makePublic(StorageInput storageInput) throws QException
+   {
+      //////////
+      // noop //
+      //////////
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default String getDownloadURL(StorageInput storageInput) throws QException
+   {
+      return (null);
+   }
 
 }

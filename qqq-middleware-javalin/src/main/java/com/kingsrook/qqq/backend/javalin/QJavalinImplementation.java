@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -109,6 +110,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendVariant;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -366,8 +368,8 @@ public class QJavalinImplementation
             post("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             post("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
-            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
-            post("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
+            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValuesForTableField);
+            post("/possibleValues/{fieldName}", QJavalinImplementation::possibleValuesForTableField);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
             path("/{primaryKey}", () ->
@@ -383,6 +385,9 @@ public class QJavalinImplementation
                QJavalinScriptsHandler.defineRecordRoutes();
             });
          });
+
+         get("/possibleValues/{possibleValueSourceName}", QJavalinImplementation::possibleValuesStandalone);
+         post("/possibleValues/{possibleValueSourceName}", QJavalinImplementation::possibleValuesStandalone);
 
          get("/widget/{name}", QJavalinImplementation::widget); // todo - can we just do a slow log here?
 
@@ -1240,7 +1245,9 @@ public class QJavalinImplementation
          }
          if(filter != null)
          {
-            queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            QQueryFilter qQueryFilter = JsonUtils.toObject(filter, QQueryFilter.class);
+            queryInput.setFilter(qQueryFilter);
+            qQueryFilter.interpretValues(Collections.emptyMap());
          }
 
          Integer skip  = QJavalinUtils.integerQueryParam(context, "skip");
@@ -1695,9 +1702,9 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    **
+    ** handler for a PVS that's associated with a field on a table.
     *******************************************************************************/
-   private static void possibleValues(Context context)
+   private static void possibleValuesForTableField(Context context)
    {
       try
       {
@@ -1736,35 +1743,70 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    **
+    ** handler for a standalone (e.g., outside of a table or process) PVS.
+    *******************************************************************************/
+   private static void possibleValuesStandalone(Context context)
+   {
+      try
+      {
+         String possibleValueSourceName = context.pathParam("possibleValueSourceName");
+
+         QPossibleValueSource pvs = qInstance.getPossibleValueSource(possibleValueSourceName);
+         if(pvs == null)
+         {
+            throw (new QNotFoundException("Could not find possible value source " + possibleValueSourceName + " in this instance."));
+         }
+
+         finishPossibleValuesRequest(context, possibleValueSourceName, null);
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** continuation for table or process PVS's,
     *******************************************************************************/
    static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
+   {
+      QQueryFilter defaultQueryFilter = null;
+      if(field.getPossibleValueSourceFilter() != null)
+      {
+         Map<String, Serializable> values = new HashMap<>();
+         if(context.formParamMap().containsKey("values"))
+         {
+            List<String> valuesParamList = context.formParamMap().get("values");
+            if(CollectionUtils.nullSafeHasContents(valuesParamList))
+            {
+               String valuesParam = valuesParamList.get(0);
+               values = JsonUtils.toObject(valuesParam, Map.class);
+            }
+         }
+
+         defaultQueryFilter = field.getPossibleValueSourceFilter().clone();
+         defaultQueryFilter.interpretValues(values);
+      }
+
+      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws IOException, QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
 
-      Map<String, Serializable> values = new HashMap<>();
-      if(context.formParamMap().containsKey("values"))
-      {
-         List<String> valuesParamList = context.formParamMap().get("values");
-         if(CollectionUtils.nullSafeHasContents(valuesParamList))
-         {
-            String valuesParam = valuesParamList.get(0);
-            values = JsonUtils.toObject(valuesParam, Map.class);
-         }
-      }
-
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       setupSession(context, input);
-      input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+      input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
-
-      if(field.getPossibleValueSourceFilter() != null)
-      {
-         QQueryFilter filter = field.getPossibleValueSourceFilter().clone();
-         filter.interpretValues(values);
-         input.setDefaultQueryFilter(filter);
-      }
 
       if(StringUtils.hasContent(ids))
       {
@@ -1777,6 +1819,7 @@ public class QJavalinImplementation
       Map<String, Object> result = new HashMap<>();
       result.put("options", output.getResults());
       context.result(JsonUtils.toJson(result));
+
    }
 
 
@@ -1920,6 +1963,7 @@ public class QJavalinImplementation
    {
       MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
+
 
 
    /*******************************************************************************

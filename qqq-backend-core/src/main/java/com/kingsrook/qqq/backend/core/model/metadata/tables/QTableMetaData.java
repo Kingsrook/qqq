@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -107,6 +108,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private List<ExposedJoin> exposedJoins;
 
+   private ShareableTableMetaData shareableTableMetaData;
 
 
    /*******************************************************************************
@@ -1384,5 +1386,36 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       this.exposedJoins.add(exposedJoin);
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for shareableTableMetaData
+    *******************************************************************************/
+   public ShareableTableMetaData getShareableTableMetaData()
+   {
+      return (this.shareableTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shareableTableMetaData
+    *******************************************************************************/
+   public void setShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shareableTableMetaData
+    *******************************************************************************/
+   public QTableMetaData withShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
+      return (this);
+   }
+
 
 }

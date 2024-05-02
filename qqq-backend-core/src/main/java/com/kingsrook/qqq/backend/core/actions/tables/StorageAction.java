@@ -93,4 +93,28 @@ public class StorageAction
       QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
       return (qModule);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void makePublic(StorageInput storageInput) throws QException
+   {
+      QBackendModuleInterface qBackendModuleInterface = preAction(storageInput);
+      QStorageInterface       storageInterface        = qBackendModuleInterface.getStorageInterface();
+      storageInterface.makePublic(storageInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getDownloadURL(StorageInput storageInput) throws QException
+   {
+      QBackendModuleInterface qBackendModuleInterface = preAction(storageInput);
+      QStorageInterface       storageInterface        = qBackendModuleInterface.getStorageInterface();
+      return (storageInterface.getDownloadURL(storageInput));
+   }
 }
