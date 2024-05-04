@@ -22,67 +22,34 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.util.List;
+
+
 /*******************************************************************************
- ** Possible values for widget type
+ ** Model containing datastructure expected by frontend bar chart widget
+ **
  *******************************************************************************/
-public enum WidgetType
+public class MultiTableData extends QWidgetData
 {
-   ///////////////////////////////////
-   // (generally) dashboard widgets //
-   ///////////////////////////////////
-   ALERT("alert"),
-   BAR_CHART("barChart"),
-   CHART("chart"),
-   DIVIDER("divider"),
-   FIELD_VALUE_LIST("fieldValueList"),
-   GENERIC("generic"),
-   HORIZONTAL_BAR_CHART("horizontalBarChart"),
-   HTML("html"),
-   LINE_CHART("lineChart"),
-   SMALL_LINE_CHART("smallLineChart"),
-   LOCATION("location"),
-   MULTI_STATISTICS("multiStatistics"),
-   MULTI_TABLE("multiTable"),
-   PIE_CHART("pieChart"),
-   QUICK_SIGHT_CHART("quickSightChart"),
-   STATISTICS("statistics"),
-   STACKED_BAR_CHART("stackedBarChart"),
-   STEPPER("stepper"),
-   TABLE("table"),
-   USA_MAP("usaMap"),
-
-   ///////////////////////////////
-   // widget to house a process //
-   ///////////////////////////////
-   PROCESS("process"),
-
-   ///////////////////////
-   // container widgets //
-   ///////////////////////
-   PARENT_WIDGET("parentWidget"),
-   COMPOSITE("composite"),
-
-   //////////////////////////////
-   // record view/edit widgets //
-   //////////////////////////////
-   CHILD_RECORD_LIST("childRecordList"),
-   DYNAMIC_FORM("dynamicForm"),
-   DATA_BAG_VIEWER("dataBagViewer"),
-   PIVOT_TABLE_SETUP("pivotTableSetup"),
-   REPORT_SETUP("reportSetup"),
-   SCRIPT_VIEWER("scriptViewer");
-
-
-   private final String type;
+   List<TableData> tableDataList;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   WidgetType(String type)
+   public MultiTableData()
    {
-      this.type = type;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public MultiTableData(List<TableData> tableDataList)
+   {
+      setTableDataList(tableDataList);
    }
 
 
@@ -93,7 +60,38 @@ public enum WidgetType
     *******************************************************************************/
    public String getType()
    {
-      return type;
+      return WidgetType.MULTI_TABLE.getType();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableDataList
+    *******************************************************************************/
+   public List<TableData> getTableDataList()
+   {
+      return (this.tableDataList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableDataList
+    *******************************************************************************/
+   public void setTableDataList(List<TableData> tableDataList)
+   {
+      this.tableDataList = tableDataList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableDataList
+    *******************************************************************************/
+   public MultiTableData withTableDataList(List<TableData> tableDataList)
+   {
+      this.tableDataList = tableDataList;
+      return (this);
    }
 
 }
