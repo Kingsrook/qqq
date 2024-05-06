@@ -495,15 +495,15 @@ public class RunProcessAction
       String basepullKeyValue = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if backend specifies that it uses variants, look for that data in the session and append to our basepull key //
+      // if process specifies that it uses variants, look for that data in the session and append to our basepull key //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(process.getSchedule() != null && process.getVariantBackend() != null)
+      if(process.getVariantBackend() != null)
       {
          QSession         session         = QContext.getQSession();
          QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getVariantBackend());
          if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
          {
-            LOG.info("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
+            LOG.warn("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
          }
          else
          {
