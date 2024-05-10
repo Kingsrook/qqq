@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -38,8 +39,11 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -81,11 +85,26 @@ class ReplaceActionTest extends BaseTest
       replaceInput.setOmitDmlAudit(true);
       replaceInput.setRecords(newPeople);
       replaceInput.setFilter(null);
+      replaceInput.setSetPrimaryKeyInInsertedRecords(false);
       ReplaceOutput replaceOutput = new ReplaceAction().execute(replaceInput);
 
       assertEquals(1, replaceOutput.getInsertOutput().getRecords().size());
       assertEquals(1, replaceOutput.getUpdateOutput().getRecords().size());
       assertEquals(1, replaceOutput.getDeleteOutput().getDeletedRecordCount());
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // due to false for SetPrimaryKeyInInsertedRecords, make sure primary keys aren't on the records that got inserted //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      Optional<QRecord> ned = newPeople.stream().filter(r -> r.getValueString("firstName").equals("Ned")).findFirst();
+      assertThat(ned).isPresent();
+      assertNull(ned.get().getValue("id"), "the record that got inserted should not have its primary key set");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // but note, homer (who was updated) would have had its primary key set too, as part of the internal processing that does the update. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      Optional<QRecord> homer = newPeople.stream().filter(r -> r.getValueString("firstName").equals("Homer")).findFirst();
+      assertThat(homer).isPresent();
+      assertNotNull(homer.get().getValue("id"), "the record that got updated should have its primary key set");
 
       //////////////////////////////
       // assert homer was updated //
@@ -136,11 +155,17 @@ class ReplaceActionTest extends BaseTest
       replaceInput.setOmitDmlAudit(true);
       replaceInput.setRecords(newPeople);
       replaceInput.setFilter(null);
+      replaceInput.setSetPrimaryKeyInInsertedRecords(true);
       ReplaceOutput replaceOutput = new ReplaceAction().execute(replaceInput);
 
       assertEquals(2, replaceOutput.getInsertOutput().getRecords().size());
       assertEquals(0, replaceOutput.getUpdateOutput().getRecords().size());
       assertEquals(2, replaceOutput.getDeleteOutput().getDeletedRecordCount());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // due to true for SetPrimaryKeyInInsertedRecords, make sure primary keys ARE on all the records that got inserted //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(newPeople.stream().allMatch(r -> r.getValue("id") != null), "All inserted records should have their primary key");
 
       ///////////////////////////////////////
       // assert homer & marge were deleted //

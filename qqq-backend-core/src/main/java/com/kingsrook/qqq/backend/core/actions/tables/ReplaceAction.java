@@ -157,6 +157,17 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
             output.setDeleteOutput(deleteOutput);
          }
 
+         if(input.getSetPrimaryKeyInInsertedRecords())
+         {
+            for(int i = 0; i < insertList.size(); i++)
+            {
+               if(i < insertOutput.getRecords().size())
+               {
+                  insertList.get(i).setValue(primaryKeyField, insertOutput.getRecords().get(i).getValue(primaryKeyField));
+               }
+            }
+         }
+
          if(weOwnTheTransaction)
          {
             transaction.commit();
