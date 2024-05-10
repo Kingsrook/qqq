@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -50,6 +51,8 @@ public class MetaDataProducerHelper
    private static Map<Class<?>, Integer> comparatorValuesByType = new HashMap<>();
    private static Integer                defaultComparatorValue;
 
+   private static ImmutableSet<ClassPath.ClassInfo> topLevelClasses;
+
    static
    {
       ////////////////////////////////////////////////////////////////////////////////////////
@@ -69,8 +72,6 @@ public class MetaDataProducerHelper
       comparatorValuesByType.put(QWidgetMetaData.class, 22);
       comparatorValuesByType.put(QAppMetaData.class, 23);
    }
-
-
 
    /*******************************************************************************
     ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
@@ -186,7 +187,7 @@ public class MetaDataProducerHelper
       List<Class<?>> classes = new ArrayList<>();
       ClassLoader    loader  = Thread.currentThread().getContextClassLoader();
 
-      for(ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses())
+      for(ClassPath.ClassInfo info : getTopLevelClasses(loader))
       {
          if(info.getName().startsWith(packageName))
          {
@@ -195,6 +196,31 @@ public class MetaDataProducerHelper
       }
 
       return (classes);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static ImmutableSet<ClassPath.ClassInfo> getTopLevelClasses(ClassLoader loader) throws IOException
+   {
+      if(topLevelClasses == null)
+      {
+         topLevelClasses = ClassPath.from(loader).getTopLevelClasses();
+      }
+
+      return (topLevelClasses);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void clearTopLevelClassCache()
+   {
+      topLevelClasses = null;
    }
 
 }

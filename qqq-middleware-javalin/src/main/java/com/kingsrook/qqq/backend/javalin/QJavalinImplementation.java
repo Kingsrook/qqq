@@ -103,6 +103,7 @@ import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSo
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -283,6 +284,14 @@ public class QJavalinImplementation
 
          try
          {
+            ////////////////////////////////////////////////////////////////////////////////
+            // clear the cache of classes in this class, so that new classes can be found //
+            ////////////////////////////////////////////////////////////////////////////////
+            MetaDataProducerHelper.clearTopLevelClassCache();
+
+            /////////////////////////////////////////////////
+            // try to get a new instance from the supplier //
+            /////////////////////////////////////////////////
             QInstance newQInstance = qInstanceHotSwapSupplier.get();
             if(newQInstance == null)
             {
@@ -290,6 +299,9 @@ public class QJavalinImplementation
                return;
             }
 
+            ///////////////////////////////////////////////////////////////////////////////////
+            // validate the instance, and only if it passes, then set it in our static field //
+            ///////////////////////////////////////////////////////////////////////////////////
             new QInstanceValidator().validate(newQInstance);
             QJavalinImplementation.qInstance = newQInstance;
             LOG.info("Swapped qInstance");
