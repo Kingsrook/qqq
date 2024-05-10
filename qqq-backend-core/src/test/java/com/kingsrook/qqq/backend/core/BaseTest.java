@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core;
 
 
+import java.time.ZoneId;
+import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -42,7 +44,10 @@ public class BaseTest
 
    public static final String DEFAULT_USER_ID = "001";
 
-
+   static
+   {
+      TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("UTC")));
+   }
 
    /*******************************************************************************
     **
