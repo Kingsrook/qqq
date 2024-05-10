@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.logging;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -143,6 +144,28 @@ public class QLogger
       Logger  loggerFromLogManager = LogManager.getLogger(c);
       QLogger qLogger              = getLogger(c);
       qLogger.setLogger(loggerFromLogManager);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public <T extends Throwable> T warnAndThrow(T t, LogPair... logPairs) throws T
+   {
+      warn(t.getMessage(), t, logPairs);
+      throw (t);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public <T extends Throwable> T errorAndThrow(T t, LogPair... logPairs) throws T
+   {
+      error(t.getMessage(), t, logPairs);
+      throw (t);
    }
 
 
@@ -595,7 +618,10 @@ public class QLogger
             {
                user = session.getUser().getIdReference();
             }
-            sessionLogPair = logPair("session", logPair("id", session.getUuid()), logPair("user", user));
+
+            LogPair variantsLogPair = getVariantsLogPair(session);
+
+            sessionLogPair = logPair("session", logPair("id", session.getUuid()), logPair("user", user), variantsLogPair);
          }
 
          try
@@ -611,6 +637,38 @@ public class QLogger
             logPairList.add(sessionLogPair);
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static LogPair getVariantsLogPair(QSession session)
+   {
+      LogPair variantsLogPair = null;
+      try
+      {
+         if(session.getBackendVariants() != null)
+         {
+            LogPair[] variants = new LogPair[session.getBackendVariants().size()];
+
+            int i = 0;
+            for(Map.Entry<String, Serializable> entry : session.getBackendVariants().entrySet())
+            {
+               variants[i] = new LogPair(entry.getKey(), entry.getValue());
+            }
+
+            variantsLogPair = new LogPair("variants", variants);
+         }
+      }
+      catch(Exception e)
+      {
+         ////////////////
+         // leave null //
+         ////////////////
+      }
+      return variantsLogPair;
    }
 
 
