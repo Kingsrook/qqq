@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -44,6 +45,8 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
    private ProcessState        processState;
    private String              processUUID;
    private Optional<Exception> exception = Optional.empty();
+
+   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
 
 
 
@@ -327,4 +330,36 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
    {
       return exception;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for updatedFrontendStepList
+    *******************************************************************************/
+   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   {
+      return (this.updatedFrontendStepList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for updatedFrontendStepList
+    *******************************************************************************/
+   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.updatedFrontendStepList = updatedFrontendStepList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for updatedFrontendStepList
+    *******************************************************************************/
+   public RunProcessOutput withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.updatedFrontendStepList = updatedFrontendStepList;
+      return (this);
+   }
+
 }

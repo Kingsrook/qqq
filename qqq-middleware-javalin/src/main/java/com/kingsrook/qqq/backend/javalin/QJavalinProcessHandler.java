@@ -72,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -448,6 +449,12 @@ public class QJavalinProcessHandler
       }
       resultForCaller.put("values", runProcessOutput.getValues());
       runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
+
+      List<QFrontendStepMetaData> updatedFrontendStepList = runProcessOutput.getUpdatedFrontendStepList();
+      if(updatedFrontendStepList != null)
+      {
+         resultForCaller.put("updatedFrontendStepList", updatedFrontendStepList);
+      }
    }
 
 
