@@ -79,7 +79,7 @@ public class LogPair
       }
       else if(value instanceof LogPair[] subLogPairs)
       {
-         String subLogPairsString = Arrays.stream(subLogPairs).map(LogPair::toString).collect(Collectors.joining(","));
+         String subLogPairsString = Arrays.stream(subLogPairs).filter(Objects::nonNull).map(LogPair::toString).collect(Collectors.joining(","));
          valueString = '{' + subLogPairsString + '}';
       }
       else if(value instanceof UnsafeSupplier<?, ?> us)
