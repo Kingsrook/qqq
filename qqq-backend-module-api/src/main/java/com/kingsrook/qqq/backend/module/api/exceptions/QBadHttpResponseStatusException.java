@@ -23,25 +23,30 @@ package com.kingsrook.qqq.backend.module.api.exceptions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.module.api.actions.QHttpResponse;
 
 
 /*******************************************************************************
  ** Exception thrown when an API HTTP request failed due to a bad status code.
- ** This exception includes the status code as a field
+ ** This exception includes the status code as a field, as well as the full
+ ** response object.
  *******************************************************************************/
 public class QBadHttpResponseStatusException extends QException
 {
-   private int statusCode;
+   private int           statusCode;
+   private QHttpResponse response;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QBadHttpResponseStatusException(String message, int statusCode)
+   public QBadHttpResponseStatusException(String message, QHttpResponse response)
    {
       super(message);
-      this.statusCode = statusCode;
+
+      this.statusCode = response.getStatusCode();
+      this.response = response;
    }
 
 
@@ -72,6 +77,37 @@ public class QBadHttpResponseStatusException extends QException
    public QBadHttpResponseStatusException withStatusCode(int statusCode)
    {
       this.statusCode = statusCode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for response
+    *******************************************************************************/
+   public QHttpResponse getResponse()
+   {
+      return (this.response);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for response
+    *******************************************************************************/
+   public void setResponse(QHttpResponse response)
+   {
+      this.response = response;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for response
+    *******************************************************************************/
+   public QBadHttpResponseStatusException withResponse(QHttpResponse response)
+   {
+      this.response = response;
       return (this);
    }
 

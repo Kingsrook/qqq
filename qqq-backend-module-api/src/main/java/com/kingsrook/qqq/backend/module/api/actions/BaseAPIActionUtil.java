@@ -594,7 +594,7 @@ public class BaseAPIActionUtil
       }
 
       String warningMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      throw (new QBadHttpResponseStatusException(warningMessage, statusCode));
+      throw (new QBadHttpResponseStatusException(warningMessage, response));
    }
 
 
