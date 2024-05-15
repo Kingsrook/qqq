@@ -914,7 +914,7 @@ public class QInstanceValidator
          }
 
          assertCondition(fieldSecurityLock.getDefaultBehavior() != null, prefix + "has a fieldSecurityLock that is missing a defaultBehavior");
-         assertCondition(CollectionUtils.nullSafeHasContents(fieldSecurityLock.getOverrideValues()), prefix + "has a fieldSecurityLock that is missing overrideValues");
+         assertCondition(CollectionUtils.nullSafeHasContents(fieldSecurityLock.getKeyValueBehaviors()), prefix + "has a fieldSecurityLock that is missing keyValueBehaviors");
       }
 
       for(FieldAdornment adornment : CollectionUtils.nonNullList(field.getAdornments()))

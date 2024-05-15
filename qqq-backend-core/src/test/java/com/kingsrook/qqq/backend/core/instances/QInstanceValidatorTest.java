@@ -1922,8 +1922,8 @@ public class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType(" ")), "missing a securityKeyType");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setSecurityKeyType("notAKeyType")), "unrecognized securityKeyType");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setDefaultBehavior(null)), "missing a defaultBehavior");
-      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(null)), "missing overrideValues");
-      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setOverrideValues(Collections.emptyList())), "missing overrideValues");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setKeyValueBehaviors(null)), "missing keyValueBehaviors");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setKeyValueBehaviors(Collections.emptyMap())), "missing keyValueBehaviors");
    }
 
 

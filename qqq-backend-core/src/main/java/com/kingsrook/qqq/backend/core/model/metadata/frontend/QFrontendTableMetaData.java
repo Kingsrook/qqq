@@ -35,16 +35,17 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -87,11 +88,13 @@ public class QFrontendTableMetaData
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
+   public QFrontendTableMetaData(QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
       this.isHidden = tableMetaData.getIsHidden();
+
+      QSession qSession = QContext.getQSession();
 
       if(includeFullMetaData)
       {
@@ -100,7 +103,21 @@ public class QFrontendTableMetaData
          for(String fieldName : tableMetaData.getFields().keySet())
          {
             QFieldMetaData field = tableMetaData.getField(fieldName);
-            if(!field.getIsHidden())
+
+            ////////////////////////////////////////////////////////
+            // apply field security lock behaviors, if applicable //
+            ////////////////////////////////////////////////////////
+            boolean isDenied = false;
+            if(field.getFieldSecurityLock() != null)
+            {
+               FieldSecurityLock.Behavior behavior = field.getFieldSecurityLock().getBehaviorForSession(qSession);
+               if(FieldSecurityLock.Behavior.DENY.equals(behavior))
+               {
+                  isDenied = true;
+               }
+            }
+
+            if(!field.getIsHidden() && !isDenied)
             {
                this.fields.put(fieldName, new QFrontendFieldMetaData(field));
             }
@@ -124,7 +141,7 @@ public class QFrontendTableMetaData
             QTableMetaData joinTable = qInstance.getTable(exposedJoin.getJoinTable());
             frontendExposedJoin.setLabel(exposedJoin.getLabel());
             frontendExposedJoin.setIsMany(exposedJoin.getIsMany());
-            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(actionInput, backendForTable, joinTable, includeFullMetaData, false));
+            frontendExposedJoin.setJoinTable(new QFrontendTableMetaData(backendForTable, joinTable, includeFullMetaData, false));
             for(String joinName : exposedJoin.getJoinPath())
             {
                frontendExposedJoin.addJoin(qInstance.getJoin(joinName));
@@ -161,16 +178,16 @@ public class QFrontendTableMetaData
 
       setCapabilities(backendForTable, tableMetaData);
 
-      readPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.READ);
-      insertPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.INSERT);
-      editPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.EDIT);
-      deletePermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.DELETE);
+      readPermission = PermissionsHelper.hasTablePermission(tableMetaData.getName(), TablePermissionSubType.READ);
+      insertPermission = PermissionsHelper.hasTablePermission(tableMetaData.getName(), TablePermissionSubType.INSERT);
+      editPermission = PermissionsHelper.hasTablePermission(tableMetaData.getName(), TablePermissionSubType.EDIT);
+      deletePermission = PermissionsHelper.hasTablePermission(tableMetaData.getName(), TablePermissionSubType.DELETE);
 
-      QBackendMetaData backend = actionInput.getInstance().getBackend(tableMetaData.getBackendName());
+      QBackendMetaData backend = QContext.getQInstance().getBackend(tableMetaData.getBackendName());
       if(backend != null && backend.getUsesVariants())
       {
          usesVariants = true;
-         variantTableLabel = actionInput.getInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
+         variantTableLabel = QContext.getQInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
       }
    }
 

@@ -152,10 +152,10 @@ class PermissionsHelperTest extends BaseTest
 
          AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.EDIT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.DELETE));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.READ));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.INSERT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.EDIT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.DELETE));
          PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.READ);
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.INSERT)).isInstanceOf(QPermissionDeniedException.class);
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.EDIT)).isInstanceOf(QPermissionDeniedException.class);
@@ -169,10 +169,10 @@ class PermissionsHelperTest extends BaseTest
 
          AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.EDIT));
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.DELETE));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.READ));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.INSERT));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.EDIT));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.DELETE));
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.READ)).isInstanceOf(QPermissionDeniedException.class);
          PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.INSERT);
          PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.EDIT);
@@ -244,10 +244,10 @@ class PermissionsHelperTest extends BaseTest
 
          AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.EDIT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.DELETE));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.READ));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.INSERT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.EDIT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.DELETE));
          PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.READ);
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.INSERT)).isInstanceOf(QPermissionDeniedException.class);
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.EDIT)).isInstanceOf(QPermissionDeniedException.class);
@@ -261,10 +261,10 @@ class PermissionsHelperTest extends BaseTest
 
          AbstractTableActionInput actionInput = new InsertInput().withTableName(TABLE_NAME);
 
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.READ));
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.INSERT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.EDIT));
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, TablePermissionSubType.DELETE));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.READ));
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.INSERT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.EDIT));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, TablePermissionSubType.DELETE));
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.READ)).isInstanceOf(QPermissionDeniedException.class);
          PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.INSERT);
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, TablePermissionSubType.EDIT)).isInstanceOf(QPermissionDeniedException.class);
@@ -581,7 +581,7 @@ class PermissionsHelperTest extends BaseTest
 
       for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
       {
-         assertTrue(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, permissionSubType), "Expected to have permission " + TABLE_NAME + ":" + permissionSubType);
+         assertTrue(PermissionsHelper.hasTablePermission(TABLE_NAME, permissionSubType), "Expected to have permission " + TABLE_NAME + ":" + permissionSubType);
          PermissionsHelper.checkTablePermissionThrowing(actionInput, permissionSubType);
       }
 
@@ -600,7 +600,7 @@ class PermissionsHelperTest extends BaseTest
 
       for(TablePermissionSubType permissionSubType : TablePermissionSubType.values())
       {
-         assertFalse(PermissionsHelper.hasTablePermission(actionInput, TABLE_NAME, permissionSubType));
+         assertFalse(PermissionsHelper.hasTablePermission(TABLE_NAME, permissionSubType));
          assertThatThrownBy(() -> PermissionsHelper.checkTablePermissionThrowing(actionInput, permissionSubType))
             .isExactlyInstanceOf(QPermissionDeniedException.class);
       }

@@ -23,17 +23,38 @@ package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
  ** Define, for a field, a lock that controls if users can or cannot see the field.
+ **
+ ** The lock has a defaultBehavior, which is how the field should be treated, well,
+ ** by default.
+ ** The lock also references a securityKeyType; whose values, when looked up in
+ ** the lock's keyValueBehaviors map, change the default behavior.
+ **
+ ** For example, consider a lock with a keyType of 'internalOrExternalUser' (with
+ ** possible values of 'internal' and 'external'), a defaultBehavior of DENY,
+ ** and a keyValueBehaviors map containing internal => ALLOW.  If a session has
+ ** no security key of the internalOrExternalUser type, or a key with the value of
+ ** 'external', then the lock's behavior will be the default (DENY).  However,
+ ** a key value of 'internal' would trigger the behavior specified for that key
+ ** (ALLOW).
  *******************************************************************************/
 public class FieldSecurityLock
 {
-   private String             securityKeyType;
-   private Behavior           defaultBehavior = Behavior.DENY;
-   private List<Serializable> overrideValues;
+   private static final QLogger LOG = QLogger.getLogger(FieldSecurityLock.class);
+
+   private String   securityKeyType;
+   private Behavior defaultBehavior = Behavior.DENY;
+
+   private Map<Serializable, Behavior> keyValueBehaviors;
 
 
 
@@ -89,7 +110,6 @@ public class FieldSecurityLock
 
 
 
-
    /*******************************************************************************
     ** Getter for defaultBehavior
     *******************************************************************************/
@@ -122,33 +142,82 @@ public class FieldSecurityLock
 
 
    /*******************************************************************************
-    ** Getter for overrideValues
+    ** Getter for keyValueBehaviors
     *******************************************************************************/
-   public List<Serializable> getOverrideValues()
+   public Map<Serializable, Behavior> getKeyValueBehaviors()
    {
-      return (this.overrideValues);
+      return (this.keyValueBehaviors);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for overrideValues
+    ** Setter for keyValueBehaviors
     *******************************************************************************/
-   public void setOverrideValues(List<Serializable> overrideValues)
+   public void setKeyValueBehaviors(Map<Serializable, Behavior> keyValueBehaviors)
    {
-      this.overrideValues = overrideValues;
+      this.keyValueBehaviors = keyValueBehaviors;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for overrideValues
+    ** Fluent setter for keyValueBehaviors
     *******************************************************************************/
-   public FieldSecurityLock withOverrideValues(List<Serializable> overrideValues)
+   public FieldSecurityLock withKeyValueBehaviors(Map<Serializable, Behavior> keyValueBehaviors)
    {
-      this.overrideValues = overrideValues;
+      this.keyValueBehaviors = keyValueBehaviors;
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Fluent setter for a single keyValueBehavior
+    *******************************************************************************/
+   public FieldSecurityLock withKeyValueBehavior(Serializable keyValue, Behavior behavior)
+   {
+      if(this.keyValueBehaviors == null)
+      {
+         this.keyValueBehaviors = new HashMap<>();
+      }
+      this.keyValueBehaviors.put(keyValue, behavior);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Behavior getBehaviorForSession(QSession session)
+   {
+      if(session != null && session.getSecurityKeyValues(this.securityKeyType) != null)
+      {
+         QSecurityKeyType securityKeyType = QContext.getQInstance().getSecurityKeyType(this.securityKeyType);
+
+         for(Serializable securityKeyValue : session.getSecurityKeyValues(this.securityKeyType))
+         {
+            try
+            {
+               if(securityKeyType.getValueType() != null)
+               {
+                  securityKeyValue = ValueUtils.getValueAsFieldType(securityKeyType.getValueType(), securityKeyValue);
+               }
+
+               if(keyValueBehaviors.containsKey(securityKeyValue))
+               {
+                  return keyValueBehaviors.get(securityKeyValue);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error getting field behavior", e);
+            }
+         }
+      }
+
+      return getDefaultBehavior();
+   }
 
 }
