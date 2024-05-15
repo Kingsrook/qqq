@@ -54,7 +54,7 @@ public class TableMetaDataAction
          throw (new QNotFoundException("Table [" + tableMetaDataInput.getTableName() + "] was not found."));
       }
       QBackendMetaData backendForTable = tableMetaDataInput.getInstance().getBackendForTable(table.getName());
-      tableMetaDataOutput.setTable(new QFrontendTableMetaData(tableMetaDataInput, backendForTable, table, true, true));
+      tableMetaDataOutput.setTable(new QFrontendTableMetaData(backendForTable, table, true, true));
 
       // todo post-customization - can do whatever w/ the result if you want
 

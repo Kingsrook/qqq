@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
@@ -36,6 +37,8 @@ public class QSecurityKeyType implements TopLevelMetaDataInterface
    private String allAccessKeyName;
    private String nullValueBehaviorKeyName;
    private String possibleValueSourceName;
+
+   private QFieldType valueType;
 
 
 
@@ -151,6 +154,7 @@ public class QSecurityKeyType implements TopLevelMetaDataInterface
    }
 
 
+
    /*******************************************************************************
     ** Getter for nullValueBehaviorKeyName
     *******************************************************************************/
@@ -180,5 +184,35 @@ public class QSecurityKeyType implements TopLevelMetaDataInterface
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for valueType
+    *******************************************************************************/
+   public QFieldType getValueType()
+   {
+      return (this.valueType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valueType
+    *******************************************************************************/
+   public void setValueType(QFieldType valueType)
+   {
+      this.valueType = valueType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valueType
+    *******************************************************************************/
+   public QSecurityKeyType withValueType(QFieldType valueType)
+   {
+      this.valueType = valueType;
+      return (this);
+   }
 
 }

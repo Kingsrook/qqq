@@ -660,7 +660,7 @@ public class TestUtils
          .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()
             .withSecurityKeyType(SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL)
             .withDefaultBehavior(FieldSecurityLock.Behavior.DENY)
-            .withOverrideValues(List.of("internal"))
+            .withKeyValueBehavior("internal", FieldSecurityLock.Behavior.ALLOW)
          ));
    }
 

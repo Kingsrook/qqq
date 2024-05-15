@@ -65,7 +65,7 @@ public class PermissionsHelper
     *******************************************************************************/
    public static void checkTablePermissionThrowing(AbstractTableActionInput tableActionInput, TablePermissionSubType permissionSubType) throws QPermissionDeniedException
    {
-      checkTablePermissionThrowing(tableActionInput, tableActionInput.getTableName(), permissionSubType);
+      checkTablePermissionThrowing(tableActionInput.getTableName(), permissionSubType);
    }
 
 
@@ -73,7 +73,7 @@ public class PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void checkTablePermissionThrowing(AbstractActionInput actionInput, String tableName, TablePermissionSubType permissionSubType) throws QPermissionDeniedException
+   private static void checkTablePermissionThrowing(String tableName, TablePermissionSubType permissionSubType) throws QPermissionDeniedException
    {
       warnAboutPermissionSubTypeForTables(permissionSubType);
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
@@ -99,11 +99,11 @@ public class PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static boolean hasTablePermission(AbstractActionInput actionInput, String tableName, TablePermissionSubType permissionSubType)
+   public static boolean hasTablePermission(String tableName, TablePermissionSubType permissionSubType)
    {
       try
       {
-         checkTablePermissionThrowing(actionInput, tableName, permissionSubType);
+         checkTablePermissionThrowing(tableName, permissionSubType);
          return (true);
       }
       catch(QPermissionDeniedException e)
