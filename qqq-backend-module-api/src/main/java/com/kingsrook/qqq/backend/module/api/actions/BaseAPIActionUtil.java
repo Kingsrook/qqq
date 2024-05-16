@@ -69,6 +69,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.OAuthCredentialsException;
 import com.kingsrook.qqq.backend.module.api.exceptions.OAuthExpiredTokenException;
+import com.kingsrook.qqq.backend.module.api.exceptions.QBadHttpResponseStatusException;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
 import com.kingsrook.qqq.backend.module.api.exceptions.RetryableServerErrorException;
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
@@ -593,7 +594,7 @@ public class BaseAPIActionUtil
       }
 
       String warningMessage = "HTTP " + request.getMethod() + " for table [" + table.getName() + "] failed with status " + statusCode + ": " + resultString;
-      throw (new QException(warningMessage));
+      throw (new QBadHttpResponseStatusException(warningMessage, response));
    }
 
 

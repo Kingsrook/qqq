@@ -120,7 +120,7 @@ public class UpdateInput extends AbstractTableActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public UpdateInput withRecordEntities(List<QRecordEntity> recordEntityList)
+   public UpdateInput withRecordEntities(List<? extends QRecordEntity> recordEntityList)
    {
       for(QRecordEntity recordEntity : CollectionUtils.nonNullList(recordEntityList))
       {

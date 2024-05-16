@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -37,7 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterf
  ** Input data for the Query action
  **
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface
+public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, Cloneable
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;
@@ -105,6 +106,40 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    public QueryInput(String tableName)
    {
       setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QueryInput clone() throws CloneNotSupportedException
+   {
+      QueryInput clone = (QueryInput) super.clone();
+
+      if(fieldsToTranslatePossibleValues != null)
+      {
+         clone.fieldsToTranslatePossibleValues = new HashSet<>(fieldsToTranslatePossibleValues);
+      }
+
+      if(queryJoins != null)
+      {
+         clone.queryJoins = new ArrayList<>(queryJoins);
+      }
+
+      if(clone.associationNamesToInclude != null)
+      {
+         clone.associationNamesToInclude = new HashSet<>(associationNamesToInclude);
+      }
+
+      if(queryHints != null)
+      {
+         clone.queryHints = EnumSet.noneOf(QueryHint.class);
+         clone.queryHints.addAll(queryHints);
+      }
+
+      return (clone);
    }
 
 

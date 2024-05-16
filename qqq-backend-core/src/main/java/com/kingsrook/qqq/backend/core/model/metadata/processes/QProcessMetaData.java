@@ -736,4 +736,14 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for the full map of all steps (not the step list!)
+    **
+    *******************************************************************************/
+   public Map<String, QStepMetaData> getAllSteps()
+   {
+      return steps;
+   }
+
 }

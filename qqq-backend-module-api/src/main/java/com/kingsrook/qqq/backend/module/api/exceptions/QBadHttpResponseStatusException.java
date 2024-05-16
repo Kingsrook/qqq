@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,106 +19,96 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core;
+package com.kingsrook.qqq.backend.module.api.exceptions;
 
 
-import java.time.ZoneId;
-import java.util.TimeZone;
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.qqq.backend.core.model.session.QUser;
-import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import com.kingsrook.qqq.backend.core.utils.TestUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.module.api.actions.QHttpResponse;
 
 
 /*******************************************************************************
- **
+ ** Exception thrown when an API HTTP request failed due to a bad status code.
+ ** This exception includes the status code as a field, as well as the full
+ ** response object.
  *******************************************************************************/
-public class BaseTest
+public class QBadHttpResponseStatusException extends QException
 {
-   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
-
-   public static final String DEFAULT_USER_ID = "001";
-
-   static
-   {
-      TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("UTC")));
-   }
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @BeforeEach
-   void baseBeforeEach()
-   {
-      System.setProperty("qqq.logger.logSessionId.disabled", "true");
-
-      QContext.init(TestUtils.defineInstance(), newSession());
-      resetMemoryRecordStore();
-   }
+   private int           statusCode;
+   private QHttpResponse response;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected QSession newSession()
+   public QBadHttpResponseStatusException(String message, QHttpResponse response)
    {
-      return newSession(DEFAULT_USER_ID);
+      super(message);
+
+      this.statusCode = response.getStatusCode();
+      this.response = response;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for statusCode
     *******************************************************************************/
-   protected QSession newSession(String userId)
+   public int getStatusCode()
    {
-      return new QSession().withUser(new QUser()
-         .withIdReference(userId)
-         .withFullName("Anonymous"));
+      return (this.statusCode);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for statusCode
     *******************************************************************************/
-   @AfterEach
-   void baseAfterEach()
+   public void setStatusCode(int statusCode)
    {
-      QContext.clear();
-      resetMemoryRecordStore();
+      this.statusCode = statusCode;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter for statusCode
     *******************************************************************************/
-   private static void resetMemoryRecordStore()
+   public QBadHttpResponseStatusException withStatusCode(int statusCode)
    {
-      MemoryRecordStore.getInstance().reset();
-      MemoryRecordStore.resetStatistics();
-      MemoryRecordStore.setCollectStatistics(false);
+      this.statusCode = statusCode;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for response
     *******************************************************************************/
-   protected static void reInitInstanceInContext(QInstance qInstance)
+   public QHttpResponse getResponse()
    {
-      if(qInstance.equals(QContext.getQInstance()))
-      {
-         LOG.warn("Unexpected condition - the same qInstance that is already in the QContext was passed into reInit.  You probably want a new QInstance object instance.");
-      }
-      QContext.init(qInstance, new QSession());
+      return (this.response);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for response
+    *******************************************************************************/
+   public void setResponse(QHttpResponse response)
+   {
+      this.response = response;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for response
+    *******************************************************************************/
+   public QBadHttpResponseStatusException withResponse(QHttpResponse response)
+   {
+      this.response = response;
+      return (this);
    }
 
 }

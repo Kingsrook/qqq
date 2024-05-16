@@ -190,7 +190,25 @@ public class RunProcessAction
                // Run backend steps //
                ///////////////////////
                LOG.debug("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
-               runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
+               RunBackendStepOutput runBackendStepOutput = runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
+
+               /////////////////////////////////////////////////////////////////////////////////////////
+               // if the step returned an override lastStepName, use that to determine how we proceed //
+               /////////////////////////////////////////////////////////////////////////////////////////
+               if(runBackendStepOutput.getOverrideLastStepName() != null)
+               {
+                  LOG.debug("Process step [" + lastStepName + "] returned an overrideLastStepName [" + runBackendStepOutput.getOverrideLastStepName() + "]!");
+                  lastStepName = runBackendStepOutput.getOverrideLastStepName();
+               }
+
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               // similarly, if the step produced an updatedFrontendStepList, propagate that data outward //
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               if(runBackendStepOutput.getUpdatedFrontendStepList() != null)
+               {
+                  LOG.debug("Process step [" + lastStepName + "] generated an updatedFrontendStepList [" + runBackendStepOutput.getUpdatedFrontendStepList().stream().map(s -> s.getName()).toList() + "]!");
+                  runProcessOutput.setUpdatedFrontendStepList(runBackendStepOutput.getUpdatedFrontendStepList());
+               }
             }
             else
             {
@@ -339,7 +357,7 @@ public class RunProcessAction
    /*******************************************************************************
     ** Run a single backend step.
     *******************************************************************************/
-   private void runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
+   private RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());
@@ -368,14 +386,16 @@ public class RunProcessAction
          runBackendStepInput.setBasepullLastRunTime((Instant) runProcessInput.getValues().get(BASEPULL_LAST_RUNTIME_KEY));
       }
 
-      RunBackendStepOutput lastFunctionResult = new RunBackendStepAction().execute(runBackendStepInput);
-      storeState(stateKey, lastFunctionResult.getProcessState());
+      RunBackendStepOutput runBackendStepOutput = new RunBackendStepAction().execute(runBackendStepInput);
+      storeState(stateKey, runBackendStepOutput.getProcessState());
 
-      if(lastFunctionResult.getException() != null)
+      if(runBackendStepOutput.getException() != null)
       {
-         runProcessOutput.setException(lastFunctionResult.getException());
-         throw (lastFunctionResult.getException());
+         runProcessOutput.setException(runBackendStepOutput.getException());
+         throw (runBackendStepOutput.getException());
       }
+
+      return (runBackendStepOutput);
    }
 
 
