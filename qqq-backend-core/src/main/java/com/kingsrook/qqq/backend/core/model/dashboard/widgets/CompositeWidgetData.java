@@ -54,6 +54,7 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
       /////////////////////////////////////////////////////////////
       // note, these are used in QQQ FMD CompositeWidgetData.tsx //
       /////////////////////////////////////////////////////////////
+      FLEX_COLUMN,
       FLEX_ROW_WRAPPED,
       FLEX_ROW_SPACE_BETWEEN,
       TABLE_SUB_ROW_DETAILS,
