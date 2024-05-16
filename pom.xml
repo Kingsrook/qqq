@@ -29,6 +29,7 @@
    <packaging>pom</packaging>
 
    <modules>
+      <module>qqq-bom</module>
       <module>qqq-backend-core</module>
       <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
