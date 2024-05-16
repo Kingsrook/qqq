@@ -190,6 +190,8 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          this(sourceTable, sourceTableKeyField, destinationTable, destinationTableForeignKey, true, true);
       }
 
+
+
       /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
@@ -207,7 +209,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {

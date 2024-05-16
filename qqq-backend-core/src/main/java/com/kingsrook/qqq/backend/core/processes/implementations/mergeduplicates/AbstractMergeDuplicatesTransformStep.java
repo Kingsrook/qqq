@@ -203,7 +203,7 @@ public abstract class AbstractMergeDuplicatesTransformStep extends AbstractTrans
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {

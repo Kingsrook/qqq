@@ -457,7 +457,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          if(finalTransformStep != null)
          {
             finalTransformStepInput.setRecords(records);
-            finalTransformStep.run(finalTransformStepInput, finalTransformStepOutput);
+            finalTransformStep.runOnePage(finalTransformStepInput, finalTransformStepOutput);
             records = finalTransformStepOutput.getRecords();
          }
 

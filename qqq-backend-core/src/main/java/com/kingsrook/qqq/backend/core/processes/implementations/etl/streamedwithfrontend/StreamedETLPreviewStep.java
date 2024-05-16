@@ -206,7 +206,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
 
       ////////////////////////////////////////////////////
       // add the transformed records to the output list //

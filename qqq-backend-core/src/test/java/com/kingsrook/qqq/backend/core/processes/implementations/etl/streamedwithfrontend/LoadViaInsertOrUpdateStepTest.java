@@ -76,7 +76,7 @@ class LoadViaInsertOrUpdateStepTest extends BaseTest
       input.setRecords(inputRecordList);
       input.addValue(LoadViaInsertOrUpdateStep.FIELD_DESTINATION_TABLE, TestUtils.TABLE_NAME_PERSON_MEMORY);
       RunBackendStepOutput output = new RunBackendStepOutput();
-      new LoadViaInsertOrUpdateStep().run(input, output);
+      new LoadViaInsertOrUpdateStep().runOnePage(input, output);
 
       List<QRecord> qRecords = TestUtils.queryTable(qInstance, TestUtils.TABLE_NAME_PERSON_MEMORY);
       assertEquals(2, qRecords.size());
