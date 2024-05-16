@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.help.HelpFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -111,6 +112,7 @@ public class QInstanceHelpContentManager
          String processName = nameValuePairs.get("process");
          String fieldName   = nameValuePairs.get("field");
          String sectionName = nameValuePairs.get("section");
+         String stepName = nameValuePairs.get("step");
          String widgetName  = nameValuePairs.get("widget");
          String slotName    = nameValuePairs.get("slot");
 
@@ -145,7 +147,7 @@ public class QInstanceHelpContentManager
          }
          else if(StringUtils.hasContent(processName))
          {
-            processHelpContentForProcess(key, processName, fieldName, roles, helpContent);
+            processHelpContentForProcess(key, processName, fieldName, stepName, roles, helpContent);
          }
          else if(StringUtils.hasContent(widgetName))
          {
@@ -208,6 +210,10 @@ public class QInstanceHelpContentManager
             optionalSection.get().removeHelpContent(roles);
          }
       }
+      else
+      {
+         LOG.info("Unrecognized key format for table help content", logPair("key", key));
+      }
    }
 
 
@@ -215,7 +221,7 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForProcess(String key, String processName, String fieldName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForProcess(String key, String processName, String fieldName, String stepName, Set<HelpRole> roles, QHelpContent helpContent)
    {
       QProcessMetaData process = QContext.getQInstance().getProcess(processName);
       if(process == null)
@@ -243,6 +249,30 @@ public class QInstanceHelpContentManager
          {
             optionalField.get().removeHelpContent(roles);
          }
+      }
+      else if(StringUtils.hasContent(stepName))
+      {
+         /////////////////////////////
+         // handle a process screen //
+         /////////////////////////////
+         QFrontendStepMetaData frontendStep = process.getFrontendStep(stepName);
+
+         if(frontendStep == null)
+         {
+            LOG.info("Unrecognized process step in help content", logPair("key", key));
+         }
+         else if(helpContent != null)
+         {
+            frontendStep.withHelpContent(helpContent);
+         }
+         else
+         {
+            frontendStep.removeHelpContent(roles);
+         }
+      }
+      else
+      {
+         LOG.info("Unrecognized key format for process help content", logPair("key", key));
       }
    }
 

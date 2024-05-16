@@ -167,6 +167,36 @@ class QInstanceHelpContentManagerTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
+      HelpContent recordEntity = new HelpContent()
+         .withId(1)
+         .withKey("process:" + TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE + ";step:setup")
+         .withContent("v1")
+         .withRole(HelpContentRole.PROCESS_SCREEN.getId());
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(recordEntity));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // now - post-insert customizer should have automatically added help content to the instance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      List<QHelpContent> helpContents = qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getFrontendStep("setup").getHelpContents();
+      assertEquals(1, helpContents.size());
+      assertEquals("v1", helpContents.get(0).getContent());
+      assertEquals(Set.of(QHelpRole.PROCESS_SCREEN), helpContents.get(0).getRoles());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testProcessStep() throws QException
+   {
+      /////////////////////////////////////
+      // get the instance from base test //
+      /////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
       //////////////////////////////////////////////////////////
       // first, assert there's no help content on the section //
       //////////////////////////////////////////////////////////

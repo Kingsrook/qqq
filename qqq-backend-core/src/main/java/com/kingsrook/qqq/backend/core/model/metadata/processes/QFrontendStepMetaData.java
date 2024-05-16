@@ -26,8 +26,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 
 
 /*******************************************************************************
@@ -42,6 +46,8 @@ public class QFrontendStepMetaData extends QStepMetaData
    private List<QFieldMetaData>             viewFields;
    private List<QFieldMetaData>             recordListFields;
    private Map<String, QFieldMetaData>      formFieldMap;
+
+   private List<QHelpContent> helpContents;
 
 
 
@@ -338,6 +344,63 @@ public class QFrontendStepMetaData extends QStepMetaData
       }
 
       return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    *******************************************************************************/
+   public List<QHelpContent> getHelpContents()
+   {
+      return (this.helpContents);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContents
+    *******************************************************************************/
+   public void setHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContents
+    *******************************************************************************/
+   public QFrontendStepMetaData withHelpContents(List<QHelpContent> helpContents)
+   {
+      this.helpContents = helpContents;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent
+    *******************************************************************************/
+   public QFrontendStepMetaData withHelpContent(QHelpContent helpContent)
+   {
+      if(this.helpContents == null)
+      {
+         this.helpContents = new ArrayList<>();
+      }
+
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, this.helpContents);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a single helpContent based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(Set<HelpRole> roles)
+   {
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
 
 }
