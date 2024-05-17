@@ -405,6 +405,9 @@ public class AbstractMongoDBAction
       QQueryFilter securityFilter = new QQueryFilter();
       securityFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
 
+      ////////////////////////////////////
+      // todo - evolve to use lock tree //
+      ////////////////////////////////////
       for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
          addSubFilterForRecordSecurityLock(QContext.getQInstance(), QContext.getQSession(), table, securityFilter, recordSecurityLock, null, table.getName(), false);
