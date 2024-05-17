@@ -50,10 +50,7 @@ public interface RecordCustomizerUtilityInterface
    /*******************************************************************************
     ** Container for an old value and a new value.
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:MethodName")
-   record Change(Serializable oldValue, Serializable newValue)
-   {
-   }
+   record Change(Serializable oldValue, Serializable newValue) {}
 
 
    /*******************************************************************************

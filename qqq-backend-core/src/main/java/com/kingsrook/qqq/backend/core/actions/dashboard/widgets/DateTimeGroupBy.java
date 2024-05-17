@@ -256,7 +256,6 @@ public enum DateTimeGroupBy
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public Instant roundDown(Instant instant, ZoneId zoneId)
    {
       ZonedDateTime zoned = instant.atZone(zoneId);

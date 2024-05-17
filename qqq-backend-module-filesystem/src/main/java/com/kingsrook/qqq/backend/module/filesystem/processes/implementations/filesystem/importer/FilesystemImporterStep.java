@@ -101,6 +101,7 @@ public class FilesystemImporterStep implements BackendStep
    private Function<QRecord, Serializable> securitySupplier = null;
 
 
+
    /*******************************************************************************
     ** Execute the step - using the request as input, and the result as output.
     *******************************************************************************/
@@ -373,7 +374,6 @@ public class FilesystemImporterStep implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    List<QRecord> parseFileIntoRecords(RunBackendStepInput runBackendStepInput, String content) throws QException
    {
       /////////////////////////////////////////////////////////////////////////////////////////////////////////

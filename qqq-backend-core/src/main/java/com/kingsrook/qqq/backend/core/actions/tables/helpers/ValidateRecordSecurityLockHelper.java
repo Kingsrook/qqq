@@ -390,7 +390,6 @@ public class ValidateRecordSecurityLockHelper
     ** MultiRecordSecurityLock, with only the appropriate lock-scopes being included
     ** (e.g., read-locks for selects, write-locks for insert/update/delete).
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    static MultiRecordSecurityLock getRecordSecurityLocks(QTableMetaData table, Action action)
    {
       List<RecordSecurityLock> allLocksOnTable = CollectionUtils.nonNullList(table.getRecordSecurityLocks());
