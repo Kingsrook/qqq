@@ -95,10 +95,8 @@ public class MockQueryAction implements QueryInterface
     ** Get a mock value to use, based on its type.
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:MagicNumber")
    public static Serializable getMockValue(QTableMetaData table, String field)
    {
-      // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(table.getField(field).getType())
       {
          case STRING -> UUID.randomUUID().toString();
@@ -112,7 +110,6 @@ public class MockQueryAction implements QueryInterface
          case PASSWORD -> "abc***234";
          default -> throw new IllegalStateException("Unexpected value: " + table.getField(field).getType());
       };
-      // @formatter:on
    }
 
 }

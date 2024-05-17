@@ -195,7 +195,6 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    /*******************************************************************************
     ** Generic implementation of the execute method from the QueryInterface
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    public QueryOutput executeQuery(QueryInput queryInput) throws QException
    {
       preAction(queryInput.getBackend());

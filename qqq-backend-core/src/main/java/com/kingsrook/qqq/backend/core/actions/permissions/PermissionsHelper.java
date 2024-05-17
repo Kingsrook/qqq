@@ -500,7 +500,6 @@ public class PermissionsHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    static PermissionSubType getEffectivePermissionSubType(QPermissionRules rules, PermissionSubType originalPermissionSubType)
    {
       if(rules == null || rules.getLevel() == null)
@@ -515,10 +514,10 @@ public class PermissionsHelper
       if(PrivatePermissionSubType.HAS_ACCESS.equals(originalPermissionSubType))
       {
          return switch(rules.getLevel())
-            {
-               case NOT_PROTECTED -> null;
-               default -> PrivatePermissionSubType.HAS_ACCESS;
-            };
+         {
+            case NOT_PROTECTED -> null;
+            default -> PrivatePermissionSubType.HAS_ACCESS;
+         };
       }
       else
       {
@@ -527,30 +526,30 @@ public class PermissionsHelper
          // permission sub-type to what we expect to be set for the table                                      //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////
          return switch(rules.getLevel())
+         {
+            case NOT_PROTECTED -> null;
+            case HAS_ACCESS_PERMISSION -> PrivatePermissionSubType.HAS_ACCESS;
+            case READ_WRITE_PERMISSIONS ->
             {
-               case NOT_PROTECTED -> null;
-               case HAS_ACCESS_PERMISSION -> PrivatePermissionSubType.HAS_ACCESS;
-               case READ_WRITE_PERMISSIONS ->
+               if(PrivatePermissionSubType.READ.equals(originalPermissionSubType) || PrivatePermissionSubType.WRITE.equals(originalPermissionSubType))
                {
-                  if(PrivatePermissionSubType.READ.equals(originalPermissionSubType) || PrivatePermissionSubType.WRITE.equals(originalPermissionSubType))
-                  {
-                     yield (originalPermissionSubType);
-                  }
-                  else if(TablePermissionSubType.INSERT.equals(originalPermissionSubType) || TablePermissionSubType.EDIT.equals(originalPermissionSubType) || TablePermissionSubType.DELETE.equals(originalPermissionSubType))
-                  {
-                     yield (PrivatePermissionSubType.WRITE);
-                  }
-                  else if(TablePermissionSubType.READ.equals(originalPermissionSubType))
-                  {
-                     yield (PrivatePermissionSubType.READ);
-                  }
-                  else
-                  {
-                     throw new IllegalStateException("Unexpected permissionSubType: " + originalPermissionSubType);
-                  }
+                  yield (originalPermissionSubType);
                }
-               case READ_INSERT_EDIT_DELETE_PERMISSIONS -> originalPermissionSubType;
-            };
+               else if(TablePermissionSubType.INSERT.equals(originalPermissionSubType) || TablePermissionSubType.EDIT.equals(originalPermissionSubType) || TablePermissionSubType.DELETE.equals(originalPermissionSubType))
+               {
+                  yield (PrivatePermissionSubType.WRITE);
+               }
+               else if(TablePermissionSubType.READ.equals(originalPermissionSubType))
+               {
+                  yield (PrivatePermissionSubType.READ);
+               }
+               else
+               {
+                  throw new IllegalStateException("Unexpected permissionSubType: " + originalPermissionSubType);
+               }
+            }
+            case READ_INSERT_EDIT_DELETE_PERMISSIONS -> originalPermissionSubType;
+         };
       }
    }
 

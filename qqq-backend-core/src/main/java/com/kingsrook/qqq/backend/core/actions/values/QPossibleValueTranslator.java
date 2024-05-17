@@ -118,6 +118,7 @@ public class QPossibleValueTranslator
    }
 
 
+
    /*******************************************************************************
     ** Constructor
     **
@@ -421,7 +422,6 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private String doFormatPossibleValue(String formatString, List<String> valueFields, Object id, String label)
    {
       List<Object> values = new ArrayList<>();
