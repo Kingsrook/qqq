@@ -101,7 +101,7 @@ public class ValidateRecordSecurityLockHelper
       // actually check lock values //
       ////////////////////////////////
       Map<Serializable, RecordWithErrors> errorRecords = new HashMap<>();
-      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>());
+      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>(), madeUpPrimaryKeys);
 
       /////////////////////////////////
       // propagate errors to records //
@@ -141,7 +141,7 @@ public class ValidateRecordSecurityLockHelper
     ** BUT - WRITE locks - in their case, we read the record no matter what, and in
     ** here we need to verify we have a key that allows us to WRITE the record.
     *******************************************************************************/
-   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition) throws QException
+   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition, Map<Serializable, QRecord> madeUpPrimaryKeys) throws QException
    {
       if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
       {
@@ -152,7 +152,7 @@ public class ValidateRecordSecurityLockHelper
          for(RecordSecurityLock childLock : CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks()))
          {
             treePosition.add(i);
-            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition);
+            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition, madeUpPrimaryKeys);
             treePosition.remove(treePosition.size() - 1);
             i++;
          }
@@ -192,7 +192,7 @@ public class ValidateRecordSecurityLockHelper
             }
 
             Serializable        recordSecurityValue = record.getValue(field.getName());
-            List<QErrorMessage> recordErrors        = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action);
+            List<QErrorMessage> recordErrors        = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys);
             if(CollectionUtils.nullSafeHasContents(recordErrors))
             {
                errorRecords.computeIfAbsent(record.getValue(primaryKeyField), (k) -> new RecordWithErrors(record)).addAll(recordErrors, treePosition);
@@ -337,7 +337,7 @@ public class ValidateRecordSecurityLockHelper
 
                   for(QRecord inputRecord : inputRecords)
                   {
-                     List<QErrorMessage> recordErrors = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action);
+                     List<QErrorMessage> recordErrors = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys);
                      if(CollectionUtils.nullSafeHasContents(recordErrors))
                      {
                         errorRecords.computeIfAbsent(inputRecord.getValue(primaryKeyField), (k) -> new RecordWithErrors(inputRecord)).addAll(recordErrors, treePosition);
@@ -370,14 +370,14 @@ public class ValidateRecordSecurityLockHelper
    {
       String                     primaryKeyField   = table.getPrimaryKeyField();
       Map<Serializable, QRecord> madeUpPrimaryKeys = new HashMap<>();
-      Integer                    madeUpPrimaryKey  = -1;
+      Integer                    madeUpPrimaryKey  = Integer.MIN_VALUE / 2;
       for(QRecord record : records)
       {
          if(record.getValue(primaryKeyField) == null)
          {
             madeUpPrimaryKeys.put(madeUpPrimaryKey, record);
             record.setValue(primaryKeyField, madeUpPrimaryKey);
-            madeUpPrimaryKey--;
+            madeUpPrimaryKey++;
          }
       }
       return madeUpPrimaryKeys;
@@ -445,9 +445,9 @@ public class ValidateRecordSecurityLockHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static List<QErrorMessage> validateRecordSecurityValue(QTableMetaData table, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action)
+   public static List<QErrorMessage> validateRecordSecurityValue(QTableMetaData table, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action, Map<Serializable, QRecord> madeUpPrimaryKeys)
    {
-      if(recordSecurityValue == null)
+      if(recordSecurityValue == null || (madeUpPrimaryKeys != null && madeUpPrimaryKeys.containsKey(recordSecurityValue)))
       {
          /////////////////////////////////////////////////////////////////
          // handle null values - error if the NullValueBehavior is DENY //
