@@ -31,5 +31,10 @@ package com.kingsrook.qqq.backend.core.model.metadata;
  *******************************************************************************/
 public interface MetaDataProducerOutput
 {
+
+   /*******************************************************************************
+    ** call the appropriate methods on a QInstance to add ourselves to it.
+    *******************************************************************************/
    void addSelfToInstance(QInstance instance);
+
 }
