@@ -44,7 +44,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -80,7 +82,10 @@ public class ProcessLockUtils
       }
 
       QSession qSession = QContext.getQSession();
-      holder = qSession.getUser().getIdReference() + "-" + qSession.getUuid() + "-" + holder;
+      holder = ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUser().getIdReference(), "anonymous")
+         + "-"
+         + ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUuid(), "no-session")
+         + (StringUtils.hasContent(holder) ? ("-" + holder) : "");
 
       Instant now = Instant.now();
       ProcessLock processLock = new ProcessLock()
@@ -240,9 +245,53 @@ public class ProcessLockUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void release(ProcessLock processLock) throws QException
+   public static void releaseById(Integer id)
    {
-      DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(processLock.getId()));
+      if(id == null)
+      {
+         LOG.debug("No id passed in to releaseById - returning with noop");
+         return;
+      }
+
+      ProcessLock processLock = null;
+      try
+      {
+         processLock = ProcessLockUtils.getById(id);
+         if(processLock == null)
+         {
+            LOG.info("Process lock not found in releaseById call", logPair("id", id));
+         }
+      }
+      catch(QException e)
+      {
+         LOG.warn("Exception releasing processLock byId", e, logPair("id", id));
+      }
+
+      if(processLock != null)
+      {
+         release(processLock);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void release(ProcessLock processLock)
+   {
+      try
+      {
+         DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(processLock.getId()));
+         if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
+         {
+            throw (new QException("Error deleting processLock record: " + deleteOutput.getRecordsWithErrors().get(0).getErrorsAsString()));
+         }
+      }
+      catch(QException e)
+      {
+         LOG.warn("Exception releasing processLock", e, logPair("processLockId", () -> processLock.getId()));
+      }
    }
 
 

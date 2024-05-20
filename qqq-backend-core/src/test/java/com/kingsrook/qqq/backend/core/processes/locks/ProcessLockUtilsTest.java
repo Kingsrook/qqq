@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerMultiOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -189,8 +190,56 @@ class ProcessLockUtilsTest extends BaseTest
       ProcessLockUtils.checkIn(processLock);
 
       ProcessLock freshLock = ProcessLockUtils.getById(processLock.getId());
+      assertNotNull(freshLock);
       assertNotEquals(originalCheckIn, freshLock.getCheckInTimestamp());
       assertNotEquals(originalExpiration, freshLock.getExpiresAtTimestamp());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReleaseById() throws QException
+   {
+      ////////////////////////////////////////////
+      // assert no exceptions for these 2 cases //
+      ////////////////////////////////////////////
+      ProcessLockUtils.releaseById(null);
+      ProcessLockUtils.releaseById(1);
+
+      ProcessLock processLock = ProcessLockUtils.create("1", "typeA", "me");
+      ProcessLockUtils.releaseById(processLock.getId());
+      assertNull(ProcessLockUtils.getById(processLock.getId()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testHolders() throws QException
+   {
+      QContext.getQSession().setUser(new QUser().withIdReference("me"));
+      assertThat(ProcessLockUtils.create("1", "typeA", null).getHolder())
+         .isEqualTo("me-" + QContext.getQSession().getUuid());
+
+      assertThat(ProcessLockUtils.create("2", "typeA", "foo").getHolder())
+         .isEqualTo("me-" + QContext.getQSession().getUuid() + "-foo");
+
+      QContext.getQSession().setUser(null);
+      assertThat(ProcessLockUtils.create("3", "typeA", "bar").getHolder())
+         .isEqualTo("anonymous-" + QContext.getQSession().getUuid() + "-bar");
+
+      QContext.getQSession().setUuid(null);
+      assertThat(ProcessLockUtils.create("4", "typeA", "baz").getHolder())
+         .isEqualTo("anonymous-no-session-baz");
+
+      QContext.getQSession().setUuid(null);
+      assertThat(ProcessLockUtils.create("5", "typeA", "").getHolder())
+         .isEqualTo("anonymous-no-session");
    }
 
 }
