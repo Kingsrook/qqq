@@ -123,6 +123,57 @@ class MemoizationTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testMayNotStoreNull()
+   {
+      Memoization<String, String> memoization = new Memoization<>();
+      memoization.setMayStoreNullValues(false);
+
+      AtomicInteger callCounter = new AtomicInteger();
+      callCounter.set(0);
+      UnsafeFunction<String, String, Exception> supplier = name ->
+      {
+         callCounter.getAndIncrement();
+         if(name.equals("throw"))
+         {
+            throw (new Exception("You asked me to throw"));
+         }
+         else if(name.equals("null"))
+         {
+            return (null);
+         }
+         else
+         {
+            return (name);
+         }
+      };
+
+      assertThat(memoization.getResult("null", supplier)).isEmpty();
+      assertEquals(1, callCounter.get());
+
+      assertThat(memoization.getResult("null", supplier)).isEmpty();
+      assertEquals(2, callCounter.get()); // should re-run the supplier, incrementing the counter
+
+      assertThat(memoization.getResult("throw", supplier)).isEmpty();
+      assertEquals(3, callCounter.get());
+
+      assertThat(memoization.getResult("throw", supplier)).isEmpty();
+      assertEquals(4, callCounter.get()); // should re-run the supplier, incrementing the counter
+
+      //noinspection AssertBetweenInconvertibleTypes
+      assertThat(memoization.getResult("foo", supplier)).isPresent().get().isEqualTo("foo");
+      assertEquals(5, callCounter.get());
+
+      //noinspection AssertBetweenInconvertibleTypes
+      assertThat(memoization.getResult("foo", supplier)).isPresent().get().isEqualTo("foo");
+      assertEquals(5, callCounter.get()); // should NOT re-run the supplier, NOT incrementing the counter
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testLookupFunction()
    {
       AtomicInteger lookupFunctionCallCounter = new AtomicInteger(0);

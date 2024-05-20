@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
  ** MetaDataProducerHelper, to put point at a package full of these, and populate
  ** your whole QInstance.
  *******************************************************************************/
-public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface> implements MetaDataProducerInterface<T>
+public abstract class MetaDataProducer<T extends MetaDataProducerOutput> implements MetaDataProducerInterface<T>
 {
 
 }

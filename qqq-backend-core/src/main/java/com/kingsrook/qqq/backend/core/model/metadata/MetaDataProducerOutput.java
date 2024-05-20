@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -23,20 +23,18 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 /*******************************************************************************
- ** Interface for meta-data classes that can be added directly (e.g, at the top
- ** level) to a QInstance (such as a QTableMetaData - not a QFieldMetaData).
+ ** Interface to mark objects that can be produced by a MetaDataProducer.
+ **
+ ** These would usually be TopLevelMetaData objects (a table, a process, etc)
+ ** but can also be a MetaDataProducerMultiOutput, to produce multiple objects
+ ** from one producer.
  *******************************************************************************/
-public interface TopLevelMetaDataInterface extends MetaDataProducerOutput
+public interface MetaDataProducerOutput
 {
 
    /*******************************************************************************
-    **
+    ** call the appropriate methods on a QInstance to add ourselves to it.
     *******************************************************************************/
-   String getName();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void addSelfToInstance(QInstance qInstance);
+   void addSelfToInstance(QInstance instance);
 
 }
