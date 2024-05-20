@@ -157,7 +157,7 @@ public class MetaDataProducerHelper
          {
             try
             {
-               TopLevelMetaDataInterface metaData = producer.produce(instance);
+               MetaDataProducerOutput metaData = producer.produce(instance);
                if(metaData != null)
                {
                   metaData.addSelfToInstance(instance);
