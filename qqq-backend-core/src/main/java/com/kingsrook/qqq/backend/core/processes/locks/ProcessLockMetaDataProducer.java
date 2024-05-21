@@ -63,7 +63,7 @@ public class ProcessLockMetaDataProducer implements MetaDataProducerInterface<Me
          .withRecordLabelFormat("%s %s")
          .withRecordLabelFields("processLockTypeId", "key")
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "processLockTypeId", "key")))
-         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("holder", "checkInTimestamp", "expiresAtTimestamp")))
+         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId", "sessionUUID", "message", "checkInTimestamp", "expiresAtTimestamp")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
       );
 

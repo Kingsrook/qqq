@@ -51,8 +51,14 @@ public class ProcessLock extends QRecordEntity
    @QField(possibleValueSourceName = ProcessLockType.TABLE_NAME)
    private Integer processLockTypeId;
 
-   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
-   private String holder;
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String userId;
+
+   @QField(label = "Session UUID", maxLength = 36, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String sessionUUID;
+
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String details;
 
    @QField()
    private Instant checkInTimestamp;
@@ -206,37 +212,6 @@ public class ProcessLock extends QRecordEntity
 
 
    /*******************************************************************************
-    ** Getter for holder
-    *******************************************************************************/
-   public String getHolder()
-   {
-      return (this.holder);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for holder
-    *******************************************************************************/
-   public void setHolder(String holder)
-   {
-      this.holder = holder;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for holder
-    *******************************************************************************/
-   public ProcessLock withHolder(String holder)
-   {
-      this.holder = holder;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
     ** Getter for checkInTimestamp
     *******************************************************************************/
    public Instant getCheckInTimestamp()
@@ -324,6 +299,99 @@ public class ProcessLock extends QRecordEntity
    public ProcessLock withProcessLockTypeId(Integer processLockTypeId)
    {
       this.processLockTypeId = processLockTypeId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for userId
+    *******************************************************************************/
+   public String getUserId()
+   {
+      return (this.userId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for userId
+    *******************************************************************************/
+   public void setUserId(String userId)
+   {
+      this.userId = userId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for userId
+    *******************************************************************************/
+   public ProcessLock withUserId(String userId)
+   {
+      this.userId = userId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sessionUUID
+    *******************************************************************************/
+   public String getSessionUUID()
+   {
+      return (this.sessionUUID);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sessionUUID
+    *******************************************************************************/
+   public void setSessionUUID(String sessionUUID)
+   {
+      this.sessionUUID = sessionUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sessionUUID
+    *******************************************************************************/
+   public ProcessLock withSessionUUID(String sessionUUID)
+   {
+      this.sessionUUID = sessionUUID;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for details
+    *******************************************************************************/
+   public String getDetails()
+   {
+      return (this.details);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for details
+    *******************************************************************************/
+   public void setDetails(String details)
+   {
+      this.details = details;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for details
+    *******************************************************************************/
+   public ProcessLock withDetails(String details)
+   {
+      this.details = details;
       return (this);
    }
 

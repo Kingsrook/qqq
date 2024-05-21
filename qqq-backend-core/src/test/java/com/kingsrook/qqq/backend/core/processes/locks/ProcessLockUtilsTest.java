@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -125,7 +126,7 @@ class ProcessLockUtilsTest extends BaseTest
       //////////////////////
       processLock = ProcessLockUtils.create("1", "typeA", "you");
       assertNotNull(processLock.getId());
-      assertThat(processLock.getHolder()).endsWith("you");
+      assertEquals("you", processLock.getDetails());
 
       assertThatThrownBy(() -> ProcessLockUtils.create("1", "notAType", "you"))
          .isInstanceOf(QException.class)
@@ -150,7 +151,7 @@ class ProcessLockUtilsTest extends BaseTest
       /////////////////////////////////////////////////////////////////////////
       processLock = ProcessLockUtils.create("1", "typeB", "you", Duration.of(1, ChronoUnit.SECONDS), Duration.of(3, ChronoUnit.SECONDS));
       assertNotNull(processLock.getId());
-      assertThat(processLock.getHolder()).endsWith("you");
+      assertThat(processLock.getDetails()).endsWith("you");
    }
 
 
@@ -220,26 +221,46 @@ class ProcessLockUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testHolders() throws QException
+   void testUserAndSessionNullness() throws QException
    {
-      QContext.getQSession().setUser(new QUser().withIdReference("me"));
-      assertThat(ProcessLockUtils.create("1", "typeA", null).getHolder())
-         .isEqualTo("me-" + QContext.getQSession().getUuid());
+      {
+         QContext.getQSession().setUser(new QUser().withIdReference("me"));
+         ProcessLock processLock = ProcessLockUtils.create("1", "typeA", null);
+         assertNull(processLock.getDetails());
+         assertEquals("me", processLock.getUserId());
+         assertEquals(QContext.getQSession().getUuid(), processLock.getSessionUUID());
+      }
 
-      assertThat(ProcessLockUtils.create("2", "typeA", "foo").getHolder())
-         .isEqualTo("me-" + QContext.getQSession().getUuid() + "-foo");
+      {
+         ProcessLock processLock = ProcessLockUtils.create("2", "typeA", "foo");
+         assertEquals("foo", processLock.getDetails());
+         assertEquals("me", processLock.getUserId());
+         assertEquals(QContext.getQSession().getUuid(), processLock.getSessionUUID());
+      }
 
-      QContext.getQSession().setUser(null);
-      assertThat(ProcessLockUtils.create("3", "typeA", "bar").getHolder())
-         .isEqualTo("anonymous-" + QContext.getQSession().getUuid() + "-bar");
+      {
+         QContext.getQSession().setUser(null);
+         ProcessLock processLock = ProcessLockUtils.create("3", "typeA", "bar");
+         assertEquals("bar", processLock.getDetails());
+         assertNull(processLock.getUserId());
+         assertEquals(QContext.getQSession().getUuid(), processLock.getSessionUUID());
+      }
 
-      QContext.getQSession().setUuid(null);
-      assertThat(ProcessLockUtils.create("4", "typeA", "baz").getHolder())
-         .isEqualTo("anonymous-no-session-baz");
+      {
+         QContext.getQSession().setUuid(null);
+         ProcessLock processLock = ProcessLockUtils.create("4", "typeA", "baz");
+         assertEquals("baz", processLock.getDetails());
+         assertNull(processLock.getUserId());
+         assertNull(processLock.getSessionUUID());
+      }
 
-      QContext.getQSession().setUuid(null);
-      assertThat(ProcessLockUtils.create("5", "typeA", "").getHolder())
-         .isEqualTo("anonymous-no-session");
+      {
+         QContext.getQSession().setUuid(null);
+         ProcessLock processLock = ProcessLockUtils.create("5", "typeA", "");
+         assertEquals("", processLock.getDetails());
+         assertNull(processLock.getUserId());
+         assertNull(processLock.getSessionUUID());
+      }
    }
 
 }

@@ -46,7 +46,6 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -73,7 +72,7 @@ public class ProcessLockUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static ProcessLock create(String key, String typeName, String holder) throws UnableToObtainProcessLockException, QException
+   public static ProcessLock create(String key, String typeName, String details) throws UnableToObtainProcessLockException, QException
    {
       ProcessLockType lockType = getProcessLockTypeByName(typeName);
       if(lockType == null)
@@ -82,16 +81,14 @@ public class ProcessLockUtils
       }
 
       QSession qSession = QContext.getQSession();
-      holder = ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUser().getIdReference(), "anonymous")
-         + "-"
-         + ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUuid(), "no-session")
-         + (StringUtils.hasContent(holder) ? ("-" + holder) : "");
 
       Instant now = Instant.now();
       ProcessLock processLock = new ProcessLock()
          .withKey(key)
          .withProcessLockTypeId(lockType.getId())
-         .withHolder(holder)
+         .withSessionUUID(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUuid(), null))
+         .withUserId(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUser().getIdReference(), null))
+         .withDetails(details)
          .withCheckInTimestamp(now);
 
       Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
@@ -126,7 +123,7 @@ public class ProcessLockUtils
                /////////////////////////////////////////////////////////////////////////////////
                Serializable id = existingLockRecord.getValue("id");
                LOG.info("Existing lock has expired - deleting it and trying again.", logPair("id", id),
-                  logPair("key", key), logPair("type", typeName), logPair("holder", holder), logPair("expiresAtTimestamp", expiresAtTimestamp));
+                  logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", expiresAtTimestamp));
                new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(id));
                insertOutputRecord = tryToInsert(processLock);
             }
@@ -146,12 +143,12 @@ public class ProcessLockUtils
          // if at this point, we have errors on the last attempted insert, then give up //
          /////////////////////////////////////////////////////////////////////////////////
          LOG.info("Errors in process lock record after attempted insert", logPair("errors", insertOutputRecord.getErrors()),
-            logPair("key", key), logPair("type", typeName), logPair("holder", holder));
+            logPair("key", key), logPair("type", typeName), logPair("details", details));
          throw (new UnableToObtainProcessLockException("A Process Lock already exists for key [" + key + "] of type [" + typeName + "], " + existingLockDetails));
       }
 
       LOG.info("Created process lock", logPair("id", processLock.getId()),
-         logPair("key", key), logPair("type", typeName), logPair("holder", holder), logPair("expiresAtTimestamp", processLock.getExpiresAtTimestamp()));
+         logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", processLock.getExpiresAtTimestamp()));
       return new ProcessLock(insertOutputRecord);
    }
 
