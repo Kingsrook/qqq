@@ -212,6 +212,17 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
+   public void revalidate(QInstance qInstance) throws QInstanceValidationException
+   {
+      qInstance.setHasBeenValidated(null);
+      validate(qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static void addValidatorPlugin(QInstanceValidatorPluginInterface<?> plugin)
    {
       Optional<Method> validateMethod = Arrays.stream(plugin.getClass().getDeclaredMethods())

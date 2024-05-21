@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.processes.locks;
 
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -46,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -108,12 +108,22 @@ public class ProcessLockUtils
          QRecord existingLockRecord = new GetAction().executeForRecord(new GetInput(ProcessLock.TABLE_NAME).withUniqueKey(Map.of("key", key, "processLockTypeId", lockType.getId())));
          if(existingLockRecord != null)
          {
-            existingLockDetails.append("Held by: ").append(existingLockRecord.getValueString("holder"));
-            Instant expiresAtTimestamp = existingLockRecord.getValueInstant("expiresAtTimestamp");
+            ProcessLock existingLock = new ProcessLock(existingLockRecord);
+            if(StringUtils.hasContent(existingLock.getUserId()))
+            {
+               existingLockDetails.append("Held by: ").append(existingLock.getUserId());
+            }
+
+            if(StringUtils.hasContent(existingLock.getDetails()))
+            {
+               existingLockDetails.append("; with details: ").append(existingLock.getDetails());
+            }
+
+            Instant expiresAtTimestamp = existingLock.getExpiresAtTimestamp();
             if(expiresAtTimestamp != null)
             {
                ZonedDateTime zonedExpiresAt = expiresAtTimestamp.atZone(ValueUtils.getSessionOrInstanceZoneId());
-               existingLockDetails.append("; Expires at: ").append(QValueFormatter.formatDateTimeWithZone(zonedExpiresAt));
+               existingLockDetails.append("; expiring at: ").append(QValueFormatter.formatDateTimeWithZone(zonedExpiresAt));
             }
 
             if(expiresAtTimestamp != null && expiresAtTimestamp.isBefore(now))
@@ -121,10 +131,9 @@ public class ProcessLockUtils
                /////////////////////////////////////////////////////////////////////////////////
                // if existing lock has expired, then we can delete it and try to insert again //
                /////////////////////////////////////////////////////////////////////////////////
-               Serializable id = existingLockRecord.getValue("id");
-               LOG.info("Existing lock has expired - deleting it and trying again.", logPair("id", id),
+               LOG.info("Existing lock has expired - deleting it and trying again.", logPair("id", existingLock.getId()),
                   logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", expiresAtTimestamp));
-               new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(id));
+               new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(existingLock.getId()));
                insertOutputRecord = tryToInsert(processLock);
             }
          }
@@ -171,6 +180,7 @@ public class ProcessLockUtils
    {
       Instant giveUpTime = Instant.now().plus(maxWait);
 
+      UnableToObtainProcessLockException lastCaughtUnableToObtainProcessLockException = null;
       while(true)
       {
          try
@@ -180,6 +190,7 @@ public class ProcessLockUtils
          }
          catch(UnableToObtainProcessLockException e)
          {
+            lastCaughtUnableToObtainProcessLockException = e;
             if(Instant.now().plus(sleepBetweenTries).isBefore(giveUpTime))
             {
                SleepUtils.sleep(sleepBetweenTries);
@@ -191,7 +202,12 @@ public class ProcessLockUtils
          }
       }
 
-      throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]"));
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // var can never be null with current code-path, but prefer defensiveness regardless. //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      @SuppressWarnings("ConstantValue")
+      String suffix = lastCaughtUnableToObtainProcessLockException == null ? "" : ": " + lastCaughtUnableToObtainProcessLockException.getMessage();
+      throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]" + suffix));
    }
 
 

@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerMultiOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -68,6 +69,7 @@ class ProcessLockUtilsTest extends BaseTest
       }
 
       metaData.addSelfToInstance(qInstance);
+      new QInstanceValidator().revalidate(qInstance);
 
       new InsertAction().execute(new InsertInput(ProcessLockType.TABLE_NAME).withRecordEntities(List.of(
          new ProcessLockType()
@@ -104,7 +106,10 @@ class ProcessLockUtilsTest extends BaseTest
       // make sure we can't create a second for the same key //
       /////////////////////////////////////////////////////////
       assertThatThrownBy(() -> ProcessLockUtils.create("1", "typeA", "you"))
-         .isInstanceOf(UnableToObtainProcessLockException.class);
+         .isInstanceOf(UnableToObtainProcessLockException.class)
+         .hasMessageContaining("Held by: " + QContext.getQSession().getUser().getIdReference())
+         .hasMessageContaining("with details: me")
+         .hasMessageNotContaining("expiring at: 20");
 
       /////////////////////////////////////////////////////////
       // make sure we can create another for a different key //
@@ -171,7 +176,10 @@ class ProcessLockUtilsTest extends BaseTest
       // make sure someone else fails, if they don't wait long enough //
       //////////////////////////////////////////////////////////////////
       assertThatThrownBy(() -> ProcessLockUtils.create("1", "typeC", "you", Duration.of(1, ChronoUnit.SECONDS), Duration.of(3, ChronoUnit.SECONDS)))
-         .isInstanceOf(UnableToObtainProcessLockException.class);
+         .isInstanceOf(UnableToObtainProcessLockException.class)
+         .hasMessageContaining("Held by: " + QContext.getQSession().getUser().getIdReference())
+         .hasMessageContaining("with details: me")
+         .hasMessageContaining("expiring at: 20");
    }
 
 
