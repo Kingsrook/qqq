@@ -217,12 +217,17 @@ public class ProcessLockUtils
     *******************************************************************************/
    public static ProcessLock getById(Integer id) throws QException
    {
+      if(id == null)
+      {
+         return (null);
+      }
+
       QRecord existingLockRecord = new GetAction().executeForRecord(new GetInput(ProcessLock.TABLE_NAME).withPrimaryKey(id));
       if(existingLockRecord != null)
       {
          return (new ProcessLock(existingLockRecord));
       }
-      return null;
+      return (null);
    }
 
 
@@ -230,27 +235,40 @@ public class ProcessLockUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void checkIn(ProcessLock processLock) throws QException
+   public static void checkIn(ProcessLock processLock)
    {
-      ProcessLockType lockType = getProcessLockTypeById(processLock.getProcessLockTypeId());
-      if(lockType == null)
+      try
       {
-         throw (new QException("Unrecognized process lock type id: " + processLock.getProcessLockTypeId()));
+         if(processLock == null)
+         {
+            LOG.debug("Null processLock passed in - will not checkin.");
+            return;
+         }
+
+         ProcessLockType lockType = getProcessLockTypeById(processLock.getProcessLockTypeId());
+         if(lockType == null)
+         {
+            throw (new QException("Unrecognized process lock type id: " + processLock.getProcessLockTypeId()));
+         }
+
+         Instant now = Instant.now();
+         QRecord recordToUpdate = new QRecord()
+            .withValue("id", processLock.getId())
+            .withValue("checkInTimestamp", now);
+
+         Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
+         if(defaultExpirationSeconds != null)
+         {
+            recordToUpdate.setValue("expiresAtTimestamp", now.plusSeconds(defaultExpirationSeconds));
+         }
+
+         new UpdateAction().execute(new UpdateInput(ProcessLock.TABLE_NAME).withRecord(recordToUpdate));
+         LOG.debug("Updated processLock checkInTimestamp", logPair("id", processLock.getId()), logPair("checkInTimestamp", now));
       }
-
-      Instant now = Instant.now();
-      QRecord recordToUpdate = new QRecord()
-         .withValue("id", processLock.getId())
-         .withValue("checkInTimestamp", now);
-
-      Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
-      if(defaultExpirationSeconds != null)
+      catch(Exception e)
       {
-         recordToUpdate.setValue("expiresAtTimestamp", now.plusSeconds(defaultExpirationSeconds));
+         LOG.warn("Error checking-in on process lock", e, logPair("processLockId", () -> processLock.getId()));
       }
-
-      new UpdateAction().execute(new UpdateInput(ProcessLock.TABLE_NAME).withRecord(recordToUpdate));
-      LOG.debug("Updated processLock checkInTimestamp", logPair("id", processLock.getId()), logPair("checkInTimestamp", now));
    }
 
 
