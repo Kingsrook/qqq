@@ -73,6 +73,7 @@ public class SavedReportsMetaDataProvider
    public static final String RENDER_REPORT_PROCESS_VALUES_WIDGET = "renderReportProcessValuesWidget";
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -234,7 +235,7 @@ public class SavedReportsMetaDataProvider
          .withName("reportSetupWidget")
          .withLabel("Filters and Columns")
          .withIsCard(true)
-         .withType(WidgetType.REPORT_SETUP.getType())
+         .withType(WidgetType.FILTER_AND_COLUMNS_SETUP.getType())
          .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
    }
 
