@@ -271,4 +271,111 @@ class ProcessLockUtilsTest extends BaseTest
       }
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCheckInExpiresAtTimestampsWithNoDefault() throws QException
+   {
+      /////////////////////////////////////////
+      // this type has no default expiration //
+      /////////////////////////////////////////
+      ProcessLock processLock = ProcessLockUtils.create("1", "typeA", null);
+      assertNull(processLock.getExpiresAtTimestamp());
+
+      /////////////////////////////////////////////////////////////
+      // checkin w/o specifying an expires-time - leaves it null //
+      /////////////////////////////////////////////////////////////
+      ProcessLockUtils.checkIn(processLock);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNull(processLock.getExpiresAtTimestamp());
+
+      //////////////////////////////////////////////
+      // checkin specifying null - leaves it null //
+      //////////////////////////////////////////////
+      ProcessLockUtils.checkIn(processLock, null);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNull(processLock.getExpiresAtTimestamp());
+
+      //////////////////////////////////////////////
+      // checkin w/ a time - sets it to that time //
+      //////////////////////////////////////////////
+      Instant specifiedTime = Instant.now();
+      ProcessLockUtils.checkIn(processLock, specifiedTime);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertEquals(specifiedTime, processLock.getExpiresAtTimestamp());
+
+      ///////////////////////////////////////////////////////////
+      // checkin w/o specifying time - leaves it previous time //
+      ///////////////////////////////////////////////////////////
+      SleepUtils.sleep(1, TimeUnit.MILLISECONDS);
+      ProcessLockUtils.checkIn(processLock);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertEquals(specifiedTime, processLock.getExpiresAtTimestamp());
+
+      ////////////////////////////////////////////////////
+      // checkin specifying null - puts it back to null //
+      ////////////////////////////////////////////////////
+      ProcessLockUtils.checkIn(processLock, null);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNull(processLock.getExpiresAtTimestamp());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCheckInExpiresAtTimestampsWithSomeDefault() throws QException
+   {
+      /////////////////////////////////////////
+      // this type has a default expiration //
+      /////////////////////////////////////////
+      ProcessLock processLock = ProcessLockUtils.create("1", "typeB", null);
+      assertNotNull(processLock.getExpiresAtTimestamp());
+      Instant expiresAtTimestamp = processLock.getExpiresAtTimestamp();
+
+      ///////////////////////////////////////////////////////////////
+      // checkin w/o specifying an expires-time - moves it forward //
+      ///////////////////////////////////////////////////////////////
+      SleepUtils.sleep(1, TimeUnit.MILLISECONDS);
+      ProcessLockUtils.checkIn(processLock);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNotNull(processLock.getExpiresAtTimestamp());
+      assertNotEquals(expiresAtTimestamp, processLock.getExpiresAtTimestamp());
+
+      ///////////////////////////////////////////////
+      // checkin specifying null - sets it to null //
+      ///////////////////////////////////////////////
+      ProcessLockUtils.checkIn(processLock, null);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNull(processLock.getExpiresAtTimestamp());
+
+      //////////////////////////////////////////////
+      // checkin w/ a time - sets it to that time //
+      //////////////////////////////////////////////
+      Instant specifiedTime = Instant.now();
+      ProcessLockUtils.checkIn(processLock, specifiedTime);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertEquals(specifiedTime, processLock.getExpiresAtTimestamp());
+
+      /////////////////////////////////////////////////////////////////////////
+      // checkin w/o specifying time - uses the default and moves it forward //
+      /////////////////////////////////////////////////////////////////////////
+      SleepUtils.sleep(1, TimeUnit.MILLISECONDS);
+      ProcessLockUtils.checkIn(processLock);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNotEquals(specifiedTime, processLock.getExpiresAtTimestamp());
+
+      ////////////////////////////////////////////////////
+      // checkin specifying null - puts it back to null //
+      ////////////////////////////////////////////////////
+      ProcessLockUtils.checkIn(processLock, null);
+      processLock = ProcessLockUtils.getById(processLock.getId());
+      assertNull(processLock.getExpiresAtTimestamp());
+   }
+
 }

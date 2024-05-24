@@ -233,10 +233,68 @@ public class ProcessLockUtils
 
 
    /*******************************************************************************
-    **
+    ** input wrapper for an overload of the checkin method, to allow more flexibility
+    ** w/ whether or not you want to update details & expiresAtTimestamp (e.g., so a
+    ** null can be passed in, to mean "set it to null" vs. "don't update it").
     *******************************************************************************/
-   public static void checkIn(ProcessLock processLock)
+   public static class CheckInInput
    {
+      private ProcessLock processLock;
+      private Instant     expiresAtTimestamp         = null;
+      private boolean     wasGivenExpiresAtTimestamp = false;
+      private String      details                    = null;
+      private boolean     wasGivenDetails            = false;
+
+
+
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public CheckInInput(ProcessLock processLock)
+      {
+         this.processLock = processLock;
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public CheckInInput withExpiresAtTimestamp(Instant expiresAtTimestamp)
+      {
+         this.expiresAtTimestamp = expiresAtTimestamp;
+         this.wasGivenExpiresAtTimestamp = true;
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public CheckInInput withDetails(String details)
+      {
+         this.details = details;
+         this.wasGivenDetails = true;
+         return (this);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a check-in, with a specific value for the expiresAtTimestamp - which can
+    ** be set to null to make it null in the lock.
+    **
+    ** If you don't want to specify the expiresAtTimestamp, call the overload that
+    ** doesn't take the timestamp - in which case it'll either stay the same as it
+    ** was, or will be set based on the type's default.
+    *******************************************************************************/
+   public static void checkIn(CheckInInput input)
+   {
+      ProcessLock processLock = input.processLock;
+
       try
       {
          if(processLock == null)
@@ -245,30 +303,76 @@ public class ProcessLockUtils
             return;
          }
 
-         ProcessLockType lockType = getProcessLockTypeById(processLock.getProcessLockTypeId());
-         if(lockType == null)
-         {
-            throw (new QException("Unrecognized process lock type id: " + processLock.getProcessLockTypeId()));
-         }
-
-         Instant now = Instant.now();
          QRecord recordToUpdate = new QRecord()
             .withValue("id", processLock.getId())
-            .withValue("checkInTimestamp", now);
+            .withValue("checkInTimestamp", Instant.now());
 
-         Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
-         if(defaultExpirationSeconds != null)
+         ///////////////////////////////////////////////////////////////////
+         // if the input was given a details string, update the details   //
+         // use boolean instead of null to know whether or not to do this //
+         ///////////////////////////////////////////////////////////////////
+         if(input.wasGivenDetails)
          {
-            recordToUpdate.setValue("expiresAtTimestamp", now.plusSeconds(defaultExpirationSeconds));
+            recordToUpdate.setValue("details", input.details);
+         }
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the input object had an expires-at timestamp put in it, then use that value (null or otherwise) for the expires-at-timestamp //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(input.wasGivenExpiresAtTimestamp)
+         {
+            recordToUpdate.setValue("expiresAtTimestamp", input.expiresAtTimestamp);
+         }
+         else
+         {
+            ////////////////////////////////////////////////////////////////////////////////
+            // else, do the default thing - which is, look for a default in the lock type //
+            ////////////////////////////////////////////////////////////////////////////////
+            ProcessLockType lockType = getProcessLockTypeById(processLock.getProcessLockTypeId());
+            if(lockType != null)
+            {
+               Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
+               if(defaultExpirationSeconds != null)
+               {
+                  recordToUpdate.setValue("expiresAtTimestamp", Instant.now().plusSeconds(defaultExpirationSeconds));
+               }
+            }
          }
 
          new UpdateAction().execute(new UpdateInput(ProcessLock.TABLE_NAME).withRecord(recordToUpdate));
-         LOG.debug("Updated processLock checkInTimestamp", logPair("id", processLock.getId()), logPair("checkInTimestamp", now));
+         LOG.debug("Checked in on process lock", logPair("id", processLock.getId()));
       }
       catch(Exception e)
       {
          LOG.warn("Error checking-in on process lock", e, logPair("processLockId", () -> processLock.getId()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a check-in, with a specific value for the expiresAtTimestamp - which can
+    ** be set to null to make it null in the lock.
+    **
+    ** If you don't want to specify the expiresAtTimestamp, call the overload that
+    ** doesn't take the timestamp - in which case it'll either stay the same as it
+    ** was, or will be set based on the type's default.
+    *******************************************************************************/
+   public static void checkIn(ProcessLock processLock, Instant expiresAtTimestamp)
+   {
+      checkIn(new CheckInInput(processLock).withExpiresAtTimestamp(expiresAtTimestamp));
+   }
+
+
+
+   /*******************************************************************************
+    ** Do a check-in, updating the expires-timestamp based on the lock type's default.
+    ** (or leaving it the same as it was (null or otherwise) if there is no default
+    ** on the type).
+    *******************************************************************************/
+   public static void checkIn(ProcessLock processLock)
+   {
+      checkIn(new CheckInInput(processLock));
    }
 
 
