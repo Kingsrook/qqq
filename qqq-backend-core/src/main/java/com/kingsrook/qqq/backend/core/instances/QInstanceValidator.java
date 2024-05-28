@@ -109,6 +109,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
 import org.quartz.CronExpression;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -151,6 +152,7 @@ public class QInstanceValidator
       // once, during the enrichment/validation work, so, capture it, and store it back in the instance. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       JoinGraph joinGraph = null;
+      long      start     = System.currentTimeMillis();
       try
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +193,9 @@ public class QInstanceValidator
          validateUniqueTopLevelNames(qInstance);
 
          runPlugins(QInstance.class, qInstance, qInstance);
+
+         long end = System.currentTimeMillis();
+         LOG.info("Validation (and enrichment) performance", logPair("millis", (end - start)));
       }
       catch(Exception e)
       {
@@ -668,17 +673,20 @@ public class QInstanceValidator
             {
                if(assertCondition(CollectionUtils.nullSafeHasContents(exposedJoin.getJoinPath()), joinPrefix + "is missing a joinPath."))
                {
-                  joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
-
-                  boolean foundJoinConnection = false;
-                  for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
+                  if(joinGraph != null)
                   {
-                     if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                     joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
+
+                     boolean foundJoinConnection = false;
+                     for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
                      {
-                        foundJoinConnection = true;
+                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                        {
+                           foundJoinConnection = true;
+                        }
                      }
+                     assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
                   }
-                  assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
 
                   assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
                   usedJoinPaths.add(exposedJoin.getJoinPath());
@@ -1479,11 +1487,19 @@ public class QInstanceValidator
                                  warn("Error loading expectedType for field [" + fieldMetaData.getName() + "] in process [" + processName + "]: " + e.getMessage());
                               }
 
-                              validateSimpleCodeReference("Process " + processName + " code reference: ", codeReference, expectedClass);
+                              validateSimpleCodeReference("Process " + processName + " code reference:", codeReference, expectedClass);
                            }
                         }
                      }
                   }
+               }
+            }
+
+            if(process.getCancelStep() != null)
+            {
+               if(assertCondition(process.getCancelStep().getCode() != null, "Cancel step is missing a code reference, in process " + processName))
+               {
+                  validateSimpleCodeReference("Process " + processName + " cancel step code reference: ", process.getCancelStep().getCode(), BackendStep.class);
                }
             }
 
@@ -1498,7 +1514,11 @@ public class QInstanceValidator
 
             if(process.getVariantBackend() != null)
             {
-               assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
+               if(qInstance.getBackends() != null)
+               {
+                  assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
+               }
+
                assertCondition(process.getVariantRunStrategy() != null, "A variant run strategy was not set for process " + processName + " (which does specify a variant backend)");
             }
             else
