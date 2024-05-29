@@ -82,7 +82,7 @@ public class RunProcessAction
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
-   public static final String BASEPULL_CONFIGURATION = "basepullConfiguration";
+   public static final String BASEPULL_CONFIGURATION    = "basepullConfiguration";
 
    ////////////////////////////////////////////////////////////////////////////////////////////////
    // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
@@ -335,6 +335,13 @@ public class RunProcessAction
          ///////////////////////////////////////////////////
          runProcessInput.seedFromProcessState(optionalProcessState.get());
 
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're restoring an old state, we can discard a previously stored updatedFrontendStepList - //
+         // it is only needed on the transitional edge from a backend-step to a frontend step, but not    //
+         // in the other directly                                                                         //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         optionalProcessState.get().setUpdatedFrontendStepList(null);
+
          ///////////////////////////////////////////////////////////////////////////
          // if there were values from the caller, put those (back) in the request //
          ///////////////////////////////////////////////////////////////////////////
@@ -357,7 +364,7 @@ public class RunProcessAction
    /*******************************************************************************
     ** Run a single backend step.
     *******************************************************************************/
-   private RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
+   protected RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());

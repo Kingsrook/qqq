@@ -69,7 +69,7 @@ public enum WidgetType
    DYNAMIC_FORM("dynamicForm"),
    DATA_BAG_VIEWER("dataBagViewer"),
    PIVOT_TABLE_SETUP("pivotTableSetup"),
-   REPORT_SETUP("reportSetup"),
+   FILTER_AND_COLUMNS_SETUP("filterAndColumnsSetup"),
    SCRIPT_VIEWER("scriptViewer");
 
 

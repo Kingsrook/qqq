@@ -60,6 +60,8 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
+   private QBackendStepMetaData cancelStep;
+
    private QIcon icon;
 
    private QScheduleMetaData schedule;
@@ -675,6 +677,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    }
 
 
+
    /*******************************************************************************
     ** Getter for variantRunStrategy
     *******************************************************************************/
@@ -744,6 +747,37 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public Map<String, QStepMetaData> getAllSteps()
    {
       return steps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for cancelStep
+    *******************************************************************************/
+   public QBackendStepMetaData getCancelStep()
+   {
+      return (this.cancelStep);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cancelStep
+    *******************************************************************************/
+   public void setCancelStep(QBackendStepMetaData cancelStep)
+   {
+      this.cancelStep = cancelStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cancelStep
+    *******************************************************************************/
+   public QProcessMetaData withCancelStep(QBackendStepMetaData cancelStep)
+   {
+      this.cancelStep = cancelStep;
+      return (this);
    }
 
 }

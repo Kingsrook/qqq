@@ -641,6 +641,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
    /*******************************************************************************
+    ** fluent setter for both recordLabelFormat and recordLabelFields
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFormatAndFields(String format, String... fields)
+   {
+      setRecordLabelFormat(format);
+      setRecordLabelFields(Arrays.asList(fields));
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for recordLabelFields
     **
     *******************************************************************************/

@@ -218,6 +218,7 @@ public abstract class QRecordEntity
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -296,7 +297,19 @@ public abstract class QRecordEntity
                   }
                   else
                   {
-                     LOG.debug("Skipping field without @QField annotation", logPair("class", c.getSimpleName()), logPair("fieldName", fieldName));
+                     Optional<QIgnore>      ignoreAnnotation      = getQIgnoreAnnotation(c, fieldName);
+                     Optional<QAssociation> associationAnnotation = getQAssociationAnnotation(c, fieldName);
+
+                     if(ignoreAnnotation.isPresent() || associationAnnotation.isPresent())
+                     {
+                        ////////////////////////////////////////////////////////////
+                        // silently skip if marked as an association or an ignore //
+                        ////////////////////////////////////////////////////////////
+                     }
+                     else
+                     {
+                        LOG.debug("Skipping field without @QField annotation", logPair("class", c.getSimpleName()), logPair("fieldName", fieldName));
+                     }
                   }
                }
                else
@@ -363,6 +376,16 @@ public abstract class QRecordEntity
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static Optional<QIgnore> getQIgnoreAnnotation(Class<? extends QRecordEntity> c, String ignoreName)
+   {
+      return (getAnnotationOnField(c, QIgnore.class, ignoreName));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static Optional<QAssociation> getQAssociationAnnotation(Class<? extends QRecordEntity> c, String fieldName)
    {
       return (getAnnotationOnField(c, QAssociation.class, fieldName));
@@ -419,9 +442,9 @@ public abstract class QRecordEntity
          }
          else
          {
-            if(!method.getName().equals("getClass"))
+            if(!method.getName().equals("getClass") && method.getAnnotation(QIgnore.class) == null)
             {
-               LOG.debug("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
+               LOG.debug("Method [" + method.getName() + "] in [" + method.getDeclaringClass().getSimpleName() + "] looks like a getter, but its return type, [" + method.getReturnType().getSimpleName() + "], isn't supported.");
             }
          }
       }

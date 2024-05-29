@@ -31,13 +31,18 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -248,6 +253,42 @@ class QRecordTest extends BaseTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////
       originalMap.put("four", 4);
       assertNotEquals(originalMap, cloneWithMapValue.getValue("myMap"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetErrorsAndWarningsAsString()
+   {
+      assertEquals("", new QRecord().getErrorsAsString());
+      assertEquals("one", new QRecord()
+         .withError(new BadInputStatusMessage("one"))
+         .getErrorsAsString());
+      assertEquals("one; two", new QRecord()
+         .withError(new BadInputStatusMessage("one"))
+         .withError(new SystemErrorStatusMessage("two"))
+         .getErrorsAsString());
+
+      assertEquals("", new QRecord().getWarningsAsString());
+      assertEquals("A", new QRecord()
+         .withWarning(new QWarningMessage("A"))
+         .getWarningsAsString());
+      assertEquals("A; B; C", new QRecord()
+         .withWarning(new QWarningMessage("A"))
+         .withWarning(new QWarningMessage("B"))
+         .withWarning(new QWarningMessage("C"))
+         .getWarningsAsString());
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // make sure this AsString method doesn't get included in our json serialization //
+      ///////////////////////////////////////////////////////////////////////////////////
+      String json = JsonUtils.toJson(new QRecord()
+         .withError(new BadInputStatusMessage("one")));
+      JSONObject jsonObject = new JSONObject(json);
+      assertFalse(jsonObject.has("errorsAsString"));
    }
 
 }

@@ -30,6 +30,7 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QIgnore;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -425,6 +426,7 @@ public class APILog extends QRecordEntity
    /*******************************************************************************
     ** Getter for securityKeyValues
     *******************************************************************************/
+   @QIgnore
    public Map<String, Serializable> getSecurityKeyValues()
    {
       return (this.securityKeyValues);

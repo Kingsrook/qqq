@@ -351,6 +351,36 @@ public class GeneralProcessUtils
     ** If multiple values are found for the key, they'll squash each other, and only
     ** one (random) value will appear.
     *******************************************************************************/
+   public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(String tableName, String keyFieldName, Class<T> entityClass, QQueryFilter filter) throws QException
+   {
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(filter);
+      QueryOutput   queryOutput = new QueryAction().execute(queryInput);
+      List<QRecord> records     = queryOutput.getRecords();
+
+      Map<Serializable, T> map = new HashMap<>();
+      for(QRecord record : records)
+      {
+         Serializable value = record.getValue(keyFieldName);
+         if(value != null)
+         {
+            map.put(value, QRecordEntity.fromQRecord(entityClass, record));
+         }
+      }
+      return (map);
+   }
+
+
+
+   /*******************************************************************************
+    ** Load rows from a table matching the specified filter, into a map, keyed by the keyFieldName.
+    **
+    ** Note - null values from the key field are NOT put in the map.
+    **
+    ** If multiple values are found for the key, they'll squash each other, and only
+    ** one (random) value will appear.
+    *******************************************************************************/
    public static Map<Serializable, QRecord> loadTableToMap(String tableName, String keyFieldName, QQueryFilter filter) throws QException
    {
       QueryInput queryInput = new QueryInput();
@@ -412,7 +442,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static <T extends QRecordEntity> Map<Serializable, T> loadTableToMap(String tableName, String keyFieldName, Class<T> entityClass) throws QException
    {
-      return (loadTableToMap(tableName, keyFieldName, entityClass, null));
+      return (loadTableToMap(tableName, keyFieldName, entityClass, (Consumer<QueryInput>) null));
    }
 
 

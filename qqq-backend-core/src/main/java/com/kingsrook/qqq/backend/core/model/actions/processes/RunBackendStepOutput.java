@@ -49,8 +49,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    private ProcessState processState;
    private Exception    exception; // todo - make optional
 
-   private String                      overrideLastStepName;
-   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
+   private String overrideLastStepName; // todo - does this need to go into state too??
 
    private List<AuditInput> auditInputList = new ArrayList<>();
 
@@ -416,7 +415,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
     *******************************************************************************/
    public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
    {
-      return (this.updatedFrontendStepList);
+      return (this.processState.getUpdatedFrontendStepList());
    }
 
 
@@ -426,18 +425,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
     *******************************************************************************/
    public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for updatedFrontendStepList
-    *******************************************************************************/
-   public RunBackendStepOutput withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
-   {
-      this.updatedFrontendStepList = updatedFrontendStepList;
-      return (this);
+      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
    }
 
 }
