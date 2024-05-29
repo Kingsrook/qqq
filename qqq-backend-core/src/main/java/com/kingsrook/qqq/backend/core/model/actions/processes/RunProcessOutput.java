@@ -46,8 +46,6 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
    private String              processUUID;
    private Optional<Exception> exception = Optional.empty();
 
-   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
-
 
 
    /*******************************************************************************
@@ -334,32 +332,21 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
 
 
    /*******************************************************************************
-    ** Getter for updatedFrontendStepList
-    *******************************************************************************/
-   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
-   {
-      return (this.updatedFrontendStepList);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for updatedFrontendStepList
+    **
     *******************************************************************************/
    public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
+      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for updatedFrontendStepList
+    **
     *******************************************************************************/
-   public RunProcessOutput withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
-      return (this);
+      return this.processState.getUpdatedFrontendStepList();
    }
 
 }

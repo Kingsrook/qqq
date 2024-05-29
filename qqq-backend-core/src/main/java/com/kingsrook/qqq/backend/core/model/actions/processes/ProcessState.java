@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 
 
 /*******************************************************************************
@@ -40,6 +41,11 @@ public class ProcessState implements Serializable
    private Map<String, Serializable> values       = new HashMap<>();
    private List<String>              stepList     = new ArrayList<>();
    private Optional<String>          nextStepName = Optional.empty();
+
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // maybe, remove this altogether - just let the frontend compute & send if needed... but how does it know last version...? //
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
 
 
 
@@ -139,4 +145,36 @@ public class ProcessState implements Serializable
    {
       this.stepList = stepList;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for updatedFrontendStepList
+    *******************************************************************************/
+   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   {
+      return (this.updatedFrontendStepList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for updatedFrontendStepList
+    *******************************************************************************/
+   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.updatedFrontendStepList = updatedFrontendStepList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for updatedFrontendStepList
+    *******************************************************************************/
+   public ProcessState withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.updatedFrontendStepList = updatedFrontendStepList;
+      return (this);
+   }
+
 }

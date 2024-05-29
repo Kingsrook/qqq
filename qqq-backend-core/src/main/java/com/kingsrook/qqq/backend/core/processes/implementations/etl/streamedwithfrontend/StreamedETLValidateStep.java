@@ -141,6 +141,11 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
       BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
       transformStep.postRun(postRunInput, postRunOutput);
+
+      if(postRunOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+      }
    }
 
 
