@@ -152,6 +152,22 @@ public class QueryAction
 
 
    /*******************************************************************************
+    ** shorthand way to call for the most common use-case, when you just want the
+    ** records to be returned, and you just want to pass in a table name and filter.
+    *******************************************************************************/
+   public static List<QRecord> execute(String tableName, QQueryFilter filter) throws QException
+   {
+      QueryAction queryAction = new QueryAction();
+      QueryInput  queryInput  = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(filter);
+      QueryOutput queryOutput = queryAction.execute(queryInput);
+      return (queryOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
