@@ -417,6 +417,12 @@ public class ProcessLockUtils
    {
       try
       {
+         if(processLock == null)
+         {
+            LOG.debug("No process lock passed in to release - returning with noop");
+            return;
+         }
+
          DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(processLock.getId()));
          if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
          {
