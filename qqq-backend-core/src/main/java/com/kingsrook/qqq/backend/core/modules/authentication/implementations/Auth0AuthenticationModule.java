@@ -208,7 +208,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process a sessionUUID - looks up userSession record - cannot create token this way. //
             /////////////////////////////////////////////////////////////////////////////////////////
             String sessionUUID = context.get(SESSION_UUID_KEY);
-            LOG.debug("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
+            LOG.trace("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
             if(sessionUUID != null)
             {
                accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
@@ -266,7 +266,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                // decode the credentials from the header auth //
                /////////////////////////////////////////////////
                String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-               LOG.info("Creating session from basicAuthentication", logPair("base64Credentials", maskForLog(base64Credentials)));
+               LOG.trace("Creating session from basicAuthentication", logPair("base64Credentials", maskForLog(base64Credentials)));
                accessToken = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
             }
             catch(Auth0Exception e)
@@ -285,7 +285,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process an api key - looks up client application token (creating token if needed) //
             ///////////////////////////////////////////////////////////////////////////////////////
             String apiKey = context.get(API_KEY);
-            LOG.info("Creating session from apiKey (accessTokenTable)", logPair("apiKey", maskForLog(apiKey)));
+            LOG.trace("Creating session from apiKey (accessTokenTable)", logPair("apiKey", maskForLog(apiKey)));
             if(apiKey != null)
             {
                accessToken = getAccessTokenFromApiKey(metaData, apiKey);
