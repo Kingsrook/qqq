@@ -161,7 +161,7 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    public static String linkTableCreateWithDefaultValues(RenderWidgetInput input, String tableName, Map<String, Serializable> defaultValues) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
-      return (tablePath + "/create?defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), Charset.defaultCharset()));
+      return (tablePath + "/create#defaultValues=" + URLEncoder.encode(JsonUtils.toJson(defaultValues), Charset.defaultCharset()));
    }
 
 
@@ -180,7 +180,6 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
       filter = QQueryFilterDeduper.dedupeFilter(filter);
       return ("<a href='" + tablePath + "?filter=" + JsonUtils.toJson(filter) + "'>" + totalString + "</a>");
    }
-
 
 
 
