@@ -823,16 +823,19 @@ public class QJavalinImplementation
                JSONObject associationsJSON = new JSONObject(value);
                for(String key : associationsJSON.keySet())
                {
-                  JSONArray associatedRecords = associationsJSON.getJSONArray(key);
-                  for(int i = 0; i < associatedRecords.length(); i++)
+                  JSONArray     associatedRecordsJSON = associationsJSON.getJSONArray(key);
+                  List<QRecord> associatedRecords     = new ArrayList<>();
+                  record.withAssociatedRecords(key, associatedRecords);
+
+                  for(int i = 0; i < associatedRecordsJSON.length(); i++)
                   {
                      QRecord    associatedRecord = new QRecord();
-                     JSONObject recordJSON       = associatedRecords.getJSONObject(i);
+                     JSONObject recordJSON       = associatedRecordsJSON.getJSONObject(i);
                      for(String k : recordJSON.keySet())
                      {
                         associatedRecord.withValue(k, ValueUtils.getValueAsString(recordJSON.get(k)));
                      }
-                     record.withAssociatedRecord(key, associatedRecord);
+                     associatedRecords.add(associatedRecord);
                   }
                }
                continue;
