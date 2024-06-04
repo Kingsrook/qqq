@@ -174,6 +174,14 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          transformStep.postRun(postRunInput, postRunOutput);
          loadStep.postRun(postRunInput, postRunOutput);
 
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(postRunOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+         }
+
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // explicitly copy values back into the runStepOutput from the post-run output                                     //
          // this might not be needed, since they (presumably) share a processState object, but just in case that changes... //
@@ -271,6 +279,15 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
 
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+            runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+         }
+
          ////////////////////////////////////////////////
          // pass the records through the load function //
          ////////////////////////////////////////////////
@@ -279,6 +296,15 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
+
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+            runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+         }
 
          ///////////////////////////////////////////////////////
          // copy a small number of records to the output list //

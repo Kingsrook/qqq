@@ -145,7 +145,9 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
       transformStep.postRun(postRunInput, postRunOutput);
 
-      // todo figure out what kind of test we can get on this
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
       if(postRunOutput.getUpdatedFrontendStepList() != null)
       {
          runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
@@ -213,6 +215,15 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
       transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+         runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+      }
 
       ////////////////////////////////////////////////////
       // add the transformed records to the output list //

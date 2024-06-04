@@ -142,6 +142,9 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
       transformStep.postRun(postRunInput, postRunOutput);
 
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
       if(postRunOutput.getUpdatedFrontendStepList() != null)
       {
          runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
@@ -176,6 +179,15 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
       transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+         runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+      }
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //
