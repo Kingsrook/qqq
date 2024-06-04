@@ -384,9 +384,9 @@ public class QInstanceEnricher
          process.setLabel(nameToLabel(process.getName()));
       }
 
-      if(process.getStepList() != null)
+      for(QStepMetaData step : CollectionUtils.nonNullMap(process.getAllSteps()).values())
       {
-         process.getStepList().forEach(this::enrichStep);
+         enrichStep(step);
       }
 
       for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
