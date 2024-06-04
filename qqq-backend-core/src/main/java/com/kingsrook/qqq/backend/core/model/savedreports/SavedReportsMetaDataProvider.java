@@ -236,7 +236,7 @@ public class SavedReportsMetaDataProvider
          .withLabel("Filters and Columns")
          .withIsCard(true)
          .withType(WidgetType.FILTER_AND_COLUMNS_SETUP.getType())
-         .withCodeReference(new QCodeReference(DefaultWidgetRenderer.class));
+         .withCodeReference(new QCodeReference(SavedReportsFilterAndColumnsSetupRenderer.class));
    }
 
 
