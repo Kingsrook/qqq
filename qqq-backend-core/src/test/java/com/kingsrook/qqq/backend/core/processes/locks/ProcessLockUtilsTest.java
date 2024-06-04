@@ -109,7 +109,8 @@ class ProcessLockUtilsTest extends BaseTest
          .isInstanceOf(UnableToObtainProcessLockException.class)
          .hasMessageContaining("Held by: " + QContext.getQSession().getUser().getIdReference())
          .hasMessageContaining("with details: me")
-         .hasMessageNotContaining("expiring at: 20");
+         .hasMessageNotContaining("expiring at: 20")
+         .matches(e -> ((UnableToObtainProcessLockException) e).getExistingLock() != null);
 
       /////////////////////////////////////////////////////////
       // make sure we can create another for a different key //
@@ -179,7 +180,8 @@ class ProcessLockUtilsTest extends BaseTest
          .isInstanceOf(UnableToObtainProcessLockException.class)
          .hasMessageContaining("Held by: " + QContext.getQSession().getUser().getIdReference())
          .hasMessageContaining("with details: me")
-         .hasMessageContaining("expiring at: 20");
+         .hasMessageContaining("expiring at: 20")
+         .matches(e -> ((UnableToObtainProcessLockException) e).getExistingLock() != null);
    }
 
 

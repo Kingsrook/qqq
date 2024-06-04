@@ -30,6 +30,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
  *******************************************************************************/
 public class UnableToObtainProcessLockException extends QUserFacingException
 {
+   private ProcessLock existingLock;
+
+
 
    /*******************************************************************************
     **
@@ -47,6 +50,37 @@ public class UnableToObtainProcessLockException extends QUserFacingException
    public UnableToObtainProcessLockException(String message, Throwable cause)
    {
       super(message, cause);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for existingLock
+    *******************************************************************************/
+   public ProcessLock getExistingLock()
+   {
+      return (this.existingLock);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for existingLock
+    *******************************************************************************/
+   public void setExistingLock(ProcessLock existingLock)
+   {
+      this.existingLock = existingLock;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for existingLock
+    *******************************************************************************/
+   public UnableToObtainProcessLockException withExistingLock(ProcessLock existingLock)
+   {
+      this.existingLock = existingLock;
+      return (this);
    }
 
 }

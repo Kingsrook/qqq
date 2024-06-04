@@ -103,12 +103,13 @@ public class ProcessLockUtils
       // if inserting failed... see if we can get existing lock //
       ////////////////////////////////////////////////////////////
       StringBuilder existingLockDetails = new StringBuilder();
+      ProcessLock   existingLock        = null;
       if(CollectionUtils.nullSafeHasContents(insertOutputRecord.getErrors()))
       {
          QRecord existingLockRecord = new GetAction().executeForRecord(new GetInput(ProcessLock.TABLE_NAME).withUniqueKey(Map.of("key", key, "processLockTypeId", lockType.getId())));
          if(existingLockRecord != null)
          {
-            ProcessLock existingLock = new ProcessLock(existingLockRecord);
+            existingLock = new ProcessLock(existingLockRecord);
             if(StringUtils.hasContent(existingLock.getUserId()))
             {
                existingLockDetails.append("Held by: ").append(existingLock.getUserId());
@@ -153,7 +154,8 @@ public class ProcessLockUtils
          /////////////////////////////////////////////////////////////////////////////////
          LOG.info("Errors in process lock record after attempted insert", logPair("errors", insertOutputRecord.getErrors()),
             logPair("key", key), logPair("type", typeName), logPair("details", details));
-         throw (new UnableToObtainProcessLockException("A Process Lock already exists for key [" + key + "] of type [" + typeName + "], " + existingLockDetails));
+         throw (new UnableToObtainProcessLockException("A Process Lock already exists for key [" + key + "] of type [" + typeName + "], " + existingLockDetails)
+            .withExistingLock(existingLock));
       }
 
       LOG.info("Created process lock", logPair("id", processLock.getId()),
@@ -202,12 +204,16 @@ public class ProcessLockUtils
          }
       }
 
-      ////////////////////////////////////////////////////////////////////////////////////////
-      // var can never be null with current code-path, but prefer defensiveness regardless. //
-      ////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // this variable can never be null with current code-path, but prefer to be defensive regardless //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
       @SuppressWarnings("ConstantValue")
       String suffix = lastCaughtUnableToObtainProcessLockException == null ? "" : ": " + lastCaughtUnableToObtainProcessLockException.getMessage();
-      throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]" + suffix));
+
+      //noinspection ConstantValue
+      throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]" + suffix)
+         .withExistingLock(lastCaughtUnableToObtainProcessLockException == null ? null : lastCaughtUnableToObtainProcessLockException.getExistingLock())
+      );
    }
 
 
