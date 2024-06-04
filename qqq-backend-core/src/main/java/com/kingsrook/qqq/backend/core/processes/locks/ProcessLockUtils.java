@@ -212,8 +212,7 @@ public class ProcessLockUtils
 
       //noinspection ConstantValue
       throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]" + suffix)
-         .withExistingLock(lastCaughtUnableToObtainProcessLockException == null ? null : lastCaughtUnableToObtainProcessLockException.getExistingLock())
-      );
+         .withExistingLock(lastCaughtUnableToObtainProcessLockException == null ? null : lastCaughtUnableToObtainProcessLockException.getExistingLock()));
    }
 
 
