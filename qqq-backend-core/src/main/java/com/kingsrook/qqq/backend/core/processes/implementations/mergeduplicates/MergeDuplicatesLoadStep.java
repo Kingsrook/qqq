@@ -61,9 +61,9 @@ public class MergeDuplicatesLoadStep extends LoadViaInsertOrUpdateStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      super.run(runBackendStepInput, runBackendStepOutput);
+      super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
       ListingHash<String, Serializable> otherTableIdsToDelete     = (ListingHash<String, Serializable>) runBackendStepInput.getValue("otherTableIdsToDelete");
       ListingHash<String, QQueryFilter> otherTableFiltersToDelete = (ListingHash<String, QQueryFilter>) runBackendStepInput.getValue("otherTableFiltersToDelete");

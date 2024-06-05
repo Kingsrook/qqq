@@ -94,7 +94,7 @@ class ClonePeopleTransformStepTest
       ClonePeopleTransformStep clonePeopleTransformStep = new ClonePeopleTransformStep();
 
       input.setRecords(queryOutput.getRecords());
-      clonePeopleTransformStep.run(input, output);
+      clonePeopleTransformStep.runOnePage(input, output);
 
       ArrayList<ProcessSummaryLineInterface> processSummary = clonePeopleTransformStep.getProcessSummary(output, true);
 

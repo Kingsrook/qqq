@@ -62,7 +62,7 @@ public class LoadViaUpdateStep extends AbstractLoadStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       UpdateInput updateInput = new UpdateInput();
       updateInput.setInputSource(getInputSource());

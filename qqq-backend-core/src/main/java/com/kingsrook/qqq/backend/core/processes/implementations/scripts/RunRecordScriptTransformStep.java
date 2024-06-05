@@ -88,9 +88,9 @@ public class RunRecordScriptTransformStep extends NoopTransformStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      super.run(runBackendStepInput, runBackendStepOutput);
+      super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
       runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY, doGetProcessSummary(runBackendStepOutput, false));
    }

@@ -60,7 +60,7 @@ public class LoadViaInsertStep extends AbstractLoadStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setInputSource(getInputSource());

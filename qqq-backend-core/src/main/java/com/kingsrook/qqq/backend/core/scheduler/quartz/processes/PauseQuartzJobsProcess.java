@@ -78,7 +78,7 @@ public class PauseQuartzJobsProcess extends AbstractLoadStep implements MetaData
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       try
       {

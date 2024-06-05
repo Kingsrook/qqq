@@ -2258,7 +2258,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    public abstract class TestAbstractClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
    }
@@ -2270,7 +2270,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    private class TestPrivateClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
@@ -2297,7 +2297,7 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
