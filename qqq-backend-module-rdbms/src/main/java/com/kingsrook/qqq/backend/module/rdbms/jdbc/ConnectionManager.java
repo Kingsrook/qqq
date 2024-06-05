@@ -23,68 +23,81 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import java.util.concurrent.ConcurrentHashMap;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
+ ** Class to manage access to JDBC Connections.
  **
+ ** Relies heavily on RDBMSBackendMetaData.
  *******************************************************************************/
 public class ConnectionManager
 {
-   private boolean mayUseConnectionPool = true;
+   private static final QLogger LOG = QLogger.getLogger(ConnectionManager.class);
 
-   private static Map<String, Boolean>               initedConnectionPool = new HashMap<>();
-   private static Map<String, ComboPooledDataSource> connectionPoolMap    = new HashMap<>();
+   private static final Map<String, ConnectionProviderInterface> connectionProviderMap = new ConcurrentHashMap<>();
 
-   private static int usageCounter = 0;
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Connection getConnection(RDBMSBackendMetaData backend) throws SQLException
-   {
-      usageCounter++;
-
-      if(mayUseConnectionPool)
-      {
-         return (getConnectionFromPool(backend));
-      }
-
-      String jdbcURL = getJdbcUrl(backend);
-      return DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void checkPools()
+   public static Connection getConnection(RDBMSBackendMetaData backend) throws SQLException
    {
       try
       {
-         System.out.println("Usages: " + usageCounter);
+         ConnectionProviderInterface connectionProvider = getConnectionProvider(backend);
+         return connectionProvider.getConnection();
+      }
+      catch(QException qe)
+      {
+         throw (new SQLException("Error getting connection", qe));
+      }
+   }
 
-         for(Map.Entry<String, ComboPooledDataSource> entry : CollectionUtils.nonNullMap(connectionPoolMap).entrySet())
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static ConnectionProviderInterface getConnectionProvider(RDBMSBackendMetaData backend) throws QException
+   {
+      if(!connectionProviderMap.containsKey(backend.getName()))
+      {
+         synchronized(connectionProviderMap)
          {
-            System.out.println("POOL USAGE: " + entry.getKey() + ": " + entry.getValue().getNumBusyConnections());
-            if(entry.getValue().getNumBusyConnections() > 2)
+            if(!connectionProviderMap.containsKey(backend.getName()))
             {
-               System.out.println("break!");
+               QCodeReference connectionProviderReference = backend.getConnectionProvider();
+               boolean        usingDefaultSimpleProvider  = false;
+               if(connectionProviderReference == null)
+               {
+                  connectionProviderReference = new QCodeReference(SimpleConnectionProvider.class);
+                  usingDefaultSimpleProvider = true;
+               }
+
+               LOG.info("Initializing connection provider for RDBMS backend", logPair("backendName", backend.getName()), logPair("connectionProvider", connectionProviderReference.getName()), logPair("usingDefaultSimpleProvider", usingDefaultSimpleProvider));
+               ConnectionProviderInterface connectionProvider = QCodeLoader.getAdHoc(ConnectionProviderInterface.class, connectionProviderReference);
+               connectionProvider.init(backend);
+
+               connectionProviderMap.put(backend.getName(), connectionProvider);
             }
          }
       }
-      catch(Exception e)
-      {
-         e.printStackTrace();
-      }
+
+      return (connectionProviderMap.get(backend.getName()));
    }
 
 
@@ -92,36 +105,27 @@ public class ConnectionManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Connection getConnectionFromPool(RDBMSBackendMetaData backend) throws SQLException
+   public static JSONArray dumpConnectionProviderDebug()
    {
       try
       {
-         if(!initedConnectionPool.getOrDefault(backend.getName(), false))
+         JSONArray rs = new JSONArray();
+         for(Map.Entry<String, ConnectionProviderInterface> entry : connectionProviderMap.entrySet())
          {
-            // todo - some syncrhonized
-            ComboPooledDataSource connectionPool = new ComboPooledDataSource();
-            connectionPool.setDriverClass(getJdbcDriverClassName(backend));
-            connectionPool.setJdbcUrl(getJdbcUrl(backend));
-            connectionPool.setUser(backend.getUsername());
-            connectionPool.setPassword(backend.getPassword());
-
-            connectionPool.setTestConnectionOnCheckout(true);
-
-            //////////////////////////////////////////////////////////////////////////
-            // useful to debug leaking connections - meant for tests only though... //
-            //////////////////////////////////////////////////////////////////////////
-            // connectionPool.setDebugUnreturnedConnectionStackTraces(true);
-            // connectionPool.setUnreturnedConnectionTimeout(10);
-
-            connectionPoolMap.put(backend.getName(), connectionPool);
-            initedConnectionPool.put(backend.getName(), true);
+            JSONObject jsonObject = new JSONObject(new LinkedHashMap<>());
+            jsonObject.put("backendName", entry.getKey());
+            jsonObject.put("connectionProviderClass", entry.getValue().getClass().getName());
+            jsonObject.put("values", entry.getValue().dumpDebug());
+            rs.put(jsonObject);
          }
 
-         return (connectionPoolMap.get(backend.getName()).getConnection());
+         return (rs);
       }
       catch(Exception e)
       {
-         throw (new SQLException("Error getting connection from pool", e));
+         String message = "Error dumping debug data for connection providers";
+         LOG.warn(message, e);
+         return (new JSONArray(new JSONObject(Map.of("error", e.getMessage()))));
       }
    }
 
@@ -168,4 +172,14 @@ public class ConnectionManager
       };
    }
 
+
+
+   /*******************************************************************************
+    ** reset the map of connection providers - not necessarily meant to be useful
+    ** in production code - written for use in qqq tests.
+    *******************************************************************************/
+   static void resetConnectionProviders()
+   {
+      connectionProviderMap.clear();
+   }
 }

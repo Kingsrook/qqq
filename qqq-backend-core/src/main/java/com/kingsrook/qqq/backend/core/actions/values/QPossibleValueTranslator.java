@@ -32,13 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -77,45 +76,6 @@ public class QPossibleValueTranslator
    private Map<String, Map<Serializable, String>> possibleValueCache = new HashMap<>();
 
    private int maxSizePerPvsCache = 50_000;
-
-   private Map<String, QBackendTransaction> transactionsPerTable = new HashMap<>();
-
-   // todo not commit - remove instance & session - use Context
-
-
-   boolean useTransactionsAsConnectionPool = false;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private QBackendTransaction getTransaction(String tableName)
-   {
-      /////////////////////////////////////////////////////////////
-      // mmm, this does cut down on connections used -           //
-      // especially seems helpful in big exports.                //
-      // but, let's just start using connection pools instead... //
-      /////////////////////////////////////////////////////////////
-      if(useTransactionsAsConnectionPool)
-      {
-         try
-         {
-            if(!transactionsPerTable.containsKey(tableName))
-            {
-               transactionsPerTable.put(tableName, QBackendTransaction.openFor(new InsertInput(tableName)));
-            }
-
-            return (transactionsPerTable.get(tableName));
-         }
-         catch(Exception e)
-         {
-            LOG.warn("Error opening transaction for table", logPair("tableName", tableName));
-         }
-      }
-
-      return null;
-   }
 
 
 
@@ -601,7 +561,7 @@ public class QPossibleValueTranslator
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
             queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(idField, QCriteriaOperator.IN, page)));
-            queryInput.setTransaction(getTransaction(tableName));
+            queryInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // when querying for possible values, we do want to generate their display values, which makes record labels, which are usually used as PVS labels //

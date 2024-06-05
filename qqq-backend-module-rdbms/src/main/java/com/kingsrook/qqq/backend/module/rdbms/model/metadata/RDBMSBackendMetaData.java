@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 
 
@@ -41,6 +42,12 @@ public class RDBMSBackendMetaData extends QBackendMetaData
 
    private String jdbcUrl;
    private String jdbcDriverClassName;
+
+   private QCodeReference connectionProvider;
+
+   private ConnectionPoolSettings connectionPoolSettings;
+
+   private RDBMSBackendMetaData readOnlyBackendMetaData;
 
 
 
@@ -316,6 +323,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for jdbcDriverClassName
     *******************************************************************************/
@@ -345,5 +353,97 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for connectionProvider
+    *******************************************************************************/
+   public QCodeReference getConnectionProvider()
+   {
+      return (this.connectionProvider);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for connectionProvider
+    *******************************************************************************/
+   public void setConnectionProvider(QCodeReference connectionProvider)
+   {
+      this.connectionProvider = connectionProvider;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for connectionProvider
+    *******************************************************************************/
+   public RDBMSBackendMetaData withConnectionProvider(QCodeReference connectionProvider)
+   {
+      this.connectionProvider = connectionProvider;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for readOnlyBackendMetaData
+    *******************************************************************************/
+   public RDBMSBackendMetaData getReadOnlyBackendMetaData()
+   {
+      return (this.readOnlyBackendMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for readOnlyBackendMetaData
+    *******************************************************************************/
+   public void setReadOnlyBackendMetaData(RDBMSBackendMetaData readOnlyBackendMetaData)
+   {
+      this.readOnlyBackendMetaData = readOnlyBackendMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for readOnlyBackendMetaData
+    *******************************************************************************/
+   public RDBMSBackendMetaData withReadOnlyBackendMetaData(RDBMSBackendMetaData readOnlyBackendMetaData)
+   {
+      this.readOnlyBackendMetaData = readOnlyBackendMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for connectionPoolSettings
+    *******************************************************************************/
+   public ConnectionPoolSettings getConnectionPoolSettings()
+   {
+      return (this.connectionPoolSettings);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for connectionPoolSettings
+    *******************************************************************************/
+   public void setConnectionPoolSettings(ConnectionPoolSettings connectionPoolSettings)
+   {
+      this.connectionPoolSettings = connectionPoolSettings;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for connectionPoolSettings
+    *******************************************************************************/
+   public RDBMSBackendMetaData withConnectionPoolSettings(ConnectionPoolSettings connectionPoolSettings)
+   {
+      this.connectionPoolSettings = connectionPoolSettings;
+      return (this);
+   }
 
 }

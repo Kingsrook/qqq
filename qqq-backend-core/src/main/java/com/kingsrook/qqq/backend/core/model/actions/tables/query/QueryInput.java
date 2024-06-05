@@ -31,12 +31,16 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 
 
 /*******************************************************************************
  ** Input data for the Query action
  **
+ ** Todo - maybe make a class between AbstractTableActionInput and {QueryInput,
+ ** CountInput, and AggregateInput}, with common attributes for all of these
+ ** "read" operations (like, queryHints,
  *******************************************************************************/
 public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, Cloneable
 {
@@ -71,22 +75,6 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    private Collection<String> associationNamesToInclude = null;
 
    private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
-
-
-
-   /*******************************************************************************
-    ** Information about the query that an application (or qqq service) may know and
-    ** want to tell the backend, that can help influence how the backend processes
-    ** query.
-    **
-    ** For example, a query with potentially a large result set, for MySQL backend,
-    ** we may want to configure the result set to stream results rather than do its
-    ** default in-memory thing.  See RDBMSQueryAction for usage.
-    *******************************************************************************/
-   public enum QueryHint
-   {
-      POTENTIALLY_LARGE_NUMBER_OF_RESULTS
-   }
 
 
 
@@ -681,6 +669,21 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
          this.queryHints.remove(queryHint);
       }
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** null-safely check if query hints map contains the specified hint
+    *******************************************************************************/
+   public boolean hasQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         return (false);
+      }
+
+      return (queryHints.contains(queryHint));
    }
 
 }

@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
@@ -79,7 +80,6 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          LOG.warn("Error reading property/env for mysqlResultSetOptimizationEnabled", e);
       }
    }
-
 
    /*******************************************************************************
     **
@@ -361,7 +361,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // if we're allowed to use the mysqlResultSetOptimization, and we have the query hint of "expected large result set", then do it. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(mysqlResultSetOptimizationEnabled && queryInput.getQueryHints() != null && queryInput.getQueryHints().contains(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
+         if(mysqlResultSetOptimizationEnabled && queryInput.getQueryHints() != null && queryInput.getQueryHints().contains(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
          {
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //

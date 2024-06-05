@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -216,7 +217,8 @@ public class ExportAction
       }
       queryInput.getFilter().setLimit(exportInput.getLimit());
       queryInput.setShouldTranslatePossibleValues(true);
-      queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+      queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+      queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //

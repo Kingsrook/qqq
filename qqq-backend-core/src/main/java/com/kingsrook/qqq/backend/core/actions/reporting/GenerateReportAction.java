@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -417,7 +418,8 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
             queryInput.setQueryJoins(dataSource.getQueryJoins());
-            queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+            queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+            queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
             queryInput.setShouldTranslatePossibleValues(true);
             queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));

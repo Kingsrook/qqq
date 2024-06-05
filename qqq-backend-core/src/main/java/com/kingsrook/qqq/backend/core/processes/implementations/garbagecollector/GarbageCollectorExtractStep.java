@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.garbagecollecto
 import java.time.Instant;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
@@ -66,7 +67,7 @@ public class GarbageCollectorExtractStep extends ExtractViaQueryStep
    @Override
    protected void customizeInputPreQuery(QueryInput queryInput)
    {
-      queryInput.withQueryHint(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+      queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
    }
 
 }
