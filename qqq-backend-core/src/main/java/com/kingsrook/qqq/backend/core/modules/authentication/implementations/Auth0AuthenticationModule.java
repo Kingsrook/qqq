@@ -150,10 +150,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // this is how we allow the actions within this class to work without themselves having a logged-in user. //
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static QSession chickenAndEggSession = new QSession()
-   {
-
-   };
+   private static QSession chickenAndEggSession = null;
 
 
 
@@ -163,14 +160,29 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     *******************************************************************************/
    private QSession getChickenAndEggSession()
    {
-      for(String typeName : QContext.getQInstance().getSecurityKeyTypes().keySet())
+      if(chickenAndEggSession == null)
       {
-         QSecurityKeyType keyType = QContext.getQInstance().getSecurityKeyType(typeName);
-         if(StringUtils.hasContent(keyType.getAllAccessKeyName()))
+         ////////////////////////////////////////////////////////////////////////////////
+         // if the static field is null, then let's make a new session;                //
+         // prime it with all all-access keys; and then set it in the static field.    //
+         // and, if 2 threads get in here at the same time, no real harm will be done, //
+         // other than creating the session twice, and whoever loses the race, that'll //
+         // be the one that stays in the field                                         //
+         ////////////////////////////////////////////////////////////////////////////////
+         QSession newChickenAndEggSession = new QSession();
+
+         for(String typeName : QContext.getQInstance().getSecurityKeyTypes().keySet())
          {
-            chickenAndEggSession = chickenAndEggSession.withSecurityKeyValue(keyType.getAllAccessKeyName(), true);
+            QSecurityKeyType keyType = QContext.getQInstance().getSecurityKeyType(typeName);
+            if(StringUtils.hasContent(keyType.getAllAccessKeyName()))
+            {
+               newChickenAndEggSession.withSecurityKeyValue(keyType.getAllAccessKeyName(), true);
+            }
          }
+
+         chickenAndEggSession = newChickenAndEggSession;
       }
+
       return (chickenAndEggSession);
    }
 

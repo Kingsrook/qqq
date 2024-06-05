@@ -1304,7 +1304,7 @@ public class QInstanceValidatorTest extends BaseTest
          {
             TableAutomationAction action = getAction0(qInstance);
             action.setCodeReference(null);
-            action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+            action.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
          },
          "different table");
    }
