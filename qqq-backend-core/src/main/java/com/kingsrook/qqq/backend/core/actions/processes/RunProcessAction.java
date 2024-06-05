@@ -82,7 +82,7 @@ public class RunProcessAction
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
-   public static final String BASEPULL_CONFIGURATION = "basepullConfiguration";
+   public static final String BASEPULL_CONFIGURATION    = "basepullConfiguration";
 
    ////////////////////////////////////////////////////////////////////////////////////////////////
    // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
@@ -190,7 +190,25 @@ public class RunProcessAction
                // Run backend steps //
                ///////////////////////
                LOG.debug("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
-               runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
+               RunBackendStepOutput runBackendStepOutput = runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
+
+               /////////////////////////////////////////////////////////////////////////////////////////
+               // if the step returned an override lastStepName, use that to determine how we proceed //
+               /////////////////////////////////////////////////////////////////////////////////////////
+               if(runBackendStepOutput.getOverrideLastStepName() != null)
+               {
+                  LOG.debug("Process step [" + lastStepName + "] returned an overrideLastStepName [" + runBackendStepOutput.getOverrideLastStepName() + "]!");
+                  lastStepName = runBackendStepOutput.getOverrideLastStepName();
+               }
+
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               // similarly, if the step produced an updatedFrontendStepList, propagate that data outward //
+               /////////////////////////////////////////////////////////////////////////////////////////////
+               if(runBackendStepOutput.getUpdatedFrontendStepList() != null)
+               {
+                  LOG.debug("Process step [" + lastStepName + "] generated an updatedFrontendStepList [" + runBackendStepOutput.getUpdatedFrontendStepList().stream().map(s -> s.getName()).toList() + "]!");
+                  runProcessOutput.setUpdatedFrontendStepList(runBackendStepOutput.getUpdatedFrontendStepList());
+               }
             }
             else
             {
@@ -317,6 +335,13 @@ public class RunProcessAction
          ///////////////////////////////////////////////////
          runProcessInput.seedFromProcessState(optionalProcessState.get());
 
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're restoring an old state, we can discard a previously stored updatedFrontendStepList - //
+         // it is only needed on the transitional edge from a backend-step to a frontend step, but not    //
+         // in the other directly                                                                         //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         optionalProcessState.get().setUpdatedFrontendStepList(null);
+
          ///////////////////////////////////////////////////////////////////////////
          // if there were values from the caller, put those (back) in the request //
          ///////////////////////////////////////////////////////////////////////////
@@ -339,7 +364,7 @@ public class RunProcessAction
    /*******************************************************************************
     ** Run a single backend step.
     *******************************************************************************/
-   private void runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
+   protected RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());
@@ -368,14 +393,16 @@ public class RunProcessAction
          runBackendStepInput.setBasepullLastRunTime((Instant) runProcessInput.getValues().get(BASEPULL_LAST_RUNTIME_KEY));
       }
 
-      RunBackendStepOutput lastFunctionResult = new RunBackendStepAction().execute(runBackendStepInput);
-      storeState(stateKey, lastFunctionResult.getProcessState());
+      RunBackendStepOutput runBackendStepOutput = new RunBackendStepAction().execute(runBackendStepInput);
+      storeState(stateKey, runBackendStepOutput.getProcessState());
 
-      if(lastFunctionResult.getException() != null)
+      if(runBackendStepOutput.getException() != null)
       {
-         runProcessOutput.setException(lastFunctionResult.getException());
-         throw (lastFunctionResult.getException());
+         runProcessOutput.setException(runBackendStepOutput.getException());
+         throw (runBackendStepOutput.getException());
       }
+
+      return (runBackendStepOutput);
    }
 
 
@@ -495,15 +522,15 @@ public class RunProcessAction
       String basepullKeyValue = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if backend specifies that it uses variants, look for that data in the session and append to our basepull key //
+      // if process specifies that it uses variants, look for that data in the session and append to our basepull key //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(process.getSchedule() != null && process.getSchedule().getVariantBackend() != null)
+      if(process.getVariantBackend() != null)
       {
          QSession         session         = QContext.getQSession();
-         QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getSchedule().getVariantBackend());
+         QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getVariantBackend());
          if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
          {
-            LOG.info("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
+            LOG.warn("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
          }
          else
          {

@@ -43,8 +43,9 @@ public class Memoization<K, V>
 
    private final Map<K, MemoizedResult<V>> map = Collections.synchronizedMap(new LinkedHashMap<>());
 
-   private Duration timeout = Duration.ofSeconds(600);
-   private Integer  maxSize = 1000;
+   private Duration timeout            = Duration.ofSeconds(600);
+   private Integer  maxSize            = 1000;
+   private boolean  mayStoreNullValues = true;
 
 
 
@@ -54,6 +55,40 @@ public class Memoization<K, V>
     *******************************************************************************/
    public Memoization()
    {
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public Memoization(Integer maxSize)
+   {
+      this.maxSize = maxSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public Memoization(Duration timeout)
+   {
+      this.timeout = timeout;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public Memoization(Duration timeout, Integer maxSize)
+   {
+      this.timeout = timeout;
+      this.maxSize = maxSize;
    }
 
 
@@ -153,6 +188,14 @@ public class Memoization<K, V>
     *******************************************************************************/
    public void storeResult(K key, V value)
    {
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // if the value is null, and we're not supposed to store nulls, then return w/o storing //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      if(value == null && !mayStoreNullValues)
+      {
+         return;
+      }
+
       map.put(key, new MemoizedResult<>(value));
 
       //////////////////////////////////////
@@ -274,6 +317,37 @@ public class Memoization<K, V>
    public Memoization<K, V> withMaxSize(Integer maxSize)
    {
       this.maxSize = maxSize;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for mayStoreNullValues
+    *******************************************************************************/
+   public boolean getMayStoreNullValues()
+   {
+      return (this.mayStoreNullValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for mayStoreNullValues
+    *******************************************************************************/
+   public void setMayStoreNullValues(boolean mayStoreNullValues)
+   {
+      this.mayStoreNullValues = mayStoreNullValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for mayStoreNullValues
+    *******************************************************************************/
+   public Memoization<K, V> withMayStoreNullValues(boolean mayStoreNullValues)
+   {
+      this.mayStoreNullValues = mayStoreNullValues;
       return (this);
    }
 

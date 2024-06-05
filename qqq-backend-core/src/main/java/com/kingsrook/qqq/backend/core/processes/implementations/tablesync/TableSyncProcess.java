@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.VariantRunStrategy;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.ExtractViaBasepullQueryStep;
@@ -246,6 +247,29 @@ public class TableSyncProcess
       public Builder withExtractStepClass(Class<? extends AbstractExtractStep> extractStepClass)
       {
          super.withExtractStepClass(extractStepClass);
+         return (this);
+      }
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+      {
+         processMetaData.setVariantRunStrategy(variantRunStrategy);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withVariantBackend(String variantBackend)
+      {
+         processMetaData.setVariantBackend(variantBackend);
          return (this);
       }
    }

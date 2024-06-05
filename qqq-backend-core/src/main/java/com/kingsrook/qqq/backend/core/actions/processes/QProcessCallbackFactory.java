@@ -23,11 +23,19 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -63,6 +71,58 @@ public class QProcessCallbackFactory
             return (Collections.emptyMap());
          }
       };
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forRecordEntity(QRecordEntity entity)
+   {
+      return forRecord(entity.toQRecord());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forRecord(QRecord record)
+   {
+      String primaryKeyField = "id";
+      if(StringUtils.hasContent(record.getTableName()))
+      {
+         primaryKeyField = QContext.getQInstance().getTable(record.getTableName()).getPrimaryKeyField();
+      }
+
+      Serializable primaryKeyValue = record.getValue(primaryKeyField);
+      if(primaryKeyValue == null)
+      {
+         throw (new QRuntimeException("Record did not have value in its primary key field [" + primaryKeyField + "]"));
+      }
+
+      return (forPrimaryKey(primaryKeyField, primaryKeyValue));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forPrimaryKey(String fieldName, Serializable value)
+   {
+      return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, value))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QProcessCallback forPrimaryKeys(String fieldName, Collection<? extends Serializable> values)
+   {
+      return (forFilter(new QQueryFilter().withCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.IN, values))));
    }
 
 }

@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -363,11 +365,11 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAppMetaData withSectionOfChildren(QAppSection section, QAppChildMetaData... children)
+   public QAppMetaData withSectionOfChildren(QAppSection section, Collection<? extends QAppChildMetaData> children)
    {
       this.addSection(section);
 
-      for(QAppChildMetaData child : children)
+      for(QAppChildMetaData child : CollectionUtils.nonNullCollection(children))
       {
          withChild(child);
          if(child instanceof QTableMetaData)
@@ -389,6 +391,15 @@ public class QAppMetaData implements QAppChildMetaData, MetaDataWithPermissionRu
       }
 
       return (this);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QAppMetaData withSectionOfChildren(QAppSection section, QAppChildMetaData... children)
+   {
+      return (withSectionOfChildren(section, children == null ? null : Arrays.stream(children).toList()));
    }
 
 

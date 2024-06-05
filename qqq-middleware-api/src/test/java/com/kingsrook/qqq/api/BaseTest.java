@@ -23,6 +23,7 @@ package com.kingsrook.qqq.api;
 
 
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -56,7 +57,7 @@ public class BaseTest
     **
     *******************************************************************************/
    @BeforeEach
-   void baseBeforeEach()
+   void baseBeforeEach() throws QException
    {
       QContext.init(TestUtils.defineInstance(), new QSession());
    }

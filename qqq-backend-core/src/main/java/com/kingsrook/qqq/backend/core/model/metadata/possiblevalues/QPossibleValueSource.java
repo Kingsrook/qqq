@@ -53,6 +53,7 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
    // for type = TABLE //
    //////////////////////
    private String               tableName;
+   private String overrideIdField;
    private List<String>         searchFields;
    private List<QFilterOrderBy> orderByFields;
 
@@ -628,6 +629,37 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
    public void addSelfToInstance(QInstance qInstance)
    {
       qInstance.addPossibleValueSource(this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideIdField
+    *******************************************************************************/
+   public String getOverrideIdField()
+   {
+      return (this.overrideIdField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideIdField
+    *******************************************************************************/
+   public void setOverrideIdField(String overrideIdField)
+   {
+      this.overrideIdField = overrideIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideIdField
+    *******************************************************************************/
+   public QPossibleValueSource withOverrideIdField(String overrideIdField)
+   {
+      this.overrideIdField = overrideIdField;
+      return (this);
    }
 
 }

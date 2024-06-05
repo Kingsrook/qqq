@@ -39,7 +39,9 @@ public class ReplaceInput extends AbstractTableActionInput
    private UniqueKey           key;
    private List<QRecord>       records;
    private QQueryFilter        filter;
-   private boolean             performDeletes = true;
+   private boolean performDeletes                 = true;
+   private boolean allowNullKeyValuesToEqual      = false;
+   private boolean setPrimaryKeyInInsertedRecords = false;
 
    private boolean omitDmlAudit = false;
 
@@ -236,6 +238,68 @@ public class ReplaceInput extends AbstractTableActionInput
    public ReplaceInput withPerformDeletes(boolean performDeletes)
    {
       this.performDeletes = performDeletes;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for allowNullKeyValuesToEqual
+    *******************************************************************************/
+   public boolean getAllowNullKeyValuesToEqual()
+   {
+      return (this.allowNullKeyValuesToEqual);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for allowNullKeyValuesToEqual
+    *******************************************************************************/
+   public void setAllowNullKeyValuesToEqual(boolean allowNullKeyValuesToEqual)
+   {
+      this.allowNullKeyValuesToEqual = allowNullKeyValuesToEqual;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for allowNullKeyValuesToEqual
+    *******************************************************************************/
+   public ReplaceInput withAllowNullKeyValuesToEqual(boolean allowNullKeyValuesToEqual)
+   {
+      this.allowNullKeyValuesToEqual = allowNullKeyValuesToEqual;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for setPrimaryKeyInInsertedRecords
+    *******************************************************************************/
+   public boolean getSetPrimaryKeyInInsertedRecords()
+   {
+      return (this.setPrimaryKeyInInsertedRecords);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for setPrimaryKeyInInsertedRecords
+    *******************************************************************************/
+   public void setSetPrimaryKeyInInsertedRecords(boolean setPrimaryKeyInInsertedRecords)
+   {
+      this.setPrimaryKeyInInsertedRecords = setPrimaryKeyInInsertedRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for setPrimaryKeyInInsertedRecords
+    *******************************************************************************/
+   public ReplaceInput withSetPrimaryKeyInInsertedRecords(boolean setPrimaryKeyInInsertedRecords)
+   {
+      this.setPrimaryKeyInInsertedRecords = setPrimaryKeyInInsertedRecords;
       return (this);
    }
 

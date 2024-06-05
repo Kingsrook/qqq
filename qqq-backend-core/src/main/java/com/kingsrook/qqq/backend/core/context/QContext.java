@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -52,6 +53,7 @@ public class QContext
    private static ThreadLocal<Stack<AbstractActionInput>> actionStackThreadLocal         = new ThreadLocal<>();
 
    private static ThreadLocal<Map<String, Serializable>> objectsThreadLocal = new ThreadLocal<>();
+
 
 
    /*******************************************************************************
@@ -100,6 +102,25 @@ public class QContext
             LOG.warn(e);
             throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage(), e));
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T extends Throwable> void withTemporaryContext(CapturedContext context, UnsafeVoidVoidMethod<T> method) throws T
+   {
+      CapturedContext originalContext = QContext.capture();
+      try
+      {
+         QContext.init(context);
+         method.run();
+      }
+      finally
+      {
+         QContext.init(originalContext);
       }
    }
 
@@ -267,6 +288,7 @@ public class QContext
    }
 
 
+
    /*******************************************************************************
     ** get one named object from the Context for the current thread.  may return null.
     *******************************************************************************/
@@ -278,6 +300,7 @@ public class QContext
       }
       return objectsThreadLocal.get().get(key);
    }
+
 
 
    /*******************************************************************************

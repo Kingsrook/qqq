@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.state;
 
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -86,6 +88,44 @@ public class InMemoryStateProviderTest extends BaseTest
       {
          stateProvider.get(QTableMetaData.class, key);
       });
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testClean()
+   {
+      InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
+
+      /////////////////////////////////////////////////////////////
+      // Add an entry that is 3 hours old, should not be cleaned //
+      /////////////////////////////////////////////////////////////
+      UUIDAndTypeStateKey   newKey           = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(3, ChronoUnit.HOURS));
+      String  newUUID    = UUID.randomUUID().toString();
+      QRecord newQRecord = new QRecord().withValue("uuid", newUUID);
+      stateProvider.put(newKey, newQRecord);
+
+      ////////////////////////////////////////////////////////////
+      // Add an entry that is 5 hours old, it should be cleaned //
+      ////////////////////////////////////////////////////////////
+      UUIDAndTypeStateKey   oldKey           = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(5, ChronoUnit.HOURS));
+      String  oldUUID    = UUID.randomUUID().toString();
+      QRecord oldQRecord = new QRecord().withValue("uuid", oldUUID);
+      stateProvider.put(oldKey, oldQRecord);
+
+      ///////////////////
+      // Call to clean //
+      ///////////////////
+      stateProvider.clean(Instant.now().minus(4, ChronoUnit.HOURS));
+
+      QRecord qRecordFromState = stateProvider.get(QRecord.class, newKey).get();
+      Assertions.assertEquals(newUUID, qRecordFromState.getValueString("uuid"), "Should read value from state persistence");
+
+      Assertions.assertTrue(stateProvider.get(QRecord.class, oldKey).isEmpty(), "Key not found in state should return empty");
+
    }
 
 }

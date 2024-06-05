@@ -35,9 +35,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostDeleteCustomizer;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreDeleteCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
@@ -250,7 +249,7 @@ public class DeleteAction
       //////////////////////////////////////////////////////////////
       // finally, run the post-delete customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostDeleteCustomizer> postDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPostDeleteCustomizer.class, table, TableCustomizers.POST_DELETE_RECORD.getRole());
+      Optional<TableCustomizerInterface> postDeleteCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_DELETE_RECORD.getRole());
       if(postDeleteCustomizer.isPresent() && oldRecordList.isPresent())
       {
          ////////////////////////////////////////////////////////////////////////////
@@ -260,8 +259,7 @@ public class DeleteAction
 
          try
          {
-            postDeleteCustomizer.get().setDeleteInput(deleteInput);
-            List<QRecord> postCustomizerResult = postDeleteCustomizer.get().apply(recordsForCustomizer);
+            List<QRecord> postCustomizerResult = postDeleteCustomizer.get().postDelete(deleteInput, recordsForCustomizer);
 
             ///////////////////////////////////////////////////////
             // check if any records got errors in the customizer //
@@ -327,13 +325,11 @@ public class DeleteAction
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-delete customizer, if there is one //
       ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreDeleteCustomizer> preDeleteCustomizer = QCodeLoader.getTableCustomizer(AbstractPreDeleteCustomizer.class, table, TableCustomizers.PRE_DELETE_RECORD.getRole());
+      Optional<TableCustomizerInterface> preDeleteCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_DELETE_RECORD.getRole());
       List<QRecord>                         customizerResult    = oldRecordList.get();
       if(preDeleteCustomizer.isPresent())
       {
-         preDeleteCustomizer.get().setDeleteInput(deleteInput);
-         preDeleteCustomizer.get().setIsPreview(isPreview);
-         customizerResult = preDeleteCustomizer.get().apply(oldRecordList.get());
+         customizerResult = preDeleteCustomizer.get().preDelete(deleteInput, oldRecordList.get(), isPreview);
       }
 
       /////////////////////////////////////////////////////////////////////////
@@ -474,7 +470,7 @@ public class DeleteAction
                QRecord recordWithError = new QRecord();
                recordsWithErrors.add(recordWithError);
                recordWithError.setValue(primaryKeyField.getName(), primaryKeyValue);
-               recordWithError.addError(new NotFoundStatusMessage("No record was found to delete for " + primaryKeyField.getLabel() + " = " + primaryKeyValue));
+               recordWithError.addError(new NotFoundStatusMessage("No record was found to delete for " + Objects.requireNonNullElse(primaryKeyField.getLabel(), primaryKeyField.getName()) + " = " + primaryKeyValue));
             }
          }
       }

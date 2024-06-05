@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -34,6 +35,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -71,7 +73,17 @@ public class RunBackendStepAction
       QStepMetaData stepMetaData = process.getStep(runBackendStepInput.getStepName());
       if(stepMetaData == null)
       {
-         throw new QException("Step [" + runBackendStepInput.getStepName() + "] is not defined in the process [" + process.getName() + "]");
+         if(process.getCancelStep() != null && Objects.equals(process.getCancelStep().getName(), runBackendStepInput.getStepName()))
+         {
+            /////////////////////////////////////
+            // special case for cancel step... //
+            /////////////////////////////////////
+            stepMetaData = process.getCancelStep();
+         }
+         else
+         {
+            throw new QException("Step [" + runBackendStepInput.getStepName() + "] is not defined in the process [" + process.getName() + "]");
+         }
       }
 
       if(!(stepMetaData instanceof QBackendStepMetaData backendStepMetaData))
@@ -82,7 +94,7 @@ public class RunBackendStepAction
       //////////////////////////////////////////////////////////////////////////////////////
       // ensure input data is set as needed - use callback object to get anything missing //
       //////////////////////////////////////////////////////////////////////////////////////
-      ensureRecordsAreInRequest(runBackendStepInput, backendStepMetaData);
+      ensureRecordsAreInRequest(runBackendStepInput, backendStepMetaData, process);
       ensureInputFieldsAreInRequest(runBackendStepInput, backendStepMetaData);
 
       ////////////////////////////////////////////////////////////////////
@@ -167,7 +179,7 @@ public class RunBackendStepAction
     ** check if this step uses a record list - and if so, if we need to get one
     ** via the callback
     *******************************************************************************/
-   private void ensureRecordsAreInRequest(RunBackendStepInput runBackendStepInput, QBackendStepMetaData step) throws QException
+   private void ensureRecordsAreInRequest(RunBackendStepInput runBackendStepInput, QBackendStepMetaData step, QProcessMetaData process) throws QException
    {
       QFunctionInputMetaData inputMetaData = step.getInputMetaData();
       if(inputMetaData != null && inputMetaData.getRecordListMetaData() != null)
@@ -190,9 +202,44 @@ public class RunBackendStepAction
 
             queryInput.setFilter(callback.getQueryFilter());
 
+            //////////////////////////////////////////////////////////////////////////////////////////
+            // if process has a max-no of records, set a limit on the process of that number plus 1 //
+            // (the plus 1 being so we can see "oh, you selected more than that many; error!"       //
+            //////////////////////////////////////////////////////////////////////////////////////////
+            if(process.getMaxInputRecords() != null)
+            {
+               if(callback.getQueryFilter() == null)
+               {
+                  queryInput.setFilter(new QQueryFilter());
+               }
+
+               queryInput.getFilter().setLimit(process.getMaxInputRecords() + 1);
+            }
+
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
             runBackendStepInput.setRecords(queryOutput.getRecords());
-            // todo - handle 0 results found?
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // if process defines a max, and more than the max were found, throw an error //
+            ////////////////////////////////////////////////////////////////////////////////
+            if(process.getMaxInputRecords() != null)
+            {
+               if(queryOutput.getRecords().size() > process.getMaxInputRecords())
+               {
+                  throw (new QUserFacingException("Too many records were selected for this process.  At most, only " + process.getMaxInputRecords() + " can be selected."));
+               }
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////
+            // if process defines a min, and fewer than the min were found, throw an error //
+            /////////////////////////////////////////////////////////////////////////////////
+            if(process.getMinInputRecords() != null)
+            {
+               if(queryOutput.getRecords().size() < process.getMinInputRecords())
+               {
+                  throw (new QUserFacingException("Too few records were selected for this process.  At least " + process.getMinInputRecords() + " must be selected."));
+               }
+            }
          }
       }
    }

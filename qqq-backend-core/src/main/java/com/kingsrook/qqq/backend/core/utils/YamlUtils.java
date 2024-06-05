@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 
 import java.util.Map;
+import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,16 @@ public class YamlUtils
     *******************************************************************************/
    public static String toYaml(Object object)
    {
+      return toYaml(object, null);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String toYaml(Object object, Consumer<ObjectMapper> objectMapperCustomizer)
+   {
       try
       {
          YAMLFactory yamlFactory = new YAMLFactory()
@@ -66,7 +77,10 @@ public class YamlUtils
          objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
          objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
-         // todo? objectMapper.setFilterProvider(new OmitDefaultValuesFilterProvider());
+         if(objectMapperCustomizer != null)
+         {
+            objectMapperCustomizer.accept(objectMapper);
+         }
 
          objectMapper.findAndRegisterModules();
          return (objectMapper.writeValueAsString(object));

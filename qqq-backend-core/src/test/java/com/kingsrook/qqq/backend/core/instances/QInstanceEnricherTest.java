@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
@@ -38,6 +39,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -229,6 +232,24 @@ class QInstanceEnricherTest extends BaseTest
       assertEquals("word_then_tla_in_middle", QInstanceEnricher.inferBackendName("wordThenTLAInMiddle"));
       assertEquals("end_with_tla", QInstanceEnricher.inferBackendName("endWithTLA"));
       assertEquals("tla_and_another_tla", QInstanceEnricher.inferBackendName("TLAAndAnotherTLA"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferNameFromBackendName()
+   {
+      assertEquals("id", QInstanceEnricher.inferNameFromBackendName("id"));
+      assertEquals("wordAnotherWordMoreWords", QInstanceEnricher.inferNameFromBackendName("word_another_word_more_words"));
+      assertEquals("lUlUlUl", QInstanceEnricher.inferNameFromBackendName("l_ul_ul_ul"));
+      assertEquals("tlaFirst", QInstanceEnricher.inferNameFromBackendName("tla_first"));
+      assertEquals("wordThenTlaInMiddle", QInstanceEnricher.inferNameFromBackendName("word_then_tla_in_middle"));
+      assertEquals("endWithTla", QInstanceEnricher.inferNameFromBackendName("end_with_tla"));
+      assertEquals("tlaAndAnotherTla", QInstanceEnricher.inferNameFromBackendName("tla_and_another_tla"));
+      assertEquals("allCaps", QInstanceEnricher.inferNameFromBackendName("ALL_CAPS"));
    }
 
 
@@ -527,6 +548,28 @@ class QInstanceEnricherTest extends BaseTest
       new QInstanceEnricher(qInstance).enrich();
       assertEquals(DynamicDefaultValueBehavior.CREATE_DATE, table.getField("createDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
       assertEquals(DynamicDefaultValueBehavior.MODIFY_DATE, table.getField("modifyDate").getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOptionalProcessSteps()
+   {
+      QInstance        qInstance = TestUtils.defineInstance();
+      QProcessMetaData process   = new QProcessMetaData();
+      process.setName("test");
+      process.withStepList(List.of(new QBackendStepMetaData().withName("execute").withCode(new QCodeReference(TestUtils.IncreaseBirthdateStep.class))));
+      process.addOptionalStep(new QFrontendStepMetaData()
+         .withName("screen")
+         .withViewField(new QFieldMetaData("myField", QFieldType.STRING)));
+      qInstance.addProcess(process);
+
+      new QInstanceEnricher(qInstance).enrich();
+
+      assertEquals("My Field", qInstance.getProcess("test").getFrontendStep("screen").getViewFields().get(0).getLabel());
    }
 
 }

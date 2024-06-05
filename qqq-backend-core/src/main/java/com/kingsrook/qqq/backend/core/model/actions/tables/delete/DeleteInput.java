@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.delete;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -135,6 +136,24 @@ public class DeleteInput extends AbstractTableActionInput
       // the action may edit this list (e.g., to remove keys w/ errors), so wrap it in MutableList //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       this.primaryKeys = new MutableList<>(primaryKeys);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluently add 1 primary key to the delete input
+    **
+    *******************************************************************************/
+   public DeleteInput withPrimaryKey(Serializable primaryKey)
+   {
+      if(primaryKeys == null)
+      {
+         primaryKeys = new ArrayList<>();
+      }
+
+      primaryKeys.add(primaryKey);
+
+      return (this);
    }
 
 

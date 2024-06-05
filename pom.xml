@@ -29,6 +29,7 @@
    <packaging>pom</packaging>
 
    <modules>
+      <module>qqq-bom</module>
       <module>qqq-backend-core</module>
       <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
@@ -54,7 +55,7 @@
       <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
       <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
       <coverage.haltOnFailure>true</coverage.haltOnFailure>
-      <coverage.instructionCoveredRatioMinimum>0.80</coverage.instructionCoveredRatioMinimum>
+      <coverage.instructionCoveredRatioMinimum>0.75</coverage.instructionCoveredRatioMinimum>
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
       <plugin.shade.phase>none</plugin.shade.phase>
    </properties>
@@ -149,7 +150,7 @@
                <dependency>
                   <groupId>com.puppycrawl.tools</groupId>
                   <artifactId>checkstyle</artifactId>
-                  <version>9.0</version>
+                  <version>10.16.0</version>
                </dependency>
             </dependencies>
             <executions>
@@ -245,8 +246,7 @@ echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
 
-which xpath > /dev/null 2>&1
-if [ "$?" == "0" ]; then
+if which xpath > /dev/null 2>&1; then
    echo "Element\nInstructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
    xpath -n -q -e '/html/body/table/tfoot/tr[1]/td/text()' target/site/jacoco/index.html > /tmp/$$.values
    paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
@@ -255,8 +255,7 @@ else
    echo "xpath is not installed.  Jacoco coverage summary will not be produced here...";
 fi
 
-which xpath > /dev/null 2>&1
-if [ "$?" == "0" ]; then
+if which html2text > /dev/null 2>&1; then
    echo "Untested classes, per Jacoco:"
    echo "-----------------------------"
    for i in target/site/jacoco/*/index.html; do

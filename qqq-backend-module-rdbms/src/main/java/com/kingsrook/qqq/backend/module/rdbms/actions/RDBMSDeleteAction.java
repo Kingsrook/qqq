@@ -268,7 +268,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
       String       tableName    = getTableName(table);
       JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), new ArrayList<>(), deleteInput.getQueryFilter());
-      String       whereClause  = makeWhereClause(deleteInput.getInstance(), deleteInput.getSession(), table, joinsContext, filter, params);
+      String       whereClause  = makeWhereClause(joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?
       String sql = "DELETE FROM "

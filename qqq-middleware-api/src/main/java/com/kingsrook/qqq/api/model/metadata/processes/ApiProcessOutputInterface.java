@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.model.metadata.processes;
 
 import java.io.Serializable;
 import java.util.Map;
+import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
@@ -61,4 +62,13 @@ public interface ApiProcessOutputInterface
             .withDescription("Process has been successfully executed.")
       ));
    }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
+   {
+
+   }
+
 }

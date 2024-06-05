@@ -189,7 +189,7 @@ public class AbstractMongoDBAction
       Map<String, Serializable> values = record.getValues();
       for(QFieldMetaData field : table.getFields().values())
       {
-         String fieldName = field.getName();
+         String fieldName        = field.getName();
          String fieldBackendName = getFieldBackendName(field);
 
          if(fieldBackendName.contains("."))
@@ -405,6 +405,9 @@ public class AbstractMongoDBAction
       QQueryFilter securityFilter = new QQueryFilter();
       securityFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
 
+      ////////////////////////////////////
+      // todo - evolve to use lock tree //
+      ////////////////////////////////////
       for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
          addSubFilterForRecordSecurityLock(QContext.getQInstance(), QContext.getQSession(), table, securityFilter, recordSecurityLock, null, table.getName(), false);
@@ -528,7 +531,6 @@ public class AbstractMongoDBAction
    /*******************************************************************************
     ** w/o considering security, just map a QQueryFilter to a Bson searchQuery.
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private Bson makeSearchQueryDocumentWithoutSecurity(QTableMetaData table, QQueryFilter filter)
    {
       if(filter == null || !filter.hasAnyCriteria())
@@ -554,7 +556,14 @@ public class AbstractMongoDBAction
             Serializable value = valueListIterator.next();
             if(value instanceof AbstractFilterExpression<?> expression)
             {
-               valueListIterator.set(expression.evaluate());
+               try
+               {
+                  valueListIterator.set(expression.evaluate());
+               }
+               catch(QException qe)
+               {
+                  LOG.warn("Unexpected exception caught evaluating expression", qe);
+               }
             }
             /*
             todo - is this needed??
@@ -626,6 +635,8 @@ public class AbstractMongoDBAction
             case IS_NOT_BLANK -> Filters.nor(filterIsBlank(fieldBackendName));
             case BETWEEN -> filterBetween(fieldBackendName, values);
             case NOT_BETWEEN -> Filters.nor(filterBetween(fieldBackendName, values));
+            case TRUE -> Filters.or(Filters.eq(fieldBackendName, "true"), Filters.ne(fieldBackendName, "true"), Filters.eq(fieldBackendName, null)); // todo test!!
+            case FALSE -> Filters.and(Filters.eq(fieldBackendName, "true"), Filters.ne(fieldBackendName, "true"), Filters.eq(fieldBackendName, null));
          });
       }
 

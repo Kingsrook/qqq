@@ -155,4 +155,26 @@ public class AbstractProcessMetaDataBuilder
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+   {
+      processMetaData.setVariantRunStrategy(variantRunStrategy);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public AbstractProcessMetaDataBuilder withVariantBackend(String variantBackend)
+   {
+      processMetaData.setVariantBackend(variantBackend);
+      return (this);
+   }
+
 }

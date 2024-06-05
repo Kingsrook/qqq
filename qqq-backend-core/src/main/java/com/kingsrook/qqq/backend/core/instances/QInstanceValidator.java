@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
@@ -62,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -83,6 +86,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
@@ -104,6 +108,8 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.quartz.CronExpression;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -146,6 +152,7 @@ public class QInstanceValidator
       // once, during the enrichment/validation work, so, capture it, and store it back in the instance. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       JoinGraph joinGraph = null;
+      long      start     = System.currentTimeMillis();
       try
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,6 +193,9 @@ public class QInstanceValidator
          validateUniqueTopLevelNames(qInstance);
 
          runPlugins(QInstance.class, qInstance, qInstance);
+
+         long end = System.currentTimeMillis();
+         LOG.info("Validation (and enrichment) performance", logPair("millis", (end - start)));
       }
       catch(Exception e)
       {
@@ -200,6 +210,17 @@ public class QInstanceValidator
       QInstanceValidationKey validationKey = new QInstanceValidationKey();
       qInstance.setHasBeenValidated(validationKey);
       qInstance.setJoinGraph(validationKey, joinGraph);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void revalidate(QInstance qInstance) throws QInstanceValidationException
+   {
+      qInstance.setHasBeenValidated(null);
+      validate(qInstance);
    }
 
 
@@ -432,6 +453,11 @@ public class QInstanceValidator
                assertCondition(qInstance.getProcesses() != null && qInstance.getProcess(queue.getProcessName()) != null, "Unrecognized processName for queue: " + name);
             }
 
+            if(queue.getSchedule() != null)
+            {
+               validateScheduleMetaData(queue.getSchedule(), qInstance, "SQSQueueProvider " + name + ", schedule: ");
+            }
+
             runPlugins(QQueueMetaData.class, queue, qInstance);
          });
       }
@@ -615,6 +641,11 @@ public class QInstanceValidator
                supplementalTableMetaData.validate(qInstance, table, this);
             }
 
+            if(table.getShareableTableMetaData() != null)
+            {
+               table.getShareableTableMetaData().validate(qInstance, table, this);
+            }
+
             runPlugins(QTableMetaData.class, table, qInstance);
          });
       }
@@ -642,17 +673,20 @@ public class QInstanceValidator
             {
                if(assertCondition(CollectionUtils.nullSafeHasContents(exposedJoin.getJoinPath()), joinPrefix + "is missing a joinPath."))
                {
-                  joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
-
-                  boolean foundJoinConnection = false;
-                  for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
+                  if(joinGraph != null)
                   {
-                     if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                     joinConnectionsForTable = Objects.requireNonNullElseGet(joinConnectionsForTable, () -> joinGraph.getJoinConnections(table.getName()));
+
+                     boolean foundJoinConnection = false;
+                     for(JoinGraph.JoinConnectionList joinConnectionList : joinConnectionsForTable)
                      {
-                        foundJoinConnection = true;
+                        if(joinConnectionList.matchesJoinPath(exposedJoin.getJoinPath()))
+                        {
+                           foundJoinConnection = true;
+                        }
                      }
+                     assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
                   }
-                  assertCondition(foundJoinConnection, joinPrefix + "specified a joinPath [" + exposedJoin.getJoinPath() + "] which does not match a valid join connection in the instance.");
 
                   assertCondition(!usedJoinPaths.contains(exposedJoin.getJoinPath()), tablePrefix + "has more than one join with the joinPath: " + exposedJoin.getJoinPath());
                   usedJoinPaths.add(exposedJoin.getJoinPath());
@@ -702,7 +736,6 @@ public class QInstanceValidator
    {
       String prefix = "Table " + table.getName() + " ";
 
-      RECORD_SECURITY_LOCKS_LOOP:
       for(RecordSecurityLock recordSecurityLock : CollectionUtils.nonNullList(table.getRecordSecurityLocks()))
       {
          if(!assertCondition(recordSecurityLock != null, prefix + "has a null recordSecurityLock (did you mean to give it a null list of locks?)"))
@@ -710,90 +743,14 @@ public class QInstanceValidator
             continue;
          }
 
-         String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
-         if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
+         if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
          {
-            assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a recordSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+            validateMultiRecordSecurityLock(qInstance, table, multiRecordSecurityLock, prefix);
          }
-
-         prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
-
-         assertCondition(recordSecurityLock.getLockScope() != null, prefix + " is missing its lockScope");
-
-         boolean hasAnyBadJoins = false;
-         for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+         else
          {
-            if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
-            {
-               hasAnyBadJoins = true;
-            }
+            validateRecordSecurityLock(qInstance, table, recordSecurityLock, prefix);
          }
-
-         String fieldName = recordSecurityLock.getFieldName();
-
-         ////////////////////////////////////////////////////////////////////////////////
-         // don't bother trying to validate field names if we know we have a bad join. //
-         ////////////////////////////////////////////////////////////////////////////////
-         if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
-         {
-            if(fieldName.contains("."))
-            {
-               if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
-               {
-                  List<QueryJoin> joins = new ArrayList<>();
-
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////
-                  // ok - so - the join name chain is going to be like this:                                       //
-                  // for a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is): //
-                  // - securityFieldName = order.clientId                                                          //
-                  // - joinNameChain = orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic             //
-                  // so - to navigate from the table to the security field, we need to reverse the joinNameChain,  //
-                  // and step (via tmpTable variable) back to the securityField                                    //
-                  ///////////////////////////////////////////////////////////////////////////////////////////////////
-                  ArrayList<String> joinNameChain = new ArrayList<>(CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()));
-                  Collections.reverse(joinNameChain);
-
-                  QTableMetaData tmpTable = table;
-
-                  for(String joinName : joinNameChain)
-                  {
-                     QJoinMetaData join = qInstance.getJoin(joinName);
-                     if(join == null)
-                     {
-                        errors.add(prefix + "joinNameChain contained an unrecognized join: " + joinName);
-                        continue RECORD_SECURITY_LOCKS_LOOP;
-                     }
-
-                     if(join.getLeftTable().equals(tmpTable.getName()))
-                     {
-                        joins.add(new QueryJoin(join));
-                        tmpTable = qInstance.getTable(join.getRightTable());
-                     }
-                     else if(join.getRightTable().equals(tmpTable.getName()))
-                     {
-                        joins.add(new QueryJoin(join.flip()));
-                        tmpTable = qInstance.getTable(join.getLeftTable());
-                     }
-                     else
-                     {
-                        errors.add(prefix + "joinNameChain could not be followed through join: " + joinName);
-                        continue RECORD_SECURITY_LOCKS_LOOP;
-                     }
-                  }
-
-                  assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
-               }
-            }
-            else
-            {
-               if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
-               {
-                  assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
-               }
-            }
-         }
-
-         assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
       }
    }
 
@@ -802,7 +759,121 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
+   private void validateMultiRecordSecurityLock(QInstance qInstance, QTableMetaData table, MultiRecordSecurityLock multiRecordSecurityLock, String prefix)
+   {
+      assertCondition(multiRecordSecurityLock.getOperator() != null, prefix + "has a MultiRecordSecurityLock that is missing an operator");
+
+      for(RecordSecurityLock lock : multiRecordSecurityLock.getLocks())
+      {
+         validateRecordSecurityLock(qInstance, table, lock, prefix);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateRecordSecurityLock(QInstance qInstance, QTableMetaData table, RecordSecurityLock recordSecurityLock, String prefix)
+   {
+      String securityKeyTypeName = recordSecurityLock.getSecurityKeyType();
+      if(assertCondition(StringUtils.hasContent(securityKeyTypeName), prefix + "has a recordSecurityLock that is missing a securityKeyType"))
+      {
+         assertCondition(qInstance.getSecurityKeyType(securityKeyTypeName) != null, prefix + "has a recordSecurityLock with an unrecognized securityKeyType: " + securityKeyTypeName);
+      }
+
+      prefix = "Table " + table.getName() + " recordSecurityLock (of key type " + securityKeyTypeName + ") ";
+
+      assertCondition(recordSecurityLock.getLockScope() != null, prefix + " is missing its lockScope");
+
+      boolean hasAnyBadJoins = false;
+      for(String joinName : CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()))
+      {
+         if(!assertCondition(qInstance.getJoin(joinName) != null, prefix + "has an unrecognized joinName: " + joinName))
+         {
+            hasAnyBadJoins = true;
+         }
+      }
+
+      String fieldName = recordSecurityLock.getFieldName();
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // don't bother trying to validate field names if we know we have a bad join. //
+      ////////////////////////////////////////////////////////////////////////////////
+      if(assertCondition(StringUtils.hasContent(fieldName), prefix + "is missing a fieldName") && !hasAnyBadJoins)
+      {
+         if(fieldName.contains("."))
+         {
+            if(assertCondition(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " looks like a join (has a dot), but no joinNameChain was given."))
+            {
+               String[] split         = fieldName.split("\\.");
+               String   joinTableName = split[0];
+               String   joinFieldName = split[1];
+
+               List<QueryJoin> joins = new ArrayList<>();
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // ok - so - the join name chain is going to be like this:                                       //
+               // for a table:  orderLineItemExtrinsic (that's 2 away from order, where the security field is): //
+               // - securityFieldName = order.clientId                                                          //
+               // - joinNameChain = orderJoinOrderLineItem, orderLineItemJoinOrderLineItemExtrinsic             //
+               // so - to navigate from the table to the security field, we need to reverse the joinNameChain,  //
+               // and step (via tmpTable variable) back to the securityField                                    //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               ArrayList<String> joinNameChain = new ArrayList<>(CollectionUtils.nonNullList(recordSecurityLock.getJoinNameChain()));
+               Collections.reverse(joinNameChain);
+
+               QTableMetaData tmpTable = table;
+
+               for(String joinName : joinNameChain)
+               {
+                  QJoinMetaData join = qInstance.getJoin(joinName);
+                  if(join == null)
+                  {
+                     errors.add(prefix + "joinNameChain contained an unrecognized join: " + joinName);
+                     return;
+                  }
+
+                  if(join.getLeftTable().equals(tmpTable.getName()))
+                  {
+                     joins.add(new QueryJoin(join));
+                     tmpTable = qInstance.getTable(join.getRightTable());
+                  }
+                  else if(join.getRightTable().equals(tmpTable.getName()))
+                  {
+                     joins.add(new QueryJoin(join.flip()));
+                     tmpTable = qInstance.getTable(join.getLeftTable());
+                  }
+                  else
+                  {
+                     errors.add(prefix + "joinNameChain could not be followed through join: " + joinName);
+                     return;
+                  }
+               }
+
+               assertCondition(Objects.equals(tmpTable.getName(), joinTableName), prefix + "has a joinNameChain doesn't end in the expected table [" + joinTableName + "] (was: " + tmpTable.getName() + ")");
+
+               assertCondition(findField(qInstance, table, joins, fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+            }
+         }
+         else
+         {
+            if(assertCondition(CollectionUtils.nullSafeIsEmpty(recordSecurityLock.getJoinNameChain()), prefix + "field name " + fieldName + " does not look like a join (does not have a dot), but a joinNameChain was given."))
+            {
+               assertNoException(() -> table.getField(fieldName), prefix + "has an unrecognized fieldName: " + fieldName);
+            }
+         }
+      }
+
+      assertCondition(recordSecurityLock.getNullValueBehavior() != null, prefix + "is missing a nullValueBehavior");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <T extends FieldBehavior<T>> void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -815,10 +886,30 @@ public class QInstanceValidator
 
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
 
+      ///////////////////////////////////////////////////
+      // validate things we know about field behaviors //
+      ///////////////////////////////////////////////////
       ValueTooLongBehavior behavior = field.getBehaviorOrDefault(qInstance, ValueTooLongBehavior.class);
       if(behavior != null && !behavior.equals(ValueTooLongBehavior.PASS_THROUGH))
       {
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
+      }
+
+      Set<Class<FieldBehavior<T>>> usedFieldBehaviorTypes = new HashSet<>();
+      if(field.getBehaviors() != null)
+      {
+         for(FieldBehavior<?> fieldBehavior : field.getBehaviors())
+         {
+            Class<FieldBehavior<T>> behaviorClass = (Class<FieldBehavior<T>>) fieldBehavior.getClass();
+
+            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+
+            if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
+            {
+               assertCondition(!usedFieldBehaviorTypes.contains(behaviorClass), prefix + "has more than 1 fieldBehavior of type " + behaviorClass.getSimpleName() + ", which is not allowed for this type");
+            }
+            usedFieldBehaviorTypes.add(behaviorClass);
+         }
       }
 
       if(field.getMaxLength() != null)
@@ -1011,6 +1102,11 @@ public class QInstanceValidator
       if(assertCondition(StringUtils.hasContent(providerName), prefix + " is missing a providerName"))
       {
          assertCondition(qInstance.getAutomationProvider(providerName) != null, " has an unrecognized providerName: " + providerName);
+      }
+
+      if(automationDetails.getSchedule() != null)
+      {
+         validateScheduleMetaData(automationDetails.getSchedule(), qInstance, prefix + " automationDetails, schedule: ");
       }
 
       //////////////////////////////////
@@ -1349,12 +1445,17 @@ public class QInstanceValidator
             ///////////////////////////////////
             // validate steps in the process //
             ///////////////////////////////////
+            Set<String> usedStepNames = new HashSet<>();
             if(assertCondition(CollectionUtils.nullSafeHasContents(process.getStepList()), "At least 1 step must be defined in process " + processName + "."))
             {
                int index = 0;
                for(QStepMetaData step : process.getStepList())
                {
-                  assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName);
+                  if(assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName))
+                  {
+                     assertCondition(!usedStepNames.contains(step.getName()), "Duplicate step name [" + step.getName() + "] in process " + processName);
+                     usedStepNames.add(step.getName());
+                  }
                   index++;
 
                   ////////////////////////////////////////////
@@ -1386,11 +1487,19 @@ public class QInstanceValidator
                                  warn("Error loading expectedType for field [" + fieldMetaData.getName() + "] in process [" + processName + "]: " + e.getMessage());
                               }
 
-                              validateSimpleCodeReference("Process " + processName + " code reference: ", codeReference, expectedClass);
+                              validateSimpleCodeReference("Process " + processName + " code reference:", codeReference, expectedClass);
                            }
                         }
                      }
                   }
+               }
+            }
+
+            if(process.getCancelStep() != null)
+            {
+               if(assertCondition(process.getCancelStep().getCode() != null, "Cancel step is missing a code reference, in process " + processName))
+               {
+                  validateSimpleCodeReference("Process " + processName + " cancel step code reference: ", process.getCancelStep().getCode(), BackendStep.class);
                }
             }
 
@@ -1400,13 +1509,21 @@ public class QInstanceValidator
             if(process.getSchedule() != null)
             {
                QScheduleMetaData schedule = process.getSchedule();
-               assertCondition(schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null, "Either repeat millis or repeat seconds must be set on schedule in process " + processName);
+               validateScheduleMetaData(schedule, qInstance, "Process " + processName + ", schedule: ");
+            }
 
-               if(schedule.getVariantBackend() != null)
+            if(process.getVariantBackend() != null)
+            {
+               if(qInstance.getBackends() != null)
                {
-                  assertCondition(qInstance.getBackend(schedule.getVariantBackend()) != null, "A variant backend was not found for " + schedule.getVariantBackend());
-                  assertCondition(schedule.getVariantRunStrategy() != null, "A variant run strategy was not set for " + schedule.getVariantBackend() + " on schedule in process " + processName);
+                  assertCondition(qInstance.getBackend(process.getVariantBackend()) != null, "Process " + processName + ", a variant backend was not found named " + process.getVariantBackend());
                }
+
+               assertCondition(process.getVariantRunStrategy() != null, "A variant run strategy was not set for process " + processName + " (which does specify a variant backend)");
+            }
+            else
+            {
+               assertCondition(process.getVariantRunStrategy() == null, "A variant run strategy was set for process " + processName + " (which isn't allowed, since it does not specify a variant backend)");
             }
 
             for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
@@ -1416,6 +1533,50 @@ public class QInstanceValidator
 
             runPlugins(QProcessMetaData.class, process, qInstance);
          });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateScheduleMetaData(QScheduleMetaData schedule, QInstance qInstance, String prefix)
+   {
+      boolean isRepeat = schedule.getRepeatMillis() != null || schedule.getRepeatSeconds() != null;
+      boolean isCron   = StringUtils.hasContent(schedule.getCronExpression());
+      assertCondition(isRepeat || isCron, prefix + " either repeatMillis or repeatSeconds or cronExpression must be set");
+      assertCondition(!(isRepeat && isCron), prefix + " both a repeat time and cronExpression may not be set");
+
+      if(isCron)
+      {
+         boolean hasDelay = schedule.getInitialDelayMillis() != null || schedule.getInitialDelaySeconds() != null;
+         assertCondition(!hasDelay, prefix + " a cron schedule may not have an initial delay");
+
+         try
+         {
+            CronExpression.validateExpression(schedule.getCronExpression());
+         }
+         catch(ParseException pe)
+         {
+            errors.add(prefix + " invalid cron expression: " + pe.getMessage());
+         }
+
+         if(assertCondition(StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a cron schedule must specify a cronTimeZoneId"))
+         {
+            String[]         availableIDs = TimeZone.getAvailableIDs();
+            Optional<String> first        = Arrays.stream(availableIDs).filter(id -> id.equals(schedule.getCronTimeZoneId())).findFirst();
+            assertCondition(first.isPresent(), prefix + " unrecognized cronTimeZoneId: " + schedule.getCronTimeZoneId());
+         }
+      }
+      else
+      {
+         assertCondition(!StringUtils.hasContent(schedule.getCronTimeZoneId()), prefix + " a non-cron schedule must not specify a cronTimeZoneId");
+      }
+
+      if(assertCondition(StringUtils.hasContent(schedule.getSchedulerName()), prefix + " is missing a scheduler name"))
+      {
+         assertCondition(qInstance.getScheduler(schedule.getSchedulerName()) != null, prefix + " is referencing an unknown scheduler name: " + schedule.getSchedulerName());
       }
    }
 

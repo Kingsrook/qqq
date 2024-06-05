@@ -28,6 +28,7 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QIgnore;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
@@ -77,7 +78,9 @@ public class QueryStat extends QRecordEntity
    ///////////////////////////////////////////////////////////
    // non-persistent fields - used to help build the record //
    ///////////////////////////////////////////////////////////
-   private String       tableName;
+   @QIgnore
+   private String tableName;
+
    private Set<String>  joinTableNames;
    private QQueryFilter queryFilter;
 
@@ -384,6 +387,7 @@ public class QueryStat extends QRecordEntity
    /*******************************************************************************
     ** Getter for queryFilter
     *******************************************************************************/
+   @QIgnore
    public QQueryFilter getQueryFilter()
    {
       return (this.queryFilter);
@@ -446,6 +450,7 @@ public class QueryStat extends QRecordEntity
    /*******************************************************************************
     ** Getter for joinTableNames
     *******************************************************************************/
+   @QIgnore
    public Set<String> getJoinTableNames()
    {
       return (this.joinTableNames);

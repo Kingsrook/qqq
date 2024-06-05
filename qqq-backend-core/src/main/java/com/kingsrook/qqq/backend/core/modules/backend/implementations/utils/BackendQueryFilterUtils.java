@@ -32,6 +32,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -50,6 +52,9 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class BackendQueryFilterUtils
 {
+   private static final QLogger LOG = QLogger.getLogger(BackendQueryFilterUtils.class);
+
+
 
    /*******************************************************************************
     ** Test if record matches filter.
@@ -78,14 +83,16 @@ public class BackendQueryFilterUtils
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
-            // field names in the record are fully qualified, then just use the field-name portion...        //
+            // field names in the record are fully qualified - OR - the table name portion of the field name //
+            // matches the record's field name, then just use the field-name portion...                      //
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             if(fieldName.contains("."))
             {
+               String[]                  parts  = fieldName.split("\\.");
                Map<String, Serializable> values = qRecord.getValues();
-               if(values.keySet().stream().noneMatch(n -> n.contains(".")))
+               if(values.keySet().stream().noneMatch(n -> n.contains(".")) || parts[0].equals(qRecord.getTableName()))
                {
-                  value = qRecord.getValue(fieldName.substring(fieldName.indexOf(".") + 1));
+                  value = qRecord.getValue(parts[1]);
                }
             }
          }
@@ -127,7 +134,6 @@ public class BackendQueryFilterUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
       ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();
@@ -136,7 +142,14 @@ public class BackendQueryFilterUtils
          Serializable criteriaValue = valueListIterator.next();
          if(criteriaValue instanceof AbstractFilterExpression<?> expression)
          {
-            valueListIterator.set(expression.evaluate());
+            try
+            {
+               valueListIterator.set(expression.evaluate());
+            }
+            catch(QException qe)
+            {
+               LOG.warn("Unexpected exception caught evaluating expression", qe);
+            }
          }
       }
 
@@ -177,6 +190,8 @@ public class BackendQueryFilterUtils
             boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
             yield !between;
          }
+         case TRUE -> true;
+         case FALSE -> false;
       };
       return criterionMatches;
    }
@@ -203,12 +218,13 @@ public class BackendQueryFilterUtils
     ** operator, update the accumulator, and if we can then short-circuit remaining
     ** operations, return a true or false.  Returning null means to keep going.
     *******************************************************************************/
-   private static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
+   static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
    {
       boolean accumulatorValue = accumulator.getPlain();
       if(booleanOperator.equals(QQueryFilter.BooleanOperator.AND))
       {
          accumulatorValue &= newValue;
+         accumulator.set(accumulatorValue);
          if(!accumulatorValue)
          {
             return (false);
@@ -217,6 +233,7 @@ public class BackendQueryFilterUtils
       else
       {
          accumulatorValue |= newValue;
+         accumulator.set(accumulatorValue);
          if(accumulatorValue)
          {
             return (true);

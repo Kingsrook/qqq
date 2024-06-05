@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -107,6 +108,8 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
    private List<ExposedJoin> exposedJoins;
 
+   private ShareableTableMetaData shareableTableMetaData;
+
 
 
    /*******************************************************************************
@@ -156,11 +159,26 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withFieldsFromEntity(Class<? extends QRecordEntity> entityClass) throws QException
    {
       List<QRecordEntityField> recordEntityFieldList = QRecordEntity.getFieldList(entityClass);
+
+      boolean setPrimaryKey = false;
+
       for(QRecordEntityField recordEntityField : recordEntityFieldList)
       {
          QFieldMetaData field = new QFieldMetaData(recordEntityField.getGetter());
          addField(field);
+
+         if(recordEntityField.getFieldAnnotation().isPrimaryKey())
+         {
+            if(setPrimaryKey)
+            {
+               throw (new QException("Attempt to set more than one field as primary key (" + primaryKeyField + "," + field.getName() + ")."));
+            }
+
+            setPrimaryKeyField(field.getName());
+            setPrimaryKey = true;
+         }
       }
+
       return (this);
    }
 
@@ -617,6 +635,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withRecordLabelFormat(String recordLabelFormat)
    {
       this.recordLabelFormat = recordLabelFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter for both recordLabelFormat and recordLabelFields
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFormatAndFields(String format, String... fields)
+   {
+      setRecordLabelFormat(format);
+      setRecordLabelFields(Arrays.asList(fields));
       return (this);
    }
 
@@ -1382,6 +1412,37 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
          this.exposedJoins = new ArrayList<>();
       }
       this.exposedJoins.add(exposedJoin);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shareableTableMetaData
+    *******************************************************************************/
+   public ShareableTableMetaData getShareableTableMetaData()
+   {
+      return (this.shareableTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shareableTableMetaData
+    *******************************************************************************/
+   public void setShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shareableTableMetaData
+    *******************************************************************************/
+   public QTableMetaData withShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
       return (this);
    }
 

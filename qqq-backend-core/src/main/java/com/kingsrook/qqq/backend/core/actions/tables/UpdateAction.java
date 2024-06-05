@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,9 +35,8 @@ import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostUpdateCustomizer;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreUpdateCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper;
@@ -69,6 +69,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.NotFoundStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -192,14 +193,12 @@ public class UpdateAction
       //////////////////////////////////////////////////////////////
       // finally, run the post-update customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostUpdateCustomizer> postUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPostUpdateCustomizer.class, table, TableCustomizers.POST_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> postUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_UPDATE_RECORD.getRole());
       if(postUpdateCustomizer.isPresent())
       {
          try
          {
-            postUpdateCustomizer.get().setUpdateInput(updateInput);
-            oldRecordList.ifPresent(l -> postUpdateCustomizer.get().setOldRecordList(l));
-            updateOutput.setRecords(postUpdateCustomizer.get().apply(updateOutput.getRecords()));
+            updateOutput.setRecords(postUpdateCustomizer.get().postUpdate(updateInput, updateOutput.getRecords(), oldRecordList));
          }
          catch(Exception e)
          {
@@ -273,13 +272,10 @@ public class UpdateAction
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-update customizer, if there is one //
       ///////////////////////////////////////////////////////////////////////////
-      Optional<AbstractPreUpdateCustomizer> preUpdateCustomizer = QCodeLoader.getTableCustomizer(AbstractPreUpdateCustomizer.class, table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      Optional<TableCustomizerInterface> preUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
       if(preUpdateCustomizer.isPresent())
       {
-         preUpdateCustomizer.get().setUpdateInput(updateInput);
-         preUpdateCustomizer.get().setIsPreview(isPreview);
-         oldRecordList.ifPresent(l -> preUpdateCustomizer.get().setOldRecordList(l));
-         updateInput.setRecords(preUpdateCustomizer.get().apply(updateInput.getRecords()));
+         updateInput.setRecords(preUpdateCustomizer.get().preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
       }
    }
 
@@ -340,6 +336,9 @@ public class UpdateAction
       QTableMetaData table           = updateInput.getTable();
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
 
+      /////////////////////////////////////////////////////////////
+      // todo - evolve to use lock tree (e.g., from multi-locks) //
+      /////////////////////////////////////////////////////////////
       List<RecordSecurityLock> onlyWriteLocks = RecordSecurityLockFilters.filterForOnlyWriteLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks()));
 
       for(List<QRecord> page : CollectionUtils.getPages(updateInput.getRecords(), 1000))
@@ -399,7 +398,12 @@ public class UpdateAction
                   QRecord      oldRecord = lookedUpRecords.get(value);
                   QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
                   Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
-                  ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, record, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE);
+
+                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap());
+                  if(CollectionUtils.nullSafeHasContents(errors))
+                  {
+                     errors.forEach(e -> record.addError(e));
+                  }
                }
             }
          }

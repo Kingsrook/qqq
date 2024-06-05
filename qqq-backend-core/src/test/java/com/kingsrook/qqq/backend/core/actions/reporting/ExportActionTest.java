@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.LocalMacDevUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -118,6 +120,26 @@ class ExportActionTest extends BaseTest
       runReport(recordCount, filename, ReportFormat.XLSX, true);
 
       File file = new File(filename);
+      LocalMacDevUtils.openFile(file.getAbsolutePath());
+
+      assertTrue(file.delete());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testExcelPOI() throws Exception
+   {
+      int    recordCount = 1000;
+      String filename    = "/tmp/ReportActionTest-POI.xlsx";
+
+      runReport(recordCount, filename, ReportFormat.XLSX, true);
+
+      File file = new File(filename);
+      LocalMacDevUtils.openFile(file.getAbsolutePath());
 
       assertTrue(file.delete());
    }
@@ -147,9 +169,10 @@ class ExportActionTest extends BaseTest
       ExportInput exportInput = new ExportInput();
       exportInput.setTableName(TestUtils.TABLE_NAME_ORDER);
 
-      exportInput.setReportFormat(ReportFormat.CSV);
       ByteArrayOutputStream reportOutputStream = new ByteArrayOutputStream();
-      exportInput.setReportOutputStream(reportOutputStream);
+      exportInput.setReportDestination(new ReportDestination()
+         .withReportFormat(ReportFormat.CSV)
+         .withReportOutputStream(reportOutputStream));
       exportInput.setQueryFilter(new QQueryFilter());
       exportInput.setFieldNames(List.of("id", "orderNo", "storeId", "orderLine.id", "orderLine.sku", "orderLine.quantity"));
       // exportInput.setFieldNames(List.of("id", "orderNo", "storeId"));
@@ -197,8 +220,7 @@ class ExportActionTest extends BaseTest
          exportInput.setTableName("person");
          QTableMetaData table = exportInput.getTable();
 
-         exportInput.setReportFormat(reportFormat);
-         exportInput.setReportOutputStream(outputStream);
+         exportInput.setReportDestination(new ReportDestination().withReportFormat(reportFormat).withReportOutputStream(outputStream));
          exportInput.setQueryFilter(new QQueryFilter());
          exportInput.setLimit(recordCount);
 
@@ -243,7 +265,7 @@ class ExportActionTest extends BaseTest
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // use xlsx, which has a max-rows limit, to verify that code runs, but doesn't throw when there aren't too many rows //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      exportInput.setReportFormat(ReportFormat.XLSX);
+      exportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.XLSX));
 
       new ExportAction().preExecute(exportInput);
 
@@ -278,7 +300,7 @@ class ExportActionTest extends BaseTest
       ////////////////////////////////////////////////////////////////
       // use xlsx, which has a max-cols limit, to verify that code. //
       ////////////////////////////////////////////////////////////////
-      exportInput.setReportFormat(ReportFormat.XLSX);
+      exportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.XLSX));
 
       assertThrows(QUserFacingException.class, () ->
       {

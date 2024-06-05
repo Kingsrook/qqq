@@ -67,7 +67,7 @@ public class NoopTransformStep extends AbstractTransformStep
     *
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ////////////////////////////////
       // return if no input records //

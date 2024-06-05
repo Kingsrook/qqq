@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
@@ -149,10 +150,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // this is how we allow the actions within this class to work without themselves having a logged-in user. //
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static QSession chickenAndEggSession = new QSession()
-   {
-
-   };
+   private static QSession chickenAndEggSession = null;
 
 
 
@@ -162,14 +160,29 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
     *******************************************************************************/
    private QSession getChickenAndEggSession()
    {
-      for(String typeName : QContext.getQInstance().getSecurityKeyTypes().keySet())
+      if(chickenAndEggSession == null)
       {
-         QSecurityKeyType keyType = QContext.getQInstance().getSecurityKeyType(typeName);
-         if(StringUtils.hasContent(keyType.getAllAccessKeyName()))
+         ////////////////////////////////////////////////////////////////////////////////
+         // if the static field is null, then let's make a new session;                //
+         // prime it with all all-access keys; and then set it in the static field.    //
+         // and, if 2 threads get in here at the same time, no real harm will be done, //
+         // other than creating the session twice, and whoever loses the race, that'll //
+         // be the one that stays in the field                                         //
+         ////////////////////////////////////////////////////////////////////////////////
+         QSession newChickenAndEggSession = new QSession();
+
+         for(String typeName : QContext.getQInstance().getSecurityKeyTypes().keySet())
          {
-            chickenAndEggSession = chickenAndEggSession.withSecurityKeyValue(keyType.getAllAccessKeyName(), true);
+            QSecurityKeyType keyType = QContext.getQInstance().getSecurityKeyType(typeName);
+            if(StringUtils.hasContent(keyType.getAllAccessKeyName()))
+            {
+               newChickenAndEggSession.withSecurityKeyValue(keyType.getAllAccessKeyName(), true);
+            }
          }
+
+         chickenAndEggSession = newChickenAndEggSession;
       }
+
       return (chickenAndEggSession);
    }
 
@@ -195,7 +208,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process a sessionUUID - looks up userSession record - cannot create token this way. //
             /////////////////////////////////////////////////////////////////////////////////////////
             String sessionUUID = context.get(SESSION_UUID_KEY);
-            LOG.debug("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
+            LOG.trace("Creating session from sessionUUID (userSession)", logPair("sessionUUID", maskForLog(sessionUUID)));
             if(sessionUUID != null)
             {
                accessToken = getAccessTokenFromSessionUUID(metaData, sessionUUID);
@@ -230,6 +243,14 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                }
             }
 
+            //////////////////////////////////////////////////////////////
+            // allow customizer to do custom things here, if so desired //
+            //////////////////////////////////////////////////////////////
+            if(getCustomizer() != null)
+            {
+               getCustomizer().finalCustomizeSession(qInstance, qSession);
+            }
+
             return (qSession);
          }
          else if(CollectionUtils.containsKeyWithNonNullValue(context, BASIC_AUTH_KEY))
@@ -245,7 +266,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
                // decode the credentials from the header auth //
                /////////////////////////////////////////////////
                String base64Credentials = context.get(BASIC_AUTH_KEY).trim();
-               LOG.info("Creating session from basicAuthentication", logPair("base64Credentials", maskForLog(base64Credentials)));
+               LOG.trace("Creating session from basicAuthentication", logPair("base64Credentials", maskForLog(base64Credentials)));
                accessToken = getAccessTokenFromBase64BasicAuthCredentials(metaData, auth, base64Credentials);
             }
             catch(Auth0Exception e)
@@ -264,7 +285,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // process an api key - looks up client application token (creating token if needed) //
             ///////////////////////////////////////////////////////////////////////////////////////
             String apiKey = context.get(API_KEY);
-            LOG.info("Creating session from apiKey (accessTokenTable)", logPair("apiKey", maskForLog(apiKey)));
+            LOG.trace("Creating session from apiKey (accessTokenTable)", logPair("apiKey", maskForLog(apiKey)));
             if(apiKey != null)
             {
                accessToken = getAccessTokenFromApiKey(metaData, apiKey);
@@ -284,7 +305,17 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          // try to build session to see if still valid      //
          // then call method to check more session validity //
          /////////////////////////////////////////////////////
-         return buildAndValidateSession(qInstance, accessToken);
+         QSession qSession = buildAndValidateSession(qInstance, accessToken);
+
+         //////////////////////////////////////////////////////////////
+         // allow customizer to do custom things here, if so desired //
+         //////////////////////////////////////////////////////////////
+         if(getCustomizer() != null)
+         {
+            getCustomizer().finalCustomizeSession(qInstance, qSession);
+         }
+
+         return (qSession);
       }
       catch(QAuthenticationException qae)
       {
@@ -604,7 +635,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       // set security keys in the session from the JWT //
       ///////////////////////////////////////////////////
       setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
-      
+
       //////////////////////////////////////////////////////////////
       // allow customizer to do custom things here, if so desired //
       //////////////////////////////////////////////////////////////
@@ -1089,5 +1120,21 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          LOG.warn("Error getting customizer.", e);
          return (null);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** e.g., if a scheduled job needs to run as a user (say, a report)...
+    *******************************************************************************/
+   @Override
+   public QSession createAutomatedSessionForUser(QInstance qInstance, Serializable userId) throws QAuthenticationException
+   {
+      QSession automatedSessionForUser = QAuthenticationModuleInterface.super.createAutomatedSessionForUser(qInstance, userId);
+      if(getCustomizer() != null)
+      {
+         getCustomizer().customizeAutomatedSessionForUser(qInstance, automatedSessionForUser, userId);
+      }
+      return (automatedSessionForUser);
    }
 }

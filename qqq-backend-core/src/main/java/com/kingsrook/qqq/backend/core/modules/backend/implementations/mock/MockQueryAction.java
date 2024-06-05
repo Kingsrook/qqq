@@ -95,14 +95,13 @@ public class MockQueryAction implements QueryInterface
     ** Get a mock value to use, based on its type.
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:MagicNumber")
    public static Serializable getMockValue(QTableMetaData table, String field)
    {
-      // @formatter:off // IJ can't do new-style switch correctly yet...
       return switch(table.getField(field).getType())
       {
          case STRING -> UUID.randomUUID().toString();
          case INTEGER -> 42;
+         case LONG -> 42L;
          case DECIMAL -> new BigDecimal("3.14159");
          case DATE -> LocalDate.of(1970, Month.JANUARY, 1);
          case DATE_TIME -> LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0);
@@ -111,7 +110,6 @@ public class MockQueryAction implements QueryInterface
          case PASSWORD -> "abc***234";
          default -> throw new IllegalStateException("Unexpected value: " + table.getField(field).getType());
       };
-      // @formatter:on
    }
 
 }

@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IN;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IS_NOT_BLANK;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.NOT_EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.NOT_IN;
 
@@ -309,6 +310,28 @@ public class QQueryFilterDeduper
                         iterator.remove();
                         didAnyGood = true;
                         log.add("Merge two not-equals as not-in");
+                        continue;
+                     }
+                     else if(IN.equals(other.getOperator()) && IS_NOT_BLANK.equals(criteria.getOperator()))
+                     {
+                        //////////////////////////////////////////////////////////////////////////
+                        // for an IN and IS_NOT_BLANK, remove the IS_NOT_BLANK - it's redundant //
+                        //////////////////////////////////////////////////////////////////////////
+                        iterator.remove();
+                        didAnyGood = true;
+                        log.add("Removing redundant is-not-blank");
+                        continue;
+                     }
+                     else if(IS_NOT_BLANK.equals(other.getOperator()) && IN.equals(criteria.getOperator()))
+                     {
+                        //////////////////////////////////////////////////////////////////////////
+                        // for an IN and IS_NOT_BLANK, remove the IS_NOT_BLANK - it's redundant //
+                        //////////////////////////////////////////////////////////////////////////
+                        other.setOperator(IN);
+                        other.setValues(new ArrayList<>(criteria.getValues()));
+                        iterator.remove();
+                        didAnyGood = true;
+                        log.add("Removing redundant is-not-blank");
                         continue;
                      }
                      else

@@ -65,6 +65,7 @@ public class QueryStatMetaDataProvider
       instance.addTable(defineStandardTable(QueryStatJoinTable.TABLE_NAME, QueryStatJoinTable.class, backendName, backendDetailEnricher));
 
       instance.addTable(defineStandardTable(QueryStatCriteriaField.TABLE_NAME, QueryStatCriteriaField.class, backendName, backendDetailEnricher)
+         .withIcon(new QIcon().withName("filter_alt"))
          .withExposedJoin(new ExposedJoin().withJoinTable(QueryStat.TABLE_NAME))
       );
 
@@ -115,6 +116,7 @@ public class QueryStatMetaDataProvider
 
       QTableMetaData table = new QTableMetaData()
          .withName(QueryStat.TABLE_NAME)
+         .withIcon(new QIcon().withName("query_stats"))
          .withBackendName(backendName)
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")

@@ -72,15 +72,6 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          return;
       }
 
-      //////////////////////////////
-      // set up the extract steps //
-      //////////////////////////////
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
-      RecordPipe          recordPipe  = new RecordPipe();
-      extractStep.setLimit(limit);
-      extractStep.setRecordPipe(recordPipe);
-      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
-
       /////////////////////////////////////////////////////////////////
       // if we're running inside an automation, then skip this step. //
       /////////////////////////////////////////////////////////////////
@@ -89,6 +80,19 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
          LOG.debug("Skipping preview step when [" + runBackendStepInput.getProcessName() + "] is running as part of an automation.");
          return;
       }
+
+      /////////////////////////////
+      // set up the extract step //
+      /////////////////////////////
+      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+      extractStep.setLimit(limit);
+      extractStep.preRun(runBackendStepInput, runBackendStepOutput);
+
+      //////////////////////////////////////////
+      // set up a record pipe for the process //
+      //////////////////////////////////////////
+      RecordPipe recordPipe = extractStep.createRecordPipe(runBackendStepInput, null);
+      extractStep.setRecordPipe(recordPipe);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if skipping frontend steps, skip this action -                                                                 //
@@ -125,7 +129,7 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       // }
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      new AsyncRecordPipeLoop().run("StreamedETL>Preview>ExtractStep", PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
+      new AsyncRecordPipeLoop().run("StreamedETLPreview>Extract>" + runBackendStepInput.getProcessName(), PROCESS_OUTPUT_RECORD_LIST_LIMIT, recordPipe, (status) ->
          {
             runBackendStepInput.setAsyncJobCallback(status);
             extractStep.run(runBackendStepInput, runBackendStepOutput);
@@ -140,6 +144,14 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
       BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
       transformStep.postRun(postRunInput, postRunOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(postRunOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+      }
    }
 
 
@@ -202,7 +214,16 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+         runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+      }
 
       ////////////////////////////////////////////////////
       // add the transformed records to the output list //

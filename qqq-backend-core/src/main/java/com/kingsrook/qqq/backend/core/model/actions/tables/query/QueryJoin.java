@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -49,6 +51,10 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** specific joinMetaData to use must be set.  The joinMetaData field can also be
  ** used instead of specify joinTable and baseTableOrAlias, but only for cases
  ** where the baseTable is not an alias.
+ **
+ ** The securityCriteria member, in general, is meant to be populated when a
+ ** JoinsContext is constructed before executing a query, and not meant to be set
+ ** by users.
  *******************************************************************************/
 public class QueryJoin
 {
@@ -59,13 +65,30 @@ public class QueryJoin
    private boolean       select = false;
    private Type          type   = Type.INNER;
 
+   private List<QFilterCriteria> securityCriteria = new ArrayList<>();
+
 
 
    /*******************************************************************************
-    **
+    ** define the types of joins - INNER, LEFT, RIGHT, or FULL.
     *******************************************************************************/
    public enum Type
-   {INNER, LEFT, RIGHT, FULL}
+   {
+      INNER,
+      LEFT,
+      RIGHT,
+      FULL;
+
+
+
+      /*******************************************************************************
+       ** check if a join is an OUTER type (LEFT or RIGHT).
+       *******************************************************************************/
+      public static boolean isOuter(Type type)
+      {
+         return (LEFT == type || RIGHT == type);
+      }
+   }
 
 
 
@@ -348,4 +371,66 @@ public class QueryJoin
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for securityCriteria
+    *******************************************************************************/
+   public List<QFilterCriteria> getSecurityCriteria()
+   {
+      return (this.securityCriteria);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for securityCriteria
+    *******************************************************************************/
+   public void setSecurityCriteria(List<QFilterCriteria> securityCriteria)
+   {
+      this.securityCriteria = securityCriteria;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securityCriteria
+    *******************************************************************************/
+   public QueryJoin withSecurityCriteria(List<QFilterCriteria> securityCriteria)
+   {
+      this.securityCriteria = securityCriteria;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securityCriteria
+    *******************************************************************************/
+   public QueryJoin withSecurityCriteria(QFilterCriteria securityCriteria)
+   {
+      if(this.securityCriteria == null)
+      {
+         this.securityCriteria = new ArrayList<>();
+      }
+      this.securityCriteria.add(securityCriteria);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "QueryJoin{base="
+         + baseTableOrAlias + ", joinTable='"
+         + joinTable + ", joinMetaData="
+         + (joinMetaData == null ? null : joinMetaData.getName()) + ", alias='"
+         + alias + ", select="
+         + select + ", type="
+         + type + '}';
+   }
 }

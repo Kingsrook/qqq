@@ -26,8 +26,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -35,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarCh
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -52,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -65,14 +70,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
@@ -148,7 +156,7 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    public void test_validateEmptyBackends()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
          "At least 1 backend must be defined");
    }
 
@@ -268,6 +276,25 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
+    ** Test rules for process step names (must be set; must not be duplicated)
+    **
+    *******************************************************************************/
+   @Test
+   public void test_validateProcessStepNames()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(0).setName(null),
+         "Missing name for a step at index");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().get(0).setName(""),
+         "Missing name for a step at index");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE_INTERACTIVE).getStepList().forEach(s -> s.setName("myStep")),
+         "Duplicate step name [myStep]", "Duplicate step name [myStep]");
+   }
+
+
+
+   /*******************************************************************************
     ** Test that a process with a step that is a private class fails
     **
     *******************************************************************************/
@@ -372,6 +399,147 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void test_validateProcessCancelSteps()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData()),
+         "Cancel step is missing a code reference");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference())),
+         "missing a code reference name", "missing a code type");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference(ValidAuthCustomizer.class))),
+         "CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference(CancelProcessActionTest.CancelStep.class))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_validateSchedules()
+   {
+      String processName = TestUtils.PROCESS_NAME_GREET_PEOPLE;
+      Supplier<QScheduleMetaData> baseScheduleMetaData = () -> new QScheduleMetaData()
+         .withSchedulerName(TestUtils.SIMPLE_SCHEDULER_NAME);
+
+      ////////////////////////////////////////////////////
+      // do our basic schedule validations on a process //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()),
+         "either repeatMillis or repeatSeconds or cronExpression must be set");
+
+      String validCronString = "* * * * * ?";
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(1)
+            .withRepeatMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "both a repeat time and cronExpression may not be set");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelaySeconds(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelayMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withInitialDelaySeconds(1)
+            .withInitialDelayMillis(1)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "cron schedule may not have an initial delay");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression(validCronString)),
+         "must specify a cronTimeZoneId");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("foobar")),
+         "unrecognized cronTimeZoneId: foobar");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression("* * * * * *")
+            .withCronTimeZoneId("UTC")),
+         "invalid cron expression: Support for specifying both");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withCronExpression("x")
+            .withCronTimeZoneId("UTC")),
+         "invalid cron expression: Illegal cron expression format");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withRepeatSeconds(10)
+            .withCronTimeZoneId("UTC")),
+         "non-cron schedule must not specify a cronTimeZoneId");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName("not-a-scheduler")
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "referencing an unknown scheduler name: not-a-scheduler");
+
+      /////////////////////////////////
+      // validate some success cases //
+      /////////////////////////////////
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withRepeatSeconds(1)));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withRepeatMillis(1)));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("UTC")));
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(processName).withSchedule(baseScheduleMetaData.get().withCronExpression(validCronString).withCronTimeZoneId("America/New_York")));
+
+      ///////////////////////////////////////////////////////////////
+      // make sure table automations get their schedules validated //
+      ///////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+      ////////////////////////////////////////////////////
+      // make sure queues get their schedules validated //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance) -> (qInstance.getQueue(TestUtils.TEST_SQS_QUEUE)).withSchedule(baseScheduleMetaData.get()
+            .withSchedulerName(null)
+            .withCronExpression(validCronString)
+            .withCronTimeZoneId("UTC")),
+         "is missing a scheduler name");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void test_validatorPlugins()
    {
       try
@@ -387,11 +555,12 @@ public class QInstanceValidatorTest extends BaseTest
       finally
       {
          QInstanceValidator.removeAllValidatorPlugins();
-         
+
          ////////////////////////////////////////////////////
          // make sure if remove all plugins, we don't fail //
          ////////////////////////////////////////////////////
-         assertValidationSuccess((qInstance) -> {});
+         assertValidationSuccess((qInstance) -> {
+         });
       }
    }
 
@@ -1158,7 +1327,7 @@ public class QInstanceValidatorTest extends BaseTest
          {
             TableAutomationAction action = getAction0(qInstance);
             action.setCodeReference(null);
-            action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+            action.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
          },
          "different table");
    }
@@ -1620,6 +1789,26 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testFieldBehaviors()
+   {
+      BiFunction<QInstance, String, QFieldMetaData> fieldExtractor = (QInstance qInstance, String fieldName) -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField(fieldName);
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance, "firstName").withBehaviors(Set.of(ValueTooLongBehavior.ERROR, ValueTooLongBehavior.TRUNCATE)).withMaxLength(1)),
+         "more than 1 fieldBehavior of type ValueTooLongBehavior, which is not allowed");
+
+      ///////////////////////////////////////////////////////////////////////////
+      // make sure a custom validation method in a field behavior gets applied //
+      // more tests for this particular behavior are in its own test class     //
+      ///////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance, "firstName").withBehavior(new DateTimeDisplayValueBehavior())),
+         "DateTimeDisplayValueBehavior was a applied to a non-DATE_TIME field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testFieldValueTooLongBehavior()
    {
       Function<QInstance, QFieldMetaData> fieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("firstName");
@@ -1737,6 +1926,7 @@ public class QInstanceValidatorTest extends BaseTest
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(new ArrayList<>())), "looks like a join (has a dot), but no joinNameChain was given");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("storeId")), "does not look like a join (does not have a dot), but a joinNameChain was given");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("order.wrongId")), "unrecognized fieldName: order.wrongId");
+      assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setFieldName("lineItem.id")), "joinNameChain doesn't end in the expected table [lineItem]");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("notAJoin"))), "an unrecognized join");
       assertValidationFailureReasons((qInstance -> lockExtractor.apply(qInstance).setJoinNameChain(List.of("orderLineItem"))), "joinNameChain could not be followed through join");
    }
@@ -1838,7 +2028,21 @@ public class QInstanceValidatorTest extends BaseTest
          qInstance.addTable(newTable("B", "id", "aId"));
          qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
       });
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testShareableTableMetaData()
+   {
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // just make sure we call this class's validator - the rest of its conditions are covered in its own test //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons(qInstance -> qInstance.addTable(newTable("A", "id").withShareableTableMetaData(new ShareableTableMetaData())),
+         "missing sharedRecordTableName");
    }
 
 
@@ -1947,7 +2151,7 @@ public class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QTableMetaData newTable(String tableName, String... fieldNames)
+   protected QTableMetaData newTable(String tableName, String... fieldNames)
    {
       QTableMetaData tableMetaData = new QTableMetaData()
          .withName(tableName)
@@ -2041,7 +2245,7 @@ public class QInstanceValidatorTest extends BaseTest
    /*******************************************************************************
     ** Assert that an instance is valid!
     *******************************************************************************/
-   private void assertValidationSuccess(Consumer<QInstance> setup)
+   public static void assertValidationSuccess(Consumer<QInstance> setup)
    {
       try
       {
@@ -2077,7 +2281,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    public abstract class TestAbstractClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
    }
@@ -2089,7 +2293,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    private class TestPrivateClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
@@ -2116,7 +2320,7 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 

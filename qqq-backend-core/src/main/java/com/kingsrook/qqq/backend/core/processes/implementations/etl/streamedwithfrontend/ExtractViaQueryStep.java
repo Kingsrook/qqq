@@ -24,8 +24,14 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.actions.reporting.DistinctFilteringRecordPipe;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -36,9 +42,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -105,6 +115,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
       queryInput.setFilter(filterClone);
+      getQueryJoinsForOrderByIfNeeded(queryFilter).forEach(queryJoin -> queryInput.withQueryJoin(queryJoin));
       queryInput.setSelectDistinct(true);
       queryInput.setRecordPipe(getRecordPipe());
       queryInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
@@ -112,6 +123,10 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       if(runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_FETCH_HEAVY_FIELDS))
       {
          queryInput.setShouldFetchHeavyFields(true);
+      }
+      if(runBackendStepInput.getValuePrimitiveBoolean(StreamedETLWithFrontendProcess.FIELD_INCLUDE_ASSOCIATIONS))
+      {
+         queryInput.setIncludeAssociations(true);
       }
 
       customizeInputPreQuery(queryInput);
@@ -136,6 +151,45 @@ public class ExtractViaQueryStep extends AbstractExtractStep
 
 
    /*******************************************************************************
+    ** If the queryFilter has order-by fields from a joinTable, then create QueryJoins
+    ** for each such table - marked as LEFT, and select=true.
+    **
+    ** This is under the rationale that, the filter would have come from the frontend,
+    ** which would be doing outer-join semantics for a column being shown (but not filtered by).
+    ** If the table IS filtered by, it's still OK to do a LEFT, as we'll only get rows
+    ** that match.
+    **
+    ** Also, they are being select=true'ed so that the DISTINCT clause works (since
+    ** process queries always try to be DISTINCT).
+    *******************************************************************************/
+   private List<QueryJoin> getQueryJoinsForOrderByIfNeeded(QQueryFilter queryFilter)
+   {
+      if(queryFilter == null)
+      {
+         return (Collections.emptyList());
+      }
+
+      List<QueryJoin> rs          = new ArrayList<>();
+      Set<String>     addedTables = new HashSet<>();
+      for(QFilterOrderBy filterOrderBy : CollectionUtils.nonNullList(queryFilter.getOrderBys()))
+      {
+         if(filterOrderBy.getFieldName().contains("."))
+         {
+            String tableName = filterOrderBy.getFieldName().split("\\.")[0];
+            if(!addedTables.contains(tableName))
+            {
+               rs.add(new QueryJoin(tableName).withType(QueryJoin.Type.LEFT).withSelect(true));
+            }
+            addedTables.add(tableName);
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Override
@@ -144,6 +198,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       CountInput countInput = new CountInput();
       countInput.setTableName(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
       countInput.setFilter(queryFilter);
+      getQueryJoinsForOrderByIfNeeded(queryFilter).forEach(queryJoin -> countInput.withQueryJoin(queryJoin));
       countInput.setIncludeDistinctCount(true);
       CountOutput countOutput = new CountAction().execute(countInput);
       Integer     count       = countOutput.getDistinctCount();
@@ -243,4 +298,33 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       }
    }
 
+
+
+   /*******************************************************************************
+    ** Create the record pipe to be used for this process step.
+    **
+    *******************************************************************************/
+   @Override
+   public RecordPipe createRecordPipe(RunBackendStepInput runBackendStepInput, Integer overrideCapacity)
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if the filter has order-bys from a join-table, then we have to include that join-table in the SELECT clause,                 //
+      // which means we need to do distinct "manually", e.g., via a DistinctFilteringRecordPipe                                       //
+      // todo - really, wouldn't this only be if it's a many-join?  but that's not completely trivial to detect, given join-chains... //
+      //  as it is, we may end up using DistinctPipe in some cases that we need it - which isn't an error, just slightly sub-optimal. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      List<QueryJoin> queryJoinsForOrderByIfNeeded = getQueryJoinsForOrderByIfNeeded(queryFilter);
+      boolean         needDistinctPipe             = CollectionUtils.nullSafeHasContents(queryJoinsForOrderByIfNeeded);
+
+      if(needDistinctPipe)
+      {
+         String         sourceTableName = runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE);
+         QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(sourceTableName);
+         return (new DistinctFilteringRecordPipe(new UniqueKey(sourceTable.getPrimaryKeyField()), overrideCapacity));
+      }
+      else
+      {
+         return (super.createRecordPipe(runBackendStepInput, overrideCapacity));
+      }
+   }
 }

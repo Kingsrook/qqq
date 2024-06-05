@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -41,8 +42,18 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class JoinGraph
 {
-
    private Set<Edge> edges = new HashSet<>();
+
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // as an instance grows, with the number of joins (say, more than 50?), especially as they may have a lot of connections, //
+   // it can become very very slow to process a full join graph (e.g., 10 seconds, maybe much worse, per Big-O...)           //
+   // also, it's not frequently useful to look at a join path that's more than a handful of tables long.                     //
+   // thus - this property exists - to limit the max length of a join path.  Keeping it small keeps instance enrichment      //
+   // and validation reasonably performant, at the possible cost of, some join-path that's longer than this limit may not    //
+   // be found - but - chances are, you don't want some 12-element join path to be used anyway, thus, this makes sense.      //
+   // but - it can be adjusted, per system property or ENV var.                                                              //
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private int maxPathLength = new QMetaDataVariableInterpreter().getIntegerFromPropertyOrEnvironment("qqq.instance.joinGraph.maxPathLength", "QQQ_INSTANCE_JOIN_GRAPH_MAX_PATH_LENGTH", 3);
 
 
 
@@ -303,6 +314,13 @@ public class JoinGraph
 
                if(otherTableName != null)
                {
+                  if(newPath.size() > maxPathLength)
+                  {
+                     ////////////////////////////////////////////////////////////////
+                     // performance hack.  see comment at maxPathLength definition //
+                     ////////////////////////////////////////////////////////////////
+                     continue;
+                  }
 
                   JoinConnectionList newConnectionList = connectionList.copy();
                   JoinConnection     joinConnection    = new JoinConnection(otherTableName, edge.joinName);

@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.NoSuchFileException;
+import java.time.Instant;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -98,14 +100,14 @@ public class TempFileStateProvider implements StateProviderInterface
          String json = FileUtils.readFileToString(getFile(key));
          return (Optional.of(JsonUtils.toObject(json, type)));
       }
-      catch(FileNotFoundException fnfe)
+      catch(FileNotFoundException | NoSuchFileException fnfe)
       {
          return (Optional.empty());
       }
       catch(IOException e)
       {
          LOG.error("Error getting state from file", e);
-         throw (new RuntimeException("Error retreiving state", e));
+         throw (new RuntimeException("Error retrieving state", e));
       }
    }
 
@@ -122,6 +124,31 @@ public class TempFileStateProvider implements StateProviderInterface
       {
          LOG.warn("Error deleting state-providing tempFile", logPair("file", file.getAbsolutePath()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the current status
+    *
+    *******************************************************************************/
+   @Override
+   public String status()
+   {
+      return ("TempFileStateProvider status not supported");
+   }
+
+
+
+   /*******************************************************************************
+    ** Clean entries that started before the given Instant
+    *******************************************************************************/
+   @Override
+   public void clean(Instant startTime)
+   {
+      ////////////////////////////////
+      // Not supported at this time //
+      ////////////////////////////////
    }
 
 

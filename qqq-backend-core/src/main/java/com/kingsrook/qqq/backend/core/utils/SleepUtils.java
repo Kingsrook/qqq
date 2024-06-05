@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 
@@ -53,6 +54,16 @@ public class SleepUtils
             // sleep more.
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** overload for sleep that takes duration object
+    *******************************************************************************/
+   public static void sleep(Duration sleepDuration)
+   {
+      sleep(sleepDuration.toMillis(), TimeUnit.MILLISECONDS);
    }
 
 }

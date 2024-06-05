@@ -156,18 +156,6 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
 
 
    /*******************************************************************************
-    ** Fluent setter, returning generically, to help sub-class fluent flows
-    *******************************************************************************/
-   @SuppressWarnings("unchecked")
-   public <T extends QBackendMetaData> T withBackendType(String backendType)
-   {
-      this.backendType = backendType;
-      return (T) this;
-   }
-
-
-
-   /*******************************************************************************
     **
     *******************************************************************************/
    public QBackendMetaData withBackendType(Class<? extends QBackendModuleInterface> backendModuleClass)

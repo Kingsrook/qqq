@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
@@ -129,6 +130,7 @@ public class HealBadRecordAutomationStatusesProcessStep implements BackendStep, 
 
       QProcessMetaData processMetaData = new QProcessMetaData()
          .withName(NAME)
+         .withIcon(new QIcon().withName("healing"))
          .withStepList(List.of(
             new QFrontendStepMetaData()
                .withName("input")

@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -36,7 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterf
  ** Input data for the Query action
  **
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface
+public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, Cloneable
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;
@@ -68,6 +70,24 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    private boolean            includeAssociations       = false;
    private Collection<String> associationNamesToInclude = null;
 
+   private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
+
+
+
+   /*******************************************************************************
+    ** Information about the query that an application (or qqq service) may know and
+    ** want to tell the backend, that can help influence how the backend processes
+    ** query.
+    **
+    ** For example, a query with potentially a large result set, for MySQL backend,
+    ** we may want to configure the result set to stream results rather than do its
+    ** default in-memory thing.  See RDBMSQueryAction for usage.
+    *******************************************************************************/
+   public enum QueryHint
+   {
+      POTENTIALLY_LARGE_NUMBER_OF_RESULTS
+   }
+
 
 
    /*******************************************************************************
@@ -86,6 +106,40 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    public QueryInput(String tableName)
    {
       setTableName(tableName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QueryInput clone() throws CloneNotSupportedException
+   {
+      QueryInput clone = (QueryInput) super.clone();
+
+      if(fieldsToTranslatePossibleValues != null)
+      {
+         clone.fieldsToTranslatePossibleValues = new HashSet<>(fieldsToTranslatePossibleValues);
+      }
+
+      if(queryJoins != null)
+      {
+         clone.queryJoins = new ArrayList<>(queryJoins);
+      }
+
+      if(clone.associationNamesToInclude != null)
+      {
+         clone.associationNamesToInclude = new HashSet<>(associationNamesToInclude);
+      }
+
+      if(queryHints != null)
+      {
+         clone.queryHints = EnumSet.noneOf(QueryHint.class);
+         clone.queryHints.addAll(queryHints);
+      }
+
+      return (clone);
    }
 
 
@@ -566,6 +620,66 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    public QueryInput withTimeoutSeconds(Integer timeoutSeconds)
    {
       this.timeoutSeconds = timeoutSeconds;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryHints
+    *******************************************************************************/
+   public EnumSet<QueryHint> getQueryHints()
+   {
+      return (this.queryHints);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryHints
+    *******************************************************************************/
+   public void setQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public QueryInput withQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public QueryInput withQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         this.queryHints = EnumSet.noneOf(QueryHint.class);
+      }
+      this.queryHints.add(queryHint);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public QueryInput withoutQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints != null)
+      {
+         this.queryHints.remove(queryHint);
+      }
       return (this);
    }
 

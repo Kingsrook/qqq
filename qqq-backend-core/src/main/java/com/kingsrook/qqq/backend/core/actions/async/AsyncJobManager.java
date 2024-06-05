@@ -159,7 +159,7 @@ public class AsyncJobManager
    private <T extends Serializable> T runAsyncJob(String jobName, AsyncJob<T> asyncJob, UUIDAndTypeStateKey uuidAndTypeStateKey, AsyncJobStatus asyncJobStatus)
    {
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName("Job:" + jobName + ":" + uuidAndTypeStateKey.getUuid().toString().substring(0, 8));
+      Thread.currentThread().setName("Job:" + jobName);
       try
       {
          LOG.debug("Starting job " + uuidAndTypeStateKey.getUuid());
@@ -169,17 +169,24 @@ public class AsyncJobManager
          LOG.debug("Completed job " + uuidAndTypeStateKey.getUuid());
          return (result);
       }
-      catch(Exception e)
+      catch(Throwable t)
       {
          asyncJobStatus.setState(AsyncJobState.ERROR);
-         asyncJobStatus.setCaughtException(e);
+         if(t instanceof Exception e)
+         {
+            asyncJobStatus.setCaughtException(e);
+         }
+         else
+         {
+            asyncJobStatus.setCaughtException(new QException("Caught throwable", t));
+         }
          getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
 
          //////////////////////////////////////////////////////
          // if user facing, just log an info, warn otherwise //
          //////////////////////////////////////////////////////
-         LOG.log((e instanceof QUserFacingException) ? Level.INFO : Level.WARN, "Job ended with an exception", e, logPair("jobId", uuidAndTypeStateKey.getUuid()));
-         throw (new CompletionException(e));
+         LOG.log((t instanceof QUserFacingException) ? Level.INFO : Level.WARN, "Job ended with an exception", t, logPair("jobId", uuidAndTypeStateKey.getUuid()));
+         throw (new CompletionException(t));
       }
       finally
       {

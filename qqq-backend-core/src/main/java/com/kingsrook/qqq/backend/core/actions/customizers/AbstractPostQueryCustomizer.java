@@ -23,16 +23,29 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public abstract class AbstractPostQueryCustomizer
+public abstract class AbstractPostQueryCustomizer implements TableCustomizerInterface
 {
-   protected AbstractTableActionInput input;
+   protected QueryOrGetInputInterface input;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> postQuery(QueryOrGetInputInterface queryInput, List<QRecord> records) throws QException
+   {
+      input = queryInput;
+      return apply(records);
+   }
 
 
 
@@ -47,7 +60,7 @@ public abstract class AbstractPostQueryCustomizer
     ** Getter for input
     **
     *******************************************************************************/
-   public AbstractTableActionInput getInput()
+   public QueryOrGetInputInterface getInput()
    {
       return (input);
    }
@@ -58,7 +71,7 @@ public abstract class AbstractPostQueryCustomizer
     ** Setter for input
     **
     *******************************************************************************/
-   public void setInput(AbstractTableActionInput input)
+   public void setInput(QueryOrGetInputInterface input)
    {
       this.input = input;
    }

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -26,13 +26,15 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -45,6 +47,7 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
 {
    CREATE_DATE,
    MODIFY_DATE,
+   USER_ID,
    NONE;
 
    private static final QLogger LOG = QLogger.getLogger(ValueTooLongBehavior.class);
@@ -66,13 +69,9 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
     **
     *******************************************************************************/
    @Override
-   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field, Set<FieldBehavior<?>> behaviorsToOmit)
+   public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field)
    {
       if(this.equals(NONE))
-      {
-         return;
-      }
-      if(behaviorsToOmit != null && behaviorsToOmit.contains(this))
       {
          return;
       }
@@ -81,6 +80,7 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
       {
          case CREATE_DATE -> applyCreateDate(action, recordList, table, field);
          case MODIFY_DATE -> applyModifyDate(action, recordList, table, field);
+         case USER_ID -> applyUserId(action, recordList, table, field);
          default -> throw new IllegalStateException("Unexpected enum value: " + this);
       }
    }
@@ -131,6 +131,27 @@ public enum DynamicDefaultValueBehavior implements FieldBehavior<DynamicDefaultV
       for(QRecord record : CollectionUtils.nonNullList(recordList))
       {
          record.setValue(fieldName, value);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void applyUserId(ValueBehaviorApplier.Action action, List<QRecord> recordList, QTableMetaData table, QFieldMetaData field)
+   {
+      String fieldName = field.getName();
+      String userId    = ObjectUtils.tryElse(() -> QContext.getQSession().getUser().getIdReference(), null);
+      if(StringUtils.hasContent(userId))
+      {
+         for(QRecord record : CollectionUtils.nonNullList(recordList))
+         {
+            if(!StringUtils.hasContent(record.getValueString(fieldName)))
+            {
+               record.setValue(field.getName(), userId);
+            }
+         }
       }
    }
 

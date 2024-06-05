@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -154,6 +155,49 @@ class DynamicDefaultValueBehaviorTest extends BaseTest
       QRecord record = new QRecord().withValue("id", 1);
       ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
       assertNull(record.getValue("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testUserId()
+   {
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      table.getField("firstName").withBehavior(DynamicDefaultValueBehavior.USER_ID);
+
+      {
+         ////////////////////////////////
+         // set it (if null) on insert //
+         ////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 1);
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
+         assertEquals(QContext.getQSession().getUser().getIdReference(), record.getValue("firstName"));
+      }
+
+      {
+         ////////////////////////////////
+         // set it (if null) on update //
+         ////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 1);
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record), null);
+         assertEquals(QContext.getQSession().getUser().getIdReference(), record.getValue("firstName"));
+      }
+
+      {
+         ////////////////////////////////////////////////////////////////////
+         // only set it if it wasn't previously set (both insert & update) //
+         ////////////////////////////////////////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 1).withValue("firstName", "Bob");
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, qInstance, table, List.of(record), null);
+         assertEquals("Bob", record.getValue("firstName"));
+
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, qInstance, table, List.of(record), null);
+         assertEquals("Bob", record.getValue("firstName"));
+      }
    }
 
 }

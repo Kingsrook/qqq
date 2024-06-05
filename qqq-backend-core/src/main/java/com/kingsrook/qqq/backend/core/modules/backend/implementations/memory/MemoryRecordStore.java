@@ -177,6 +177,14 @@ public class MemoryRecordStore
 
       for(QRecord qRecord : tableData)
       {
+         if(qRecord.getTableName() == null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            // internally, doesRecordMatch likes to know table names on records, so, set if missing. //
+            ///////////////////////////////////////////////////////////////////////////////////////////
+            qRecord.setTableName(input.getTableName());
+         }
+
          boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), qRecord);
 
          if(recordMatches)
@@ -232,16 +240,7 @@ public class MemoryRecordStore
       {
          QTableMetaData      nextTable        = qInstance.getTable(queryJoin.getJoinTable());
          Collection<QRecord> nextTableRecords = getTableData(nextTable).values();
-
-         QJoinMetaData joinMetaData = Objects.requireNonNullElseGet(queryJoin.getJoinMetaData(), () ->
-         {
-            QJoinMetaData found = joinsContext.findJoinMetaData(qInstance, input.getTableName(), queryJoin.getJoinTable());
-            if(found == null)
-            {
-               throw (new RuntimeException("Could not find a join between tables [" + input.getTableName() + "][" + queryJoin.getJoinTable() + "]"));
-            }
-            return (found);
-         });
+         QJoinMetaData       joinMetaData     = Objects.requireNonNull(queryJoin.getJoinMetaData(), () -> "Could not find a join between tables [" + leftTable + "][" + queryJoin.getJoinTable() + "]");
 
          List<QRecord> nextLevelProduct = new ArrayList<>();
          for(QRecord productRecord : crossProduct)
@@ -372,7 +371,7 @@ public class MemoryRecordStore
          /////////////////////////////////////////////////
          // set the next serial in the record if needed //
          /////////////////////////////////////////////////
-         if(recordToInsert.getValue(primaryKeyField.getName()) == null && primaryKeyField.getType().equals(QFieldType.INTEGER))
+         if(recordToInsert.getValue(primaryKeyField.getName()) == null && (primaryKeyField.getType().equals(QFieldType.INTEGER) || primaryKeyField.getType().equals(QFieldType.LONG)))
          {
             recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
          }
@@ -382,6 +381,13 @@ public class MemoryRecordStore
          ///////////////////////////////////////////////////////////////////////////////////////////////////
          if(primaryKeyField.getType().equals(QFieldType.INTEGER) && recordToInsert.getValueInteger(primaryKeyField.getName()) > nextSerial)
          {
+            nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
+         }
+         else if(primaryKeyField.getType().equals(QFieldType.LONG) && recordToInsert.getValueLong(primaryKeyField.getName()) > nextSerial)
+         {
+            //////////////////////////////////////
+            // todo - mmm, could overflow here? //
+            //////////////////////////////////////
             nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
          }
 
@@ -763,7 +769,6 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private static Serializable computeAggregate(List<QRecord> records, Aggregate aggregate, QTableMetaData table)
    {
       String            fieldName = aggregate.getFieldName();
@@ -773,7 +778,7 @@ public class MemoryRecordStore
       {
          // todo - joins probably?
          QFieldMetaData field = table.getField(fieldName);
-         if(field.getType().equals(QFieldType.INTEGER) && (operator.equals(AggregateOperator.AVG)))
+         if((field.getType().equals(QFieldType.INTEGER) || field.getType().equals(QFieldType.LONG)) && (operator.equals(AggregateOperator.AVG)))
          {
             fieldType = QFieldType.DECIMAL;
          }
@@ -809,6 +814,10 @@ public class MemoryRecordStore
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
                .sum();
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
+               .sum();
             case DECIMAL -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .map(r -> r.getValueBigDecimal(fieldName))
@@ -821,6 +830,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .min()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .min()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -839,7 +853,12 @@ public class MemoryRecordStore
          {
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
-               .mapToInt(r -> r.getValueInteger(fieldName))
+               .mapToLong(r -> r.getValueInteger(fieldName))
+               .max()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .max()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL, STRING, DATE, DATE_TIME ->
@@ -859,6 +878,11 @@ public class MemoryRecordStore
             case INTEGER -> records.stream()
                .filter(r -> r.getValue(fieldName) != null)
                .mapToInt(r -> r.getValueInteger(fieldName))
+               .average()
+               .stream().boxed().findFirst().orElse(null);
+            case LONG -> records.stream()
+               .filter(r -> r.getValue(fieldName) != null)
+               .mapToLong(r -> r.getValueLong(fieldName))
                .average()
                .stream().boxed().findFirst().orElse(null);
             case DECIMAL -> records.stream()

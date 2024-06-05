@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -364,7 +363,9 @@ public class QValueFormatter
             }
          }
 
-         setDisplayValuesInRecord(fieldMap, record);
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, records, null);
+
+         setDisplayValuesInRecord(table, fieldMap, record, true);
          record.setRecordLabel(formatRecordLabel(table, record));
       }
    }
@@ -374,61 +375,49 @@ public class QValueFormatter
    /*******************************************************************************
     ** For a list of records, set their recordLabels and display values
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(Collection<QFieldMetaData> fields, List<QRecord> records)
+   public static void setDisplayValuesInRecords(QTableMetaData table, Map<String, QFieldMetaData> fields, List<QRecord> records)
    {
       if(records == null)
       {
          return;
       }
 
+      if(table != null)
+      {
+         ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, records, null);
+      }
+
       for(QRecord record : records)
       {
-         setDisplayValuesInRecord(fields, record);
+         setDisplayValuesInRecord(table, fields, record, true);
       }
    }
 
 
 
    /*******************************************************************************
-    ** For a list of records, set their recordLabels and display values
+    ** For a single record, set its display values - public version of this.
     *******************************************************************************/
-   public static void setDisplayValuesInRecords(Map<String, QFieldMetaData> fields, List<QRecord> records)
+   public static void setDisplayValuesInRecord(QTableMetaData table, Map<String, QFieldMetaData> fields, QRecord record)
    {
-      if(records == null)
-      {
-         return;
-      }
-
-      for(QRecord record : records)
-      {
-         setDisplayValuesInRecord(fields, record);
-      }
+      setDisplayValuesInRecord(table, fields, record, false);
    }
 
 
-
    /*******************************************************************************
-    ** For a list of records, set their display values
+    ** For a single record, set its display values - where caller (meant to stay private)
+    ** can specify if they've already done fieldBehaviors (to avoid re-doing).
     *******************************************************************************/
-   public static void setDisplayValuesInRecord(Collection<QFieldMetaData> fields, QRecord record)
+   private static void setDisplayValuesInRecord(QTableMetaData table, Map<String, QFieldMetaData> fields, QRecord record, boolean alreadyAppliedFieldDisplayBehaviors)
    {
-      for(QFieldMetaData field : fields)
+      if(!alreadyAppliedFieldDisplayBehaviors)
       {
-         if(record.getDisplayValue(field.getName()) == null)
+         if(table != null)
          {
-            String formattedValue = formatValue(field, record.getValue(field.getName()));
-            record.setDisplayValue(field.getName(), formattedValue);
+            ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, QContext.getQInstance(), table, List.of(record), null);
          }
       }
-   }
 
-
-
-   /*******************************************************************************
-    ** For a list of records, set their display values
-    *******************************************************************************/
-   public static void setDisplayValuesInRecord(Map<String, QFieldMetaData> fields, QRecord record)
-   {
       for(Map.Entry<String, QFieldMetaData> entry : fields.entrySet())
       {
          String         fieldName = entry.getKey();
@@ -489,6 +478,13 @@ public class QValueFormatter
             if(fileDownloadAdornment.isPresent())
             {
                adornmentValues = fileDownloadAdornment.get().getValues();
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////
+               // don't change blobs unless they are file-downloads //
+               ///////////////////////////////////////////////////////
+               continue;
             }
 
             String fileNameField    = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));

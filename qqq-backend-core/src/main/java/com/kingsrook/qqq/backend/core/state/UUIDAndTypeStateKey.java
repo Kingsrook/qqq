@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.state;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -34,6 +35,7 @@ public class UUIDAndTypeStateKey extends AbstractStateKey implements Serializabl
 {
    private final UUID      uuid;
    private final StateType stateType;
+   private final Instant   startTime;
 
 
 
@@ -43,7 +45,7 @@ public class UUIDAndTypeStateKey extends AbstractStateKey implements Serializabl
     *******************************************************************************/
    public UUIDAndTypeStateKey(StateType stateType)
    {
-      this(UUID.randomUUID(), stateType);
+      this(UUID.randomUUID(), stateType, Instant.now());
    }
 
 
@@ -54,8 +56,20 @@ public class UUIDAndTypeStateKey extends AbstractStateKey implements Serializabl
     *******************************************************************************/
    public UUIDAndTypeStateKey(UUID uuid, StateType stateType)
    {
+      this(uuid, stateType, Instant.now());
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor where user can supply the UUID.
+    **
+    *******************************************************************************/
+   public UUIDAndTypeStateKey(UUID uuid, StateType stateType, Instant startTime)
+   {
       this.uuid = uuid;
       this.stateType = stateType;
+      this.startTime = startTime;
    }
 
 
@@ -133,4 +147,15 @@ public class UUIDAndTypeStateKey extends AbstractStateKey implements Serializabl
    {
       return "{uuid=" + uuid + ", stateType=" + stateType + '}';
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for startTime
+    *******************************************************************************/
+   public Instant getStartTime()
+   {
+      return (this.startTime);
+   }
+
 }

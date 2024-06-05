@@ -93,13 +93,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
          StringBuilder sql = new StringBuilder(makeSelectClause(queryInput));
 
-         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), queryInput.getFilter());
-         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext));
+         QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
+         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), filter);
 
-         QQueryFilter       filter = queryInput.getFilter();
          List<Serializable> params = new ArrayList<>();
-
-         sql.append(" WHERE ").append(makeWhereClause(queryInput.getInstance(), queryInput.getSession(), table, joinsContext, filter, params));
+         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext, params));
+         sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
          {
@@ -357,16 +356,22 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
    {
-      if(mysqlResultSetOptimizationEnabled && connection.getClass().getName().startsWith("com.mysql"))
+      if(connection.getClass().getName().startsWith("com.mysql"))
       {
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
-         // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
-         // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
-         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-         statement.setFetchSize(Integer.MIN_VALUE);
-         return (statement);
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're allowed to use the mysqlResultSetOptimization, and we have the query hint of "expected large result set", then do it. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(mysqlResultSetOptimizationEnabled && queryInput.getQueryHints() != null && queryInput.getQueryHints().contains(QueryInput.QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
+            // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
+            // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            statement.setFetchSize(Integer.MIN_VALUE);
+            return (statement);
+         }
       }
 
       return (connection.prepareStatement(sql));

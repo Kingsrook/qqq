@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 
 
 /*******************************************************************************
@@ -87,7 +88,7 @@ public class ListOfMapsExportStreamer implements ExportStreamerInterface
     **
     *******************************************************************************/
    @Override
-   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label) throws QReportingException
+   public void start(ExportInput exportInput, List<QFieldMetaData> fields, String label, QReportView view) throws QReportingException
    {
       this.exportInput = exportInput;
       this.fields = fields;

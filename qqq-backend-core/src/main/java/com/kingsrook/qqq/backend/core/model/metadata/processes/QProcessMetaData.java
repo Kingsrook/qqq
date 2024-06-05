@@ -60,9 +60,14 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
+   private QBackendStepMetaData cancelStep;
+
    private QIcon icon;
 
    private QScheduleMetaData schedule;
+
+   private VariantRunStrategy variantRunStrategy;
+   private String             variantBackend;
 
    private Map<String, QSupplementalProcessMetaData> supplementalMetaData;
 
@@ -668,6 +673,110 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public QProcessMetaData withMaxInputRecords(Integer maxInputRecords)
    {
       this.maxInputRecords = maxInputRecords;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantRunStrategy
+    *******************************************************************************/
+   public VariantRunStrategy getVariantRunStrategy()
+   {
+      return (this.variantRunStrategy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantRunStrategy
+    *******************************************************************************/
+   public void setVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantRunStrategy
+    *******************************************************************************/
+   public QProcessMetaData withVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+   {
+      this.variantRunStrategy = variantRunStrategy;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantBackend
+    *******************************************************************************/
+   public String getVariantBackend()
+   {
+      return (this.variantBackend);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantBackend
+    *******************************************************************************/
+   public void setVariantBackend(String variantBackend)
+   {
+      this.variantBackend = variantBackend;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantBackend
+    *******************************************************************************/
+   public QProcessMetaData withVariantBackend(String variantBackend)
+   {
+      this.variantBackend = variantBackend;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for the full map of all steps (not the step list!)
+    **
+    *******************************************************************************/
+   public Map<String, QStepMetaData> getAllSteps()
+   {
+      return steps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for cancelStep
+    *******************************************************************************/
+   public QBackendStepMetaData getCancelStep()
+   {
+      return (this.cancelStep);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for cancelStep
+    *******************************************************************************/
+   public void setCancelStep(QBackendStepMetaData cancelStep)
+   {
+      this.cancelStep = cancelStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for cancelStep
+    *******************************************************************************/
+   public QProcessMetaData withCancelStep(QBackendStepMetaData cancelStep)
+   {
+      this.cancelStep = cancelStep;
       return (this);
    }
 

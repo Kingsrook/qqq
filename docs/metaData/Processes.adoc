@@ -16,6 +16,7 @@ Processes are defined in a QQQ Instance in a `*QProcessMetaData*` object.
 In addition to directly building a `QProcessMetaData` object setting its properties directly, there are a few common process patterns that provide *Builder* objects for ease-of-use.
 See StreamedETLWithFrontendProcess below for a common example
 
+[#_QProcessMetaData_Properties]
 *QProcessMetaData Properties:*
 
 * `name` - *String, Required* - Unique name for the process within the QQQ Instance.
@@ -30,12 +31,13 @@ See below for details.
 * `permissionRules` - *QPermissionRules object* - define the permission/access rules for the process.
 See {link-permissionRules} for details.
 * `steps` and `stepList` - *Map of String → <<QStepMetaData>>* and *List of QStepMetaData* - Defines the <<QFrontendStepMetaData,screens>> and <<QBackendStepMetaData,backend code>> that makes up the process.
-** `stepList` is the list of steps in the order that they will by default be executed.
-** `steps` is a map, including all steps from `stepList`, but which may also include steps which can used by the process if its backend steps make the decision to do so, at run-time.
+** `stepList` is the list of steps in the order that they will be executed
+(that is to say - this is the _default_ order of execution - but it can be customized - see <<_custom_process_flow>> for details).
+** `steps` is a map, including all steps from `stepList`, but which may also include steps which can used by the process if its backend steps make the decision to do so, at run-time (e.g., using <<_custom_process_flow>>).
 ** A process's steps are normally defined in one of two was:
 *** 1) by a single call to `.withStepList(List<QStepMetaData>)`, which internally adds each step into the `steps` map.
 *** 2) by multiple calls to `.addStep(QStepMetaData)`, which adds a step to both the `stepList` and `steps` map.
-** If a process also needs optional steps, they should be added by a call to `.addOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
+** If a process also needs optional steps (for a <<_custom_process_flow>>), they should be added by a call to `.addOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
 * `schedule` - *<<QScheduleMetaData>>* - set up the process to run automatically on the specified schedule.
 See below for details.
 * `minInputRecords` - *Integer* - #not used...#
@@ -214,3 +216,112 @@ But for some cases, doing page-level transactions can reduce long-transactions a
 * `withFields(List<QFieldMetaData> fieldList)` - Adds additional input fields to the preview step of the process.
 * `withBasepullConfiguration(BasepullConfiguration basepullConfiguration)` - Add a <<BasepullConfiguration>> to the process.
 * `withSchedule(QScheduleMetaData schedule)` - Add a <<QScheduleMetaData>> to the process.
+
+[#_custom_process_flow]
+==== Custom Process Flow
+As referenced in the definition of the <<_QProcessMetaData_Properties,QProcessMetaData Properties>>, by default, a process
+will execute each of its steps in-order, as defined in the `stepList` property.
+However, a Backend Step can customize this flow #todo - write more clearly here...
+
+There are generally 2 method to call (in a `BackendStep`) to do a dynamic flow:
+
+* `RunBackendStepOutput.setOverrideLastStepName(String stepName)`
+** QQQ's `RunProcessAction` keeps track of which step it "last" ran, e.g., to tell it which one to run next.
+However, if a step sets the `OverrideLastStepName` property in its output object,
+then the step named in that property becomes the effective "last" step,
+thus determining which step comes next.
+
+* `RunBackendStepOutput.updateStepList(List<String> stepNameList)`
+** Calling this method changes the process's runtime definition of steps to be executed.
+Thus allowing a completely custom flow.
+It should be noted, that the "last" step name (as tracked by QQQ within `RunProcessAction`)
+does need to be found in the new `stepNameList` - otherwise, the framework will not know where you were,
+for figuring out where to go next.
+
+[source,java]
+.Example of a defining process that can use a flexible flow:
+----
+// for a case like this, it would be recommended to define all step names in constants:
+public final static String STEP_START = "start";
+public final static String STEP_A     = "a";
+public final static String STEP_B     = "b";
+public final static String STEP_C     = "c";
+public final static String STEP_1     = "1";
+public final static String STEP_2     = "2";
+public final static String STEP_3     = "3";
+public final static String STEP_END   = "end";
+
+// also, to define the possible flows (lists of steps) in constants as well:
+public final static List<String> LETTERS_STEP_LIST = List.of(
+  STEP_START, STEP_A, STEP_B, STEP_C, STEP_END);
+
+public final static List<String> NUMBERS_STEP_LIST = List.of(
+  STEP_START, STEP_1, STEP_2, STEP_3, STEP_END);
+
+// when we define the process's meta-data, we only give a "skeleton" stepList -
+// we must at least have our starting step, and we may want at least one frontend step
+// for the UI to show some placeholder(s):
+QProcessMetaData process = new QProcessMetaData()
+   .withName(PROCESS_NAME)
+   .withStepList(List.of(
+      new QBackendStepMetaData().withName(STEP_START)
+         .withCode(new QCodeReference(/*...*/)),
+      new QFrontendStepMetaData()
+         .withName(STEP_END)
+   ));
+
+// the additional steps get added via `addOptionalStep`, which only puts them in
+// the process's stepMap, not its stepList!
+process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_A));
+process.addOptionalStep(new QBackendStepMetaData().withName(STEP_B)
+   .withCode(new QCodeReference(/*...*/)));
+process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_C));
+
+process.addOptionalStep(new QBackendStepMetaData().withName(STEP_1)
+   .withCode(new QCodeReference(/*...*/)));
+process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_2));
+process.addOptionalStep(new QBackendStepMetaData().withName(STEP_3)
+   .withCode(new QCodeReference(/*...*/)));
+
+----
+
+[source,java]
+.Example of a process backend step adjusting the process's runtime flow:
+----
+/***************************************************************************
+** look at the value named "which". if it's "letters", then make the process
+** go through the stepList consisting of letters; else, update the step list
+** to be the "numbers" steps.
+**
+** Also - if the "skipSomeSteps" value is give as true, then set the
+** overrideLastStepName to skip again (in the letters case, skip past A, B
+** and C; in the numbers case, skip past 1 and 2).
+***************************************************************************/
+public static class StartStep implements BackendStep
+{
+  @Override
+  public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+  {
+     Boolean skipSomeSteps = runBackendStepInput.getValueBoolean("skipSomeSteps");
+
+     if(runBackendStepInput.getValueString("which").equals("letters"))
+     {
+        runBackendStepOutput.updateStepList(LETTERS_STEP_LIST);
+        if(BooleanUtils.isTrue(skipSomeSteps))
+        {
+           runBackendStepOutput.setOverrideLastStepName(STEP_C);
+        }
+     }
+     else
+     {
+        runBackendStepOutput.updateStepList(NUMBERS_STEP_LIST);
+        if(BooleanUtils.isTrue(skipSomeSteps))
+        {
+           runBackendStepOutput.setOverrideLastStepName(STEP_2);
+        }
+     }
+  }
+}
+----
+
+

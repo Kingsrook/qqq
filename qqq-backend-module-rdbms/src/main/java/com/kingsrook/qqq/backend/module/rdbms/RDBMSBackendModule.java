@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.rdbms.actions.AbstractRDBMSAction;
 import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSAggregateAction;
@@ -55,7 +56,10 @@ public class RDBMSBackendModule implements QBackendModuleInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSBackendModule.class);
 
-
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new RDBMSBackendModule());
+   }
 
    /*******************************************************************************
     ** Method where a backend module must be able to provide its type (name).

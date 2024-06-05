@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.BufferedRecordPipe;
@@ -73,7 +73,7 @@ public class QueryAction
 {
    private static final QLogger LOG = QLogger.getLogger(QueryAction.class);
 
-   private Optional<AbstractPostQueryCustomizer> postQueryRecordCustomizer;
+   private Optional<TableCustomizerInterface> postQueryRecordCustomizer;
 
    private QueryInput               queryInput;
    private QueryInterface           queryInterface;
@@ -100,7 +100,7 @@ public class QueryAction
       }
 
       QBackendMetaData backend = queryInput.getBackend();
-      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(AbstractPostQueryCustomizer.class, table, TableCustomizers.POST_QUERY_RECORD.getRole());
+      postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
       this.queryInput = queryInput;
 
       if(queryInput.getRecordPipe() != null)
@@ -152,6 +152,22 @@ public class QueryAction
 
 
    /*******************************************************************************
+    ** shorthand way to call for the most common use-case, when you just want the
+    ** records to be returned, and you just want to pass in a table name and filter.
+    *******************************************************************************/
+   public static List<QRecord> execute(String tableName, QQueryFilter filter) throws QException
+   {
+      QueryAction queryAction = new QueryAction();
+      QueryInput  queryInput  = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(filter);
+      QueryOutput queryOutput = queryAction.execute(queryInput);
+      return (queryOutput.getRecords());
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private void manageAssociations(QueryInput queryInput, List<QRecord> queryOutputRecords) throws QException
@@ -169,6 +185,7 @@ public class QueryAction
             nextLevelQueryInput.setTableName(association.getAssociatedTableName());
             nextLevelQueryInput.setIncludeAssociations(true);
             nextLevelQueryInput.setAssociationNamesToInclude(buildNextLevelAssociationNamesToInclude(association.getName(), queryInput.getAssociationNamesToInclude()));
+            nextLevelQueryInput.setTransaction(queryInput.getTransaction());
 
             QQueryFilter filter = new QQueryFilter();
             nextLevelQueryInput.setFilter(filter);
@@ -264,7 +281,7 @@ public class QueryAction
    {
       if(this.postQueryRecordCustomizer.isPresent())
       {
-         records = postQueryRecordCustomizer.get().apply(records);
+         records = postQueryRecordCustomizer.get().postQuery(queryInput, records);
       }
 
       if(queryInput.getShouldTranslatePossibleValues())

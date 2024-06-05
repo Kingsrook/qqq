@@ -103,7 +103,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //

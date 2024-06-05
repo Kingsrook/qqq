@@ -112,12 +112,12 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ////////////////////////////
       // have base class delete //
       ////////////////////////////
-      super.run(runBackendStepInput, runBackendStepOutput);
+      super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
       QTableMetaData             table               = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
       String                     primaryKeyFieldName = table.getPrimaryKeyField();

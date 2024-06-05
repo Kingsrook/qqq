@@ -47,9 +47,21 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** records that the delete action marked in error - the user might want to do
  ** something special with them (idk, try some other way to delete them?)
  *******************************************************************************/
-public abstract class AbstractPostDeleteCustomizer
+public abstract class AbstractPostDeleteCustomizer implements TableCustomizerInterface
 {
    protected DeleteInput deleteInput;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> postDelete(DeleteInput deleteInput, List<QRecord> records) throws QException
+   {
+      this.deleteInput = deleteInput;
+      return apply(records);
+   }
 
 
 

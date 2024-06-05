@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
@@ -36,6 +37,8 @@ public class QTableAutomationDetails
    private List<TableAutomationAction> actions;
 
    private Integer overrideBatchSize;
+
+   private QScheduleMetaData schedule;
 
    private String shardByFieldName; // field in "this" table, to use for sharding
    private String shardSourceTableName; // name of the table where the shards are defined as rows
@@ -316,5 +319,36 @@ public class QTableAutomationDetails
       this.shardIdFieldName = shardIdFieldName;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for schedule
+    *******************************************************************************/
+   public QScheduleMetaData getSchedule()
+   {
+      return (this.schedule);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedule
+    *******************************************************************************/
+   public void setSchedule(QScheduleMetaData schedule)
+   {
+      this.schedule = schedule;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schedule
+    *******************************************************************************/
+   public QTableAutomationDetails withSchedule(QScheduleMetaData schedule)
+   {
+      this.schedule = schedule;
+      return (this);
+   }
+
 
 }
