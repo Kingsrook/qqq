@@ -58,7 +58,6 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     **
     *******************************************************************************/
    @Override
-   @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Optional<QBackendTransaction> transaction = Optional.empty();

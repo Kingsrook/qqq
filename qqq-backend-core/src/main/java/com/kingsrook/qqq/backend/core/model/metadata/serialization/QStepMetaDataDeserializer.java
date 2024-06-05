@@ -39,18 +39,21 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
  *******************************************************************************/
 public class QStepMetaDataDeserializer extends JsonDeserializer<QStepMetaData>
 {
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @Override
-   @SuppressWarnings("checkstyle:Indentation")
    public QStepMetaData deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException
    {
       TreeNode treeNode = jsonParser.readValueAsTree();
       String   stepType = DeserializerUtils.readTextValue(treeNode, "stepType");
       Class<? extends QStepMetaData> targetClass = switch(stepType)
-         {
-            case "backend" -> QBackendStepMetaData.class;
-            case "frontend" -> QFrontendStepMetaData.class;
-            default -> throw new IllegalArgumentException("Unsupported StepType " + stepType + " for deserialization");
-         };
+      {
+         case "backend" -> QBackendStepMetaData.class;
+         case "frontend" -> QFrontendStepMetaData.class;
+         default -> throw new IllegalArgumentException("Unsupported StepType " + stepType + " for deserialization");
+      };
       return (DeserializerUtils.reflectivelyDeserialize(targetClass, treeNode));
    }
 

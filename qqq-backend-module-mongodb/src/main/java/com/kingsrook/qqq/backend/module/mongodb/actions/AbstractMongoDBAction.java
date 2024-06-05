@@ -528,7 +528,6 @@ public class AbstractMongoDBAction
    /*******************************************************************************
     ** w/o considering security, just map a QQueryFilter to a Bson searchQuery.
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private Bson makeSearchQueryDocumentWithoutSecurity(QTableMetaData table, QQueryFilter filter)
    {
       if(filter == null || !filter.hasAnyCriteria())

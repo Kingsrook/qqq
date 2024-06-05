@@ -58,7 +58,6 @@ public class FilesystemTableMetaDataBuilder
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    public QTableMetaData buildStandardCardinalityOneTable()
    {
       AbstractFilesystemTableBackendDetails tableBackendDetails = switch(backend.getBackendType())

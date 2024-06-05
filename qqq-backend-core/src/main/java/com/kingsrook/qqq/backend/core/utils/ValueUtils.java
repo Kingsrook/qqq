@@ -793,7 +793,6 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public static Serializable getValueAsFieldType(QFieldType type, Object value)
    {
       return switch(type)

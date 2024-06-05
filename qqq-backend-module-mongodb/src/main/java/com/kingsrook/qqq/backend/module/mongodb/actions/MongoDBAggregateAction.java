@@ -70,7 +70,6 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public AggregateOutput execute(AggregateInput aggregateInput) throws QException
    {
       MongoClientContainer mongoClientContainer = null;
