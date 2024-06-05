@@ -298,7 +298,6 @@ public class QJavalinApiHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private void runProcess(Context context, QProcessMetaData processMetaData, ApiProcessMetaData apiProcessMetaData, ApiInstanceMetaData apiInstanceMetaData)
    {
       String version = context.pathParam("version");

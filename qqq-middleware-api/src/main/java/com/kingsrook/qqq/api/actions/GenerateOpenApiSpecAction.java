@@ -1027,7 +1027,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       responses.putAll(buildStandardErrorResponses(apiInstanceMetaData));
       methodForProcess.withResponses(responses);
 
-      @SuppressWarnings("checkstyle:indentation")
       Path path = switch(apiProcessMetaData.getMethod())
       {
          case GET -> new Path().withGet(methodForProcess);
@@ -1555,7 +1554,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private Response buildMultiStatusResponse(String tableLabel, String primaryKeyApiName, QFieldMetaData primaryKeyField, String method)
    {
       List<Object> example = switch(method.toLowerCase())
@@ -1713,7 +1711,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private static String getFieldType(QFieldType type)
    {
       return switch(type)
@@ -1740,7 +1737,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private String getFieldFormat(QFieldType type)
    {
       return switch(type)

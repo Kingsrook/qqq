@@ -1327,7 +1327,7 @@ public class QInstanceValidatorTest extends BaseTest
          {
             TableAutomationAction action = getAction0(qInstance);
             action.setCodeReference(null);
-            action.setProcessName(TestUtils.PROCESS_NAME_GREET_PEOPLE);
+            action.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
          },
          "different table");
    }
@@ -2281,7 +2281,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    public abstract class TestAbstractClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
    }
@@ -2293,7 +2293,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    private class TestPrivateClass extends AbstractTransformStep implements BackendStep
    {
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
@@ -2320,7 +2320,7 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 

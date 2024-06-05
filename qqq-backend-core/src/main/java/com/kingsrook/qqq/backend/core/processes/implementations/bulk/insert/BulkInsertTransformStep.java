@@ -118,7 +118,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       int            rowsInThisPage = runBackendStepInput.getRecords().size();
       QTableMetaData table          = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());

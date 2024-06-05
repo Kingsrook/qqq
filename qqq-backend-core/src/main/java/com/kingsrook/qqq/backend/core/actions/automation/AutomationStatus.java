@@ -127,7 +127,6 @@ public enum AutomationStatus implements PossibleValueEnum<Integer>
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public String getInsertOrUpdate()
    {
       return switch(this)

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.GREATER_THAN;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IN;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IS_NOT_BLANK;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.NOT_EQUALS;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.NOT_IN;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter.BooleanOperator.OR;
@@ -350,6 +351,25 @@ class QQueryFilterDeduperTest extends BaseTest
          .withCriteria(new QFilterCriteria("f", IN, 1, 2))
          .withCriteria(new QFilterCriteria("f", IN, 3, 4));
       assertEquals(contradiction, dedupeFilter(contradiction));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInAndIsNotBlank()
+   {
+      assertEquals(new QQueryFilter().withCriteria(new QFilterCriteria("f", IN, 1, 2)), dedupeFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria("f", IN, 1, 2))
+         .withCriteria(new QFilterCriteria("f", IS_NOT_BLANK))
+      ));
+
+      assertEquals(new QQueryFilter().withCriteria(new QFilterCriteria("f", IN, 1, 2)), dedupeFilter(new QQueryFilter()
+         .withCriteria(new QFilterCriteria("f", IS_NOT_BLANK))
+         .withCriteria(new QFilterCriteria("f", IN, 1, 2))
+      ));
    }
 
 }

@@ -178,7 +178,7 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
 
       //////////////////////////////////////////////////////////////////////
       // propagate data from inner-step state to process-level step state //

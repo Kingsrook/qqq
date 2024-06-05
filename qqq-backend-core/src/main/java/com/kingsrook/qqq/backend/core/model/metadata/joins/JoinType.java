@@ -44,14 +44,13 @@ public enum JoinType
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public JoinType flip()
    {
       return switch(this)
-         {
-            case ONE_TO_MANY -> MANY_TO_ONE;
-            case MANY_TO_ONE -> ONE_TO_MANY;
-            case MANY_TO_MANY, ONE_TO_ONE -> this;
-         };
+      {
+         case ONE_TO_MANY -> MANY_TO_ONE;
+         case MANY_TO_ONE -> ONE_TO_MANY;
+         case MANY_TO_MANY, ONE_TO_ONE -> this;
+      };
    }
 }

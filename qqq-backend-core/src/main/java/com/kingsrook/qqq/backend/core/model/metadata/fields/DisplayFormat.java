@@ -49,7 +49,6 @@ public interface DisplayFormat
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    static String getExcelFormat(String javaDisplayFormat)
    {
       if(javaDisplayFormat == null)
@@ -58,21 +57,21 @@ public interface DisplayFormat
       }
 
       return switch(javaDisplayFormat)
-         {
-            case DisplayFormat.DEFAULT -> null;
-            case DisplayFormat.COMMAS -> "#,##0";
-            case DisplayFormat.DECIMAL1 -> "0.0";
-            case DisplayFormat.DECIMAL2 -> "0.00";
-            case DisplayFormat.DECIMAL3 -> "0.000";
-            case DisplayFormat.DECIMAL1_COMMAS -> "#,##0.0";
-            case DisplayFormat.DECIMAL2_COMMAS -> "#,##0.00";
-            case DisplayFormat.DECIMAL3_COMMAS -> "#,##0.000";
-            case DisplayFormat.CURRENCY -> "$#,##0.00";
-            case DisplayFormat.PERCENT -> "0%";
-            case DisplayFormat.PERCENT_POINT1 -> "0.0%";
-            case DisplayFormat.PERCENT_POINT2 -> "0.00%";
-            default -> null;
-         };
+      {
+         case DisplayFormat.DEFAULT -> null;
+         case DisplayFormat.COMMAS -> "#,##0";
+         case DisplayFormat.DECIMAL1 -> "0.0";
+         case DisplayFormat.DECIMAL2 -> "0.00";
+         case DisplayFormat.DECIMAL3 -> "0.000";
+         case DisplayFormat.DECIMAL1_COMMAS -> "#,##0.0";
+         case DisplayFormat.DECIMAL2_COMMAS -> "#,##0.00";
+         case DisplayFormat.DECIMAL3_COMMAS -> "#,##0.000";
+         case DisplayFormat.CURRENCY -> "$#,##0.00";
+         case DisplayFormat.PERCENT -> "0%";
+         case DisplayFormat.PERCENT_POINT1 -> "0.0%";
+         case DisplayFormat.PERCENT_POINT2 -> "0.00%";
+         default -> null;
+      };
 
    }
 }

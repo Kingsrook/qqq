@@ -405,6 +405,9 @@ public class AbstractMongoDBAction
       QQueryFilter securityFilter = new QQueryFilter();
       securityFilter.setBooleanOperator(QQueryFilter.BooleanOperator.AND);
 
+      ////////////////////////////////////
+      // todo - evolve to use lock tree //
+      ////////////////////////////////////
       for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
          addSubFilterForRecordSecurityLock(QContext.getQInstance(), QContext.getQSession(), table, securityFilter, recordSecurityLock, null, table.getName(), false);
@@ -528,7 +531,6 @@ public class AbstractMongoDBAction
    /*******************************************************************************
     ** w/o considering security, just map a QQueryFilter to a Bson searchQuery.
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private Bson makeSearchQueryDocumentWithoutSecurity(QTableMetaData table, QQueryFilter filter)
    {
       if(filter == null || !filter.hasAnyCriteria())

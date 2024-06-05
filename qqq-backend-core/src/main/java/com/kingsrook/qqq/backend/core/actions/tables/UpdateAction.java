@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -335,6 +336,9 @@ public class UpdateAction
       QTableMetaData table           = updateInput.getTable();
       QFieldMetaData primaryKeyField = table.getField(table.getPrimaryKeyField());
 
+      /////////////////////////////////////////////////////////////
+      // todo - evolve to use lock tree (e.g., from multi-locks) //
+      /////////////////////////////////////////////////////////////
       List<RecordSecurityLock> onlyWriteLocks = RecordSecurityLockFilters.filterForOnlyWriteLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks()));
 
       for(List<QRecord> page : CollectionUtils.getPages(updateInput.getRecords(), 1000))
@@ -395,7 +399,7 @@ public class UpdateAction
                   QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
                   Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
 
-                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE);
+                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap());
                   if(CollectionUtils.nullSafeHasContents(errors))
                   {
                      errors.forEach(e -> record.addError(e));

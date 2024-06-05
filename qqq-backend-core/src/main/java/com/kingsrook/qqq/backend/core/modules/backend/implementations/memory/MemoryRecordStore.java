@@ -769,7 +769,6 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private static Serializable computeAggregate(List<QRecord> records, Aggregate aggregate, QTableMetaData table)
    {
       String            fieldName = aggregate.getFieldName();

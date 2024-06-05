@@ -111,7 +111,7 @@ class BulkInsertTransformStepTest extends BaseTest
          newQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
       ));
       bulkInsertTransformStep.preRun(input, output);
-      bulkInsertTransformStep.run(input, output);
+      bulkInsertTransformStep.runOnePage(input, output);
 
       ///////////////////////////////////////////////////////
       // assert about the records that passed successfully //
@@ -193,7 +193,7 @@ class BulkInsertTransformStepTest extends BaseTest
          newQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
       ));
       bulkInsertTransformStep.preRun(input, output);
-      bulkInsertTransformStep.run(input, output);
+      bulkInsertTransformStep.runOnePage(input, output);
 
       ///////////////////////////////////////////////////////
       // assert that all records pass.

@@ -233,7 +233,6 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
     *******************************************************************************/
    private static String getResultMapMessagePrefix(ProcessSummaryLineInterface processSummaryLine)
    {
-      @SuppressWarnings("checkstyle:indentation")
       String messagePrefix = switch(processSummaryLine.getStatus())
       {
          case OK, INFO, ERROR -> "";
@@ -251,7 +250,6 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
    {
       HashMap<String, Serializable> map = new HashMap<>();
 
-      @SuppressWarnings("checkstyle:indentation")
       HttpStatus.Code code = switch(processSummaryLine.getStatus())
       {
          case OK, WARNING, INFO -> HttpStatus.Code.OK;

@@ -58,7 +58,6 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     **
     *******************************************************************************/
    @Override
-   @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Optional<QBackendTransaction> transaction = Optional.empty();
@@ -276,7 +275,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////////////////////////////////////
          // pass the records through the transform function //
          /////////////////////////////////////////////////////
-         transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
 
          //////////////////////////////////////////////////////////////////////
@@ -294,7 +293,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
          streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
-         loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         loadStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
 
          //////////////////////////////////////////////////////////////////////

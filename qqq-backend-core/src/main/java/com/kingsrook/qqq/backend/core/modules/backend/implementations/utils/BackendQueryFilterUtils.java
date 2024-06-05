@@ -134,7 +134,6 @@ public class BackendQueryFilterUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
       ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();

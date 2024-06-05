@@ -77,7 +77,6 @@ public class ExecuteCodeAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public void run(ExecuteCodeInput input, ExecuteCodeOutput output) throws QException, QCodeException
    {
       QCodeReference codeReference = input.getCodeReference();
