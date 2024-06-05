@@ -145,7 +145,7 @@ public interface QRecordEnum
          {
             if(!method.getName().equals("getClass") && !method.getName().equals("getDeclaringClass") && !method.getName().equals("getPossibleValueId"))
             {
-               LOG.debug("Method [" + method.getName() + "] looks like a getter, but its return type, [" + method.getReturnType() + "], isn't supported.");
+               LOG.debug("Method [" + method.getName() + "] in [" + method.getDeclaringClass().getSimpleName() + "] looks like a getter, but its return type, [" + method.getReturnType().getSimpleName() + "], isn't supported.");
             }
          }
       }

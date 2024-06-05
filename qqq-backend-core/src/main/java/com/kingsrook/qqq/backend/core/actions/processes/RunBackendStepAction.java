@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -72,7 +73,17 @@ public class RunBackendStepAction
       QStepMetaData stepMetaData = process.getStep(runBackendStepInput.getStepName());
       if(stepMetaData == null)
       {
-         throw new QException("Step [" + runBackendStepInput.getStepName() + "] is not defined in the process [" + process.getName() + "]");
+         if(process.getCancelStep() != null && Objects.equals(process.getCancelStep().getName(), runBackendStepInput.getStepName()))
+         {
+            /////////////////////////////////////
+            // special case for cancel step... //
+            /////////////////////////////////////
+            stepMetaData = process.getCancelStep();
+         }
+         else
+         {
+            throw new QException("Step [" + runBackendStepInput.getStepName() + "] is not defined in the process [" + process.getName() + "]");
+         }
       }
 
       if(!(stepMetaData instanceof QBackendStepMetaData backendStepMetaData))

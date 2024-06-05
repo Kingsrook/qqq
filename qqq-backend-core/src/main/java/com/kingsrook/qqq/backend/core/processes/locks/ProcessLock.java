@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,334 +19,380 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.processes;
+package com.kingsrook.qqq.backend.core.processes.locks;
 
 
-import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 
 
 /*******************************************************************************
- ** Output data container for the RunProcess action
- **
+ ** QRecord Entity for ProcessLock table
  *******************************************************************************/
-public class RunProcessOutput extends AbstractActionOutput implements Serializable
+public class ProcessLock extends QRecordEntity
 {
-   private ProcessState        processState;
-   private String              processUUID;
-   private Optional<Exception> exception = Optional.empty();
+   public static final String TABLE_NAME = "processLock";
+
+   @QField(isEditable = false, isPrimaryKey = true)
+   private Integer id;
+
+   @QField(isEditable = false)
+   private Instant createDate;
+
+   @QField(isEditable = false)
+   private Instant modifyDate;
+
+   @QField(isRequired = true, maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String key;
+
+   @QField(possibleValueSourceName = ProcessLockType.TABLE_NAME)
+   private Integer processLockTypeId;
+
+   @QField(maxLength = 100, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String userId;
+
+   @QField(label = "Session UUID", maxLength = 36, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String sessionUUID;
+
+   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   private String details;
+
+   @QField()
+   private Instant checkInTimestamp;
+
+   @QField()
+   private Instant expiresAtTimestamp;
 
 
 
    /*******************************************************************************
-    **
+    ** Default constructor
     *******************************************************************************/
-   public RunProcessOutput()
+   public ProcessLock()
    {
-      processState = new ProcessState();
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Constructor that takes a QRecord
     *******************************************************************************/
-   public RunProcessOutput(ProcessState processState)
+   public ProcessLock(QRecord record)
    {
-      this.processState = processState;
+      populateFromQRecord(record);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for id
     *******************************************************************************/
-   @Override
-   public String toString()
+   public Integer getId()
    {
-      return "RunProcessOutput{uuid='" + processUUID
-         + ",exception?='" + (exception.isPresent() ? exception.get().getMessage() : "null")
-         + ",records.size()=" + (processState == null ? null : processState.getRecords().size())
-         + ",values=" + (processState == null ? null : processState.getValues())
-         + "}";
+      return (this.id);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for records
-    **
+    ** Setter for id
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public void setId(Integer id)
    {
-      return processState.getRecords();
+      this.id = id;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for records
-    **
+    ** Fluent setter for id
     *******************************************************************************/
-   public void setRecords(List<QRecord> records)
+   public ProcessLock withId(Integer id)
    {
-      this.processState.setRecords(records);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for records
-    **
-    *******************************************************************************/
-   public RunProcessOutput withRecords(List<QRecord> records)
-   {
-      this.processState.setRecords(records);
+      this.id = id;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for values
-    **
+    ** Getter for createDate
     *******************************************************************************/
-   public Map<String, Serializable> getValues()
+   public Instant getCreateDate()
    {
-      return processState.getValues();
+      return (this.createDate);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for a single field's value
-    **
+    ** Setter for createDate
     *******************************************************************************/
-   public Serializable getValue(String fieldName)
+   public void setCreateDate(Instant createDate)
    {
-      return (this.processState.getValues().get(fieldName));
+      this.createDate = createDate;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for a single field's value
-    **
+    ** Fluent setter for createDate
     *******************************************************************************/
-   public String getValueString(String fieldName)
+   public ProcessLock withCreateDate(Instant createDate)
    {
-      return (ValueUtils.getValueAsString(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for a single field's value
-    **
-    *******************************************************************************/
-   public Integer getValueInteger(String fieldName)
-   {
-      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public BigDecimal getValueBigDecimal(String fieldName)
-   {
-      return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Boolean getValueBoolean(String fieldName)
-   {
-      return (ValueUtils.getValueAsBoolean(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public LocalTime getValueLocalTime(String fieldName)
-   {
-      return (ValueUtils.getValueAsLocalTime(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public LocalDate getValueLocalDate(String fieldName)
-   {
-      return (ValueUtils.getValueAsLocalDate(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public byte[] getValueByteArray(String fieldName)
-   {
-      return (ValueUtils.getValueAsByteArray(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public Instant getValueInstant(String fieldName)
-   {
-      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for values
-    **
-    *******************************************************************************/
-   public void setValues(Map<String, Serializable> values)
-   {
-      this.processState.setValues(values);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public RunProcessOutput withValue(String fieldName, Serializable value)
-   {
-      this.processState.getValues().put(fieldName, value);
+      this.createDate = createDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
-    **
+    ** Getter for modifyDate
     *******************************************************************************/
-   public RunProcessOutput withValues(Map<String, Serializable> values)
+   public Instant getModifyDate()
    {
-      this.processState.setValues(values);
+      return (this.modifyDate);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for modifyDate
+    *******************************************************************************/
+   public void setModifyDate(Instant modifyDate)
+   {
+      this.modifyDate = modifyDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for modifyDate
+    *******************************************************************************/
+   public ProcessLock withModifyDate(Instant modifyDate)
+   {
+      this.modifyDate = modifyDate;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
-    **
+    ** Getter for key
     *******************************************************************************/
-   public RunProcessOutput addValue(String fieldName, Serializable value)
+   public String getKey()
    {
-      this.processState.getValues().put(fieldName, value);
+      return (this.key);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for key
+    *******************************************************************************/
+   public void setKey(String key)
+   {
+      this.key = key;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for key
+    *******************************************************************************/
+   public ProcessLock withKey(String key)
+   {
+      this.key = key;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for processUUID
-    **
+    ** Getter for checkInTimestamp
     *******************************************************************************/
-   public String getProcessUUID()
+   public Instant getCheckInTimestamp()
    {
-      return processUUID;
+      return (this.checkInTimestamp);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for processUUID
-    **
+    ** Setter for checkInTimestamp
     *******************************************************************************/
-   public void setProcessUUID(String processUUID)
+   public void setCheckInTimestamp(Instant checkInTimestamp)
    {
-      this.processUUID = processUUID;
+      this.checkInTimestamp = checkInTimestamp;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for processState
-    **
+    ** Fluent setter for checkInTimestamp
     *******************************************************************************/
-   public ProcessState getProcessState()
+   public ProcessLock withCheckInTimestamp(Instant checkInTimestamp)
    {
-      return processState;
+      this.checkInTimestamp = checkInTimestamp;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for processState
-    **
+    ** Getter for expiresAtTimestamp
     *******************************************************************************/
-   public void setProcessState(ProcessState processState)
+   public Instant getExpiresAtTimestamp()
    {
-      this.processState = processState;
+      return (this.expiresAtTimestamp);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for expiresAtTimestamp
     *******************************************************************************/
-   public void setException(Exception exception)
+   public void setExpiresAtTimestamp(Instant expiresAtTimestamp)
    {
-      this.exception = Optional.of(exception);
+      this.expiresAtTimestamp = expiresAtTimestamp;
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Fluent setter for expiresAtTimestamp
     *******************************************************************************/
-   public Optional<Exception> getException()
+   public ProcessLock withExpiresAtTimestamp(Instant expiresAtTimestamp)
    {
-      return exception;
+      this.expiresAtTimestamp = expiresAtTimestamp;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for processLockTypeId
     *******************************************************************************/
-   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public Integer getProcessLockTypeId()
    {
-      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
+      return (this.processLockTypeId);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Setter for processLockTypeId
     *******************************************************************************/
-   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   public void setProcessLockTypeId(Integer processLockTypeId)
    {
-      return this.processState.getUpdatedFrontendStepList();
+      this.processLockTypeId = processLockTypeId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processLockTypeId
+    *******************************************************************************/
+   public ProcessLock withProcessLockTypeId(Integer processLockTypeId)
+   {
+      this.processLockTypeId = processLockTypeId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for userId
+    *******************************************************************************/
+   public String getUserId()
+   {
+      return (this.userId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for userId
+    *******************************************************************************/
+   public void setUserId(String userId)
+   {
+      this.userId = userId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for userId
+    *******************************************************************************/
+   public ProcessLock withUserId(String userId)
+   {
+      this.userId = userId;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sessionUUID
+    *******************************************************************************/
+   public String getSessionUUID()
+   {
+      return (this.sessionUUID);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sessionUUID
+    *******************************************************************************/
+   public void setSessionUUID(String sessionUUID)
+   {
+      this.sessionUUID = sessionUUID;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sessionUUID
+    *******************************************************************************/
+   public ProcessLock withSessionUUID(String sessionUUID)
+   {
+      this.sessionUUID = sessionUUID;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for details
+    *******************************************************************************/
+   public String getDetails()
+   {
+      return (this.details);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for details
+    *******************************************************************************/
+   public void setDetails(String details)
+   {
+      this.details = details;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for details
+    *******************************************************************************/
+   public ProcessLock withDetails(String details)
+   {
+      this.details = details;
+      return (this);
    }
 
 }

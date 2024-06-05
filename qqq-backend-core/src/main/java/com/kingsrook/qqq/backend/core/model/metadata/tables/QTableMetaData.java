@@ -111,6 +111,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    private ShareableTableMetaData shareableTableMetaData;
 
 
+
    /*******************************************************************************
     ** Default constructor.
     *******************************************************************************/
@@ -158,11 +159,26 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withFieldsFromEntity(Class<? extends QRecordEntity> entityClass) throws QException
    {
       List<QRecordEntityField> recordEntityFieldList = QRecordEntity.getFieldList(entityClass);
+
+      boolean setPrimaryKey = false;
+
       for(QRecordEntityField recordEntityField : recordEntityFieldList)
       {
          QFieldMetaData field = new QFieldMetaData(recordEntityField.getGetter());
          addField(field);
+
+         if(recordEntityField.getFieldAnnotation().isPrimaryKey())
+         {
+            if(setPrimaryKey)
+            {
+               throw (new QException("Attempt to set more than one field as primary key (" + primaryKeyField + "," + field.getName() + ")."));
+            }
+
+            setPrimaryKeyField(field.getName());
+            setPrimaryKey = true;
+         }
       }
+
       return (this);
    }
 
@@ -619,6 +635,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withRecordLabelFormat(String recordLabelFormat)
    {
       this.recordLabelFormat = recordLabelFormat;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent setter for both recordLabelFormat and recordLabelFields
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFormatAndFields(String format, String... fields)
+   {
+      setRecordLabelFormat(format);
+      setRecordLabelFields(Arrays.asList(fields));
       return (this);
    }
 
@@ -1388,6 +1416,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for shareableTableMetaData
     *******************************************************************************/
@@ -1416,6 +1445,5 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       this.shareableTableMetaData = shareableTableMetaData;
       return (this);
    }
-
 
 }

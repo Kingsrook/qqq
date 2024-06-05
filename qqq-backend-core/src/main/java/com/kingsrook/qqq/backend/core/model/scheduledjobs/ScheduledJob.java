@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.common.TimeZonePossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QIgnore;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
@@ -434,6 +435,7 @@ public class ScheduledJob extends QRecordEntity
    /*******************************************************************************
     ** Getter for jobParameters - but a map of just the key=value pairs.
     *******************************************************************************/
+   @QIgnore
    public Map<String, String> getJobParametersMap()
    {
       if(CollectionUtils.nullSafeIsEmpty(this.jobParameters))
@@ -467,6 +469,7 @@ public class ScheduledJob extends QRecordEntity
       this.jobParameters = jobParameters;
       return (this);
    }
+
 
 
    /*******************************************************************************

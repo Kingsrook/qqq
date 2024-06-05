@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,24 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.savedreports;
+
+
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.FilterAndColumnsSetupData;
 
 
 /*******************************************************************************
- ** Interface for meta-data classes that can be added directly (e.g, at the top
- ** level) to a QInstance (such as a QTableMetaData - not a QFieldMetaData).
+ **
  *******************************************************************************/
-public interface TopLevelMetaDataInterface extends MetaDataProducerOutput
+public class SavedReportsFilterAndColumnsSetupRenderer extends AbstractWidgetRenderer
 {
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   String getName();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void addSelfToInstance(QInstance qInstance);
-
+   @Override
+   public RenderWidgetOutput render(RenderWidgetInput input) throws QException
+   {
+      return (new RenderWidgetOutput(new FilterAndColumnsSetupData(null, true, false, null)));
+   }
 }

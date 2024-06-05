@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarCh
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -69,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
@@ -154,7 +156,7 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    public void test_validateEmptyBackends()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
          "At least 1 backend must be defined");
    }
 
@@ -397,6 +399,26 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void test_validateProcessCancelSteps()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData()),
+         "Cancel step is missing a code reference");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference())),
+         "missing a code reference name", "missing a code type");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference(ValidAuthCustomizer.class))),
+         "CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.getProcess(TestUtils.PROCESS_NAME_GREET_PEOPLE).withCancelStep(new QBackendStepMetaData().withCode(new QCodeReference(CancelProcessActionTest.CancelStep.class))));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void test_validateSchedules()
    {
       String processName = TestUtils.PROCESS_NAME_GREET_PEOPLE;
@@ -537,7 +559,8 @@ public class QInstanceValidatorTest extends BaseTest
          ////////////////////////////////////////////////////
          // make sure if remove all plugins, we don't fail //
          ////////////////////////////////////////////////////
-         assertValidationSuccess((qInstance) -> {});
+         assertValidationSuccess((qInstance) -> {
+         });
       }
    }
 

@@ -35,12 +35,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -462,6 +465,7 @@ public class QRecord implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Getter for a single field's value
     **
@@ -617,6 +621,22 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
+    ** Getter for errors
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public String getErrorsAsString()
+   {
+      if(CollectionUtils.nullSafeHasContents(errors))
+      {
+         return StringUtils.join("; ", errors.stream().map(e -> e.getMessage()).toList());
+      }
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for errors
     **
     *******************************************************************************/
@@ -733,11 +753,39 @@ public class QRecord implements Serializable
 
 
    /*******************************************************************************
+    ** Getter for warnings
+    **
+    *******************************************************************************/
+   @JsonIgnore
+   public String getWarningsAsString()
+   {
+      if(CollectionUtils.nullSafeHasContents(warnings))
+      {
+         return StringUtils.join("; ", warnings.stream().map(e -> e.getMessage()).toList());
+      }
+      return ("");
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for warnings
     *******************************************************************************/
    public void setWarnings(List<QWarningMessage> warnings)
    {
       this.warnings = warnings;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluently Add one warning to this record
+    **
+    *******************************************************************************/
+   public QRecord withWarning(QWarningMessage warning)
+   {
+      addWarning(warning);
+      return (this);
    }
 
 

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.javalin;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -604,4 +605,45 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       assertEquals(1, jsonObject.getJSONArray("options").getJSONObject(0).getInt("id"));
       assertEquals("Darin Kelkhoff (1)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void test_processCancel()
+   {
+      /////////////////////////
+      // 400s for bad inputs //
+      /////////////////////////
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/noSuchProcess/" + UUID.randomUUID() + "/cancel").asString();
+         assertEquals(400, response.getStatus());
+         assertThat(response.getBody()).contains("Process [noSuchProcess] is not defined in this instance");
+      }
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/" + TestUtils.PROCESS_NAME_SIMPLE_SLEEP + "/" + UUID.randomUUID() + "/cancel").asString();
+         assertEquals(400, response.getStatus());
+         assertThat(response.getBody()).matches(".*State for process UUID.*not found.*");
+      }
+
+      ///////////////////////////////////
+      // start a process, get its uuid //
+      ///////////////////////////////////
+      String processBasePath = BASE_URL + "/processes/" + TestUtils.PROCESS_NAME_SLEEP_INTERACTIVE;
+      HttpResponse<String> response = Unirest.post(processBasePath + "/init?" + TestUtils.SleeperStep.FIELD_SLEEP_MILLIS + "=" + MORE_THAN_TIMEOUT)
+         .header("Content-Type", "application/json").asString();
+
+      JSONObject jsonObject  = assertProcessStepCompleteResponse(response);
+      String     processUUID = jsonObject.getString("processUUID");
+      assertNotNull(processUUID, "Process UUID should not be null.");
+
+      /////////////////////////////////////////
+      // now cancel that, and expect success //
+      /////////////////////////////////////////
+      response = Unirest.get(BASE_URL + "/processes/" + TestUtils.PROCESS_NAME_SLEEP_INTERACTIVE + "/" + processUUID + "/cancel").asString();
+      assertEquals(200, response.getStatus());
+   }
+
 }

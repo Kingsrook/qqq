@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,24 +19,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.data;
+
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /*******************************************************************************
- ** Interface for meta-data classes that can be added directly (e.g, at the top
- ** level) to a QInstance (such as a QTableMetaData - not a QFieldMetaData).
+ ** Marker - that a piece of code should be ignored (e.g., a field not treated as
+ ** a @QField)
  *******************************************************************************/
-public interface TopLevelMetaDataInterface extends MetaDataProducerOutput
+@Target({ ElementType.FIELD, ElementType.METHOD })
+@Retention(RetentionPolicy.RUNTIME)
+public @interface QIgnore
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   String getName();
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   void addSelfToInstance(QInstance qInstance);
-
 }

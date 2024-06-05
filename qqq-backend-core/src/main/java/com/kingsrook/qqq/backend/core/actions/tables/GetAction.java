@@ -68,16 +68,6 @@ public class GetAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QRecord executeForRecord(GetInput getInput) throws QException
-   {
-      return (execute(getInput).getRecord());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public GetOutput execute(GetInput getInput) throws QException
    {
       ActionHelper.validateSession(getInput);
@@ -108,7 +98,7 @@ public class GetAction
       }
 
       GetOutput getOutput;
-      boolean usingDefaultGetInterface = false;
+      boolean   usingDefaultGetInterface = false;
       if(getInterface == null)
       {
          getInterface = new DefaultGetInterface();
@@ -136,6 +126,43 @@ public class GetAction
       }
 
       return getOutput;
+   }
+
+
+
+   /*******************************************************************************
+    ** shorthand way to call for the most common use-case, when you just want the
+    ** output record to be returned.
+    *******************************************************************************/
+   public QRecord executeForRecord(GetInput getInput) throws QException
+   {
+      return (execute(getInput).getRecord());
+   }
+
+
+
+   /*******************************************************************************
+    ** more shorthand way to call for the most common use-case, when you just want the
+    ** output record to be returned, and you just want to pass in a table name and primary key.
+    *******************************************************************************/
+   public static QRecord execute(String tableName, Serializable primaryKey) throws QException
+   {
+      GetAction getAction = new GetAction();
+      GetInput  getInput  = new GetInput(tableName).withPrimaryKey(primaryKey);
+      return getAction.executeForRecord(getInput);
+   }
+
+
+
+   /*******************************************************************************
+    ** more shorthand way to call for the most common use-case, when you just want the
+    ** output record to be returned, and you just want to pass in a table name and unique key
+    *******************************************************************************/
+   public static QRecord execute(String tableName, Map<String, Serializable> uniqueKey) throws QException
+   {
+      GetAction getAction = new GetAction();
+      GetInput  getInput  = new GetInput(tableName).withUniqueKey(uniqueKey);
+      return getAction.executeForRecord(getInput);
    }
 
 

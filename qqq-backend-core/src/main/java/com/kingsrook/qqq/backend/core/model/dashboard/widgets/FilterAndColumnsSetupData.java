@@ -19,161 +19,177 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.processes;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 
 
 /*******************************************************************************
+ ** Model containing datastructure expected by frontend filter and columns setup widget
  **
  *******************************************************************************/
-public class ProcessState implements Serializable
+public class FilterAndColumnsSetupData extends QWidgetData
 {
-   private List<QRecord>             records      = new ArrayList<>();
-   private Map<String, Serializable> values       = new HashMap<>();
-   private List<String>              stepList     = new ArrayList<>();
-   private Optional<String>          nextStepName = Optional.empty();
-
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   // maybe, remove this altogether - just let the frontend compute & send if needed... but how does it know last version...? //
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
+   private String       tableName;
+   private Boolean      allowVariables = false;
+   private Boolean      hideColumns    = false;
+   private List<String> filterDefaultFieldNames;
 
 
 
    /*******************************************************************************
-    ** Getter for records
     **
     *******************************************************************************/
-   public List<QRecord> getRecords()
+   public FilterAndColumnsSetupData()
    {
-      return records;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for records
     **
     *******************************************************************************/
-   public void setRecords(List<QRecord> records)
+   public FilterAndColumnsSetupData(String tableName, Boolean allowVariables, Boolean hideColumns, List<String> filterDefaultFieldNames)
    {
-      this.records = records;
+      this.tableName = tableName;
+      this.allowVariables = allowVariables;
+      this.hideColumns = hideColumns;
+      this.filterDefaultFieldNames = filterDefaultFieldNames;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for values
+    ** Getter for type
     **
     *******************************************************************************/
-   public Map<String, Serializable> getValues()
+   public String getType()
    {
-      return values;
+      return WidgetType.FILTER_AND_COLUMNS_SETUP.getType();
    }
 
 
 
    /*******************************************************************************
-    ** Setter for values
-    **
+    ** Getter for tableName
     *******************************************************************************/
-   public void setValues(Map<String, Serializable> values)
+   public String getTableName()
    {
-      this.values = values;
+      return (this.tableName);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for nextStepName
-    **
+    ** Setter for tableName
     *******************************************************************************/
-   public Optional<String> getNextStepName()
+   public void setTableName(String tableName)
    {
-      return nextStepName;
+      this.tableName = tableName;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for nextStepName
-    **
+    ** Fluent setter for tableName
     *******************************************************************************/
-   public void setNextStepName(String nextStepName)
+   public FilterAndColumnsSetupData withTableName(String tableName)
    {
-      this.nextStepName = Optional.of(nextStepName);
+      this.tableName = tableName;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** clear out the value of nextStepName (set the Optional to empty)
-    **
+    ** Getter for hideColumns
     *******************************************************************************/
-   public void clearNextStepName()
+   public Boolean getHideColumns()
    {
-      this.nextStepName = Optional.empty();
+      return (this.hideColumns);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for stepList
-    **
+    ** Setter for hideColumns
     *******************************************************************************/
-   public List<String> getStepList()
+   public void setHideColumns(Boolean hideColumns)
    {
-      return stepList;
+      this.hideColumns = hideColumns;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for stepList
-    **
+    ** Fluent setter for hideColumns
     *******************************************************************************/
-   public void setStepList(List<String> stepList)
+   public FilterAndColumnsSetupData withHideColumns(Boolean hideColumns)
    {
-      this.stepList = stepList;
+      this.hideColumns = hideColumns;
+      return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for updatedFrontendStepList
+    ** Getter for filterDefaultFieldNames
     *******************************************************************************/
-   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   public List<String> getFilterDefaultFieldNames()
    {
-      return (this.updatedFrontendStepList);
+      return (this.filterDefaultFieldNames);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for updatedFrontendStepList
+    ** Setter for filterDefaultFieldNames
     *******************************************************************************/
-   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public void setFilterDefaultFieldNames(List<String> filterDefaultFieldNames)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
+      this.filterDefaultFieldNames = filterDefaultFieldNames;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for updatedFrontendStepList
+    ** Fluent setter for filterDefaultFieldNames
     *******************************************************************************/
-   public ProcessState withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public FilterAndColumnsSetupData withFilterDefaultFieldNames(List<String> filterDefaultFieldNames)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
+      this.filterDefaultFieldNames = filterDefaultFieldNames;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for allowVariables
+    *******************************************************************************/
+   public Boolean getAllowVariables()
+   {
+      return (this.allowVariables);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for allowVariables
+    *******************************************************************************/
+   public void setAllowVariables(Boolean allowVariables)
+   {
+      this.allowVariables = allowVariables;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for allowVariables
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withAllowVariables(Boolean allowVariables)
+   {
+      this.allowVariables = allowVariables;
       return (this);
    }
 

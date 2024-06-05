@@ -23,8 +23,8 @@ package com.kingsrook.qqq.backend.core.model;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 
 
 /*******************************************************************************
@@ -42,7 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
  ** implement this interface.  or, same idea for a QRecordEntity that provides
  ** its own TableMetaData.
  *******************************************************************************/
-public interface MetaDataProducerInterface<T extends TopLevelMetaDataInterface>
+public interface MetaDataProducerInterface<T extends MetaDataProducerOutput>
 {
    int DEFAULT_SORT_ORDER = 500;
 

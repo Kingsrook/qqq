@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.JobGoingAsyncException;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessAction;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
@@ -130,6 +131,7 @@ public class QJavalinProcessHandler
                   post("/step/{step}", QJavalinProcessHandler::processStep);
                   get("/status/{jobUUID}", QJavalinProcessHandler::processStatus);
                   get("/records", QJavalinProcessHandler::processRecords);
+                  get("/cancel", QJavalinProcessHandler::processCancel);
                });
 
                get("/possibleValues/{fieldName}", QJavalinProcessHandler::possibleValues);
@@ -758,6 +760,32 @@ public class QJavalinProcessHandler
             resultForCaller.put("totalRecords", records.size());
          }
 
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
+      catch(Exception e)
+      {
+         QJavalinImplementation.handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processCancel(Context context)
+   {
+      try
+      {
+         RunProcessInput runProcessInput = new RunProcessInput();
+         QJavalinImplementation.setupSession(context, runProcessInput);
+
+         runProcessInput.setProcessName(context.pathParam("processName"));
+         runProcessInput.setProcessUUID(context.pathParam("processUUID"));
+
+         new CancelProcessAction().execute(runProcessInput);
+
+         Map<String, Object> resultForCaller = new HashMap<>();
          context.result(JsonUtils.toJson(resultForCaller));
       }
       catch(Exception e)
