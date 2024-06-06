@@ -22,10 +22,19 @@
 package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,7 +44,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class ActionTimeoutHelperTest extends BaseTest
 {
-   boolean didCancel = false;
+   private static AtomicInteger cancelCount;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   void beforeEach()
+   {
+      cancelCount = new AtomicInteger(0);
+   }
 
 
 
@@ -45,11 +65,10 @@ class ActionTimeoutHelperTest extends BaseTest
    @Test
    void testTimesOut()
    {
-      didCancel = false;
       ActionTimeoutHelper actionTimeoutHelper = new ActionTimeoutHelper(10, TimeUnit.MILLISECONDS, () -> doCancel());
       actionTimeoutHelper.start();
       SleepUtils.sleep(50, TimeUnit.MILLISECONDS);
-      assertTrue(didCancel);
+      assertEquals(1, cancelCount.get());
       assertTrue(actionTimeoutHelper.getDidTimeout());
    }
 
@@ -61,15 +80,48 @@ class ActionTimeoutHelperTest extends BaseTest
    @Test
    void testGetsCancelled()
    {
-      didCancel = false;
       ActionTimeoutHelper actionTimeoutHelper = new ActionTimeoutHelper(100, TimeUnit.MILLISECONDS, () -> doCancel());
       actionTimeoutHelper.start();
       SleepUtils.sleep(10, TimeUnit.MILLISECONDS);
       actionTimeoutHelper.cancel();
-      assertFalse(didCancel);
+      assertEquals(0, cancelCount.get());
       SleepUtils.sleep(200, TimeUnit.MILLISECONDS);
-      assertFalse(didCancel);
+      assertEquals(0, cancelCount.get());
       assertFalse(actionTimeoutHelper.getDidTimeout());
+   }
+
+
+
+   /*******************************************************************************
+    ** goal here is - confirm that we can have more threads running at same time
+    ** than we have threads allocated to the ActionTimeoutHelper's thread pool,
+    ** and they should all still get cancelled.
+    *******************************************************************************/
+   @Test
+   void testManyThreads() throws InterruptedException, ExecutionException
+   {
+      int N = 50;
+
+      ExecutorService executorService = Executors.newCachedThreadPool();
+      List<Future<?>> futureList      = new ArrayList<>();
+
+      for(int i = 0; i < N; i++)
+      {
+         System.out.println("Submitting: " + i);
+         futureList.add(executorService.submit(() ->
+         {
+            ActionTimeoutHelper actionTimeoutHelper = new ActionTimeoutHelper(10, TimeUnit.MILLISECONDS, () -> doCancel());
+            actionTimeoutHelper.start();
+            SleepUtils.sleep(1, TimeUnit.SECONDS);
+         }));
+      }
+
+      for(Future<?> future : futureList)
+      {
+         future.get();
+      }
+
+      assertEquals(N, cancelCount.get());
    }
 
 
@@ -79,7 +131,7 @@ class ActionTimeoutHelperTest extends BaseTest
     *******************************************************************************/
    private void doCancel()
    {
-      didCancel = true;
+      cancelCount.getAndIncrement();
    }
 
 }
