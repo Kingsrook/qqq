@@ -57,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -176,7 +177,7 @@ public class QueryStatManager
       active = true;
       queryStats = new ArrayList<>();
 
-      executorService = Executors.newSingleThreadScheduledExecutor();
+      executorService = Executors.newSingleThreadScheduledExecutor(new PrefixedDefaultThreadFactory(this));
       executorService.scheduleAtFixedRate(new QueryStatManagerInsertJob(), jobInitialDelay, jobPeriodSeconds, TimeUnit.SECONDS);
    }
 
