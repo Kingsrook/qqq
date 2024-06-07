@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -74,11 +75,16 @@ public class ConnectionManager
     *******************************************************************************/
    private static ConnectionProviderInterface getConnectionProvider(RDBMSBackendMetaData backend) throws QException
    {
-      if(!connectionProviderMap.containsKey(backend.getName()))
+      //////////////////////////////////////////////////////////////////////////////////
+      // some non-standard use-cases use a backend without a name... avoid NPE in map //
+      //////////////////////////////////////////////////////////////////////////////////
+      String name = Objects.requireNonNullElse(backend.getName(), "");
+
+      if(!connectionProviderMap.containsKey(name))
       {
          synchronized(connectionProviderMap)
          {
-            if(!connectionProviderMap.containsKey(backend.getName()))
+            if(!connectionProviderMap.containsKey(name))
             {
                QCodeReference connectionProviderReference = backend.getConnectionProvider();
                boolean        usingDefaultSimpleProvider  = false;
@@ -88,16 +94,16 @@ public class ConnectionManager
                   usingDefaultSimpleProvider = true;
                }
 
-               LOG.info("Initializing connection provider for RDBMS backend", logPair("backendName", backend.getName()), logPair("connectionProvider", connectionProviderReference.getName()), logPair("usingDefaultSimpleProvider", usingDefaultSimpleProvider));
+               LOG.info("Initializing connection provider for RDBMS backend", logPair("backendName", name), logPair("connectionProvider", connectionProviderReference.getName()), logPair("usingDefaultSimpleProvider", usingDefaultSimpleProvider));
                ConnectionProviderInterface connectionProvider = QCodeLoader.getAdHoc(ConnectionProviderInterface.class, connectionProviderReference);
                connectionProvider.init(backend);
 
-               connectionProviderMap.put(backend.getName(), connectionProvider);
+               connectionProviderMap.put(name, connectionProvider);
             }
          }
       }
 
-      return (connectionProviderMap.get(backend.getName()));
+      return (connectionProviderMap.get(name));
    }
 
 
