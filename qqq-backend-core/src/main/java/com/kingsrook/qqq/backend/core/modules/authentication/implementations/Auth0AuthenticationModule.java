@@ -72,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
@@ -488,6 +489,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // this is how we allow the actions within this class to work without themselves having a logged-in user. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
+
+      if(session instanceof QSystemUserSession)
+      {
          return (true);
       }
 
