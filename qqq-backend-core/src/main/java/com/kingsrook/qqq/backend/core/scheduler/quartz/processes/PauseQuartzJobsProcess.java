@@ -23,15 +23,18 @@ package com.kingsrook.qqq.backend.core.scheduler.quartz.processes;
 
 
 import java.util.List;
+import java.util.function.BiFunction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerMultiOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
@@ -43,33 +46,39 @@ import com.kingsrook.qqq.backend.core.scheduler.quartz.QuartzScheduler;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class PauseQuartzJobsProcess extends AbstractLoadStep implements MetaDataProducerInterface<QProcessMetaData>
+public class PauseQuartzJobsProcess extends AbstractLoadStep implements MetaDataProducerInterface<MetaDataProducerMultiOutput>
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
-   public QProcessMetaData produce(QInstance qInstance) throws QException
+   public MetaDataProducerMultiOutput produce(QInstance qInstance) throws QException
    {
-      String tableName = "quartzJobDetails";
+      BiFunction<String, String, QProcessMetaData> processMaker = (String tableName, String label) ->
+         StreamedETLWithFrontendProcess.processMetaDataBuilder()
+            .withName(getClass().getSimpleName())
+            .withLabel(label)
+            .withPreviewMessage("This is a preview of the jobs that will be paused.")
+            .withTableName(tableName)
+            .withSourceTable(tableName)
+            .withDestinationTable(tableName)
+            .withExtractStepClass(ExtractViaQueryStep.class)
+            .withTransformStepClass(NoopTransformStep.class)
+            .withLoadStepClass(getClass())
+            .withIcon(new QIcon("pause_circle_outline"))
+            .withReviewStepRecordFields(List.of(
+               new QFieldMetaData("id", QFieldType.LONG),
+               new QFieldMetaData("jobName", QFieldType.STRING),
+               new QFieldMetaData("jobGroup", QFieldType.STRING),
+               new QFieldMetaData("description", QFieldType.STRING)))
+            .getProcessMetaData()
+            .withPermissionRules(new QPermissionRules().withPermissionBaseName(getClass().getSimpleName()));
 
-      return StreamedETLWithFrontendProcess.processMetaDataBuilder()
-         .withName(getClass().getSimpleName())
-         .withLabel("Pause Quartz Jobs")
-         .withPreviewMessage("This is a preview of the jobs that will be paused.")
-         .withTableName(tableName)
-         .withSourceTable(tableName)
-         .withDestinationTable(tableName)
-         .withExtractStepClass(ExtractViaQueryStep.class)
-         .withTransformStepClass(NoopTransformStep.class)
-         .withLoadStepClass(getClass())
-         .withIcon(new QIcon("pause_circle_outline"))
-         .withReviewStepRecordFields(List.of(
-            new QFieldMetaData("id", QFieldType.LONG),
-            new QFieldMetaData("jobName", QFieldType.STRING),
-            new QFieldMetaData("jobGroup", QFieldType.STRING)))
-         .getProcessMetaData();
+      MetaDataProducerMultiOutput output = new MetaDataProducerMultiOutput();
+      output.add(processMaker.apply("quartzJobDetails", "Pause Quartz Jobs"));
+      output.add(processMaker.apply("quartzTriggers", "Pause Quartz Triggers").withName(getClass().getSimpleName() + "ForTriggers"));
+      return (output);
    }
 
 
