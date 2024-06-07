@@ -108,7 +108,7 @@ class C3P0PooledConnectionProviderTest extends BaseTest
       }
 
       JSONObject debugValues = getDebugStateValues(true);
-      assertThat(debugValues.getInt("numConnections")).isEqualTo(3); // one time (in a @RepeatedTest(100) we saw a 3 != 6 here...)
+      assertThat(debugValues.getInt("numConnections")).isBetween(3, 6); // due to potential timing issues, sometimes pool will acquire another 3 conns, so 3 or 6 seems ok.
 
       ////////////////////////////////////////////////////////////////////
       // open up 4 transactions - confirm the pool opens some new conns //
@@ -180,7 +180,7 @@ class C3P0PooledConnectionProviderTest extends BaseTest
          new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON));
       }
       debugValues = getDebugStateValues(true);
-      assertThat(debugValues.getInt("numConnections")).isEqualTo(2); // one time (in a @RepeatedTest(100) we saw a 3 != 6 here...)
+      assertThat(debugValues.getInt("numConnections")).isBetween(2, 4); // due to potential timing issues, sometimes pool will acquire 1 or 2 more, so, this seems ok
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // open up 4 transactions - confirm the pool opens some new conns, but stops at the max, and throws based on checkoutTimeout setting //
