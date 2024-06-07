@@ -192,6 +192,13 @@
          <version>2.3.2</version>
       </dependency>
 
+      <!-- bring in a newer version of this lib, which quartz transitively loads through c3p0 -->
+      <dependency>
+         <groupId>com.mchange</groupId>
+         <artifactId>mchange-commons-java</artifactId>
+         <version>0.3.0</version>
+      </dependency>
+
       <!-- Many of the deps we bring in use slf4j.  This dep maps slf4j to our logger, log4j -->
       <dependency>
          <groupId>org.apache.logging.log4j</groupId>

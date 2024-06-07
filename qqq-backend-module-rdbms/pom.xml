@@ -42,13 +42,6 @@
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
          <version>${revision}</version>
-         <exclusions>
-            <exclusion>
-               <!-- for c3p0 connection pooling - transitively brought in by quartz -->
-               <groupId>com.mchange</groupId>
-               <artifactId>mchange-commons-java</artifactId>
-            </exclusion>
-         </exclusions>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->
