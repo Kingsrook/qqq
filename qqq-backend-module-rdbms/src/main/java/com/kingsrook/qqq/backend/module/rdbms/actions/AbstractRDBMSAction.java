@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -155,6 +156,10 @@ public abstract class AbstractRDBMSAction
       else if(tableActionInput instanceof CountInput countInput)
       {
          useReadOnly = countInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+      }
+      else if(tableActionInput instanceof GetInput getInput)
+      {
+         useReadOnly = getInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
       }
       else if(tableActionInput instanceof AggregateInput aggregateInput)
       {

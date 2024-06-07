@@ -76,6 +76,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -160,6 +161,7 @@ public class ApiImplementation
       queryInput.setTableName(tableName);
       queryInput.setIncludeAssociations(true);
       queryInput.setShouldFetchHeavyFields(true);
+      queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -394,6 +396,7 @@ public class ApiImplementation
          CountInput countInput = new CountInput();
          countInput.setTableName(tableName);
          countInput.setFilter(filter);
+         countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
          CountOutput countOutput = new CountAction().execute(countInput);
          output.put("count", countOutput.getCount());
       }
@@ -595,6 +598,7 @@ public class ApiImplementation
 
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
+      getInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
@@ -1144,8 +1148,8 @@ public class ApiImplementation
       ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
       if(output != null)
       {
-         Serializable outputForProcess = output.getOutputForProcess(runProcessInput, runProcessOutput);
-         HttpApiResponse httpApiResponse = new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), outputForProcess);
+         Serializable    outputForProcess = output.getOutputForProcess(runProcessInput, runProcessOutput);
+         HttpApiResponse httpApiResponse  = new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), outputForProcess);
          output.customizeHttpApiResponse(httpApiResponse, runProcessInput, runProcessOutput);
          return httpApiResponse;
       }
