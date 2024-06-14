@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.apache.commons.lang.BooleanUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -73,7 +74,7 @@ public class QRecordApiAdapter
     *******************************************************************************/
    public static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion) throws QException
    {
-      return qRecordsToApiMapList(List.of(record), tableName, apiName, apiVersion).get(0);
+      return qRecordsToApiMapList(ListBuilder.of(record), tableName, apiName, apiVersion).get(0);
    }
 
 
