@@ -23,7 +23,9 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -31,9 +33,12 @@ import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContent;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.helpcontent.HelpContentRole;
@@ -151,6 +156,108 @@ class QInstanceHelpContentManagerTest extends BaseTest
       // now - post-insert customizer should have automatically added help content to the instance //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       assertOnePersonSectionHelp(qInstance, "v1", Set.of(QHelpRole.INSERT_SCREEN));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTable() throws QException
+   {
+      /////////////////////////////////////
+      // get the instance from base test //
+      /////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      ////////////////////////////////////////////////////////
+      // first, assert there's no help content on the table //
+      ////////////////////////////////////////////////////////
+      assertThat(qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getHelpContent()).isNullOrEmpty();
+
+      //////////////////////////////////////
+      // insert a record missing its slot //
+      //////////////////////////////////////
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(new HelpContent()
+         .withId(1)
+         .withKey("table:person")
+         .withContent("content")
+         .withRole(HelpContentRole.ALL_SCREENS.getId())));
+
+      //////////////////////////////////
+      // assert still no help content //
+      //////////////////////////////////
+      assertThat(qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getHelpContent()).isNullOrEmpty();
+
+      //////////////////////////
+      // insert a good record //
+      //////////////////////////
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(new HelpContent()
+         .withId(1)
+         .withKey("table:person;slot:someSlot")
+         .withContent("content")
+         .withRole(HelpContentRole.ALL_SCREENS.getId())));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // now - post-insert customizer should have automatically added help content to the instance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      Map<String, List<QHelpContent>> helpContent = qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getHelpContent();
+      assertEquals(1, helpContent.size());
+      assertEquals(1, helpContent.get("someSlot").size());
+      assertEquals("content", helpContent.get("someSlot").get(0).getContent());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInstance() throws QException
+   {
+      /////////////////////////////////////
+      // get the instance from base test //
+      /////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      ///////////////////////////////////////////////////////////
+      // first, assert there's no help content on the instance //
+      ///////////////////////////////////////////////////////////
+      assertThat(qInstance.getHelpContent()).isNullOrEmpty();
+
+      //////////////////////////////////////
+      // insert a record missing its slot //
+      //////////////////////////////////////
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(new HelpContent()
+         .withId(1)
+         .withKey("instanceLevel:true")
+         .withContent("content")
+         .withRole(HelpContentRole.ALL_SCREENS.getId())));
+
+      //////////////////////////////////
+      // assert still no help content //
+      //////////////////////////////////
+      assertThat(qInstance.getHelpContent()).isNullOrEmpty();
+
+      //////////////////////////
+      // insert a good record //
+      //////////////////////////
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(new HelpContent()
+         .withId(1)
+         .withKey("instanceLevel:true;slot:someSlot")
+         .withContent("content")
+         .withRole(HelpContentRole.ALL_SCREENS.getId())));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // now - post-insert customizer should have automatically added help content to the instance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      Map<String, List<QHelpContent>> helpContent = qInstance.getHelpContent();
+      assertEquals(1, helpContent.size());
+      assertEquals(1, helpContent.get("someSlot").size());
+      assertEquals("content", helpContent.get("someSlot").get(0).getContent());
    }
 
 
@@ -281,6 +388,46 @@ class QInstanceHelpContentManagerTest extends BaseTest
       // now - post-insert customizer should have automatically added help content to the instance //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       assertOnePersonIdHelp(qInstance, "v1", Set.of(QHelpRole.INSERT_SCREEN));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMalformedKeys() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QInstanceHelpContentManager.class);
+
+      Function<String, QRecord> helpContentCreator = (String key) -> new HelpContent()
+         .withId(1)
+         .withKey(key)
+         .withContent("v1")
+         .withRole(HelpContentRole.INSERT_SCREEN.getId()).toQRecord();
+
+      QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply("foo;bar:baz"));
+      assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
+      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Discarding help content with key that does not contain name:value format");
+      collectingLogger.clear();
+
+      QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply(null));
+      assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
+      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Error processing a helpContent record");
+      collectingLogger.clear();
+
+      QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply("table:notATable;slot:foo"));
+      assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
+      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Unrecognized table in help content");
+      collectingLogger.clear();
+
+      QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply("table:" + TestUtils.TABLE_NAME_PERSON));
+      assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
+      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Missing slot name");
+      collectingLogger.clear();
    }
 
 

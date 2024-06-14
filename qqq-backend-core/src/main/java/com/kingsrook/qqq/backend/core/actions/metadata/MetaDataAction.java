@@ -218,6 +218,8 @@ public class MetaDataAction
 
       metaDataOutput.setEnvironmentValues(metaDataInput.getInstance().getEnvironmentValues());
 
+      metaDataOutput.setHelpContents(metaDataInput.getInstance().getHelpContent());
+
       // todo post-customization - can do whatever w/ the result if you want?
 
       return metaDataOutput;

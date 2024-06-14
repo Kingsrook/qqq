@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
@@ -76,7 +77,8 @@ public class QFrontendTableMetaData
    private boolean usesVariants;
    private String  variantTableLabel;
 
-   private ShareableTableMetaData shareableTableMetaData;
+   private ShareableTableMetaData          shareableTableMetaData;
+   private Map<String, List<QHelpContent>> helpContents;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -172,6 +174,8 @@ public class QFrontendTableMetaData
          usesVariants = true;
          variantTableLabel = actionInput.getInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
       }
+
+      this.helpContents = tableMetaData.getHelpContent();
    }
 
 
@@ -381,5 +385,16 @@ public class QFrontendTableMetaData
    public ShareableTableMetaData getShareableTableMetaData()
    {
       return shareableTableMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    **
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContents()
+   {
+      return helpContents;
    }
 }
