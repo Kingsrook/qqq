@@ -26,12 +26,14 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.api.BaseTest;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
+import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapperBulkSupportInterface;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -201,6 +203,43 @@ class ApiImplementationTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testBulkValueCustomizer() throws QException
+   {
+      QInstance           qInstance           = QContext.getQInstance();
+      ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaDataContainer.of(qInstance).getApiInstanceMetaData(TestUtils.API_NAME);
+      TestUtils.insertSimpsons();
+
+      ////////////////////////////////////////////////////////////////////
+      // set up a custom value mapper on lastName field of person table //
+      ////////////////////////////////////////////////////////////////////
+      QTableMetaData table = qInstance.getTable(TestUtils.TABLE_NAME_PERSON);
+      QFieldMetaData field = table.getField("lastName");
+      field.withSupplementalMetaData(new ApiFieldMetaDataContainer()
+         .withApiFieldMetaData(TestUtils.API_NAME, new ApiFieldMetaData()
+            .withInitialVersion(TestUtils.V2022_Q4)
+            .withCustomValueMapper(new QCodeReference(PersonLastNameBulkApiValueCustomizer.class))));
+
+      ////////////////////////////////////////////////
+      // get a person - make sure custom method ran //
+      ////////////////////////////////////////////////
+      Map<String, Serializable> person = ApiImplementation.get(apiInstanceMetaData, TestUtils.CURRENT_API_VERSION, "person", "1");
+      assertEquals("value from prepareToProduceApiValues", person.get("lastName"));
+      assertEquals(1, PersonLastNameBulkApiValueCustomizer.prepareWasCalledWithThisNoOfRecords);
+
+      /////////////////////////////////////////////////////
+      // query for persons - make sure custom method ran //
+      /////////////////////////////////////////////////////
+      Map<String, Serializable> queryResult = ApiImplementation.query(apiInstanceMetaData, TestUtils.CURRENT_API_VERSION, "person", Collections.emptyMap());
+      assertEquals("value from prepareToProduceApiValues", ((List<Map<String, Object>>) queryResult.get("records")).get(0).get("lastName"));
+      assertEquals(queryResult.get("count"), PersonLastNameBulkApiValueCustomizer.prepareWasCalledWithThisNoOfRecords);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testQueryWithRemovedFields() throws QException
    {
       QInstance           qInstance           = QContext.getQInstance();
@@ -262,6 +301,41 @@ class ApiImplementationTest extends BaseTest
          record.setValue("lastName", valueString);
       }
 
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonLastNameBulkApiValueCustomizer extends ApiFieldCustomValueMapper implements ApiFieldCustomValueMapperBulkSupportInterface
+   {
+      static Integer prepareWasCalledWithThisNoOfRecords = null;
+
+      private String valueToPutInRecords = null;
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Serializable produceApiValue(QRecord record, String apiFieldName)
+      {
+         return (valueToPutInRecords);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public void prepareToProduceApiValues(List<QRecord> records)
+      {
+         prepareWasCalledWithThisNoOfRecords = records.size();
+         valueToPutInRecords = "value from prepareToProduceApiValues";
+      }
    }
 
 }
