@@ -235,9 +235,9 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          String tableName      = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
          String sql = "DELETE FROM "
-            + tableName
+            + escapeIdentifier(tableName)
             + " WHERE "
-            + primaryKeyName
+            + escapeIdentifier(primaryKeyName)
             + " IN ("
             + primaryKeys.stream().map(x -> "?").collect(Collectors.joining(","))
             + ")";
