@@ -25,6 +25,14 @@ package com.kingsrook.qqq.api.model.metadata.tables;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.api.ApiSupplementType;
+import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
+import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
+import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -36,6 +44,8 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
 {
+   private static final QLogger LOG = QLogger.getLogger(ApiTableMetaDataContainer.class);
+
    private Map<String, ApiTableMetaData> apis;
 
 
@@ -172,4 +182,51 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QTableMetaData tableMetaData, QInstanceValidator qInstanceValidator)
+   {
+      super.validate(qInstance, tableMetaData, qInstanceValidator);
+
+      ////////////////////////////////////////
+      // iterate over apis this table is in //
+      ////////////////////////////////////////
+      for(String apiName : CollectionUtils.nonNullMap(apis).keySet())
+      {
+         ApiInstanceMetaData apiInstanceMetaData = ApiInstanceMetaDataContainer.of(qInstance).getApis().get(apiName);
+
+         //////////////////////////////////////////////////
+         // iterate over supported versions for this api //
+         //////////////////////////////////////////////////
+         for(APIVersion version : apiInstanceMetaData.getSupportedVersions())
+         {
+            CapturedContext capturedContext = QContext.capture();
+            try
+            {
+               QContext.setQInstance(qInstance);
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               // try to get the field-map for this table.  note that this will (implicitly) throw an exception //
+               // if we have the same field name more than once, which can happen if a field is both in the     //
+               // removed-list and the table's normal field list.                                               //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////
+               GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version.toString(), tableMetaData.getName()));
+            }
+            catch(Exception e)
+            {
+               String message = "Error validating ApiTableMetaData for table: " + tableMetaData.getName() + ", api: " + apiName + ", version: " + version;
+               LOG.warn(message, e);
+               qInstanceValidator.getErrors().add(message + ": " + e.getMessage());
+            }
+            finally
+            {
+               QContext.init(capturedContext);
+            }
+         }
+      }
+   }
 }

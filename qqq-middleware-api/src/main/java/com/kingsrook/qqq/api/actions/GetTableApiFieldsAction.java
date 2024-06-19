@@ -25,9 +25,11 @@ package com.kingsrook.qqq.api.actions;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
@@ -76,7 +78,27 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
    {
       if(!fieldMapCache.containsKey(apiNameVersionAndTableName))
       {
-         Map<String, QFieldMetaData> map = getTableApiFieldList(apiNameVersionAndTableName).stream().collect(Collectors.toMap(f -> (ApiFieldMetaData.getEffectiveApiFieldName(apiNameVersionAndTableName.apiName(), f)), f -> f));
+         List<QFieldMetaData>        tableApiFieldList   = getTableApiFieldList(apiNameVersionAndTableName);
+         Map<String, QFieldMetaData> map                 = new LinkedHashMap<>();
+         Set<String>                 duplicateFieldNames = new HashSet<>();
+         for(QFieldMetaData qFieldMetaData : tableApiFieldList)
+         {
+            String effectiveApiFieldName = ApiFieldMetaData.getEffectiveApiFieldName(apiNameVersionAndTableName.apiName(), qFieldMetaData);
+            if(map.containsKey(effectiveApiFieldName))
+            {
+               duplicateFieldNames.add(effectiveApiFieldName);
+            }
+            else
+            {
+               map.put(effectiveApiFieldName, qFieldMetaData);
+            }
+         }
+
+         if(!duplicateFieldNames.isEmpty())
+         {
+            throw (new QException("The field names [" + duplicateFieldNames + "] appear in this api table more than once.  (Do you need to exclude a field that is still in the table, but is also marked as removed?)"));
+         }
+
          fieldMapCache.put(apiNameVersionAndTableName, map);
       }
 
