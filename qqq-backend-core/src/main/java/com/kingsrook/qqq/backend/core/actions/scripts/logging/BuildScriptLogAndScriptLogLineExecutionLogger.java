@@ -94,7 +94,7 @@ public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecu
    protected QRecord buildDetailLogRecord(String logLine)
    {
       return (new QRecord()
-         .withValue("scriptLogId", scriptLog.getValue("id"))
+         .withValue("scriptLogId", scriptLog == null ? null : scriptLog.getValue("id"))
          .withValue("timestamp", Instant.now())
          .withValue("text", truncate(logLine)));
    }
@@ -145,6 +145,14 @@ public class BuildScriptLogAndScriptLogLineExecutionLogger implements QCodeExecu
       {
          this.executeCodeInput = executeCodeInput;
          this.scriptLog = buildHeaderRecord(executeCodeInput);
+
+         if(scriptLogLines != null)
+         {
+            for(QRecord scriptLogLine : scriptLogLines)
+            {
+               scriptLogLine.setValue("scriptLogId", scriptLog.getValue("id"));
+            }
+         }
       }
       catch(Exception e)
       {
