@@ -33,6 +33,7 @@ import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
+import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapperBulkSupportInterface;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -52,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.apache.commons.lang.BooleanUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -67,9 +69,61 @@ public class QRecordApiAdapter
 
 
    /*******************************************************************************
-    ** Convert a QRecord to a map for the API
+    ** Simple/short form of convert a QRecord to a map for the API - e.g., meant for
+    ** public consumption.
     *******************************************************************************/
    public static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion) throws QException
+   {
+      return qRecordsToApiMapList(ListBuilder.of(record), tableName, apiName, apiVersion).get(0);
+   }
+
+
+
+   /*******************************************************************************
+    ** bulk-version of the qRecordToApiMap - will use
+    ** ApiFieldCustomValueMapperBulkSupportInterface's in the bulky way.
+    *******************************************************************************/
+   public static ArrayList<Map<String, Serializable>> qRecordsToApiMapList(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
+   {
+      Map<String, ApiFieldCustomValueMapper> fieldValueMappers = new HashMap<>();
+
+      List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
+      for(QFieldMetaData field : tableApiFields)
+      {
+         ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
+         String           apiFieldName     = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
+
+         if(apiFieldMetaData.getCustomValueMapper() != null)
+         {
+            if(!fieldValueMappers.containsKey(apiFieldMetaData.getCustomValueMapper().getName()))
+            {
+               ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+               fieldValueMappers.put(apiFieldMetaData.getCustomValueMapper().getName(), customValueMapper);
+
+               if(customValueMapper instanceof ApiFieldCustomValueMapperBulkSupportInterface bulkMapper)
+               {
+                  bulkMapper.prepareToProduceApiValues(records);
+               }
+            }
+         }
+      }
+
+      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         rs.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers));
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** private version of convert a QRecord to a map for the API - takes params to
+    ** support working in bulk w/ customizers much better.
+    *******************************************************************************/
+   private static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion, Map<String, ApiFieldCustomValueMapper> fieldValueMappers) throws QException
    {
       if(record == null)
       {
@@ -87,14 +141,25 @@ public class QRecordApiAdapter
          ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
          String           apiFieldName     = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
 
-         Serializable value = null;
+         Serializable value;
          if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
          {
             value = record.getValue(apiFieldMetaData.getReplacedByFieldName());
          }
          else if(apiFieldMetaData.getCustomValueMapper() != null)
          {
-            ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+            if(fieldValueMappers == null)
+            {
+               fieldValueMappers = new HashMap<>();
+            }
+
+            String customValueMapperName = apiFieldMetaData.getCustomValueMapper().getName();
+            if(!fieldValueMappers.containsKey(customValueMapperName))
+            {
+               fieldValueMappers.put(customValueMapperName, QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper()));
+            }
+
+            ApiFieldCustomValueMapper customValueMapper = fieldValueMappers.get(customValueMapperName);
             value = customValueMapper.produceApiValue(record, apiFieldName);
          }
          else
@@ -331,5 +396,4 @@ public class QRecordApiAdapter
 
       return (null);
    }
-
 }

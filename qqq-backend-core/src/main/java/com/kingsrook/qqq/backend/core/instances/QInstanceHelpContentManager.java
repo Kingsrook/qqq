@@ -105,14 +105,21 @@ public class QInstanceHelpContentManager
          for(String part : key.split(";"))
          {
             String[] parts = part.split(":");
-            nameValuePairs.put(parts[0], parts[1]);
+            if(parts.length > 1)
+            {
+               nameValuePairs.put(parts[0], parts[1]);
+            }
+            else
+            {
+               LOG.info("Discarding help content with key that does not contain name:value format", logPair("key", key), logPair("id", record.getValue("id")));
+            }
          }
 
          String tableName   = nameValuePairs.get("table");
          String processName = nameValuePairs.get("process");
          String fieldName   = nameValuePairs.get("field");
          String sectionName = nameValuePairs.get("section");
-         String stepName = nameValuePairs.get("step");
+         String stepName    = nameValuePairs.get("step");
          String widgetName  = nameValuePairs.get("widget");
          String slotName    = nameValuePairs.get("slot");
 
@@ -143,7 +150,7 @@ public class QInstanceHelpContentManager
          ///////////////////////////////////////////////////////////////////////////////////
          if(StringUtils.hasContent(tableName))
          {
-            processHelpContentForTable(key, tableName, sectionName, fieldName, roles, helpContent);
+            processHelpContentForTable(key, tableName, sectionName, fieldName, slotName, roles, helpContent);
          }
          else if(StringUtils.hasContent(processName))
          {
@@ -152,6 +159,10 @@ public class QInstanceHelpContentManager
          else if(StringUtils.hasContent(widgetName))
          {
             processHelpContentForWidget(key, widgetName, slotName, roles, helpContent);
+         }
+         else if(nameValuePairs.containsKey("instanceLevel"))
+         {
+            processHelpContentForInstance(key, slotName, roles, helpContent);
          }
       }
       catch(Exception e)
@@ -165,7 +176,7 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForTable(String key, String tableName, String sectionName, String fieldName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForTable(String key, String tableName, String sectionName, String fieldName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
    {
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
       if(table == null)
@@ -212,7 +223,21 @@ public class QInstanceHelpContentManager
       }
       else
       {
-         LOG.info("Unrecognized key format for table help content", logPair("key", key));
+         if(!StringUtils.hasContent(slotName))
+         {
+            LOG.info("Missing slot name in table-level help content", logPair("key", key));
+         }
+         else
+         {
+            if(helpContent != null)
+            {
+               table.withHelpContent(slotName, helpContent);
+            }
+            else
+            {
+               table.removeHelpContent(slotName, roles);
+            }
+         }
       }
    }
 
@@ -301,6 +326,30 @@ public class QInstanceHelpContentManager
          else
          {
             widget.removeHelpContent(slotName, roles);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void processHelpContentForInstance(String key, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
+   {
+      if(!StringUtils.hasContent(slotName))
+      {
+         LOG.info("Missing slot name in instance-level help content", logPair("key", key));
+      }
+      else
+      {
+         if(helpContent != null)
+         {
+            QContext.getQInstance().withHelpContent(slotName, helpContent);
+         }
+         else
+         {
+            QContext.getQInstance().removeHelpContent(slotName, roles);
          }
       }
    }

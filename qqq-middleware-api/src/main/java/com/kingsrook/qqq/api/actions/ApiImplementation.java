@@ -382,11 +382,7 @@ public class ApiImplementation
       // map record fields for api                                                                                  //
       // note - don't put them in the output until after the count, just because that looks a little nicer, i think //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ArrayList<Map<String, Serializable>> records = new ArrayList<>();
-      for(QRecord record : queryOutput.getRecords())
-      {
-         records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, version));
-      }
+      ArrayList<Map<String, Serializable>> records = QRecordApiAdapter.qRecordsToApiMapList(queryOutput.getRecords(), tableName, apiName, version);
 
       /////////////////////////////
       // optionally do the count //
@@ -619,7 +615,7 @@ public class ApiImplementation
             + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
       }
 
-      Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, apiInstanceMetaData.getName(), version);
+      Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordsToApiMapList(List.of(record), tableName, apiInstanceMetaData.getName(), version).get(0);
       return (outputRecord);
    }
 

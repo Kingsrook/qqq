@@ -750,7 +750,7 @@ public class QJavalinApiHandler
          /////////////////////////////////
          html = html.replace("{spec-url}", apiInstanceMetaData.getPath() + version + "/openapi.json");
          html = html.replace("{version}", version);
-         html = html.replace("{primaryColor}", branding == null ? "#FF791A" : branding.getAccentColor());
+         html = html.replace("{primaryColor}", (branding == null || branding.getAccentColor() == null) ? "#FF791A" : branding.getAccentColor());
 
          if(branding != null && StringUtils.hasContent(branding.getLogo()))
          {
