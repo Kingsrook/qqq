@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.TableBasedAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
@@ -253,6 +254,11 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // this is how we allow the actions within this class to work without themselves having a logged-in user. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (true);
+      }
+
+      if(session instanceof QSystemUserSession)
+      {
          return (true);
       }
 
