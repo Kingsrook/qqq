@@ -139,13 +139,19 @@ public class QInstanceValidator
     *******************************************************************************/
    public void validate(QInstance qInstance) throws QInstanceValidationException
    {
-      if(qInstance.getHasBeenValidated())
+      if(qInstance.getHasBeenValidated() || qInstance.getValidationIsRunning())
       {
-         //////////////////////////////////////////
-         // don't re-validate if previously done //
-         //////////////////////////////////////////
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // don't re-validate if previously complete or currently running (avoids recursive re-validation chaos!) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
          return;
       }
+
+      ////////////////////////////////////
+      // mark validation as running now //
+      ////////////////////////////////////
+      QInstanceValidationKey validationKey = new QInstanceValidationKey();
+      qInstance.setValidationIsRunning(validationKey);
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////
       // the enricher will build a join graph (if there are any joins).  we'd like to only do that       //
@@ -207,9 +213,11 @@ public class QInstanceValidator
          throw (new QInstanceValidationException(errors));
       }
 
-      QInstanceValidationKey validationKey = new QInstanceValidationKey();
-      qInstance.setHasBeenValidated(validationKey);
+      //////////////////////////////
+      // mark validation complete //
+      //////////////////////////////
       qInstance.setJoinGraph(validationKey, joinGraph);
+      qInstance.setHasBeenValidated(validationKey);
    }
 
 

@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -112,10 +113,13 @@ public class QInstance
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
 
-   // todo - lock down the object (no more changes allowed) after it's been validated?
+   //////////////////////////////////////////////////////////////////////////////////////
+   // todo - lock down the object (no more changes allowed) after it's been validated? //
+   //  if doing so, may need to copy all of the collections into read-only versions... //
+   //////////////////////////////////////////////////////////////////////////////////////
 
    @JsonIgnore
-   private boolean hasBeenValidated = false;
+   private QInstanceValidationState validationState = QInstanceValidationState.PENDING;
 
    private Map<String, String> memoizedTablePaths   = new HashMap<>();
    private Map<String, String> memoizedProcessPaths = new HashMap<>();
@@ -799,28 +803,54 @@ public class QInstance
     *******************************************************************************/
    public boolean getHasBeenValidated()
    {
-      return hasBeenValidated;
+      return validationState.equals(QInstanceValidationState.COMPLETE);
    }
 
 
 
    /*******************************************************************************
     ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
-    ** then the hasBeenValidated field will be set to true.
+    ** then the validationState will be set to COMPLETE.
     **
-    ** Else, if passed a null, hasBeenValidated will be reset to false - e.g., to
+    ** Else, if passed a null, the validationState will be reset to PENDING.  e.g., to
     ** re-trigger validation (can be useful in tests).
     *******************************************************************************/
    public void setHasBeenValidated(QInstanceValidationKey key)
    {
       if(key == null)
       {
-         this.hasBeenValidated = false;
+         this.validationState = QInstanceValidationState.PENDING;
       }
       else
       {
-         this.hasBeenValidated = true;
+         this.validationState = QInstanceValidationState.COMPLETE;
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the validationState set to RUNNING.
+    **
+    *******************************************************************************/
+   public void setValidationIsRunning(QInstanceValidationKey key)
+   {
+      if(key != null)
+      {
+         this.validationState = QInstanceValidationState.RUNNING;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** check if the instance is currently running validation.
+    **
+    *******************************************************************************/
+   public boolean getValidationIsRunning()
+   {
+      return validationState.equals(QInstanceValidationState.RUNNING);
    }
 
 
