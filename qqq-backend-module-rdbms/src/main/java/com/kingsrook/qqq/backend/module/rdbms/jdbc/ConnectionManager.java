@@ -75,10 +75,11 @@ public class ConnectionManager
     *******************************************************************************/
    private static ConnectionProviderInterface getConnectionProvider(RDBMSBackendMetaData backend) throws QException
    {
-      //////////////////////////////////////////////////////////////////////////////////
-      // some non-standard use-cases use a backend without a name... avoid NPE in map //
-      //////////////////////////////////////////////////////////////////////////////////
       String name = Objects.requireNonNullElse(backend.getName(), "");
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new QException("RDBMSBackendMetaData is missing a name"));
+      }
 
       if(!connectionProviderMap.containsKey(name))
       {
