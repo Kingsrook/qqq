@@ -82,6 +82,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -1195,6 +1196,7 @@ public class QJavalinImplementation
          countInput.setTimeoutSeconds(DEFAULT_COUNT_TIMEOUT_SECONDS);
          countInput.setQueryJoins(processQueryJoinsParam(context));
          countInput.setIncludeDistinctCount(QJavalinUtils.queryParamIsTrue(context, "includeDistinct"));
+         countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
@@ -1250,6 +1252,7 @@ public class QJavalinImplementation
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setTimeoutSeconds(DEFAULT_QUERY_TIMEOUT_SECONDS);
+         queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 

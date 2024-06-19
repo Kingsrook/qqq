@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,54 +19,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms.actions;
+package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 
 import java.sql.Connection;
-import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
-import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.junit.jupiter.api.AfterEach;
+import java.sql.SQLException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
- **
+ ** interface for classes that can provide jdbc Connections for an RDBMS backend.
  *******************************************************************************/
-public class RDBMSActionTest extends BaseTest
+public interface ConnectionProviderInterface
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @AfterEach
-   void afterEachRDBMSActionTest()
-   {
-      QueryManager.resetPageSize();
-      QueryManager.resetStatistics();
-      QueryManager.setCollectStatistics(false);
-   }
-
-
+   void init(RDBMSBackendMetaData backend) throws QException;
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void primeTestDatabase() throws Exception
-   {
-      TestUtils.primeTestDatabase("prime-test-database.sql");
-   }
-
-
+   Connection getConnection() throws SQLException;
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
+   default JSONObject dumpDebug() throws SQLException
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-      Connection        connection        = connectionManager.getConnection(TestUtils.defineBackend());
-      QueryManager.executeStatement(connection, sql, resultSetProcessor);
-      connection.close();
+      JSONObject rs = new JSONObject();
+      rs.put("nothingToReport", true);
+      return (rs);
    }
 }
+

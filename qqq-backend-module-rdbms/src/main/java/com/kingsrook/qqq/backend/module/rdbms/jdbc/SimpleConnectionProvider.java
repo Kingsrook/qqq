@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,32 +19,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms.actions;
+package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 
 import java.sql.Connection;
-import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
-import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import org.junit.jupiter.api.AfterEach;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import static com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager.getJdbcUrl;
 
 
 /*******************************************************************************
- **
+ ** Simple connection provider - no pooling, just opens a new connection for
+ ** every request.
  *******************************************************************************/
-public class RDBMSActionTest extends BaseTest
+public class SimpleConnectionProvider implements ConnectionProviderInterface
 {
+   private RDBMSBackendMetaData backend;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @AfterEach
-   void afterEachRDBMSActionTest()
+   @Override
+   public void init(RDBMSBackendMetaData backend)
    {
-      QueryManager.resetPageSize();
-      QueryManager.resetStatistics();
-      QueryManager.setCollectStatistics(false);
+      this.backend = backend;
    }
 
 
@@ -52,21 +53,11 @@ public class RDBMSActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void primeTestDatabase() throws Exception
+   @Override
+   public Connection getConnection() throws SQLException
    {
-      TestUtils.primeTestDatabase("prime-test-database.sql");
+      String jdbcURL = getJdbcUrl(backend);
+      return DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   protected void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
-   {
-      ConnectionManager connectionManager = new ConnectionManager();
-      Connection        connection        = connectionManager.getConnection(TestUtils.defineBackend());
-      QueryManager.executeStatement(connection, sql, resultSetProcessor);
-      connection.close();
-   }
 }

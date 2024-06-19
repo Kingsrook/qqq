@@ -47,14 +47,19 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.Aggregate;
+import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -135,11 +140,38 @@ public abstract class AbstractRDBMSAction
 
    /*******************************************************************************
     ** Get a database connection, per the backend in the request.
+    **
+    ** Note that it may be a connection to a read-only backend, per query-hints,
+    ** and backend settings.
     *******************************************************************************/
-   public static Connection getConnection(AbstractTableActionInput qTableRequest) throws SQLException
+   public static Connection getConnection(AbstractTableActionInput tableActionInput) throws SQLException
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-      return connectionManager.getConnection((RDBMSBackendMetaData) qTableRequest.getBackend());
+      RDBMSBackendMetaData backend = (RDBMSBackendMetaData) tableActionInput.getBackend();
+
+      boolean useReadOnly = false;
+      if(tableActionInput instanceof QueryInput queryInput)
+      {
+         useReadOnly = queryInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+      }
+      else if(tableActionInput instanceof CountInput countInput)
+      {
+         useReadOnly = countInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+      }
+      else if(tableActionInput instanceof GetInput getInput)
+      {
+         useReadOnly = getInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+      }
+      else if(tableActionInput instanceof AggregateInput aggregateInput)
+      {
+         useReadOnly = aggregateInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
+      }
+
+      if(useReadOnly && backend.getReadOnlyBackendMetaData() != null)
+      {
+         return ConnectionManager.getConnection(backend.getReadOnlyBackendMetaData());
+      }
+
+      return ConnectionManager.getConnection(backend);
    }
 
 

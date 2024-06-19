@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,365 +19,308 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
-
-
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
+package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
 /*******************************************************************************
- ** Input data for the Count action
+ ** Settings for a connection pool (if your backend is configured to use one).
+ ** Originally based on the most common settings for C3P0 - see
+ ** https://www.mchange.com/projects/c3p0/#configuration
  **
+ ** If you want more - you'll be looking at defining your own subclass of
+ ** C3P0PooledConnectionProvider and possibly this class.
+ **
+ ** If using a pool other than C3P0 - some of these may apply others may not.
  *******************************************************************************/
-public class AggregateInput extends AbstractTableActionInput
+public class ConnectionPoolSettings
 {
-   private QQueryFilter    filter;
-   private List<Aggregate> aggregates;
-   private List<GroupBy>   groupBys = new ArrayList<>();
-   private Integer         limit;
-
-   private Integer timeoutSeconds;
-
-   private List<QueryJoin> queryJoins = null;
-
-   private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
+   private Integer initialPoolSize;
+   private Integer minPoolSize;
+   private Integer maxPoolSize;
+   private Integer acquireIncrement;
+   private Integer maxConnectionAgeSeconds;
+   private Integer maxIdleTimeSeconds;
+   private Integer maxIdleTimeExcessConnectionsSeconds;
+   private Integer checkoutTimeoutSeconds;
+   private Boolean testConnectionOnCheckout;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for initialPoolSize
     *******************************************************************************/
-   public AggregateInput()
+   public Integer getInitialPoolSize()
    {
+      return (this.initialPoolSize);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for filter
-    **
+    ** Setter for initialPoolSize
     *******************************************************************************/
-   public QQueryFilter getFilter()
+   public void setInitialPoolSize(Integer initialPoolSize)
    {
-      return filter;
+      this.initialPoolSize = initialPoolSize;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for filter
-    **
+    ** Fluent setter for initialPoolSize
     *******************************************************************************/
-   public void setFilter(QQueryFilter filter)
+   public ConnectionPoolSettings withInitialPoolSize(Integer initialPoolSize)
    {
-      this.filter = filter;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for filter
-    **
-    *******************************************************************************/
-   public AggregateInput withFilter(QQueryFilter filter)
-   {
-      setFilter(filter);
+      this.initialPoolSize = initialPoolSize;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for aggregates
-    **
+    ** Getter for minPoolSize
     *******************************************************************************/
-   public List<Aggregate> getAggregates()
+   public Integer getMinPoolSize()
    {
-      return aggregates;
+      return (this.minPoolSize);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for aggregates
-    **
+    ** Setter for minPoolSize
     *******************************************************************************/
-   public void setAggregates(List<Aggregate> aggregates)
+   public void setMinPoolSize(Integer minPoolSize)
    {
-      this.aggregates = aggregates;
+      this.minPoolSize = minPoolSize;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for aggregates
-    **
+    ** Fluent setter for minPoolSize
     *******************************************************************************/
-   public AggregateInput withAggregates(List<Aggregate> aggregates)
+   public ConnectionPoolSettings withMinPoolSize(Integer minPoolSize)
    {
-      this.aggregates = aggregates;
+      this.minPoolSize = minPoolSize;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for aggregates
-    **
+    ** Getter for maxPoolSize
     *******************************************************************************/
-   public AggregateInput withAggregate(Aggregate aggregate)
+   public Integer getMaxPoolSize()
    {
-      if(this.aggregates == null)
-      {
-         this.aggregates = new ArrayList<>();
-      }
-      this.aggregates.add(aggregate);
+      return (this.maxPoolSize);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxPoolSize
+    *******************************************************************************/
+   public void setMaxPoolSize(Integer maxPoolSize)
+   {
+      this.maxPoolSize = maxPoolSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxPoolSize
+    *******************************************************************************/
+   public ConnectionPoolSettings withMaxPoolSize(Integer maxPoolSize)
+   {
+      this.maxPoolSize = maxPoolSize;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for groupBys
-    **
+    ** Getter for acquireIncrement
     *******************************************************************************/
-   public List<GroupBy> getGroupBys()
+   public Integer getAcquireIncrement()
    {
-      return groupBys;
+      return (this.acquireIncrement);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for groupBys
-    **
+    ** Setter for acquireIncrement
     *******************************************************************************/
-   public void setGroupBys(List<GroupBy> groupBys)
+   public void setAcquireIncrement(Integer acquireIncrement)
    {
-      this.groupBys = groupBys;
+      this.acquireIncrement = acquireIncrement;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupBys
-    **
+    ** Fluent setter for acquireIncrement
     *******************************************************************************/
-   public AggregateInput withGroupBys(List<GroupBy> groupBys)
+   public ConnectionPoolSettings withAcquireIncrement(Integer acquireIncrement)
    {
-      this.groupBys = groupBys;
+      this.acquireIncrement = acquireIncrement;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for groupBys
-    **
+    ** Getter for maxConnectionAgeSeconds
     *******************************************************************************/
-   public AggregateInput withGroupBy(GroupBy groupBy)
+   public Integer getMaxConnectionAgeSeconds()
    {
-      if(this.groupBys == null)
-      {
-         this.groupBys = new ArrayList<>();
-      }
-      this.groupBys.add(groupBy);
+      return (this.maxConnectionAgeSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxConnectionAgeSeconds
+    *******************************************************************************/
+   public void setMaxConnectionAgeSeconds(Integer maxConnectionAgeSeconds)
+   {
+      this.maxConnectionAgeSeconds = maxConnectionAgeSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxConnectionAgeSeconds
+    *******************************************************************************/
+   public ConnectionPoolSettings withMaxConnectionAgeSeconds(Integer maxConnectionAgeSeconds)
+   {
+      this.maxConnectionAgeSeconds = maxConnectionAgeSeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for queryJoins
-    **
+    ** Getter for maxIdleTimeSeconds
     *******************************************************************************/
-   public List<QueryJoin> getQueryJoins()
+   public Integer getMaxIdleTimeSeconds()
    {
-      return queryJoins;
+      return (this.maxIdleTimeSeconds);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for queryJoins
-    **
+    ** Setter for maxIdleTimeSeconds
     *******************************************************************************/
-   public void setQueryJoins(List<QueryJoin> queryJoins)
+   public void setMaxIdleTimeSeconds(Integer maxIdleTimeSeconds)
    {
-      this.queryJoins = queryJoins;
+      this.maxIdleTimeSeconds = maxIdleTimeSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryJoins
-    **
+    ** Fluent setter for maxIdleTimeSeconds
     *******************************************************************************/
-   public AggregateInput withQueryJoins(List<QueryJoin> queryJoins)
+   public ConnectionPoolSettings withMaxIdleTimeSeconds(Integer maxIdleTimeSeconds)
    {
-      this.queryJoins = queryJoins;
+      this.maxIdleTimeSeconds = maxIdleTimeSeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for queryJoins
-    **
+    ** Getter for maxIdleTimeExcessConnectionsSeconds
     *******************************************************************************/
-   public AggregateInput withQueryJoin(QueryJoin queryJoin)
+   public Integer getMaxIdleTimeExcessConnectionsSeconds()
    {
-      if(this.queryJoins == null)
-      {
-         this.queryJoins = new ArrayList<>();
-      }
-      this.queryJoins.add(queryJoin);
+      return (this.maxIdleTimeExcessConnectionsSeconds);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for maxIdleTimeExcessConnectionsSeconds
+    *******************************************************************************/
+   public void setMaxIdleTimeExcessConnectionsSeconds(Integer maxIdleTimeExcessConnectionsSeconds)
+   {
+      this.maxIdleTimeExcessConnectionsSeconds = maxIdleTimeExcessConnectionsSeconds;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for maxIdleTimeExcessConnectionsSeconds
+    *******************************************************************************/
+   public ConnectionPoolSettings withMaxIdleTimeExcessConnectionsSeconds(Integer maxIdleTimeExcessConnectionsSeconds)
+   {
+      this.maxIdleTimeExcessConnectionsSeconds = maxIdleTimeExcessConnectionsSeconds;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for limit
-    **
+    ** Getter for testConnectionOnCheckout
     *******************************************************************************/
-   public Integer getLimit()
+   public Boolean getTestConnectionOnCheckout()
    {
-      return limit;
+      return (this.testConnectionOnCheckout);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for limit
-    **
+    ** Setter for testConnectionOnCheckout
     *******************************************************************************/
-   public void setLimit(Integer limit)
+   public void setTestConnectionOnCheckout(Boolean testConnectionOnCheckout)
    {
-      this.limit = limit;
+      this.testConnectionOnCheckout = testConnectionOnCheckout;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for limit
-    **
+    ** Fluent setter for testConnectionOnCheckout
     *******************************************************************************/
-   public AggregateInput withLimit(Integer limit)
+   public ConnectionPoolSettings withTestConnectionOnCheckout(Boolean testConnectionOnCheckout)
    {
-      this.limit = limit;
+      this.testConnectionOnCheckout = testConnectionOnCheckout;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for timeoutSeconds
+    ** Getter for checkoutTimeoutSeconds
     *******************************************************************************/
-   public Integer getTimeoutSeconds()
+   public Integer getCheckoutTimeoutSeconds()
    {
-      return (this.timeoutSeconds);
+      return (this.checkoutTimeoutSeconds);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for timeoutSeconds
+    ** Setter for checkoutTimeoutSeconds
     *******************************************************************************/
-   public void setTimeoutSeconds(Integer timeoutSeconds)
+   public void setCheckoutTimeoutSeconds(Integer checkoutTimeoutSeconds)
    {
-      this.timeoutSeconds = timeoutSeconds;
+      this.checkoutTimeoutSeconds = checkoutTimeoutSeconds;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for timeoutSeconds
+    ** Fluent setter for checkoutTimeoutSeconds
     *******************************************************************************/
-   public AggregateInput withTimeoutSeconds(Integer timeoutSeconds)
+   public ConnectionPoolSettings withCheckoutTimeoutSeconds(Integer checkoutTimeoutSeconds)
    {
-      this.timeoutSeconds = timeoutSeconds;
+      this.checkoutTimeoutSeconds = checkoutTimeoutSeconds;
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for queryHints
-    *******************************************************************************/
-   public EnumSet<QueryHint> getQueryHints()
-   {
-      return (this.queryHints);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for queryHints
-    *******************************************************************************/
-   public void setQueryHints(EnumSet<QueryHint> queryHints)
-   {
-      this.queryHints = queryHints;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for queryHints
-    *******************************************************************************/
-   public AggregateInput withQueryHints(EnumSet<QueryHint> queryHints)
-   {
-      this.queryHints = queryHints;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for queryHints
-    *******************************************************************************/
-   public AggregateInput withQueryHint(QueryHint queryHint)
-   {
-      if(this.queryHints == null)
-      {
-         this.queryHints = EnumSet.noneOf(QueryHint.class);
-      }
-      this.queryHints.add(queryHint);
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for queryHints
-    *******************************************************************************/
-   public AggregateInput withoutQueryHint(QueryHint queryHint)
-   {
-      if(this.queryHints != null)
-      {
-         this.queryHints.remove(queryHint);
-      }
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** null-safely check if query hints map contains the specified hint
-    *******************************************************************************/
-   public boolean hasQueryHint(QueryHint queryHint)
-   {
-      if(this.queryHints == null)
-      {
-         return (false);
-      }
-
-      return (queryHints.contains(queryHint));
-   }
 }
