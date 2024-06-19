@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.Level;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -65,7 +66,7 @@ public class AsyncJobManager
    /////////////////////////////////////////////////////////////////////////////
    private static Integer         CORE_THREADS    = 8;
    private static Integer         MAX_THREADS     = 500;
-   private static ExecutorService executorService = new ThreadPoolExecutor(CORE_THREADS, MAX_THREADS, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
+   private static ExecutorService executorService = new ThreadPoolExecutor(CORE_THREADS, MAX_THREADS, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new PrefixedDefaultThreadFactory(AsyncJobManager.class));
 
 
    private String forcedJobUUID = null;

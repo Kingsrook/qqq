@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -62,7 +63,7 @@ public class InMemoryStateProvider implements StateProviderInterface
       ///////////////////////////////////////////////////////////
       // Start a single thread executor to handle the cleaning //
       ///////////////////////////////////////////////////////////
-      ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+      ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new PrefixedDefaultThreadFactory(this));
       executorService.scheduleAtFixedRate(new InMemoryStateProvider.InMemoryStateProviderCleanJob(), jobInitialDelay, jobPeriodSeconds, TimeUnit.SECONDS);
    }
 

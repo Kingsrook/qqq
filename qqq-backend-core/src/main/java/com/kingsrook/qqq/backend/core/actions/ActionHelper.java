@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 
 
 /*******************************************************************************
@@ -55,7 +56,7 @@ public class ActionHelper
    /////////////////////////////////////////////////////////////////////////////
    private static Integer         CORE_THREADS    = 8;
    private static Integer         MAX_THREADS     = 500;
-   private static ExecutorService executorService = new ThreadPoolExecutor(CORE_THREADS, MAX_THREADS, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
+   private static ExecutorService executorService = new ThreadPoolExecutor(CORE_THREADS, MAX_THREADS, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new PrefixedDefaultThreadFactory(ActionHelper.class));
 
 
 

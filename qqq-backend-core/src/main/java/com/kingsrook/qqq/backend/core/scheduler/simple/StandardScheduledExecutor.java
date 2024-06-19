@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 
 
 /*******************************************************************************
@@ -95,7 +96,7 @@ public class StandardScheduledExecutor
       }
 
       LOG.info("Starting [" + name + "]");
-      service = Executors.newSingleThreadScheduledExecutor();
+      service = Executors.newSingleThreadScheduledExecutor(new PrefixedDefaultThreadFactory(this));
       service.scheduleWithFixedDelay(getRunnable(), initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS);
       runningState = RunningState.RUNNING;
       return (true);
