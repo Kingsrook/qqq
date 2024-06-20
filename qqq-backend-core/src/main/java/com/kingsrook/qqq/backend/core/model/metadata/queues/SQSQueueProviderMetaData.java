@@ -36,6 +36,8 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
    private String region;
    private String baseURL;
 
+   private SQSPollerSettings pollerSettings;
+
 
 
    /*******************************************************************************
@@ -193,6 +195,37 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
    public SQSQueueProviderMetaData withBaseURL(String baseURL)
    {
       this.baseURL = baseURL;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pollerSettings
+    *******************************************************************************/
+   public SQSPollerSettings getPollerSettings()
+   {
+      return (this.pollerSettings);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pollerSettings
+    *******************************************************************************/
+   public void setPollerSettings(SQSPollerSettings pollerSettings)
+   {
+      this.pollerSettings = pollerSettings;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pollerSettings
+    *******************************************************************************/
+   public SQSQueueProviderMetaData withPollerSettings(SQSPollerSettings pollerSettings)
+   {
+      this.pollerSettings = pollerSettings;
       return (this);
    }
 

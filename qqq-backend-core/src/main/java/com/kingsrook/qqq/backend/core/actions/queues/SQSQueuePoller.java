@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.queues;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -41,6 +42,8 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSPollerSettings;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
@@ -90,15 +93,17 @@ public class SQSQueuePoller implements Runnable
          }
          queueUrl += queueMetaData.getQueueName();
 
-         while(true)
+         SQSPollerSettings sqsPollerSettings = getSqsPollerSettings(queueProviderMetaData, queueMetaData);
+
+         for(int loop = 0; loop < sqsPollerSettings.getMaxLoops(); loop++)
          {
             ///////////////////////////////
             // fetch a batch of messages //
             ///////////////////////////////
             ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest();
             receiveMessageRequest.setQueueUrl(queueUrl);
-            receiveMessageRequest.setMaxNumberOfMessages(10);
-            receiveMessageRequest.setWaitTimeSeconds(20); // help urge SQS to query multiple servers and find more messages
+            receiveMessageRequest.setMaxNumberOfMessages(sqsPollerSettings.getMaxNumberOfMessages());
+            receiveMessageRequest.setWaitTimeSeconds(sqsPollerSettings.getWaitTimeSeconds()); // larger value (e.g., 20) can help urge SQS to query multiple servers and find more messages
             ReceiveMessageResult receiveMessageResult = sqs.receiveMessage(receiveMessageRequest);
             if(receiveMessageResult.getMessages().isEmpty())
             {
@@ -173,6 +178,47 @@ public class SQSQueuePoller implements Runnable
          Thread.currentThread().setName(originalThreadName);
          QContext.clear();
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** For a given queueProvider and queue, get the poller settings to use (using
+    ** default values if none are set at either level).
+    *******************************************************************************/
+   static SQSPollerSettings getSqsPollerSettings(SQSQueueProviderMetaData queueProviderMetaData, QQueueMetaData queueMetaData)
+   {
+      /////////////////////////////////
+      // start with default settings //
+      /////////////////////////////////
+      SQSPollerSettings sqsPollerSettings = new SQSPollerSettings()
+         .withMaxLoops(Integer.MAX_VALUE)
+         .withMaxNumberOfMessages(10)
+         .withWaitTimeSeconds(20);
+
+      /////////////////////////////////////////////////////////////////////
+      // if the queue provider has settings, let them overwrite defaults //
+      /////////////////////////////////////////////////////////////////////
+      if(queueProviderMetaData != null && queueProviderMetaData.getPollerSettings() != null)
+      {
+         SQSPollerSettings providerSettings = queueProviderMetaData.getPollerSettings();
+         sqsPollerSettings.setMaxLoops(Objects.requireNonNullElse(providerSettings.getMaxLoops(), sqsPollerSettings.getMaxLoops()));
+         sqsPollerSettings.setMaxNumberOfMessages(Objects.requireNonNullElse(providerSettings.getMaxNumberOfMessages(), sqsPollerSettings.getMaxNumberOfMessages()));
+         sqsPollerSettings.setWaitTimeSeconds(Objects.requireNonNullElse(providerSettings.getWaitTimeSeconds(), sqsPollerSettings.getWaitTimeSeconds()));
+      }
+
+      ////////////////////////////////////////////////////////////
+      // if the queue has settings, let them overwrite defaults //
+      ////////////////////////////////////////////////////////////
+      if(queueMetaData instanceof SQSQueueMetaData sqsQueueMetaData && sqsQueueMetaData.getPollerSettings() != null)
+      {
+         SQSPollerSettings providerSettings = sqsQueueMetaData.getPollerSettings();
+         sqsPollerSettings.setMaxLoops(Objects.requireNonNullElse(providerSettings.getMaxLoops(), sqsPollerSettings.getMaxLoops()));
+         sqsPollerSettings.setMaxNumberOfMessages(Objects.requireNonNullElse(providerSettings.getMaxNumberOfMessages(), sqsPollerSettings.getMaxNumberOfMessages()));
+         sqsPollerSettings.setWaitTimeSeconds(Objects.requireNonNullElse(providerSettings.getWaitTimeSeconds(), sqsPollerSettings.getWaitTimeSeconds()));
+      }
+
+      return sqsPollerSettings;
    }
 
 
