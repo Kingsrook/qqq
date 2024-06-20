@@ -79,6 +79,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.QueueType;
+import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.SQSQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
@@ -439,10 +441,29 @@ public class QInstanceValidator
 
             if(queueProvider instanceof SQSQueueProviderMetaData sqsQueueProvider)
             {
+               if(queueProvider.getType() != null)
+               {
+                  assertCondition(queueProvider.getType().equals(QueueType.SQS), "Inconsistent Type/class given for queueProvider: " + name + " (SQSQueueProviderMetaData is not allowed for type " + queueProvider.getType() + ")");
+               }
+
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getAccessKey()), "Missing accessKey for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getSecretKey()), "Missing secretKey for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getBaseURL()), "Missing baseURL for SQSQueueProvider: " + name);
                assertCondition(StringUtils.hasContent(sqsQueueProvider.getRegion()), "Missing region for SQSQueueProvider: " + name);
+            }
+            else if(queueProvider.getClass().equals(QQueueProviderMetaData.class))
+            {
+               /////////////////////////////////////////////////////////////////////
+               // this just means a subtype wasn't used, so, it should be allowed //
+               // (unless we had a case where a type required a subtype?)         //
+               /////////////////////////////////////////////////////////////////////
+            }
+            else
+            {
+               if(queueProvider.getType() != null)
+               {
+                  assertCondition(!queueProvider.getType().equals(QueueType.SQS), "Inconsistent Type/class given for queueProvider: " + name + " (" + queueProvider.getClass().getSimpleName() + " is not allowed for type " + queueProvider.getType() + ")");
+               }
             }
 
             runPlugins(QQueueProviderMetaData.class, queueProvider, qInstance);
@@ -454,7 +475,27 @@ public class QInstanceValidator
          qInstance.getQueues().forEach((name, queue) ->
          {
             assertCondition(Objects.equals(name, queue.getName()), "Inconsistent naming for queue: " + name + "/" + queue.getName() + ".");
-            assertCondition(qInstance.getQueueProvider(queue.getProviderName()) != null, "Unrecognized queue providerName for queue: " + name);
+
+            QQueueProviderMetaData queueProvider = qInstance.getQueueProvider(queue.getProviderName());
+            if(assertCondition(queueProvider != null, "Unrecognized queue providerName for queue: " + name))
+            {
+               if(queue instanceof SQSQueueMetaData)
+               {
+                  assertCondition(queueProvider.getType().equals(QueueType.SQS), "Inconsistent class given for queueMetaData: " + name + " (SQSQueueMetaData is not allowed for queue provider of type " + queueProvider.getType() + ")");
+               }
+               else if(queue.getClass().equals(QQueueMetaData.class))
+               {
+                  ////////////////////////////////////////////////////////////////////
+                  // this just means a subtype wasn't used, so, it should be        //
+                  // allowed (unless we had a case where a type required a subtype? //
+                  ////////////////////////////////////////////////////////////////////
+               }
+               else
+               {
+                  assertCondition(!queueProvider.getType().equals(QueueType.SQS), "Inconsistent class given for queueProvider: " + name + " (" + queue.getClass().getSimpleName() + " is not allowed for type " + queueProvider.getType() + ")");
+               }
+            }
+
             assertCondition(StringUtils.hasContent(queue.getQueueName()), "Missing queueName for queue: " + name);
             if(assertCondition(StringUtils.hasContent(queue.getProcessName()), "Missing processName for queue: " + name))
             {
