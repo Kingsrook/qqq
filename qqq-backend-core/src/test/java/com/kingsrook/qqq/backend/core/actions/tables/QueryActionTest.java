@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
@@ -32,13 +33,18 @@ import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.CaseChangeBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStatMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -499,4 +505,40 @@ class QueryActionTest extends BaseTest
       insertInput.setRecords(recordList);
       new InsertAction().execute(insertInput);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterFieldBehaviors() throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////
+      // insert one shape with a mixed-case name, one with an all-lower name //
+      /////////////////////////////////////////////////////////////////////////
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_SHAPE).withRecords(List.of(
+         new QRecord().withValue("name", "Triangle"),
+         new QRecord().withValue("name", "square")
+      )));
+
+      ///////////////////////////////////////////////////////////////////////////
+      // now set the shape table's name field to have a to-lower-case behavior //
+      ///////////////////////////////////////////////////////////////////////////
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      QFieldMetaData field     = table.getField("name");
+      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // confirm that if we query for "Triangle", we can't find it (because query will to-lower-case the criteria) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(0, QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle"))).size());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // confirm that if we query for "SQUARE", we do find it (because query will to-lower-case the criteria) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(1, QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "SqUaRe"))).size());
+   }
+
 }

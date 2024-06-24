@@ -22,12 +22,18 @@
 package com.kingsrook.qqq.backend.core.actions.values;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldDisplayBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldFilterBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -46,6 +52,7 @@ public class ValueBehaviorApplier
    {
       INSERT,
       UPDATE,
+      READ,
       FORMATTING
    }
 
@@ -94,6 +101,173 @@ public class ValueBehaviorApplier
                fieldBehavior.apply(action, recordList, instance, table, field);
             }
          }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** apply field behaviors (of FieldFilterBehavior type) to a QQueryFilter.
+    ** note that, we don't like to ever edit a QQueryFilter itself (e.g., as it might
+    ** have come from meta-data, or it might have some immutable structures in it).
+    ** So, if any changes are needed, they'll be returned in a clone.
+    ** So, either way, you should use this method like:
+    *
+    ** QQueryFilter myFilter = // wherever I got my filter from
+    ** myFilter = ValueBehaviorApplier.applyFieldBehaviorsToFilter(QContext.getInstance, table, myFilter, null);
+    ** // e.g., always re-assign over top of your filter.
+    *******************************************************************************/
+   public static QQueryFilter applyFieldBehaviorsToFilter(QInstance instance, QTableMetaData table, QQueryFilter filter, Set<FieldBehavior<?>> behaviorsToOmit)
+   {
+      ////////////////////////////////////////////////
+      // for null or empty filter, return the input //
+      ////////////////////////////////////////////////
+      if(filter == null || !filter.hasAnyCriteria())
+      {
+         return (filter);
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      // track if we need to make & return a clone.                    //
+      // which will be the case if we get back any different criteria, //
+      // or any different sub-filters, than what we originally had.    //
+      ///////////////////////////////////////////////////////////////////
+      boolean needToUseClone = false;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make a new criteria list, and a new subFilter list - either null, if the source was null, or a new array list //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      List<QFilterCriteria> newCriteriaList = filter.getCriteria() == null ? null : new ArrayList<>();
+      List<QQueryFilter>    newSubFilters   = filter.getSubFilters() == null ? null : new ArrayList<>();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // for each criteria, if its field has any applicable behaviors, apply them //
+      //////////////////////////////////////////////////////////////////////////////
+      for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         QFieldMetaData field = table.getFields().get(criteria.getFieldName());
+         if(field == null && criteria.getFieldName() != null && criteria.getFieldName().contains("."))
+         {
+            String[] parts = criteria.getFieldName().split("\\.");
+            if(parts.length == 2)
+            {
+               QTableMetaData joinTable = instance.getTable(parts[0]);
+               if(joinTable != null)
+               {
+                  field = joinTable.getFields().get(parts[1]);
+               }
+            }
+         }
+
+         if(field != null)
+         {
+            for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(field.getBehaviors()))
+            {
+               boolean applyBehavior = true;
+               if(behaviorsToOmit != null && behaviorsToOmit.contains(fieldBehavior))
+               {
+                  applyBehavior = false;
+               }
+
+               if(applyBehavior && fieldBehavior instanceof FieldFilterBehavior<?> filterBehavior)
+               {
+                  //////////////////////////////////////////////////////////////////////
+                  // call to apply the behavior on the criteria - which will return a //
+                  // new criteria if any values are changed, else the input criteria  //
+                  //////////////////////////////////////////////////////////////////////
+                  QFilterCriteria newCriteria = apply(criteria, instance, table, field, filterBehavior);
+
+                  if(newCriteria != criteria)
+                  {
+                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // if the new criteria is not the same as the old criteria, mark that we need to make and return a clone. //
+                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     newCriteriaList.add(newCriteria);
+                     needToUseClone = true;
+                  }
+                  else
+                  {
+                     newCriteriaList.add(criteria);
+                  }
+               }
+            }
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // similar to above - iterate over the subfilters, making a recursive call, and tracking if we //
+      // got back the same object (in which case, there are no changes, and we don't need to clone), //
+      // or a different object (in which case, we do need a clone, because there were changes).      //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
+      {
+         QQueryFilter newSubFilter = applyFieldBehaviorsToFilter(instance, table, subFilter, behaviorsToOmit);
+         if(newSubFilter != subFilter)
+         {
+            newSubFilters.add(newSubFilter);
+            needToUseClone = true;
+         }
+         else
+         {
+            newSubFilters.add(subFilter);
+         }
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // if we need to return a clone, then do so, replacing the lists with the ones we built in here //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      if(needToUseClone)
+      {
+         QQueryFilter cloneFilter = filter.clone();
+         cloneFilter.setCriteria(newCriteriaList);
+         cloneFilter.setSubFilters(newSubFilters);
+         return (cloneFilter);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////
+      // else, if no clone needed (e.g., no changes), return the original filter //
+      /////////////////////////////////////////////////////////////////////////////
+      return (filter);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QFilterCriteria apply(QFilterCriteria criteria, QInstance instance, QTableMetaData table, QFieldMetaData field, FieldFilterBehavior<?> filterBehavior)
+   {
+      if(criteria == null || CollectionUtils.nullSafeIsEmpty(criteria.getValues()))
+      {
+         return (criteria);
+      }
+
+      List<Serializable> newValues  = new ArrayList<>();
+      boolean            changedAny = false;
+
+      for(Serializable value : criteria.getValues())
+      {
+         Serializable newValue = filterBehavior.applyToFilterCriteriaValue(value, instance, table, field);
+         if(!Objects.equals(value, newValue))
+         {
+            newValues.add(newValue);
+            changedAny = true;
+         }
+         else
+         {
+            newValues.add(value);
+         }
+      }
+
+      if(changedAny)
+      {
+         QFilterCriteria clone = criteria.clone();
+         clone.setValues(newValues);
+         return (clone);
+      }
+      else
+      {
+         return (criteria);
       }
    }
 

@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,8 +36,10 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.GetInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.GetActionCacheHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -45,11 +49,16 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldFilterBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 
 
 /*******************************************************************************
@@ -58,10 +67,14 @@ import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
  *******************************************************************************/
 public class GetAction
 {
+   private static final QLogger LOG = QLogger.getLogger(GetAction.class);
+
    private Optional<TableCustomizerInterface> postGetRecordCustomizer;
 
    private GetInput                 getInput;
    private QPossibleValueTranslator qPossibleValueTranslator;
+
+   private Memoization<Pair<String, String>, List<FieldFilterBehavior<?>>> getFieldFilterBehaviorMemoization = new Memoization<>();
 
 
 
@@ -105,6 +118,8 @@ public class GetAction
          usingDefaultGetInterface = true;
       }
 
+      getInput = applyFieldBehaviors(getInput);
+
       getInterface.validateInput(getInput);
       getOutput = getInterface.execute(getInput);
 
@@ -126,6 +141,82 @@ public class GetAction
       }
 
       return getOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private GetInput applyFieldBehaviors(GetInput getInput)
+   {
+      QTableMetaData table = getInput.getTable();
+
+      try
+      {
+         if(getInput.getPrimaryKey() != null)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the input has a primary key, get its behaviors, then apply, and update the pkey in the input if the value is different //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            List<FieldFilterBehavior<?>> fieldFilterBehaviors = getFieldFilterBehaviors(table, table.getPrimaryKeyField());
+            for(FieldFilterBehavior<?> fieldFilterBehavior : CollectionUtils.nonNullList(fieldFilterBehaviors))
+            {
+               QFilterCriteria pkeyCriteria    = new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.EQUALS, getInput.getPrimaryKey());
+               QFilterCriteria updatedCriteria = ValueBehaviorApplier.apply(pkeyCriteria, QContext.getQInstance(), table, table.getField(table.getPrimaryKeyField()), fieldFilterBehavior);
+               if(updatedCriteria != pkeyCriteria)
+               {
+                  getInput.setPrimaryKey(updatedCriteria.getValues().get(0));
+               }
+            }
+         }
+         else if(getInput.getUniqueKey() != null)
+         {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if the input has a unique key, get its behaviors, then apply, and update the ukey values in the input if any are different //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Map<String, Serializable> updatedUniqueKey = new HashMap<>(getInput.getUniqueKey());
+            for(String fieldName : getInput.getUniqueKey().keySet())
+            {
+               List<FieldFilterBehavior<?>> fieldFilterBehaviors = getFieldFilterBehaviors(table, fieldName);
+               for(FieldFilterBehavior<?> fieldFilterBehavior : CollectionUtils.nonNullList(fieldFilterBehaviors))
+               {
+                  QFilterCriteria ukeyCriteria    = new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, updatedUniqueKey.get(fieldName));
+                  QFilterCriteria updatedCriteria = ValueBehaviorApplier.apply(ukeyCriteria, QContext.getQInstance(), table, table.getField(table.getPrimaryKeyField()), fieldFilterBehavior);
+                  updatedUniqueKey.put(fieldName, updatedCriteria.getValues().get(0));
+               }
+            }
+            getInput.setUniqueKey(updatedUniqueKey);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error applying field behaviors to get input - will run with original inputs", e);
+      }
+
+      return (getInput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<FieldFilterBehavior<?>> getFieldFilterBehaviors(QTableMetaData tableMetaData, String fieldName)
+   {
+      Pair<String, String> key = new Pair<>(tableMetaData.getName(), fieldName);
+      return getFieldFilterBehaviorMemoization.getResult(key, (p) ->
+      {
+         List<FieldFilterBehavior<?>> rs = new ArrayList<>();
+         for(FieldBehavior<?> fieldBehavior : tableMetaData.getFields().get(fieldName).getBehaviors())
+         {
+            if(fieldBehavior instanceof FieldFilterBehavior<?> fieldFilterBehavior)
+            {
+               rs.add(fieldFilterBehavior);
+            }
+         }
+         return (rs);
+      }).orElse(null);
    }
 
 
@@ -254,6 +345,8 @@ public class GetAction
       {
          returnRecord = postGetRecordCustomizer.get().postQuery(getInput, List.of(record)).get(0);
       }
+
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.READ, QContext.getQInstance(), getInput.getTable(), List.of(record), null);
 
       if(getInput.getShouldTranslatePossibleValues())
       {
