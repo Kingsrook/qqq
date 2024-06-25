@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -210,6 +211,32 @@ class CaseChangeBehaviorTest extends BaseTest
 
       field.setBehaviors(Set.of(CaseChangeBehavior.NONE));
       assertEquals("Circle", CaseChangeBehavior.NONE.applyToFilterCriteriaValue("Circle", qInstance, table, field));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValidation()
+   {
+      QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE);
+
+      ///////////////////////////////////////////
+      // should be no errors on a string field //
+      ///////////////////////////////////////////
+      assertTrue(CaseChangeBehavior.TO_UPPER_CASE.validateBehaviorConfiguration(table, table.getField("name")).isEmpty());
+
+      //////////////////////////////////////////
+      // should be an error on a number field //
+      //////////////////////////////////////////
+      assertEquals(1, CaseChangeBehavior.TO_LOWER_CASE.validateBehaviorConfiguration(table, table.getField("id")).size());
+
+      /////////////////////////////////////////
+      // NONE should be allowed on any field //
+      /////////////////////////////////////////
+      assertTrue(CaseChangeBehavior.NONE.validateBehaviorConfiguration(table, table.getField("id")).isEmpty());
    }
 
 }

@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -138,6 +140,33 @@ public enum CaseChangeBehavior implements FieldBehavior<CaseChangeBehavior>, Fie
    public boolean allowMultipleBehaviorsOfThisType()
    {
       return (false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<String> validateBehaviorConfiguration(QTableMetaData tableMetaData, QFieldMetaData fieldMetaData)
+   {
+      if(this == NONE)
+      {
+         return Collections.emptyList();
+      }
+
+      List<String> errors      = new ArrayList<>();
+      String       errorSuffix = " field [" + fieldMetaData.getName() + "] in table [" + tableMetaData.getName() + "]";
+
+      if(fieldMetaData.getType() != null)
+      {
+         if(!fieldMetaData.getType().isStringLike())
+         {
+            errors.add("A CaseChange was a applied to a non-String-like field:" + errorSuffix);
+         }
+      }
+
+      return (errors);
    }
 
 }
