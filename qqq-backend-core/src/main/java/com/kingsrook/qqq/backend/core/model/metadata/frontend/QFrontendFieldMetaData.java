@@ -57,7 +57,7 @@ public class QFrontendFieldMetaData
    private List<FieldAdornment> adornments;
    private List<QHelpContent>   helpContents;
 
-   private List<FieldBehaviorForFrontend> fieldBehaviors;
+   private List<FieldBehaviorForFrontend> behaviors;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -86,11 +86,11 @@ public class QFrontendFieldMetaData
       {
          if(behavior instanceof FieldBehaviorForFrontend fbff)
          {
-            if(fieldBehaviors == null)
+            if(behaviors == null)
             {
-               fieldBehaviors = new ArrayList<>();
+               behaviors = new ArrayList<>();
             }
-            fieldBehaviors.add(fbff);
+            behaviors.add(fbff);
          }
       }
    }
@@ -222,8 +222,8 @@ public class QFrontendFieldMetaData
     ** Getter for fieldBehaviors
     **
     *******************************************************************************/
-   public List<FieldBehaviorForFrontend> getFieldBehaviors()
+   public List<FieldBehaviorForFrontend> getBehaviors()
    {
-      return fieldBehaviors;
+      return behaviors;
    }
 }
