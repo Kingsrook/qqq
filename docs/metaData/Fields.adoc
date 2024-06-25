@@ -117,3 +117,19 @@ new QTableMetaData().withName("flights").withFields(List.of(
       .withBehavior(new DateTimeDisplayValueBehavior()
          .withDefaultZoneId("UTC"))
 ----
+
+===== CaseChangeBehavior
+A field can be made to always go through a toUpperCase or toLowerCase transformation, both before it is stored in a backend,
+and after it is read from a backend, by adding a CaseChangeBehavior to it:
+
+[source,java]
+.Examples of using CaseChangeBehavior
+----
+new QTableMetaData().withName("item").withFields(List.of(
+
+   new QFieldMetaData("sku", QFieldType.STRING)
+      .withBehavior(CaseChangeBehavior.TO_UPPER_CASE)),
+
+   new QFieldMetaData("username", QFieldType.STRING)
+      .withBehavior(CaseChangeBehavior.TO_LOWER_CASE)),
+----
