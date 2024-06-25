@@ -208,7 +208,7 @@ public class GetAction
       return getFieldFilterBehaviorMemoization.getResult(key, (p) ->
       {
          List<FieldFilterBehavior<?>> rs = new ArrayList<>();
-         for(FieldBehavior<?> fieldBehavior : tableMetaData.getFields().get(fieldName).getBehaviors())
+         for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(tableMetaData.getFields().get(fieldName).getBehaviors()))
          {
             if(fieldBehavior instanceof FieldFilterBehavior<?> fieldFilterBehavior)
             {
