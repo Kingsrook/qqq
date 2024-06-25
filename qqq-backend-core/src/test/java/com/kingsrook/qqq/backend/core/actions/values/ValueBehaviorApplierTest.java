@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.actions.values;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.CaseChangeBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldDisplayBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldFilterBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -164,7 +166,7 @@ class ValueBehaviorApplierTest extends BaseTest
 
       QRecord record = new QRecord().withValue("firstName", "Homer").withValue("lastName", "Simpson").withValue("ssn", "0123456789");
       ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.FORMATTING, qInstance, table, List.of(record), null);
-      
+
       assertEquals("HOMER", record.getDisplayValue("firstName"));
       assertNull(record.getDisplayValue("lastName")); // noop will literally do nothing, not even pass value through.
       assertEquals("0123456789", record.getValueString("ssn")); // formatting action should not run the too-long truncate behavior
@@ -314,11 +316,87 @@ class ValueBehaviorApplierTest extends BaseTest
       assertEquals("square", hasCriteriaAndSubFilterUpdated.getCriteria().get(0).getValues().get(0));
       assertEquals("circle", hasCriteriaAndSubFilterUpdated.getSubFilters().get(0).getCriteria().get(0).getValues().get(0));
 
-      QQueryFilter hasMultiValueCriteriaToUpdate = new QQueryFilter().withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle", "Square"));
+      QQueryFilter hasMultiValueCriteriaToUpdate = new QQueryFilter().withCriteria(new QFilterCriteria("name", QCriteriaOperator.IN, "Triangle", "Square"));
       QQueryFilter hasMultiValueCriteriaUpdated  = ValueBehaviorApplier.applyFieldBehaviorsToFilter(qInstance, table, hasMultiValueCriteriaToUpdate, null);
       assertNotSame(hasMultiValueCriteriaToUpdate, hasMultiValueCriteriaUpdated);
       assertEquals(List.of("triangle", "square"), hasMultiValueCriteriaUpdated.getCriteria().get(0).getValues());
       assertEquals(hasMultiValueCriteriaToUpdate.getSubFilters(), hasMultiValueCriteriaUpdated.getSubFilters());
+
+      QQueryFilter hasMultipleCriteriaOnlyToUpdate = new QQueryFilter()
+         .withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Square"))
+         .withCriteria(new QFilterCriteria("id", QCriteriaOperator.IS_NOT_BLANK));
+
+      QQueryFilter hasMultipleCriteriaOnlyOneUpdated = ValueBehaviorApplier.applyFieldBehaviorsToFilter(qInstance, table, hasMultipleCriteriaOnlyToUpdate, null);
+      assertNotSame(hasMultipleCriteriaOnlyToUpdate, hasMultipleCriteriaOnlyOneUpdated);
+      assertEquals(2, hasMultipleCriteriaOnlyOneUpdated.getCriteria().size());
+      assertEquals(List.of("square"), hasMultipleCriteriaOnlyOneUpdated.getCriteria().get(0).getValues());
+      assertEquals(hasMultipleCriteriaOnlyToUpdate.getSubFilters(), hasMultipleCriteriaOnlyOneUpdated.getSubFilters());
+
+      //////////////////////////////////////////////////////////
+      // set 2 behaviors on the field - make sure both happen //
+      //////////////////////////////////////////////////////////
+      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE, new AppendSomethingBehavior("-x")));
+      QQueryFilter criteriaValueToUpdateTwice = new QQueryFilter().withCriteria(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle"));
+      QQueryFilter criteriaValueUpdatedTwice  = ValueBehaviorApplier.applyFieldBehaviorsToFilter(qInstance, table, criteriaValueToUpdateTwice, null);
+      assertNotSame(criteriaValueToUpdateTwice, criteriaValueUpdatedTwice);
+      assertEquals("triangle-x", criteriaValueUpdatedTwice.getCriteria().get(0).getValues().get(0));
+      assertEquals(criteriaValueToUpdateTwice.getSubFilters(), criteriaValueUpdatedTwice.getSubFilters());
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static class AppendSomethingBehavior implements FieldBehavior<AppendSomethingBehavior>, FieldFilterBehavior<AppendSomethingBehavior>
+   {
+      private String something;
+
+
+
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public AppendSomethingBehavior(String something)
+      {
+         this.something = something;
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public Serializable applyToFilterCriteriaValue(Serializable value, QInstance instance, QTableMetaData table, QFieldMetaData field)
+      {
+         return value + something;
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public AppendSomethingBehavior getDefault()
+      {
+         return null;
+      }
+
+
+
+      /***************************************************************************
+       *
+       ***************************************************************************/
+      @Override
+      public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field)
+      {
+         //////////
+         // noop //
+         //////////
+      }
    }
 
 }

@@ -159,6 +159,7 @@ public class ValueBehaviorApplier
             }
          }
 
+         QFilterCriteria criteriaToUse = criteria;
          if(field != null)
          {
             for(FieldBehavior<?> fieldBehavior : CollectionUtils.nonNullCollection(field.getBehaviors()))
@@ -175,23 +176,20 @@ public class ValueBehaviorApplier
                   // call to apply the behavior on the criteria - which will return a //
                   // new criteria if any values are changed, else the input criteria  //
                   //////////////////////////////////////////////////////////////////////
-                  QFilterCriteria newCriteria = apply(criteria, instance, table, field, filterBehavior);
+                  criteriaToUse = apply(criteriaToUse, instance, table, field, filterBehavior);
 
-                  if(newCriteria != criteria)
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if the new criteria is not the same as the old criteria, mark that we need to make and return a clone. //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  if(criteriaToUse != criteria)
                   {
-                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                     // if the new criteria is not the same as the old criteria, mark that we need to make and return a clone. //
-                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                     newCriteriaList.add(newCriteria);
                      needToUseClone = true;
-                  }
-                  else
-                  {
-                     newCriteriaList.add(criteria);
                   }
                }
             }
          }
+
+         newCriteriaList.add(criteriaToUse);
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////
