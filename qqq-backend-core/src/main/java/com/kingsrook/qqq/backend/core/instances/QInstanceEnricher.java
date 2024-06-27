@@ -123,6 +123,18 @@ public class QInstanceEnricher
     *******************************************************************************/
    public void enrich()
    {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // at one point, we did apps later - but - it was possible to put tables in an app's   //
+      // sections, but not its children list (enrichApp fixes this by adding such tables to  //
+      // the children list) so then when enrichTable runs, it looks for fields that are      //
+      // possible-values pointed at tables,  for adding LINK adornments - and that could     //
+      // cause such links to be omitted, mysteriously!  so, do app enrichment before tables. //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      if(qInstance.getApps() != null)
+      {
+         qInstance.getApps().values().forEach(this::enrichApp);
+      }
+
       if(qInstance.getTables() != null)
       {
          qInstance.getTables().values().forEach(this::enrichTable);
@@ -137,11 +149,6 @@ public class QInstanceEnricher
       if(qInstance.getBackends() != null)
       {
          qInstance.getBackends().values().forEach(this::enrichBackend);
-      }
-
-      if(qInstance.getApps() != null)
-      {
-         qInstance.getApps().values().forEach(this::enrichApp);
       }
 
       if(qInstance.getReports() != null)
