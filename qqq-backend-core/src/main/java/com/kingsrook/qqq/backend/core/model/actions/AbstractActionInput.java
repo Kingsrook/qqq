@@ -107,8 +107,10 @@ public class AbstractActionInput
    /*******************************************************************************
     ** Getter for instance
     **
+    ** Deprecated.  Please use QContext.getInstance() instead
     *******************************************************************************/
    @JsonIgnore
+   @Deprecated
    public QInstance getInstance()
    {
       return (QContext.getQInstance());
@@ -119,8 +121,10 @@ public class AbstractActionInput
    /*******************************************************************************
     ** Getter for session
     **
+    ** Deprecated.  Please use QContext.getSession() instead
     *******************************************************************************/
    @JsonIgnore
+   @Deprecated
    public QSession getSession()
    {
       return (QContext.getQSession());
