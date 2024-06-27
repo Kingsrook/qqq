@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -185,8 +186,7 @@ public class AsyncRecordPipeLoop
 
       if(recordCount > 0)
       {
-         LOG.info(String.format("Processed %,d records", recordCount)
-            + String.format(" at end of job [%s] in %,d ms (%.2f records/second).", jobName, (endTime - jobStartTime), 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
+         LOG.info("End of job summary", logPair("recordCount", recordCount), logPair("jobName", jobName), logPair("millis", endTime - jobStartTime), logPair("recordsPerSecond", 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
       }
 
       return (recordCount);
