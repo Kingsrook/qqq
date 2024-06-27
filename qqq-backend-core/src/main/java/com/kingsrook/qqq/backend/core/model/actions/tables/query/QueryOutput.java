@@ -53,7 +53,7 @@ public class QueryOutput extends AbstractActionOutput implements Serializable
       }
       else
       {
-         storage = new QueryOutputList();
+         storage = new QueryOutputList(queryInput);
       }
    }
 

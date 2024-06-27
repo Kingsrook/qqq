@@ -24,7 +24,10 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import org.apache.logging.log4j.Level;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -33,15 +36,50 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 class QueryOutputList implements QueryOutputStorageInterface
 {
-   private List<QRecord> records = new ArrayList<>();
+   private static final QLogger LOG = QLogger.getLogger(QueryOutputList.class);
+
+   private final String        tableName;
+   private       List<QRecord> records = new ArrayList<>();
+
+   private static int LOG_SIZE_INFO_OVER  = 50_000;
+   private static int LOG_SIZE_WARN_OVER  = 100_000;
+   private static int LOG_SIZE_ERROR_OVER = 250_000;
 
 
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QueryOutputList()
+   public QueryOutputList(QueryInput queryInput)
    {
+      tableName = queryInput.getTableName();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void logSize(int sizeBefore, int sizeAfter)
+   {
+      Level level = null;
+      if(sizeBefore < LOG_SIZE_ERROR_OVER && sizeAfter >= LOG_SIZE_ERROR_OVER)
+      {
+         level = Level.ERROR;
+      }
+      else if(sizeBefore < LOG_SIZE_WARN_OVER && sizeAfter >= LOG_SIZE_WARN_OVER)
+      {
+         level = Level.WARN;
+      }
+      else if(sizeBefore < LOG_SIZE_INFO_OVER && sizeAfter >= LOG_SIZE_INFO_OVER)
+      {
+         level = Level.INFO;
+      }
+
+      if(level != null)
+      {
+         LOG.log(level, "Large number of records in QueryOutputList", new Throwable(), logPair("noRecords", sizeAfter), logPair("tableName", tableName));
+      }
    }
 
 
@@ -52,7 +90,9 @@ class QueryOutputList implements QueryOutputStorageInterface
    @Override
    public void addRecord(QRecord record)
    {
+      int sizeBefore = this.records.size();
       records.add(record);
+      logSize(sizeBefore, this.records.size());
    }
 
 
@@ -63,7 +103,9 @@ class QueryOutputList implements QueryOutputStorageInterface
    @Override
    public void addRecords(List<QRecord> records)
    {
+      int sizeBefore = this.records.size();
       this.records.addAll(records);
+      logSize(sizeBefore, this.records.size());
    }
 
 
@@ -77,4 +119,36 @@ class QueryOutputList implements QueryOutputStorageInterface
       return (records);
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for LOG_SIZE_INFO_OVER
+    **
+    *******************************************************************************/
+   public static void setLogSizeInfoOver(int logSizeInfoOver)
+   {
+      QueryOutputList.LOG_SIZE_INFO_OVER = logSizeInfoOver;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for LOG_SIZE_WARN_OVER
+    **
+    *******************************************************************************/
+   public static void setLogSizeWarnOver(int logSizeWarnOver)
+   {
+      QueryOutputList.LOG_SIZE_WARN_OVER = logSizeWarnOver;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for LOG_SIZE_ERROR_OVER
+    **
+    *******************************************************************************/
+   public static void setLogSizeErrorOver(int logSizeErrorOver)
+   {
+      QueryOutputList.LOG_SIZE_ERROR_OVER = logSizeErrorOver;
+   }
 }
