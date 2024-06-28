@@ -49,6 +49,13 @@ public class RDBMSBackendMetaData extends QBackendMetaData
 
    private RDBMSBackendMetaData readOnlyBackendMetaData;
 
+   ///////////////////////////////////////////////////////////
+   // define well-known (and fully supported) vendor values //
+   ///////////////////////////////////////////////////////////
+   public static final String VENDOR_MYSQL        = "mysql";
+   public static final String VENDOR_H2           = "h2";
+   public static final String VENDOR_AURORA_MYSQL = "aurora-mysql";
+
 
 
    /*******************************************************************************
