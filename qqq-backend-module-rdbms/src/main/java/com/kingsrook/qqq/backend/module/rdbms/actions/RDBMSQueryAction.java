@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -356,18 +357,29 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private PreparedStatement createStatement(Connection connection, String sql, QueryInput queryInput) throws SQLException
    {
-      if(connection.getClass().getName().startsWith("com.mysql"))
+      /////////////////////////////////////////////////////////////////////////
+      // if we're allowed to use the mysqlResultSetOptimization, and we have //
+      // the query hint of "potentially large no of results", then check if  //
+      // our backend is indeed mysql, and if so, then apply those settings.  //
+      /////////////////////////////////////////////////////////////////////////
+      if(mysqlResultSetOptimizationEnabled && queryInput.hasQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
       {
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if we're allowed to use the mysqlResultSetOptimization, and we have the query hint of "expected large result set", then do it. //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(mysqlResultSetOptimizationEnabled && queryInput.getQueryHints() != null && queryInput.getQueryHints().contains(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS))
+         RDBMSBackendMetaData rdbmsBackendMetaData = (RDBMSBackendMetaData) queryInput.getBackend();
+
+         ////////////////////////////////////////////////////////////////////////////
+         // todo - remove "aurora" - it's a legacy value here for a staged rollout //
+         ////////////////////////////////////////////////////////////////////////////
+         if(RDBMSBackendMetaData.VENDOR_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || RDBMSBackendMetaData.VENDOR_AURORA_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || "aurora".equals(rdbmsBackendMetaData.getVendor()))
          {
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // mysql "optimization", presumably here - from Result Set section of https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html //
-            // without this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a large query (e.g., > 1,000,000 rows).                 //
-            // with this change, we start to get results immediately, and the total runtime also seems lower...                                                            //
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // mysql "optimization", presumably here - from Result Set section of                               //
+            // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html without //
+            // this change, we saw ~10 seconds of "wait" time, before results would start to stream out of a    //
+            // large query (e.g., > 1,000,000 rows).                                                            //
+            // with this change, we start to get results immediately, and the total runtime also seems lower... //
+            // perhaps more importantly, without this change, the whole result set goes into memory - but with  //
+            // this change, it is streamed.                                                                     //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
             PreparedStatement statement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             statement.setFetchSize(Integer.MIN_VALUE);
             return (statement);
