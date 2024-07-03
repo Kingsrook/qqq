@@ -22,11 +22,22 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
+import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+
+
 /*******************************************************************************
- ** Interface to mark a field behavior as one to be used during generating
- ** display values.
+ ** Interface to mark a field behavior as one to be used before a query filter
+ ** is executed.
  *******************************************************************************/
-public interface FieldDisplayBehavior<T extends FieldDisplayBehavior<T>> extends FieldBehavior<T>
+public interface FieldFilterBehavior<T extends FieldFilterBehavior<T>> extends FieldBehavior<T>
 {
+
+   /*******************************************************************************
+    ** Apply the filter to a value from a criteria.
+    ** If you don't want to change the input value, return the parameter.
+    *******************************************************************************/
+   Serializable applyToFilterCriteriaValue(Serializable value, QInstance instance, QTableMetaData table, QFieldMetaData field);
 
 }

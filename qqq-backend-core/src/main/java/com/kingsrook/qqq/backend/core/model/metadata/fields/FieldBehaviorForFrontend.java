@@ -22,11 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
-/*******************************************************************************
- ** Interface to mark a field behavior as one to be used during generating
- ** display values.
- *******************************************************************************/
-public interface FieldDisplayBehavior<T extends FieldDisplayBehavior<T>> extends FieldBehavior<T>
-{
+import java.io.Serializable;
 
+
+/*******************************************************************************
+ ** Marker interface for a field behavior which you might want to send to a
+ ** frontend (e.g., so it can edit values to match what'll happen in the backend).
+ *******************************************************************************/
+public interface FieldBehaviorForFrontend extends Serializable
+{
 }

@@ -23,13 +23,17 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehaviorForFrontend;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -53,6 +57,8 @@ public class QFrontendFieldMetaData
    private List<FieldAdornment> adornments;
    private List<QHelpContent>   helpContents;
 
+   private List<FieldBehaviorForFrontend> behaviors;
+
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +81,18 @@ public class QFrontendFieldMetaData
       this.adornments = fieldMetaData.getAdornments();
       this.defaultValue = fieldMetaData.getDefaultValue();
       this.helpContents = fieldMetaData.getHelpContents();
+
+      for(FieldBehavior<?> behavior : CollectionUtils.nonNullCollection(fieldMetaData.getBehaviors()))
+      {
+         if(behavior instanceof FieldBehaviorForFrontend fbff)
+         {
+            if(behaviors == null)
+            {
+               behaviors = new ArrayList<>();
+            }
+            behaviors.add(fbff);
+         }
+      }
    }
 
 
@@ -198,4 +216,14 @@ public class QFrontendFieldMetaData
       return helpContents;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for fieldBehaviors
+    **
+    *******************************************************************************/
+   public List<FieldBehaviorForFrontend> getBehaviors()
+   {
+      return behaviors;
+   }
 }

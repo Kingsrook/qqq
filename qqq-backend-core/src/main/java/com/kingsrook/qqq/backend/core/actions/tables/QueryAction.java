@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryActionCacheHel
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -116,6 +118,11 @@ public class QueryAction
             queryInput.setRecordPipe(new RecordPipeBufferedWrapper(queryInput.getRecordPipe()));
          }
       }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // apply any available field behaviors to the filter (noting that, if anything changes, a new filter is returned) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.setFilter(ValueBehaviorApplier.applyFieldBehaviorsToFilter(QContext.getQInstance(), table, queryInput.getFilter(), Collections.emptySet()));
 
       QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, queryInput.getFilter());
 
@@ -283,6 +290,8 @@ public class QueryAction
       {
          records = postQueryRecordCustomizer.get().postQuery(queryInput, records);
       }
+
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.READ, QContext.getQInstance(), queryInput.getTable(), records, null);
 
       if(queryInput.getShouldTranslatePossibleValues())
       {
