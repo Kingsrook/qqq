@@ -245,9 +245,9 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       // extract keys from source records //
       //////////////////////////////////////
       List<Serializable> sourceKeyList = runBackendStepInput.getRecords().stream()
-         .map(r -> r.getValueString(sourceTableKeyField))
+         .map(r -> extractSourceKeyValueFromRecord(r, sourceTableKeyField))
          .filter(Objects::nonNull)
-         .filter(v -> !"".equals(v))
+         .filter(v -> !"".equals(String.valueOf(v)))
          .collect(Collectors.toList());
 
       if(this.recordLookupHelper == null)
@@ -267,12 +267,12 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
       /////////////////////////////////////////////////////////////////
-      QFieldMetaData    destinationForeignKeyField = runBackendStepInput.getInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
+      QFieldMetaData    destinationForeignKeyField = QContext.getQInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
       Set<Serializable> processedSourceKeys        = new HashSet<>();
       for(QRecord sourceRecord : runBackendStepInput.getRecords())
       {
          Serializable sourcePrimaryKey = sourceRecord.getValue(QContext.getQInstance().getTable(config.sourceTable).getPrimaryKeyField());
-         Serializable sourceKeyValue   = sourceRecord.getValue(sourceTableKeyField);
+         Serializable sourceKeyValue   = extractSourceKeyValueFromRecord(sourceRecord, sourceTableKeyField);
          if(processedSourceKeys.contains(sourceKeyValue))
          {
             LOG.info("Skipping duplicated source-key within page", logPair("key", sourceKeyValue));
@@ -370,6 +370,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
+   }
+
+
+   /*******************************************************************************
+    ** Given a source record, extract what we'll use as its key from it.
+    **
+    ** Normally this is just its sourceTableKeyField value - but - a subclass may
+    ** do something more interesting, including, returning a java-record.
+    *******************************************************************************/
+   protected Serializable extractSourceKeyValueFromRecord(QRecord sourceRecord, String sourceTableKeyField)
+   {
+      return sourceRecord.getValue(sourceTableKeyField);
    }
 
 
