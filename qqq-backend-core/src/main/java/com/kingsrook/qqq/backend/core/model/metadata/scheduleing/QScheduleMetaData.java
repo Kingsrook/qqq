@@ -22,29 +22,41 @@
 package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+
+
 /*******************************************************************************
  ** Meta-data to define scheduled actions within QQQ.
  **
- ** Initially, only supports repeating jobs, either on a given # of seconds or millis.
+ ** Supports repeating jobs, either on a given # of seconds or millis, or cron
+ ** expressions (though cron may not be supported by all schedulers!)
+ **
  ** Can also specify an initialDelay - e.g., to avoid all jobs starting up at the
  ** same moment.
  **
- ** In the future we most likely would want to allow cron strings to be added here.
  *******************************************************************************/
 public class QScheduleMetaData
 {
-   public enum RunStrategy
-   {PARALLEL, SERIAL}
-
-
+   private String schedulerName;
+   private String description;
 
    private Integer repeatSeconds;
    private Integer repeatMillis;
    private Integer initialDelaySeconds;
    private Integer initialDelayMillis;
 
-   private RunStrategy variantRunStrategy;
-   private String      variantBackend;
+   private String cronExpression;
+   private String cronTimeZoneId;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isCron()
+   {
+      return StringUtils.hasContent(cronExpression);
+   }
 
 
 
@@ -185,63 +197,125 @@ public class QScheduleMetaData
 
 
    /*******************************************************************************
-    ** Getter for variantBackend
+    ** Getter for cronExpression
     *******************************************************************************/
-   public String getVariantBackend()
+   public String getCronExpression()
    {
-      return (this.variantBackend);
+      return (this.cronExpression);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for variantBackend
+    ** Setter for cronExpression
     *******************************************************************************/
-   public void setVariantBackend(String variantBackend)
+   public void setCronExpression(String cronExpression)
    {
-      this.variantBackend = variantBackend;
+      this.cronExpression = cronExpression;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for variantBackend
+    ** Fluent setter for cronExpression
     *******************************************************************************/
-   public QScheduleMetaData withBackendVariant(String backendVariant)
+   public QScheduleMetaData withCronExpression(String cronExpression)
    {
-      this.variantBackend = backendVariant;
+      this.cronExpression = cronExpression;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for variantRunStrategy
+    ** Getter for cronTimeZoneId
     *******************************************************************************/
-   public RunStrategy getVariantRunStrategy()
+   public String getCronTimeZoneId()
    {
-      return (this.variantRunStrategy);
+      return (this.cronTimeZoneId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for variantRunStrategy
+    ** Setter for cronTimeZoneId
     *******************************************************************************/
-   public void setVariantRunStrategy(RunStrategy variantRunStrategy)
+   public void setCronTimeZoneId(String cronTimeZoneId)
    {
-      this.variantRunStrategy = variantRunStrategy;
+      this.cronTimeZoneId = cronTimeZoneId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for variantRunStrategy
+    ** Fluent setter for cronTimeZoneId
     *******************************************************************************/
-   public QScheduleMetaData withVariantRunStrategy(RunStrategy variantRunStrategy)
+   public QScheduleMetaData withCronTimeZoneId(String cronTimeZoneId)
    {
-      this.variantRunStrategy = variantRunStrategy;
+      this.cronTimeZoneId = cronTimeZoneId;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulerName
+    *******************************************************************************/
+   public String getSchedulerName()
+   {
+      return (this.schedulerName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulerName
+    *******************************************************************************/
+   public void setSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schedulerName
+    *******************************************************************************/
+   public QScheduleMetaData withSchedulerName(String schedulerName)
+   {
+      this.schedulerName = schedulerName;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public QScheduleMetaData withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
 
 }

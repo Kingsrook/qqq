@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.context;
 
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
@@ -31,6 +34,8 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -46,6 +51,8 @@ public class QContext
    private static ThreadLocal<QSession>                   qSessionThreadLocal            = new ThreadLocal<>();
    private static ThreadLocal<QBackendTransaction>        qBackendTransactionThreadLocal = new ThreadLocal<>();
    private static ThreadLocal<Stack<AbstractActionInput>> actionStackThreadLocal         = new ThreadLocal<>();
+
+   private static ThreadLocal<Map<String, Serializable>> objectsThreadLocal = new ThreadLocal<>();
 
 
 
@@ -101,6 +108,25 @@ public class QContext
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static <T extends Throwable> void withTemporaryContext(CapturedContext context, UnsafeVoidVoidMethod<T> method) throws T
+   {
+      CapturedContext originalContext = QContext.capture();
+      try
+      {
+         QContext.init(context);
+         method.run();
+      }
+      finally
+      {
+         QContext.init(originalContext);
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Init a new thread with the context captured from a different thread.  e.g.,
     ** when starting some async task.
     *******************************************************************************/
@@ -132,6 +158,7 @@ public class QContext
       qSessionThreadLocal.remove();
       qBackendTransactionThreadLocal.remove();
       actionStackThreadLocal.remove();
+      objectsThreadLocal.remove();
    }
 
 
@@ -259,4 +286,94 @@ public class QContext
 
       return (Optional.of(actionStackThreadLocal.get().get(0)));
    }
+
+
+
+   /*******************************************************************************
+    ** get one named object from the Context for the current thread.  may return null.
+    *******************************************************************************/
+   public static Serializable getObject(String key)
+   {
+      if(objectsThreadLocal.get() == null)
+      {
+         return null;
+      }
+      return objectsThreadLocal.get().get(key);
+   }
+
+
+
+   /*******************************************************************************
+    ** get one named object from the Context for the current thread, cast to the
+    ** specified type if possible.  if not found, or wrong type, empty is returned.
+    *******************************************************************************/
+   public static <T extends Serializable> Optional<T> getObject(String key, Class<T> type)
+   {
+      Serializable object = getObject(key);
+
+      if(type.isInstance(object))
+      {
+         return Optional.of(type.cast(object));
+      }
+      else if(object == null)
+      {
+         return Optional.empty();
+      }
+      else
+      {
+         LOG.warn("Unexpected type of object found in session under key [" + key + "]",
+            logPair("expectedType", type.getName()),
+            logPair("actualType", object.getClass().getName())
+         );
+         return Optional.empty();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** put a named object into the Context for the current thread.
+    *******************************************************************************/
+   public static void setObject(String key, Serializable object)
+   {
+      if(objectsThreadLocal.get() == null)
+      {
+         objectsThreadLocal.set(new HashMap<>());
+      }
+      objectsThreadLocal.get().put(key, object);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a named object from the Context of the current thread.
+    *******************************************************************************/
+   public static void removeObject(String key)
+   {
+      if(objectsThreadLocal.get() != null)
+      {
+         objectsThreadLocal.get().remove(key);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** get the full map of named objects for the current thread (possibly null).
+    *******************************************************************************/
+   public static Map<String, Serializable> getObjects()
+   {
+      return objectsThreadLocal.get();
+   }
+
+
+
+   /*******************************************************************************
+    ** fully replace the map of named objets for the current thread.
+    *******************************************************************************/
+   public static void setObjects(Map<String, Serializable> objects)
+   {
+      objectsThreadLocal.set(objects);
+   }
+
 }

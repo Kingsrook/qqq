@@ -1,0 +1,64 @@
+== GetAction
+include::../variables.adoc[]
+
+The `*GetAction*` is essentially a subset of the <<QueryAction>>, only specifically meant to get just a single record from a {link-table}.
+In SQL/RDBMS terms, it is analogous to a `SELECT` statement, where a single record may be found - or - it may not be found.
+
+For all tables, `GetAction` can do a lookup by primary key.
+In addition, for tables that define a `UniqueKey`, name/value pairs (in the form of a `Map`) can be used as input for `GetAction`.
+
+=== Examples
+[source,java]
+.Basic form - by primary key
+----
+GetInput input = new GetInput();
+input.setTableName("orders");
+input.setPrimaryKey(1);
+GetOutput output = new GetAction.execute(input);
+QRecord record = output.getRecord();
+----
+
+[source,java]
+.Secondary form - by Unique Key
+----
+GetInput input = new GetInput();
+input.setTableName("products");
+input.setUniqueKey(Map.of("storeId", 1701, "sku", "ABCD"));
+GetOutput output = new GetAction.execute(input);
+QRecord record = output.getRecord();
+----
+
+=== GetInput
+* `table` - *String, Required* - Name of the table being queried against.
+* `primaryKey` - *Serializable, Conditional* - Value for the primary key field of the table being queried.
+Type should match the table's primary key field's type.
+If a `primaryKey` is not given, then a `uniqueKey` must be given.
+* `uniqueKey` - *Map of String -> Serializable, Conditional* - Map of name-value pairs that define the record to be fetcheed.
+Keys in the map must be field names from the table being queried.
+Values in the map should should be of types that correspond to the fields.
+If a `primaryKey` is not given, then a `uniqueKey` must be given.
+If both `primaryKey` and `uniqueKey` are given, then `uniqueKey` is ignored.
+* `transaction` - *QBackendTransaction object* - Optional transaction object.
+** Behavior for this object is backend-dependant.
+In an RDBMS backend, this object is generally needed if you want your query to see data that may have been modified within the same transaction.
+
+* `shouldTranslatePossibleValues` - *boolean, default: false* - Controls whether any fields in the table with a *possibleValueSource* assigned to them should have those possible values looked up
+(e.g., to provide text translations in the generated records' `displayValues` map).
+** For example, if getting a record to present to a user, this would generally need to be *true*.
+But if getting a record as part of a process, then this can generally be left as *false*.
+* `shouldGenerateDisplayValues` - *boolean, default: false* - Controls whether field level *displayFormats* should be used to populate the generated records' `displayValues` map.
+** For example, if getting a record to present to a user, this would generally need to be *true*.
+But if getting a record as part of a process, then this can generally be left as *false*.
+* `shouldFetchHeavyFields` - *boolean, default: true* - Controls whether or not fields marked as `isHeavy` should be fetched & returned or not.
+* `shouldOmitHiddenFields` - *boolean, default: true* - Controls whether or not fields marked as `isHidden` should be included in the result or not.
+* `shouldMaskPassword` - *boolean, default: true* - Controls whether or not fields with `type` = `PASSWORD` should be masked, or if their actual values should be returned.
+* `queryJoins` - *List of <<QueryJoin>> objects* - Optional list of tables to be joined with the main table being queried.
+See QueryJoin under <<QueryAction>> for further details.
+* `includeAssociations` - *boolean, default: false* - Control whether or not records from tables defined as `associations` under the table being queried should be included in the result or not.
+* `associationNamesToInclude` - *Collection of String* - If `includeAssociations` is true, then this field can be used to limit which associated tables are included.
+If this field is null, then all associated tables are included.
+Otherwise, a table is only included if its name is in this collection.
+
+=== GetOutput
+* `record` - *QRecord* - The record that was specified by the input `primaryKey` or `uniqueKey`.
+Will be null if the record was not found.

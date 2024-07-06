@@ -22,15 +22,28 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.CaseChangeBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -69,6 +82,42 @@ class GetActionTest extends BaseTest
       GetOutput result = new GetAction().execute(request);
       assertNotNull(result);
       assertNotNull(result.getRecord());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterFieldBehaviors() throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////
+      // insert one shape with a mixed-case name, one with an all-lower name //
+      /////////////////////////////////////////////////////////////////////////
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_SHAPE).withRecords(List.of(
+         new QRecord().withValue("name", "Triangle"),
+         new QRecord().withValue("name", "square")
+      )));
+
+      ///////////////////////////////////////////////////////////////////////////
+      // now set the shape table's name field to have a to-lower-case behavior //
+      ///////////////////////////////////////////////////////////////////////////
+      QInstance      qInstance = QContext.getQInstance();
+      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
+      table.withUniqueKey(new UniqueKey("name"));
+      QFieldMetaData field = table.getField("name");
+      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // confirm that if we query for "Triangle", we can't find it (because query will to-lower-case the criteria) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertNull(GetAction.execute(TestUtils.TABLE_NAME_SHAPE, Map.of("name", "Triangle")));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // confirm that if we query for "SQUARE", we do find it (because query will to-lower-case the criteria) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertNotNull(GetAction.execute(TestUtils.TABLE_NAME_SHAPE, Map.of("name", "sQuArE")));
    }
 
 }

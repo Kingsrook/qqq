@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.sql.Connection;
-import java.time.Instant;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +38,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
-import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -55,26 +54,11 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
     *******************************************************************************/
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
-      InsertOutput rs = new InsertOutput();
-
-      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
-      {
-         LOG.debug("Insert request called with 0 records.  Returning with no-op", logPair("tableName", insertInput.getTableName()));
-         rs.setRecords(new ArrayList<>());
-         return (rs);
-      }
-
+      InsertOutput   rs    = new InsertOutput();
       QTableMetaData table = insertInput.getTable();
-      Instant        now   = Instant.now();
 
-      for(QRecord record : insertInput.getRecords())
-      {
-         ///////////////////////////////////////////
-         // todo .. better (not hard-coded names) //
-         ///////////////////////////////////////////
-         setValueIfTableHasField(record, table, "createDate", now);
-         setValueIfTableHasField(record, table, "modifyDate", now);
-      }
+      Connection connection = null;
+      boolean    needToCloseConnection = false;
 
       try
       {
@@ -92,8 +76,6 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
          List<QRecord> outputRecords = new ArrayList<>();
          rs.setRecords(outputRecords);
 
-         Connection connection;
-         boolean    needToCloseConnection = false;
          if(insertInput.getTransaction() != null && insertInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
          {
             connection = rdbmsTransaction.getConnection();
@@ -104,87 +86,77 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             needToCloseConnection = true;
          }
 
-         try
+         for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
          {
-            for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
+            String        tableName   = escapeIdentifier(getTableName(table));
+            StringBuilder sql         = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
+            List<Object>  params      = new ArrayList<>();
+            int           recordIndex = 0;
+
+            //////////////////////////////////////////////////////
+            // for each record in the page:                     //
+            // - if it has errors, skip it                      //
+            // - else add a "(?,?,...,?)," clause to the INSERT //
+            // - then add all fields into the params list       //
+            //////////////////////////////////////////////////////
+            for(QRecord record : page)
             {
-               String        tableName   = escapeIdentifier(getTableName(table));
-               StringBuilder sql         = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
-               List<Object>  params      = new ArrayList<>();
-               int           recordIndex = 0;
-
-               //////////////////////////////////////////////////////
-               // for each record in the page:                     //
-               // - if it has errors, skip it                      //
-               // - else add a "(?,?,...,?)," clause to the INSERT //
-               // - then add all fields into the params list       //
-               //////////////////////////////////////////////////////
-               for(QRecord record : page)
+               if(CollectionUtils.nullSafeHasContents(record.getErrors()))
                {
-                  if(CollectionUtils.nullSafeHasContents(record.getErrors()))
-                  {
-                     continue;
-                  }
-
-                  if(recordIndex++ > 0)
-                  {
-                     sql.append(",");
-                  }
-                  sql.append("(").append(questionMarks).append(")");
-
-                  for(QFieldMetaData field : insertableFields)
-                  {
-                     Serializable value = record.getValue(field.getName());
-                     value = scrubValue(field, value);
-                     params.add(value);
-                  }
-               }
-
-               ////////////////////////////////////////////////////////////////////////////////////////
-               // if all records had errors, copy them to the output, and continue w/o running query //
-               ////////////////////////////////////////////////////////////////////////////////////////
-               if(recordIndex == 0)
-               {
-                  for(QRecord record : page)
-                  {
-                     QRecord outputRecord = new QRecord(record);
-                     outputRecords.add(outputRecord);
-                  }
                   continue;
                }
 
-               Long mark = System.currentTimeMillis();
+               if(recordIndex++ > 0)
+               {
+                  sql.append(",");
+               }
+               sql.append("(").append(questionMarks).append(")");
 
-               ///////////////////////////////////////////////////////////
-               // execute the insert, then foreach record in the input, //
-               // add it to the output, and set its generated id too.   //
-               ///////////////////////////////////////////////////////////
-               // todo sql customization - can edit sql and/or param list
-               // todo - non-serial-id style tables
-               // todo - other generated values, e.g., createDate...  maybe need to re-select?
-               List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-               int           index  = 0;
+               for(QFieldMetaData field : insertableFields)
+               {
+                  Serializable value = record.getValue(field.getName());
+                  value = scrubValue(field, value);
+                  params.add(value);
+               }
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // if all records had errors, copy them to the output, and continue w/o running query //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            if(recordIndex == 0)
+            {
                for(QRecord record : page)
                {
                   QRecord outputRecord = new QRecord(record);
                   outputRecords.add(outputRecord);
-
-                  if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
-                  {
-                     Integer id = idList.get(index++);
-                     outputRecord.setValue(table.getPrimaryKeyField(), id);
-                  }
                }
+               continue;
+            }
 
-               logSQL(sql, params, mark);
-            }
-         }
-         finally
-         {
-            if(needToCloseConnection)
+            Long mark = System.currentTimeMillis();
+
+            ///////////////////////////////////////////////////////////
+            // execute the insert, then foreach record in the input, //
+            // add it to the output, and set its generated id too.   //
+            ///////////////////////////////////////////////////////////
+            // todo sql customization - can edit sql and/or param list
+            // todo - non-serial-id style tables
+            // todo - other generated values, e.g., createDate...  maybe need to re-select?
+            List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
+            int           index  = 0;
+            for(QRecord record : page)
             {
-               connection.close();
+               QRecord outputRecord = new QRecord(record);
+               outputRecords.add(outputRecord);
+
+               if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
+               {
+                  Integer id = idList.get(index++);
+                  outputRecord.setValue(table.getPrimaryKeyField(), id);
+               }
             }
+
+            logSQL(sql, params, mark);
          }
 
          return rs;
@@ -193,6 +165,21 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
+      finally
+      {
+         if(needToCloseConnection && connection != null)
+         {
+            try
+            {
+               connection.close();
+            }
+            catch(SQLException se)
+            {
+               LOG.error("Error closing database connection", se);
+            }
+         }
+      }
+
    }
 
 }

@@ -22,13 +22,12 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.utils;
 
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  **
  *******************************************************************************/
-@Disabled("Because localstack won't start")
 public class S3UtilsTest extends BaseS3Test
 {
 
@@ -44,14 +42,14 @@ public class S3UtilsTest extends BaseS3Test
     **
     *******************************************************************************/
    @Test
-   public void testListObjectsInBucketAtPath()
+   public void testListObjectsInBucketAtPath() throws QException
    {
       S3Utils s3Utils = getS3Utils();
       assertEquals(3, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/").size(), "Expected # of s3 objects without subfolders");
       assertEquals(2, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/*.csv").size(), "Expected # of csv s3 objects without subfolders");
       assertEquals(1, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/*.txt").size(), "Expected # of txt s3 objects without subfolders");
       assertEquals(0, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/*.pdf").size(), "Expected # of pdf s3 objects without subfolders");
-      assertEquals(4, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/**").size(), "Expected # of s3 objects with subfolders");
+      assertEquals(7, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "/**").size(), "Expected # of s3 objects with subfolders");
       assertEquals(3, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "/" + TEST_FOLDER, "/").size(), "With leading slash");
       assertEquals(3, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "/" + TEST_FOLDER, "").size(), "Without trailing slash");
       assertEquals(3, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "//" + TEST_FOLDER, "//").size(), "With multiple leading and trailing slashes");
@@ -62,8 +60,8 @@ public class S3UtilsTest extends BaseS3Test
       assertEquals(1, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "/", "").size(), "In the root folder, specified as /");
       assertEquals(1, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "//", "").size(), "In the root folder, specified as multiple /s");
       assertEquals(1, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "", "").size(), "In the root folder, specified as empty-string");
-      assertEquals(5, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "/", "**").size(), "In the root folder, specified as /, and recursively");
-      assertEquals(5, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "", "**").size(), "In the root folder, specified as empty-string, and recursively");
+      assertEquals(8, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "/", "**").size(), "In the root folder, specified as /, and recursively");
+      assertEquals(8, s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "", "**").size(), "In the root folder, specified as empty-string, and recursively");
    }
 
 
@@ -72,7 +70,7 @@ public class S3UtilsTest extends BaseS3Test
     **
     *******************************************************************************/
    @Test
-   public void testGetObjectAsInputStream() throws IOException
+   public void testGetObjectAsInputStream() throws Exception
    {
       S3Utils               s3Utils           = getS3Utils();
       List<S3ObjectSummary> s3ObjectSummaries = s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "test-files", "");

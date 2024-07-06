@@ -1,0 +1,25 @@
+:link-app: <<Apps,QQQ App>>
+:link-apps: <<Apps,QQQ Apps>>
+:link-backend: <<Backends,QQQ Backend>>
+:link-backends: <<Backends,QQQ Backends>>
+:link-field: <<Fields,QQQ Field>>
+:link-fields: <<Fields,QQQ Fields>>
+:link-icon: <<Icons,Icon>>
+:link-icons: <<Icons,Icons>>
+:link-instance: <<QInstance,QInstance>>
+:link-join: <<Joins,QQQ Join>>
+:link-joins: <<Joins,QQQ Joins>>
+:link-permissionRule: <<PermissionRules,Permission Rule>>
+:link-permissionRules: <<PermissionRules,Permission Rules>>
+:link-possibleValueSource: <<PossibleValueSources,QQQ Possible Value Source>>
+:link-possibleValueSources: <<PossibleValueSources,QQQ Possible Value Sources>>
+:link-process: <<Processes,QQQ Process>>
+:link-processes: <<Processes,QQQ Processes>>
+:link-report: <<Reports,QQQ Report>>
+:link-reports: <<Reports,QQQ Reports>>
+:link-securityKeyType: <<SecurityKeyTypes,Security Key Type>>
+:link-securityKeyTypes: <<SecurityKeyTypes,Security Key Types>>
+:link-table: <<Tables,QQQ Table>>
+:link-tables: <<Tables,QQQ Tables>>
+:link-widget: <<Widgets,QQQ Widget>>
+:link-widgets: <<Widgets,QQQ Widgets>>

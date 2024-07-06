@@ -33,7 +33,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -44,8 +46,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.QMessagingProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -53,8 +58,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -76,6 +83,7 @@ public class QInstance
    private QAuthenticationMetaData                  authentication      = null;
    private QBrandingMetaData                        branding            = null;
    private Map<String, QAutomationProviderMetaData> automationProviders = new HashMap<>();
+   private Map<String, QMessagingProviderMetaData>  messagingProviders  = new HashMap<>();
 
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
@@ -91,7 +99,12 @@ public class QInstance
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
+   private Map<String, QSchedulerMetaData> schedulers       = new LinkedHashMap<>();
+   private Map<String, SchedulableType>    schedulableTypes = new LinkedHashMap<>();
+
    private Map<String, QSupplementalInstanceMetaData> supplementalMetaData = new LinkedHashMap<>();
+
+   protected Map<String, List<QHelpContent>> helpContent;
 
    private String              deploymentMode;
    private Map<String, String> environmentValues = new LinkedHashMap<>();
@@ -100,10 +113,13 @@ public class QInstance
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
 
-   // todo - lock down the object (no more changes allowed) after it's been validated?
+   //////////////////////////////////////////////////////////////////////////////////////
+   // todo - lock down the object (no more changes allowed) after it's been validated? //
+   //  if doing so, may need to copy all of the collections into read-only versions... //
+   //////////////////////////////////////////////////////////////////////////////////////
 
    @JsonIgnore
-   private boolean hasBeenValidated = false;
+   private QInstanceValidationState validationState = QInstanceValidationState.PENDING;
 
    private Map<String, String> memoizedTablePaths   = new HashMap<>();
    private Map<String, String> memoizedProcessPaths = new HashMap<>();
@@ -735,23 +751,106 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Getter for hasBeenValidated
     **
     *******************************************************************************/
-   public boolean getHasBeenValidated()
+   public void addMessagingProvider(QMessagingProviderMetaData messagingProvider)
    {
-      return hasBeenValidated;
+      String name = messagingProvider.getName();
+      if(this.messagingProviders.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second messagingProvider with name: " + name));
+      }
+      this.messagingProviders.put(name, messagingProvider);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for hasBeenValidated
     **
+    *******************************************************************************/
+   public QMessagingProviderMetaData getMessagingProvider(String name)
+   {
+      return (this.messagingProviders.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for messagingProviders
+    **
+    *******************************************************************************/
+   public Map<String, QMessagingProviderMetaData> getMessagingProviders()
+   {
+      return messagingProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for messagingProviders
+    **
+    *******************************************************************************/
+   public void setMessagingProviders(Map<String, QMessagingProviderMetaData> messagingProviders)
+   {
+      this.messagingProviders = messagingProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasBeenValidated
+    **
+    *******************************************************************************/
+   public boolean getHasBeenValidated()
+   {
+      return validationState.equals(QInstanceValidationState.COMPLETE);
+   }
+
+
+
+   /*******************************************************************************
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the validationState will be set to COMPLETE.
+    **
+    ** Else, if passed a null, the validationState will be reset to PENDING.  e.g., to
+    ** re-trigger validation (can be useful in tests).
     *******************************************************************************/
    public void setHasBeenValidated(QInstanceValidationKey key)
    {
-      this.hasBeenValidated = true;
+      if(key == null)
+      {
+         this.validationState = QInstanceValidationState.PENDING;
+      }
+      else
+      {
+         this.validationState = QInstanceValidationState.COMPLETE;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** If pass a QInstanceValidationKey (which can only be instantiated by the validator),
+    ** then the validationState set to RUNNING.
+    **
+    *******************************************************************************/
+   public void setValidationIsRunning(QInstanceValidationKey key)
+   {
+      if(key != null)
+      {
+         this.validationState = QInstanceValidationState.RUNNING;
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** check if the instance is currently running validation.
+    **
+    *******************************************************************************/
+   public boolean getValidationIsRunning()
+   {
+      return validationState.equals(QInstanceValidationState.RUNNING);
    }
 
 
@@ -1042,9 +1141,15 @@ public class QInstance
       for(QSecurityKeyType securityKeyType : CollectionUtils.nonNullMap(getSecurityKeyTypes()).values())
       {
          rs.add(securityKeyType.getName());
+
          if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
          {
             rs.add(securityKeyType.getAllAccessKeyName());
+         }
+
+         if(StringUtils.hasContent(securityKeyType.getNullValueBehaviorKeyName()))
+         {
+            rs.add(securityKeyType.getNullValueBehaviorKeyName());
          }
       }
       return (rs);
@@ -1196,6 +1301,188 @@ public class QInstance
    {
       this.deploymentMode = deploymentMode;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void add(TopLevelMetaDataInterface metaData)
+   {
+      metaData.addSelfToInstance(this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addScheduler(QSchedulerMetaData scheduler)
+   {
+      String name = scheduler.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a scheduler without a name."));
+      }
+      if(this.schedulers.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second scheduler with name: " + name));
+      }
+      this.schedulers.put(name, scheduler);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QSchedulerMetaData getScheduler(String name)
+   {
+      return (this.schedulers.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulers
+    **
+    *******************************************************************************/
+   public Map<String, QSchedulerMetaData> getSchedulers()
+   {
+      return schedulers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulers
+    **
+    *******************************************************************************/
+   public void setSchedulers(Map<String, QSchedulerMetaData> schedulers)
+   {
+      this.schedulers = schedulers;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSchedulableType(SchedulableType schedulableType)
+   {
+      String name = schedulableType.getName();
+      if(!StringUtils.hasContent(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a schedulableType without a name."));
+      }
+      if(this.schedulableTypes.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second schedulableType with name: " + name));
+      }
+      this.schedulableTypes.put(name, schedulableType);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public SchedulableType getSchedulableType(String name)
+   {
+      return (this.schedulableTypes.get(name));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schedulableTypes
+    **
+    *******************************************************************************/
+   public Map<String, SchedulableType> getSchedulableTypes()
+   {
+      return schedulableTypes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schedulableTypes
+    **
+    *******************************************************************************/
+   public void setSchedulableTypes(Map<String, SchedulableType> schedulableTypes)
+   {
+      this.schedulableTypes = schedulableTypes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QInstance withHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent (for a slot)
+    *******************************************************************************/
+   public QInstance withHelpContent(String slot, QHelpContent helpContent)
+   {
+      if(this.helpContent == null)
+      {
+         this.helpContent = new HashMap<>();
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.computeIfAbsent(slot, (k) -> new ArrayList<>());
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, listForSlot);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      if(this.helpContent == null)
+      {
+         return;
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.get(slot);
+      if(listForSlot == null)
+      {
+         return;
+      }
+
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
 
 }

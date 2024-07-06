@@ -60,16 +60,18 @@ public class TestUtils
    @SuppressWarnings("unchecked")
    public static void primeTestDatabase() throws Exception
    {
-      ConnectionManager connectionManager          = new ConnectionManager();
-      Connection        connection                 = connectionManager.getConnection(TestUtils.defineBackend());
-      InputStream       primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
-      assertNotNull(primeTestDatabaseSqlStream);
-      List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
-      lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
-      String joinedSQL = String.join("\n", lines);
-      for(String sql : joinedSQL.split(";"))
+      ConnectionManager connectionManager = new ConnectionManager();
+      try(Connection connection = connectionManager.getConnection(TestUtils.defineBackend()))
       {
-         QueryManager.executeUpdate(connection, sql);
+         InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
+         assertNotNull(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
+         String joinedSQL = String.join("\n", lines);
+         for(String sql : joinedSQL.split(";"))
+         {
+            QueryManager.executeUpdate(connection, sql);
+         }
       }
    }
 
@@ -82,8 +84,10 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection        connection        = connectionManager.getConnection(defineBackend());
-      QueryManager.executeStatement(connection, sql, resultSetProcessor);
+      try(Connection connection = connectionManager.getConnection(defineBackend()))
+      {
+         QueryManager.executeStatement(connection, sql, resultSetProcessor);
+      }
    }
 
 

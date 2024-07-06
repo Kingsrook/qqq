@@ -32,7 +32,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,8 +79,10 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -100,6 +104,7 @@ import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSo
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -107,6 +112,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendVariant;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -279,6 +285,14 @@ public class QJavalinImplementation
 
          try
          {
+            ////////////////////////////////////////////////////////////////////////////////
+            // clear the cache of classes in this class, so that new classes can be found //
+            ////////////////////////////////////////////////////////////////////////////////
+            MetaDataProducerHelper.clearTopLevelClassCache();
+
+            /////////////////////////////////////////////////
+            // try to get a new instance from the supplier //
+            /////////////////////////////////////////////////
             QInstance newQInstance = qInstanceHotSwapSupplier.get();
             if(newQInstance == null)
             {
@@ -286,6 +300,9 @@ public class QJavalinImplementation
                return;
             }
 
+            ///////////////////////////////////////////////////////////////////////////////////
+            // validate the instance, and only if it passes, then set it in our static field //
+            ///////////////////////////////////////////////////////////////////////////////////
             new QInstanceValidator().validate(newQInstance);
             QJavalinImplementation.qInstance = newQInstance;
             LOG.info("Swapped qInstance");
@@ -364,8 +381,8 @@ public class QJavalinImplementation
             post("/export", QJavalinImplementation::dataExportWithoutFilename);
             get("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
             post("/export/{filename}", QJavalinImplementation::dataExportWithFilename);
-            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
-            post("/possibleValues/{fieldName}", QJavalinImplementation::possibleValues);
+            get("/possibleValues/{fieldName}", QJavalinImplementation::possibleValuesForTableField);
+            post("/possibleValues/{fieldName}", QJavalinImplementation::possibleValuesForTableField);
 
             // todo - add put and/or patch at this level (without a primaryKey) to do a bulk update based on primaryKeys in the records.
             path("/{primaryKey}", () ->
@@ -381,6 +398,9 @@ public class QJavalinImplementation
                QJavalinScriptsHandler.defineRecordRoutes();
             });
          });
+
+         get("/possibleValues/{possibleValueSourceName}", QJavalinImplementation::possibleValuesStandalone);
+         post("/possibleValues/{possibleValueSourceName}", QJavalinImplementation::possibleValuesStandalone);
 
          get("/widget/{name}", QJavalinImplementation::widget); // todo - can we just do a slow log here?
 
@@ -420,10 +440,24 @@ public class QJavalinImplementation
          authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
          authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
 
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // put the qInstance into context - but no session yet (since, the whole point of this call is to manage the session!) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QContext.init(qInstance, null);
          QSession session = authenticationModule.createSession(qInstance, authContext);
 
          context.cookie(SESSION_UUID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
-         context.result(JsonUtils.toJson(MapBuilder.of("uuid", session.getUuid())));
+
+         Map<String, Serializable> resultMap = new HashMap<>();
+         resultMap.put("uuid", session.getUuid());
+
+         if(session.getValuesForFrontend() != null)
+         {
+            LinkedHashMap<String, Serializable> valuesForFrontend = new LinkedHashMap<>(session.getValuesForFrontend());
+            resultMap.put("values", valuesForFrontend);
+         }
+
+         context.result(JsonUtils.toJson(resultMap));
       }
       catch(Exception e)
       {
@@ -524,7 +558,10 @@ public class QJavalinImplementation
             }
          }
 
-         QContext.init(qInstance, null); // hmm...
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // put the qInstance into context - but no session yet (since, the whole point of this call is to setup the session!) //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QContext.init(qInstance, null);
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, input);
 
@@ -703,10 +740,15 @@ public class QJavalinImplementation
          {
             throw (new QUserFacingException("Error updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
          }
-         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
-         {
-            throw (new QUserFacingException("Warning updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
-         }
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at one time, we threw upon warning - but                                                           //
+         // on insert we need to return the record (e.g., to get a generated id), so, make update do the same. //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         // {
+         //    throw (new QUserFacingException("Warning updating " + tableMetaData.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
+         // }
 
          QJavalinAccessLogger.logEndSuccess();
          context.result(JsonUtils.toJson(updateOutput));
@@ -772,9 +814,34 @@ public class QJavalinImplementation
       {
          String       fieldName = formParam.getKey();
          List<String> values    = formParam.getValue();
+
          if(CollectionUtils.nullSafeHasContents(values))
          {
             String value = values.get(0);
+
+            if("associations".equals(fieldName) && StringUtils.hasContent(value))
+            {
+               JSONObject associationsJSON = new JSONObject(value);
+               for(String key : associationsJSON.keySet())
+               {
+                  JSONArray     associatedRecordsJSON = associationsJSON.getJSONArray(key);
+                  List<QRecord> associatedRecords     = new ArrayList<>();
+                  record.withAssociatedRecords(key, associatedRecords);
+
+                  for(int i = 0; i < associatedRecordsJSON.length(); i++)
+                  {
+                     QRecord    associatedRecord = new QRecord();
+                     JSONObject recordJSON       = associatedRecordsJSON.getJSONObject(i);
+                     for(String k : recordJSON.keySet())
+                     {
+                        associatedRecord.withValue(k, ValueUtils.getValueAsString(recordJSON.get(k)));
+                     }
+                     associatedRecords.add(associatedRecord);
+                  }
+               }
+               continue;
+            }
+
             if(StringUtils.hasContent(value))
             {
                record.setValue(fieldName, value);
@@ -786,7 +853,6 @@ public class QJavalinImplementation
          }
          else
          {
-            // is this ever hit?
             record.setValue(fieldName, null);
          }
       }
@@ -874,10 +940,16 @@ public class QJavalinImplementation
          {
             throw (new QUserFacingException("Error inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getErrors())));
          }
-         if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
-         {
-            throw (new QUserFacingException("Warning inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
-         }
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at one time, we threw upon warning - but                                                              //
+         // our use-case is, the frontend, it wants to get the record, and show a success (with the generated id) //
+         // and then to also show a warning message - so - let it all be returned and handled on the frontend.    //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if(CollectionUtils.nullSafeHasContents(outputRecord.getWarnings()))
+         // {
+         //    throw (new QUserFacingException("Warning inserting " + table.getLabel() + ": " + joinErrorsWithCommasAndAnd(outputRecord.getWarnings())));
+         // }
 
          QJavalinAccessLogger.logEndSuccess(logPair("primaryKey", () -> (outputRecord.getValue(table.getPrimaryKeyField()))));
          context.result(JsonUtils.toJson(insertOutput));
@@ -1124,6 +1196,7 @@ public class QJavalinImplementation
          countInput.setTimeoutSeconds(DEFAULT_COUNT_TIMEOUT_SECONDS);
          countInput.setQueryJoins(processQueryJoinsParam(context));
          countInput.setIncludeDistinctCount(QJavalinUtils.queryParamIsTrue(context, "includeDistinct"));
+         countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
          CountAction countAction = new CountAction();
          CountOutput countOutput = countAction.execute(countInput);
@@ -1179,6 +1252,7 @@ public class QJavalinImplementation
          queryInput.setShouldGenerateDisplayValues(true);
          queryInput.setShouldTranslatePossibleValues(true);
          queryInput.setTimeoutSeconds(DEFAULT_QUERY_TIMEOUT_SECONDS);
+         queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -1189,7 +1263,9 @@ public class QJavalinImplementation
          }
          if(filter != null)
          {
-            queryInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
+            QQueryFilter qQueryFilter = JsonUtils.toObject(filter, QQueryFilter.class);
+            queryInput.setFilter(qQueryFilter);
+            qQueryFilter.interpretValues(Collections.emptyMap());
          }
 
          Integer skip  = QJavalinUtils.integerQueryParam(context, "skip");
@@ -1453,10 +1529,11 @@ public class QJavalinImplementation
          setupSession(context, exportInput);
 
          exportInput.setTableName(tableName);
-         exportInput.setReportFormat(reportFormat);
 
          String filename = optionalFilename.orElse(tableName + "." + reportFormat.toString().toLowerCase(Locale.ROOT));
-         exportInput.setFilename(filename);
+         exportInput.withReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename));
 
          Integer limit = QJavalinUtils.integerQueryParam(context, "limit");
          exportInput.setLimit(limit);
@@ -1487,7 +1564,7 @@ public class QJavalinImplementation
 
          UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
-            exportInput.setReportOutputStream(pos);
+            exportInput.getReportDestination().setReportOutputStream(pos);
 
             ExportAction exportAction = new ExportAction();
             exportAction.preExecute(exportInput);
@@ -1643,9 +1720,9 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    **
+    ** handler for a PVS that's associated with a field on a table.
     *******************************************************************************/
-   private static void possibleValues(Context context)
+   private static void possibleValuesForTableField(Context context)
    {
       try
       {
@@ -1684,35 +1761,70 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    **
+    ** handler for a standalone (e.g., outside of a table or process) PVS.
+    *******************************************************************************/
+   private static void possibleValuesStandalone(Context context)
+   {
+      try
+      {
+         String possibleValueSourceName = context.pathParam("possibleValueSourceName");
+
+         QPossibleValueSource pvs = qInstance.getPossibleValueSource(possibleValueSourceName);
+         if(pvs == null)
+         {
+            throw (new QNotFoundException("Could not find possible value source " + possibleValueSourceName + " in this instance."));
+         }
+
+         finishPossibleValuesRequest(context, possibleValueSourceName, null);
+      }
+      catch(Exception e)
+      {
+         handleException(context, e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** continuation for table or process PVS's,
     *******************************************************************************/
    static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
+   {
+      QQueryFilter defaultQueryFilter = null;
+      if(field.getPossibleValueSourceFilter() != null)
+      {
+         Map<String, Serializable> values = new HashMap<>();
+         if(context.formParamMap().containsKey("values"))
+         {
+            List<String> valuesParamList = context.formParamMap().get("values");
+            if(CollectionUtils.nullSafeHasContents(valuesParamList))
+            {
+               String valuesParam = valuesParamList.get(0);
+               values = JsonUtils.toObject(valuesParam, Map.class);
+            }
+         }
+
+         defaultQueryFilter = field.getPossibleValueSourceFilter().clone();
+         defaultQueryFilter.interpretValues(values);
+      }
+
+      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws IOException, QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
 
-      Map<String, Serializable> values = new HashMap<>();
-      if(context.formParamMap().containsKey("values"))
-      {
-         List<String> valuesParamList = context.formParamMap().get("values");
-         if(CollectionUtils.nullSafeHasContents(valuesParamList))
-         {
-            String valuesParam = valuesParamList.get(0);
-            values = JsonUtils.toObject(valuesParam, Map.class);
-         }
-      }
-
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       setupSession(context, input);
-      input.setPossibleValueSourceName(field.getPossibleValueSourceName());
+      input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
-
-      if(field.getPossibleValueSourceFilter() != null)
-      {
-         QQueryFilter filter = field.getPossibleValueSourceFilter().clone();
-         filter.interpretValues(values);
-         input.setDefaultQueryFilter(filter);
-      }
 
       if(StringUtils.hasContent(ids))
       {
@@ -1725,6 +1837,7 @@ public class QJavalinImplementation
       Map<String, Object> result = new HashMap<>();
       result.put("options", output.getResults());
       context.result(JsonUtils.toJson(result));
+
    }
 
 
@@ -1869,4 +1982,13 @@ public class QJavalinImplementation
       MILLIS_BETWEEN_HOT_SWAPS = millisBetweenHotSwaps;
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static long getStartTimeMillis()
+   {
+      return (startTime);
+   }
 }

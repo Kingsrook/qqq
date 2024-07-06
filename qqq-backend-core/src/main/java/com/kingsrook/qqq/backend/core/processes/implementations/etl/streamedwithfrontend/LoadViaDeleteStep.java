@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -34,7 +33,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
@@ -63,7 +61,7 @@ public class LoadViaDeleteStep extends AbstractLoadStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       QTableMetaData table = runBackendStepInput.getTable();
 
@@ -87,9 +85,8 @@ public class LoadViaDeleteStep extends AbstractLoadStep
    @Override
    public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      return (Optional.of(QBackendTransaction.openFor(deleteInput)));
    }
 }

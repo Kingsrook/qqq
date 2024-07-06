@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticat
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 
 
 /*******************************************************************************
@@ -74,7 +75,7 @@ public class TestUtils
    {
       return (new QBackendMetaData()
          .withName(DEFAULT_BACKEND_NAME)
-         .withBackendType("memory"));
+         .withBackendType(MemoryBackendModule.class));
    }
 
 

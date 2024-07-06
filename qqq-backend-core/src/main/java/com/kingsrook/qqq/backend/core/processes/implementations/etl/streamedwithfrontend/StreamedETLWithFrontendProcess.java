@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.VariantRunStrategy;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 
@@ -54,6 +55,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
  ** - review (frontend) - a review screen
  ** - validate (backend) - optionally (per input on review screen), does like the preview step,
  **      but on all records from the extract step.
+ ** - review (frontend) - a second view of the review screen, if the validate step was executed.
  ** - execute (backend) - processes all the rows, does all the work.
  ** - result (frontend) - a result screen
  **
@@ -82,6 +84,7 @@ public class StreamedETLWithFrontendProcess
    public static final String FIELD_RECORD_COUNT         = "recordCount"; // Integer
    public static final String FIELD_DEFAULT_QUERY_FILTER = "defaultQueryFilter"; // QQueryFilter or String (json, of q QQueryFilter)
    public static final String FIELD_FETCH_HEAVY_FIELDS   = "fetchHeavyFields"; // Boolean
+   public static final String FIELD_INCLUDE_ASSOCIATIONS = "includeAssociations"; // Boolean
 
    public static final String FIELD_SUPPORTS_FULL_VALIDATION = "supportsFullValidation"; // Boolean
    public static final String FIELD_DO_FULL_VALIDATION       = "doFullValidation"; // Boolean
@@ -143,6 +146,7 @@ public class StreamedETLWithFrontendProcess
          .withCode(new QCodeReference(StreamedETLPreviewStep.class))
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_SOURCE_TABLE)))
+            .withField(new QFieldMetaData(FIELD_INCLUDE_ASSOCIATIONS, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_INCLUDE_ASSOCIATIONS, false)))
             .withField(new QFieldMetaData(FIELD_FETCH_HEAVY_FIELDS, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_FETCH_HEAVY_FIELDS, false)))
             .withField(new QFieldMetaData(FIELD_DESTINATION_TABLE, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DESTINATION_TABLE)))
             .withField(new QFieldMetaData(FIELD_SUPPORTS_FULL_VALIDATION, QFieldType.BOOLEAN).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_SUPPORTS_FULL_VALIDATION, true)))
@@ -150,6 +154,7 @@ public class StreamedETLWithFrontendProcess
             .withField(new QFieldMetaData(FIELD_DEFAULT_QUERY_FILTER, QFieldType.STRING).withDefaultValue(defaultFieldValues.get(FIELD_DEFAULT_QUERY_FILTER)))
             .withField(new QFieldMetaData(FIELD_EXTRACT_CODE, QFieldType.STRING).withDefaultValue(extractStepClass == null ? null : new QCodeReference(extractStepClass)))
             .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE, QFieldType.STRING).withDefaultValue(transformStepClass == null ? null : new QCodeReference(transformStepClass)))
+            .withField(new QFieldMetaData(FIELD_TRANSFORM_CODE + "_expectedType", QFieldType.STRING).withDefaultValue(AbstractTransformStep.class.getName()))
             .withField(new QFieldMetaData(FIELD_PREVIEW_MESSAGE, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_PREVIEW_MESSAGE, DEFAULT_PREVIEW_MESSAGE_FOR_INSERT)))
             .withField(new QFieldMetaData(FIELD_TRANSACTION_LEVEL, QFieldType.STRING).withDefaultValue(defaultFieldValues.getOrDefault(FIELD_TRANSACTION_LEVEL, TRANSACTION_LEVEL_PROCESS)))
          );
@@ -169,7 +174,8 @@ public class StreamedETLWithFrontendProcess
          .withName(STEP_NAME_EXECUTE)
          .withCode(new QCodeReference(StreamedETLExecuteStep.class))
          .withInputData(new QFunctionInputMetaData()
-            .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(loadStepClass == null ? null : new QCodeReference(loadStepClass))))
+            .withField(new QFieldMetaData(FIELD_LOAD_CODE, QFieldType.STRING).withDefaultValue(loadStepClass == null ? null : new QCodeReference(loadStepClass)))
+            .withField(new QFieldMetaData(FIELD_LOAD_CODE + "_expectedType", QFieldType.STRING).withDefaultValue(AbstractLoadStep.class.getName())))
          .withOutputMetaData(new QFunctionOutputMetaData()
             .withField(new QFieldMetaData(FIELD_PROCESS_SUMMARY, QFieldType.STRING))
          );
@@ -485,5 +491,28 @@ public class StreamedETLWithFrontendProcess
          return (this);
       }
 
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withVariantRunStrategy(VariantRunStrategy variantRunStrategy)
+      {
+         processMetaData.setVariantRunStrategy(variantRunStrategy);
+         return (this);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public Builder withVariantBackend(String variantBackend)
+      {
+         processMetaData.setVariantBackend(variantBackend);
+         return (this);
+      }
    }
 }

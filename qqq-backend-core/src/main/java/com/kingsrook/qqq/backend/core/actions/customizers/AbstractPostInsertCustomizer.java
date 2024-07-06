@@ -42,9 +42,21 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  **
  ** Note that the full insertInput is available as a field in this class.
  *******************************************************************************/
-public abstract class AbstractPostInsertCustomizer
+public abstract class AbstractPostInsertCustomizer implements TableCustomizerInterface
 {
    protected InsertInput insertInput;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
+   {
+      this.insertInput = insertInput;
+      return (apply(records));
+   }
 
 
 

@@ -400,4 +400,49 @@ class DMLAuditActionTest extends BaseTest
       QContext.popAction();
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableWithoutIntegerPrimaryKey() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // we used to throw if table had no primary key.  first, assert that we do not throw in that case //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().addTable(
+         new QTableMetaData()
+            .withName("nullPkey")
+            .withField(new QFieldMetaData("foo", QFieldType.STRING))
+            .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD)));
+
+      new DMLAuditAction().execute(new DMLAuditInput()
+         .withTableActionInput(new InsertInput("nullPkey"))
+         .withRecordList(List.of(new QRecord())));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // next, make sure we don't throw (and don't record anything) if table's pkey isn't integer //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQInstance().addTable(
+         new QTableMetaData()
+            .withName("stringPkey")
+            .withField(new QFieldMetaData("idString", QFieldType.STRING))
+            .withPrimaryKeyField("idString")
+            .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD)));
+
+      new DMLAuditAction().execute(new DMLAuditInput()
+         .withTableActionInput(new InsertInput("stringPkey"))
+         .withRecordList(List.of(new QRecord())));
+
+      //////////////////////////////////
+      // make sure no audits happened //
+      //////////////////////////////////
+      List<QRecord> auditList = TestUtils.queryTable("audit");
+      assertTrue(auditList.isEmpty());
+   }
+
 }

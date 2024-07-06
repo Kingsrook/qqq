@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -76,7 +77,9 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -93,10 +96,8 @@ public class QInstanceEnricher
 
    private JoinGraph joinGraph;
 
-   //////////////////////////////////////////////////////////
-   // todo - come up w/ a way for app devs to set configs! //
-   //////////////////////////////////////////////////////////
-   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = true;
+   private boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels        = true;
+   private boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = true;
 
    //////////////////////////////////////////////////////////////////////////////////////////////////
    // let an instance define mappings to be applied during name-to-label enrichments,              //
@@ -122,6 +123,18 @@ public class QInstanceEnricher
     *******************************************************************************/
    public void enrich()
    {
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // at one point, we did apps later - but - it was possible to put tables in an app's   //
+      // sections, but not its children list (enrichApp fixes this by adding such tables to  //
+      // the children list) so then when enrichTable runs, it looks for fields that are      //
+      // possible-values pointed at tables,  for adding LINK adornments - and that could     //
+      // cause such links to be omitted, mysteriously!  so, do app enrichment before tables. //
+      /////////////////////////////////////////////////////////////////////////////////////////
+      if(qInstance.getApps() != null)
+      {
+         qInstance.getApps().values().forEach(this::enrichApp);
+      }
+
       if(qInstance.getTables() != null)
       {
          qInstance.getTables().values().forEach(this::enrichTable);
@@ -136,11 +149,6 @@ public class QInstanceEnricher
       if(qInstance.getBackends() != null)
       {
          qInstance.getBackends().values().forEach(this::enrichBackend);
-      }
-
-      if(qInstance.getApps() != null)
-      {
-         qInstance.getApps().values().forEach(this::enrichApp);
       }
 
       if(qInstance.getReports() != null)
@@ -159,6 +167,18 @@ public class QInstanceEnricher
       }
 
       enrichJoins();
+
+      //////////////////////////////////////////////////////////////////////////////
+      // if the instance DOES have 1 or more scheduler, but no schedulable types, //
+      // then go ahead and add the default set that qqq knows about               //
+      //////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(qInstance.getSchedulers()))
+      {
+         if(CollectionUtils.nullSafeIsEmpty(qInstance.getSchedulableTypes()))
+         {
+            QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
+         }
+      }
    }
 
 
@@ -371,9 +391,9 @@ public class QInstanceEnricher
          process.setLabel(nameToLabel(process.getName()));
       }
 
-      if(process.getStepList() != null)
+      for(QStepMetaData step : CollectionUtils.nonNullMap(process.getAllSteps()).values())
       {
-         process.getStepList().forEach(this::enrichStep);
+         enrichStep(step);
       }
 
       for(QSupplementalProcessMetaData supplementalProcessMetaData : CollectionUtils.nonNullMap(process.getSupplementalMetaData()).values())
@@ -463,6 +483,22 @@ public class QInstanceEnricher
             }
          }
       }
+
+      /////////////////////////////////////////////////////////////////////////
+      // add field behaviors for create date & modify date, if so configured //
+      /////////////////////////////////////////////////////////////////////////
+      if(configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+      {
+         if("createDate".equals(field.getName()) && field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class) == null)
+         {
+            field.withBehavior(DynamicDefaultValueBehavior.CREATE_DATE);
+         }
+
+         if("modifyDate".equals(field.getName()) && field.getBehaviorOnlyIfSet(DynamicDefaultValueBehavior.class) == null)
+         {
+            field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
+         }
+      }
    }
 
 
@@ -531,7 +567,66 @@ public class QInstanceEnricher
          enrichAppSection(section);
       }
 
+      ensureAppSectionMembersAreAppChildren(app);
+
       enrichPermissionRules(app);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void ensureAppSectionMembersAreAppChildren(QAppMetaData app)
+   {
+      ListingHash<Class<? extends QAppChildMetaData>, String> childrenByType = new ListingHash<>();
+      childrenByType.put(QTableMetaData.class, new ArrayList<>());
+      childrenByType.put(QProcessMetaData.class, new ArrayList<>());
+      childrenByType.put(QReportMetaData.class, new ArrayList<>());
+
+      for(QAppChildMetaData qAppChildMetaData : CollectionUtils.nonNullList(app.getChildren()))
+      {
+         childrenByType.add(qAppChildMetaData.getClass(), qAppChildMetaData.getName());
+      }
+
+      for(QAppSection section : CollectionUtils.nonNullList(app.getSections()))
+      {
+         for(String tableName : CollectionUtils.nonNullList(section.getTables()))
+         {
+            if(!childrenByType.get(QTableMetaData.class).contains(tableName))
+            {
+               QTableMetaData table = qInstance.getTable(tableName);
+               if(table != null)
+               {
+                  app.withChild(table);
+               }
+            }
+         }
+
+         for(String processName : CollectionUtils.nonNullList(section.getProcesses()))
+         {
+            if(!childrenByType.get(QProcessMetaData.class).contains(processName))
+            {
+               QProcessMetaData process = qInstance.getProcess(processName);
+               if(process != null)
+               {
+                  app.withChild(process);
+               }
+            }
+         }
+
+         for(String reportName : CollectionUtils.nonNullList(section.getReports()))
+         {
+            if(!childrenByType.get(QReportMetaData.class).contains(reportName))
+            {
+               QReportMetaData report = qInstance.getReport(reportName);
+               if(report != null)
+               {
+                  app.withChild(report);
+               }
+            }
+         }
+      }
    }
 
 
@@ -956,6 +1051,50 @@ public class QInstanceEnricher
 
 
    /*******************************************************************************
+    ** Do a default mapping from an underscore_style field name to a camelCase name.
+    **
+    ** Examples:
+    ** <ul>
+    **   <li>word_another_word_more_words -> wordAnotherWordMoreWords</li>
+    **   <li>l_ul_ul_ul -> lUlUlUl</li>
+    **   <li>tla_first -> tlaFirst</li>
+    **   <li>word_then_tla_in_middle -> wordThenTlaInMiddle</li>
+    **   <li>end_with_tla -> endWithTla</li>
+    **   <li>tla_and_another_tla -> tlaAndAnotherTla</li>
+    **   <li>ALL_CAPS -> allCaps</li>
+    ** </ul>
+    *******************************************************************************/
+   public static String inferNameFromBackendName(String backendName)
+   {
+      StringBuilder rs = new StringBuilder();
+
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // build a list of words in the name, then join them with _ and lower-case the result //
+      ////////////////////////////////////////////////////////////////////////////////////////
+      String[] words = backendName.toLowerCase(Locale.ROOT).split("_");
+      for(int i = 0; i < words.length; i++)
+      {
+         String word = words[i];
+         if(i == 0)
+         {
+            rs.append(word);
+         }
+         else
+         {
+            rs.append(word.substring(0, 1).toUpperCase());
+            if(word.length() > 1)
+            {
+               rs.append(word.substring(1));
+            }
+         }
+      }
+
+      return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
     ** If a app didn't have any sections, generate "sensible defaults"
     *******************************************************************************/
    private void generateAppSections(QAppMetaData app)
@@ -1158,6 +1297,68 @@ public class QInstanceEnricher
    public static void clearLabelMappings()
    {
       labelMappings.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public boolean getConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels()
+   {
+      return (this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public void setConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels(boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels)
+   {
+      this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels
+    *******************************************************************************/
+   public QInstanceEnricher withConfigRemoveIdFromNameWhenCreatingPossibleValueFieldLabels(boolean configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels)
+   {
+      this.configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels = configRemoveIdFromNameWhenCreatingPossibleValueFieldLabels;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public boolean getConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate()
+   {
+      return (this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public void setConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+   {
+      this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate
+    *******************************************************************************/
+   public QInstanceEnricher withConfigAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate(boolean configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate)
+   {
+      this.configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate = configAddDynamicDefaultValuesToFieldsNamedCreateDateAndModifyDate;
+      return (this);
    }
 
 }

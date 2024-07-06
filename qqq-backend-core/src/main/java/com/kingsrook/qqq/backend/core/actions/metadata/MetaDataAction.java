@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,14 +151,21 @@ public class MetaDataAction
       }
       metaDataOutput.setWidgets(widgets);
 
+      ///////////////////////////////////////////////////////
+      // sort apps - by sortOrder (integer), then by label //
+      ///////////////////////////////////////////////////////
+      List<QAppMetaData> sortedApps = metaDataInput.getInstance().getApps().values().stream()
+         .sorted(Comparator.comparing((QAppMetaData a) -> a.getSortOrder())
+            .thenComparing((QAppMetaData a) -> a.getLabel()))
+         .toList();
+
       ///////////////////////////////////
       // map apps to frontend metadata //
       ///////////////////////////////////
       Map<String, QFrontendAppMetaData> apps = new LinkedHashMap<>();
-      for(Map.Entry<String, QAppMetaData> entry : metaDataInput.getInstance().getApps().entrySet())
+      for(QAppMetaData app : sortedApps)
       {
-         String       appName = entry.getKey();
-         QAppMetaData app     = entry.getValue();
+         String appName = app.getName();
 
          PermissionCheckResult permissionResult = PermissionsHelper.getPermissionCheckResult(metaDataInput, app);
          if(permissionResult.equals(PermissionCheckResult.DENY_HIDE))
@@ -191,7 +199,7 @@ public class MetaDataAction
       // organize app tree nodes by their hierarchy //
       ////////////////////////////////////////////////
       List<AppTreeNode> appTree = new ArrayList<>();
-      for(QAppMetaData appMetaData : metaDataInput.getInstance().getApps().values())
+      for(QAppMetaData appMetaData : sortedApps)
       {
          if(appMetaData.getParentAppName() == null)
          {
@@ -209,6 +217,8 @@ public class MetaDataAction
       }
 
       metaDataOutput.setEnvironmentValues(metaDataInput.getInstance().getEnvironmentValues());
+
+      metaDataOutput.setHelpContents(metaDataInput.getInstance().getHelpContent());
 
       // todo post-customization - can do whatever w/ the result if you want?
 

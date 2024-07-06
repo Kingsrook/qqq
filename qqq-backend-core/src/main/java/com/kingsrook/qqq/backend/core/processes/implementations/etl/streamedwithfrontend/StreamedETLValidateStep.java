@@ -77,21 +77,51 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       moveReviewStepAfterValidateStep(runBackendStepOutput);
 
+      AbstractExtractStep   extractStep   = getExtractStep(runBackendStepInput);
+      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
+
+      runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
+
       //////////////////////////////////////////////////////////
       // basically repeat the preview step, but with no limit //
       //////////////////////////////////////////////////////////
       runBackendStepInput.getAsyncJobCallback().updateStatus("Validating Records");
-      RecordPipe          recordPipe  = new RecordPipe();
-      AbstractExtractStep extractStep = getExtractStep(runBackendStepInput);
+
+      //////////////////////////////////////////////////////////////////////
+      // let the transform step override the capacity for the record pipe //
+      //////////////////////////////////////////////////////////////////////
+      RecordPipe recordPipe;
+      Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
+      if(overrideRecordPipeCapacity != null)
+      {
+         recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+         LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+      }
+      else
+      {
+         overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         if(overrideRecordPipeCapacity != null)
+         {
+            recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+            LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+         }
+         else
+         {
+            recordPipe = new RecordPipe();
+         }
+      }
+
+      /////////////////////////////
+      // set up the extract step //
+      /////////////////////////////
       extractStep.setLimit(null);
       extractStep.setRecordPipe(recordPipe);
       extractStep.preRun(runBackendStepInput, runBackendStepOutput);
 
-      AbstractTransformStep transformStep = getTransformStep(runBackendStepInput);
       transformStep.preRun(runBackendStepInput, runBackendStepOutput);
 
       List<QRecord> previewRecordList = new ArrayList<>();
-      int recordCount = new AsyncRecordPipeLoop().run("StreamedETL>Preview>ValidateStep", null, recordPipe, (status) ->
+      int recordCount = new AsyncRecordPipeLoop().run("StreamedETLValidate>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
          {
             extractStep.run(runBackendStepInput, runBackendStepOutput);
             return (runBackendStepOutput);
@@ -111,6 +141,14 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       BackendStepPostRunOutput postRunOutput = new BackendStepPostRunOutput(runBackendStepOutput);
       BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
       transformStep.postRun(postRunInput, postRunOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(postRunOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+      }
    }
 
 
@@ -140,7 +178,16 @@ public class StreamedETLValidateStep extends BaseStreamedETLStep implements Back
       /////////////////////////////////////////////////////
       // pass the records through the transform function //
       /////////////////////////////////////////////////////
-      transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+      transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
+
+      //////////////////////////////////////////////////////////////////////
+      // propagate data from inner-step state to process-level step state //
+      //////////////////////////////////////////////////////////////////////
+      if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+      {
+         runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+         runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+      }
 
       ///////////////////////////////////////////////////////
       // copy a small number of records to the output list //

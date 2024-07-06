@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -42,8 +43,14 @@ public class MemoryCountAction implements CountInterface
    {
       try
       {
+         if(CollectionUtils.nullSafeHasContents(countInput.getQueryJoins()))
+         {
+            throw (new UnsupportedOperationException("Performing counts on tables with exposed joins is currently not supported by the Memory Backend."));
+         }
+
          CountOutput countOutput = new CountOutput();
          countOutput.setCount(MemoryRecordStore.getInstance().count(countInput));
+         countOutput.setDistinctCount(countOutput.getCount());
          return (countOutput);
       }
       catch(Exception e)

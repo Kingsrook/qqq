@@ -25,10 +25,12 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.get;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
@@ -59,6 +61,8 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private boolean            includeAssociations       = false;
    private Collection<String> associationNamesToInclude = null;
+
+   private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
 
 
 
@@ -460,6 +464,81 @@ public class GetInput extends AbstractTableActionInput implements QueryOrGetInpu
       }
       this.queryJoins.add(queryJoin);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryHints
+    *******************************************************************************/
+   public EnumSet<QueryHint> getQueryHints()
+   {
+      return (this.queryHints);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryHints
+    *******************************************************************************/
+   public void setQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public GetInput withQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public GetInput withQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         this.queryHints = EnumSet.noneOf(QueryHint.class);
+      }
+      this.queryHints.add(queryHint);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public GetInput withoutQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints != null)
+      {
+         this.queryHints.remove(queryHint);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** null-safely check if query hints map contains the specified hint
+    *******************************************************************************/
+   public boolean hasQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         return (false);
+      }
+
+      return (queryHints.contains(queryHint));
    }
 
 }

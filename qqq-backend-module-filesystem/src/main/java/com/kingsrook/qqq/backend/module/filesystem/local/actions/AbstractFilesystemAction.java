@@ -26,16 +26,30 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.base.utils.SharedFilesystemBackendModuleUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.FileUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -51,19 +65,71 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** List the files for this table.
     *******************************************************************************/
    @Override
-   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase)
+   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
    {
-      // todo - needs rewritten to do globbing...
-      String fullPath  = getFullBasePath(table, backendBase);
-      File   directory = new File(fullPath);
-      File[] files     = directory.listFiles();
-
-      if(files == null)
+      try
       {
-         return Collections.emptyList();
+         String fullPath  = getFullBasePath(table, backendBase);
+         File   directory = new File(fullPath);
+
+         AbstractFilesystemTableBackendDetails tableBackendDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
+
+         String pattern = "regex:.*";
+         if(StringUtils.hasContent(tableBackendDetails.getGlob()))
+         {
+            pattern = "glob:" + tableBackendDetails.getGlob();
+         }
+         List<String> matchedFiles = recursivelyListFilesMatchingPattern(directory.toPath(), pattern, backendBase, table);
+         List<File>   rs           = new ArrayList<>();
+
+         for(String matchedFile : matchedFiles)
+         {
+            if(SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails))
+            {
+               rs.add(new File(fullPath + File.separatorChar + matchedFile));
+            }
+         }
+
+         return (rs);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error searching files", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Credit: https://www.baeldung.com/java-files-match-wildcard-strings
+    *******************************************************************************/
+   List<String> recursivelyListFilesMatchingPattern(Path rootDir, String pattern, QBackendMetaData backend, QTableMetaData table) throws IOException
+   {
+      List<String> matchesList = new ArrayList<>();
+
+      FileVisitor<Path> matcherVisitor = new SimpleFileVisitor<>()
+      {
+         @Override
+         public FileVisitResult visitFile(Path file, BasicFileAttributes attribs)
+         {
+            FileSystem  fs      = FileSystems.getDefault();
+            PathMatcher matcher = fs.getPathMatcher(pattern);
+            Path        path    = Path.of(stripBackendAndTableBasePathsFromFileName(file.toAbsolutePath().toString(), backend, table));
+
+            if(matcher.matches(path))
+            {
+               matchesList.add(path.toString());
+            }
+            return FileVisitResult.CONTINUE;
+         }
+      };
+
+      if(rootDir.toFile().exists())
+      {
+         Files.walkFileTree(rootDir, matcherVisitor);
       }
 
-      return (Arrays.stream(files).filter(File::isFile).toList());
+      return matchesList;
    }
 
 
@@ -118,7 +184,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
          // if the file doesn't exist, just exit with noop.  don't throw an error - that should only //
          // happen if the "contract" of the method is broken, and the file still exists              //
          //////////////////////////////////////////////////////////////////////////////////////////////
-         LOG.debug("Not deleting file [{}], because it does not exist.", file);
+         LOG.debug("Not deleting file, because it does not exist.", logPair("file", file));
          return;
       }
 
@@ -153,7 +219,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
       //////////////////////////////////////////////////////////////////////////////////////
       if(!destinationParent.exists())
       {
-         LOG.debug("Making destination directory {} for move", destinationParent.getAbsolutePath());
+         LOG.debug("Making destination directory for move", logPair("directory", destinationParent.getAbsolutePath()));
          if(!destinationParent.mkdirs())
          {
             throw (new FilesystemException("Failed to make destination directory " + destinationParent.getAbsolutePath() + " to move " + source + " into."));

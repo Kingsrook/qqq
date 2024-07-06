@@ -37,6 +37,7 @@ public class TableAutomationAction
    private TriggerEvent triggerEvent;
    private Integer      priority = 500;
    private QQueryFilter filter;
+   private Serializable shardId;
 
    ////////////////////////////////////////////////////////////////////////
    // flag that will cause the records to cause their associations to be //
@@ -326,6 +327,37 @@ public class TableAutomationAction
    public TableAutomationAction withIncludeRecordAssociations(boolean includeRecordAssociations)
    {
       this.includeRecordAssociations = includeRecordAssociations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shardId
+    *******************************************************************************/
+   public Serializable getShardId()
+   {
+      return (this.shardId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shardId
+    *******************************************************************************/
+   public void setShardId(Serializable shardId)
+   {
+      this.shardId = shardId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shardId
+    *******************************************************************************/
+   public TableAutomationAction withShardId(Serializable shardId)
+   {
+      this.shardId = shardId;
       return (this);
    }
 

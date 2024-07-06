@@ -112,7 +112,7 @@ public class InsertInput extends AbstractTableActionInput
    /*******************************************************************************
     **
     *******************************************************************************/
-   public InsertInput withRecordEntities(List<QRecordEntity> recordEntityList)
+   public InsertInput withRecordEntities(List<? extends QRecordEntity> recordEntityList)
    {
       for(QRecordEntity recordEntity : CollectionUtils.nonNullList(recordEntityList))
       {

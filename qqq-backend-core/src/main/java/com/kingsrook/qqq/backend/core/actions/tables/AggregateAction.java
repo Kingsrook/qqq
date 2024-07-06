@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.util.Collections;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.AggregateInput;
@@ -58,6 +61,11 @@ public class AggregateAction
       QTableMetaData   table   = aggregateInput.getTable();
       QBackendMetaData backend = aggregateInput.getBackend();
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // apply any available field behaviors to the filter (noting that, if anything changes, a new filter is returned) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      aggregateInput.setFilter(ValueBehaviorApplier.applyFieldBehaviorsToFilter(QContext.getQInstance(), table, aggregateInput.getFilter(), Collections.emptySet()));
+
       QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, aggregateInput.getFilter());
 
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
@@ -66,6 +74,10 @@ public class AggregateAction
       aggregateInterface = qModule.getAggregateInterface();
       aggregateInterface.setQueryStat(queryStat);
       AggregateOutput aggregateOutput = aggregateInterface.execute(aggregateInput);
+
+      // todo, maybe, not real important? ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.READ, QContext.getQInstance(), table, aggregateOutput.getResults(), null);
+      //  issue being, the signature there... it takes a list of QRecords, which aren't what we have...
+      //  do we want to ... idk, refactor all these behavior deals?  hmm... maybe a new interface/ for ones that do reads?  not sure.
 
       QueryStatManager.getInstance().add(queryStat);
 

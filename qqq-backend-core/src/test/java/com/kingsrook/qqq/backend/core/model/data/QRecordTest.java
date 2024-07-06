@@ -23,15 +23,27 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS;
 import static com.kingsrook.qqq.backend.core.model.data.QRecord.BACKEND_DETAILS_TYPE_JSON_SOURCE_OBJECT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -140,6 +152,17 @@ class QRecordTest extends BaseTest
       nullWarnings.setWarnings(null);
       assertNull(new QRecord(nullWarnings).getWarnings());
 
+      QRecord byteArrayValue = new QRecord().withValue("myBytes", new byte[] { 65, 66, 67, 68 });
+      assertArrayEquals(new byte[] { 65, 66, 67, 68 }, new QRecord(byteArrayValue).getValueByteArray("myBytes"));
+
+      ////////////////////////////////////////////
+      // qrecord as a value inside another (!?) //
+      ////////////////////////////////////////////
+      QRecord nestedQRecordValue     = new QRecord().withValue("myRecord", new QRecord().withValue("A", 1));
+      QRecord cloneWithNestedQRecord = new QRecord(nestedQRecordValue);
+      assertEquals(1, ((QRecord) cloneWithNestedQRecord.getValue("myRecord")).getValueInteger("A"));
+      assertNotSame(cloneWithNestedQRecord.getValue("myRecord"), nestedQRecordValue.getValue("myRecord"));
+
       QRecord emptyRecord = new QRecord();
       QRecord emptyClone  = new QRecord(emptyRecord);
       assertNull(emptyClone.getTableName());
@@ -150,6 +173,122 @@ class QRecordTest extends BaseTest
       assertEquals(0, emptyClone.getErrors().size());
       assertEquals(0, emptyClone.getWarnings().size());
       assertEquals(0, emptyClone.getAssociatedRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testArrayListAsValue()
+   {
+      ArrayList<Integer> originalArrayList        = new ArrayList<>(List.of(1, 2, 3));
+      QRecord            recordWithArrayListValue = new QRecord().withValue("myList", originalArrayList);
+      QRecord            cloneWithArrayListValue  = new QRecord(recordWithArrayListValue);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the clone list and original list should be equals (have contents that are equals), but not be the same (reference) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(List.of(1, 2, 3), cloneWithArrayListValue.getValue("myList"));
+      assertNotSame(originalArrayList, cloneWithArrayListValue.getValue("myList"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure a change to the original list doesn't change the cloned list (as it was cloned deeply) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      originalArrayList.add(4);
+      assertNotEquals(originalArrayList, cloneWithArrayListValue.getValue("myList"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLinkedListAsValue()
+   {
+      LinkedList<Integer> originalLinkedList        = new LinkedList<>(List.of(1, 2, 3));
+      QRecord             recordWithLinkedListValue = new QRecord().withValue("myList", originalLinkedList);
+      QRecord             cloneWithLinkedListValue  = new QRecord(recordWithLinkedListValue);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the clone list and original list should be equals (have contents that are equals), but not be the same (reference) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(List.of(1, 2, 3), cloneWithLinkedListValue.getValue("myList"));
+      assertNotSame(originalLinkedList, cloneWithLinkedListValue.getValue("myList"));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure a change to the original list doesn't change the cloned list (as it was cloned deeply) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      originalLinkedList.add(4);
+      assertNotEquals(originalLinkedList, cloneWithLinkedListValue.getValue("myList"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMapAsValue()
+   {
+      LinkedHashMap<String, Integer> originalMap        = new LinkedHashMap<>(Map.of("one", 1, "two", 2, "three", 3));
+      QRecord                        recordWithMapValue = new QRecord().withValue("myMap", originalMap);
+      QRecord                        cloneWithMapValue  = new QRecord(recordWithMapValue);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // the clone map and original map should be equals (have contents that are equals), but not be the same (reference) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(originalMap, cloneWithMapValue.getValue("myMap"));
+      assertNotSame(originalMap, cloneWithMapValue.getValue("myMap"));
+
+      //////////////////////////////////////////////////////////
+      // make sure we re-created it as the same subtype (LHM) //
+      //////////////////////////////////////////////////////////
+      assertThat(cloneWithMapValue.getValue("myMap")).isInstanceOf(LinkedHashMap.class);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure a change to the original list doesn't change the cloned list (as it was cloned deeply) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      originalMap.put("four", 4);
+      assertNotEquals(originalMap, cloneWithMapValue.getValue("myMap"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetErrorsAndWarningsAsString()
+   {
+      assertEquals("", new QRecord().getErrorsAsString());
+      assertEquals("one", new QRecord()
+         .withError(new BadInputStatusMessage("one"))
+         .getErrorsAsString());
+      assertEquals("one; two", new QRecord()
+         .withError(new BadInputStatusMessage("one"))
+         .withError(new SystemErrorStatusMessage("two"))
+         .getErrorsAsString());
+
+      assertEquals("", new QRecord().getWarningsAsString());
+      assertEquals("A", new QRecord()
+         .withWarning(new QWarningMessage("A"))
+         .getWarningsAsString());
+      assertEquals("A; B; C", new QRecord()
+         .withWarning(new QWarningMessage("A"))
+         .withWarning(new QWarningMessage("B"))
+         .withWarning(new QWarningMessage("C"))
+         .getWarningsAsString());
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // make sure this AsString method doesn't get included in our json serialization //
+      ///////////////////////////////////////////////////////////////////////////////////
+      String json = JsonUtils.toJson(new QRecord()
+         .withError(new BadInputStatusMessage("one")));
+      JSONObject jsonObject = new JSONObject(json);
+      assertFalse(jsonObject.has("errorsAsString"));
    }
 
 }

@@ -22,9 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata.queues;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
-
-
 /*******************************************************************************
  ** Meta-data for an source of Amazon SQS queues (e.g, an aws account/credential
  ** set, with a common base URL).
@@ -39,7 +36,7 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
    private String region;
    private String baseURL;
 
-   private QScheduleMetaData schedule;
+   private SQSPollerSettings pollerSettings;
 
 
 
@@ -204,34 +201,31 @@ public class SQSQueueProviderMetaData extends QQueueProviderMetaData
 
 
    /*******************************************************************************
-    ** Getter for schedule
-    **
+    ** Getter for pollerSettings
     *******************************************************************************/
-   public QScheduleMetaData getSchedule()
+   public SQSPollerSettings getPollerSettings()
    {
-      return schedule;
+      return (this.pollerSettings);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for schedule
-    **
+    ** Setter for pollerSettings
     *******************************************************************************/
-   public void setSchedule(QScheduleMetaData schedule)
+   public void setPollerSettings(SQSPollerSettings pollerSettings)
    {
-      this.schedule = schedule;
+      this.pollerSettings = pollerSettings;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for schedule
-    **
+    ** Fluent setter for pollerSettings
     *******************************************************************************/
-   public SQSQueueProviderMetaData withSchedule(QScheduleMetaData schedule)
+   public SQSQueueProviderMetaData withPollerSettings(SQSPollerSettings pollerSettings)
    {
-      this.schedule = schedule;
+      this.pollerSettings = pollerSettings;
       return (this);
    }
 

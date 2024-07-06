@@ -194,6 +194,8 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * Each input primary key will also be included in the corresponding response object.
       """;
 
+   private static final boolean LOG_OMITTED_TABLES = false;
+
    private Set<String> neededTableSchemas = new HashSet<>();
 
 
@@ -314,40 +316,40 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(input.getTableName() != null && !input.getTableName().equals(tableName))
          {
-            LOG.debug("Omitting table [" + tableName + "] because it is not the requested table [" + input.getTableName() + "]");
+            logOmittedTable("Omitting table [" + tableName + "] because it is not the requested table [" + input.getTableName() + "]");
             continue;
          }
 
          if(table.getIsHidden())
          {
-            LOG.debug("Omitting table [" + tableName + "] because it is marked as hidden");
+            logOmittedTable("Omitting table [" + tableName + "] because it is marked as hidden");
             continue;
          }
 
          ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
          if(apiTableMetaDataContainer == null)
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have an apiTableMetaDataContainer");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have an apiTableMetaDataContainer");
             continue;
          }
 
          ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApiTableMetaData(apiName);
          if(apiTableMetaData == null)
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any apiTableMetaData");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have any apiTableMetaData");
             continue;
          }
 
          if(BooleanUtils.isTrue(apiTableMetaData.getIsExcluded()))
          {
-            LOG.debug("Omitting table [" + tableName + "] because its apiTableMetaData marks it as excluded");
+            logOmittedTable("Omitting table [" + tableName + "] because its apiTableMetaData marks it as excluded");
             continue;
          }
 
          APIVersionRange apiVersionRange = apiTableMetaData.getApiVersionRange();
          if(!apiVersionRange.includes(apiVersion))
          {
-            LOG.debug("Omitting table [" + tableName + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
+            logOmittedTable("Omitting table [" + tableName + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
             continue;
          }
 
@@ -374,7 +376,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
          if(!getEnabled && !queryByQueryStringEnabled && !insertEnabled && !insertBulkEnabled && !updateEnabled && !updateBulkEnabled && !deleteEnabled && !deleteBulkEnabled && !CollectionUtils.nullSafeHasContents(apiProcessMetaDataList))
          {
-            LOG.debug("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations or processes");
+            logOmittedTable("Omitting table [" + tableName + "] because it does not have any supported capabilities / enabled operations or processes");
             continue;
          }
 
@@ -816,7 +818,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       openAPI.getPaths().put(basePath + processApiPath, path);
 
       ///////////////////////////////////////////////////////////////////////
-      // if the process can run async, then do the status checkin endpoitn //
+      // if the process can run async, then do the status checkin endpoint //
       ///////////////////////////////////////////////////////////////////////
       if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
       {
@@ -900,6 +902,21 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       String          apiName         = apiInstanceMetaData.getName();
       if(apiProcessInput != null)
       {
+         /////////////////
+         // path params //
+         /////////////////
+         ApiProcessInputFieldsContainer pathParams = apiProcessInput.getPathParams();
+         if(pathParams != null)
+         {
+            for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
+            {
+               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+            }
+         }
+
+         /////////////////////////
+         // query string params //
+         /////////////////////////
          ApiProcessInputFieldsContainer queryStringParams = apiProcessInput.getQueryStringParams();
          if(queryStringParams != null)
          {
@@ -914,6 +931,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             }
          }
 
+         /////////////////////
+         // Body as content //
+         /////////////////////
          QFieldMetaData bodyField = apiProcessInput.getBodyField();
          if(bodyField != null)
          {
@@ -939,8 +959,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                content.withSchema(new Schema()
                   .withDescription(bodyDescription)
                   .withType("string")
-                  .withExample(exampleWithSingleValue.getValue())
-               );
+                  .withExample(exampleWithSingleValue.getValue()));
             }
 
             methodForProcess.withRequestBody(new RequestBody()
@@ -963,8 +982,9 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withIn("query")
             .withDescription("""
                Indicates if the job should be ran asynchronously.
-               If false, or not specified, job is ran synchronously, and returns with response status of 207 (Multi-Status) or 204 (No Content).
-               If true, request returns immediately with response status of 202 (Accepted).
+               If false or not specified, then the job is ran synchronously and returns with an appropriate response status when completed.
+               If true, then the request returns immediately with response status of 202 (Accepted), and a jobId in the response body,
+               which can then be sent to the corresponding .../status/{jobId} endpoint to follow-up on the status of the job.
                """)
             .withExamples(MapBuilder.of(
                "false", new ExampleWithSingleValue().withValue(false).withSummary("Run the job synchronously."),
@@ -988,6 +1008,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          responses.putAll(output.getSpecResponses(apiName));
       }
+
       if(!ApiProcessMetaData.AsyncMode.NEVER.equals(apiProcessMetaData.getAsyncMode()))
       {
          responses.put(HttpStatus.ACCEPTED.getCode(), new Response()
@@ -1006,7 +1027,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       responses.putAll(buildStandardErrorResponses(apiInstanceMetaData));
       methodForProcess.withResponses(responses);
 
-      @SuppressWarnings("checkstyle:indentation")
       Path path = switch(apiProcessMetaData.getMethod())
       {
          case GET -> new Path().withGet(methodForProcess);
@@ -1046,16 +1066,28 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          .withDescription("Get the status for a previous asynchronous call to the process named " + processMetaData.getLabel())
          .withSecurity(getSecurity(apiInstanceMetaData, processMetaData.getName()));
 
-      ////////////////////////////////////////////////////////
-      // add the async input for optionally-async processes //
-      ////////////////////////////////////////////////////////
-      methodForProcess.setParameters(ListBuilder.of(new Parameter()
+      List<Parameter>                parameters      = new ArrayList<>();
+      ApiProcessInput                apiProcessInput = apiProcessMetaData.getInput();
+      ApiProcessInputFieldsContainer pathParams      = apiProcessInput.getPathParams();
+      if(pathParams != null)
+      {
+         for(QFieldMetaData field : CollectionUtils.nonNullList(pathParams.getFields()))
+         {
+            parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("path"));
+         }
+      }
+
+      parameters.add(new Parameter()
          .withName("jobId")
          .withIn("path")
          .withRequired(true)
          .withDescription("Id of the job, as returned by the API call that started it.")
-         .withSchema(new Schema().withType("string").withFormat("uuid"))
-      ));
+         .withSchema(new Schema().withType("string").withFormat("uuid")));
+
+      ////////////////////////////////////////////////////////
+      // add the async input for optionally-async processes //
+      ////////////////////////////////////////////////////////
+      methodForProcess.setParameters(parameters);
 
       //////////////////////////////////
       // build all possible responses //
@@ -1126,7 +1158,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          if(apiFieldMetaData.getExample() != null)
          {
-            parameter.withExample(apiFieldMetaData.getExample());
+            parameter.withExamples(Map.of("example", apiFieldMetaData.getExample()));
          }
          else if(apiFieldMetaData.getExamples() != null)
          {
@@ -1403,7 +1435,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       {
          String           associatedTableName        = association.getAssociatedTableName();
          QTableMetaData   associatedTable            = QContext.getQInstance().getTable(associatedTableName);
-         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
+         ApiTableMetaData associatedApiTableMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiTableMetaDataContainer.of(associatedTable).getApiTableMetaData(apiName), new ApiTableMetaData());
          String           associatedTableApiName     = StringUtils.hasContent(associatedApiTableMetaData.getApiTableName()) ? associatedApiTableMetaData.getApiTableName() : associatedTableName;
 
          ApiAssociationMetaData apiAssociationMetaData = thisApiTableMetaData.getApiAssociationMetaData().get(association.getName());
@@ -1411,14 +1443,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          {
             if(BooleanUtils.isTrue(apiAssociationMetaData.getIsExcluded()))
             {
-               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because it is marked as excluded.");
+               logOmittedTable("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because it is marked as excluded.");
                continue;
             }
 
             APIVersionRange apiVersionRange = apiAssociationMetaData.getApiVersionRange();
             if(!apiVersionRange.includes(new APIVersion(version)))
             {
-               LOG.debug("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
+               logOmittedTable("Omitting table [" + table.getName() + "] association [" + association.getName() + "] because its api version range [" + apiVersionRange + "] does not include this version [" + version + "]");
                continue;
             }
          }
@@ -1477,15 +1509,21 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
          QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
          if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
          {
-            List<String> enumValues  = new ArrayList<>();
-            List<String> enumMapping = new ArrayList<>();
-            for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // by default, we will list all enum values in the docs - but - a field's api-meta-data object can opt out //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(apiFieldMetaData == null || apiFieldMetaData.getListEnumPossibleValues())
             {
-               enumValues.add(String.valueOf(enumValue.getId()));
-               enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               List<String> enumValues  = new ArrayList<>();
+               List<String> enumMapping = new ArrayList<>();
+               for(QPossibleValue<?> enumValue : possibleValueSource.getEnumValues())
+               {
+                  enumValues.add(String.valueOf(enumValue.getId()));
+                  enumMapping.add(enumValue.getId() + "=" + enumValue.getLabel());
+               }
+               fieldSchema.setEnumValues(enumValues);
+               fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
             }
-            fieldSchema.setEnumValues(enumValues);
-            fieldSchema.setDescription(fieldSchema.getDescription() + "  Value definitions are: " + StringUtils.joinWithCommasAndAnd(enumMapping));
          }
          else if(QPossibleValueSourceType.TABLE.equals(possibleValueSource.getType()))
          {
@@ -1516,7 +1554,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private Response buildMultiStatusResponse(String tableLabel, String primaryKeyApiName, QFieldMetaData primaryKeyField, String method)
    {
       List<Object> example = switch(method.toLowerCase())
@@ -1674,13 +1711,12 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private static String getFieldType(QFieldType type)
    {
       return switch(type)
       {
          case STRING, DATE, TIME, DATE_TIME, TEXT, HTML, PASSWORD, BLOB -> "string";
-         case INTEGER -> "integer";
+         case INTEGER, LONG -> "integer"; // todo - we could give 'format' w/ int32 & int64 to further specify
          case DECIMAL -> "number";
          case BOOLEAN -> "boolean";
       };
@@ -1701,7 +1737,6 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    private String getFieldFormat(QFieldType type)
    {
       return switch(type)
@@ -1765,6 +1800,19 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                ))
             )
          ));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void logOmittedTable(String message)
+   {
+      if(LOG_OMITTED_TABLES)
+      {
+         LOG.debug(message);
+      }
    }
 
 }

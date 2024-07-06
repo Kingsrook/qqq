@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMe
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 
 
 /*******************************************************************************
@@ -47,8 +48,9 @@ public class MetaDataOutput extends AbstractActionOutput
    private Map<String, QFrontendWidgetMetaData>  widgets;
    private Map<String, String>                   environmentValues;
 
-   private List<AppTreeNode> appTree;
-   private QBrandingMetaData branding;
+   private List<AppTreeNode>               appTree;
+   private QBrandingMetaData               branding;
+   private Map<String, List<QHelpContent>> helpContents;
 
 
 
@@ -226,4 +228,25 @@ public class MetaDataOutput extends AbstractActionOutput
       this.environmentValues = environmentValues;
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for helpContents
+    **
+    *******************************************************************************/
+   public void setHelpContents(Map<String, List<QHelpContent>> helpContents)
+   {
+      this.helpContents = helpContents;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContents
+    **
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContents()
+   {
+      return helpContents;
+   }
 }

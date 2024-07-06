@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
-import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -38,13 +38,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModuleSubclassForTest;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for FilesystemSyncProcess using S3 backend
  *******************************************************************************/
-@Disabled("Because localstack won't start")
 class FilesystemSyncProcessS3Test extends BaseS3Test
 {
 
@@ -189,7 +189,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void assertTableListing(S3BackendMetaData backend, QTableMetaData table, String... paths) throws QModuleDispatchException
+   private void assertTableListing(S3BackendMetaData backend, QTableMetaData table, String... paths) throws QException
    {
       S3BackendModule  module     = (S3BackendModule) new QBackendModuleDispatcher().getQBackendModule(backend);
       AbstractS3Action actionBase = (AbstractS3Action) module.getActionBase();
@@ -199,8 +199,8 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       for(String path : paths)
       {
          assertTrue(s3ObjectSummaries.stream().anyMatch(s3o -> s3o.getKey().equals(path)),
-            "Path [" + path + "] should be in the listing, but was not.  Full listing is: " +
-               s3ObjectSummaries.stream().map(S3ObjectSummary::getKey).collect(Collectors.joining(",")));
+            "Path [" + path + "] should be in the listing, but was not.  Full listing is: "
+               + s3ObjectSummaries.stream().map(S3ObjectSummary::getKey).collect(Collectors.joining(",")));
       }
    }
 
@@ -209,7 +209,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void printTableListing(S3BackendMetaData backend, QTableMetaData table) throws QModuleDispatchException
+   private void printTableListing(S3BackendMetaData backend, QTableMetaData table) throws QException
    {
       S3BackendModule  module     = (S3BackendModule) new QBackendModuleDispatcher().getQBackendModule(backend);
       AbstractS3Action actionBase = (AbstractS3Action) module.getActionBase();
@@ -259,6 +259,8 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
          .withBackendName(backend.getName())
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withBackendDetails(new S3TableBackendDetails()
+            .withCardinality(Cardinality.MANY)
+            .withRecordFormat(RecordFormat.CSV)
             .withBasePath(path)
             .withGlob(glob));
       qInstance.addTable(qTableMetaData);

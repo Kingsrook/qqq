@@ -224,6 +224,9 @@ class MemoryBackendModuleTest extends BaseTest
       ));
       new InsertAction().execute(insertInput);
 
+      assertEquals(3, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.TRUE)).size());
+      assertEquals(0, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.FALSE)).size());
+
       assertEquals(2, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2))).size());
       assertEquals(1, queryShapes(qInstance, table, session, new QFilterCriteria("id", QCriteriaOperator.IN, List.of(3, 4))).size());
 

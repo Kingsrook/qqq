@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -36,7 +37,9 @@ import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.Auth0AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.SimpleStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -354,7 +357,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
            "iat": 1673379451
          }
          """);
-      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
       assertEquals(List.of("true"), qSession.getSecurityKeyValues("storeAllAccess"));
 
       /////////////////////////////////////////////
@@ -373,7 +376,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
            "iat": 1673379451
          }
          """);
-      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
       assertEquals(List.of("2"), qSession.getSecurityKeyValues("store"));
 
       //////////////////////////
@@ -394,7 +397,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
            "iat": 1673379451
          }
          """);
-      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
       assertEquals(List.of("3", "4", "5"), qSession.getSecurityKeyValues("store"));
       assertEquals(List.of("internal"), qSession.getSecurityKeyValues("internalOrExternal"));
 
@@ -409,7 +412,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
            "iat": 1673379451
          }
          """);
-      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
       assertTrue(CollectionUtils.nullSafeIsEmpty(qSession.getSecurityKeyValues()));
 
       /////////////////////////////////////////////////////
@@ -428,7 +431,7 @@ public class Auth0AuthenticationModuleTest extends BaseTest
            "iat": 1673379451
          }
          """);
-      Auth0AuthenticationModule.setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+      new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
       assertTrue(CollectionUtils.nullSafeIsEmpty(qSession.getSecurityKeyValues()));
    }
 
@@ -489,6 +492,75 @@ public class Auth0AuthenticationModuleTest extends BaseTest
       assertEquals("123456******", maskForLog("12345678"));
       assertEquals("123456******", maskForLog("123456789"));
       assertEquals("123456******", maskForLog("1234567890"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCustomizer()
+   {
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.setAuthentication(new Auth0AuthenticationMetaData()
+         .withCustomizer(new QCodeReference(Customizer.class)));
+
+      {
+         /////////////////////////////////////////////////////////////////
+         // baseline case - value in json becomes value in security key //
+         /////////////////////////////////////////////////////////////////
+         QSession qSession = new QSession();
+         JSONObject payload = new JSONObject("""
+            {
+              "com.kingsrook.qqq.app_metadata": {
+                "securityKeyValues": {
+                   "store": "1"
+                }
+              }
+            }
+            """);
+         new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+         assertEquals(List.of("1"), qSession.getSecurityKeyValues("store"));
+      }
+
+      {
+         QSession qSession = new QSession();
+         JSONObject payload = new JSONObject("""
+            {
+              "com.kingsrook.qqq.app_metadata": {
+                "securityKeyValues": {
+                   "store": "oddDigits"
+                }
+              }
+            }
+            """);
+         new Auth0AuthenticationModule().setSecurityKeysInSessionFromJwtPayload(qInstance, payload, qSession);
+         assertEquals(List.of("1", "3", "5", "7", "9"), qSession.getSecurityKeyValues("store"));
+      }
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class Customizer implements QAuthenticationModuleCustomizerInterface
+   {
+      @Override
+      public void addSecurityKeyValueToSession(QSession session, String keyName, Serializable value)
+      {
+         if("oddDigits".equals(value))
+         {
+            for(String oddValue : List.of("1", "3", "5", "7", "9"))
+            {
+               QAuthenticationModuleCustomizerInterface.super.addSecurityKeyValueToSession(session, keyName, oddValue);
+            }
+         }
+         else
+         {
+            QAuthenticationModuleCustomizerInterface.super.addSecurityKeyValueToSession(session, keyName, value);
+         }
+      }
    }
 
 }

@@ -26,6 +26,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.actions.async.NonPersistedAsyncJobCallback;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
@@ -106,8 +107,10 @@ public class AbstractActionInput
    /*******************************************************************************
     ** Getter for instance
     **
+    ** Deprecated.  Please use QContext.getInstance() instead
     *******************************************************************************/
    @JsonIgnore
+   @Deprecated
    public QInstance getInstance()
    {
       return (QContext.getQInstance());
@@ -118,8 +121,10 @@ public class AbstractActionInput
    /*******************************************************************************
     ** Getter for session
     **
+    ** Deprecated.  Please use QContext.getSession() instead
     *******************************************************************************/
    @JsonIgnore
+   @Deprecated
    public QSession getSession()
    {
       return (QContext.getQSession());
@@ -139,7 +144,7 @@ public class AbstractActionInput
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // don't return null here (too easy to NPE).  instead, if someone wants one of these, create one and give it to them. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
+         asyncJobCallback = new NonPersistedAsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus().withJobName(getClass().getSimpleName()));
       }
       return asyncJobCallback;
    }

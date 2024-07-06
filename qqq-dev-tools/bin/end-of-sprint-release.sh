@@ -60,7 +60,7 @@ cd $QQQ_RELEASE_DIR/qqq || exit
 
 MVN_VERIFY_LOG=/tmp/mvn-verify.log
 gumBanner "Doing clean build (logging to $MVN_VERIFY_LOG)"
-mvn clean verify > $MVN_VERIFY_LOG 2>&1
+mvn -Duser.timezone=UTC clean verify > $MVN_VERIFY_LOG 2>&1
 tail -30 $MVN_VERIFY_LOG
 gumConfirmProceed "Can we Proceed, or are there build errors to fix?" "Proceed" "There are build errors to fix"
 

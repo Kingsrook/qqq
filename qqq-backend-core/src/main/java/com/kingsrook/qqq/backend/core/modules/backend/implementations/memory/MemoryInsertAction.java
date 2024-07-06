@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
  ** In-memory version of insert action.
  **
  *******************************************************************************/
-public class MemoryInsertAction implements InsertInterface
+public class MemoryInsertAction extends AbstractMemoryAction implements InsertInterface
 {
 
    /*******************************************************************************

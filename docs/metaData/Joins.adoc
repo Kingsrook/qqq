@@ -1,0 +1,58 @@
+[#Joins]
+== Joins
+include::../variables.adoc[]
+
+A `QJoinMetaData` is a meta-data object that tells QQQ, essentially “it is possible for these 2 tables to join, here’s how to do it”.
+
+Joins can be used then, in an application, in a number of possible ways:
+
+* In a {link-table}, we can specify joins to be “exposed”, e.g., made available to users on a query screen
+* Also in a Table, as part of an “Association”, which sets up one table as a “parent” of another,
+such that you can store (and fetch) the child-records at the same time as the parent
+** A common use-case here may be an order & lineItem table -
+such that QQQ can generate an API uses to allow you to post an order and its lines in a single request, and they get stored all together
+* In defining the security field (record lock) on a table,
+sometimes, it isn’t a field directly on the table, but instead comes from a joined table (possibly even more than just 1 table away).
+** For example, maybe a lineItem table, doesn't have a clientId, but needs secured by that field
+- so its recordLock can specify a “joinNameChain” that describes how to get from lineItem to order.clientId
+* The `QueryAction` can take (through its QueryInput object) zero or more QueryJoin objects,
+which must make a reference (implicitly or explicitly) to a QJoinMetaData.
+See the section on <<QueryJoin,QueryJoins>> for more details.
+
+=== QJoinMetaData
+Joins are defined in a QQQ Instance in a `*QJoinMetaData*` object.
+
+In this object, we have the concept of a "leftTable" and a "rightTable".
+There isn't generally anything special about which table is on the "left" and which is on the "right".
+But the remaining pieces of the QJoinMetaData do all need to line-up with these sides.
+
+For example:
+
+* The Type (one-to-one, one-to-many, many-to-one) - where the leftTable comes first, and rightTable comes second
+(e.g., a one-to-many means 1-row in leftTable has many-rows in rightTable associated with it)
+* In a JoinOn object, the 1st field name given is from the leftTable;
+the second fieldName from the rightTable.
+
+*QJoinMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the join within the QQQ Instance.
+** One convention is to name joins based on (leftTable + "Join" + rightTable).
+** If you do not wish to define join names yourself, the method `withInferredName()`
+can be called (which defers to
+`public static String makeInferredJoinName(String leftTable, String rightTable)`),
+to create a name for the join following the (leftTable + "Join" + rightTable) convention.
+* `leftTable` - *String, Required* - Name of a {link-table} in the {link-instance}.
+* `rightTable` - *String, Required* - Name of a {link-table} in the {link-instance}.
+* `type` - *enum, Required* - cardinality between the two tables in the join.
+** e.g., `ONE_TO_ONE`, `ONE_TO_MANY` (indicating 1 record in the left table may join
+to many records in the right table), or `MANY_TO_ONE` (vice-versa).
+** Note that there is no MANY_TO_MANY option, as a many-to-many is built as multiple QJoinMetaData's
+going through the intermediary (intersection) table.
+* `joinOns` - *List<JoinOn>, Required* - fields used to join the tables.
+Note: In the 2-arg JoinOn constructor, the leftTable's field comes first.
+Alternatively, the no-arg constructor can be used along with `.withLeftField().withRightField()`
+* `orderBys` - *List<QFilterOrderBy>* - Optional list of order-by objects,
+used in some framework-generated queries using the join.
+The field names are assumed to come from the rightTable.
+
+#TODO# what else do we need here?

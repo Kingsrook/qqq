@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntityField;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -42,13 +44,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -57,6 +63,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
  *******************************************************************************/
 public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(QTableMetaData.class);
+
    private String name;
    private String label;
 
@@ -102,6 +110,10 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    private Map<String, QSupplementalTableMetaData> supplementalMetaData;
 
    private List<ExposedJoin> exposedJoins;
+
+   private ShareableTableMetaData shareableTableMetaData;
+
+   protected Map<String, List<QHelpContent>> helpContent;
 
 
 
@@ -152,11 +164,26 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public QTableMetaData withFieldsFromEntity(Class<? extends QRecordEntity> entityClass) throws QException
    {
       List<QRecordEntityField> recordEntityFieldList = QRecordEntity.getFieldList(entityClass);
+
+      boolean setPrimaryKey = false;
+
       for(QRecordEntityField recordEntityField : recordEntityFieldList)
       {
          QFieldMetaData field = new QFieldMetaData(recordEntityField.getGetter());
          addField(field);
+
+         if(recordEntityField.getFieldAnnotation().isPrimaryKey())
+         {
+            if(setPrimaryKey)
+            {
+               throw (new QException("Attempt to set more than one field as primary key (" + primaryKeyField + "," + field.getName() + ")."));
+            }
+
+            setPrimaryKeyField(field.getName());
+            setPrimaryKey = true;
+         }
       }
+
       return (this);
    }
 
@@ -619,6 +646,18 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
    /*******************************************************************************
+    ** fluent setter for both recordLabelFormat and recordLabelFields
+    *******************************************************************************/
+   public QTableMetaData withRecordLabelFormatAndFields(String format, String... fields)
+   {
+      setRecordLabelFormat(format);
+      setRecordLabelFields(Arrays.asList(fields));
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for recordLabelFields
     **
     *******************************************************************************/
@@ -813,6 +852,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
     *******************************************************************************/
    public QTableMetaData withUniqueKey(UniqueKey uniqueKey)
    {
+      ////////////////////////////////////////////////////////////////////////////////////
+      // you can't add a null key, so, if someone tried, just gracefully return w/ noop //
+      ////////////////////////////////////////////////////////////////////////////////////
+      if(uniqueKey == null)
+      {
+         LOG.debug("Skipping request to add null uniqueKey", logPair("tableName", name));
+         return (this);
+      }
+
       if(this.uniqueKeys == null)
       {
          this.uniqueKeys = new ArrayList<>();
@@ -1130,6 +1178,15 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
     *******************************************************************************/
    public QTableMetaData withRecordSecurityLock(RecordSecurityLock recordSecurityLock)
    {
+      /////////////////////////////////////////////////////////////////////////////////////
+      // you can't add a null lock, so, if someone tried, just gracefully return w/ noop //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(recordSecurityLock == null)
+      {
+         LOG.debug("Skipping request to add null recordSecurityLock", logPair("tableName", name));
+         return (this);
+      }
+
       if(this.recordSecurityLocks == null)
       {
          this.recordSecurityLocks = new ArrayList<>();
@@ -1361,6 +1418,107 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
       }
       this.exposedJoins.add(exposedJoin);
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for shareableTableMetaData
+    *******************************************************************************/
+   public ShareableTableMetaData getShareableTableMetaData()
+   {
+      return (this.shareableTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for shareableTableMetaData
+    *******************************************************************************/
+   public void setShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for shareableTableMetaData
+    *******************************************************************************/
+   public QTableMetaData withShareableTableMetaData(ShareableTableMetaData shareableTableMetaData)
+   {
+      this.shareableTableMetaData = shareableTableMetaData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QTableMetaData withHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent (for a slot)
+    *******************************************************************************/
+   public QTableMetaData withHelpContent(String slot, QHelpContent helpContent)
+   {
+      if(this.helpContent == null)
+      {
+         this.helpContent = new HashMap<>();
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.computeIfAbsent(slot, (k) -> new ArrayList<>());
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, listForSlot);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      if(this.helpContent == null)
+      {
+         return;
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.get(slot);
+      if(listForSlot == null)
+      {
+         return;
+      }
+
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
 
 }

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -33,9 +34,11 @@ import java.util.Map;
 public abstract class QWidgetData
 {
    private String       label;
+   private String       sublabel;
    private String       footerHTML;
    private List<String> dropdownNameList;
    private List<String> dropdownLabelList;
+   private List<String> dropdownDefaultValueList;
    private Boolean      hasPermission;
 
    /////////////////////////////////////////////////////////////////////////////////////////
@@ -45,6 +48,8 @@ public abstract class QWidgetData
    /////////////////////////////////////////////////////////////////////////////////////////
    private List<List<Map<String, String>>> dropdownDataList;
    private String                          dropdownNeedsSelectedText;
+
+   private List<List<Serializable>> csvData;
 
 
 
@@ -288,6 +293,99 @@ public abstract class QWidgetData
    public QWidgetData withHasPermission(Boolean hasPermission)
    {
       this.hasPermission = hasPermission;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for dropdownDefaultValueList
+    *******************************************************************************/
+   public List<String> getDropdownDefaultValueList()
+   {
+      return (this.dropdownDefaultValueList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for dropdownDefaultValueList
+    *******************************************************************************/
+   public void setDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   {
+      this.dropdownDefaultValueList = dropdownDefaultValueList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for dropdownDefaultValueList
+    *******************************************************************************/
+   public QWidgetData withDropdownDefaultValueList(List<String> dropdownDefaultValueList)
+   {
+      this.dropdownDefaultValueList = dropdownDefaultValueList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for csvData
+    *******************************************************************************/
+   public List<List<Serializable>> getCsvData()
+   {
+      return (this.csvData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for csvData
+    *******************************************************************************/
+   public void setCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for csvData
+    *******************************************************************************/
+   public QWidgetData withCsvData(List<List<Serializable>> csvData)
+   {
+      this.csvData = csvData;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sublabel
+    *******************************************************************************/
+   public String getSublabel()
+   {
+      return (this.sublabel);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sublabel
+    *******************************************************************************/
+   public void setSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sublabel
+    *******************************************************************************/
+   public QWidgetData withSublabel(String sublabel)
+   {
+      this.sublabel = sublabel;
       return (this);
    }
 

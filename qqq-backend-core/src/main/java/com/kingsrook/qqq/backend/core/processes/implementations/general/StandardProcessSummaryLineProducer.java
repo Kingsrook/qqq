@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.general;
 import java.util.ArrayList;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import static com.kingsrook.qqq.backend.core.model.actions.processes.Status.ERROR;
 import static com.kingsrook.qqq.backend.core.model.actions.processes.Status.OK;
 
@@ -76,6 +77,20 @@ public class StandardProcessSummaryLineProducer
          .withPluralFutureMessage("will be")
          .withSingularPastMessage("was")
          .withPluralPastMessage("were");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static ProcessSummaryLine getNoDifferencesNoUpdateLine()
+   {
+      return new ProcessSummaryLine(Status.INFO)
+         .withSingularFutureMessage("has no differences and will not be updated")
+         .withPluralFutureMessage("have no differences and will not be updated")
+         .withSingularPastMessage("has no differences and was not updated")
+         .withPluralPastMessage("have no differences and were not updated");
    }
 
 

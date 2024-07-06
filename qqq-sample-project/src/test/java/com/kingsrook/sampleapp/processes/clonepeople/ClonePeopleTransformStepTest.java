@@ -35,8 +35,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
-import com.kingsrook.sampleapp.SampleMetaDataProvider;
 import com.kingsrook.sampleapp.SampleMetaDataProviderTest;
+import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ class ClonePeopleTransformStepTest
       ClonePeopleTransformStep clonePeopleTransformStep = new ClonePeopleTransformStep();
 
       input.setRecords(queryOutput.getRecords());
-      clonePeopleTransformStep.run(input, output);
+      clonePeopleTransformStep.runOnePage(input, output);
 
       ArrayList<ProcessSummaryLineInterface> processSummary = clonePeopleTransformStep.getProcessSummary(output, true);
 

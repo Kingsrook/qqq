@@ -57,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTable;
 import com.kingsrook.qqq.backend.core.model.tables.QQQTablesMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -176,7 +177,7 @@ public class QueryStatManager
       active = true;
       queryStats = new ArrayList<>();
 
-      executorService = Executors.newSingleThreadScheduledExecutor();
+      executorService = Executors.newSingleThreadScheduledExecutor(new PrefixedDefaultThreadFactory(this));
       executorService.scheduleAtFixedRate(new QueryStatManagerInsertJob(), jobInitialDelay, jobPeriodSeconds, TimeUnit.SECONDS);
    }
 
@@ -214,71 +215,78 @@ public class QueryStatManager
     *******************************************************************************/
    public void add(QueryStat queryStat)
    {
-      if(queryStat == null)
+      try
       {
-         return;
-      }
-
-      if(active)
-      {
-         ////////////////////////////////////////////////////////////////////////////////////////
-         // set fields that we need to capture now (rather than when the thread to store runs) //
-         ////////////////////////////////////////////////////////////////////////////////////////
-         if(queryStat.getFirstResultTimestamp() == null)
+         if(queryStat == null)
          {
-            queryStat.setFirstResultTimestamp(Instant.now());
-         }
-
-         if(queryStat.getStartTimestamp() != null && queryStat.getFirstResultTimestamp() != null && queryStat.getFirstResultMillis() == null)
-         {
-            long millis = queryStat.getFirstResultTimestamp().toEpochMilli() - queryStat.getStartTimestamp().toEpochMilli();
-            queryStat.setFirstResultMillis((int) millis);
-         }
-
-         if(queryStat.getFirstResultMillis() != null && queryStat.getFirstResultMillis() < minMillisToStore)
-         {
-            //////////////////////////////////////////////////////////////
-            // discard this record if it's under the min millis setting //
-            //////////////////////////////////////////////////////////////
             return;
          }
 
-         if(queryStat.getSessionId() == null && QContext.getQSession() != null)
+         if(active)
          {
-            queryStat.setSessionId(QContext.getQSession().getUuid());
-         }
-
-         if(queryStat.getAction() == null)
-         {
-            if(!QContext.getActionStack().isEmpty())
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // set fields that we need to capture now (rather than when the thread to store runs) //
+            ////////////////////////////////////////////////////////////////////////////////////////
+            if(queryStat.getFirstResultTimestamp() == null)
             {
-               queryStat.setAction(QContext.getActionStack().peek().getActionIdentity());
+               queryStat.setFirstResultTimestamp(Instant.now());
             }
-            else
+
+            if(queryStat.getStartTimestamp() != null && queryStat.getFirstResultTimestamp() != null && queryStat.getFirstResultMillis() == null)
             {
-               boolean   expected = false;
-               Exception e        = new Exception("Unexpected empty action stack");
-               for(StackTraceElement stackTraceElement : e.getStackTrace())
+               long millis = queryStat.getFirstResultTimestamp().toEpochMilli() - queryStat.getStartTimestamp().toEpochMilli();
+               queryStat.setFirstResultMillis((int) millis);
+            }
+
+            if(queryStat.getFirstResultMillis() != null && queryStat.getFirstResultMillis() < minMillisToStore)
+            {
+               //////////////////////////////////////////////////////////////
+               // discard this record if it's under the min millis setting //
+               //////////////////////////////////////////////////////////////
+               return;
+            }
+
+            if(queryStat.getSessionId() == null && QContext.getQSession() != null)
+            {
+               queryStat.setSessionId(QContext.getQSession().getUuid());
+            }
+
+            if(queryStat.getAction() == null)
+            {
+               if(QContext.getActionStack() != null && !QContext.getActionStack().isEmpty())
                {
-                  String className = stackTraceElement.getClassName();
-                  if(className.contains(QueryStatManagerInsertJob.class.getName()))
+                  queryStat.setAction(QContext.getActionStack().peek().getActionIdentity());
+               }
+               else
+               {
+                  boolean   expected = false;
+                  Exception e        = new Exception("Unexpected empty action stack");
+                  for(StackTraceElement stackTraceElement : e.getStackTrace())
                   {
-                     expected = true;
-                     break;
+                     String className = stackTraceElement.getClassName();
+                     if(className.contains(QueryStatManagerInsertJob.class.getName()))
+                     {
+                        expected = true;
+                        break;
+                     }
+                  }
+
+                  if(!expected)
+                  {
+                     LOG.debug(e);
                   }
                }
+            }
 
-               if(!expected)
-               {
-                  LOG.debug(e);
-               }
+            synchronized(this)
+            {
+               queryStats.add(queryStat);
             }
          }
-
-         synchronized(this)
-         {
-            queryStats.add(queryStat);
-         }
+      }
+      catch(Exception e)
+      {
+         LOG.debug("Error adding query stat", e);
       }
    }
 

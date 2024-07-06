@@ -24,10 +24,16 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
@@ -55,9 +61,11 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    private boolean                  storeDropdownSelections;
 
    private boolean showReloadButton = true;
-   private boolean showExportButton = true;
+   private boolean showExportButton = false;
 
    protected Map<String, QIcon> icons;
+
+   protected Map<String, List<QHelpContent>> helpContent;
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
@@ -217,6 +225,17 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    public void setType(String type)
    {
       this.type = type;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // originally, showExportButton defaulted to true, and only a few frontend components knew how to render it. //
+      // but, with the advent of csvData that any widget type can export, then the generic frontend widget code    //
+      // became aware of the export button, so we wanted to flip the default for showExportButton to false, but    //
+      // still have it by-default be true for these 2 types                                                        //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(WidgetType.TABLE.getType().equals(type) || WidgetType.CHILD_RECORD_LIST.getType().equals(type))
+      {
+         setShowExportButton(true);
+      }
    }
 
 
@@ -227,7 +246,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
     *******************************************************************************/
    public QWidgetMetaData withType(String type)
    {
-      this.type = type;
+      setType(type);
       return (this);
    }
 
@@ -673,6 +692,76 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
    {
       this.tooltip = tooltip;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return (this.helpContent);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for helpContent
+    *******************************************************************************/
+   public void setHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for helpContent
+    *******************************************************************************/
+   public QWidgetMetaData withHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      this.helpContent = helpContent;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for adding 1 helpContent (for a slot)
+    *******************************************************************************/
+   public QWidgetMetaData withHelpContent(String slot, QHelpContent helpContent)
+   {
+      if(this.helpContent == null)
+      {
+         this.helpContent = new HashMap<>();
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.computeIfAbsent(slot, (k) -> new ArrayList<>());
+      QInstanceHelpContentManager.putHelpContentInList(helpContent, listForSlot);
+
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   public void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      if(this.helpContent == null)
+      {
+         return;
+      }
+
+      List<QHelpContent> listForSlot = this.helpContent.get(slot);
+      if(listForSlot == null)
+      {
+         return;
+      }
+
+      QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
 
 }

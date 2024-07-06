@@ -56,7 +56,7 @@ class NoopTransformStepTest extends BaseTest
       RunBackendStepOutput output = new RunBackendStepOutput();
 
       NoopTransformStep noopTransformStep = new NoopTransformStep();
-      noopTransformStep.run(input, output);
+      noopTransformStep.runOnePage(input, output);
 
       assertEquals(1, output.getRecords().size());
       assertEquals(47, output.getRecords().get(0).getValueInteger("id"));

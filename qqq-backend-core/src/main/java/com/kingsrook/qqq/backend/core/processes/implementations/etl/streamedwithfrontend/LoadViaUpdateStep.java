@@ -24,16 +24,15 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -42,7 +41,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
  *******************************************************************************/
 public class LoadViaUpdateStep extends AbstractLoadStep
 {
-   public static final String FIELD_DESTINATION_TABLE = "destinationTable";
+   public static final String FIELD_DESTINATION_TABLE               = "destinationTable";
+   public static final String DO_NOT_UPDATE_MODIFY_DATE_FIELD_NAME  = "doNotUpdateModifyDateFieldName";
+   public static final String DO_NOT_TRIGGER_AUTOMATIONS_FIELD_NAME = "doNotTriggerAutomationsFieldName";
 
 
 
@@ -61,7 +62,7 @@ public class LoadViaUpdateStep extends AbstractLoadStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       UpdateInput updateInput = new UpdateInput();
       updateInput.setInputSource(getInputSource());
@@ -69,6 +70,15 @@ public class LoadViaUpdateStep extends AbstractLoadStep
       updateInput.setRecords(runBackendStepInput.getRecords());
       getTransaction().ifPresent(updateInput::setTransaction);
       updateInput.setAsyncJobCallback(runBackendStepInput.getAsyncJobCallback());
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // look for flags in the input to either not update modify dates or not run automations //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      boolean doNotUpdateModifyDate   = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean(LoadViaUpdateStep.DO_NOT_UPDATE_MODIFY_DATE_FIELD_NAME));
+      boolean doNotTriggerAutomations = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean(LoadViaUpdateStep.DO_NOT_TRIGGER_AUTOMATIONS_FIELD_NAME));
+      updateInput.setOmitModifyDateUpdate(doNotUpdateModifyDate);
+      updateInput.setOmitTriggeringAutomations(doNotTriggerAutomations);
+
       UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
       runBackendStepOutput.getRecords().addAll(updateOutput.getRecords());
    }
@@ -81,9 +91,8 @@ public class LoadViaUpdateStep extends AbstractLoadStep
    @Override
    public Optional<QBackendTransaction> openTransaction(RunBackendStepInput runBackendStepInput) throws QException
    {
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
+      UpdateInput updateInput = new UpdateInput();
+      updateInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      return (Optional.of(QBackendTransaction.openFor(updateInput)));
    }
 }

@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
  *******************************************************************************/
 public class ApiProcessInput
 {
+   private ApiProcessInputFieldsContainer pathParams;
    private ApiProcessInputFieldsContainer queryStringParams;
    private ApiProcessInputFieldsContainer formParams;
    private ApiProcessInputFieldsContainer recordBodyParams;
@@ -44,6 +45,11 @@ public class ApiProcessInput
     *******************************************************************************/
    public String getRecordIdsParamName()
    {
+      if(pathParams != null && pathParams.getRecordIdsField() != null)
+      {
+         return (pathParams.getRecordIdsField().getName());
+      }
+
       if(queryStringParams != null && queryStringParams.getRecordIdsField() != null)
       {
          return (queryStringParams.getRecordIdsField().getName());
@@ -216,5 +222,36 @@ public class ApiProcessInput
       this.bodyFieldContentType = bodyFieldContentType;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for pathParams
+    *******************************************************************************/
+   public ApiProcessInputFieldsContainer getPathParams()
+   {
+      return (this.pathParams);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pathParams
+    *******************************************************************************/
+   public void setPathParams(ApiProcessInputFieldsContainer pathParams)
+   {
+      this.pathParams = pathParams;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pathParams
+    *******************************************************************************/
+   public ApiProcessInput withPathParams(ApiProcessInputFieldsContainer pathParams)
+   {
+      this.pathParams = pathParams;
+      return (this);
+   }
+
 
 }

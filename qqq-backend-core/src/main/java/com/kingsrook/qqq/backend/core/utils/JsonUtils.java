@@ -244,6 +244,7 @@ public class JsonUtils
          .registerModule(new JavaTimeModule())
          .setSerializationInclusion(JsonInclude.Include.NON_NULL)
          .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
          .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
       /* todo - some future version we may need to do inclusion/exclusion lists like this:
@@ -362,6 +363,7 @@ public class JsonUtils
             switch(metaData.getType())
             {
                case INTEGER -> record.setValue(fieldName, jsonObjectToUse.optInt(backendName));
+               case LONG -> record.setValue(fieldName, jsonObjectToUse.optLong(backendName));
                case DECIMAL -> record.setValue(fieldName, jsonObjectToUse.optBigDecimal(backendName, null));
                case BOOLEAN -> record.setValue(fieldName, jsonObjectToUse.optBoolean(backendName));
                case DATE_TIME ->

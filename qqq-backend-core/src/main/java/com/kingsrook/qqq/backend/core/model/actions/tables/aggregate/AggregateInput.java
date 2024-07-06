@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.aggregate;
 
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
@@ -43,6 +45,8 @@ public class AggregateInput extends AbstractTableActionInput
    private Integer timeoutSeconds;
 
    private List<QueryJoin> queryJoins = null;
+
+   private EnumSet<QueryHint> queryHints = EnumSet.noneOf(QueryHint.class);
 
 
 
@@ -302,4 +306,78 @@ public class AggregateInput extends AbstractTableActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for queryHints
+    *******************************************************************************/
+   public EnumSet<QueryHint> getQueryHints()
+   {
+      return (this.queryHints);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryHints
+    *******************************************************************************/
+   public void setQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public AggregateInput withQueryHints(EnumSet<QueryHint> queryHints)
+   {
+      this.queryHints = queryHints;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public AggregateInput withQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         this.queryHints = EnumSet.noneOf(QueryHint.class);
+      }
+      this.queryHints.add(queryHint);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryHints
+    *******************************************************************************/
+   public AggregateInput withoutQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints != null)
+      {
+         this.queryHints.remove(queryHint);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** null-safely check if query hints map contains the specified hint
+    *******************************************************************************/
+   public boolean hasQueryHint(QueryHint queryHint)
+   {
+      if(this.queryHints == null)
+      {
+         return (false);
+      }
+
+      return (queryHints.contains(queryHint));
+   }
 }

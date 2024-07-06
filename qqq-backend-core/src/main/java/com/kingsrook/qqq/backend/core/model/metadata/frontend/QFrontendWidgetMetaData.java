@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -31,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.WidgetDropdownData;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
@@ -57,7 +59,9 @@ public class QFrontendWidgetMetaData
    private boolean showReloadButton = false;
    private boolean showExportButton = false;
 
-   protected Map<String, QIcon> icons;
+   protected Map<String, QIcon>              icons;
+   protected Map<String, List<QHelpContent>> helpContent;
+   protected Map<String, Serializable>       defaultValues;
 
    private final boolean hasPermission;
 
@@ -91,6 +95,9 @@ public class QFrontendWidgetMetaData
          this.showReloadButton = qWidgetMetaData.getShowReloadButton();
          this.icons = qWidgetMetaData.getIcons();
       }
+
+      this.helpContent = widgetMetaData.getHelpContent();
+      this.defaultValues = widgetMetaData.getDefaultValues();
 
       hasPermission = PermissionsHelper.hasWidgetPermission(actionInput, name);
    }
@@ -259,4 +266,27 @@ public class QFrontendWidgetMetaData
    {
       return tooltip;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for helpContent
+    **
+    *******************************************************************************/
+   public Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return helpContent;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValues
+    **
+    *******************************************************************************/
+   public Map<String, Serializable> getDefaultValues()
+   {
+      return defaultValues;
+   }
+
 }

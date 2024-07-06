@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -36,11 +37,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -51,6 +54,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinali
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -68,7 +72,17 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    /*******************************************************************************
     ** List the files for a table - to be implemented in module-specific subclasses.
     *******************************************************************************/
-   public abstract List<FILE> listFiles(QTableMetaData table, QBackendMetaData backendBase);
+   public List<FILE> listFiles(QTableMetaData table, QBackendMetaData backendBase) throws QException
+   {
+      return (listFiles(table, backendBase, null));
+   }
+
+
+
+   /*******************************************************************************
+    ** List the files for a table - WITH an input filter - to be implemented in module-specific subclasses.
+    *******************************************************************************/
+   public abstract List<FILE> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException;
 
    /*******************************************************************************
     ** Read the contents of a file - to be implemented in module-specific subclasses.
@@ -191,51 +205,97 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
          QTableMetaData                        table        = queryInput.getTable();
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
-         List<FILE>                            files        = listFiles(table, queryInput.getBackend());
+         List<FILE>                            files        = listFiles(table, queryInput.getBackend(), queryInput.getFilter());
 
+         int recordCount = 0;
+
+         FILE_LOOP:
          for(FILE file : files)
          {
-            LOG.info("Processing file: " + getFullPathForFile(file));
-            switch(tableDetails.getRecordFormat())
+            InputStream inputStream = readFile(file);
+            switch(tableDetails.getCardinality())
             {
-               case CSV:
+               case MANY:
                {
-                  String fileContents = IOUtils.toString(readFile(file));
-                  fileContents = customizeFileContentsAfterReading(table, fileContents);
-
-                  if(queryInput.getRecordPipe() != null)
+                  LOG.info("Extracting records from file", logPair("table", table.getName()), logPair("path", getFullPathForFile(file)));
+                  switch(tableDetails.getRecordFormat())
                   {
-                     new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record ->
+                     case CSV:
                      {
-                        ////////////////////////////////////////////////////////////////////////////////////////////
-                        // Before the records go into the pipe, make sure their backend details are added to them //
-                        ////////////////////////////////////////////////////////////////////////////////////////////
-                        addBackendDetailsToRecord(record, file);
-                     }));
-                  }
-                  else
-                  {
-                     List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
-                     addBackendDetailsToRecords(recordsInFile, file);
-                     queryOutput.addRecords(recordsInFile);
+                        String fileContents = IOUtils.toString(inputStream);
+                        fileContents = customizeFileContentsAfterReading(table, fileContents);
+
+                        if(queryInput.getRecordPipe() != null)
+                        {
+                           new CsvToQRecordAdapter().buildRecordsFromCsv(queryInput.getRecordPipe(), fileContents, table, null, (record ->
+                           {
+                              ////////////////////////////////////////////////////////////////////////////////////////////
+                              // Before the records go into the pipe, make sure their backend details are added to them //
+                              ////////////////////////////////////////////////////////////////////////////////////////////
+                              addBackendDetailsToRecord(record, file);
+                           }));
+                        }
+                        else
+                        {
+                           List<QRecord> recordsInFile = new CsvToQRecordAdapter().buildRecordsFromCsv(fileContents, table, null);
+                           addBackendDetailsToRecords(recordsInFile, file);
+                           queryOutput.addRecords(recordsInFile);
+                        }
+                        break;
+                     }
+                     case JSON:
+                     {
+                        String fileContents = IOUtils.toString(inputStream);
+                        fileContents = customizeFileContentsAfterReading(table, fileContents);
+
+                        // todo - pipe support!!
+                        List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
+                        addBackendDetailsToRecords(recordsInFile, file);
+
+                        queryOutput.addRecords(recordsInFile);
+                        break;
+                     }
+                     default:
+                     {
+                        throw new IllegalStateException("Unexpected table record format: " + tableDetails.getRecordFormat());
+                     }
                   }
                   break;
                }
-               case JSON:
+               case ONE:
                {
-                  String fileContents = IOUtils.toString(readFile(file));
-                  fileContents = customizeFileContentsAfterReading(table, fileContents);
+                  ////////////////////////////////////////////////////////////////////////////////
+                  // for one-record tables, put the entire file's contents into a single record //
+                  ////////////////////////////////////////////////////////////////////////////////
+                  String filePathWithoutBase = stripBackendAndTableBasePathsFromFileName(getFullPathForFile(file), queryInput.getBackend(), table);
+                  byte[] bytes               = inputStream.readAllBytes();
 
-                  // todo - pipe support!!
-                  List<QRecord> recordsInFile = new JsonToQRecordAdapter().buildRecordsFromJson(fileContents, table, null);
-                  addBackendDetailsToRecords(recordsInFile, file);
+                  QRecord record = new QRecord()
+                     .withValue(tableDetails.getFileNameFieldName(), filePathWithoutBase)
+                     .withValue(tableDetails.getContentsFieldName(), bytes);
+                  queryOutput.addRecord(record);
 
-                  queryOutput.addRecords(recordsInFile);
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // keep our own count - in case the query output is using a pipe (e.g., so we can't just call a .size()) //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  recordCount++;
+
+                  ////////////////////////////////////////////////////////////////////////////
+                  // break out of the file loop if we have hit the limit (if one was given) //
+                  ////////////////////////////////////////////////////////////////////////////
+                  if(queryInput.getFilter() != null && queryInput.getFilter().getLimit() != null)
+                  {
+                     if(recordCount >= queryInput.getFilter().getLimit())
+                     {
+                        break FILE_LOOP;
+                     }
+                  }
+
                   break;
                }
                default:
                {
-                  throw new NotImplementedException("Filesystem record format " + tableDetails.getRecordFormat() + " is not yet implemented");
+                  throw new IllegalStateException("Unexpected table cardinality: " + tableDetails.getCardinality());
                }
             }
          }
@@ -308,13 +368,19 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    {
       try
       {
-         Optional<AbstractPostReadFileCustomizer> tableCustomizer = QCodeLoader.getTableCustomizer(AbstractPostReadFileCustomizer.class, table, FilesystemTableCustomizers.POST_READ_FILE.getRole());
-         if(tableCustomizer.isEmpty())
+         Optional<QCodeReference> codeReference = table.getCustomizer(FilesystemTableCustomizers.POST_READ_FILE.getRole());
+         if(codeReference.isEmpty())
          {
             return (fileContents);
          }
 
-         return tableCustomizer.get().customizeFileContents(fileContents);
+         AbstractPostReadFileCustomizer tableCustomizer = QCodeLoader.getAdHoc(AbstractPostReadFileCustomizer.class, codeReference.get());
+         if(tableCustomizer == null)
+         {
+            return (fileContents);
+         }
+
+         return tableCustomizer.customizeFileContents(fileContents);
       }
       catch(Exception e)
       {
@@ -337,13 +403,15 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          QTableMetaData   table   = insertInput.getTable();
          QBackendMetaData backend = insertInput.getBackend();
 
+         output.setRecords(new ArrayList<>());
+
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
          if(tableDetails.getCardinality().equals(Cardinality.ONE))
          {
             for(QRecord record : insertInput.getRecords())
             {
-               String fullPath = stripDuplicatedSlashes(getFullBasePath(table, backend) + File.separator + record.getValueString("fileName"));
-               writeFile(backend, fullPath, record.getValueByteArray("contents"));
+               String fullPath = stripDuplicatedSlashes(getFullBasePath(table, backend) + File.separator + record.getValueString(tableDetails.getFileNameFieldName()));
+               writeFile(backend, fullPath, record.getValueByteArray(tableDetails.getContentsFieldName()));
                record.addBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fullPath);
                output.addRecord(record);
             }

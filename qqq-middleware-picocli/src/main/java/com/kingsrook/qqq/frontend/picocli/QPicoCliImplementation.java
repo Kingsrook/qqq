@@ -60,6 +60,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.AbstractQFieldMapping;
 import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
@@ -618,9 +619,10 @@ public class QPicoCliImplementation
          /////////////////////////////////////////////
          ExportInput exportInput = new ExportInput();
          exportInput.setTableName(tableName);
-         exportInput.setReportFormat(reportFormat);
-         exportInput.setFilename(filename);
-         exportInput.setReportOutputStream(outputStream);
+         exportInput.setReportDestination(new ReportDestination()
+            .withReportFormat(reportFormat)
+            .withFilename(filename)
+            .withReportOutputStream(outputStream));
          exportInput.setLimit(subParseResult.matchedOptionValue("limit", null));
 
          exportInput.setQueryFilter(generateQueryFilter(subParseResult));

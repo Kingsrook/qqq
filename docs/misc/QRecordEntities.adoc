@@ -1,0 +1,116 @@
+== QRecordEntities
+include::../variables.adoc[]
+
+While `<<QRecords>>` provide a flexible mechanism for passing around record data in a QQQ Application, they have one big disadvantage from the point-of-view of a Java Application:
+They do not provide a mechanism to ensure compile-time checks of field names or field types.
+
+As such, an alternative mechanism exists, which allows records in a QQQ application to be worked with following a more familiar Java Bean (Entity Bean) like pattern.
+This mechanism is known as a `QRecordEntity`.
+
+Specifically speaking, `QRecordEntity` is an abstract base class, whose purpose is to be the base class for entity-bean classes.
+Using reflection, `QRecordEntity` is able to convert objects back and forth from `QRecord` to specific entity-bean subtypes.
+
+For example, the method `QRecordEntity::toQRecord()` converts a record entity object into a `QRecord`.
+
+Inversely, `QRecordEntity::populateFromQRecord(QRecord record)` sets fields in a record entity object, based on the values in the supplied `QRecord`.
+It is conventional for a subclass of `QRecordEntity` to have both a no-arg (default) constructor, and a constructor that takes a `QRecord` as a parameter, and calls `populateFromQRecord`.
+
+In addition to these constructors, a `QRecordEntity` subclass will generally contain:
+
+* A `public static final String TABLE_NAME`, used throughout the application as a constant reference to the name for the {link-table}.
+* A series of `private` fields, corresponding to the fields in the table that the entity represents.
+** If these fields are annotated as `@QField()`, then the {link-table} meta-data for the table that the entity represents can in part be inferred by QQQ, by using the method `QTableMetaData::withFieldsFromEntity`.
+* `getX()`, `setX()`, and `withX()` methods for all of the entity's fields.
+
+=== Examples
+[source,java]
+.Example Definition of a QRecordEntity subclass:  Person.java
+----
+/*******************************************************************************
+ ** QRecordEntity for the person table.
+ *******************************************************************************/
+public class Person extends QRecordEntity
+{
+   public static final String TABLE_NAME = "person";
+
+   @QField(isEditable = false)
+   private Integer id;
+
+   @QField()
+   private String firstName;
+
+   @QField()
+   private String lastName;
+
+   @QField()
+   private Integer age;
+
+   // all other fields
+
+   /*******************************************************************************
+    ** Default constructor
+    *******************************************************************************/
+   public Person()
+   {
+   }
+
+
+   /*******************************************************************************
+    ** Constructor that takes a QRecord
+    *******************************************************************************/
+   public Person(QRecord record)
+   {
+      populateFromQRecord(record);
+   }
+
+
+   /*******************************************************************************
+    ** Custom method to concatenate firstName and lastName
+    *******************************************************************************/
+   public String getFullName()
+   {
+      //////////////////////////////////////////////////////////////////////
+      // if there were more than an example, we could do some null-checks //
+      // here to avoid silly output like "Bobby null" :)                  //
+      //////////////////////////////////////////////////////////////////////
+      return (firstName + " " + lastName);
+   }
+
+   // all getter, setter, and fluent setter (wither) methods
+}
+----
+
+The core ORM actions and process-execution actions of QQQ work with `QRecords`.
+However, application engineers may want to apply patterns like the following example, to gain the compile-time safety of `QRecordEntities`:
+
+[source,java]
+.Example Usage of a QRecordEntity
+----
+//////////////////////////////////////////////////////////////////////
+// assume we're working with the "person" table & entity from above //
+//////////////////////////////////////////////////////////////////////
+List<QRecord> recordsToUpdate = new ArrayList<>();
+for(QRecord record : inputRecordList)
+{
+   /////////////////////////////////////////////////////////////////////////////
+   // call the constructor that copies values from the record into the entity //
+   /////////////////////////////////////////////////////////////////////////////
+   Person person = new Person(record);
+
+   ////////////////////////////////////////////////
+   // call a custom method defined in the entity //
+   ////////////////////////////////////////////////
+   LOG.info("Processing: " + person.getFullName());
+
+   /////////////////////////////////////////////////////////////
+   // age is an Integer, so no type-conversion is needed here //
+   /////////////////////////////////////////////////////////////
+   person.setAge(person.getAge() + 1);
+
+   ///////////////////////////////////////////////////////////////////////////
+   // to pass the updated records to UpdateAction, convert them to QRecords //
+   ///////////////////////////////////////////////////////////////////////////
+   recordsToUpdate.add(person.toQRecord());
+}
+----
+

@@ -50,11 +50,24 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  ** Note that the full deleteInput is available as a field in this class.
  **
  *******************************************************************************/
-public abstract class AbstractPreDeleteCustomizer
+public abstract class AbstractPreDeleteCustomizer implements TableCustomizerInterface
 {
    protected DeleteInput deleteInput;
 
    protected boolean isPreview = false;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public List<QRecord> preDelete(DeleteInput deleteInput, List<QRecord> records, boolean isPreview) throws QException
+   {
+      this.deleteInput = deleteInput;
+      this.isPreview = isPreview;
+      return apply(records);
+   }
 
 
 

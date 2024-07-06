@@ -26,11 +26,13 @@ import java.io.File;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
+import com.kingsrook.qqq.backend.core.actions.interfaces.QStorageInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.UpdateInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
@@ -39,6 +41,7 @@ import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemCount
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemDeleteAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemInsertAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemQueryAction;
+import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemStorageAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.FilesystemUpdateAction;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -51,7 +54,12 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
 {
    private static final QLogger LOG = QLogger.getLogger(FilesystemBackendModule.class);
 
+   public static final String BACKEND_TYPE = "filesystem";
 
+   static
+   {
+      QBackendModuleDispatcher.registerBackendModule(new FilesystemBackendModule());
+   }
 
    /*******************************************************************************
     ** For filesystem backends, get the module-specific action base-class, that helps
@@ -71,7 +79,7 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
    @Override
    public String getBackendType()
    {
-      return ("filesystem");
+      return (BACKEND_TYPE);
    }
 
 
@@ -151,4 +159,14 @@ public class FilesystemBackendModule implements QBackendModuleInterface, Filesys
       return (new FilesystemDeleteAction());
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QStorageInterface getStorageInterface()
+   {
+      return (new FilesystemStorageAction());
+   }
 }

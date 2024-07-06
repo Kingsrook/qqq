@@ -40,6 +40,9 @@ public class BasepullConfiguration implements Serializable
 
    private String timestampField; // the name of the field in the table being queried against the last-run timestamp.
 
+   private Integer secondsToSubtractFromLastRunTimeForTimestampQuery; // option to adjust the query's start-time (based on last run time) by a number of seconds.
+   private Integer secondsToSubtractFromThisRunTimeForTimestampQuery; // option to adjust the query's end-time (based on this run time) by a number of seconds.
+
 
 
    /*******************************************************************************
@@ -241,6 +244,68 @@ public class BasepullConfiguration implements Serializable
    public BasepullConfiguration withTimestampField(String timestampField)
    {
       this.timestampField = timestampField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for secondsToSubtractFromLastRunTimeForTimestampQuery
+    *******************************************************************************/
+   public Integer getSecondsToSubtractFromLastRunTimeForTimestampQuery()
+   {
+      return (this.secondsToSubtractFromLastRunTimeForTimestampQuery);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for secondsToSubtractFromLastRunTimeForTimestampQuery
+    *******************************************************************************/
+   public void setSecondsToSubtractFromLastRunTimeForTimestampQuery(Integer secondsToSubtractFromLastRunTimeForTimestampQuery)
+   {
+      this.secondsToSubtractFromLastRunTimeForTimestampQuery = secondsToSubtractFromLastRunTimeForTimestampQuery;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for secondsToSubtractFromLastRunTimeForTimestampQuery
+    *******************************************************************************/
+   public BasepullConfiguration withSecondsToSubtractFromLastRunTimeForTimestampQuery(Integer secondsToSubtractFromLastRunTimeForTimestampQuery)
+   {
+      this.secondsToSubtractFromLastRunTimeForTimestampQuery = secondsToSubtractFromLastRunTimeForTimestampQuery;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for secondsToSubtractFromThisRunTimeForTimestampQuery
+    *******************************************************************************/
+   public Integer getSecondsToSubtractFromThisRunTimeForTimestampQuery()
+   {
+      return (this.secondsToSubtractFromThisRunTimeForTimestampQuery);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for secondsToSubtractFromThisRunTimeForTimestampQuery
+    *******************************************************************************/
+   public void setSecondsToSubtractFromThisRunTimeForTimestampQuery(Integer secondsToSubtractFromThisRunTimeForTimestampQuery)
+   {
+      this.secondsToSubtractFromThisRunTimeForTimestampQuery = secondsToSubtractFromThisRunTimeForTimestampQuery;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for secondsToSubtractFromThisRunTimeForTimestampQuery
+    *******************************************************************************/
+   public BasepullConfiguration withSecondsToSubtractFromThisRunTimeForTimestampQuery(Integer secondsToSubtractFromThisRunTimeForTimestampQuery)
+   {
+      this.secondsToSubtractFromThisRunTimeForTimestampQuery = secondsToSubtractFromThisRunTimeForTimestampQuery;
       return (this);
    }
 

@@ -419,7 +419,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          for(QRecord qRecord : runBackendStepInput.getRecords())
          {
@@ -452,7 +452,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          for(QRecord qRecord : runBackendStepInput.getRecords())
          {
@@ -518,7 +518,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          for(QRecord qRecord : runBackendStepInput.getRecords())
          {
@@ -552,7 +552,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          for(QRecord qRecord : runBackendStepInput.getRecords())
          {
@@ -584,7 +584,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
        **
        *******************************************************************************/
       @Override
-      public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+      public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
          ///////////////////////////////////
          // just pass the records through //

@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -79,14 +80,14 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
 
       try
       {
-         QTableMetaData table           = input.getTable();
-         UniqueKey      uniqueKey       = input.getKey();
-         String         primaryKeyField = table.getPrimaryKeyField();
+         QTableMetaData table                     = input.getTable();
+         UniqueKey      uniqueKey                 = input.getKey();
+         String         primaryKeyField           = table.getPrimaryKeyField();
+         boolean        allowNullKeyValuesToEqual = BooleanUtils.isTrue(input.getAllowNullKeyValuesToEqual());
+
          if(transaction == null)
          {
-            InsertInput insertInput = new InsertInput();
-            insertInput.setTableName(input.getTableName());
-            transaction = new InsertAction().openTransaction(insertInput);
+            transaction = QBackendTransaction.openFor(new InsertInput(input.getTableName()));
             weOwnTheTransaction = true;
          }
 
@@ -100,10 +101,11 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
             // originally it was thought that we'd need to pass the filter in here           //
             // but, it's been decided not to.  the filter only applies to what we can delete //
             ///////////////////////////////////////////////////////////////////////////////////
-            Map<List<Serializable>, Serializable> existingKeys = UniqueKeyHelper.getExistingKeys(transaction, table, page, uniqueKey);
+            Map<List<Serializable>, Serializable> existingKeys = UniqueKeyHelper.getExistingKeys(transaction, table, page, uniqueKey, allowNullKeyValuesToEqual);
+
             for(QRecord record : page)
             {
-               Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
+               Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record, allowNullKeyValuesToEqual);
                if(keyValues.isPresent())
                {
                   if(existingKeys.containsKey(keyValues.get()))
@@ -138,19 +140,33 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
          output.setUpdateOutput(updateOutput);
 
-         QQueryFilter deleteFilter = new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.NOT_IN, primaryKeysToKeep));
-         if(input.getFilter() != null)
+         if(input.getPerformDeletes())
          {
-            deleteFilter.addSubFilter(input.getFilter());
+            QQueryFilter deleteFilter = new QQueryFilter(new QFilterCriteria(primaryKeyField, QCriteriaOperator.NOT_IN, primaryKeysToKeep));
+            if(input.getFilter() != null)
+            {
+               deleteFilter.addSubFilter(input.getFilter());
+            }
+
+            DeleteInput deleteInput = new DeleteInput();
+            deleteInput.setTableName(table.getName());
+            deleteInput.setQueryFilter(deleteFilter);
+            deleteInput.setTransaction(transaction);
+            deleteInput.setOmitDmlAudit(input.getOmitDmlAudit());
+            DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
+            output.setDeleteOutput(deleteOutput);
          }
 
-         DeleteInput deleteInput = new DeleteInput();
-         deleteInput.setTableName(table.getName());
-         deleteInput.setQueryFilter(deleteFilter);
-         deleteInput.setTransaction(transaction);
-         deleteInput.setOmitDmlAudit(input.getOmitDmlAudit());
-         DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);
-         output.setDeleteOutput(deleteOutput);
+         if(input.getSetPrimaryKeyInInsertedRecords())
+         {
+            for(int i = 0; i < insertList.size(); i++)
+            {
+               if(i < insertOutput.getRecords().size())
+               {
+                  insertList.get(i).setValue(primaryKeyField, insertOutput.getRecords().get(i).getValue(primaryKeyField));
+               }
+            }
+         }
 
          if(weOwnTheTransaction)
          {

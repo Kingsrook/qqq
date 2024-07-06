@@ -32,7 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
  ** In-memory version of update action.
  **
  *******************************************************************************/
-public class MemoryUpdateAction implements UpdateInterface
+public class MemoryUpdateAction extends AbstractMemoryAction implements UpdateInterface
 {
 
    /*******************************************************************************

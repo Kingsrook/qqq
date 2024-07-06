@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,9 +38,9 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
@@ -52,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.actions.audits.DMLAuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -60,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.DuplicateKeyBadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
@@ -116,21 +119,24 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       setAutomationStatusField(insertInput);
 
-      //////////////////////////////////////////////////////
-      // load the backend module and its insert interface //
-      //////////////////////////////////////////////////////
-      QBackendModuleInterface qModule         = getBackendModuleInterface(insertInput);
-      InsertInterface         insertInterface = qModule.getInsertInterface();
-
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
       performValidations(insertInput, false);
 
-      ////////////////////////////////////
-      // have the backend do the insert //
-      ////////////////////////////////////
-      InsertOutput insertOutput = insertInterface.execute(insertInput);
+      //////////////////////////////////////////////////////
+      // use the backend module to actually do the insert //
+      //////////////////////////////////////////////////////
+      InsertOutput insertOutput = runInsertInBackend(insertInput);
+
+      if(insertOutput.getRecords() == null)
+      {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // in case the module failed to set record in the output, put an empty list there //
+         // to avoid so many downstream NPE's                                              //
+         ////////////////////////////////////////////////////////////////////////////////////
+         insertOutput.setRecords(new ArrayList<>());
+      }
 
       //////////////////////////////
       // log if there were errors //
@@ -164,13 +170,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       //////////////////////////////////////////////////////////////
       // finally, run the post-insert customizer, if there is one //
       //////////////////////////////////////////////////////////////
-      Optional<AbstractPostInsertCustomizer> postInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPostInsertCustomizer.class, table, TableCustomizers.POST_INSERT_RECORD.getRole());
+      Optional<TableCustomizerInterface> postInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
          try
          {
-            postInsertCustomizer.get().setInsertInput(insertInput);
-            insertOutput.setRecords(postInsertCustomizer.get().apply(insertOutput.getRecords()));
+            insertOutput.setRecords(postInsertCustomizer.get().postInsert(insertInput, insertOutput.getRecords()));
          }
          catch(Exception e)
          {
@@ -189,6 +194,37 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
+   private InsertOutput runInsertInBackend(InsertInput insertInput) throws QException
+   {
+      ///////////////////////////////////
+      // exit early if 0 input records //
+      ///////////////////////////////////
+      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
+      {
+         LOG.debug("Insert request called with 0 records.  Returning with no-op", logPair("tableName", insertInput.getTableName()));
+         InsertOutput rs = new InsertOutput();
+         rs.setRecords(new ArrayList<>());
+         return (rs);
+      }
+
+      //////////////////////////////////////////////////////
+      // load the backend module and its insert interface //
+      //////////////////////////////////////////////////////
+      QBackendModuleInterface qModule         = getBackendModuleInterface(insertInput.getBackend());
+      InsertInterface         insertInterface = qModule.getInsertInterface();
+
+      ////////////////////////////////////
+      // have the backend do the insert //
+      ////////////////////////////////////
+      InsertOutput insertOutput = insertInterface.execute(insertInput);
+      return insertOutput;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public void performValidations(InsertInput insertInput, boolean isPreview) throws QException
    {
       QTableMetaData table = insertInput.getTable();
@@ -197,31 +233,29 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       // load the pre-insert customizer and set it up, if there is one //
       // then we'll run it based on its WhenToRun value                //
       ///////////////////////////////////////////////////////////////////
-      Optional<AbstractPreInsertCustomizer> preInsertCustomizer = QCodeLoader.getTableCustomizer(AbstractPreInsertCustomizer.class, table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      Optional<TableCustomizerInterface> preInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
-         preInsertCustomizer.get().setInsertInput(insertInput);
-         preInsertCustomizer.get().setIsPreview(isPreview);
-         runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
+         runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
       }
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
-      ValueBehaviorApplier.applyFieldBehaviors(insertInput.getInstance(), table, insertInput.getRecords());
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords(), null);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
       setErrorsIfUniqueKeyErrors(insertInput, table);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_REQUIRED_FIELD_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_REQUIRED_FIELD_CHECKS);
       if(insertInput.getInputSource().shouldValidateRequiredFields())
       {
          validateRequiredFields(insertInput);
       }
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
       ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
 
-      runPreInsertCustomizerIfItIsTime(insertInput, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
    }
 
 
@@ -255,13 +289,13 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void runPreInsertCustomizerIfItIsTime(InsertInput insertInput, Optional<AbstractPreInsertCustomizer> preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun whenToRun) throws QException
+   private void runPreInsertCustomizerIfItIsTime(InsertInput insertInput, boolean isPreview, Optional<TableCustomizerInterface> preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun whenToRun) throws QException
    {
       if(preInsertCustomizer.isPresent())
       {
-         if(whenToRun.equals(preInsertCustomizer.get().getWhenToRun()))
+         if(whenToRun.equals(preInsertCustomizer.get().whenToRunPreInsert(insertInput, isPreview)))
          {
-            insertInput.setRecords(preInsertCustomizer.get().apply(insertInput.getRecords()));
+            insertInput.setRecords(preInsertCustomizer.get().preInsert(insertInput, insertInput.getRecords(), isPreview));
          }
       }
    }
@@ -286,7 +320,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             {
                if(record.getValue(requiredField.getName()) == null || (requiredField.getType().isStringLike() && record.getValueString(requiredField.getName()).trim().equals("")))
                {
-                  record.addError(new BadInputStatusMessage("Missing value in required field: " + requiredField.getLabel()));
+                  record.addError(new BadInputStatusMessage("Missing value in required field: " + Objects.requireNonNullElse(requiredField.getLabel(), requiredField.getName())));
                }
             }
          }
@@ -381,7 +415,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
                Optional<List<Serializable>> keyValues = UniqueKeyHelper.getKeyValues(table, uniqueKey, record);
                if(keyValues.isPresent() && (existingKeys.get(uniqueKey).contains(keyValues.get()) || keysInThisList.get(uniqueKey).contains(keyValues.get())))
                {
-                  record.addError(new BadInputStatusMessage("Another record already exists with this " + uniqueKey.getDescription(table)));
+                  record.addError(new DuplicateKeyBadInputStatusMessage("Another record already exists with this " + uniqueKey.getDescription(table)));
                   foundDupe = true;
                   break;
                }
@@ -409,7 +443,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
     *******************************************************************************/
    private void setAutomationStatusField(InsertInput insertInput)
    {
-      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getSession(), insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS);
+      RecordAutomationStatusUpdater.setAutomationStatusInRecords(insertInput.getTable(), insertInput.getRecords(), AutomationStatus.PENDING_INSERT_AUTOMATIONS, insertInput.getTransaction(), null);
    }
 
 
@@ -417,23 +451,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QBackendModuleInterface getBackendModuleInterface(InsertInput insertInput) throws QException
+   private QBackendModuleInterface getBackendModuleInterface(QBackendMetaData backend) throws QException
    {
-      ActionHelper.validateSession(insertInput);
       QBackendModuleDispatcher qBackendModuleDispatcher = new QBackendModuleDispatcher();
-      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(insertInput.getBackend());
+      QBackendModuleInterface  qModule                  = qBackendModuleDispatcher.getQBackendModule(backend);
       return (qModule);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public QBackendTransaction openTransaction(InsertInput insertInput) throws QException
-   {
-      QBackendModuleInterface qModule = getBackendModuleInterface(insertInput);
-      return (qModule.getInsertInterface().openTransaction(insertInput));
    }
 
 }

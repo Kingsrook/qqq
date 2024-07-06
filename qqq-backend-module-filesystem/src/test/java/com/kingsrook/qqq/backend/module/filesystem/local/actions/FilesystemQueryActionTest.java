@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -32,8 +35,10 @@ import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractPostReadFileCustomizer;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.FilesystemTableCustomizers;
-import org.junit.jupiter.api.Assertions;
+import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -51,8 +56,8 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
-      Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream()
+      assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+      assertTrue(queryOutput.getRecords().stream()
             .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(TestUtils.BASE_PATH)),
          "All records should have a full-path in their backend details, matching the test folder name");
    }
@@ -74,14 +79,57 @@ public class FilesystemQueryActionTest extends FilesystemActionTest
 
       queryInput.setTableName(TestUtils.defineLocalFilesystemJSONPersonTable().getName());
       QueryOutput queryOutput = new FilesystemQueryAction().execute(queryInput);
-      Assertions.assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
-      Assertions.assertTrue(
+      assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+      assertTrue(
          queryOutput.getRecords().stream().allMatch(record -> record.getValueString("email").matches(".*KINGSROOK.COM")),
          "All records should have their email addresses up-shifted.");
    }
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testQueryForCardinalityOne() throws QException
+   {
+      FilesystemQueryAction filesystemQueryAction = new FilesystemQueryAction();
+
+      QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS);
+      queryInput.setFilter(new QQueryFilter());
+      QueryOutput queryOutput = filesystemQueryAction.execute(queryInput);
+      assertEquals(3, queryOutput.getRecords().size(), "Unfiltered query should find all rows");
+
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      queryOutput = filesystemQueryAction.execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Filtered query should find 1 row");
+      assertEquals("BLOB-1.txt", queryOutput.getRecords().get(0).getValueString("fileName"));
+
+      ////////////////////////////////////////////////////////////////
+      // put a glob on the table - now should only find 2 txt files //
+      ////////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      ((FilesystemTableBackendDetails) (instance.getTable(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).getBackendDetails()))
+         .withGlob("*.txt");
+      reInitInstanceInContext(instance);
+
+      queryInput.setFilter(new QQueryFilter());
+      queryOutput = filesystemQueryAction.execute(queryInput);
+      assertEquals(2, queryOutput.getRecords().size(), "Query should use glob and find 2 rows");
+
+      //////////////////////////////
+      // add a limit to the query //
+      //////////////////////////////
+      queryInput.setFilter(new QQueryFilter().withLimit(1));
+      queryOutput = filesystemQueryAction.execute(queryInput);
+      assertEquals(1, queryOutput.getRecords().size(), "Query with limit should be respected");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static class ValueUpshifter extends AbstractPostReadFileCustomizer
    {
       @Override

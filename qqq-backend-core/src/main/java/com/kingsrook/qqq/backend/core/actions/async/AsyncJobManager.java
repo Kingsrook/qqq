@@ -28,6 +28,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
@@ -39,6 +42,7 @@ import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
 import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.logging.log4j.Level;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -51,7 +55,22 @@ public class AsyncJobManager
 {
    private static final QLogger LOG = QLogger.getLogger(AsyncJobManager.class);
 
+   /////////////////////////////////////////////////////////////////////////////
+   // we would probably use Executors.newCachedThreadPool() - but - it has no //
+   // maxPoolSize...  we think some limit is good, so that at a large number  //
+   // of attempted concurrent jobs we'll have new jobs block, rather than     //
+   // exhausting all server resources and locking up "everything"             //
+   // also, it seems like keeping a handful of core-threads around is very    //
+   // little actual waste, and better than ever wasting time starting a new   //
+   // one, which we know we'll often be doing.                                //
+   /////////////////////////////////////////////////////////////////////////////
+   private static Integer         CORE_THREADS    = 8;
+   private static Integer         MAX_THREADS     = 500;
+   private static ExecutorService executorService = new ThreadPoolExecutor(CORE_THREADS, MAX_THREADS, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new PrefixedDefaultThreadFactory(AsyncJobManager.class));
+
+
    private String forcedJobUUID = null;
+
 
 
    /*******************************************************************************
@@ -84,7 +103,7 @@ public class AsyncJobManager
          {
             QContext.init(capturedContext);
             return (runAsyncJob(jobName, asyncJob, uuidAndTypeStateKey, asyncJobStatus));
-         });
+         }, executorService);
 
          if(timeout == 0)
          {
@@ -141,7 +160,7 @@ public class AsyncJobManager
    private <T extends Serializable> T runAsyncJob(String jobName, AsyncJob<T> asyncJob, UUIDAndTypeStateKey uuidAndTypeStateKey, AsyncJobStatus asyncJobStatus)
    {
       String originalThreadName = Thread.currentThread().getName();
-      Thread.currentThread().setName("Job:" + jobName + ":" + uuidAndTypeStateKey.getUuid().toString().substring(0, 8));
+      Thread.currentThread().setName("Job:" + jobName);
       try
       {
          LOG.debug("Starting job " + uuidAndTypeStateKey.getUuid());
@@ -151,17 +170,24 @@ public class AsyncJobManager
          LOG.debug("Completed job " + uuidAndTypeStateKey.getUuid());
          return (result);
       }
-      catch(Exception e)
+      catch(Throwable t)
       {
          asyncJobStatus.setState(AsyncJobState.ERROR);
-         asyncJobStatus.setCaughtException(e);
+         if(t instanceof Exception e)
+         {
+            asyncJobStatus.setCaughtException(e);
+         }
+         else
+         {
+            asyncJobStatus.setCaughtException(new QException("Caught throwable", t));
+         }
          getStateProvider().put(uuidAndTypeStateKey, asyncJobStatus);
 
          //////////////////////////////////////////////////////
          // if user facing, just log an info, warn otherwise //
          //////////////////////////////////////////////////////
-         LOG.log((e instanceof QUserFacingException) ? Level.INFO : Level.WARN, "Job ended with an exception", e, logPair("jobId", uuidAndTypeStateKey.getUuid()));
-         throw (new CompletionException(e));
+         LOG.log((t instanceof QUserFacingException) ? Level.INFO : Level.WARN, "Job ended with an exception", t, logPair("jobId", uuidAndTypeStateKey.getUuid()));
+         throw (new CompletionException(t));
       }
       finally
       {

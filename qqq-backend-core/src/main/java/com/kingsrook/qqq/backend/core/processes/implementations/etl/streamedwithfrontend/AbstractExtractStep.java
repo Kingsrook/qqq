@@ -112,4 +112,17 @@ public abstract class AbstractExtractStep implements BackendStep
       this.limit = limit;
    }
 
+
+
+   /*******************************************************************************
+    ** Create the record pipe to be used for this process step.
+    **
+    ** Here in case a subclass needs a different type of pipe - for example, a
+    ** DistinctFilteringRecordPipe.
+    *******************************************************************************/
+   public RecordPipe createRecordPipe(RunBackendStepInput runBackendStepInput, Integer overrideCapacity)
+   {
+      return (new RecordPipe(overrideCapacity));
+   }
+
 }

@@ -1,0 +1,10 @@
+name: install_asciidoctor
+runs:
+  using: composite
+  steps:
+  - uses: actions/checkout@v4.1.0
+  - name: Install asciidoctor
+    run: |-
+      sudo apt-get update
+      sudo apt install -y asciidoctor
+    shell: bash

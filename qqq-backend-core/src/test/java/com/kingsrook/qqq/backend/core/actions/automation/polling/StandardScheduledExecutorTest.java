@@ -43,7 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
-import com.kingsrook.qqq.backend.core.scheduler.StandardScheduledExecutor;
+import com.kingsrook.qqq.backend.core.scheduler.simple.StandardScheduledExecutor;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -186,9 +186,9 @@ class StandardScheduledExecutorTest extends BaseTest
     *******************************************************************************/
    private void runPollingAutomationExecutorForAwhile(QInstance qInstance, Supplier<QSession> sessionSupplier)
    {
-      List<PollingAutomationPerTableRunner.TableActions> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
+      List<PollingAutomationPerTableRunner.TableActionsInterface> tableActions = PollingAutomationPerTableRunner.getTableActions(qInstance, TestUtils.POLLING_AUTOMATION);
       List<StandardScheduledExecutor>                    executors    = new ArrayList<>();
-      for(PollingAutomationPerTableRunner.TableActions tableAction : tableActions)
+      for(PollingAutomationPerTableRunner.TableActionsInterface tableAction : tableActions)
       {
          PollingAutomationPerTableRunner pollingAutomationPerTableRunner = new PollingAutomationPerTableRunner(qInstance, TestUtils.POLLING_AUTOMATION, sessionSupplier, tableAction);
          StandardScheduledExecutor       pollingAutomationExecutor       = new StandardScheduledExecutor(pollingAutomationPerTableRunner);

@@ -24,15 +24,20 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -47,6 +52,9 @@ import org.apache.commons.lang.NotImplementedException;
  *******************************************************************************/
 public class BackendQueryFilterUtils
 {
+   private static final QLogger LOG = QLogger.getLogger(BackendQueryFilterUtils.class);
+
+
 
    /*******************************************************************************
     ** Test if record matches filter.
@@ -58,10 +66,10 @@ public class BackendQueryFilterUtils
          return (true);
       }
 
-      /////////////////////////////////////////////////////////////////////////////////////
-      // for an AND query, default to a TRUE answer, and we'll &= each criteria's value. //
-      // for an OR query, default to FALSE, and |= each criteria's value.                //
-      /////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////
+      // for an AND query, default to a TRUE answer, and we'll &= each criterion's value. //
+      // for an OR query, default to FALSE, and |= each criterion's value.                //
+      //////////////////////////////////////////////////////////////////////////////////////
       AtomicBoolean recordMatches = new AtomicBoolean(filter.getBooleanOperator().equals(QQueryFilter.BooleanOperator.AND) ? true : false);
 
       ///////////////////////////////////////
@@ -75,14 +83,16 @@ public class BackendQueryFilterUtils
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // if the value isn't in the record - check, if it looks like a table.fieldName, but none of the //
-            // field names in the record are fully qualified, then just use the field-name portion...        //
+            // field names in the record are fully qualified - OR - the table name portion of the field name //
+            // matches the record's field name, then just use the field-name portion...                      //
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             if(fieldName.contains("."))
             {
+               String[]                  parts  = fieldName.split("\\.");
                Map<String, Serializable> values = qRecord.getValues();
-               if(values.keySet().stream().noneMatch(n -> n.contains(".")))
+               if(values.keySet().stream().noneMatch(n -> n.contains(".")) || parts[0].equals(qRecord.getTableName()))
                {
-                  value = qRecord.getValue(fieldName.substring(fieldName.indexOf(".") + 1));
+                  value = qRecord.getValue(parts[1]);
                }
             }
          }
@@ -124,9 +134,25 @@ public class BackendQueryFilterUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:indentation")
    public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
    {
+      ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();
+      while(valueListIterator.hasNext())
+      {
+         Serializable criteriaValue = valueListIterator.next();
+         if(criteriaValue instanceof AbstractFilterExpression<?> expression)
+         {
+            try
+            {
+               valueListIterator.set(expression.evaluate());
+            }
+            catch(QException qe)
+            {
+               LOG.warn("Unexpected exception caught evaluating expression", qe);
+            }
+         }
+      }
+
       boolean criterionMatches = switch(criterion.getOperator())
       {
          case EQUALS -> testEquals(criterion, value);
@@ -164,6 +190,8 @@ public class BackendQueryFilterUtils
             boolean between = (testGreaterThan(criteria0, value) || testEquals(criteria0, value)) && (!testGreaterThan(criteria1, value) || testEquals(criteria1, value));
             yield !between;
          }
+         case TRUE -> true;
+         case FALSE -> false;
       };
       return criterionMatches;
    }
@@ -190,12 +218,13 @@ public class BackendQueryFilterUtils
     ** operator, update the accumulator, and if we can then short-circuit remaining
     ** operations, return a true or false.  Returning null means to keep going.
     *******************************************************************************/
-   private static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
+   static Boolean applyBooleanOperator(AtomicBoolean accumulator, boolean newValue, QQueryFilter.BooleanOperator booleanOperator)
    {
       boolean accumulatorValue = accumulator.getPlain();
       if(booleanOperator.equals(QQueryFilter.BooleanOperator.AND))
       {
          accumulatorValue &= newValue;
+         accumulator.set(accumulatorValue);
          if(!accumulatorValue)
          {
             return (false);
@@ -204,6 +233,7 @@ public class BackendQueryFilterUtils
       else
       {
          accumulatorValue |= newValue;
+         accumulator.set(accumulatorValue);
          if(accumulatorValue)
          {
             return (true);
@@ -287,26 +317,15 @@ public class BackendQueryFilterUtils
 
       if(b instanceof LocalDate || a instanceof LocalDate)
       {
-         LocalDate valueDate;
-         if(b instanceof LocalDate ld)
-         {
-            valueDate = ld;
-         }
-         else
-         {
-            valueDate = ValueUtils.getValueAsLocalDate(b);
-         }
+         LocalDate valueDate     = ValueUtils.getValueAsLocalDate(b);
+         LocalDate criterionDate = ValueUtils.getValueAsLocalDate(a);
+         return (valueDate.isAfter(criterionDate));
+      }
 
-         LocalDate criterionDate;
-         if(a instanceof LocalDate ld)
-         {
-            criterionDate = ld;
-         }
-         else
-         {
-            criterionDate = ValueUtils.getValueAsLocalDate(a);
-         }
-
+      if(b instanceof Instant || a instanceof Instant)
+      {
+         Instant valueDate     = ValueUtils.getValueAsInstant(b);
+         Instant criterionDate = ValueUtils.getValueAsInstant(a);
          return (valueDate.isAfter(criterionDate));
       }
 

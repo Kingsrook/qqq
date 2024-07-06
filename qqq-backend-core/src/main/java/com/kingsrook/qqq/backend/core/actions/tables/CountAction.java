@@ -22,9 +22,12 @@
 package com.kingsrook.qqq.backend.core.actions.tables;
 
 
+import java.util.Collections;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.QueryStatManager;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
@@ -57,6 +60,11 @@ public class CountAction
 
       QTableMetaData   table   = countInput.getTable();
       QBackendMetaData backend = countInput.getBackend();
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // apply any available field behaviors to the filter (noting that, if anything changes, a new filter is returned) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      countInput.setFilter(ValueBehaviorApplier.applyFieldBehaviorsToFilter(QContext.getQInstance(), table, countInput.getFilter(), Collections.emptySet()));
 
       QueryStat queryStat = QueryStatManager.newQueryStat(backend, table, countInput.getFilter());
 

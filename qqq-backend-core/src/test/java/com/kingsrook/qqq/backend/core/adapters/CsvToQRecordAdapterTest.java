@@ -465,4 +465,60 @@ class CsvToQRecordAdapterTest extends BaseTest
       assertThat(qRecord.getErrors().get(0).toString()).isEqualTo("Error parsing line #2: Value [green] could not be converted to an Integer.");
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCsvHeadersAsFields() throws QException
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withCsvHeadersAsFieldNames(true)
+         .withCaseSensitiveHeaders(true)
+         .withCsv("""
+            firstName,birthDate,favoriteShapeId
+            John,1980,1
+            Paul,1970-06-15,green
+            """));
+
+      List<QRecord> qRecords = csvToQRecordAdapter.getRecordList();
+
+      QRecord qRecord = qRecords.get(0);
+      assertEquals("John", qRecord.getValue("firstName"));
+      assertEquals("1980", qRecord.getValue("birthDate"));
+      assertEquals("1", qRecord.getValue("favoriteShapeId"));
+
+      qRecord = qRecords.get(1);
+      assertEquals("Paul", qRecord.getValue("firstName"));
+      assertEquals("1970-06-15", qRecord.getValue("birthDate"));
+      assertEquals("green", qRecord.getValue("favoriteShapeId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCsvHeadersAsFieldsDuplicatedNames() throws QException
+   {
+      CsvToQRecordAdapter csvToQRecordAdapter = new CsvToQRecordAdapter();
+      csvToQRecordAdapter.buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
+         .withCsvHeadersAsFieldNames(true)
+         .withCaseSensitiveHeaders(true)
+         .withCsv("""
+            orderId,sku,sku
+            10001,BASIC1,BASIC2
+            """));
+
+      List<QRecord> qRecords = csvToQRecordAdapter.getRecordList();
+
+      QRecord qRecord = qRecords.get(0);
+      assertEquals("10001", qRecord.getValue("orderId"));
+      assertEquals("BASIC1", qRecord.getValue("sku"));
+      assertEquals("BASIC2", qRecord.getValue("sku 2"));
+   }
+
 }

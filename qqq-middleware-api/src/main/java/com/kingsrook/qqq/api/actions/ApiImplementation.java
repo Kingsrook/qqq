@@ -76,6 +76,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -160,6 +161,7 @@ public class ApiImplementation
       queryInput.setTableName(tableName);
       queryInput.setIncludeAssociations(true);
       queryInput.setShouldFetchHeavyFields(true);
+      queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
@@ -380,11 +382,7 @@ public class ApiImplementation
       // map record fields for api                                                                                  //
       // note - don't put them in the output until after the count, just because that looks a little nicer, i think //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ArrayList<Map<String, Serializable>> records = new ArrayList<>();
-      for(QRecord record : queryOutput.getRecords())
-      {
-         records.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, version));
-      }
+      ArrayList<Map<String, Serializable>> records = QRecordApiAdapter.qRecordsToApiMapList(queryOutput.getRecords(), tableName, apiName, version);
 
       /////////////////////////////
       // optionally do the count //
@@ -394,6 +392,7 @@ public class ApiImplementation
          CountInput countInput = new CountInput();
          countInput.setTableName(tableName);
          countInput.setFilter(filter);
+         countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
          CountOutput countOutput = new CountAction().execute(countInput);
          output.put("count", countOutput.getCount());
       }
@@ -595,6 +594,7 @@ public class ApiImplementation
 
       GetInput getInput = new GetInput();
       getInput.setTableName(tableName);
+      getInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       PermissionsHelper.checkTablePermissionThrowing(getInput, TablePermissionSubType.READ);
 
@@ -615,7 +615,7 @@ public class ApiImplementation
             + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
       }
 
-      Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordToApiMap(record, tableName, apiInstanceMetaData.getName(), version);
+      Map<String, Serializable> outputRecord = QRecordApiAdapter.qRecordsToApiMapList(List.of(record), tableName, apiInstanceMetaData.getName(), version).get(0);
       return (outputRecord);
    }
 
@@ -992,12 +992,15 @@ public class ApiImplementation
       runProcessInput.setProcessUUID(processUUID);
       // todo i don't think runProcessInput.setAsyncJobCallback();
 
+      PermissionsHelper.checkProcessPermissionThrowing(runProcessInput, processName);
+
       //////////////////////
       // map input values //
       //////////////////////
       ApiProcessInput apiProcessInput = apiProcessMetaData.getInput();
       if(apiProcessInput != null)
       {
+         processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getPathParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getQueryStringParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getFormParams());
          processProcessInputFields(paramMap, badRequestMessages, runProcessInput, apiProcessInput.getObjectBodyParams());
@@ -1141,7 +1144,10 @@ public class ApiImplementation
       ApiProcessOutputInterface output = apiProcessMetaData.getOutput();
       if(output != null)
       {
-         return (new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), output.getOutputForProcess(runProcessInput, runProcessOutput)));
+         Serializable    outputForProcess = output.getOutputForProcess(runProcessInput, runProcessOutput);
+         HttpApiResponse httpApiResponse  = new HttpApiResponse(output.getSuccessStatusCode(runProcessInput, runProcessOutput), outputForProcess);
+         output.customizeHttpApiResponse(httpApiResponse, runProcessInput, runProcessOutput);
+         return httpApiResponse;
       }
       else
       {

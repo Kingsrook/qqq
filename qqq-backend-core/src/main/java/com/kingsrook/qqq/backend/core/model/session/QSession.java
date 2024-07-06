@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,21 +42,81 @@ import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QSession implements Serializable
+public class QSession implements Serializable, Cloneable
 {
    private String idReference;
    private QUser  user;
    private String uuid;
 
    private Set<String>                     permissions;
+
    private Map<String, List<Serializable>> securityKeyValues;
    private Map<String, Serializable>       backendVariants;
 
-   // implementation-specific custom values
+   ///////////////////////////////////////////
+   // implementation-specific custom values //
+   ///////////////////////////////////////////
    private Map<String, String> values;
+
+   /////////////////////////////////////////////
+   // values meant to be passed to a frontend //
+   /////////////////////////////////////////////
+   private Map<String, Serializable> valuesForFrontend;
 
    public static final String VALUE_KEY_USER_TIMEZONE                = "UserTimezone";
    public static final String VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES = "UserTimezoneOffsetMinutes";
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QSession clone() throws CloneNotSupportedException
+   {
+      QSession clone = (QSession) super.clone();
+
+      if(user != null)
+      {
+         clone.user = user.clone();
+      }
+
+      if(permissions != null)
+      {
+         clone.permissions = new HashSet<>();
+         clone.permissions.addAll(permissions);
+      }
+
+      if(securityKeyValues != null)
+      {
+         clone.securityKeyValues = new HashMap<>();
+         for(Map.Entry<String, List<Serializable>> entry : securityKeyValues.entrySet())
+         {
+            List<Serializable> cloneValues = entry.getValue() == null ? null : new ArrayList<>(entry.getValue());
+            clone.securityKeyValues.put(entry.getKey(), cloneValues);
+         }
+      }
+
+      if(backendVariants != null)
+      {
+         clone.backendVariants = new HashMap<>();
+         clone.backendVariants.putAll(backendVariants);
+      }
+
+      if(values != null)
+      {
+         clone.values = new HashMap<>();
+         clone.values.putAll(values);
+      }
+
+      if(valuesForFrontend != null)
+      {
+         clone.valuesForFrontend = new HashMap<>();
+         clone.valuesForFrontend.putAll(valuesForFrontend);
+      }
+
+      return (clone);
+   }
 
 
 
@@ -138,6 +199,19 @@ public class QSession implements Serializable
          values = new HashMap<>();
       }
       values.put(key, value);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void removeValue(String key)
+   {
+      if(values != null)
+      {
+         values.remove(key);
+      }
    }
 
 
@@ -324,15 +398,10 @@ public class QSession implements Serializable
 
 
    /*******************************************************************************
-    ** Fluent setter for securityKeyValues - add a list of values for 1 key
+    ** Fluent setter for securityKeyValues - add 1 value for 1 key.
     *******************************************************************************/
-   public QSession withSecurityKeyValues(String keyName, List<Serializable> values)
+   public QSession withSecurityKeyValue(String keyName, Serializable value)
    {
-      if(values == null)
-      {
-         return (this);
-      }
-
       if(securityKeyValues == null)
       {
          securityKeyValues = new HashMap<>();
@@ -342,25 +411,18 @@ public class QSession implements Serializable
 
       try
       {
-         securityKeyValues.get(keyName).addAll(values);
+         securityKeyValues.get(keyName).add(value);
       }
       catch(UnsupportedOperationException uoe)
       {
+         /////////////////////
+         // grr, List.of... //
+         /////////////////////
          securityKeyValues.put(keyName, new ArrayList<>(securityKeyValues.get(keyName)));
-         securityKeyValues.get(keyName).addAll(values);
+         securityKeyValues.get(keyName).add(value);
       }
 
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for securityKeyValues - add 1 value for 1 key.
-    *******************************************************************************/
-   public QSession withSecurityKeyValue(String keyName, Serializable value)
-   {
-      return (withSecurityKeyValues(keyName, List.of(value)));
    }
 
 
@@ -497,5 +559,50 @@ public class QSession implements Serializable
       this.backendVariants = backendVariants;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for valuesForFrontend
+    *******************************************************************************/
+   public Map<String, Serializable> getValuesForFrontend()
+   {
+      return (this.valuesForFrontend);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for valuesForFrontend
+    *******************************************************************************/
+   public void setValuesForFrontend(Map<String, Serializable> valuesForFrontend)
+   {
+      this.valuesForFrontend = valuesForFrontend;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for valuesForFrontend
+    *******************************************************************************/
+   public QSession withValuesForFrontend(Map<String, Serializable> valuesForFrontend)
+   {
+      this.valuesForFrontend = valuesForFrontend;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for a single valuesForFrontend
+    *******************************************************************************/
+   public QSession withValueForFrontend(String key, Serializable value)
+   {
+      if(this.valuesForFrontend == null)
+      {
+         this.valuesForFrontend = new LinkedHashMap<>();
+      }
+      this.valuesForFrontend.put(key, value);
+      return (this);
+   }
+
 
 }

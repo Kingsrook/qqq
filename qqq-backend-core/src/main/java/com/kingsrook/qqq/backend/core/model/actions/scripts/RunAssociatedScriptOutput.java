@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 public class RunAssociatedScriptOutput extends AbstractActionOutput
 {
    private Serializable output;
+   private Integer      scriptRevisionId;
 
 
 
@@ -66,5 +67,37 @@ public class RunAssociatedScriptOutput extends AbstractActionOutput
       this.output = output;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for scriptRevisionId
+    *******************************************************************************/
+   public Integer getScriptRevisionId()
+   {
+      return (this.scriptRevisionId);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scriptRevisionId
+    *******************************************************************************/
+   public void setScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scriptRevisionId
+    *******************************************************************************/
+   public RunAssociatedScriptOutput withScriptRevisionId(Integer scriptRevisionId)
+   {
+      this.scriptRevisionId = scriptRevisionId;
+      return (this);
+   }
+
 
 }

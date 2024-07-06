@@ -1,0 +1,155 @@
+== Process Backend Steps
+include::../variables.adoc[]
+
+In many QQQ applications, much of the code that engineers write will take the form of Backend Steps for {link-processes}.
+Such code is defined in classes which implement the interface `BackendStep`.  
+This interface defines only a single method:
+[source,java]
+.BackendStep.java
+----
+public interface BackendStep
+{
+   /*******************************************************************************
+    ** Execute the backend step - using the request as input, and the result as output.
+    **
+    *******************************************************************************/
+   void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException;
+}
+
+----
+
+Process backend steps have access to state information - specifically, a list of records, and a map of name=value pairs - in the input & output objects.
+This state data is persisted by QQQ between steps (e.g., if a frontend step is presented to a user between backend steps).
+
+
+=== RunBackendStepInput
+All input data to the step is available in the `RunBackendStepInput` object.
+Key methods in this class are:
+
+* `getRecords()` - Returns the List of <<QRecords>> that are currently being acted on in the process.
+* `getValues()` - Returns a Map of String -> Serializable; name=value pairs that are the state-data of the process.
+** Values can be added to this state from a process's meta-data, from a screen, or from another backend step.
+* `getValue(String fieldName)` - Returns a specific value, by name, from the process's state.
+** This method has several variations that return the value as a specific type, such as `getValueString`, `getValueInteger`, `getValueBoolean`...
+* `getAsyncJobCallback()` - Accessor for an `AsyncJobCallback` object, which provides a way for the process backend step to communicate about its status or progress with a user running the process in a frontend.
+Provides methods:
+** `updateStatus(String message)` - Where general status messages can be given.
+For example, `"Loading census data"`
+** `updateStatus(int current, int total)` - For updating a progress meter.
+e.g., "47 of 1701" would be display by calling `.updateStatus(47, 1701)`
+* `getFrontendStepBehavior()` - Enum, indicating what should happen when a frontend step is encountered as the process's next step to run.
+Possible values are:
+** `BREAK` - Indicates that the process's execution should be suspended, so that the screen represented by the frontend step can be presented to a user.
+This would be the expected behavior if a process is being run by a user from a UI.
+** `SKIP` - Indicates that frontend steps should be skipped.
+This would be the expected behavior if a process is running from a scheduled job (without a user present to drive it), for example.
+** `FAIL` - Indicates that the process should end with an exception if a frontend step is encountered.
+** A backend step may want to act differently based on its frontendStepBehavior.
+For example, additional data may be looked up for displaying to a user if the behavior is `BREAK`.
+* `getBasepullLastRunTime()` - For <<BasepullConfiguration,Basepull>> processes, this is the `Instant` stored in the basepull table as the process's last run time.
+
+=== RunBackendStepOutput
+All output from a process step should be placed in its `RunBackendStepOutput` object (and/or stored to a backend, as appropriate).
+Key methods in this class are:
+
+* `addValue(String fieldName, Serializable value)` - Adds a single named value to the process's state, overwriting it the value if it already exists.
+* `addRecord(QRecord record)` - Add a `<<QRecord>>` to the process's output.
+* `addAuditSingleInput(AuditSingleInput auditSingleInput)` - Add a new entry to the process's list of audit inputs, to be stored at the completion of the process.
+** An `AuditSingleInput` object can most easily be built with the constructor: `AuditSingleInput(String tableName, QRecord record, String auditMessage)`.
+** Additional audit details messages (sub-bullets that accompany the primary `auditMessage`) can be added to an `AuditSingleInput` via the `addDetail(String message)` method.
+** _Note that at this time, the automatic storing of these audits is only provided by the execute step of a StreamedETLWithFrontendProcesses._
+
+=== Example
+
+[source,java]
+.Example of a BackendStep
+----
+/*******************************************************************************
+ ** For the "person" table's "Add Age" process -
+ ** For each input person record, add the specified yearsToAdd to their age.
+ *******************************************************************************/
+public class AddAge implements BackendStep
+{
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
+   {
+      /////////////////////////////////////////////////////////////////
+      // get the yearsToAdd input field value from the process input //
+      /////////////////////////////////////////////////////////////////
+      Integer yearsToAdd = runBackendStepInput.getValueInteger("yearsToAdd");
+      int totalYearsAdded = 0;
+
+      ///////////////////////////////////////////////////
+      // loop over the records passed into the process //
+      ///////////////////////////////////////////////////
+      for(QRecord record : runBackendStepInput.getRecords())
+      {
+         Integer age = record.getValueInteger("age");
+         age += yearsToAdd;
+         totalYearsAdded += yearsToAdd;
+
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         // update the record with the new "age" value.                                            //
+         // note that this update record object will implicitly be available to the process's next //
+         // backend step, via the sharing of the processState object.                              //
+         ////////////////////////////////////////////////////////////////////////////////////////////
+         record.setValue("age", age);
+      }
+
+      /////////////////////////////////////////
+      // set an output value for the process //
+      /////////////////////////////////////////
+      runBackendStepOutput.addValue("totalYearsAdded", totalYearsAdded);
+   }
+}
+
+----
+
+
+=== Backend Steps for StreamedETLWithFrontendProcesses
+
+For <<StreamedETLWithFrontendProcess>> type processes, backend steps are defined a little bit differently than they are for other process types.
+In this type of process, the process meta-data defines 3 backend steps which are built-in to QQQ, and which do not have any custom application logic.
+These steps are:
+
+* `StreamedETLPreviewStep`
+* `StreamedETLValidateStep`
+* `StreamedETLExecuteStep`
+
+For custom application logic to be implemented in a StreamedETLWithFrontendProcesses, an application engineer must define (up to) 3 backend step classes which are loaded by the steps listed above.
+These application-defined steps must extend specific classes (which themselves implement the `BackendStep` interface), to provide the needed logic of this style of process.
+These steps are:
+
+* *Extract* - a subclass of `AbstractExtractStep` - is responsible for Extracting records from the source table.
+** For this step, we can often use the QQQ-provided class `ExtractViaQueryStep`, or sometimes a subclass of it.
+** The Extract step is called before the Preview, Validate, and Result screens, though for the Preview screen, it is set to only extract a small number of records (10).
+* *Transform* - a subclass of `AbstractTransformStep` - is responsible for applying the majority of the business logic of the process.
+In ETL terminology, this is the "Transform" action - which means applying some type of logical transformation an input record (found by the Extract step) to generate an output record (stored by the Load step).
+** A Transform step's `run` method will be called, potentially, multiple times, each time with a page of records in the `runBackendStepInput` parameter.
+** This method is responsible for adding records to the `runBackendStepOutput`, which will then be passed to the *Load* step.
+** This class is also responsible for implementing the method `getProcessSummary`, which provides the data to the *Validate* screen.
+** The run method will generally update ProcessSummaryLine objects to facilitate this functionality.
+** The Transform step is called before the Preview, Validate, and Result screens, consuming all records selected by the Extract step.
+* *Load* - a subclass of `AbstractLoadStep` - is responsible for the Load function of the ETL job.
+_A quick word on terminology - this step is actually doing what we are more likely to think of as storing data - which feels like the opposite of “loading” - but we use the name Load to keep in line with the ETL naming convention…_
+** The Load step is ONLY called before the Result screen is presented (possibly after Preview, if the user chose to skip validation, otherwise, after validation).
+** Similar to the Transform step, the Load step's `run` method will be called potentially multiple times, with pages of records in its input.
+** As such, the Load step is generally the only step where data writes should occur.
+*** e.g., a Transform step should not do any writes, as it will be called when the user is going to the Preview & Validate screens - e.g., before the user confirmed that they want to execute the action!
+** A common pattern is that the Load step just needs to insert or update the list of records output by the Transform step, in which case the QQQ-provided `LoadViaInsertStep` or `LoadViaUpdateStep` can be used, but custom use-cases can be built as well.
+
+Another distinction between StreamedELTWithFrontendProcess steps and general QQQ process backend steps, is that the list of records in the input & output objects is NOT shared for StreamedELTWithFrontendProcess steps.
+The direct implication of this is, that a Transform step MUST explicitly call `output.addRecord()` for any records that it wants to pass along to the Load step.
+
+==== Example
+
+[source,java]
+.Examples of a Transform and Load step for a StreamedELTWithFrontendProcess
+----
+   // todo!
+----
+
+#todo: more details on these 3 specialized types of process steps (e.g., method to overload, when stuff like pre-action is called; how summaries work).#

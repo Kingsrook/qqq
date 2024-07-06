@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
@@ -64,6 +65,18 @@ public abstract class QSupplementalTableMetaData
     **
     *******************************************************************************/
    public void enrich(QInstance qInstance, QTableMetaData table)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QTableMetaData tableMetaData, QInstanceValidator qInstanceValidator)
    {
       ////////////////////////
       // noop in base class //

@@ -235,9 +235,9 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          String tableName      = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
          String sql = "DELETE FROM "
-            + tableName
+            + escapeIdentifier(tableName)
             + " WHERE "
-            + primaryKeyName
+            + escapeIdentifier(primaryKeyName)
             + " IN ("
             + primaryKeys.stream().map(x -> "?").collect(Collectors.joining(","))
             + ")";
@@ -268,7 +268,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
       String       tableName    = getTableName(table);
       JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), new ArrayList<>(), deleteInput.getQueryFilter());
-      String       whereClause  = makeWhereClause(deleteInput.getInstance(), deleteInput.getSession(), table, joinsContext, filter, params);
+      String       whereClause  = makeWhereClause(joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?
       String sql = "DELETE FROM "

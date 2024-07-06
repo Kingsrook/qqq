@@ -74,6 +74,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.QMessagingProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.email.EmailMessagingProviderMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.messaging.ses.SESMessagingProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
@@ -92,6 +95,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportField;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.simple.SimpleSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
@@ -135,6 +141,7 @@ public class TestUtils
    public static final String APP_NAME_PEOPLE        = "peopleApp";
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
+   public static final String TABLE_NAME_TWO_KEYS            = "twoKeys";
    public static final String TABLE_NAME_PERSON              = "person";
    public static final String TABLE_NAME_SHAPE               = "shape";
    public static final String TABLE_NAME_SHAPE_CACHE         = "shapeCache";
@@ -173,7 +180,14 @@ public class TestUtils
 
    public static final String SECURITY_KEY_TYPE_STORE                = "store";
    public static final String SECURITY_KEY_TYPE_STORE_ALL_ACCESS     = "storeAllAccess";
+   public static final String SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR  = "storeNullBehavior";
    public static final String SECURITY_KEY_TYPE_INTERNAL_OR_EXTERNAL = "internalOrExternal";
+
+   public static final String EMAIL_MESSAGING_PROVIDER_NAME = "email";
+   public static final String SES_MESSAGING_PROVIDER_NAME   = "ses";
+
+   public static final String SIMPLE_SCHEDULER_NAME = "simpleScheduler";
+   public static final String TEST_SQS_QUEUE        = "testSQSQueue";
 
 
 
@@ -189,6 +203,7 @@ public class TestUtils
       qInstance.addBackend(defineMemoryBackend());
 
       qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTableTwoKeys());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(definePersonMemoryTable());
       qInstance.addTable(definePersonMemoryCacheTable());
@@ -233,10 +248,56 @@ public class TestUtils
       qInstance.addQueueProvider(defineSqsProvider());
       qInstance.addQueue(defineTestSqsQueue());
 
+      qInstance.addMessagingProvider(defineEmailMessagingProvider());
+      qInstance.addMessagingProvider(defineSESMessagingProvider());
+
       defineWidgets(qInstance);
       defineApps(qInstance);
 
+      qInstance.addScheduler(defineSimpleScheduler());
+
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QMessagingProviderMetaData defineSESMessagingProvider()
+   {
+      String accessKey = "MOCK"; // interpreter.interpret("${env.SES_ACCESS_KEY}");
+      String secretKey = "MOCK"; // interpreter.interpret("${env.SES_SECRET_KEY}");
+      String region    = "MOCK"; // interpreter.interpret("${env.SES_REGION}");
+
+      return (new SESMessagingProviderMetaData()
+         .withAccessKey(accessKey)
+         .withSecretKey(secretKey)
+         .withRegion(region)
+         .withName(SES_MESSAGING_PROVIDER_NAME));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QMessagingProviderMetaData defineEmailMessagingProvider()
+   {
+      return new EmailMessagingProviderMetaData()
+         .withSmtpServer("localhost")
+         .withSmtpPort("2500")
+         .withName(EMAIL_MESSAGING_PROVIDER_NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QSchedulerMetaData defineSimpleScheduler()
+   {
+      return new SimpleSchedulerMetaData().withName(SIMPLE_SCHEDULER_NAME);
    }
 
 
@@ -471,6 +532,7 @@ public class TestUtils
       return new QSecurityKeyType()
          .withName(SECURITY_KEY_TYPE_STORE)
          .withAllAccessKeyName(SECURITY_KEY_TYPE_STORE_ALL_ACCESS)
+         .withNullValueBehaviorKeyName(SECURITY_KEY_TYPE_STORE_NULL_BEHAVIOR)
          .withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STORE);
    }
 
@@ -526,6 +588,24 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define the 'two key' table used in standard tests.
+    *******************************************************************************/
+   public static QTableMetaData defineTableTwoKeys()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_TWO_KEYS)
+         .withLabel("Two Keys")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withUniqueKey(new UniqueKey("key1", "key2"))
+         .withField(new QFieldMetaData("key1", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("key2", QFieldType.INTEGER));
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -549,7 +629,9 @@ public class TestUtils
          .withField(new QFieldMetaData("cost", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("ssn", QFieldType.STRING).withType(QFieldType.PASSWORD))
-         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true));
+         .withField(new QFieldMetaData("superSecret", QFieldType.STRING).withType(QFieldType.PASSWORD).withIsHidden(true))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
+         ;
    }
 
 
@@ -602,6 +684,7 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
+         .withField(new QFieldMetaData("timestamp", QFieldType.DATE_TIME)) // adding this for GC tests, so we can set a date-time (since CD & MD are owned by system)
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("lineNumber", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING).withLabel("SKU"))
@@ -717,10 +800,13 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QTableAutomationDetails defineStandardAutomationDetails()
+   public static QTableAutomationDetails defineStandardAutomationDetails()
    {
       return (new QTableAutomationDetails()
          .withProviderName(POLLING_AUTOMATION)
+         .withSchedule(new QScheduleMetaData()
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)
+            .withRepeatSeconds(60))
          .withStatusTracking(new AutomationStatusTracking()
             .withType(AutomationStatusTrackingType.FIELD_IN_TABLE)
             .withFieldName("qqqAutomationStatus")));
@@ -761,6 +847,26 @@ public class TestUtils
          .withBackendName(DEFAULT_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withFields(TestUtils.defineTablePerson().getFields()));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a table with unique key where one is nullable
+    *******************************************************************************/
+   public static QTableMetaData defineTwoKeyTable()
+   {
+      return (new QTableMetaData()
+         .withName(TABLE_NAME_BASEPULL)
+         .withLabel("Basepull Test")
+         .withPrimaryKeyField("id")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withFields(TestUtils.defineTablePerson().getFields()))
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
+         .withField(new QFieldMetaData(BASEPULL_KEY_FIELD_NAME, QFieldType.STRING).withBackendName("process_name").withIsRequired(true))
+         .withField(new QFieldMetaData(BASEPULL_LAST_RUN_TIME_FIELD_NAME, QFieldType.DATE_TIME).withBackendName("last_run_time").withIsRequired(true));
    }
 
 
@@ -1026,21 +1132,21 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE)
-         .withTableName(TABLE_NAME_PERSON)
+         .withTableName(TABLE_NAME_PERSON_MEMORY)
          .addStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
                .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
-               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON))
+               .withRecordListMetaData(new QRecordListMetaData().withTableName(TABLE_NAME_PERSON_MEMORY))
                .withFieldList(List.of(
                   new QFieldMetaData("greetingPrefix", QFieldType.STRING),
                   new QFieldMetaData("greetingSuffix", QFieldType.STRING)
                )))
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
-                  .withTableName(TABLE_NAME_PERSON)
+                  .withTableName(TABLE_NAME_PERSON_MEMORY)
                   .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
@@ -1252,7 +1358,6 @@ public class TestUtils
 
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -1320,10 +1425,13 @@ public class TestUtils
    private static QQueueMetaData defineTestSqsQueue()
    {
       return (new QQueueMetaData()
-         .withName("testSQSQueue")
+         .withName(TEST_SQS_QUEUE)
          .withProviderName(DEFAULT_QUEUE_PROVIDER)
          .withQueueName("test-queue")
-         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE));
+         .withProcessName(PROCESS_NAME_INCREASE_BIRTHDATE)
+         .withSchedule(new QScheduleMetaData()
+            .withRepeatSeconds(60)
+            .withSchedulerName(SIMPLE_SCHEDULER_NAME)));
    }
 
 

@@ -34,7 +34,6 @@ import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -59,7 +58,6 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
     **
     *******************************************************************************/
    @Override
-   @SuppressWarnings("checkstyle:indentation")
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Optional<QBackendTransaction> transaction = Optional.empty();
@@ -84,23 +82,32 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          // before it can put more records in.                                      //
          /////////////////////////////////////////////////////////////////////////////
          RecordPipe recordPipe;
-         Integer    overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+         Integer    overrideRecordPipeCapacity = runBackendStepInput.getValueInteger("recordPipeCapacity");
          if(overrideRecordPipeCapacity != null)
          {
             recordPipe = new RecordPipe(overrideRecordPipeCapacity);
-            LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+            LOG.debug("per input value [recordPipeCapacity], we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
          }
          else
          {
-            overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+            overrideRecordPipeCapacity = loadStep.getOverrideRecordPipeCapacity(runBackendStepInput);
             if(overrideRecordPipeCapacity != null)
             {
                recordPipe = new RecordPipe(overrideRecordPipeCapacity);
-               LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               LOG.debug("per " + loadStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
             }
             else
             {
-               recordPipe = new RecordPipe();
+               overrideRecordPipeCapacity = transformStep.getOverrideRecordPipeCapacity(runBackendStepInput);
+               if(overrideRecordPipeCapacity != null)
+               {
+                  recordPipe = new RecordPipe(overrideRecordPipeCapacity);
+                  LOG.debug("per " + transformStep.getClass().getName() + ", we are overriding record pipe capacity to: " + overrideRecordPipeCapacity);
+               }
+               else
+               {
+                  recordPipe = new RecordPipe();
+               }
             }
          }
 
@@ -128,7 +135,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
             asyncRecordPipeLoop.setMinRecordsToConsume(overrideRecordPipeCapacity);
          }
 
-         int recordCount = asyncRecordPipeLoop.run("StreamedETL>Execute>ExtractStep", null, recordPipe, (status) ->
+         int recordCount = asyncRecordPipeLoop.run("StreamedETLExecute>Extract>" + runBackendStepInput.getProcessName(), null, recordPipe, (status) ->
             {
                extractStep.run(runBackendStepInput, runBackendStepOutput);
                return (runBackendStepOutput);
@@ -165,6 +172,14 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          BackendStepPostRunInput  postRunInput  = new BackendStepPostRunInput(runBackendStepInput);
          transformStep.postRun(postRunInput, postRunOutput);
          loadStep.postRun(postRunInput, postRunOutput);
+
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(postRunOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+         }
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // explicitly copy values back into the runStepOutput from the post-run output                                     //
@@ -260,8 +275,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          /////////////////////////////////////////////////////
          // pass the records through the transform function //
          /////////////////////////////////////////////////////
-         transformStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         transformStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromTransform = streamedBackendStepOutput.getAuditInputList();
+
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+            runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+         }
 
          ////////////////////////////////////////////////
          // pass the records through the load function //
@@ -269,8 +293,17 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
          streamedBackendStepInput = new StreamedBackendStepInput(runBackendStepInput, streamedBackendStepOutput.getRecords());
          streamedBackendStepOutput = new StreamedBackendStepOutput(runBackendStepOutput);
 
-         loadStep.run(streamedBackendStepInput, streamedBackendStepOutput);
+         loadStep.runOnePage(streamedBackendStepInput, streamedBackendStepOutput);
          List<AuditInput> auditInputListFromLoad = streamedBackendStepOutput.getAuditInputList();
+
+         //////////////////////////////////////////////////////////////////////
+         // propagate data from inner-step state to process-level step state //
+         //////////////////////////////////////////////////////////////////////
+         if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+         {
+            runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
+            runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+         }
 
          ///////////////////////////////////////////////////////
          // copy a small number of records to the output list //

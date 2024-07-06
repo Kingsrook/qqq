@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.actions.reporting;
 
 
-import java.io.OutputStream;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -37,9 +36,8 @@ public class ExportInput extends AbstractTableActionInput
    private Integer      limit;
    private List<String> fieldNames;
 
-   private String       filename;
-   private ReportFormat reportFormat;
-   private OutputStream reportOutputStream;
+   private ReportDestination reportDestination;
+
    private String       titleRow;
    private boolean      includeHeaderRow = true;
 
@@ -120,71 +118,6 @@ public class ExportInput extends AbstractTableActionInput
 
 
 
-   /*******************************************************************************
-    ** Getter for filename
-    **
-    *******************************************************************************/
-   public String getFilename()
-   {
-      return filename;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for filename
-    **
-    *******************************************************************************/
-   public void setFilename(String filename)
-   {
-      this.filename = filename;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for reportFormat
-    **
-    *******************************************************************************/
-   public ReportFormat getReportFormat()
-   {
-      return reportFormat;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for reportFormat
-    **
-    *******************************************************************************/
-   public void setReportFormat(ReportFormat reportFormat)
-   {
-      this.reportFormat = reportFormat;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for reportOutputStream
-    **
-    *******************************************************************************/
-   public OutputStream getReportOutputStream()
-   {
-      return reportOutputStream;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for reportOutputStream
-    **
-    *******************************************************************************/
-   public void setReportOutputStream(OutputStream reportOutputStream)
-   {
-      this.reportOutputStream = reportOutputStream;
-   }
-
-
 
    /*******************************************************************************
     **
@@ -225,5 +158,37 @@ public class ExportInput extends AbstractTableActionInput
    {
       this.includeHeaderRow = includeHeaderRow;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for reportDestination
+    *******************************************************************************/
+   public ReportDestination getReportDestination()
+   {
+      return (this.reportDestination);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for reportDestination
+    *******************************************************************************/
+   public void setReportDestination(ReportDestination reportDestination)
+   {
+      this.reportDestination = reportDestination;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for reportDestination
+    *******************************************************************************/
+   public ExportInput withReportDestination(ReportDestination reportDestination)
+   {
+      this.reportDestination = reportDestination;
+      return (this);
+   }
+
 
 }

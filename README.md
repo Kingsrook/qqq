@@ -19,7 +19,7 @@ You can also use fine-grained jars:
 
 ## License
 QQQ - Low-code Application Framework for Engineers. \
-Copyright (C) 2022.  Kingsrook, LLC \
+Copyright (C) 2020-2024.  Kingsrook, LLC \
 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States \
 contact@kingsrook.com | https://github.com/Kingsrook/
 

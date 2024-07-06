@@ -26,11 +26,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QSupplementalAppMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -51,6 +53,7 @@ public class QFrontendAppMetaData
 
    private List<QAppSection> sections;
 
+   private Map<String, QSupplementalAppMetaData> supplementalAppMetaData;
 
 
    /*******************************************************************************
@@ -92,6 +95,31 @@ public class QFrontendAppMetaData
       {
          this.sections = filteredSections;
       }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // include supplemental meta data, based on if it's meant for full or partial frontend meta-data requests //
+      // todo - take includeFullMetaData as a param?                                                            //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      boolean includeFullMetaData = true;
+      for(QSupplementalAppMetaData supplementalAppMetaData : CollectionUtils.nonNullMap(appMetaData.getSupplementalMetaData()).values())
+      {
+         boolean include;
+         if(includeFullMetaData)
+         {
+            include = supplementalAppMetaData.includeInFullFrontendMetaData();
+         }
+         else
+         {
+            include = supplementalAppMetaData.includeInPartialFrontendMetaData();
+         }
+
+         if(include)
+         {
+            this.supplementalAppMetaData = Objects.requireNonNullElseGet(this.supplementalAppMetaData, HashMap::new);
+            this.supplementalAppMetaData.put(supplementalAppMetaData.getType(), supplementalAppMetaData);
+         }
+      }
+
    }
 
 
@@ -195,5 +223,16 @@ public class QFrontendAppMetaData
    public List<QAppSection> getSections()
    {
       return sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalAppMetaData
+    **
+    *******************************************************************************/
+   public Map<String, QSupplementalAppMetaData> getSupplementalAppMetaData()
+   {
+      return supplementalAppMetaData;
    }
 }

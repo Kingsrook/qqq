@@ -1,0 +1,150 @@
+[#Backends]
+== Backends
+include::../variables.adoc[]
+
+A key component of QQQ is its ability to connect to various backend data stores, while providing the same interfaces to those backends - both User Interfaces, and Programming Interfaces.
+
+For example, out-of-the-box, QQQ can connect to:
+
+* <<RDBMSBackendMetaData,RDBMS>> (Relational Database Management Systems, such as MySQL)
+* File Systems (<<S3BackendMetaData,Amazon S3>> or <<FilesystemBackendMetaData,local disk>>)
+* <<APIBackendMetaData,JSON Web APIs>> (_using a custom mapping class per-API backend_).
+* In-Memory data stores
+
+All {link-tables} in a QQQ instance must belong to a backend. As such, any instance using tables (which would be almost all instances) must define 1 or more backends.
+
+=== QBackendMetaData
+Backends are defined in a QQQ Instance in a `*QBackendMetaData*` object.
+These objects will have some common attributes, but many different attributes based on the type of backend being used.
+
+*QBackendMetaData Properties:*
+
+* `name` - *String, Required* - Unique name for the backend within the QQQ Instance.
+* `backendType` - *String, Required* - Identifier for the backend type being defined.
+** This attribute is typically set in the constructor of a `QBackendMetaData` subclass, and as such does not need to be set when defining a backend meta data object.
+* `enabledCapabilities` and `disabledCapability` - *Sets*, containing *Capability* enum values.
+Basic rules that apply to all tables in the backend, describing what actions (such as Delete, or Count) are supported in the backend.
+** By default, QQQ assumes that a backend supports _most_ capabilities, with one exception being `QUERY_STATS`.
+** #TODO# fully explain rules here
+* `usesVariants` - *Boolean, default false* - Control whether or not the backend supports the concept of "Variants".
+** Supporting variants means that tables within the backend can exist in alternative "variants" of the backend.
+For example, this might mean a sharded or multi-tenant database backend (perhaps a different server or database name per-client).
+Or this might mean using more than one set of credentials for connecting to an API backend - each of those credential sets would be a "variant".
+** A backend that uses variants requires additional properties to be set.  #TODO complete variant documentation#
+
+In a QQQ application, one will typically not create an instance of `QBackendMetaData` directly, but instead will create an instance of one of its subclasses, specific to the type of backend being used.
+The currently available list of such classes are:
+
+==== RDBMSBackendMetaData
+The meta data required for working with tables in an RDBMS (relational database) backend are defined in an instance of the `*RDBMSBackendMetaData*` class.
+
+*RDBMSBackendMetaData Properties:*
+
+* `vendor` - *String, Required* - Database vendor.  Currently supported values are: `aurora`, `mysql`, `h2`.
+* `jdbcUrl` - *String, Optional* - Full JDBC URL for connecting to the database.
+** If this property is provided, then following properties (which are the components of a JDBC URL) are ignored.
+In other words, you can either provide the `jdbcUrl`, or the individual components that make it up.
+* `hostName` - *String, Conditionally Required* - Hostname or ip address of the RDBMS server.
+* `port` - *Integer, Conditionally Required* - Port used to connect to the RDBMS server.
+* `databaseName` - *String, Conditionally Required* - Name of the database being connected to, within the RDBMS server.
+* `username` - *String, Conditionally Required* - Username for authenticating in the database server.
+* `password` - *String, Conditionally Required* - Password for authenticating in the database server.
+
+*Examples*
+[source,java]
+----
+/*******************************************************************************
+** Full example of constructing an RDBMSBackendMetaData
+*******************************************************************************/
+public class ExampleDatabaseBackendMetaDataProducer extends MetaDataProducer<QBackendMetaData>
+{
+   public static final String NAME = "rdbmsBackend";
+
+   /*******************************************************************************
+    ** Produce the QBackendMetaData
+    *******************************************************************************/
+   @Override
+   public QBackendMetaData produce(QInstance qInstance)
+   {
+      ///////////////////////////////////////////////////////////////////////
+      // read settings from either a .env file or the system's environment //
+      ///////////////////////////////////////////////////////////////////////
+      QMetaDataVariableInterpreter interpreter = new QMetaDataVariableInterpreter();
+      String vendor       = interpreter.interpret("${env.RDBMS_VENDOR}");
+      String hostname     = interpreter.interpret("${env.RDBMS_HOSTNAME}");
+      String port         = interpreter.interpret("${env.RDBMS_PORT}");
+      String databaseName = interpreter.interpret("${env.RDBMS_DATABASE_NAME}");
+      String username     = interpreter.interpret("${env.RDBMS_USERNAME}");
+      String password     = interpreter.interpret("${env.RDBMS_PASSWORD}");
+
+      return (new RDBMSBackendMetaData()
+         .withName(NAME)
+         .withVendor(vendor)
+         .withHostName(hostname)
+         .withPort(ValueUtils.getValueAsInteger(port))
+         .withDatabaseName(databaseName)
+         .withUsername(username)
+         .withPassword(password)
+         .withCapability(Capability.QUERY_STATS));
+   }
+}
+----
+
+==== S3BackendMetaData
+The meta data required for working with tables in an Amazon S3 backend are defined in an instance of the `*S3BackendMetaData*` class.
+
+*S3BackendMetaData Properties:*
+
+* `bucketName` - *String, Required* - Bucket name to connect to inside AWS S3.
+* `accessKey` - *String, Required* - Access key for connecting to S3 inside AWS S3.
+* `secretKey` - *String, Required* - Secret key for connecting to S3 inside AWS S3.
+* `region` - *String, Required* - AWS region containing the Bucket in S3.
+* `basePath` - *String, Required* - Base path to the files within the S3 bucket.
+
+==== FilesystemBackendMetaData
+The meta data required for working with tables in a (local) filesystem backend are defined in an instance of the `*FilesystemBackendMetaData*` class.
+
+*FilesystemBackendMetaData Properties:*
+
+* `basePath` - *String, Required* - Base path to the backend's files.
+
+==== APIBackendMetaData
+The meta data required for working with tables in a web API are defined in an instance of the `*APIBackendMetaData*` class.
+
+QQQ provides a minimal, reasonable default implementation for working with web APIs, making assumptions such as using `POST` to insert records, and `GET` with a primary key in the URL to get a single record.
+However, in our experience, almost all APIs are implemented differently enough, that a layer of custom code is required.
+For example, query/search endpoints are almost always unique in how they take their search parameters, and how they wrap their output.
+
+To deal with this, a QQQ API Backend can define a custom class in the `actionUtil` property of the backend meta-data, as a subclass of `BaseAPIActionUtil`, which ideally can override methods at the level where unique functionality is needed.
+For example, an application need not define the full method for executing a Query against an API backend (which would need to make the HTTP request (actually multiple, to deal with pagination)).
+Instead, one can just override the `buildQueryStringForGet` method, where the unique details of making the request are defined, and maybe the `jsonObjectToRecord` method, where records are mapped from the API's response to a QRecord.
+
+#todo - full reference and examples for `BaseAPIActionUtil`#
+
+*APIBackendMetaData Properties:*
+
+* `baseUrl` - *String, Required* - Base URL for connecting to the API.
+* `contentType` - *String, Required* - value of `Content-type` header included in all requests to the API.
+* `actionUtil` - *QCodeReference, Required* - Reference to a class that extends `BaseAPIActionUtil`, where custom code for working with this API backend is defined.
+* `customValues` - *Map of String → Serializable* - Application-defined additional name=value pairs that can
+* `authorizationType` - *Enum, Required* - Specifies how authentication is provided for the API.
+The value here, dictates which other authentication-related properties are required.
+Possible values are:
+** `API_KEY_HEADER` - Uses the `apiKey` property in an HTTP header named `API-Key`.
+_In the future, when needed, QQQ will add a property, tentatively named `apiKeyHeaderName`, to allow customization of this header name._
+** `API_TOKEN` - Uses the `apiKey` property in an `Authroization` header, as: `"Token " + apiKey`
+** `BASIC_AUTH_API_KEY` - Uses the `apiKey` property, Base64-encoded, in an `Authroization` header, as `"Basic " + base64(apiKey)`
+** `BASIC_AUTH_USERNAME_PASSWORD` - Combines the `username` and `password` properties, Base64-encoded, in an `Authroization` header, as `"Basic " + base64(username + ":" + password)`
+** `OAUTH2` - Implements an OAuth2 client credentials token grant flow, using the properties `clientId` and `clientSecret`.
+By default, the id & secret are sent as query-string parameters to the API's `oauth/token` endpoint.
+Alternatively, if the meta-data has a `customValue` of `setCredentialsInHeader=true`, then the id & secret are posted in an `Authorization` header (base-64 encoded, and concatenated with `":"`).
+** `API_KEY_QUERY_PARAM` - Uses the `apiKey` property as a query-string parameter, with its name taken from the `apiKeyQueryParamName` property.
+** `CUSTOM` - Has a no-op implementation at the QQQ layer.
+Assumes that an override of `protected void handleCustomAuthorization(HttpRequestBase request)` be implemented in the backend's `actionUtil` class.
+This would be
+* `apiKey` - *String, Conditional* - See `authorizationType` above for details.
+* `clientId` - *String, Conditional* - See `authorizationType` above for details.
+* `clientSecret` - *String, Conditional* - See `authorizationType` above for details.
+* `username` - *String, Conditional* - See `authorizationType` above for details.
+* `password` - *String, Conditional* - See `authorizationType` above for details.
+* `apiKeyQueryParamName` - *String, Conditional* - See `authorizationType` above for details.

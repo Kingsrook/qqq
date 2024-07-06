@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -38,17 +37,36 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
  ** should be written to the output object's Records, noting that when running
  ** as a streamed-ETL process, those input & output objects will be instances of
  ** the StreamedBackendStep{Input,Output} classes, that will be associated with
- ** a page of records flowing thorugh a pipe.
+ ** a page of records flowing through a pipe.
  **
  ** Also - use the transaction member variable!!!
  *******************************************************************************/
-public abstract class AbstractLoadStep implements BackendStep
+public abstract class AbstractLoadStep
 {
    private   Optional<QBackendTransaction> transaction = Optional.empty();
    protected QSession                      session;
 
    private AbstractTransformStep transformStep;
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Deprecated
+   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      runOnePage(runBackendStepInput, runBackendStepOutput);
+   }
+
+
+   /*******************************************************************************
+    ** todo - make abstract when run is deleted.
+    *******************************************************************************/
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+
+   }
 
 
    /*******************************************************************************

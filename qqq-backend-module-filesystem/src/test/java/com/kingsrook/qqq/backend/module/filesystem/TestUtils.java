@@ -26,10 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -39,12 +39,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.etl.streamed.StreamedETLFilesystemBackendStep;
+import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer.FilesystemImporterMetaDataTemplate;
+import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.filesystem.importer.FilesystemImporterProcessMetaDataBuilder;
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
@@ -56,18 +60,23 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   public static final String BACKEND_NAME_LOCAL_FS = "local-filesystem";
-   public static final String BACKEND_NAME_S3       = "s3";
-   public static final String BACKEND_NAME_MOCK     = "mock";
+   public static final String BACKEND_NAME_LOCAL_FS       = "local-filesystem";
+   public static final String BACKEND_NAME_S3             = "s3";
+   public static final String BACKEND_NAME_S3_SANS_PREFIX = "s3sansPrefix";
+   public static final String BACKEND_NAME_MOCK           = "mock";
+   public static final String BACKEND_NAME_MEMORY         = "memory";
 
    public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
    public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
    public static final String TABLE_NAME_BLOB_LOCAL_FS        = "local-blob";
+   public static final String TABLE_NAME_ARCHIVE_LOCAL_FS     = "local-archive";
    public static final String TABLE_NAME_PERSON_S3            = "person-s3";
    public static final String TABLE_NAME_BLOB_S3              = "s3-blob";
    public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
+   public static final String TABLE_NAME_BLOB_S3_SANS_PREFIX  = "s3-blob-sans-prefix";
 
-   public static final String PROCESS_NAME_STREAMED_ETL = "etl.streamed";
+   public static final String PROCESS_NAME_STREAMED_ETL                   = "etl.streamed";
+   public static final String LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME = "localPersonCsvFileImporter";
 
    ///////////////////////////////////////////////////////////////////
    // shouldn't be accessed directly, as we append a counter to it. //
@@ -135,16 +144,40 @@ public class TestUtils
       qInstance.addTable(defineLocalFilesystemJSONPersonTable());
       qInstance.addTable(defineLocalFilesystemCSVPersonTable());
       qInstance.addTable(defineLocalFilesystemBlobTable());
+      qInstance.addTable(defineLocalFilesystemArchiveTable());
       qInstance.addBackend(defineS3Backend());
+      qInstance.addBackend(defineS3BackendSansPrefix());
       qInstance.addTable(defineS3CSVPersonTable());
       qInstance.addTable(defineS3BlobTable());
+      qInstance.addTable(defineS3BlobSansPrefixTable());
       qInstance.addBackend(defineMockBackend());
+      qInstance.addBackend(defineMemoryBackend());
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
 
-      new QInstanceValidator().validate(qInstance);
+      definePersonCsvImporter(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static void definePersonCsvImporter(QInstance qInstance)
+   {
+      String importBaseName = "personImporter";
+      FilesystemImporterProcessMetaDataBuilder filesystemImporterProcessMetaDataBuilder = (FilesystemImporterProcessMetaDataBuilder) new FilesystemImporterProcessMetaDataBuilder()
+         .withSourceTableName(TABLE_NAME_PERSON_LOCAL_FS_CSV)
+         .withFileFormat("csv")
+         .withArchiveFileEnabled(true)
+         .withArchiveTableName(TABLE_NAME_ARCHIVE_LOCAL_FS)
+         .withArchivePath("archive-of/personImporterFiles")
+         .withName(LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME);
+
+      FilesystemImporterMetaDataTemplate filesystemImporterMetaDataTemplate = new FilesystemImporterMetaDataTemplate(qInstance, importBaseName, BACKEND_NAME_MEMORY, filesystemImporterProcessMetaDataBuilder, table -> table.withAuditRules(QAuditRules.defaultInstanceLevelNone()));
+      filesystemImporterMetaDataTemplate.addToInstance(qInstance);
    }
 
 
@@ -249,6 +282,30 @@ public class TestUtils
          .withBackendDetails(new FilesystemTableBackendDetails()
             .withBasePath("blobs")
             .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineLocalFilesystemArchiveTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_ARCHIVE_LOCAL_FS)
+         .withLabel("Archive")
+         .withBackendName(defineLocalFilesystemBackend().getName())
+         .withPrimaryKeyField("fileName")
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withBackendDetails(new FilesystemTableBackendDetails()
+            .withBasePath("archive")
+            .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
          );
    }
 
@@ -269,6 +326,29 @@ public class TestUtils
          .withBackendDetails(new S3TableBackendDetails()
             .withBasePath("blobs")
             .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineS3BlobSansPrefixTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_BLOB_S3_SANS_PREFIX)
+         .withLabel("Blob S3")
+         .withBackendName(defineS3BackendSansPrefix().getName())
+         .withPrimaryKeyField("fileName")
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withBackendDetails(new S3TableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
          );
    }
 
@@ -283,6 +363,18 @@ public class TestUtils
          .withBucketName(BaseS3Test.BUCKET_NAME)
          .withBasePath(BaseS3Test.TEST_FOLDER)
          .withName(BACKEND_NAME_S3));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static S3BackendMetaData defineS3BackendSansPrefix()
+   {
+      return (new S3BackendMetaData()
+         .withBucketName(BaseS3Test.BUCKET_NAME_FOR_SANS_PREFIX_BACKEND)
+         .withName(BACKEND_NAME_S3_SANS_PREFIX));
    }
 
 
@@ -312,8 +404,20 @@ public class TestUtils
    public static QBackendMetaData defineMockBackend()
    {
       return (new QBackendMetaData()
-         .withBackendType("mock")
+         .withBackendType(MockBackendModule.class)
          .withName(BACKEND_NAME_MOCK));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QBackendMetaData defineMemoryBackend()
+   {
+      return (new QBackendMetaData()
+         .withBackendType(MemoryBackendModule.class)
+         .withName(BACKEND_NAME_MEMORY));
    }
 
 

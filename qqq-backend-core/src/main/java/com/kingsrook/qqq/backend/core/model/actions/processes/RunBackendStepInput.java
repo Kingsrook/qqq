@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
+import com.kingsrook.qqq.backend.core.actions.async.NonPersistedAsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
@@ -450,7 +451,7 @@ public class RunBackendStepInput extends AbstractActionInput
          /////////////////////////////////////////////////////////////////////////
          // avoid NPE in case we didn't have one of these!  create a new one... //
          /////////////////////////////////////////////////////////////////////////
-         asyncJobCallback = new AsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus());
+         asyncJobCallback = new NonPersistedAsyncJobCallback(UUID.randomUUID(), new AsyncJobStatus().withJobName(processName + "." + stepName));
       }
       return (asyncJobCallback);
    }

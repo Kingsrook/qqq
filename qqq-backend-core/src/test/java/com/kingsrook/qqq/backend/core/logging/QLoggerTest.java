@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 /*******************************************************************************
@@ -63,6 +64,50 @@ class QLoggerTest extends BaseTest
    @BeforeEach
    void beforeAll() throws Exception
    {
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLogAndThrowMethods() throws QException
+   {
+      try
+      {
+         LOG.info("Some info");
+         LOG.warnAndThrow(new QException("Something failed"), new LogPair("something", 1));
+      }
+      catch(Exception e)
+      {
+         //////////////
+         // ok, done //
+         //////////////
+      }
+
+      assertThatThrownBy(() ->
+         {
+            try
+            {
+               methodThatThrows();
+            }
+            catch(Exception e)
+            {
+               throw LOG.errorAndThrow(new QException("I caught, now i errorAndThrow", e), new LogPair("iLove", "logPairs"));
+            }
+         }
+      ).isInstanceOf(QException.class).hasMessageContaining("I caught").rootCause().hasMessageContaining("See, I throw");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void methodThatThrows() throws QException
+   {
+      throw (new QException("See, I throw"));
    }
 
 

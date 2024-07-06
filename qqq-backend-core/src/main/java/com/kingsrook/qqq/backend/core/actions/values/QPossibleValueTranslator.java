@@ -32,14 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -79,44 +77,6 @@ public class QPossibleValueTranslator
 
    private int maxSizePerPvsCache = 50_000;
 
-   private Map<String, QBackendTransaction> transactionsPerTable = new HashMap<>();
-
-   // todo not commit - remove instance & session - use Context
-
-
-   boolean useTransactionsAsConnectionPool = false;
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private QBackendTransaction getTransaction(String tableName)
-   {
-      /////////////////////////////////////////////////////////////
-      // mmm, this does cut down on connections used -           //
-      // especially seems helpful in big exports.                //
-      // but, let's just start using connection pools instead... //
-      /////////////////////////////////////////////////////////////
-      if(useTransactionsAsConnectionPool)
-      {
-         try
-         {
-            if(!transactionsPerTable.containsKey(tableName))
-            {
-               transactionsPerTable.put(tableName, new InsertAction().openTransaction(new InsertInput(tableName)));
-            }
-
-            return (transactionsPerTable.get(tableName));
-         }
-         catch(Exception e)
-         {
-            LOG.warn("Error opening transaction for table", logPair("tableName", tableName));
-         }
-      }
-
-      return null;
-   }
 
 
    /*******************************************************************************
@@ -270,6 +230,10 @@ public class QPossibleValueTranslator
          {
             value = ValueUtils.getValueAsInteger(value);
          }
+         if(field.getType().equals(QFieldType.LONG) && !(value instanceof Long))
+         {
+            value = ValueUtils.getValueAsLong(value);
+         }
       }
       catch(QValueException e)
       {
@@ -367,6 +331,14 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private String translatePossibleValueCustom(Serializable value, QPossibleValueSource possibleValueSource)
    {
+      /////////////////////////////////
+      // null input gets null output //
+      /////////////////////////////////
+      if(value == null)
+      {
+         return (null);
+      }
+
       try
       {
          QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
@@ -410,7 +382,6 @@ public class QPossibleValueTranslator
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:Indentation")
    private String doFormatPossibleValue(String formatString, List<String> valueFields, Object id, String label)
    {
       List<Object> values = new ArrayList<>();
@@ -549,21 +520,48 @@ public class QPossibleValueTranslator
     *******************************************************************************/
    private void primePvsCache(String tableName, List<QPossibleValueSource> possibleValueSources, Collection<Serializable> values)
    {
+      String idField = null;
       for(QPossibleValueSource possibleValueSource : possibleValueSources)
       {
          possibleValueCache.putIfAbsent(possibleValueSource.getName(), new HashMap<>());
+         String thisPvsIdField;
+         if(StringUtils.hasContent(possibleValueSource.getOverrideIdField()))
+         {
+            thisPvsIdField = possibleValueSource.getOverrideIdField();
+         }
+         else
+         {
+            thisPvsIdField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
+         }
+
+         if(idField == null)
+         {
+            idField = thisPvsIdField;
+         }
+         else
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // does this ever happen?  maybe not... because, like, the list of values probably wouldn't make sense for //
+            // more than one field in the table...                                                                     //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!idField.equals(thisPvsIdField))
+            {
+               for(QPossibleValueSource valueSource : possibleValueSources)
+               {
+                  primePvsCache(tableName, List.of(valueSource), values);
+               }
+            }
+         }
       }
 
       try
       {
-         String primaryKeyField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
-
          for(List<Serializable> page : CollectionUtils.getPages(values, 1000))
          {
             QueryInput queryInput = new QueryInput();
             queryInput.setTableName(tableName);
-            queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(primaryKeyField, QCriteriaOperator.IN, page)));
-            queryInput.setTransaction(getTransaction(tableName));
+            queryInput.setFilter(new QQueryFilter().withCriteria(new QFilterCriteria(idField, QCriteriaOperator.IN, page)));
+            queryInput.hasQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // when querying for possible values, we do want to generate their display values, which makes record labels, which are usually used as PVS labels //
@@ -607,7 +605,7 @@ public class QPossibleValueTranslator
             ///////////////////////////////////////////////////////////////////////////////////
             for(QRecord record : queryOutput.getRecords())
             {
-               Serializable pkeyValue = record.getValue(primaryKeyField);
+               Serializable pkeyValue = record.getValue(idField);
                for(QPossibleValueSource possibleValueSource : possibleValueSources)
                {
                   QPossibleValue<?> possibleValue = new QPossibleValue<>(pkeyValue, record.getRecordLabel());

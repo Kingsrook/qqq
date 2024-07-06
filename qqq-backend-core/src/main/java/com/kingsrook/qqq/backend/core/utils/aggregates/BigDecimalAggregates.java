@@ -28,13 +28,16 @@ import java.math.BigDecimal;
 /*******************************************************************************
  ** BigDecimal version of data aggregator
  *******************************************************************************/
-public class BigDecimalAggregates implements AggregatesInterface<BigDecimal>
+public class BigDecimalAggregates implements AggregatesInterface<BigDecimal, BigDecimal>
 {
    private int        count = 0;
    // private Integer countDistinct;
    private BigDecimal sum;
    private BigDecimal min;
    private BigDecimal max;
+   private BigDecimal product;
+
+   private VarianceCalculator varianceCalculator = new VarianceCalculator();
 
 
 
@@ -59,6 +62,15 @@ public class BigDecimalAggregates implements AggregatesInterface<BigDecimal>
          sum = sum.add(input);
       }
 
+      if(product == null)
+      {
+         product = input;
+      }
+      else
+      {
+         product = product.multiply(input);
+      }
+
       if(min == null || input.compareTo(min) < 0)
       {
          min = input;
@@ -68,6 +80,52 @@ public class BigDecimalAggregates implements AggregatesInterface<BigDecimal>
       {
          max = input;
       }
+
+      varianceCalculator.updateVariance(input);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getVariance()
+   {
+      return (varianceCalculator.getVariance());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getVarP()
+   {
+      return (varianceCalculator.getVarP());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getStandardDeviation()
+   {
+      return (varianceCalculator.getStandardDeviation());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getStdDevP()
+   {
+      return (varianceCalculator.getStdDevP());
    }
 
 
@@ -112,6 +170,18 @@ public class BigDecimalAggregates implements AggregatesInterface<BigDecimal>
    public BigDecimal getMax()
    {
       return (max);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for product
+    **
+    *******************************************************************************/
+   @Override
+   public BigDecimal getProduct()
+   {
+      return product;
    }
 
 

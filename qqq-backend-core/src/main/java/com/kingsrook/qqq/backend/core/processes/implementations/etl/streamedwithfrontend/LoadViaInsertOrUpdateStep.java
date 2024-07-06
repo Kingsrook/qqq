@@ -73,7 +73,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       evaluateRecords(runBackendStepInput);
       insertAndUpdateRecords(runBackendStepInput, runBackendStepOutput);
@@ -129,8 +129,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
    {
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
-
-      return (Optional.of(new InsertAction().openTransaction(insertInput)));
+      return (Optional.of(QBackendTransaction.openFor(insertInput)));
    }
 
 

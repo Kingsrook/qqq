@@ -27,10 +27,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -40,8 +44,12 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RunBackendStepOutput extends AbstractActionOutput implements Serializable
 {
+   private String processName;
+
    private ProcessState processState;
    private Exception    exception; // todo - make optional
+
+   private String overrideLastStepName; // todo - does this need to go into state too??
 
    private List<AuditInput> auditInputList = new ArrayList<>();
 
@@ -78,6 +86,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
    public void seedFromRequest(RunBackendStepInput runBackendStepInput)
    {
       this.processState = runBackendStepInput.getProcessState();
+      this.processName = runBackendStepInput.getProcessName();
    }
 
 
@@ -310,6 +319,113 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
 
       AuditInput auditInput = getAuditInputList().get(0);
       auditInput.addAuditSingleInput(auditSingleInput);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideLastStepName
+    *******************************************************************************/
+   public String getOverrideLastStepName()
+   {
+      return (this.overrideLastStepName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideLastStepName
+    *******************************************************************************/
+   public void setOverrideLastStepName(String overrideLastStepName)
+   {
+      this.overrideLastStepName = overrideLastStepName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideLastStepName
+    *******************************************************************************/
+   public RunBackendStepOutput withOverrideLastStepName(String overrideLastStepName)
+   {
+      this.overrideLastStepName = overrideLastStepName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void updateStepList(List<String> stepList)
+   {
+      getProcessState().setStepList(stepList);
+
+      if(processName == null)
+      {
+         throw (new QRuntimeException("ProcessName was not set in this object, therefore updateStepList cannot complete successfully.  Try to manually call setProcessName as a work around."));
+      }
+
+      QProcessMetaData processMetaData = QContext.getQInstance().getProcess(processName);
+
+      ArrayList<QFrontendStepMetaData> updatedFrontendStepList = new ArrayList<>(stepList.stream()
+         .map(name -> processMetaData.getStep(name))
+         .filter(step -> step instanceof QFrontendStepMetaData)
+         .map(step -> (QFrontendStepMetaData) step)
+         .toList());
+
+      setUpdatedFrontendStepList(updatedFrontendStepList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processName
+    *******************************************************************************/
+   public String getProcessName()
+   {
+      return (this.processName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processName
+    *******************************************************************************/
+   public void setProcessName(String processName)
+   {
+      this.processName = processName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processName
+    *******************************************************************************/
+   public RunBackendStepOutput withProcessName(String processName)
+   {
+      this.processName = processName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for updatedFrontendStepList
+    *******************************************************************************/
+   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   {
+      return (this.processState.getUpdatedFrontendStepList());
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for updatedFrontendStepList
+    *******************************************************************************/
+   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
    }
 
 }

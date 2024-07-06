@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 
 
 /*******************************************************************************
@@ -30,29 +30,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
  ** MetaDataProducerHelper, to put point at a package full of these, and populate
  ** your whole QInstance.
  *******************************************************************************/
-public abstract class MetaDataProducer<T extends TopLevelMetaDataInterface>
+public abstract class MetaDataProducer<T extends MetaDataProducerOutput> implements MetaDataProducerInterface<T>
 {
-   public static final int DEFAULT_SORT_ORDER = 500;
-
-
-
-   /*******************************************************************************
-    ** Produce the metaData object.  Generally, you don't want to add it to the instance
-    ** yourself - but the instance is there in case you need it to get other metaData.
-    *******************************************************************************/
-   public abstract T produce(QInstance qInstance) throws QException;
-
-
-
-   /*******************************************************************************
-    ** In case this producer needs to run before (or after) others, this method
-    ** can control influence that (e.g., if used by MetaDataProducerHelper).
-    **
-    ** Smaller values run first.
-    *******************************************************************************/
-   public int getSortOrder()
-   {
-      return (DEFAULT_SORT_ORDER);
-   }
 
 }

@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -52,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
@@ -138,7 +140,7 @@ public class ExportAction
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check if this report format has a max-rows limit -- if so, do a count to verify we're under the limit //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat reportFormat = exportInput.getReportFormat();
+      ReportFormat reportFormat = exportInput.getReportDestination().getReportFormat();
       verifyCountUnderMax(exportInput, backendModule, reportFormat);
 
       preExecuteRan = true;
@@ -189,6 +191,9 @@ public class ExportAction
       Set<String>     addedJoinNames = new HashSet<>();
       if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
       {
+         /////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure that any tables being selected from are included as (LEFT) joins in the query //
+         /////////////////////////////////////////////////////////////////////////////////////////////
          for(String fieldName : exportInput.getFieldNames())
          {
             if(fieldName.contains("."))
@@ -197,27 +202,7 @@ public class ExportAction
                String   joinTableName = parts[0];
                if(!addedJoinNames.contains(joinTableName))
                {
-                  QueryJoin queryJoin = new QueryJoin(joinTableName).withType(QueryJoin.Type.LEFT).withSelect(true);
-                  queryJoins.add(queryJoin);
-
-                  /////////////////////////////////////////////////////////////////////////////////////////////
-                  // in at least some cases, we need to let the queryJoin know what join-meta-data to use... //
-                  // This code basically mirrors what QFMD is doing right now, so it's better -              //
-                  // but shouldn't all of this just be in JoinsContext?  it does some of this...             //
-                  /////////////////////////////////////////////////////////////////////////////////////////////
-                  QTableMetaData        table               = exportInput.getTable();
-                  Optional<ExposedJoin> exposedJoinOptional = CollectionUtils.nonNullList(table.getExposedJoins()).stream().filter(ej -> ej.getJoinTable().equals(joinTableName)).findFirst();
-                  if(exposedJoinOptional.isEmpty())
-                  {
-                     throw (new QException("Could not find exposed join between base table " + table.getName() + " and requested join table " + joinTableName));
-                  }
-                  ExposedJoin exposedJoin = exposedJoinOptional.get();
-
-                  if(exposedJoin.getJoinPath().size() == 1)
-                  {
-                     queryJoin.setJoinMetaData(QContext.getQInstance().getJoin(exposedJoin.getJoinPath().get(exposedJoin.getJoinPath().size() - 1)));
-                  }
-
+                  queryJoins.add(new QueryJoin(joinTableName).withType(QueryJoin.Type.LEFT).withSelect(true));
                   addedJoinNames.add(joinTableName);
                }
             }
@@ -232,6 +217,8 @@ public class ExportAction
       }
       queryInput.getFilter().setLimit(exportInput.getLimit());
       queryInput.setShouldTranslatePossibleValues(true);
+      queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
+      queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
@@ -242,10 +229,19 @@ public class ExportAction
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up a report streamer, which will read rows from the pipe, and write formatted report rows to the output stream //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ReportFormat            reportFormat   = exportInput.getReportFormat();
+      ReportFormat            reportFormat   = exportInput.getReportDestination().getReportFormat();
       ExportStreamerInterface reportStreamer = reportFormat.newReportStreamer();
       List<QFieldMetaData>    fields         = getFields(exportInput);
-      reportStreamer.start(exportInput, fields, "Sheet 1");
+
+      //////////////////////////////////////////////////////////
+      // it seems we can pass a view with just a name in here //
+      //////////////////////////////////////////////////////////
+      List<QReportView> views = new ArrayList<>();
+      views.add(new QReportView()
+         .withName("export"));
+
+      reportStreamer.preRun(exportInput.getReportDestination(), views);
+      reportStreamer.start(exportInput, fields, "Sheet 1", views.get(0));
 
       //////////////////////////////////////////
       // run the query action as an async job //
@@ -334,7 +330,7 @@ public class ExportAction
 
       try
       {
-         exportInput.getReportOutputStream().close();
+         exportInput.getReportDestination().getReportOutputStream().close();
       }
       catch(Exception e)
       {

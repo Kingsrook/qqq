@@ -38,7 +38,6 @@ public class MockCountAction implements CountInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("checkstyle:MagicNumber")
    public CountOutput execute(CountInput countInput) throws QException
    {
       try

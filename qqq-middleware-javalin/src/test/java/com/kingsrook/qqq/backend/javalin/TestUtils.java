@@ -25,6 +25,10 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -35,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -66,8 +71,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.savedfilters.SavedFiltersMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.savedviews.SavedViewsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -106,16 +113,19 @@ public class TestUtils
    @SuppressWarnings("unchecked")
    public static void primeTestDatabase() throws Exception
    {
-      ConnectionManager connectionManager          = new ConnectionManager();
-      Connection        connection                 = connectionManager.getConnection(TestUtils.defineDefaultH2Backend());
-      InputStream       primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
-      assertNotNull(primeTestDatabaseSqlStream);
-      List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
-      lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
-      String joinedSQL = String.join("\n", lines);
-      for(String sql : joinedSQL.split(";"))
+      ConnectionManager connectionManager = new ConnectionManager();
+
+      try(Connection connection = connectionManager.getConnection(TestUtils.defineDefaultH2Backend()))
       {
-         QueryManager.executeUpdate(connection, sql);
+         InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
+         assertNotNull(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
+         String joinedSQL = String.join("\n", lines);
+         for(String sql : joinedSQL.split(";"))
+         {
+            QueryManager.executeUpdate(connection, sql);
+         }
       }
    }
 
@@ -128,8 +138,10 @@ public class TestUtils
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
-      Connection        connection        = connectionManager.getConnection(defineDefaultH2Backend());
-      QueryManager.executeStatement(connection, sql, resultSetProcessor);
+      try(Connection connection = connectionManager.getConnection(defineDefaultH2Backend()))
+      {
+         QueryManager.executeStatement(connection, sql, resultSetProcessor);
+      }
    }
 
 
@@ -157,7 +169,7 @@ public class TestUtils
       qInstance.addBackend(defineMemoryBackend());
       try
       {
-         new SavedFiltersMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
+         new SavedViewsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
          new ScriptsMetaDataProvider().defineAll(qInstance, defineMemoryBackend().getName(), null);
       }
       catch(Exception e)
@@ -220,7 +232,7 @@ public class TestUtils
    public static QBackendMetaData defineMemoryBackend()
    {
       return new QBackendMetaData()
-         .withBackendType("memory")
+         .withBackendType(MemoryBackendModule.class)
          .withName(BACKEND_NAME_MEMORY);
    }
 
@@ -255,6 +267,9 @@ public class TestUtils
             .withScriptTypeId(1)
             .withScriptTester(new QCodeReference(TestScriptAction.class)));
 
+      qTableMetaData.withCustomizer(TableCustomizers.POST_INSERT_RECORD, new QCodeReference(PersonTableCustomizer.class));
+      qTableMetaData.withCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(PersonTableCustomizer.class));
+
       qTableMetaData.getField("photo")
          .withIsHeavy(true)
          .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
@@ -262,6 +277,52 @@ public class TestUtils
             .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "photoFileName"));
 
       return (qTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class PersonTableCustomizer implements TableCustomizerInterface
+   {
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
+      {
+         return warnPostInsertOrUpdate(records);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      @Override
+      public List<QRecord> postUpdate(UpdateInput updateInput, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
+      {
+         return warnPostInsertOrUpdate(records);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      private List<QRecord> warnPostInsertOrUpdate(List<QRecord> records)
+      {
+         for(QRecord record : records)
+         {
+            if(Objects.requireNonNullElse(record.getValueString("firstName"), "").toLowerCase().contains("warn"))
+            {
+               record.addWarning(new QWarningMessage("Warning in firstName."));
+            }
+         }
+
+         return records;
+      }
    }
 
 

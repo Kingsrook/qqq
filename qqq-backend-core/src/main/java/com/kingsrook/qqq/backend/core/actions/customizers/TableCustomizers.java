@@ -29,13 +29,13 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
  *******************************************************************************/
 public enum TableCustomizers
 {
-   POST_QUERY_RECORD("postQueryRecord", AbstractPostQueryCustomizer.class),
-   PRE_INSERT_RECORD("preInsertRecord", AbstractPreInsertCustomizer.class),
-   POST_INSERT_RECORD("postInsertRecord", AbstractPostInsertCustomizer.class),
-   PRE_UPDATE_RECORD("preUpdateRecord", AbstractPreUpdateCustomizer.class),
-   POST_UPDATE_RECORD("postUpdateRecord", AbstractPostUpdateCustomizer.class),
-   PRE_DELETE_RECORD("preDeleteRecord", AbstractPreDeleteCustomizer.class),
-   POST_DELETE_RECORD("postDeleteRecord", AbstractPostDeleteCustomizer.class);
+   POST_QUERY_RECORD("postQueryRecord", TableCustomizerInterface.class),
+   PRE_INSERT_RECORD("preInsertRecord", TableCustomizerInterface.class),
+   POST_INSERT_RECORD("postInsertRecord", TableCustomizerInterface.class),
+   PRE_UPDATE_RECORD("preUpdateRecord", TableCustomizerInterface.class),
+   POST_UPDATE_RECORD("postUpdateRecord", TableCustomizerInterface.class),
+   PRE_DELETE_RECORD("preDeleteRecord", TableCustomizerInterface.class),
+   POST_DELETE_RECORD("postDeleteRecord", TableCustomizerInterface.class);
 
 
    private final String   role;

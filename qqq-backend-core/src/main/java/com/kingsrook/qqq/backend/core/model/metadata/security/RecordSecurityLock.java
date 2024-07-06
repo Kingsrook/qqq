@@ -22,7 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.security;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /*******************************************************************************
@@ -39,7 +42,7 @@ import java.util.List;
  ** - READ_AND_WRITE means that users cannot read or write records without a valid key.
  ** - WRITE means that users cannot write records without a valid key (but they can read them).
  *******************************************************************************/
-public class RecordSecurityLock
+public class RecordSecurityLock implements Cloneable
 {
    private String            securityKeyType;
    private String            fieldName;
@@ -47,6 +50,28 @@ public class RecordSecurityLock
    private NullValueBehavior nullValueBehavior = NullValueBehavior.DENY;
 
    private LockScope lockScope = LockScope.READ_AND_WRITE;
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   protected RecordSecurityLock clone() throws CloneNotSupportedException
+   {
+      RecordSecurityLock clone = (RecordSecurityLock) super.clone();
+
+      /////////////////////////
+      // deep-clone the list //
+      /////////////////////////
+      if(joinNameChain != null)
+      {
+         clone.joinNameChain = new ArrayList<>();
+         clone.joinNameChain.addAll(joinNameChain);
+      }
+
+      return (clone);
+   }
 
 
 
@@ -67,7 +92,34 @@ public class RecordSecurityLock
    {
       ALLOW,
       ALLOW_WRITE_ONLY, // not common - but see Audit, where you can do a thing that inserts them into a generic table, even though you can't later read them yourself...
-      DENY
+      DENY;
+
+
+      ////////////////////////////////////////////////////////////////////
+      // for use in tryToGetFromString, where we'll lowercase the input //
+      ////////////////////////////////////////////////////////////////////
+      private static final Map<String, NullValueBehavior> stringMapping = new HashMap<>();
+
+      static
+      {
+         stringMapping.put("allow", ALLOW);
+         stringMapping.put("allow_write_only", ALLOW_WRITE_ONLY);
+         stringMapping.put("allowwriteonly", ALLOW_WRITE_ONLY);
+         stringMapping.put("deny", DENY);
+      }
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public static NullValueBehavior tryToGetFromString(String string)
+      {
+         if(string == null)
+         {
+            return (null);
+         }
+
+         return stringMapping.get(string.toLowerCase());
+      }
    }
 
 
@@ -77,8 +129,9 @@ public class RecordSecurityLock
     *******************************************************************************/
    public enum LockScope
    {
-      READ_AND_WRITE,
-      WRITE
+      READ_AND_WRITE, // lock both reads and writes
+      WRITE, // only lock writes
+      READ // only lock reads
    }
 
 
@@ -236,4 +289,22 @@ public class RecordSecurityLock
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public String toString()
+   {
+      return "RecordSecurityLock{"
+         + "securityKeyType='" + securityKeyType + '\''
+         + ", fieldName='" + fieldName + '\''
+         + ", joinNameChain=" + joinNameChain
+         + ", nullValueBehavior=" + nullValueBehavior
+         + ", lockScope=" + lockScope
+         + '}';
+   }
+
 }
+

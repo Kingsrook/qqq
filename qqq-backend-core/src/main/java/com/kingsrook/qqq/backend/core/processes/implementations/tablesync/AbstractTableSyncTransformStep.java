@@ -77,14 +77,14 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    private ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
 
    private ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
-      .withMessageSuffix("because of this process' configuration.")
+      .withMessageSuffix("because this process is not configured to insert records.")
       .withSingularFutureMessage("will not be inserted ")
       .withPluralFutureMessage("will not be inserted ")
       .withSingularPastMessage("was not inserted ")
       .withPluralPastMessage("were not inserted ");
 
    private ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
-      .withMessageSuffix("because of this process' configuration.")
+      .withMessageSuffix("because this process is not configured to update records.")
       .withSingularFutureMessage("will not be updated ")
       .withPluralFutureMessage("will not be updated ")
       .withSingularPastMessage("was not updated ")
@@ -183,6 +183,16 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
 
       /*******************************************************************************
+       ** Overloaded constructor - defaults both performInserts & performUpdates to true.
+       *******************************************************************************/
+      public SyncProcessConfig(String sourceTable, String sourceTableKeyField, String destinationTable, String destinationTableForeignKey)
+      {
+         this(sourceTable, sourceTableKeyField, destinationTable, destinationTableForeignKey, true, true);
+      }
+
+
+
+      /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
        *******************************************************************************/
@@ -199,7 +209,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
@@ -235,14 +245,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       // extract keys from source records //
       //////////////////////////////////////
       List<Serializable> sourceKeyList = runBackendStepInput.getRecords().stream()
-         .map(r -> r.getValueString(sourceTableKeyField))
+         .map(r -> extractSourceKeyValueFromRecord(r, sourceTableKeyField))
          .filter(Objects::nonNull)
-         .filter(v -> !"".equals(v))
+         .filter(v -> !"".equals(String.valueOf(v)))
          .collect(Collectors.toList());
 
       if(this.recordLookupHelper == null)
       {
          initializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
+      }
+      else
+      {
+         reinitializeRecordLookupHelper(runBackendStepInput, runBackendStepInput.getRecords());
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,12 +267,12 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       /////////////////////////////////////////////////////////////////
       // foreach source record, build the record we'll insert/update //
       /////////////////////////////////////////////////////////////////
-      QFieldMetaData    destinationForeignKeyField = runBackendStepInput.getInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
+      QFieldMetaData    destinationForeignKeyField = QContext.getQInstance().getTable(destinationTableName).getField(destinationTableForeignKeyField);
       Set<Serializable> processedSourceKeys        = new HashSet<>();
       for(QRecord sourceRecord : runBackendStepInput.getRecords())
       {
          Serializable sourcePrimaryKey = sourceRecord.getValue(QContext.getQInstance().getTable(config.sourceTable).getPrimaryKeyField());
-         Serializable sourceKeyValue   = sourceRecord.getValue(sourceTableKeyField);
+         Serializable sourceKeyValue   = extractSourceKeyValueFromRecord(sourceRecord, sourceTableKeyField);
          if(processedSourceKeys.contains(sourceKeyValue))
          {
             LOG.info("Skipping duplicated source-key within page", logPair("key", sourceKeyValue));
@@ -268,6 +282,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
          if(sourceKeyValue == null || "".equals(sourceKeyValue))
          {
+            LOG.debug("Skipping record without a value in the sourceKeyField", logPair("keyField", sourceTableKeyField));
             errorMissingKeyField.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
 
             try
@@ -355,6 +370,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
+   }
+
+
+   /*******************************************************************************
+    ** Given a source record, extract what we'll use as its key from it.
+    **
+    ** Normally this is just its sourceTableKeyField value - but - a subclass may
+    ** do something more interesting, including, returning a java-record.
+    *******************************************************************************/
+   protected Serializable extractSourceKeyValueFromRecord(QRecord sourceRecord, String sourceTableKeyField)
+   {
+      return sourceRecord.getValue(sourceTableKeyField);
    }
 
 
@@ -455,6 +482,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             recordLookupHelper.preloadRecords(pair.getA(), pair.getB());
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** for pages after the first, possibly load more records in the lookup helper.
+    *******************************************************************************/
+   protected void reinitializeRecordLookupHelper(RunBackendStepInput runBackendStepInput, List<QRecord> sourceRecordList) throws QException
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
    }
 
 

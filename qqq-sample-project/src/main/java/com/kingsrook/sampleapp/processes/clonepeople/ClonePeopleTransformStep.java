@@ -75,7 +75,7 @@ public class ClonePeopleTransformStep extends AbstractTransformStep implements P
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       for(QRecord inputPerson : runBackendStepInput.getRecords())
       {

@@ -70,6 +70,7 @@ class QPicoCliImplementationTest
    @BeforeEach
    public void beforeEach() throws Exception
    {
+      System.setProperty("picocli.ansi", "false");
       TestUtils.primeTestDatabase();
       QContext.init(TestUtils.defineInstance(), new QSession());
    }

@@ -1,0 +1,17 @@
+[#PossibleValueSources]
+== Possible Value Sources
+include::../variables.adoc[]
+
+#TODO#
+
+=== QPossibleValueSource
+A Possible Value Source is defined in a QQQ Instance in a `*QPossibleValueSource*` object.
+
+#TODO#
+
+*QPossibleValueSource Properties:*
+
+* `name` - *String, Required* - Unique name for the possible value source within the QQQ Instance.
+
+#TODO#
+

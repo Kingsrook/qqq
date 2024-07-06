@@ -1,0 +1,30 @@
+== QContext
+include::../variables.adoc[]
+
+The class `QContext` contains a collection of thread-local variables, to define the current context of the QQQ code that is currently running.
+For example, what `QInstance` (meta-data container) is being used, what `QSession` (user attributes) is active, etc.
+
+Most of the time, main-line application code does not need to worry about setting up the `QContext` - although unit-test code can is a common exception to that rule.
+This is because all of QQQ's entry-points into execution (e.g., web context handlers, CLI startup methods, schedulers, and multi-threaded executors) take care of initializing the context.
+
+It is more common though, for application code to need to get data from the context, such as the current session or any piece of meta-data from the QInstance.
+The methods to access data from the `QContext` are fairly straightforward:
+
+=== Examples
+==== Get a QTableMetaData from the active QInstance
+[source,java]
+----
+QTableMeataData myTable = QContext.getQInstance().getTable("myTable");
+for(QFieldMeataData field : myTable.getFields().values())
+{
+   // ...
+}
+----
+
+==== Get a security key value for the current user session
+[source,java]
+----
+QSession           session   = QContext.getQSession();
+List<Serializable> clientIds = session.getSecurityKeyValues("clientId");
+----
+

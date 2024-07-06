@@ -1,0 +1,16 @@
+name: install_java17
+runs:
+  using: composite
+  steps:
+  - name: Install Java 17
+    run: |-
+      sudo apt-get update
+      sudo apt install -y openjdk-17-jdk
+      sudo rm /etc/alternatives/java
+      sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
+    shell: bash
+  - name: Install html2text
+    run: |-
+      sudo apt-get update
+      sudo apt-get install -y html2text
+    shell: bash

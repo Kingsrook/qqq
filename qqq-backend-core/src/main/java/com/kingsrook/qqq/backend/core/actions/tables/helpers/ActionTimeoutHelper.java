@@ -23,8 +23,10 @@ package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import com.kingsrook.qqq.backend.core.utils.PrefixedDefaultThreadFactory;
 
 
 /*******************************************************************************
@@ -49,6 +51,9 @@ public class ActionTimeoutHelper
    private       ScheduledFuture<?> future;
 
    private boolean didTimeout = false;
+
+   private static Integer                  CORE_THREADS             = 10;
+   private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(CORE_THREADS, new PrefixedDefaultThreadFactory(ActionTimeoutHelper.class));
 
 
 
@@ -75,7 +80,7 @@ public class ActionTimeoutHelper
          return;
       }
 
-      future = Executors.newSingleThreadScheduledExecutor().schedule(() ->
+      future = scheduledExecutorService.schedule(() ->
       {
          didTimeout = true;
          runnable.run();

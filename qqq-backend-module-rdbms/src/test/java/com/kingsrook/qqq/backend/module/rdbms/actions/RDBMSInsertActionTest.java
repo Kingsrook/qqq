@@ -65,7 +65,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    {
       InsertInput insertInput = initInsertRequest();
       insertInput.setRecords(null);
-      InsertOutput insertOutput = new RDBMSInsertAction().execute(insertInput);
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(0, insertOutput.getRecords().size());
    }
 
@@ -79,7 +79,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    {
       InsertInput insertInput = initInsertRequest();
       insertInput.setRecords(Collections.emptyList());
-      InsertOutput insertOutput = new RDBMSInsertAction().execute(insertInput);
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(0, insertOutput.getRecords().size());
    }
 
@@ -98,7 +98,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
          .withValue("email", "jamestk@starfleet.net")
          .withValue("birthDate", "2210-05-20");
       insertInput.setRecords(List.of(record));
-      InsertOutput insertOutput = new RDBMSInsertAction().execute(insertInput);
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(1, insertOutput.getRecords().size(), "Should return 1 row");
       assertNotNull(insertOutput.getRecords().get(0).getValue("id"), "Should have an id in the row");
       // todo - add errors to QRecord? assertTrue(insertResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
@@ -132,7 +132,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
          .withValue("email", "doctor@starfleet.net")
          .withValue("birthDate", "2320-06-26");
       insertInput.setRecords(List.of(record1, record2, record3));
-      InsertOutput insertOutput = new RDBMSInsertAction().execute(insertInput);
+      InsertOutput insertOutput = new InsertAction().execute(insertInput);
       assertEquals(3, insertOutput.getRecords().size(), "Should return right # of rows");
       assertEquals(6, insertOutput.getRecords().get(0).getValue("id"), "Should have next id in the row");
       assertEquals(7, insertOutput.getRecords().get(1).getValue("id"), "Should have next id in the row");
@@ -161,10 +161,10 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
       insertInput.setRecords(List.of(
          new QRecord().withValue("storeId", 1).withValue("billToPersonId", 100).withValue("shipToPersonId", 200)
 
-            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC1").withValue("quantity", 1)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("storeId", 1).withValue("sku", "BASIC1").withValue("quantity", 1)
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-1.1").withValue("value", "LINE-VAL-1")))
 
-            .withAssociatedRecord("orderLine", new QRecord().withValue("sku", "BASIC2").withValue("quantity", 2)
+            .withAssociatedRecord("orderLine", new QRecord().withValue("storeId", 1).withValue("sku", "BASIC2").withValue("quantity", 2)
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.1").withValue("value", "LINE-VAL-2"))
                .withAssociatedRecord("extrinsics", new QRecord().withValue("key", "LINE-EXT-2.2").withValue("value", "LINE-VAL-3")))
       ));

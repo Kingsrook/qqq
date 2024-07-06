@@ -59,6 +59,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
    private ActionTimeoutHelper actionTimeoutHelper;
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -68,16 +69,17 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       {
          QTableMetaData table = aggregateInput.getTable();
 
-         JoinsContext joinsContext  = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), aggregateInput.getFilter());
-         String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext);
+         QQueryFilter filter       = clonedOrNewFilter(aggregateInput.getFilter());
+         JoinsContext joinsContext = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
+
+         List<Serializable> params = new ArrayList<>();
+
+         String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext, params);
          List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 
          String sql = "SELECT " + StringUtils.join(", ", selectClauses)
-            + " FROM " + fromClause;
-
-         QQueryFilter       filter = aggregateInput.getFilter();
-         List<Serializable> params = new ArrayList<>();
-         sql += " WHERE " + makeWhereClause(aggregateInput.getInstance(), aggregateInput.getSession(), table, joinsContext, filter, params);
+            + " FROM " + fromClause
+            + " WHERE " + makeWhereClause(joinsContext, filter, params);
 
          if(CollectionUtils.nullSafeHasContents(aggregateInput.getGroupBys()))
          {
@@ -143,7 +145,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                      QFieldType fieldType = aggregate.getFieldType();
                      if(fieldType == null)
                      {
-                        if(field.getType().equals(QFieldType.INTEGER) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
+                        if((field.getType().equals(QFieldType.INTEGER) || field.getType().equals(QFieldType.LONG)) && (aggregate.getOperator().equals(AggregateOperator.AVG)))
                         {
                            fieldType = QFieldType.DECIMAL;
                         }

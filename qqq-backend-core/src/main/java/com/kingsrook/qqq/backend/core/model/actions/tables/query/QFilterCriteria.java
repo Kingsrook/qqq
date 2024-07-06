@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
@@ -42,7 +44,7 @@ public class QFilterCriteria implements Serializable, Cloneable
 {
    private static final QLogger LOG = QLogger.getLogger(QFilterCriteria.class);
 
-   private String             fieldName;
+   private String fieldName;
    private QCriteriaOperator  operator;
    private List<Serializable> values;
 
@@ -93,11 +95,37 @@ public class QFilterCriteria implements Serializable, Cloneable
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QFilterCriteria(String fieldName, QCriteriaOperator operator, List<Serializable> values)
+   @SuppressWarnings("unchecked")
+   public QFilterCriteria(String fieldName, QCriteriaOperator operator, List<? extends Serializable> values)
    {
       this.fieldName = fieldName;
       this.operator = operator;
-      this.values = values == null ? new ArrayList<>() : values;
+      this.values = values == null ? new ArrayList<>() : (List<Serializable>) values;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings({ "rawtypes", "unchecked" })
+   public QFilterCriteria(String fieldName, QCriteriaOperator operator, Collection<? extends Serializable> values)
+   {
+      this.fieldName = fieldName;
+      this.operator = operator;
+
+      if(values == null)
+      {
+         this.values = new ArrayList<>();
+      }
+      else if(values instanceof List list)
+      {
+         this.values = list;
+      }
+      else
+      {
+         this.values = new ArrayList<>(values);
+      }
    }
 
 
@@ -120,7 +148,7 @@ public class QFilterCriteria implements Serializable, Cloneable
       }
       else
       {
-         this.values = Arrays.stream(values).toList();
+         this.values = new ArrayList<>(Arrays.stream(values).toList());
       }
    }
 
@@ -278,6 +306,11 @@ public class QFilterCriteria implements Serializable, Cloneable
    @Override
    public String toString()
    {
+      if(fieldName == null)
+      {
+         return ("<null-field-criteria>");
+      }
+
       StringBuilder rs = new StringBuilder(fieldName);
       try
       {
@@ -317,6 +350,39 @@ public class QFilterCriteria implements Serializable, Cloneable
       }
 
       return (rs.toString());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+
+      QFilterCriteria that = (QFilterCriteria) o;
+      return Objects.equals(fieldName, that.fieldName) && operator == that.operator && Objects.equals(values, that.values) && Objects.equals(otherFieldName, that.otherFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(fieldName, operator, values, otherFieldName);
    }
 
 }

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -327,4 +328,25 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
    {
       return exception;
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   {
+      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   {
+      return this.processState.getUpdatedFrontendStepList();
+   }
+
 }

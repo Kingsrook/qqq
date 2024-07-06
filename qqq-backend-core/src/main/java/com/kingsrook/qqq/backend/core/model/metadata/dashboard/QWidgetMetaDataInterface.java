@@ -25,7 +25,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.dashboard;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 
@@ -34,8 +40,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRule
  ** Interface for qqq widget meta data
  **
  *******************************************************************************/
-public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
+public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules, TopLevelMetaDataInterface
 {
+   QLogger LOG = QLogger.getLogger(QWidgetMetaDataInterface.class);
+
    /*******************************************************************************
     ** Getter for name
     *******************************************************************************/
@@ -224,6 +232,49 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules
    default String getTooltip()
    {
       return (null);
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default Map<String, List<QHelpContent>> getHelpContent()
+   {
+      return (null);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void setHelpContent(Map<String, List<QHelpContent>> helpContent)
+   {
+      LOG.debug("Setting help content in a widgetMetaData type that doesn't support it (because it didn't override the getter/setter)");
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default QWidgetMetaDataInterface withHelpContent(String slot, QHelpContent helpContent)
+   {
+      LOG.debug("Setting help content in a widgetMetaData type that doesn't support it (because it didn't override the getter/setter)");
+      return (this);
+   }
+
+   /*******************************************************************************
+    ** remove a helpContent for a slot based on its set of roles
+    *******************************************************************************/
+   default void removeHelpContent(String slot, Set<HelpRole> roles)
+   {
+      LOG.debug("Setting help content in a widgetMetaData type that doesn't support it (because it didn't override the getter/setter)");
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default void addSelfToInstance(QInstance qInstance)
+   {
+      qInstance.addWidget(this);
    }
 
 }

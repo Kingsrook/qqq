@@ -164,4 +164,23 @@ public class ExceptionUtils
 
       return (StringUtils.join("; ", messages));
    }
+
+
+
+   /*******************************************************************************
+    ** Get the messages from the top & bottoms (root) of an exception.
+    **
+    ** If there's no root, just return the top (e.g., parameter)'s message.
+    ** If they are both found, put ": " between them.
+    *******************************************************************************/
+   public static String getTopAndBottomMessages(Exception e)
+   {
+      String    rs            = e.getMessage();
+      Throwable rootException = getRootException(e);
+      if(rootException != e)
+      {
+         rs += ": " + rootException.getMessage();
+      }
+      return (rs);
+   }
 }

@@ -114,12 +114,12 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
     **
     *******************************************************************************/
    @Override
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ////////////////////////////
       // have base class update //
       ////////////////////////////
-      super.run(runBackendStepInput, runBackendStepOutput);
+      super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
       ////////////////////////////////////////////////////////
       // roll up results based on output from update action //
