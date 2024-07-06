@@ -209,6 +209,7 @@
                   <productionBranch>main</productionBranch>
                   <developmentBranch>dev</developmentBranch>
                   <versionTagPrefix>version-</versionTagPrefix>
+                  <releaseBranchPrefix>rel/</releaseBranchPrefix>
                </gitFlowConfig>
                <skipFeatureVersion>true</skipFeatureVersion> <!-- Keep feature names out of versions -->
                <postReleaseGoals>install</postReleaseGoals>  <!-- Let CI run deploys -->
