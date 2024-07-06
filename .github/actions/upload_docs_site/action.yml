@@ -1,0 +1,9 @@
+name: upload_docs_site
+runs:
+  using: composite
+  steps:
+  - name: scp html to justinsgotskinnylegs.com
+    run: |-
+      cd docs
+      scp index.html dkelkhoff@45.79.44.221:/mnt/first-volume/dkelkhoff/nginx/html/justinsgotskinnylegs.com/qqq-docs.html
+    shell: bash

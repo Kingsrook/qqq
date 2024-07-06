@@ -1,0 +1,43 @@
+name: Kingsrook/qqq/deploy
+on:
+  push:
+    branches:
+    - dev
+env:
+  ACTIVATE_PRO: xxxx
+  AUTH0_AUDIENCE: xxxx000/
+  AUTH0_BASE_URL: xxxxcom/
+  AUTH0_CLIENT_ID: xxxxYfcq
+  AUTH0_CLIENT_SECRET: xxxxA8P6
+  CUSTOM_PROPERTY: xxxx9876
+  EASYPOST_API_KEY: xxxxEt0Q
+  RDBMS_DATABASE_NAME: xxxxq
+  RDBMS_HOSTNAME: xxxx.0.1
+  RDBMS_PASSWORD: xxxxua6L
+  RDBMS_PORT: xxxx06
+  RDBMS_USERNAME: xxxxot
+  RDBMS_VENDOR: xxxxql
+jobs:
+  mvn_deploy:
+    if: # GitHub does not currently support regular expressions inside if conditions
+#         github.ref == 'refs/heads//(dev|integration.*)/' || github.ref == 'refs/tags//(version|snapshot)-.*/'
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN:
+      QQQ_MAVEN_REGISTRY_PASSWORD:
+      QQQ_MAVEN_REGISTRY_USERNAME:
+      RDBMS_PASSWORD:
+    steps:
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/install_java17"
+    - uses: "./.github/actions/mvn_verify"
+    - uses: "./.github/actions/mvn_jar_deploy"
+  publish_asciidoc:
+    if: # GitHub does not currently support regular expressions inside if conditions
+#         github.ref == 'refs/heads//dev/'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/install_asciidoctor"
+    - uses: "./.github/actions/run_asciidoctor"
+    - uses: "./.github/actions/upload_docs_site"
