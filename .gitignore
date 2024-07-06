@@ -35,3 +35,5 @@ hs_err_pid*
 *.swp
 .flattened-pom.xml
 dependency-reduced-pom.xml
+/.env.local
+/.cache/
