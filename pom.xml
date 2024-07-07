@@ -46,7 +46,7 @@
    </modules>
 
    <properties>
-      <revision>0.20.0-SNAPSHOT</revision>
+      <revision>0.21.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -209,6 +209,7 @@
                   <productionBranch>main</productionBranch>
                   <developmentBranch>dev</developmentBranch>
                   <versionTagPrefix>version-</versionTagPrefix>
+                  <releaseBranchPrefix>rel/</releaseBranchPrefix>
                </gitFlowConfig>
                <skipFeatureVersion>true</skipFeatureVersion> <!-- Keep feature names out of versions -->
                <postReleaseGoals>install</postReleaseGoals>  <!-- Let CI run deploys -->
