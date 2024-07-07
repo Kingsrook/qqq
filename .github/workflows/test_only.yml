@@ -8,5 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.1.0
-    - uses: "./.github/actions/install_java17"
-    - uses: "./.github/actions/mvn_verify"
+
+    - uses: actions/setup-java@v4
+      with:
+       distribution: 'corretto'
+       java-version: '17'
+       cache: 'maven'
+       cache-dependency-path: './pom.xml' # optional
+
+    - name: Build with Maven
+      run: mvn -s .circleci/mvn-settings.xml -T4 verify              # TODO: Move this over to GHActions subdir
