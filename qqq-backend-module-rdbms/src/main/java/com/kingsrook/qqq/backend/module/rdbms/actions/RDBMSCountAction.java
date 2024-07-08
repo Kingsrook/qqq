@@ -96,7 +96,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
             actionTimeoutHelper = new ActionTimeoutHelper(countInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //

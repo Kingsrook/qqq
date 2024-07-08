@@ -170,7 +170,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //

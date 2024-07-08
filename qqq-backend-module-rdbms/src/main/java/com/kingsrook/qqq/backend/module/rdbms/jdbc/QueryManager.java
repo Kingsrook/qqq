@@ -32,6 +32,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
@@ -56,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValu
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -122,6 +124,17 @@ public class QueryManager
     *******************************************************************************/
    public static void executeStatement(PreparedStatement statement, ResultSetProcessor processor, Object... params) throws SQLException, QException
    {
+      executeStatement(statement, null, processor, params);
+   }
+
+
+
+   /*******************************************************************************
+    ** Let the caller provide their own prepared statement (e.g., possibly with some
+    ** customized settings/optimizations).
+    *******************************************************************************/
+   public static void executeStatement(PreparedStatement statement, CharSequence sql, ResultSetProcessor processor, Object... params) throws SQLException, QException
+   {
       ResultSet resultSet = null;
 
       try
@@ -135,6 +148,14 @@ public class QueryManager
          {
             processor.processResultSet(resultSet);
          }
+      }
+      catch(SQLException e)
+      {
+         if(sql != null)
+         {
+            LOG.warn("SQLException", e, logPair("sql", sql));
+         }
+         throw (e);
       }
       finally
       {
@@ -372,10 +393,17 @@ public class QueryManager
     *******************************************************************************/
    public static PreparedStatement executeUpdate(Connection connection, String sql, Object... params) throws SQLException
    {
-      PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      incrementStatistic(STAT_QUERIES_RAN);
-      statement.executeUpdate();
-      return (statement);
+      try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
+      {
+         incrementStatistic(STAT_QUERIES_RAN);
+         statement.executeUpdate();
+         return (statement);
+      }
+      catch(SQLException e)
+      {
+         LOG.warn("SQLException", e, logPair("sql", sql));
+         throw (e);
+      }
    }
 
 
@@ -385,10 +413,17 @@ public class QueryManager
     *******************************************************************************/
    public static PreparedStatement executeUpdate(Connection connection, String sql, List<Object> params) throws SQLException
    {
-      PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params);
-      incrementStatistic(STAT_QUERIES_RAN);
-      statement.executeUpdate();
-      return (statement);
+      try(PreparedStatement statement = prepareStatementAndBindParams(connection, sql, params))
+      {
+         incrementStatistic(STAT_QUERIES_RAN);
+         statement.executeUpdate();
+         return (statement);
+      }
+      catch(SQLException e)
+      {
+         LOG.warn("SQLException", e, logPair("sql", sql));
+         throw (e);
+      }
    }
 
 
@@ -435,6 +470,11 @@ public class QueryManager
          incrementStatistic(STAT_QUERIES_RAN);
          statement.executeUpdate();
          return (statement.getUpdateCount());
+      }
+      catch(SQLException e)
+      {
+         LOG.warn("SQLException", e, logPair("sql", sql));
+         throw (e);
       }
    }
 
@@ -488,19 +528,24 @@ public class QueryManager
     *******************************************************************************/
    public static List<Integer> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params) throws SQLException
    {
-      List<Integer> rs = new ArrayList<>();
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
          bindParams(params.toArray(), statement);
          incrementStatistic(STAT_QUERIES_RAN);
          statement.executeUpdate();
-         ResultSet generatedKeys = statement.getGeneratedKeys();
+         ResultSet     generatedKeys = statement.getGeneratedKeys();
+         List<Integer> rs            = new ArrayList<>();
          while(generatedKeys.next())
          {
             rs.add(getInteger(generatedKeys, 1));
          }
+         return (rs);
       }
-      return (rs);
+      catch(SQLException e)
+      {
+         LOG.warn("SQLException", e, logPair("sql", sql));
+         throw (e);
+      }
    }
 
 
@@ -747,14 +792,14 @@ public class QueryManager
       else if(value instanceof LocalDate ld)
       {
          @SuppressWarnings("deprecation")
-         java.sql.Date date = new java.sql.Date(ld.getYear() - 1900, ld.getMonthValue() - 1, ld.getDayOfMonth());
+         Date date = new Date(ld.getYear() - 1900, ld.getMonthValue() - 1, ld.getDayOfMonth());
          statement.setDate(index, date);
          return (1);
       }
       else if(value instanceof LocalTime lt)
       {
          @SuppressWarnings("deprecation")
-         java.sql.Time time = new java.sql.Time(lt.getHour(), lt.getMinute(), lt.getSecond());
+         Time time = new Time(lt.getHour(), lt.getMinute(), lt.getSecond());
          statement.setTime(index, time);
          return (1);
       }
@@ -943,7 +988,7 @@ public class QueryManager
       }
       else
       {
-         statement.setDate(index, new java.sql.Date(value.getTime()));
+         statement.setDate(index, new Date(value.getTime()));
       }
    }
 
