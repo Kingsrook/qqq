@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -77,6 +78,12 @@ public class PermissionsHelper
    {
       warnAboutPermissionSubTypeForTables(permissionSubType);
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
+
+      if(table == null)
+      {
+         LOG.info("Throwing a permission denied exception in response to a non-existent table name", logPair("tableName", tableName));
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
 
       commonCheckPermissionThrowing(getEffectivePermissionRules(table, QContext.getQInstance()), permissionSubType, table.getName());
    }
@@ -184,7 +191,14 @@ public class PermissionsHelper
     *******************************************************************************/
    public static void checkProcessPermissionThrowing(AbstractActionInput actionInput, String processName, Map<String, Serializable> processValues) throws QPermissionDeniedException
    {
-      QProcessMetaData process                  = QContext.getQInstance().getProcess(processName);
+      QProcessMetaData process = QContext.getQInstance().getProcess(processName);
+
+      if(process == null)
+      {
+         LOG.info("Throwing a permission denied exception in response to a non-existent process name", logPair("processName", processName));
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
+
       QPermissionRules effectivePermissionRules = getEffectivePermissionRules(process, QContext.getQInstance());
 
       if(effectivePermissionRules.getCustomPermissionChecker() != null)
@@ -226,6 +240,13 @@ public class PermissionsHelper
    public static void checkAppPermissionThrowing(AbstractActionInput actionInput, String appName) throws QPermissionDeniedException
    {
       QAppMetaData app = QContext.getQInstance().getApp(appName);
+
+      if(app == null)
+      {
+         LOG.info("Throwing a permission denied exception in response to a non-existent app name", logPair("appName", appName));
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
+
       commonCheckPermissionThrowing(getEffectivePermissionRules(app, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, app.getName());
    }
 
@@ -255,6 +276,13 @@ public class PermissionsHelper
    public static void checkReportPermissionThrowing(AbstractActionInput actionInput, String reportName) throws QPermissionDeniedException
    {
       QReportMetaData report = QContext.getQInstance().getReport(reportName);
+
+      if(report == null)
+      {
+         LOG.info("Throwing a permission denied exception in response to a non-existent process name", logPair("reportName", reportName));
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
+
       commonCheckPermissionThrowing(getEffectivePermissionRules(report, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, report.getName());
    }
 
@@ -284,6 +312,13 @@ public class PermissionsHelper
    public static void checkWidgetPermissionThrowing(AbstractActionInput actionInput, String widgetName) throws QPermissionDeniedException
    {
       QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(widgetName);
+
+      if(widget == null)
+      {
+         LOG.info("Throwing a permission denied exception in response to a non-existent widget name", logPair("widgetName", widgetName));
+         throw (new QPermissionDeniedException("Permission denied."));
+      }
+
       commonCheckPermissionThrowing(getEffectivePermissionRules(widget, QContext.getQInstance()), PrivatePermissionSubType.HAS_ACCESS, widget.getName());
    }
 
