@@ -26,11 +26,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -47,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
+import com.kingsrook.qqq.backend.core.utils.collections.SetBuilder;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 /*******************************************************************************
@@ -69,10 +74,6 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
-
-      AbstractRDBMSAction.setLogSQL(true);
-      AbstractRDBMSAction.setLogSQLReformat(true);
-      AbstractRDBMSAction.setLogSQLOutput("system.out");
    }
 
 
@@ -909,7 +910,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
-   void testMultipleReversedDirectionJoinsBetweenSameTables() throws QException
+   void testMultipleReversedDirectionJoinsBetweenSameTablesAllAccessKey() throws QException
    {
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
 
@@ -956,6 +957,76 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   void testMultipleReversedDirectionJoinsBetweenSameTables() throws QException
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // primer sql file loads 2 instructions for order 1, 3 for order 2, then 1 for all the others. //
+      // let's make things a bit more interesting by deleting the 2 for order 1                      //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      DeleteInput deleteInput = new DeleteInput();
+      deleteInput.setTableName(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS);
+      deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("orderId", QCriteriaOperator.EQUALS, 1)));
+      new DeleteAction().execute(deleteInput);
+
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+
+      // Integer noOfOrders            = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)).getCount();
+      // Integer noOfOrderInstructions = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS)).getCount();
+
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure we can join on order.current_order_instruction_id = order_instruction.id -- and that we get back 1 row per order //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS).withSelect(true).withJoinMetaData(QContext.getQInstance().getJoin("orderJoinCurrentOrderInstructions")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         assertEquals(2, queryOutput.getRecords().size());
+      }
+
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure we can join on order.current_order_instruction_id = order_instruction.id -- and that we get back 1 row per order //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS).withSelect(true).withType(QueryJoin.Type.LEFT).withJoinMetaData(QContext.getQInstance().getJoin("orderJoinCurrentOrderInstructions")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         assertEquals(5, queryOutput.getRecords().size());
+      }
+
+      /*
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         // assert that the query succeeds (based on exposed join) if the joinMetaData isn't specified //
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         // assertEquals(noOfOrders, queryOutput.getRecords().size());
+      }
+
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make sure we can join on order.id = order_instruction.order_id (e.g., not the exposed one used above) -- and that we get back 1 row per order instruction //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QueryInput queryInput = new QueryInput();
+         queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+         queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS).withJoinMetaData(QContext.getQInstance().getJoin("orderInstructionsJoinOrder")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         // assertEquals(noOfOrderInstructions, queryOutput.getRecords().size());
+      }
+      */
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testSecurityJoinForJoinedTableFromImplicitlyJoinedTable() throws QException
    {
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -988,6 +1059,32 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       // for order 2, as it has an item from a different store             //
       ///////////////////////////////////////////////////////////////////////
       assertThat(records).allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5));
+   }
+
+
+
+   /*******************************************************************************
+    ** We had, at one time, a bug where, for tables with 2 joins between each other,
+    ** an ON clause could get written using the wrong table name in one part.
+    **
+    ** With that bug, this QueryAction.execute would throw an SQL Exception.
+    **
+    ** So this test, just makes sure that no such exception gets thrown.
+    *******************************************************************************/
+   @Test
+   void testFlippedJoinForOnClause() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS);
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertFalse(queryOutput.getRecords().isEmpty());
+
+      ////////////////////////////////////
+      // if no exception, then we pass. //
+      ////////////////////////////////////
    }
 
 
@@ -1027,6 +1124,52 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////////////////////////////////
       personTable.getRecordSecurityLocks().get(0).setLockScope(RecordSecurityLock.LockScope.WRITE);
       assertEquals(5, new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)).getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    ** scenario:
+    ** order LEFT JOIN shipment.  both have storeId as security field.
+    ** not all orders have a shipment (but due to left-join, expect to get all
+    ** orders back, even if missing a shipment).
+    **
+    ** If the security clause for shipment is in the WHERE clause, it will "negate"
+    ** the effect of the LEFT JOIN (unless it includes, e.g., "OR id IS NULL").
+    **
+    ** At one point, we tried AND'ing such a security clause to the JOIN ... ON,
+    ** but that is frequently causing issues...
+    *******************************************************************************/
+   @Test
+   void testLeftJoinSecurityClause() throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////
+      // scenario:                                                                    //
+      // order LEFT JOIN shipment.  both have storeId as security field.              //
+      // not all orders have a shipment (but due to left-join, expect to get all      //
+      // orders back, even if missing a shipment).                                    //
+      //                                                                              //
+      // If the security clause for shipment is in the WHERE clause, it will "negate" //
+      // the effect of the LEFT JOIN (unless it includes, e.g., "OR id IS NULL").     //
+      //                                                                              //
+      // At one point, we tried AND'ing such a security clause to the JOIN ... ON,    //
+      // but that is frequently causing issues...                                     //
+      //                                                                              //
+      // order table has 3 rows for store 1:                                          //
+      // - id=1 has 1 shipment, but assigned to the wrong store!                      //
+      // - id=2 has no shipments.                                                     //
+      // - id=3 has 2 shipments.                                                      //
+      //////////////////////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER);
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHIPMENT).withSelect(true).withType(QueryJoin.Type.LEFT));
+      QueryOutput   queryOutput = new QueryAction().execute(queryInput);
+      List<QRecord> records     = queryOutput.getRecords();
+      assertEquals(4, records.size(), "expected no of records");
+      assertEquals(SetBuilder.of(1), records.stream().map(r -> r.getValue("storeId")).collect(Collectors.toSet()));
+      assertEquals(SetBuilder.of(null, 1), records.stream().map(r -> r.getValue(TestUtils.TABLE_NAME_SHIPMENT + ".storeId")).collect(Collectors.toSet()));
    }
 
 }
