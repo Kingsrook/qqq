@@ -66,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -303,7 +304,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       {
          if(StringUtils.hasContent(dataSource.getSourceTable()))
          {
-            joinsContext = new JoinsContext(exportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), dataSource.getQueryFilter());
+            joinsContext = new JoinsContext(QContext.getQInstance(), dataSource.getSourceTable(), cloneDataSourceQueryJoins(dataSource), dataSource.getQueryFilter() == null ? null : dataSource.getQueryFilter().clone());
             countDataSourceRecords(reportInput, dataSource, reportFormat);
          }
       }
@@ -351,7 +352,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       CountInput countInput = new CountInput();
       countInput.setTableName(dataSource.getSourceTable());
       countInput.setFilter(queryFilter);
-      countInput.setQueryJoins(dataSource.getQueryJoins());
+      countInput.setQueryJoins(cloneDataSourceQueryJoins(dataSource));
       CountOutput countOutput = new CountAction().execute(countInput);
 
       if(countOutput.getCount() != null)
@@ -365,6 +366,26 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
                + String.format("%,d", reportFormat.getMaxRows()) + ") for the selected file format (" + reportFormat + ")."));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static List<QueryJoin> cloneDataSourceQueryJoins(QReportDataSource dataSource)
+   {
+      if(dataSource == null || dataSource.getQueryJoins() == null)
+      {
+         return (null);
+      }
+
+      List<QueryJoin> rs = new ArrayList<>();
+      for(QueryJoin queryJoin : dataSource.getQueryJoins())
+      {
+         rs.add(queryJoin.clone());
+      }
+      return (rs);
    }
 
 
@@ -417,12 +438,12 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             queryInput.setRecordPipe(recordPipe);
             queryInput.setTableName(dataSource.getSourceTable());
             queryInput.setFilter(queryFilter);
-            queryInput.setQueryJoins(dataSource.getQueryJoins());
+            queryInput.setQueryJoins(cloneDataSourceQueryJoins(dataSource));
             queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
             queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
             queryInput.setShouldTranslatePossibleValues(true);
-            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource));
 
             if(dataSource.getQueryInputCustomizer() != null)
             {
@@ -474,7 +495,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          }
          consumedCount.getAndAdd(records.size());
 
-         return (consumeRecords(reportInput, dataSource, records, tableView, summaryViews, variantViews));
+         return (consumeRecords(dataSource, records, tableView, summaryViews, variantViews));
       });
 
       ////////////////////////////////////////////////
@@ -493,7 +514,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Set<String> setupFieldsToTranslatePossibleValues(ReportInput reportInput, QReportDataSource dataSource, JoinsContext joinsContext) throws QException
+   private Set<String> setupFieldsToTranslatePossibleValues(ReportInput reportInput, QReportDataSource dataSource) throws QException
    {
       Set<String> fieldsToTranslatePossibleValues = new HashSet<>();
 
@@ -574,9 +595,9 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Integer consumeRecords(ReportInput reportInput, QReportDataSource dataSource, List<QRecord> records, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
+   private Integer consumeRecords(QReportDataSource dataSource, List<QRecord> records, QReportView tableView, List<QReportView> summaryViews, List<QReportView> variantViews) throws QException
    {
-      QTableMetaData table = reportInput.getInstance().getTable(dataSource.getSourceTable());
+      QTableMetaData table = QContext.getQInstance().getTable(dataSource.getSourceTable());
 
       ////////////////////////////////////////////////////////////////////////////
       // if this record goes on a table view, add it to the report streamer now //
@@ -687,7 +708,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates, SummaryKey key) throws QException
+   private void addRecordToSummaryKeyAggregates(QTableMetaData table, QRecord record, Map<SummaryKey, Map<String, AggregatesInterface<?, ?>>> viewAggregates, SummaryKey key)
    {
       Map<String, AggregatesInterface<?, ?>> keyAggregates = viewAggregates.computeIfAbsent(key, (name) -> new HashMap<>());
       addRecordToAggregatesMap(table, record, keyAggregates);
@@ -698,7 +719,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?, ?>> aggregatesMap) throws QException
+   private void addRecordToAggregatesMap(QTableMetaData table, QRecord record, Map<String, AggregatesInterface<?, ?>> aggregatesMap)
    {
       //////////////////////////////////////////////////////////////////////////////////////
       // todo - an optimization could be, to only compute aggregates that we'll need...   //
@@ -706,7 +727,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       //////////////////////////////////////////////////////////////////////////////////////
       for(String fieldName : record.getValues().keySet())
       {
-         QFieldMetaData field = null;
+         QFieldMetaData field;
          try
          {
             //////////////////////////////////////////////////////
@@ -779,9 +800,14 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       List<QReportView> reportViews = views.stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
-         QReportDataSource dataSource    = getDataSource(view.getDataSourceName());
-         QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
-         SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
+         QReportDataSource dataSource = getDataSource(view.getDataSourceName());
+         if(dataSource == null)
+         {
+            throw new QReportingException("Data source for summary view was not found (viewName=" + view.getName() + ", dataSourceName=" + view.getDataSourceName() + ").");
+         }
+
+         QTableMetaData table         = QContext.getQInstance().getTable(dataSource.getSourceTable());
+         SummaryOutput  summaryOutput = computeSummaryRowsForView(reportInput, view, table);
 
          ExportInput exportInput = new ExportInput();
          exportInput.setReportDestination(reportInput.getReportDestination());
@@ -867,9 +893,8 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    /*******************************************************************************
     **
     *******************************************************************************/
-   private SummaryOutput computeSummaryRowsForView(ReportInput reportInput, QReportView view, QTableMetaData table) throws QReportingException, QFormulaException
+   private SummaryOutput computeSummaryRowsForView(ReportInput reportInput, QReportView view, QTableMetaData table) throws QFormulaException
    {
-      QValueFormatter              valueFormatter      = new QValueFormatter();
       QMetaDataVariableInterpreter variableInterpreter = new QMetaDataVariableInterpreter();
       variableInterpreter.addValueMap("input", reportInput.getInputValues());
       variableInterpreter.addValueMap("total", getSummaryValuesForInterpreter(totalAggregates));
@@ -941,10 +966,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       //////////////////////////////////////////////////////////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(view.getOrderByFields()))
       {
-         summaryRows.sort((o1, o2) ->
-         {
-            return summaryRowComparator(view, o1, o2);
-         });
+         summaryRows.sort((o1, o2) -> summaryRowComparator(view, o1, o2));
       }
 
       ////////////////
@@ -979,8 +1001,6 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             Serializable serializable = getValueForColumn(variableInterpreter, column);
             totalRow.setValue(column.getName(), serializable);
             thisRowValues.put(column.getName(), serializable);
-
-            String formatted = valueFormatter.formatValue(column.getDisplayFormat(), serializable);
          }
       }
 
@@ -1003,7 +1023,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             titleValues.add(variableInterpreter.interpret(titleField));
          }
 
-         title = new QValueFormatter().formatStringWithValues(view.getTitleFormat(), titleValues);
+         title = QValueFormatter.formatStringWithValues(view.getTitleFormat(), titleValues);
       }
       else if(StringUtils.hasContent(view.getTitleFormat()))
       {
