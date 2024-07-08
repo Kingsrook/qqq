@@ -84,10 +84,10 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          setSqlAndJoinsInQueryStat(sql, joinsContext);
 
          CountOutput rs = new CountOutput();
+         long mark = System.currentTimeMillis();
+
          try(Connection connection = getConnection(countInput))
          {
-            long mark = System.currentTimeMillis();
-
             statement = connection.prepareStatement(sql);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,7 +116,9 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                setQueryStatFirstResultTime();
 
             }), params);
-
+         }
+         finally
+         {
             logSQL(sql, params, mark);
          }
 

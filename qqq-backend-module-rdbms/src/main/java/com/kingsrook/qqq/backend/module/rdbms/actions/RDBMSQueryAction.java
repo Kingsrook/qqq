@@ -223,17 +223,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             }), params);
 
-            logSQL(sql, params, mark);
-
             return queryOutput;
-         }
-         catch(Exception e)
-         {
-            logSQL(sql, params, mark);
-            throw (e);
          }
          finally
          {
+            logSQL(sql, params, mark);
+
             if(actionTimeoutHelper != null)
             {
                /////////////////////////////////////////

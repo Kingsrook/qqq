@@ -179,10 +179,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       ////////////////////////////////////////////////////////////////////////////////
       // let query manager do the batch updates - note that it will internally page //
       ////////////////////////////////////////////////////////////////////////////////
-      QueryManager.executeBatchUpdate(connection, sql, values);
-      incrementStatus(updateInput, recordList.size());
-
-      logSQL(sql, values, mark);
+      try
+      {
+         QueryManager.executeBatchUpdate(connection, sql, values);
+         incrementStatus(updateInput, recordList.size());
+      }
+      finally
+      {
+         logSQL(sql, values, mark);
+      }
    }
 
 
@@ -249,10 +254,15 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          /////////////////////////////////////
          // let query manager do the update //
          /////////////////////////////////////
-         QueryManager.executeUpdate(connection, sql, params);
-         incrementStatus(updateInput, page.size());
-
-         logSQL(sql, params, mark);
+         try
+         {
+            QueryManager.executeUpdate(connection, sql, params);
+            incrementStatus(updateInput, page.size());
+         }
+         finally
+         {
+            logSQL(sql, params, mark);
+         }
       }
    }
 

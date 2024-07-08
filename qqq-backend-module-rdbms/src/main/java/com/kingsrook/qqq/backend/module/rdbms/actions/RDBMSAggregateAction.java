@@ -168,8 +168,10 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
             }), params);
          }
-
-         logSQL(sql, params, mark);
+         finally
+         {
+            logSQL(sql, params, mark);
+         }
 
          return rs;
       }
