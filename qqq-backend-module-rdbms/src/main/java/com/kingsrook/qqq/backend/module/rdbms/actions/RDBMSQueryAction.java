@@ -361,10 +361,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       {
          RDBMSBackendMetaData rdbmsBackendMetaData = (RDBMSBackendMetaData) queryInput.getBackend();
 
-         ////////////////////////////////////////////////////////////////////////////
-         // todo - remove "aurora" - it's a legacy value here for a staged rollout //
-         ////////////////////////////////////////////////////////////////////////////
-         if(RDBMSBackendMetaData.VENDOR_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || RDBMSBackendMetaData.VENDOR_AURORA_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || "aurora".equals(rdbmsBackendMetaData.getVendor()))
+         if(RDBMSBackendMetaData.VENDOR_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || RDBMSBackendMetaData.VENDOR_AURORA_MYSQL.equals(rdbmsBackendMetaData.getVendor()))
          {
             //////////////////////////////////////////////////////////////////////////////////////////////////////
             // mysql "optimization", presumably here - from Result Set section of                               //
