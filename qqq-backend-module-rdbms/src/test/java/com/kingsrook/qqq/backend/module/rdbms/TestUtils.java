@@ -399,7 +399,7 @@ public class TestUtils
          .withRightTable(TABLE_NAME_ORDER_INSTRUCTIONS)
          .withLeftTable(TABLE_NAME_ORDER)
          .withType(JoinType.MANY_TO_ONE)
-         .withJoinOn(new JoinOn("orderId", "id"))
+         .withJoinOn(new JoinOn("id", "orderId"))
       );
 
       qInstance.addPossibleValueSource(new QPossibleValueSource()
