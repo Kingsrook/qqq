@@ -378,7 +378,7 @@ public class JoinsContext
             {
                securityFieldTableAlias = matchedQueryJoin.getJoinTableOrItsAlias();
             }
-            tmpTable = instance.getTable(securityFieldTableAlias);
+            tmpTable = instance.getTable(aliasToTableNameMap.getOrDefault(securityFieldTableAlias, securityFieldTableAlias));
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // set the baseTableOrAlias for the next iteration to be this join's joinTableOrAlias //
@@ -466,8 +466,8 @@ public class JoinsContext
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QSecurityKeyType securityKeyType = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
-      boolean haveAllAccessKey = false;
+      QSecurityKeyType securityKeyType  = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+      boolean          haveAllAccessKey = false;
       if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
       {
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1118,7 +1118,7 @@ public class JoinsContext
          if(useExposedJoins)
          {
             QTableMetaData mainTable = QContext.getQInstance().getTable(mainTableName);
-            for(ExposedJoin exposedJoin : mainTable.getExposedJoins())
+            for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(mainTable.getExposedJoins()))
             {
                if(exposedJoin.getJoinTable().equals(joinTableName))
                {
@@ -1157,6 +1157,7 @@ public class JoinsContext
    {
       LOG.log(logLevel, message, null, logPairs);
    }
+
 
 
    /*******************************************************************************
