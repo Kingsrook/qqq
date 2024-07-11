@@ -1816,7 +1816,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws IOException, QException
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
@@ -1825,6 +1825,7 @@ public class QJavalinImplementation
       setupSession(context, input);
       input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
+      input.setDefaultQueryFilter(defaultFilter);
 
       if(StringUtils.hasContent(ids))
       {
@@ -1837,7 +1838,6 @@ public class QJavalinImplementation
       Map<String, Object> result = new HashMap<>();
       result.put("options", output.getResults());
       context.result(JsonUtils.toJson(result));
-
    }
 
 
