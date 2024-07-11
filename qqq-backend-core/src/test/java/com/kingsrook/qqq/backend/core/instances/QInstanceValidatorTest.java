@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
-import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -2279,7 +2278,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    // test classes for validating process steps //
    ///////////////////////////////////////////////
-   public abstract class TestAbstractClass extends AbstractTransformStep implements BackendStep
+   public abstract class TestAbstractClass extends AbstractTransformStep
    {
       public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
@@ -2291,7 +2290,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    //                                           //
    ///////////////////////////////////////////////
-   private class TestPrivateClass extends AbstractTransformStep implements BackendStep
+   private class TestPrivateClass extends AbstractTransformStep
    {
       public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
@@ -2311,7 +2310,7 @@ public class QInstanceValidatorTest extends BaseTest
    ///////////////////////////////////////////////
    //                                           //
    ///////////////////////////////////////////////
-   public class TestNoArgsConstructorClass extends AbstractTransformStep implements BackendStep
+   public class TestNoArgsConstructorClass extends AbstractTransformStep
    {
       public TestNoArgsConstructorClass(int i)
       {
