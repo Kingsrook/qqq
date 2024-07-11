@@ -190,8 +190,8 @@ To improve this programmer-interface, an inner `Builder` class exists within `St
 
 *StreamedETLWithFrontendProcess.Builder methods:*
 
-* `withName(String name) - Set the name for the process.
-* `withLabel(String label) - Set the label for the process.
+* `withName(String name)` - Set the name for the process.
+* `withLabel(String label)` - Set the label for the process.
 * `withIcon(QIcon icon)` - Set an {link-icon} to be display with the process in the UI.
 * `withExtractStepClass(Class<? extends AbstractExtractStep>)` - Define the Extract step for the process.
 If no special extraction logic is needed, `ExtractViaQuery.class` is often a reasonable default.

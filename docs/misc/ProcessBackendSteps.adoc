@@ -128,15 +128,15 @@ These steps are:
 ** The Extract step is called before the Preview, Validate, and Result screens, though for the Preview screen, it is set to only extract a small number of records (10).
 * *Transform* - a subclass of `AbstractTransformStep` - is responsible for applying the majority of the business logic of the process.
 In ETL terminology, this is the "Transform" action - which means applying some type of logical transformation an input record (found by the Extract step) to generate an output record (stored by the Load step).
-** A Transform step's `run` method will be called, potentially, multiple times, each time with a page of records in the `runBackendStepInput` parameter.
+** A Transform step's `runOnePage` method will be called, potentially, multiple times, each time with a page of records in the `runBackendStepInput` parameter.
 ** This method is responsible for adding records to the `runBackendStepOutput`, which will then be passed to the *Load* step.
 ** This class is also responsible for implementing the method `getProcessSummary`, which provides the data to the *Validate* screen.
-** The run method will generally update ProcessSummaryLine objects to facilitate this functionality.
+** The `runOnePage` method will generally update ProcessSummaryLine objects to facilitate this functionality.
 ** The Transform step is called before the Preview, Validate, and Result screens, consuming all records selected by the Extract step.
 * *Load* - a subclass of `AbstractLoadStep` - is responsible for the Load function of the ETL job.
 _A quick word on terminology - this step is actually doing what we are more likely to think of as storing data - which feels like the opposite of “loading” - but we use the name Load to keep in line with the ETL naming convention…_
 ** The Load step is ONLY called before the Result screen is presented (possibly after Preview, if the user chose to skip validation, otherwise, after validation).
-** Similar to the Transform step, the Load step's `run` method will be called potentially multiple times, with pages of records in its input.
+** Similar to the Transform step, the Load step's `runOnePage` method will be called potentially multiple times, with pages of records in its input.
 ** As such, the Load step is generally the only step where data writes should occur.
 *** e.g., a Transform step should not do any writes, as it will be called when the user is going to the Preview & Validate screens - e.g., before the user confirmed that they want to execute the action!
 ** A common pattern is that the Load step just needs to insert or update the list of records output by the Transform step, in which case the QQQ-provided `LoadViaInsertStep` or `LoadViaUpdateStep` can be used, but custom use-cases can be built as well.
