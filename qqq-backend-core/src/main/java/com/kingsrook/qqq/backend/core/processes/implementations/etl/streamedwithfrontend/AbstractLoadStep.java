@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -51,31 +52,18 @@ public abstract class AbstractLoadStep
 
 
    /*******************************************************************************
-    **
+    ** Do the load logic for one page of records
     *******************************************************************************/
-   @Deprecated
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-   {
-      runOnePage(runBackendStepInput, runBackendStepOutput);
-   }
+   public abstract void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException;
+
 
 
    /*******************************************************************************
-    ** todo - make abstract when run is deleted.
-    *******************************************************************************/
-   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-   {
-
-   }
-
-
-   /*******************************************************************************
-    ** Allow subclasses to do an action before the run is complete - before any
-    ** pages of records are passed in.
+    ** Allow subclasses to do an action before any pages of records are processed.
     *******************************************************************************/
    public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      this.session = runBackendStepInput.getSession();
+      this.session = QContext.getQSession();
    }
 
 
