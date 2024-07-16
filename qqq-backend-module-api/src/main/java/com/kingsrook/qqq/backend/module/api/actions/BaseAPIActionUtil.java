@@ -35,6 +35,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -64,6 +65,7 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -87,6 +89,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -117,8 +120,37 @@ public class BaseAPIActionUtil
 
 
 
+   /***************************************************************************
+    ** enum of which HTTP Method the backend uses for Updates.
+    ***************************************************************************/
    public enum UpdateHttpMethod
-   {PUT, POST}
+   {
+      PUT(HttpPut::new),
+      POST(HttpPost::new),
+      PATCH(HttpPatch::new);
+
+      private Supplier<HttpEntityEnclosingRequestBase> httpEntitySupplier;
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      UpdateHttpMethod(Supplier<HttpEntityEnclosingRequestBase> httpEnttySupplier)
+      {
+         this.httpEntitySupplier = httpEnttySupplier;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public HttpEntityEnclosingRequestBase newRequest()
+      {
+         return (this.httpEntitySupplier.get());
+      }
+   }
 
 
 
@@ -347,7 +379,7 @@ public class BaseAPIActionUtil
             {
                String                         paramString = buildQueryStringForUpdate(table, recordList);
                String                         url         = buildTableUrl(table) + paramString;
-               HttpEntityEnclosingRequestBase request     = getUpdateMethod().equals(UpdateHttpMethod.PUT) ? new HttpPut(url) : new HttpPost(url);
+               HttpEntityEnclosingRequestBase request     = getUpdateMethod().newRequest();
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);
@@ -685,54 +717,19 @@ public class BaseAPIActionUtil
     *******************************************************************************/
    public void setupAuthorizationInRequest(HttpRequestBase request) throws QException
    {
-      ///////////////////////////////////////////////////////////////////////////////////
-      // if backend specifies that it uses variants, look for that data in the session //
-      ///////////////////////////////////////////////////////////////////////////////////
-      if(backendMetaData.getUsesVariants())
-      {
-         QSession session = QContext.getQSession();
-         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
-         {
-            throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
-         }
-
-         Serializable variantId = session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
-         GetInput     getInput  = new GetInput();
-         getInput.setShouldMaskPasswords(false);
-         getInput.setTableName(backendMetaData.getVariantOptionsTableName());
-         getInput.setPrimaryKey(variantId);
-         GetOutput getOutput = new GetAction().execute(getInput);
-
-         QRecord record = getOutput.getRecord();
-         if(record == null)
-         {
-            throw (new QException("Could not find Backend Variant in table " + backendMetaData.getVariantOptionsTableName() + " with id '" + variantId + "'"));
-         }
-
-         if(backendMetaData.getAuthorizationType().equals(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD))
-         {
-            request.setHeader("Authorization", getBasicAuthenticationHeader(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
-         }
-         else if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_HEADER))
-         {
-            request.setHeader("API-Key", record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
-         }
-         else
-         {
-            throw (new IllegalArgumentException("Unexpected variant authorization type specified: " + backendMetaData.getAuthorizationType()));
-         }
-         return;
-      }
-
-      ///////////////////////////////////////////////////////////////////////////////////////////
-      // if not using variants, the authorization data will be in the backend meta data object //
-      ///////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////
+      // update the request based on the authorization type being used //
+      ///////////////////////////////////////////////////////////////////
       switch(backendMetaData.getAuthorizationType())
       {
-         case BASIC_AUTH_API_KEY -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getApiKey()));
-         case BASIC_AUTH_USERNAME_PASSWORD -> request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getUsername(), backendMetaData.getPassword()));
-         case API_KEY_HEADER -> request.setHeader("API-Key", backendMetaData.getApiKey());
-         case API_TOKEN -> request.setHeader("Authorization", "Token " + backendMetaData.getApiKey());
+         case BASIC_AUTH_API_KEY -> request.setHeader("Authorization", getBasicAuthenticationHeader(getApiKey()));
+         case BASIC_AUTH_USERNAME_PASSWORD ->
+         {
+            Pair<String, String> usernameAndPassword = getUsernameAndPassword();
+            request.setHeader("Authorization", getBasicAuthenticationHeader(usernameAndPassword.getA(), usernameAndPassword.getB()));
+         }
+         case API_KEY_HEADER -> request.setHeader("API-Key", getApiKey());
+         case API_TOKEN -> request.setHeader("Authorization", "Token " + getApiKey());
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM ->
          {
@@ -740,7 +737,7 @@ public class BaseAPIActionUtil
             {
                String uri = request.getURI().toString();
                uri += (uri.contains("?") ? "&" : "?");
-               uri += backendMetaData.getApiKeyQueryParamName() + "=" + backendMetaData.getApiKey();
+               uri += backendMetaData.getApiKeyQueryParamName() + "=" + getApiKey();
                request.setURI(new URI(uri));
             }
             catch(URISyntaxException e)
@@ -748,12 +745,81 @@ public class BaseAPIActionUtil
                throw (new QException("Error setting authorization query parameter", e));
             }
          }
-         case CUSTOM ->
-         {
-            handleCustomAuthorization(request);
-         }
+         case CUSTOM -> handleCustomAuthorization(request);
          default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected String getApiKey() throws QException
+   {
+      if(backendMetaData.getUsesVariants())
+      {
+         QRecord record = getVariantRecord();
+         return (record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+      }
+
+      return (backendMetaData.getApiKey());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected Pair<String, String> getUsernameAndPassword() throws QException
+   {
+      if(backendMetaData.getUsesVariants())
+      {
+         QRecord record = getVariantRecord();
+         return (Pair.of(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+      }
+
+      return (Pair.of(backendMetaData.getUsername(), backendMetaData.getPassword()));
+   }
+
+
+
+   /*******************************************************************************
+    ** For backends that use variants, look up the variant record (in theory, based
+    ** on an id in the session's backend variants map, then fetched from the backend's
+    ** variant options table.
+    *******************************************************************************/
+   protected QRecord getVariantRecord() throws QException
+   {
+      Serializable variantId = getVariantId();
+      GetInput     getInput  = new GetInput();
+      getInput.setShouldMaskPasswords(false);
+      getInput.setTableName(backendMetaData.getVariantOptionsTableName());
+      getInput.setPrimaryKey(variantId);
+      GetOutput getOutput = new GetAction().execute(getInput);
+
+      QRecord record = getOutput.getRecord();
+      if(record == null)
+      {
+         throw (new QException("Could not find Backend Variant in table " + backendMetaData.getVariantOptionsTableName() + " with id '" + variantId + "'"));
+      }
+      return record;
+   }
+
+
+
+   /*******************************************************************************
+    ** Get the variant id from the session for the backend.
+    *******************************************************************************/
+   protected Serializable getVariantId() throws QException
+   {
+      QSession session = QContext.getQSession();
+      if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+      {
+         throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
+      }
+      Serializable variantId = session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+      return variantId;
    }
 
 
@@ -761,36 +827,31 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getOAuth2Token() throws OAuthCredentialsException
+   public String getOAuth2Token() throws OAuthCredentialsException, QException
    {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // define the key that will be used in the backend's customValues map, to stash the access token.                   //
+      // for non-variant backends, this is just a constant string.  But for variant-backends, append the variantId to it. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      String accessTokenKey = "accessToken";
+      if(backendMetaData.getUsesVariants())
+      {
+         Serializable variantId = getVariantId();
+         accessTokenKey = accessTokenKey + ":" + variantId;
+      }
+
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check for the access token in the backend meta data.  if it's not there, then issue a request for a token. //
       // this is not generally meant to be put in the meta data by the app programmer - rather, we're just using    //
       // it as a "cheap & easy" way to "cache" the token within our process's memory...                             //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      String  accessToken            = ValueUtils.getValueAsString(backendMetaData.getCustomValue("accessToken"));
-      Boolean setCredentialsInHeader = BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(backendMetaData.getCustomValue("setCredentialsInHeader")));
+      String accessToken = ValueUtils.getValueAsString(backendMetaData.getCustomValue(accessTokenKey));
 
       if(!StringUtils.hasContent(accessToken))
       {
-         String fullURL  = backendMetaData.getBaseUrl() + "oauth/token";
-         String postBody = "grant_type=client_credentials";
-
-         if(!setCredentialsInHeader)
-         {
-            postBody += "&client_id=" + backendMetaData.getClientId() + "&client_secret=" + backendMetaData.getClientSecret();
-         }
-
          try(CloseableHttpClient client = HttpClients.custom().setConnectionManager(new PoolingHttpClientConnectionManager()).build())
          {
-            HttpPost request = new HttpPost(fullURL);
-            request.setEntity(new StringEntity(postBody, getCharsetForEntity()));
-
-            if(setCredentialsInHeader)
-            {
-               request.setHeader("Authorization", getBasicAuthenticationHeader(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
-            }
-            request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+            HttpRequestBase request = createOAuth2TokenRequest();
 
             HttpResponse response     = executeOAuthTokenRequest(client, request);
             int          statusCode   = response.getStatusLine().getStatusCode();
@@ -808,7 +869,7 @@ public class BaseAPIActionUtil
             ///////////////////////////////////////////////////////////////////////////////////////////////////
             // stash the access token in the backendMetaData, from which it will be used for future requests //
             ///////////////////////////////////////////////////////////////////////////////////////////////////
-            backendMetaData.withCustomValue("accessToken", accessToken);
+            backendMetaData.withCustomValue(accessTokenKey, accessToken);
          }
          catch(OAuthCredentialsException oce)
          {
@@ -827,6 +888,53 @@ public class BaseAPIActionUtil
 
 
 
+   /***************************************************************************
+    ** For doing OAuth2 authentication, create a request for a token.
+    ***************************************************************************/
+   protected HttpRequestBase createOAuth2TokenRequest() throws QException
+   {
+      String fullURL  = backendMetaData.getBaseUrl() + "oauth/token";
+      String postBody = "grant_type=client_credentials";
+
+      Pair<String, String> clientIdAndSecret = getClientIdAndSecret();
+      String               clientId          = clientIdAndSecret.getA();
+      String               clientSecret      = clientIdAndSecret.getB();
+
+      Boolean setCredentialsInHeader = BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(backendMetaData.getCustomValue("setCredentialsInHeader")));
+      if(!setCredentialsInHeader)
+      {
+         postBody += "&client_id=" + clientId + "&client_secret=" + clientSecret;
+      }
+
+      HttpPost request = new HttpPost(fullURL);
+      request.setEntity(new StringEntity(postBody, getCharsetForEntity()));
+
+      if(setCredentialsInHeader)
+      {
+         request.setHeader("Authorization", getBasicAuthenticationHeader(clientId, clientSecret));
+      }
+      request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+      return request;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected Pair<String, String> getClientIdAndSecret() throws QException
+   {
+      if(backendMetaData.getUsesVariants())
+      {
+         QRecord record = getVariantRecord();
+         return (Pair.of(record.getValueString(backendMetaData.getVariantOptionsTableClientIdField()), record.getValueString(backendMetaData.getVariantOptionsTableClientSecretField())));
+      }
+
+      return (Pair.of(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
+   }
+
+
+
    /*******************************************************************************
     ** Let a subclass change what charset to use for entities (bodies) being posted/put/etc.
     *******************************************************************************/
@@ -840,6 +948,18 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     ** one-line method, factored out so mock/tests can override
     *******************************************************************************/
+   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpRequestBase request) throws IOException
+   {
+      return client.execute(request);
+   }
+
+
+
+   /*******************************************************************************
+    ** one-line method, factored out so mock/tests can override
+    ** Deprecated, in favor of more generic overload that takes HttpRequestBase
+    *******************************************************************************/
+   @Deprecated
    protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
    {
       return client.execute(request);
