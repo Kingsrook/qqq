@@ -380,6 +380,8 @@ public class BaseAPIActionUtil
                String                         paramString = buildQueryStringForUpdate(table, recordList);
                String                         url         = buildTableUrl(table) + paramString;
                HttpEntityEnclosingRequestBase request     = getUpdateMethod().newRequest();
+
+               request.setURI(new URI(url));
                request.setEntity(recordsToEntity(table, recordList));
 
                QHttpResponse response = makeRequest(table, request);
