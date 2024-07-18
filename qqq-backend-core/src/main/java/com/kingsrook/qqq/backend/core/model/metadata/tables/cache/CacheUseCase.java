@@ -32,6 +32,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
  *******************************************************************************/
 public class CacheUseCase
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum Type
    {
       PRIMARY_KEY_TO_PRIMARY_KEY, // e.g., the primary key in the cache table equals the primary key in the source table.

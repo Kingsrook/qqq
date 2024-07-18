@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 
-@SuppressWarnings({ "checkstyle:javadoc", "DanglingJavadoc" })
 /*******************************************************************************
  ** Map.of is "great", but annoying because it makes unmodifiable maps, and it
  ** NPE's on nulls...  So, replace it with this, which returns HashMaps (or maps

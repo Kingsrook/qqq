@@ -28,6 +28,9 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
  *******************************************************************************/
 public class AlertData extends QWidgetData
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum AlertType
    {
       ERROR,

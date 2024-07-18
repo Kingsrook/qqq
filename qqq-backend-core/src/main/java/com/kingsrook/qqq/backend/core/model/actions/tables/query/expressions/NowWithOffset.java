@@ -42,6 +42,9 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum Operator
    {PLUS, MINUS}
 
