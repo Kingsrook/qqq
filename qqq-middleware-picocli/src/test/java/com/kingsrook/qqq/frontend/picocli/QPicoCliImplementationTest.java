@@ -552,7 +552,8 @@ class QPicoCliImplementationTest
     *******************************************************************************/
    private void assertRowValueById(String tableName, String columnName, String value, Integer id) throws Exception
    {
-      TestUtils.runTestSql("SELECT " + columnName + " FROM " + tableName + " WHERE id=" + id, (rs -> {
+      TestUtils.runTestSql("SELECT " + columnName + " FROM " + tableName + " WHERE id=" + id, (rs ->
+      {
          if(rs.next())
          {
             assertEquals(value, rs.getString(1));
@@ -590,7 +591,8 @@ class QPicoCliImplementationTest
       JSONObject deleteResult = JsonUtils.toJSONObject(testOutput.getOutput());
       assertNotNull(deleteResult);
       assertEquals(2, deleteResult.getInt("deletedRecordCount"));
-      TestUtils.runTestSql("SELECT id FROM person", (rs -> {
+      TestUtils.runTestSql("SELECT id FROM person", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {

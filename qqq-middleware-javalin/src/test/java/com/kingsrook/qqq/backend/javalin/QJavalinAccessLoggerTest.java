@@ -136,13 +136,12 @@ class QJavalinAccessLoggerTest
       QInstance qInstance = TestUtils.defineInstance();
       new QJavalinImplementation(qInstance, new QJavalinMetaData()
          .withLoggerDisabled(false)
-         .withLogFilter(logEntry ->
-            switch(logEntry.logType())
-            {
-               case START, PROCESS_SUMMARY -> false;
-               case END_SUCCESS, END_SUCCESS_SLOW -> true;
-               case END_FAIL -> logEntry.actionName().startsWith("yes");
-            }));
+         .withLogFilter(logEntry -> switch(logEntry.logType())
+         {
+            case START, PROCESS_SUMMARY -> false;
+            case END_SUCCESS, END_SUCCESS_SLOW -> true;
+            case END_FAIL -> logEntry.actionName().startsWith("yes");
+         }));
 
       System.out.println("shouldn't log");
       QJavalinAccessLogger.logStart("test"); // shouldn't log

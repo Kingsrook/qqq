@@ -95,8 +95,7 @@ public class TestUtils
          .withAuthorizationType(AuthorizationType.API_KEY_HEADER)
          .withBaseUrl("http://localhost:9999/mock")
          .withContentType("application/json")
-         .withActionUtil(new QCodeReference(MockApiActionUtils.class))
-      );
+         .withActionUtil(new QCodeReference(MockApiActionUtils.class)));
    }
 
 
@@ -115,8 +114,7 @@ public class TestUtils
          .withBackendDetails(new APITableBackendDetails()
             .withTablePath("mock")
             .withTableWrapperObjectName("mocks")
-         )
-      );
+         ));
    }
 
 
@@ -147,8 +145,7 @@ public class TestUtils
          .withAuthorizationType(AuthorizationType.BASIC_AUTH_API_KEY)
          .withBaseUrl("https://api.easypost.com/v2/")
          .withContentType("application/json")
-         .withActionUtil(new QCodeReference(EasyPostUtils.class))
-      );
+         .withActionUtil(new QCodeReference(EasyPostUtils.class)));
    }
 
 
@@ -170,8 +167,7 @@ public class TestUtils
          .withBackendDetails(new APITableBackendDetails()
             .withTablePath("variant")
             .withTableWrapperObjectName("variant")
-         )
-      );
+         ));
    }
 
 
@@ -191,7 +187,6 @@ public class TestUtils
          .withBackendDetails(new APITableBackendDetails()
             .withTablePath("trackers")
             .withTableWrapperObjectName("tracker")
-         )
-      );
+         ));
    }
 }

@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class CaseChangeBehaviorTest extends BaseTest
 {
-   public static final String FIELD = "firstName" ;
+   public static final String FIELD = "firstName";
 
 
 

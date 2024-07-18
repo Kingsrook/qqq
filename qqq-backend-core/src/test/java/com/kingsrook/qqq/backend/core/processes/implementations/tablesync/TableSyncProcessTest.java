@@ -54,8 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 class TableSyncProcessTest extends BaseTest
 {
-   String PROCESS_NAME           = "testSyncProcess";
-   String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
+   private static final String PROCESS_NAME           = "testSyncProcess";
+   private static final String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
 
 
 

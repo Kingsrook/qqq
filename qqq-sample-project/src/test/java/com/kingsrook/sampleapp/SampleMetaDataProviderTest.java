@@ -117,7 +117,6 @@ public class SampleMetaDataProviderTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
    public static void primeTestDatabase(String sqlFileName) throws Exception
    {
       ConnectionManager connectionManager = new ConnectionManager();
@@ -125,7 +124,7 @@ public class SampleMetaDataProviderTest
       {
          InputStream primeTestDatabaseSqlStream = SampleMetaDataProviderTest.class.getResourceAsStream("/" + sqlFileName);
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = IOUtils.readLines(primeTestDatabaseSqlStream);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))
@@ -168,8 +167,8 @@ public class SampleMetaDataProviderTest
     *******************************************************************************/
    private File copyTestFileToRandomNameUnderTable(QTableMetaData fedExTable) throws IOException
    {
-      File destinationDir = new File(SampleMetaDataProvider.defineFilesystemBackend().getBasePath() + File.separator +
-         ((FilesystemTableBackendDetails) fedExTable.getBackendDetails()).getBasePath());
+      File destinationDir = new File(SampleMetaDataProvider.defineFilesystemBackend().getBasePath() + File.separator
+         + ((FilesystemTableBackendDetails) fedExTable.getBackendDetails()).getBasePath());
       destinationDir.mkdirs();
       File destinationFile = new File(destinationDir.getAbsolutePath() + File.separator + UUID.randomUUID());
 

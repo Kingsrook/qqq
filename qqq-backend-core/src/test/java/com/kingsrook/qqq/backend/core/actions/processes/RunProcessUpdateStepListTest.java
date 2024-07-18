@@ -51,16 +51,16 @@ public class RunProcessUpdateStepListTest extends BaseTest
 {
    private static final String PROCESS_NAME = RunProcessUpdateStepListTest.class.getSimpleName();
 
-   private final static String STEP_START = "start";
-   private final static String STEP_A     = "a";
-   private final static String STEP_B     = "b";
-   private final static String STEP_C     = "c";
-   private final static String STEP_1     = "1";
-   private final static String STEP_2     = "2";
-   private final static String STEP_3     = "3";
-   private final static String STEP_END   = "end";
+   private static final String STEP_START = "start";
+   private static final String STEP_A     = "a";
+   private static final String STEP_B     = "b";
+   private static final String STEP_C     = "c";
+   private static final String STEP_1     = "1";
+   private static final String STEP_2     = "2";
+   private static final String STEP_3     = "3";
+   private static final String STEP_END   = "end";
 
-   private final static List<String> LETTERS_STEP_LIST = List.of(
+   private static final List<String> LETTERS_STEP_LIST = List.of(
       STEP_START,
       STEP_A,
       STEP_B,
@@ -68,7 +68,7 @@ public class RunProcessUpdateStepListTest extends BaseTest
       STEP_END
    );
 
-   private final static List<String> NUMBERS_STEP_LIST = List.of(
+   private static final List<String> NUMBERS_STEP_LIST = List.of(
       STEP_START,
       STEP_1,
       STEP_2,

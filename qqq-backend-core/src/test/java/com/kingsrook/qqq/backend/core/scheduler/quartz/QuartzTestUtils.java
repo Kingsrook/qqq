@@ -35,7 +35,7 @@ import org.quartz.SchedulerException;
  *******************************************************************************/
 public class QuartzTestUtils
 {
-   public final static String QUARTZ_SCHEDULER_NAME = "TestQuartzScheduler";
+   public static final String QUARTZ_SCHEDULER_NAME = "TestQuartzScheduler";
 
 
 

@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 public class S3BackendModuleTest extends BaseS3Test
 {
-   private final String PATH_THAT_WONT_EXIST = "some/path/that/wont/exist";
+   private static final String PATH_THAT_WONT_EXIST = "some/path/that/wont/exist";
 
 
 

@@ -53,6 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *******************************************************************************/
 class QJavalinScriptsHandlerTest extends QJavalinTestBase
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @BeforeEach
    public void beforeEach() throws Exception
    {

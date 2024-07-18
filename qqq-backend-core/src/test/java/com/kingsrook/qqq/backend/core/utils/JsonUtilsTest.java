@@ -93,6 +93,9 @@ class JsonUtilsTest extends BaseTest
     *******************************************************************************/
    private static class LooksLikeAnEntityButJustThrowsInItsGetterMethod
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public String getValue()
       {
          throw new IllegalStateException("Test");
