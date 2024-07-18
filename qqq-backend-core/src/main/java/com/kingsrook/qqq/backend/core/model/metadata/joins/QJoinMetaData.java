@@ -33,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 /*******************************************************************************
  ** Definition of how 2 tables join together within a QQQ Instance.
  *******************************************************************************/
-public class QJoinMetaData implements TopLevelMetaDataInterface
+public class QJoinMetaData implements TopLevelMetaDataInterface, Cloneable
 {
    private String   name;
    private JoinType type;
@@ -58,6 +58,44 @@ public class QJoinMetaData implements TopLevelMetaDataInterface
          .withType(type.flip())
          .withJoinOns(joinOns.stream().map(JoinOn::flip).toList()));
       // todo - what about order bys??
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QJoinMetaData clone()
+   {
+      try
+      {
+         QJoinMetaData clone = (QJoinMetaData) super.clone();
+
+         if(joinOns != null)
+         {
+            clone.joinOns = new ArrayList<>();
+            for(JoinOn joinOn : joinOns)
+            {
+               clone.joinOns.add(joinOn.clone());
+            }
+         }
+
+         if(orderBys != null)
+         {
+            clone.orderBys = new ArrayList<>();
+            for(QFilterOrderBy orderBy : orderBys)
+            {
+               clone.orderBys.add(orderBy.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 

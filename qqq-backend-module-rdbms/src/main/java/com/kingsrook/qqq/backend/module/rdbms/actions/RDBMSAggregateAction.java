@@ -116,7 +116,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             actionTimeoutHelper = new ActionTimeoutHelper(aggregateInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //
@@ -168,8 +168,10 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
             }), params);
          }
-
-         logSQL(sql, params, mark);
+         finally
+         {
+            logSQL(sql, params, mark);
+         }
 
          return rs;
       }

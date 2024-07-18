@@ -245,31 +245,64 @@ public abstract class AbstractRDBMSAction
     *******************************************************************************/
    protected String makeFromClause(QInstance instance, String tableName, JoinsContext joinsContext, List<Serializable> params)
    {
+      //////////////////////////////////////////////////////////////////////
+      // start with the main table - un-aliased (well, aliased as itself) //
+      //////////////////////////////////////////////////////////////////////
       StringBuilder rs = new StringBuilder(escapeIdentifier(getTableName(instance.getTable(tableName))) + " AS " + escapeIdentifier(tableName));
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // sort the query joins from the main table "outward"...                                              //
+      // this might not be perfect, e.g., for cases where what we actually might need is a tree of joins... //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<QueryJoin> queryJoins = sortQueryJoinsForFromClause(tableName, joinsContext.getQueryJoins());
+
+      ////////////////////////////////////////////////////////
+      // iterate over joins, adding to the from clause (rs) //
+      ////////////////////////////////////////////////////////
       for(QueryJoin queryJoin : queryJoins)
       {
-         QTableMetaData joinTable        = instance.getTable(queryJoin.getJoinTable());
-         String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
+         QTableMetaData joinTable            = instance.getTable(queryJoin.getJoinTable());
+         String         joinTableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
 
+         ////////////////////////////////////////////////////////
+         // add the `<type> JOIN table AS alias` bit to the rs //
+         ////////////////////////////////////////////////////////
          rs.append(" ").append(queryJoin.getType()).append(" JOIN ")
             .append(escapeIdentifier(getTableName(joinTable)))
-            .append(" AS ").append(escapeIdentifier(tableNameOrAlias));
+            .append(" AS ").append(escapeIdentifier(joinTableNameOrAlias));
 
-         ////////////////////////////////////////////////////////////
-         // find the join in the instance, to set the 'on' clause  //
-         ////////////////////////////////////////////////////////////
+         ////////////////////////////////////////////////////////////////////////////////
+         // find the join in the instance, for building the ON clause                  //
+         // append each sub-clause (condition) into a list, for later joining with AND //
+         ////////////////////////////////////////////////////////////////////////////////
          List<String>  joinClauseList = new ArrayList<>();
          String        baseTableName  = Objects.requireNonNullElse(joinsContext.resolveTableNameOrAliasToTableName(queryJoin.getBaseTableOrAlias()), tableName);
          QJoinMetaData joinMetaData   = Objects.requireNonNull(queryJoin.getJoinMetaData(), () -> "Could not find a join between tables [" + baseTableName + "][" + queryJoin.getJoinTable() + "]");
 
+         //////////////////////////////////////////////////
+         // loop over join-ons (e.g., multi-column join) //
+         //////////////////////////////////////////////////
          for(JoinOn joinOn : joinMetaData.getJoinOns())
          {
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // figure out if the join needs flipped.  We want its left table to equal the queryJoin's base table. //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////
             QTableMetaData leftTable  = instance.getTable(joinMetaData.getLeftTable());
             QTableMetaData rightTable = instance.getTable(joinMetaData.getRightTable());
 
+            if(!joinMetaData.getLeftTable().equals(baseTableName))
+            {
+               joinOn = joinOn.flip();
+               QTableMetaData tmpTable = leftTable;
+               leftTable = rightTable;
+               rightTable = tmpTable;
+            }
+
+            ////////////////////////////////////////////////////////////
+            // get the table-names-or-aliases to use in the ON clause //
+            ////////////////////////////////////////////////////////////
             String baseTableOrAlias = queryJoin.getBaseTableOrAlias();
+            String joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
             if(baseTableOrAlias == null)
             {
                baseTableOrAlias = leftTable.getName();
@@ -277,15 +310,6 @@ public abstract class AbstractRDBMSAction
                {
                   throw (new RuntimeException("Could not find a table or alias [" + baseTableOrAlias + "] in query.  May need to be more specific setting up QueryJoins."));
                }
-            }
-
-            String joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
-            if(!joinMetaData.getLeftTable().equals(baseTableName))
-            {
-               joinOn = joinOn.flip();
-               QTableMetaData tmpTable = leftTable;
-               leftTable = rightTable;
-               rightTable = tmpTable;
             }
 
             joinClauseList.add(escapeIdentifier(baseTableOrAlias)
@@ -938,6 +962,7 @@ public abstract class AbstractRDBMSAction
       {
          try
          {
+            params = Objects.requireNonNullElse(params, Collections.emptyList());
             params = params.size() <= 100 ? params : params.subList(0, 99);
 
             /////////////////////////////////////////////////////////////////////////////

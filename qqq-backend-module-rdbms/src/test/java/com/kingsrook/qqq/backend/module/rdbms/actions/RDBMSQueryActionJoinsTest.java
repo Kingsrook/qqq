@@ -54,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 /*******************************************************************************
@@ -69,10 +70,6 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
-
-      AbstractRDBMSAction.setLogSQL(true);
-      AbstractRDBMSAction.setLogSQLReformat(true);
-      AbstractRDBMSAction.setLogSQLOutput("system.out");
    }
 
 
@@ -909,7 +906,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
-   void testMultipleReversedDirectionJoinsBetweenSameTables() throws QException
+   void testMultipleReversedDirectionJoinsBetweenSameTablesAllAccessKey() throws QException
    {
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
 
@@ -988,6 +985,32 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       // for order 2, as it has an item from a different store             //
       ///////////////////////////////////////////////////////////////////////
       assertThat(records).allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5));
+   }
+
+
+
+   /*******************************************************************************
+    ** We had, at one time, a bug where, for tables with 2 joins between each other,
+    ** an ON clause could get written using the wrong table name in one part.
+    **
+    ** With that bug, this QueryAction.execute would throw an SQL Exception.
+    **
+    ** So this test, just makes sure that no such exception gets thrown.
+    *******************************************************************************/
+   @Test
+   void testFlippedJoinForOnClause() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS);
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertFalse(queryOutput.getRecords().isEmpty());
+
+      ////////////////////////////////////
+      // if no exception, then we pass. //
+      ////////////////////////////////////
    }
 
 

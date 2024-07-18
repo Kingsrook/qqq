@@ -129,6 +129,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
             .withRenderedReportStatusId(RenderedReportStatus.RUNNING.getId())
             .withReportFormat(ReportFormatPossibleValueEnum.valueOf(reportFormat.name()).getPossibleValueId())
          )).getRecords().get(0);
+         runBackendStepOutput.addValue("renderedReportId", renderedReportRecord.getValue("id"));
 
          ////////////////////////////////////////////////////////////////////////////////////////////
          // convert the report record to report meta-data, which the GenerateReportAction works on //

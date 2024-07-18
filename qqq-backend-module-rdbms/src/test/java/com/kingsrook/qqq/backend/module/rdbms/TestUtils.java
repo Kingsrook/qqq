@@ -273,6 +273,7 @@ public class TestUtils
             .withJoinNameChain(List.of("orderInstructionsJoinOrder")))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
          .withField(new QFieldMetaData("instructions", QFieldType.STRING))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER).withJoinPath(List.of("orderInstructionsJoinOrder")))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
@@ -395,10 +396,10 @@ public class TestUtils
 
       qInstance.addJoin(new QJoinMetaData()
          .withName("orderInstructionsJoinOrder")
-         .withLeftTable(TABLE_NAME_ORDER_INSTRUCTIONS)
-         .withRightTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_ORDER_INSTRUCTIONS)
+         .withLeftTable(TABLE_NAME_ORDER)
          .withType(JoinType.MANY_TO_ONE)
-         .withJoinOn(new JoinOn("orderId", "id"))
+         .withJoinOn(new JoinOn("id", "orderId"))
       );
 
       qInstance.addPossibleValueSource(new QPossibleValueSource()

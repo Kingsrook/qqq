@@ -212,12 +212,15 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
          //    LOG.debug("rowCount 0 trying to delete [" + tableName + "][" + primaryKey + "]");
          //    deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError("Record was not deleted (but no error was given from the database)"));
          // }
-         logSQL(sql, List.of(primaryKey), mark);
       }
       catch(Exception e)
       {
          LOG.debug("Exception trying to delete [" + tableName + "][" + primaryKey + "]", e);
          deleteOutput.addRecordWithError(new QRecord(table, primaryKey).withError(new SystemErrorStatusMessage("Record was not deleted: " + e.getMessage())));
+      }
+      finally
+      {
+         logSQL(sql, List.of(primaryKey), mark);
       }
    }
 
@@ -228,13 +231,14 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
     *******************************************************************************/
    public void doDeleteList(Connection connection, QTableMetaData table, List<Serializable> primaryKeys, DeleteOutput deleteOutput) throws QException
    {
+      long   mark = System.currentTimeMillis();
+      String sql  = null;
+
       try
       {
-         long mark = System.currentTimeMillis();
-
          String tableName      = getTableName(table);
          String primaryKeyName = getColumnName(table.getField(table.getPrimaryKeyField()));
-         String sql = "DELETE FROM "
+         sql = "DELETE FROM "
             + escapeIdentifier(tableName)
             + " WHERE "
             + escapeIdentifier(primaryKeyName)
@@ -246,12 +250,14 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
          Integer rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKeys);
          deleteOutput.addToDeletedRecordCount(rowCount);
-
-         logSQL(sql, primaryKeys, mark);
       }
       catch(Exception e)
       {
          throw new QException("Error executing delete: " + e.getMessage(), e);
+      }
+      finally
+      {
+         logSQL(sql, primaryKeys, mark);
       }
    }
 
@@ -282,12 +288,14 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       {
          int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, params);
          deleteOutput.setDeletedRecordCount(rowCount);
-
-         logSQL(sql, params, mark);
       }
       catch(Exception e)
       {
          throw new QException("Error executing delete with filter: " + e.getMessage(), e);
+      }
+      finally
+      {
+         logSQL(sql, params, mark);
       }
    }
 }

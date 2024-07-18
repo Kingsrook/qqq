@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -232,6 +233,28 @@ public class QQueryFilter implements Serializable, Cloneable
    public QQueryFilter withCriteria(QFilterCriteria qFilterCriteria)
    {
       addCriteria(qFilterCriteria);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent method to add a new criteria
+    *******************************************************************************/
+   public QQueryFilter withCriteria(String fieldName, QCriteriaOperator operator, Collection<? extends Serializable> values)
+   {
+      addCriteria(new QFilterCriteria(fieldName, operator, values));
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** fluent method to add a new criteria
+    *******************************************************************************/
+   public QQueryFilter withCriteria(String fieldName, QCriteriaOperator operator, Serializable... values)
+   {
+      addCriteria(new QFilterCriteria(fieldName, operator, values));
       return (this);
    }
 

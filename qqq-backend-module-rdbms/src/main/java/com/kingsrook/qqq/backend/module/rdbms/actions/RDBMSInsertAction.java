@@ -57,8 +57,12 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
       InsertOutput   rs    = new InsertOutput();
       QTableMetaData table = insertInput.getTable();
 
-      Connection connection = null;
+      Connection connection            = null;
       boolean    needToCloseConnection = false;
+
+      StringBuilder sql    = null;
+      List<Object>  params = null;
+      Long          mark   = null;
 
       try
       {
@@ -88,10 +92,10 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
          for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
          {
-            String        tableName   = escapeIdentifier(getTableName(table));
-            StringBuilder sql         = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
-            List<Object>  params      = new ArrayList<>();
-            int           recordIndex = 0;
+            String tableName = escapeIdentifier(getTableName(table));
+            sql = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
+            params = new ArrayList<>();
+            int recordIndex = 0;
 
             //////////////////////////////////////////////////////
             // for each record in the page:                     //
@@ -133,7 +137,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                continue;
             }
 
-            Long mark = System.currentTimeMillis();
+            mark = System.currentTimeMillis();
 
             ///////////////////////////////////////////////////////////
             // execute the insert, then foreach record in the input, //
@@ -163,6 +167,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
       }
       catch(Exception e)
       {
+         logSQL(sql, params, mark);
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
       finally

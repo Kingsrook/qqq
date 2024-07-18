@@ -170,7 +170,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //
@@ -223,17 +223,12 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
             }), params);
 
-            logSQL(sql, params, mark);
-
             return queryOutput;
-         }
-         catch(Exception e)
-         {
-            logSQL(sql, params, mark);
-            throw (e);
          }
          finally
          {
+            logSQL(sql, params, mark);
+
             if(actionTimeoutHelper != null)
             {
                /////////////////////////////////////////
@@ -366,10 +361,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       {
          RDBMSBackendMetaData rdbmsBackendMetaData = (RDBMSBackendMetaData) queryInput.getBackend();
 
-         ////////////////////////////////////////////////////////////////////////////
-         // todo - remove "aurora" - it's a legacy value here for a staged rollout //
-         ////////////////////////////////////////////////////////////////////////////
-         if(RDBMSBackendMetaData.VENDOR_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || RDBMSBackendMetaData.VENDOR_AURORA_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || "aurora".equals(rdbmsBackendMetaData.getVendor()))
+         if(RDBMSBackendMetaData.VENDOR_MYSQL.equals(rdbmsBackendMetaData.getVendor()) || RDBMSBackendMetaData.VENDOR_AURORA_MYSQL.equals(rdbmsBackendMetaData.getVendor()))
          {
             //////////////////////////////////////////////////////////////////////////////////////////////////////
             // mysql "optimization", presumably here - from Result Set section of                               //

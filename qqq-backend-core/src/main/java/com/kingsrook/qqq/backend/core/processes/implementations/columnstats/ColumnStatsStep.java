@@ -136,29 +136,11 @@ public class ColumnStatsStep implements BackendStep
             filter = new QQueryFilter();
          }
 
-         QueryJoin      queryJoin = null;
-         QTableMetaData table     = QContext.getQInstance().getTable(tableName);
-         QFieldMetaData field     = null;
-         if(fieldName.contains("."))
-         {
-            String[] parts = fieldName.split("\\.", 2);
-            for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
-            {
-               if(exposedJoin.getJoinTable().equals(parts[0]))
-               {
-                  field = QContext.getQInstance().getTable(exposedJoin.getJoinTable()).getField(parts[1]);
-                  queryJoin = new QueryJoin()
-                     .withJoinTable(exposedJoin.getJoinTable())
-                     .withSelect(true)
-                     .withType(QueryJoin.Type.INNER);
-                  break;
-               }
-            }
-         }
-         else
-         {
-            field = table.getField(fieldName);
-         }
+         QTableMetaData table = QContext.getQInstance().getTable(tableName);
+
+         FieldAndQueryJoin fieldAndQueryJoin = getFieldAndQueryJoin(table, fieldName);
+         QFieldMetaData    field             = fieldAndQueryJoin.field();
+         QueryJoin         queryJoin         = fieldAndQueryJoin.queryJoin();
 
          if(field == null)
          {
@@ -213,7 +195,7 @@ public class ColumnStatsStep implements BackendStep
          filter.withOrderBy(new QFilterOrderByAggregate(aggregate, false));
          filter.withOrderBy(new QFilterOrderByGroupBy(groupBy));
 
-         Integer        limit          = 1000; // too big?
+         Integer        limit          = 1000;
          AggregateInput aggregateInput = new AggregateInput();
          aggregateInput.withAggregate(aggregate);
          aggregateInput.withGroupBy(groupBy);
@@ -223,7 +205,11 @@ public class ColumnStatsStep implements BackendStep
 
          if(queryJoin != null)
          {
-            aggregateInput.withQueryJoin(queryJoin);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // re-construct this queryJoin object - just because, the JoinsContext edits the previous one, so we can make some failing-joins otherwise... //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            fieldAndQueryJoin = getFieldAndQueryJoin(table, fieldName);
+            aggregateInput.withQueryJoin(fieldAndQueryJoin.queryJoin());
          }
 
          AggregateOutput aggregateOutput = new AggregateAction().execute(aggregateInput);
@@ -238,7 +224,7 @@ public class ColumnStatsStep implements BackendStep
                value = Instant.parse(value + ":00:00Z");
             }
 
-            Integer      count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
+            Integer count = ValueUtils.getValueAsInteger(result.getAggregateValue(aggregate));
             valueCounts.add(new QRecord().withValue(fieldName, value).withValue("count", count));
          }
 
@@ -526,4 +512,43 @@ public class ColumnStatsStep implements BackendStep
       return (null);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private FieldAndQueryJoin getFieldAndQueryJoin(QTableMetaData table, String fieldName)
+   {
+      QFieldMetaData field     = null;
+      QueryJoin      queryJoin = null;
+      if(fieldName.contains("."))
+      {
+         String[] parts = fieldName.split("\\.", 2);
+         for(ExposedJoin exposedJoin : CollectionUtils.nonNullList(table.getExposedJoins()))
+         {
+            if(exposedJoin.getJoinTable().equals(parts[0]))
+            {
+               field = QContext.getQInstance().getTable(exposedJoin.getJoinTable()).getField(parts[1]);
+               queryJoin = new QueryJoin()
+                  .withJoinTable(exposedJoin.getJoinTable())
+                  .withSelect(true)
+                  .withType(QueryJoin.Type.INNER);
+               break;
+            }
+         }
+      }
+      else
+      {
+         field = table.getField(fieldName);
+      }
+
+      return (new FieldAndQueryJoin(field, queryJoin));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private record FieldAndQueryJoin(QFieldMetaData field, QueryJoin queryJoin) {}
 }

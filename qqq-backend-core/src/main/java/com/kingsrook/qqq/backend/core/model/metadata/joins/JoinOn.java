@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.joins;
  ** Specification for (at least part of) how two tables join together - e.g.,
  ** leftField = rightField.  Used as part of a list in a QJoinMetaData.
  *******************************************************************************/
-public class JoinOn
+public class JoinOn implements Cloneable
 {
    private String leftField;
    private String rightField;
@@ -131,4 +131,22 @@ public class JoinOn
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public JoinOn clone()
+   {
+      try
+      {
+         JoinOn clone = (JoinOn) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 }
