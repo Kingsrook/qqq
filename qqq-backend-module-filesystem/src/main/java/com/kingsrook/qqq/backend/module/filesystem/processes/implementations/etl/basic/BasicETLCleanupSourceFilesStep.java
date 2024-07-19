@@ -129,7 +129,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
             .withName(this.getClass().getName())
             .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
-            .addField(new QFieldMetaData("moveOrDelete", QFieldType.STRING))
-            .addField(new QFieldMetaData("destinationForMoves", QFieldType.STRING))));
+            .withField(new QFieldMetaData("moveOrDelete", QFieldType.STRING))
+            .withField(new QFieldMetaData("destinationForMoves", QFieldType.STRING))));
    }
 }

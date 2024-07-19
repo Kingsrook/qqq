@@ -86,7 +86,7 @@ class BulkInsertTransformStepTest extends BaseTest
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
-      TestUtils.insertRecords(instance, table, List.of(
+      TestUtils.insertRecords(table, List.of(
          newQRecord("uuid-A", "SKU-1", 1),
          newQRecord("uuid-B", "SKU-2", 1),
          newQRecord("uuid-C", "SKU-2", 2)
@@ -168,7 +168,7 @@ class BulkInsertTransformStepTest extends BaseTest
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
-      TestUtils.insertRecords(instance, table, List.of(
+      TestUtils.insertRecords(table, List.of(
          newQRecord("uuid-A", "SKU-1", 1),
          newQRecord("uuid-B", "SKU-2", 1),
          newQRecord("uuid-C", "SKU-2", 2)

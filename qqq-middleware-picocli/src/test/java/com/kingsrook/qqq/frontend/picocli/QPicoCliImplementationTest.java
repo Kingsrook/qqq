@@ -395,7 +395,7 @@ class QPicoCliImplementationTest
 
       File file = new File("/tmp/" + UUID.randomUUID() + ".json");
       file.deleteOnExit();
-      FileUtils.writeStringToFile(file, jsonContents);
+      FileUtils.writeStringToFile(file, jsonContents, StandardCharsets.UTF_8);
 
       TestOutput testOutput   = testCli("person", "insert", mapping, "--jsonFile=" + file.getAbsolutePath());
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
@@ -433,7 +433,7 @@ class QPicoCliImplementationTest
 
       File file = new File("/tmp/" + UUID.randomUUID() + ".csv");
       file.deleteOnExit();
-      FileUtils.writeStringToFile(file, csvContents);
+      FileUtils.writeStringToFile(file, csvContents, StandardCharsets.UTF_8);
 
       TestOutput testOutput   = testCli("person", "insert", mapping, "--csvFile=" + file.getAbsolutePath());
       JSONObject insertResult = JsonUtils.toJSONObject(testOutput.getOutput());
@@ -683,8 +683,7 @@ class QPicoCliImplementationTest
       assertTestOutputContains(testOutput, "Wrote 3 records to file " + filename);
 
       File file = new File(filename);
-      @SuppressWarnings("unchecked")
-      List<String> list = FileUtils.readLines(file);
+      List<String> list = FileUtils.readLines(file, StandardCharsets.UTF_8);
       assertEquals(4, list.size());
       assertThat(list.get(0)).contains("""
          "Id","Create Date","Modify Date\"""");
@@ -710,8 +709,7 @@ class QPicoCliImplementationTest
       assertTestOutputContains(testOutput, "Wrote 4 records to file " + filename);
 
       File file = new File(filename);
-      @SuppressWarnings("unchecked")
-      List<String> list = FileUtils.readLines(file);
+      List<String> list = FileUtils.readLines(file, StandardCharsets.UTF_8);
       assertEquals(5, list.size());
       assertThat(list.get(0)).contains("""
          "Id","Create Date","Modify Date\"""");
@@ -842,8 +840,7 @@ class QPicoCliImplementationTest
       TestOutput testOutput = testCli("person", "export", "--filename=" + filename, "--fieldNames=id,lastName,birthDate");
 
       File file = new File(filename);
-      @SuppressWarnings("unchecked")
-      List<String> list = FileUtils.readLines(file);
+      List<String> list = FileUtils.readLines(file, StandardCharsets.UTF_8);
       assertEquals(6, list.size());
       assertThat(list.get(0)).isEqualTo("""
          "Id","Last Name","Birth Date\"""");

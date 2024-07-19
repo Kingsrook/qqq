@@ -279,7 +279,9 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             Map<String, Serializable> widgetValues = input.getWidgetMetaData().getDefaultValues();
             if(widgetValues.containsKey("disabledFieldsForNewChildRecords"))
             {
-               widgetData.setDisabledFieldsForNewChildRecords((Set<String>) widgetValues.get("disabledFieldsForNewChildRecords"));
+               @SuppressWarnings("unchecked")
+               Set<String> disabledFieldsForNewChildRecords = (Set<String>) widgetValues.get("disabledFieldsForNewChildRecords");
+               widgetData.setDisabledFieldsForNewChildRecords(disabledFieldsForNewChildRecords);
             }
             else
             {

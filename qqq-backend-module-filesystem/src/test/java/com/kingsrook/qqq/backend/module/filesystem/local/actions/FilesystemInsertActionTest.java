@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -64,7 +65,7 @@ public class FilesystemInsertActionTest extends FilesystemActionTest
          .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains(TestUtils.BASE_PATH))
          .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains("blobs"));
 
-      assertEquals("Hello, World", FileUtils.readFileToString(new File(insertOutput.getRecords().get(0).getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH))));
+      assertEquals("Hello, World", FileUtils.readFileToString(new File(insertOutput.getRecords().get(0).getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH)), StandardCharsets.UTF_8));
    }
 
 

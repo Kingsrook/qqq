@@ -53,6 +53,7 @@ class SavedViewProcessTests extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    @Test
    void test() throws QException
    {

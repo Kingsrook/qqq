@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.api.mocks;
 
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -221,6 +222,6 @@ public class MockApiUtilsHelper
    @SuppressWarnings("unchecked")
    public static String readRequestBody(HttpRequestBase request) throws IOException
    {
-      return (StringUtils.join("\n", IOUtils.readLines(((HttpEntityEnclosingRequestBase) request).getEntity().getContent())));
+      return (StringUtils.join("\n", IOUtils.readLines(((HttpEntityEnclosingRequestBase) request).getEntity().getContent(), StandardCharsets.UTF_8)));
    }
 }

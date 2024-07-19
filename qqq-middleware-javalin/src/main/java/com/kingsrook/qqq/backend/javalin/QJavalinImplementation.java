@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
@@ -223,7 +225,7 @@ public class QJavalinImplementation
    public QJavalinImplementation(String qInstanceFilePath) throws IOException
    {
       LOG.info("Loading qInstance from file (assuming json): " + qInstanceFilePath);
-      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath));
+      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath), StandardCharsets.UTF_8);
       QJavalinImplementation.qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
       QJavalinImplementation.javalinMetaData = new QJavalinMetaData();
    }
@@ -1800,7 +1802,7 @@ public class QJavalinImplementation
             if(CollectionUtils.nullSafeHasContents(valuesParamList))
             {
                String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, Map.class);
+               values = JsonUtils.toObject(valuesParam, new TypeReference<>(){});
             }
          }
 

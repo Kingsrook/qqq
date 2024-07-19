@@ -37,6 +37,7 @@ public class ObjectUtils
    /*******************************************************************************
     ** A varargs version of Objects.requireNonNullElse
     *******************************************************************************/
+   @SafeVarargs
    public static <T> T requireNonNullElse(T... objects)
    {
       if(objects == null)

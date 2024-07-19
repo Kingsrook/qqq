@@ -154,8 +154,9 @@ public class RunAdHocRecordScriptAction
          Method   qRecordListToApiRecordList = apiScriptUtilsClass.getMethod("qRecordListToApiRecordList", List.class, String.class, String.class, String.class);
          Object   apiRecordList              = qRecordListToApiRecordList.invoke(null, input.getRecordList(), input.getTableName(), scriptRevision.getApiName(), scriptRevision.getApiVersion());
 
-         // noinspection unchecked
-         return (ArrayList<? extends Serializable>) apiRecordList;
+         @SuppressWarnings("unchecked")
+         ArrayList<? extends Serializable> rs = (ArrayList<? extends Serializable>) apiRecordList;
+         return rs;
       }
       catch(ClassNotFoundException e)
       {

@@ -311,6 +311,7 @@ class ApiScriptUtilsTest extends BaseTest
 
       Serializable result = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, JsonUtils.toJson(Map.of("id", "1,2,3")));
       assertThat(result).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
       List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
       assertEquals(3, resultList.size());
 
@@ -332,6 +333,7 @@ class ApiScriptUtilsTest extends BaseTest
 
       Serializable asyncResult = apiScriptUtils.runProcess(TestUtils.PROCESS_NAME_TRANSFORM_PEOPLE, JsonUtils.toJson(Map.of("id", "1,2,3", "async", true)));
       assertThat(asyncResult).isInstanceOf(Map.class);
+      @SuppressWarnings("unchecked")
       String jobId = ValueUtils.getValueAsString(((Map<String, ?>) asyncResult).get("jobId"));
       assertNotNull(jobId);
 
@@ -350,6 +352,7 @@ class ApiScriptUtilsTest extends BaseTest
          }
 
          assertThat(result).isInstanceOf(List.class);
+         @SuppressWarnings("unchecked")
          List<Map<String, Object>> resultList = (List<Map<String, Object>>) result;
          assertEquals(3, resultList.size());
 

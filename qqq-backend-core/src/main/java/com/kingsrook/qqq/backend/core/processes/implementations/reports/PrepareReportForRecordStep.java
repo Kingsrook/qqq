@@ -114,8 +114,9 @@ public class PrepareReportForRecordStep extends PrepareReportStep
       /////////////////////////////////////////////////////////////////////////////////////
       // if there are no more input fields, then remove the INPUT step from the process. //
       /////////////////////////////////////////////////////////////////////////////////////
-      inputFieldList = (ArrayList<QFieldMetaData>) runBackendStepOutput.getValue("inputFieldList");
-      if(!CollectionUtils.nullSafeHasContents(inputFieldList))
+      @SuppressWarnings("unchecked")
+      ArrayList<QFieldMetaData> updatedInputFieldList = (ArrayList<QFieldMetaData>) runBackendStepOutput.getValue("inputFieldList");
+      if(!CollectionUtils.nullSafeHasContents(updatedInputFieldList))
       {
          removeInputStepFromProcess(runBackendStepOutput);
       }

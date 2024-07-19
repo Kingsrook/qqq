@@ -70,7 +70,9 @@ public class QuartzJobRunner implements Job
          QContext.init(qInstance, quartzScheduler.getSessionSupplier().get());
 
          schedulableType = qInstance.getSchedulableType(context.getJobDetail().getJobDataMap().getString("type"));
-         params = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
+         @SuppressWarnings("unchecked")
+         Map<String, Object> paramsFromJobDataMap = (Map<String, Object>) context.getJobDetail().getJobDataMap().get("params");
+         params = paramsFromJobDataMap;
 
          SchedulableRunner schedulableRunner = QCodeLoader.getAdHoc(SchedulableRunner.class, schedulableType.getRunner());
 

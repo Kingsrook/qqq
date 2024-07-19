@@ -300,6 +300,7 @@ public class SearchPossibleValueSourceAction
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings({ "rawtypes", "unchecked" })
    private SearchPossibleValueSourceOutput searchPossibleValueCustom(SearchPossibleValueSourceInput input, QPossibleValueSource possibleValueSource)
    {
       try

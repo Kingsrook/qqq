@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +190,7 @@ public class BasicETLCleanupSourceFilesStepTest extends BaseTest
       for(String filePath : filePathsSet)
       {
          File file = new File(filePath);
-         FileUtils.writeStringToFile(file, "content");
+         FileUtils.writeStringToFile(file, "content", StandardCharsets.UTF_8);
       }
 
       // List<QRecord> records = filePaths.stream()
