@@ -32,6 +32,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 /*******************************************************************************
  ** Meta-data definition of a source of data for a report (e.g., a table and query
  ** filter or custom-code reference).
+ **
+ ** Runs in 3 modes:
+ **
+ ** - If a customRecordSource is specified, then that code is executed to get the records.
+ ** - else, if a sourceTable is specified, then the corresponding queryFilter
+ ** (optionally along with queryJoins and queryInputCustomizer) is used.
+ ** - else a staticDataSupplier is used.
  *******************************************************************************/
 public class QReportDataSource
 {
@@ -44,6 +51,7 @@ public class QReportDataSource
 
    private QCodeReference queryInputCustomizer;
    private QCodeReference staticDataSupplier;
+   private QCodeReference customRecordSource;
 
 
 
@@ -264,5 +272,36 @@ public class QReportDataSource
       this.queryInputCustomizer = queryInputCustomizer;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for customRecordSource
+    *******************************************************************************/
+   public QCodeReference getCustomRecordSource()
+   {
+      return (this.customRecordSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for customRecordSource
+    *******************************************************************************/
+   public void setCustomRecordSource(QCodeReference customRecordSource)
+   {
+      this.customRecordSource = customRecordSource;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for customRecordSource
+    *******************************************************************************/
+   public QReportDataSource withCustomRecordSource(QCodeReference customRecordSource)
+   {
+      this.customRecordSource = customRecordSource;
+      return (this);
+   }
+
 
 }
