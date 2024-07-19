@@ -804,7 +804,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    {
       if(this.associatedScripts == null)
       {
-         this.associatedScripts = new ArrayList();
+         this.associatedScripts = new ArrayList<>();
       }
       this.associatedScripts.add(associatedScript);
       return (this);

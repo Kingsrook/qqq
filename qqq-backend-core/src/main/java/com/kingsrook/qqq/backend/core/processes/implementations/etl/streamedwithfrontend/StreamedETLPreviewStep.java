@@ -162,10 +162,10 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
    private void countRecords(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, AbstractExtractStep extractStep) throws QException
    {
       String         sourceTableName = runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE);
-      QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(sourceTableName);
+      QTableMetaData sourceTable     = QContext.getQInstance().getTable(sourceTableName);
       if(StringUtils.hasContent(sourceTableName))
       {
-         QBackendMetaData sourceTableBackend = runBackendStepInput.getInstance().getBackendForTable(sourceTableName);
+         QBackendMetaData sourceTableBackend = QContext.getQInstance().getBackendForTable(sourceTableName);
          if(sourceTable.isCapabilityEnabled(sourceTableBackend, Capability.TABLE_COUNT))
          {
             Integer recordCount = extractStep.doCount(runBackendStepInput);

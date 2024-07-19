@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.time.Instant;
 import java.util.Optional;
@@ -78,7 +79,7 @@ public class TempFileStateProvider implements StateProviderInterface
       try
       {
          String json = JsonUtils.toJson(data);
-         FileUtils.writeStringToFile(getFile(key), json);
+         FileUtils.writeStringToFile(getFile(key), json, StandardCharsets.UTF_8);
       }
       catch(IOException e)
       {
@@ -97,7 +98,7 @@ public class TempFileStateProvider implements StateProviderInterface
    {
       try
       {
-         String json = FileUtils.readFileToString(getFile(key));
+         String json = FileUtils.readFileToString(getFile(key), StandardCharsets.UTF_8);
          return (Optional.of(JsonUtils.toObject(json, type)));
       }
       catch(FileNotFoundException | NoSuchFileException fnfe)

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -65,7 +66,7 @@ public class BulkDeleteTransformStep extends AbstractTransformStep
       ///////////////////////////////////////////////////////
       // capture the table label - for the process summary //
       ///////////////////////////////////////////////////////
-      QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      QTableMetaData table = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
       if(table != null)
       {
          tableLabel = table.getLabel();

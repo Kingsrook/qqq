@@ -192,6 +192,7 @@ public abstract class QRecordEntity
 
          for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
          {
+            @SuppressWarnings("unchecked")
             List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
             String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
 
@@ -245,6 +246,7 @@ public abstract class QRecordEntity
 
          for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
          {
+            @SuppressWarnings("unchecked")
             List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
             String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
 
@@ -346,6 +348,7 @@ public abstract class QRecordEntity
 
                   if(associationAnnotation.isPresent())
                   {
+                     @SuppressWarnings("unchecked")
                      Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
                      associationList.add(new QRecordEntityAssociation(fieldName, possibleGetter, setter.get(), listTypeParam, associationAnnotation.orElse(null)));
                   }

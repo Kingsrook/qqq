@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -113,7 +114,7 @@ public class SecretsManagerUtils
             dotEnv.renameTo(new File(".env.backup-" + System.currentTimeMillis()));
          }
 
-         FileUtils.writeStringToFile(dotEnv, fullEnv.toString());
+         FileUtils.writeStringToFile(dotEnv, fullEnv.toString(), StandardCharsets.UTF_8);
       }
       else
       {

@@ -360,17 +360,6 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   @Deprecated(since = "better to call the one without qInstance param")
-   public static void insertRecords(QInstance qInstance, QTableMetaData table, List<QRecord> records) throws QException
-   {
-      insertRecords(table, records);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    public static class IncreaseBirthdateStep implements BackendStep
    {
       /*******************************************************************************

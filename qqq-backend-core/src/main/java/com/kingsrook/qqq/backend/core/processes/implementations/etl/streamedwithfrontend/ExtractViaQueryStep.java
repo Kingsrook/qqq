@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.DistinctFilteringRecordP
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -267,7 +268,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
          //////////////////////////////////////////////////////////////////////
          // else, check for recordIds from a frontend launching of a process //
          //////////////////////////////////////////////////////////////////////
-         QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
+         QTableMetaData table = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
          if(table == null)
          {
             throw (new QException("source table name was not set - could not load records by id"));
@@ -319,7 +320,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       if(needDistinctPipe)
       {
          String         sourceTableName = runBackendStepInput.getValueString(StreamedETLWithFrontendProcess.FIELD_SOURCE_TABLE);
-         QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(sourceTableName);
+         QTableMetaData sourceTable     = QContext.getQInstance().getTable(sourceTableName);
          return (new DistinctFilteringRecordPipe(new UniqueKey(sourceTable.getPrimaryKeyField()), overrideCapacity));
       }
       else

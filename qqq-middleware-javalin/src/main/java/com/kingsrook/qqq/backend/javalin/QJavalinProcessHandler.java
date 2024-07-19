@@ -52,6 +52,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
@@ -590,7 +591,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    private static QQueryFilter buildProcessInitRecordsFilter(Context context, RunProcessInput runProcessInput) throws IOException
    {
-      QInstance        instance = runProcessInput.getInstance();
+      QInstance        instance = QContext.getQInstance();
       QProcessMetaData process  = instance.getProcess(runProcessInput.getProcessName());
       QTableMetaData   table    = instance.getTable(process.getTableName());
 

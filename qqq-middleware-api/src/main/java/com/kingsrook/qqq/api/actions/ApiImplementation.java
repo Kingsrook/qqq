@@ -1388,7 +1388,7 @@ public class ApiImplementation
       List<Serializable> criteriaValues;
       if(selectedOperator.noOfValues == null)
       {
-         criteriaValues = Arrays.asList(value.split(","));
+         criteriaValues = Arrays.stream(value.split(",")).map(Serializable.class::cast).toList();
       }
       else if(selectedOperator.noOfValues == 1)
       {
@@ -1404,7 +1404,7 @@ public class ApiImplementation
       }
       else if(selectedOperator.noOfValues == 2)
       {
-         criteriaValues = Arrays.asList(value.split(","));
+         criteriaValues = Arrays.stream(value.split(",")).map(Serializable.class::cast).toList();
          if(criteriaValues.size() != 2)
          {
             throw (new QBadRequestException("Operator " + selectedOperator.prefix + " for field " + name + " requires 2 values (received " + criteriaValues.size() + ")"));

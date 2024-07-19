@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fi
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import com.kingsrook.qqq.backend.core.actions.processes.RunBackendStepAction;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -105,7 +106,7 @@ class FilesystemSyncProcessTest extends BaseTest
    {
       String path = ((FilesystemTableBackendDetails) table.getBackendDetails()).getBasePath();
       File   file = new File(basePath + "/" + path + "/" + name);
-      FileUtils.writeStringToFile(file, content);
+      FileUtils.writeStringToFile(file, content, StandardCharsets.UTF_8);
    }
 
 

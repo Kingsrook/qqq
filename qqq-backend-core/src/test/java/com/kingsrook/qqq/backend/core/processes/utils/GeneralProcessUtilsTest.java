@@ -80,7 +80,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
          new QRecord().withValue("favoriteShapeId", 1)
       ));
@@ -107,7 +107,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
          new QRecord().withValue("favoriteShapeId", 1)
       ));
@@ -134,7 +134,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 2).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 3).withValue("favoriteShapeId", 1)
@@ -166,7 +166,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("favoriteShapeId", 3),
          new QRecord().withValue("favoriteShapeId", 1)
       ));
@@ -194,7 +194,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 2).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 3).withValue("favoriteShapeId", 1)
@@ -239,7 +239,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 2).withValue("favoriteShapeId", 3),
          new QRecord().withValue("id", 3).withValue("favoriteShapeId", 1)
@@ -263,7 +263,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
          new QRecord().withValue("id", 2).withValue("firstName", "James"),
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
@@ -288,7 +288,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
          new QRecord().withValue("id", 2).withValue("firstName", "James"),
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
@@ -309,7 +309,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
          new QRecord().withValue("id", 2).withValue("firstName", "James"),
          new QRecord().withValue("id", 3).withValue("firstName", "Tim")
@@ -342,7 +342,7 @@ class GeneralProcessUtilsTest extends BaseTest
    {
       QInstance instance = QContext.getQInstance();
 
-      TestUtils.insertRecords(instance, instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(instance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff"),
          new QRecord().withValue("id", 2).withValue("firstName", "James").withValue("lastName", "Maes"),
          new QRecord().withValue("id", 3).withValue("firstName", "James").withValue("lastName", "Brown")

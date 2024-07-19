@@ -230,7 +230,9 @@ class ApiImplementationTest extends BaseTest
       // query for persons - make sure custom method ran //
       /////////////////////////////////////////////////////
       Map<String, Serializable> queryResult = ApiImplementation.query(apiInstanceMetaData, TestUtils.CURRENT_API_VERSION, "person", Collections.emptyMap());
-      assertEquals("value from prepareToProduceApiValues", ((List<Map<String, Object>>) queryResult.get("records")).get(0).get("lastName"));
+      @SuppressWarnings("unchecked")
+      List<Map<String, Object>> records = (List<Map<String, Object>>) queryResult.get("records");
+      assertEquals("value from prepareToProduceApiValues", records.get(0).get("lastName"));
       assertEquals(queryResult.get("count"), PersonLastNameBulkApiValueCustomizer.prepareWasCalledWithThisNoOfRecords);
    }
 

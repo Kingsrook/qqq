@@ -61,7 +61,7 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
       Integer scriptId       = 1701;
       String  scriptContents = "logger.log('Hi');";
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", scriptId)));
+      TestUtils.insertRecords(qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", scriptId)));
       List<QRecord> scripts = TestUtils.queryTable(Script.TABLE_NAME);
       assertNull(scripts.get(0).getValueInteger("currentScriptRevisionId"));
 
@@ -121,7 +121,7 @@ class StoreScriptRevisionProcessStepTest extends BaseTest
       String  scriptContents   = "logger.log('Hi');";
       String  templateContents = "<h1>Hey</h1>";
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", scriptId)));
+      TestUtils.insertRecords(qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", scriptId)));
       List<QRecord> scripts = TestUtils.queryTable(Script.TABLE_NAME);
       assertNull(scripts.get(0).getValueInteger("currentScriptRevisionId"));
 

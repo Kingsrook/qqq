@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.utils;
 
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -76,7 +77,7 @@ public class S3UtilsTest extends BaseS3Test
       List<S3ObjectSummary> s3ObjectSummaries = s3Utils.listObjectsInBucketMatchingGlob(BUCKET_NAME, "test-files", "");
       S3ObjectSummary       s3ObjectSummary   = s3ObjectSummaries.stream().filter(o -> o.getKey().contains("1.csv")).findAny().get();
       InputStream           inputStream       = s3Utils.getObjectAsInputStream(s3ObjectSummary);
-      String                csvFromS3         = IOUtils.toString(inputStream);
+      String                csvFromS3         = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
       assertEquals(getCSVData1(), csvFromS3, "File from S3 should match expected content");
    }

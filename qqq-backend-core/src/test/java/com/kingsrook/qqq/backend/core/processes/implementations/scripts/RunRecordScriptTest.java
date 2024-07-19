@@ -56,8 +56,8 @@ class RunRecordScriptTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       new ScriptsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(new QRecord().withValue("id", 1)));
-      TestUtils.insertRecords(qInstance, qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", 1).withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)));
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(new QRecord().withValue("id", 1)));
+      TestUtils.insertRecords(qInstance.getTable(Script.TABLE_NAME), List.of(new QRecord().withValue("id", 1).withTableName(TestUtils.TABLE_NAME_PERSON_MEMORY)));
 
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(ScriptsMetaDataProvider.RUN_RECORD_SCRIPT_PROCESS_NAME);
@@ -73,8 +73,10 @@ class RunRecordScriptTest extends BaseTest
       // still good to run the code and at least get this far w/ an expected exception.                //
       ///////////////////////////////////////////////////////////////////////////////////////////////////
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
-      System.out.println(runProcessOutput);
-      assertTrue(((List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults")).stream().anyMatch(psli -> psli instanceof ProcessSummaryLine psl && psl.getMessage().contains("error that was not logged")));
+
+      @SuppressWarnings("unchecked")
+      List<ProcessSummaryLineInterface> processResults = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults");
+      assertTrue(processResults.stream().anyMatch(psli -> psli instanceof ProcessSummaryLine psl && psl.getMessage().contains("error that was not logged")));
    }
 
 }

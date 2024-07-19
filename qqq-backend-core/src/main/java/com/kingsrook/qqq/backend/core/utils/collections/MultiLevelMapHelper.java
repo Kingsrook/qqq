@@ -87,7 +87,9 @@ public class MultiLevelMapHelper
       {
          try
          {
-            return (map.getClass().getConstructor().newInstance());
+            @SuppressWarnings("unchecked")
+            Map<K2, V> map1 = map.getClass().getConstructor().newInstance();
+            return map1;
          }
          catch(Exception e)
          {

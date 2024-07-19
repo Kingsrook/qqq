@@ -293,6 +293,7 @@ class QueryManagerTest extends BaseTest
     ** confirms (more?) correct behavior
     *******************************************************************************/
    @Test
+   @SuppressWarnings("deprecation")
    void testLocalDate() throws SQLException
    {
       try(Connection connection = getConnection())
@@ -304,17 +305,20 @@ class QueryManagerTest extends BaseTest
          ResultSet rs = preparedStatement.getResultSet();
          rs.next();
 
-         Date date = QueryManager.getDate(rs, 1);
+         Date date  = QueryManager.getDate(rs, 1);
+         assertNotNull(date);
          assertEquals(1, date.getDate(), "Date value");
          assertEquals(Month.OCTOBER.getValue(), date.getMonth() + 1, "Month value");
          assertEquals(2013, date.getYear() + 1900, "Year value");
 
          LocalDate localDate = QueryManager.getLocalDate(rs, 1);
+         assertNotNull(localDate);
          assertEquals(1, localDate.getDayOfMonth(), "Date value");
          assertEquals(Month.OCTOBER, localDate.getMonth(), "Month value");
          assertEquals(2013, localDate.getYear(), "Year value");
 
          LocalDateTime localDateTime = QueryManager.getLocalDateTime(rs, 1);
+         assertNotNull(localDateTime);
          assertEquals(1, localDateTime.getDayOfMonth(), "Date value");
          assertEquals(Month.OCTOBER, localDateTime.getMonth(), "Month value");
          assertEquals(2013, localDateTime.getYear(), "Year value");
@@ -322,6 +326,7 @@ class QueryManagerTest extends BaseTest
          assertEquals(0, localDateTime.getMinute(), "Minute value");
 
          OffsetDateTime offsetDateTime = QueryManager.getOffsetDateTime(rs, 1);
+         assertNotNull(offsetDateTime);
          assertEquals(1, offsetDateTime.getDayOfMonth(), "Date value");
          assertEquals(Month.OCTOBER, offsetDateTime.getMonth(), "Month value");
          assertEquals(2013, offsetDateTime.getYear(), "Year value");

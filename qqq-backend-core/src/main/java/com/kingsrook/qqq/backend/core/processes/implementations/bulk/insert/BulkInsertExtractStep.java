@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
@@ -83,7 +84,7 @@ public class BulkInsertExtractStep extends AbstractExtractStep
             .withLimit(getLimit())
             .withCsv(new String(bytes))
             .withDoCorrectValueTypes(true)
-            .withTable(runBackendStepInput.getInstance().getTable(tableName))
+            .withTable(QContext.getQInstance().getTable(tableName))
             .withMapping(mapping)
             .withRecordCustomizer((record) ->
             {

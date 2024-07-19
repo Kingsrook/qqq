@@ -563,6 +563,7 @@ public class QValueFormatter
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // heavy fields that weren't fetched - they should have a backend-detail specifying their length (or null if null) //
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            @SuppressWarnings("unchecked")
             Map<String, Serializable> heavyFieldLengths = (Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS);
             if(heavyFieldLengths != null)
             {

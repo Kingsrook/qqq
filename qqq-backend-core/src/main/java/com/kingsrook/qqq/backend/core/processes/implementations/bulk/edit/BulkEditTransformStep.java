@@ -31,6 +31,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -81,7 +82,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
       ///////////////////////////////////////////////////////
       // capture the table label - for the process summary //
       ///////////////////////////////////////////////////////
-      table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      table = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
       if(table != null)
       {
          tableLabel = table.getLabel();
@@ -230,7 +231,7 @@ public class BulkEditTransformStep extends AbstractTransformStep
 
             if(field.getPossibleValueSourceName() != null)
             {
-               QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(runBackendStepInput.getInstance(), runBackendStepInput.getSession());
+               QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
                String                   translatedValue          = qPossibleValueTranslator.translatePossibleValue(field, value);
                if(StringUtils.hasContent(translatedValue))
                {

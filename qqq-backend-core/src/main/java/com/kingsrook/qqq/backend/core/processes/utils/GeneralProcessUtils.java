@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -515,7 +516,7 @@ public class GeneralProcessUtils
     *******************************************************************************/
    public static Integer validateSingleSelectedId(RunBackendStepInput runBackendStepInput, String tableName) throws QException
    {
-      String tableLabel = runBackendStepInput.getInstance().getTable(tableName).getLabel();
+      String tableLabel = QContext.getQInstance().getTable(tableName).getLabel();
 
       ////////////////////////////////////////////////////
       // Get the selected recordId and verify we only 1 //

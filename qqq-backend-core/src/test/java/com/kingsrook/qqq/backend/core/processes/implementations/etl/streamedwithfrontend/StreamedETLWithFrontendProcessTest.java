@@ -307,6 +307,7 @@ public class StreamedETLWithFrontendProcessTest extends BaseTest
       assertTrue(runProcessOutput.getException().isEmpty());
       assertThat(runProcessOutput.getProcessState().getNextStepName()).hasValue("review");
 
+      @SuppressWarnings("unchecked")
       List<ProcessSummaryLine> validationSummaryLines = (List<ProcessSummaryLine>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY);
       assertThat(validationSummaryLines)
          .usingRecursiveFieldByFieldElementComparatorOnFields("status", "count")

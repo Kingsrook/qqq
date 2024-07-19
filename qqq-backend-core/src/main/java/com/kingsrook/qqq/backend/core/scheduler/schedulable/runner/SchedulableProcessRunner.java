@@ -74,7 +74,9 @@ public class SchedulableProcessRunner implements SchedulableRunner
       Map<String, Serializable> backendVariantData = null;
       if(params.containsKey("backendVariantData"))
       {
-         backendVariantData = (Map<String, Serializable>) params.get("backendVariantData");
+         @SuppressWarnings("unchecked")
+         Map<String, Serializable> dataFromMap = (Map<String, Serializable>) params.get("backendVariantData");
+         backendVariantData = dataFromMap;
       }
 
       Map<String, Serializable> processInputValues = buildProcessInputValuesMap(params, process);

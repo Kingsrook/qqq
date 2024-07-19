@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterfa
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -104,7 +105,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    @Override
    public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      this.table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      this.table = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // since we're doing a unique key check in this class, we can tell the loadViaInsert step that it (rather, the InsertAction) doesn't need to re-do one. //
@@ -121,7 +122,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       int            rowsInThisPage = runBackendStepInput.getRecords().size();
-      QTableMetaData table          = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      QTableMetaData table          = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //

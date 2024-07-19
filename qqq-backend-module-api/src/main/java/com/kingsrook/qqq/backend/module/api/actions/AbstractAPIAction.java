@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.api.actions;
 
 
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -45,9 +46,9 @@ public abstract class AbstractAPIAction
     *******************************************************************************/
    public void preAction(AbstractTableActionInput actionInput)
    {
-      QBackendMetaData baseBackendMetaData = actionInput.getInstance().getBackendForTable(actionInput.getTableName());
+      QBackendMetaData baseBackendMetaData = QContext.getQInstance().getBackendForTable(actionInput.getTableName());
       this.backendMetaData = (APIBackendMetaData) baseBackendMetaData;
-      this.session = actionInput.getSession();
+      this.session = QContext.getQSession();
 
       if(backendMetaData.getActionUtil() != null)
       {

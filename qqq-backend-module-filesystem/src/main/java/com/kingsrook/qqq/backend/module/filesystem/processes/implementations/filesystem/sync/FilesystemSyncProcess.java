@@ -69,10 +69,10 @@ public class FilesystemSyncProcess
             .withName(FilesystemSyncStep.class.getName())
             .withCodeType(QCodeType.JAVA))
          .withInputData(new QFunctionInputMetaData()
-            .addField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
-            .addField(new QFieldMetaData(FIELD_ARCHIVE_TABLE, QFieldType.STRING))
-            .addField(new QFieldMetaData(FIELD_MAX_FILES_TO_ARCHIVE, QFieldType.INTEGER).withDefaultValue(Integer.MAX_VALUE))
-            .addField(new QFieldMetaData(FIELD_PROCESSING_TABLE, QFieldType.STRING)));
+            .withField(new QFieldMetaData(FIELD_SOURCE_TABLE, QFieldType.STRING))
+            .withField(new QFieldMetaData(FIELD_ARCHIVE_TABLE, QFieldType.STRING))
+            .withField(new QFieldMetaData(FIELD_MAX_FILES_TO_ARCHIVE, QFieldType.INTEGER).withDefaultValue(Integer.MAX_VALUE))
+            .withField(new QFieldMetaData(FIELD_PROCESSING_TABLE, QFieldType.STRING)));
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)

@@ -39,11 +39,11 @@ class ObjectUtilsTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SuppressWarnings({ "DataFlowIssue", "ConfusingArgumentToVarargsMethod" })
    @Test
    void testRequireNonNullElse()
    {
-      assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(null)).isInstanceOf(NullPointerException.class);
+      Object nullObject = null;
+      assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(nullObject)).isInstanceOf(NullPointerException.class);
       assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(null, null)).isInstanceOf(NullPointerException.class);
       assertThatThrownBy(() -> ObjectUtils.requireNonNullElse(null, null, null)).isInstanceOf(NullPointerException.class);
       assertEquals("a", ObjectUtils.requireNonNullElse("a", "b"));

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
@@ -76,7 +77,7 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
    {
       super.preRun(runBackendStepInput, runBackendStepOutput);
 
-      QTableMetaData table = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      QTableMetaData table = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
       if(table != null)
       {
          tableLabel = table.getLabel();
@@ -119,7 +120,7 @@ public class BulkDeleteLoadStep extends LoadViaDeleteStep implements ProcessSumm
       ////////////////////////////
       super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
-      QTableMetaData             table               = runBackendStepInput.getInstance().getTable(runBackendStepInput.getTableName());
+      QTableMetaData             table               = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
       String                     primaryKeyFieldName = table.getPrimaryKeyField();
       Map<Serializable, QRecord> outputRecordMap     = runBackendStepOutput.getRecords().stream().collect(Collectors.toMap(r -> r.getValue(primaryKeyFieldName), r -> r, (a, b) -> a));
 

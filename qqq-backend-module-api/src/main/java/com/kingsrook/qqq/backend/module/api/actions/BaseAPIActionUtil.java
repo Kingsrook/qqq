@@ -1215,7 +1215,7 @@ public class BaseAPIActionUtil
          {
             try
             {
-               requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent()));
+               requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent(), StandardCharsets.UTF_8));
             }
             catch(Exception e)
             {

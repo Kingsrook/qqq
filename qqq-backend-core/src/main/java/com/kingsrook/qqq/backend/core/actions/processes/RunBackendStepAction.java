@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -64,7 +65,7 @@ public class RunBackendStepAction
    {
       ActionHelper.validateSession(runBackendStepInput);
 
-      QProcessMetaData process = runBackendStepInput.getInstance().getProcess(runBackendStepInput.getProcessName());
+      QProcessMetaData process = QContext.getQInstance().getProcess(runBackendStepInput.getProcessName());
       if(process == null)
       {
          throw new QException("Process [" + runBackendStepInput.getProcessName() + "] is not defined in this instance.");

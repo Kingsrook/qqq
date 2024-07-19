@@ -62,6 +62,7 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
    @Override
    public HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
    {
+      @SuppressWarnings("unchecked")
       List<ProcessSummaryLineInterface> processSummaryLineInterfaces = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults");
       if(processSummaryLineInterfaces.isEmpty())
       {
@@ -134,7 +135,9 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
    {
       try
       {
-         ArrayList<Serializable>           apiOutput                    = new ArrayList<>();
+         ArrayList<Serializable> apiOutput = new ArrayList<>();
+
+         @SuppressWarnings("unchecked")
          List<ProcessSummaryLineInterface> processSummaryLineInterfaces = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get("processResults");
          for(ProcessSummaryLineInterface processSummaryLineInterface : processSummaryLineInterfaces)
          {

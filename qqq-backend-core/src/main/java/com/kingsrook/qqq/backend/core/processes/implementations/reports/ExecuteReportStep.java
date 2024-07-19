@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -58,7 +59,7 @@ public class ExecuteReportStep implements BackendStep
       try
       {
          String          reportName = runBackendStepInput.getValueString("reportName");
-         QReportMetaData report     = runBackendStepInput.getInstance().getReport(reportName);
+         QReportMetaData report     = QContext.getQInstance().getReport(reportName);
          File            tmpFile    = File.createTempFile(reportName, ".xlsx", new File("/tmp/"));
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");

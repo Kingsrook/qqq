@@ -337,7 +337,7 @@ public class TableBasedAuthenticationModuleTest extends BaseTest
    {
       QAuthenticationMetaData tableBasedAuthentication = qInstance.getAuthentication();
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withName("mock").withType(QAuthenticationType.MOCK));
-      TestUtils.insertRecords(qInstance, qInstance.getTable("user"), List.of(new QRecord()
+      TestUtils.insertRecords(qInstance.getTable("user"), List.of(new QRecord()
          .withValue("username", username)
          .withValue("fullName", fullName)
          .withValue("passwordHash", TableBasedAuthenticationModule.PasswordHasher.createHashedPassword(password))));
@@ -361,7 +361,7 @@ public class TableBasedAuthenticationModuleTest extends BaseTest
       getUserInput.setUniqueKey(Map.of("username", username));
       GetOutput getUserOutput = new GetAction().execute(getUserInput);
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable("session"), List.of(new QRecord()
+      TestUtils.insertRecords(qInstance.getTable("session"), List.of(new QRecord()
          .withValue("id", uuid)
          .withValue("userId", getUserOutput.getRecord() == null ? -1 : getUserOutput.getRecord().getValueInteger("id"))
          .withValue("accessTimestamp", accessTimestamp)

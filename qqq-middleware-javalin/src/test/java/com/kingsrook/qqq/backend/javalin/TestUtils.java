@@ -23,14 +23,17 @@ package com.kingsrook.qqq.backend.javalin;
 
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -40,6 +43,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
+import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.RawHTML;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -70,9 +77,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedViewsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
@@ -92,6 +101,7 @@ public class TestUtils
    public static final String BACKEND_NAME_MEMORY = "memory";
 
    public static final String TABLE_NAME_PERSON = "person";
+   public static final String TABLE_NAME_PET    = "pet";
 
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP             = "simpleSleep";
@@ -119,7 +129,7 @@ public class TestUtils
       {
          InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))
@@ -156,7 +166,9 @@ public class TestUtils
       qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineDefaultH2Backend());
       qInstance.addTable(defineTablePerson());
+      qInstance.addTable(defineTablePet());
       qInstance.addJoin(definePersonJoinPartnerPerson());
+      qInstance.addJoin(definePersonJoinPet());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
       qInstance.addProcess(defineProcessSimpleSleep());
@@ -190,6 +202,12 @@ public class TestUtils
       qInstance.addWidget(new QWidgetMetaData()
          .withName(PersonsByCreateDateBarChart.class.getSimpleName())
          .withCodeReference(new QCodeReference(PersonsByCreateDateBarChart.class)));
+
+      qInstance.addWidget(new QWidgetMetaData()
+         .withName("timezoneWidget")
+         .withType(WidgetType.HTML.getType())
+         .withCodeReference(new QCodeReference(TimezoneWidgetRenderer.class)));
+
    }
 
 
@@ -262,6 +280,7 @@ public class TestUtils
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
          .withField(new QFieldMetaData("photo", QFieldType.BLOB).withBackendName("photo"))
          .withField(new QFieldMetaData("photoFileName", QFieldType.STRING).withBackendName("photo_file_name"))
+         .withAssociation(new Association().withName("pets").withJoinName("personJoinPet").withAssociatedTableName(TABLE_NAME_PET))
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
             .withScriptTypeId(1)
@@ -275,6 +294,34 @@ public class TestUtils
          .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
             .withValue(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE, "image")
             .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "photoFileName"));
+
+      return (qTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Define the pet table
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineTablePet()
+   {
+      QTableMetaData qTableMetaData = new QTableMetaData()
+         .withName(TABLE_NAME_PET)
+         .withLabel("Pet")
+         .withRecordLabelFormat("%s")
+         .withRecordLabelFields("name")
+         .withBackendName(defineDefaultH2Backend().getName())
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
+         .withField(new QFieldMetaData("ownerPersonId", QFieldType.INTEGER).withBackendName("owner_person_id")
+            .withPossibleValueSourceName(TABLE_NAME_PERSON)
+            .withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.EQUALS, "${input.email}")))
+         )
+         .withField(new QFieldMetaData("name", QFieldType.STRING).withBackendName("name"))
+         .withField(new QFieldMetaData("species", QFieldType.STRING).withBackendName("species"));
 
       return (qTableMetaData);
    }
@@ -343,6 +390,21 @@ public class TestUtils
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJoinMetaData definePersonJoinPet()
+   {
+      return (new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_PERSON)
+         .withRightTable(TABLE_NAME_PET)
+         .withType(JoinType.ONE_TO_MANY)
+         .withName("personJoinPet")
+         .withJoinOn(new JoinOn("id", "ownerPersonId")));
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'greet people' process
     *******************************************************************************/
    private static QProcessMetaData defineProcessGreetPeople()
@@ -365,7 +427,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          );
@@ -402,7 +464,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName(TABLE_NAME_PERSON)
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
@@ -514,7 +576,7 @@ public class TestUtils
                .withName(SleeperStep.class.getName())
                .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
-               .addField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+               .withField(new QFieldMetaData(SleeperStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
    }
 
@@ -571,7 +633,7 @@ public class TestUtils
                .withName(ThrowerStep.class.getName())
                .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
-               .addField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+               .withField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
       }
    }
 
@@ -612,4 +674,24 @@ public class TestUtils
       new InsertAction().execute(insertInput);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class TimezoneWidgetRenderer extends AbstractWidgetRenderer
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public RenderWidgetOutput render(RenderWidgetInput input) throws QException
+      {
+         return (new RenderWidgetOutput(new RawHTML("title",
+            QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES)
+               + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
+         )));
+      }
+   }
 }

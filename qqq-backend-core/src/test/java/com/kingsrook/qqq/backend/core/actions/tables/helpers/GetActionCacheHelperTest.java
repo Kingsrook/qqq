@@ -69,7 +69,7 @@ class GetActionCacheHelperTest extends BaseTest
       /////////////////////////////////////
       // insert rows in the source table //
       /////////////////////////////////////
-      TestUtils.insertRecords(qInstance, qInstance.getTable(sourceTableName), List.of(
+      TestUtils.insertRecords(qInstance.getTable(sourceTableName), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "George").withValue("lastName", "Washington").withValue("noOfShoes", 5),
          new QRecord().withValue("id", 2).withValue("firstName", "John").withValue("lastName", "Adams"),
          new QRecord().withValue("id", 3).withValue("firstName", "Thomas").withValue("lastName", "Jefferson"),

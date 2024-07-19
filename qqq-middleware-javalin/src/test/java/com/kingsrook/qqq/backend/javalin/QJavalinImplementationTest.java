@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
@@ -556,7 +557,59 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
-   public void test_dataInsertMultipartForm() throws IOException
+   public void test_dataInsertMultipartForm() throws IOException, QException
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person")
+         .header("Content-Type", "application/json")
+         .multiPartContent()
+         .field("firstName", "Bobby")
+         .field("lastName", "Hull")
+         .field("email", "bobby@hull.com")
+         .field("associations", """
+            {
+               "pets":
+               [
+                  {"name": "Fido", "species": "dog"}
+               ]
+            }
+            """)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertTrue(jsonObject.has("records"));
+      JSONArray records = jsonObject.getJSONArray("records");
+      assertEquals(1, records.length());
+      JSONObject record0     = records.getJSONObject(0);
+      Integer    newPersonId = record0.getJSONObject("values").getInt("id");
+
+      //////////////////////////////////////////////////////////////////////////
+      // get all the pets - assert a new one was inserted for this new person //
+      //////////////////////////////////////////////////////////////////////////
+      HttpResponse<String> petGetResponse = Unirest.get(BASE_URL + "/data/pet").asString();
+      assertEquals(200, petGetResponse.getStatus());
+      JSONObject petsJsonObject       = JsonUtils.toJSONObject(petGetResponse.getBody());
+      JSONArray  petRecords           = petsJsonObject.getJSONArray("records");
+      boolean    foundPetForNewPerson = false;
+      for(int i = 0; i < petRecords.length(); i++)
+      {
+         if(newPersonId.equals(petRecords.getJSONObject(i).getJSONObject("values").getInt("ownerPersonId")))
+         {
+            assertEquals("Fido", petRecords.getJSONObject(i).getJSONObject("values").getString("name"));
+            foundPetForNewPerson = true;
+         }
+      }
+      assertTrue(foundPetForNewPerson);
+   }
+
+
+
+   /*******************************************************************************
+    ** test an insert - posting a multipart form - including associations!
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataInsertMultipartFormWithAssocitions() throws IOException
    {
       try(InputStream photoInputStream = getClass().getResourceAsStream("/photo.png"))
       {
@@ -901,6 +954,28 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
+   void testPossibleValueWithFilter()
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=")
+         .field("values", """
+         {"email":"tsamples@mmltholdings.com"}
+         """)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(1, jsonObject.getJSONArray("options").length());
+      assertEquals("Tyler Samples (4)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testPossibleValueWithIds()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?ids=4,5").asString();
@@ -968,6 +1043,44 @@ class QJavalinImplementationTest extends QJavalinTestBase
       assertNotNull(jsonObject);
       assertTrue(jsonObject.has("uuid"));
       response.getHeaders().get("Set-Cookie").stream().anyMatch(s -> s.contains("sessionUUID"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTimeZoneHeaders()
+   {
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/widget/timezoneWidget")
+            .header("X-QQQ-UserTimezoneOffsetMinutes", "300")
+            .header("X-QQQ-UserTimezone", "US/Central")
+            .asString();
+
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("300|US/Central", jsonObject.getString("html"));
+      }
+
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/widget/timezoneWidget")
+            .header("X-QQQ-UserTimezoneOffsetMinutes", "-600")
+            .header("X-QQQ-UserTimezone", "SomeZone")
+            .asString();
+
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("-600|SomeZone", jsonObject.getString("html"));
+      }
+
+      {
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/widget/timezoneWidget")
+            .header("X-QQQ-UserTimezoneOffsetMinutes", "foo")
+            .asString();
+
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals("null|null", jsonObject.getString("html"));
+      }
    }
 
 

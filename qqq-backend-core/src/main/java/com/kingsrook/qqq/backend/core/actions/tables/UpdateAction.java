@@ -252,7 +252,7 @@ public class UpdateAction
          behaviorsToOmit = Set.of(DynamicDefaultValueBehavior.MODIFY_DATE);
       }
 
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, updateInput.getInstance(), table, updateInput.getRecords(), behaviorsToOmit);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.UPDATE, QContext.getQInstance(), table, updateInput.getRecords(), behaviorsToOmit);
       validatePrimaryKeysAreGiven(updateInput);
 
       if(oldRecordList.isPresent())

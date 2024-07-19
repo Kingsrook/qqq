@@ -287,6 +287,7 @@ public class MockHttpResponse implements CloseableHttpResponse
 
 
    @Override
+   @SuppressWarnings("deprecation")
    public HttpParams getParams()
    {
       return null;
@@ -295,6 +296,7 @@ public class MockHttpResponse implements CloseableHttpResponse
 
 
    @Override
+   @SuppressWarnings("deprecation")
    public void setParams(HttpParams httpParams)
    {
 

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -115,14 +116,14 @@ public class FilesystemActionTest extends BaseTest
             {"id":2,"createDate":"2022-06-17 14:52:59","modifyDate":"2022-06-17 14:52:59","firstName":"Jane","lastName":"Smith","birthDate":"1982-02-02","email":"jane@kingsrook.com"}
          ]
          """;
-      FileUtils.writeStringToFile(new File(fullPath + "DATA-1.json"), jsonData1);
+      FileUtils.writeStringToFile(new File(fullPath + "DATA-1.json"), jsonData1, StandardCharsets.UTF_8);
 
       String jsonData2 = """
          [
             {"id":3,"createDate":"2021-11-27 15:40:38","modifyDate":"2021-11-27 15:40:38","firstName":"Homer","lastName":"S","birthDate":"1983-03-03","email":"homer.s@kingsrook.com"}
          ]
          """;
-      FileUtils.writeStringToFile(new File(fullPath + "DATA-2.json"), jsonData2);
+      FileUtils.writeStringToFile(new File(fullPath + "DATA-2.json"), jsonData2, StandardCharsets.UTF_8);
    }
 
 
@@ -147,14 +148,14 @@ public class FilesystemActionTest extends BaseTest
          "1","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1981-01-01","john@kingsrook.com"
          "2","2022-06-17 14:52:59","2022-06-17 14:52:59","Jane","Smith","1982-02-02","jane@kingsrook.com"
          """;
-      FileUtils.writeStringToFile(new File(fullPath + "FILE-1.csv"), csvData1);
+      FileUtils.writeStringToFile(new File(fullPath + "FILE-1.csv"), csvData1, StandardCharsets.UTF_8);
 
       String csvData2 = """
          "id","createDate","modifyDate","firstName","lastName","birthDate","email"
          "3","2021-11-27 15:40:38","2021-11-27 15:40:38","Homer","S","1983-03-03","homer.s@kingsrook.com"
          "4","2022-07-18 15:53:00","2022-07-18 15:53:00","Marge","S","1984-04-04","marge.s@kingsrook.com"
          "5","2022-11-11 12:00:00","2022-11-12 13:00:00","Bart","S","1985-05-05","bart.s@kingsrook.com\""""; // intentionally no \n at EOL here
-      FileUtils.writeStringToFile(new File(fullPath + "FILE-2.csv"), csvData2);
+      FileUtils.writeStringToFile(new File(fullPath + "FILE-2.csv"), csvData2, StandardCharsets.UTF_8);
    }
 
 
@@ -177,15 +178,15 @@ public class FilesystemActionTest extends BaseTest
       String data1 = """
          Hello, Blob
          """;
-      FileUtils.writeStringToFile(new File(fullPath + "BLOB-1.txt"), data1);
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-1.txt"), data1, StandardCharsets.UTF_8);
 
       String data2 = """
          Hi Bob""";
-      FileUtils.writeStringToFile(new File(fullPath + "BLOB-2.txt"), data2);
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-2.txt"), data2, StandardCharsets.UTF_8);
 
       String data3 = """
          # Hi MD...""";
-      FileUtils.writeStringToFile(new File(fullPath + "BLOB-3.md"), data3);
+      FileUtils.writeStringToFile(new File(fullPath + "BLOB-3.md"), data3, StandardCharsets.UTF_8);
    }
 
 

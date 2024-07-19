@@ -23,6 +23,7 @@ package com.kingsrook.qqq.frontend.picocli;
 
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
@@ -65,7 +66,7 @@ public class TestUtils
       {
          InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))
@@ -182,7 +183,7 @@ public class TestUtils
             .withOutputMetaData(new QFunctionOutputMetaData()
                .withRecordListMetaData(new QRecordListMetaData()
                   .withTableName("person")
-                  .addField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
+                  .withField(new QFieldMetaData("fullGreeting", QFieldType.STRING))
                )
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          );

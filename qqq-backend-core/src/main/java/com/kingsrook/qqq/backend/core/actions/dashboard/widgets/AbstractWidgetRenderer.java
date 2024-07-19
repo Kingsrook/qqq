@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -102,7 +103,7 @@ public abstract class AbstractWidgetRenderer
             String possibleValueSourceName = dropdownData.getPossibleValueSourceName();
             if(possibleValueSourceName != null)
             {
-               QPossibleValueSource possibleValueSource = input.getInstance().getPossibleValueSource(possibleValueSourceName);
+               QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(possibleValueSourceName);
 
                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // this looks complicated, but is just look for a label in the dropdown data and if found use it,                                                                                  //

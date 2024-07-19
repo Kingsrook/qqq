@@ -415,8 +415,8 @@ public class QPossibleValueTranslatorTest extends BaseTest
       List<QRecord> regions   = List.of(new QRecord().withValue("id", 11).withValue("name", "Missouri").withValue("countryId", 111));
       List<QRecord> countries = List.of(new QRecord().withValue("id", 111).withValue("name", "U.S.A"));
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable("region"), regions);
-      TestUtils.insertRecords(qInstance, qInstance.getTable("country"), countries);
+      TestUtils.insertRecords(qInstance.getTable("region"), regions);
+      TestUtils.insertRecords(qInstance.getTable("country"), countries);
 
       MemoryRecordStore.resetStatistics();
       MemoryRecordStore.setCollectStatistics(true);

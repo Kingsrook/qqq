@@ -86,7 +86,7 @@ public class AlphaNumericComparator implements Comparator<String>
          ////////////////////////////////////////////////////////////////
          if(INT_PATTERN.matcher(a).matches() && INT_PATTERN.matcher(b).matches())
          {
-            int intsCompared = new Integer(a).compareTo(new Integer(b));
+            int intsCompared = Integer.valueOf(a).compareTo(Integer.valueOf(b));
             if(intsCompared == TIE)
             {
                ///////////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ public class AlphaNumericComparator implements Comparator<String>
             /////////////////////////////////////////////////////////////
             // if the ints compare as non-zero, return that comparison //
             /////////////////////////////////////////////////////////////
-            int intPartCompared = new Integer(aIntPart).compareTo(new Integer(bIntPart));
+            int intPartCompared = Integer.valueOf(aIntPart).compareTo(Integer.valueOf(bIntPart));
             if(intPartCompared != TIE)
             {
                return (intPartCompared);

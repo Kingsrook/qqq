@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.adapters;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -73,7 +74,7 @@ class QInstanceAdapterTest extends BaseTest
    @Disabled("Pending custom deserializer on QStepMetaData")
    void jsonToQInstance() throws IOException
    {
-      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstance.json"));
+      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstance.json"), StandardCharsets.UTF_8);
       QInstance qInstance = new QInstanceAdapter().jsonToQInstance(json);
       System.out.println(qInstance);
    }
@@ -87,7 +88,7 @@ class QInstanceAdapterTest extends BaseTest
    @Disabled("Pending custom deserializer on QStepMetaData")
    void jsonToQInstanceIncludingBackend() throws IOException
    {
-      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstanceIncludingBackend.json"));
+      String    json      = FileUtils.readFileToString(new File("src/test/resources/personQInstanceIncludingBackend.json"), StandardCharsets.UTF_8);
       QInstance qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(json);
       System.out.println(qInstance);
       assertNotNull(qInstance.getBackends());

@@ -92,7 +92,9 @@ public class RenderSavedReportProcessApiMetaDataEnricher
       ApiFieldMetaDataContainer apiFieldMetaDataContainer = new ApiFieldMetaDataContainer().withDefaultApiFieldMetaData(defaultApiFieldMetaData);
       if(example instanceof List)
       {
-         defaultApiFieldMetaData.withExample(new ExampleWithListValue().withValue((List<String>) example));
+         @SuppressWarnings("unchecked")
+         List<String> stringList = (List<String>) example;
+         defaultApiFieldMetaData.withExample(new ExampleWithListValue().withValue(stringList));
       }
       else
       {

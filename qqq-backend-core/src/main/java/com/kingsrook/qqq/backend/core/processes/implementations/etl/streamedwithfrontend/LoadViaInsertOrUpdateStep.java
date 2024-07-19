@@ -28,6 +28,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -86,7 +87,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
     *******************************************************************************/
    public void insertAndUpdateRecords(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      QTableMetaData tableMetaData = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
 
       if(CollectionUtils.nullSafeHasContents(recordsToInsert))
       {
@@ -139,7 +140,7 @@ public class LoadViaInsertOrUpdateStep extends AbstractLoadStep
     *******************************************************************************/
    protected void evaluateRecords(RunBackendStepInput runBackendStepInput) throws QException
    {
-      QTableMetaData tableMetaData = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
+      QTableMetaData tableMetaData = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_DESTINATION_TABLE));
       recordsToInsert = new ArrayList<>();
       recordsToUpdate = new ArrayList<>();
 

@@ -25,6 +25,7 @@ package com.kingsrook.sampleapp;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import java.util.UUID;
@@ -124,7 +125,7 @@ public class SampleMetaDataProviderTest
       {
          InputStream primeTestDatabaseSqlStream = SampleMetaDataProviderTest.class.getResourceAsStream("/" + sqlFileName);
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))
@@ -176,7 +177,7 @@ public class SampleMetaDataProviderTest
          id,name,state
          1,Chester,IL
          2,Red Bud,IL
-         3,Sparta,IL""");
+         3,Sparta,IL""", StandardCharsets.UTF_8);
 
       return destinationFile;
    }

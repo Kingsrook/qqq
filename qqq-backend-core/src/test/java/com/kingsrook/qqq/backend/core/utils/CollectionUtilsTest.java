@@ -557,6 +557,7 @@ class CollectionUtilsTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    @Test
    void testUseOrWrap()
    {

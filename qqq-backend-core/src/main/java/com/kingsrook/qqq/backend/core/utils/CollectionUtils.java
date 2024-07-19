@@ -50,7 +50,7 @@ public class CollectionUtils
     ** true if c is null or it's empty
     **
     *******************************************************************************/
-   public static boolean nullSafeIsEmpty(Collection c)
+   public static boolean nullSafeIsEmpty(Collection<?> c)
    {
       if(c == null || c.isEmpty())
       {
@@ -66,7 +66,7 @@ public class CollectionUtils
     ** true if c is null or it's empty
     **
     *******************************************************************************/
-   public static boolean nullSafeIsEmpty(Map c)
+   public static boolean nullSafeIsEmpty(Map<?, ?> c)
    {
       if(c == null || c.isEmpty())
       {
@@ -82,7 +82,7 @@ public class CollectionUtils
     ** true if c is NOT null and it's not empty
     **
     *******************************************************************************/
-   public static boolean nullSafeHasContents(Collection c)
+   public static boolean nullSafeHasContents(Collection<?> c)
    {
       return (!nullSafeIsEmpty(c));
    }
@@ -93,7 +93,7 @@ public class CollectionUtils
     ** true if c is NOT null and it's not empty
     **
     *******************************************************************************/
-   public static boolean nullSafeHasContents(Map c)
+   public static boolean nullSafeHasContents(Map<?, ?> c)
    {
       return (!nullSafeIsEmpty(c));
    }
@@ -104,7 +104,7 @@ public class CollectionUtils
     ** 0 if c is empty, otherwise, its size.
     **
     *******************************************************************************/
-   public static int nullSafeSize(Collection c)
+   public static int nullSafeSize(Collection<?> c)
    {
       if(c == null)
       {
@@ -120,7 +120,7 @@ public class CollectionUtils
     ** 0 if c is empty, otherwise, its size.
     **
     *******************************************************************************/
-   public static int nullSafeSize(Map c)
+   public static int nullSafeSize(Map<?, ?> c)
    {
       if(c == null)
       {
@@ -302,14 +302,14 @@ public class CollectionUtils
          return (rs);
       }
 
-      List<T> currentPage = new LinkedList<T>();
+      List<T> currentPage = new LinkedList<>();
       rs.add(currentPage);
 
       for(T value : values)
       {
          if(currentPage.size() >= pageSize)
          {
-            currentPage = new LinkedList<T>();
+            currentPage = new LinkedList<>();
             rs.add(currentPage);
          }
 
@@ -423,6 +423,7 @@ public class CollectionUtils
     **
     ** Meant to help avoid null checks on foreach loops.
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public static <T> T[] nonNullArray(T[] array)
    {
       if(array == null)
@@ -539,7 +540,7 @@ public class CollectionUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static Map objectToMap(Object o)
+   public static Map<?, ?> objectToMap(Object o)
    {
       ObjectMapper mapper = new ObjectMapper()
          .registerModule(new JavaTimeModule())
@@ -555,6 +556,7 @@ public class CollectionUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SafeVarargs
    public static <T> List<T> mergeLists(List<T>... lists)
    {
       List<T> rs = new ArrayList<>();
@@ -593,6 +595,7 @@ public class CollectionUtils
             return (null);
          }
 
+         @SuppressWarnings("unchecked")
          Class<T> targetClass = (Class<T>) typeToken.getRawType();
          if(targetClass.isInstance(collection))
          {
@@ -630,6 +633,7 @@ public class CollectionUtils
             return (null);
          }
 
+         @SuppressWarnings("unchecked")
          Class<T> targetClass = (Class<T>) typeToken.getRawType();
          if(targetClass.isInstance(collection))
          {

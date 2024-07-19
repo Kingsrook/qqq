@@ -65,9 +65,14 @@ public class MergeDuplicatesLoadStep extends LoadViaInsertOrUpdateStep
    {
       super.runOnePage(runBackendStepInput, runBackendStepOutput);
 
-      ListingHash<String, Serializable> otherTableIdsToDelete     = (ListingHash<String, Serializable>) runBackendStepInput.getValue("otherTableIdsToDelete");
+      @SuppressWarnings("unchecked")
+      ListingHash<String, Serializable> otherTableIdsToDelete = (ListingHash<String, Serializable>) runBackendStepInput.getValue("otherTableIdsToDelete");
+
+      @SuppressWarnings("unchecked")
       ListingHash<String, QQueryFilter> otherTableFiltersToDelete = (ListingHash<String, QQueryFilter>) runBackendStepInput.getValue("otherTableFiltersToDelete");
-      ListingHash<String, QRecord>      otherTableRecordsToStore  = (ListingHash<String, QRecord>) runBackendStepInput.getValue("otherTableRecordsToStore");
+
+      @SuppressWarnings("unchecked")
+      ListingHash<String, QRecord> otherTableRecordsToStore = (ListingHash<String, QRecord>) runBackendStepInput.getValue("otherTableRecordsToStore");
 
       if(otherTableIdsToDelete != null)
       {

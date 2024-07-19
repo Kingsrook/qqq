@@ -888,6 +888,7 @@ public class ValueUtils
     ** Return the first argument that isn't null.
     ** If all were null, return null.
     *******************************************************************************/
+   @SafeVarargs
    public static <T> T getFirstNonNull(T... ts)
    {
       if(ts == null || ts.length == 0)

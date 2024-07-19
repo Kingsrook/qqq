@@ -30,6 +30,7 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -72,7 +73,7 @@ public class MetaDataAction
       // map tables to frontend metadata //
       /////////////////////////////////////
       Map<String, QFrontendTableMetaData> tables = new LinkedHashMap<>();
-      for(Map.Entry<String, QTableMetaData> entry : metaDataInput.getInstance().getTables().entrySet())
+      for(Map.Entry<String, QTableMetaData> entry : QContext.getQInstance().getTables().entrySet())
       {
          String         tableName = entry.getKey();
          QTableMetaData table     = entry.getValue();
@@ -83,7 +84,7 @@ public class MetaDataAction
             continue;
          }
 
-         QBackendMetaData backendForTable = metaDataInput.getInstance().getBackendForTable(tableName);
+         QBackendMetaData backendForTable = QContext.getQInstance().getBackendForTable(tableName);
          tables.put(tableName, new QFrontendTableMetaData(metaDataInput, backendForTable, table, false, false));
          treeNodes.put(tableName, new AppTreeNode(table));
       }
@@ -96,7 +97,7 @@ public class MetaDataAction
       // map processes to frontend metadata //
       ////////////////////////////////////////
       Map<String, QFrontendProcessMetaData> processes = new LinkedHashMap<>();
-      for(Map.Entry<String, QProcessMetaData> entry : metaDataInput.getInstance().getProcesses().entrySet())
+      for(Map.Entry<String, QProcessMetaData> entry : QContext.getQInstance().getProcesses().entrySet())
       {
          String           processName = entry.getKey();
          QProcessMetaData process     = entry.getValue();
@@ -116,7 +117,7 @@ public class MetaDataAction
       // map reports to frontend metadata //
       //////////////////////////////////////
       Map<String, QFrontendReportMetaData> reports = new LinkedHashMap<>();
-      for(Map.Entry<String, QReportMetaData> entry : metaDataInput.getInstance().getReports().entrySet())
+      for(Map.Entry<String, QReportMetaData> entry : QContext.getQInstance().getReports().entrySet())
       {
          String          reportName = entry.getKey();
          QReportMetaData report     = entry.getValue();
@@ -136,7 +137,7 @@ public class MetaDataAction
       // map widgets to frontend metadata //
       //////////////////////////////////////
       Map<String, QFrontendWidgetMetaData> widgets = new LinkedHashMap<>();
-      for(Map.Entry<String, QWidgetMetaDataInterface> entry : metaDataInput.getInstance().getWidgets().entrySet())
+      for(Map.Entry<String, QWidgetMetaDataInterface> entry : QContext.getQInstance().getWidgets().entrySet())
       {
          String                   widgetName = entry.getKey();
          QWidgetMetaDataInterface widget     = entry.getValue();
@@ -154,7 +155,7 @@ public class MetaDataAction
       ///////////////////////////////////////////////////////
       // sort apps - by sortOrder (integer), then by label //
       ///////////////////////////////////////////////////////
-      List<QAppMetaData> sortedApps = metaDataInput.getInstance().getApps().values().stream()
+      List<QAppMetaData> sortedApps = QContext.getQInstance().getApps().values().stream()
          .sorted(Comparator.comparing((QAppMetaData a) -> a.getSortOrder())
             .thenComparing((QAppMetaData a) -> a.getLabel()))
          .toList();
@@ -211,14 +212,14 @@ public class MetaDataAction
       ////////////////////////////////////
       // add branding metadata if found //
       ////////////////////////////////////
-      if(metaDataInput.getInstance().getBranding() != null)
+      if(QContext.getQInstance().getBranding() != null)
       {
-         metaDataOutput.setBranding(metaDataInput.getInstance().getBranding());
+         metaDataOutput.setBranding(QContext.getQInstance().getBranding());
       }
 
-      metaDataOutput.setEnvironmentValues(metaDataInput.getInstance().getEnvironmentValues());
+      metaDataOutput.setEnvironmentValues(QContext.getQInstance().getEnvironmentValues());
 
-      metaDataOutput.setHelpContents(metaDataInput.getInstance().getHelpContent());
+      metaDataOutput.setHelpContents(QContext.getQInstance().getHelpContent());
 
       // todo post-customization - can do whatever w/ the result if you want?
 

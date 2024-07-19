@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.amazonaws.services.s3.model.S3Object;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -68,9 +69,9 @@ public class S3InsertActionTest extends BaseS3Test
       assertThat(insertOutput.getRecords())
          .allMatch(record -> record.getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH).contains("blobs"));
 
-      String   fullPath = insertOutput.getRecords().get(0).getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH);
-      S3Object object   = getAmazonS3().getObject(BUCKET_NAME, fullPath);
-      List     lines    = IOUtils.readLines(object.getObjectContent());
+      String       fullPath = insertOutput.getRecords().get(0).getBackendDetailString(FilesystemRecordBackendDetailFields.FULL_PATH);
+      S3Object     object   = getAmazonS3().getObject(BUCKET_NAME, fullPath);
+      List<String> lines    = IOUtils.readLines(object.getObjectContent(), StandardCharsets.UTF_8);
       assertEquals("Hi, Bob.", lines.get(0));
    }
 
