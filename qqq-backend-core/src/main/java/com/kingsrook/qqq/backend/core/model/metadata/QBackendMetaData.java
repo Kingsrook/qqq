@@ -53,6 +53,8 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    private String  variantOptionsTableUsernameField;
    private String  variantOptionsTablePasswordField;
    private String  variantOptionsTableApiKeyField;
+   private String  variantOptionsTableClientIdField;
+   private String  variantOptionsTableClientSecretField;
    private String  variantOptionsTableName;
 
    // todo - at some point, we may want to apply this to secret properties on subclasses?
@@ -648,4 +650,66 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    {
       qInstance.addBackend(this);
    }
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableClientIdField
+    *******************************************************************************/
+   public String getVariantOptionsTableClientIdField()
+   {
+      return (this.variantOptionsTableClientIdField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableClientIdField
+    *******************************************************************************/
+   public void setVariantOptionsTableClientIdField(String variantOptionsTableClientIdField)
+   {
+      this.variantOptionsTableClientIdField = variantOptionsTableClientIdField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableClientIdField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableClientIdField(String variantOptionsTableClientIdField)
+   {
+      this.variantOptionsTableClientIdField = variantOptionsTableClientIdField;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for variantOptionsTableClientSecretField
+    *******************************************************************************/
+   public String getVariantOptionsTableClientSecretField()
+   {
+      return (this.variantOptionsTableClientSecretField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantOptionsTableClientSecretField
+    *******************************************************************************/
+   public void setVariantOptionsTableClientSecretField(String variantOptionsTableClientSecretField)
+   {
+      this.variantOptionsTableClientSecretField = variantOptionsTableClientSecretField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantOptionsTableClientSecretField
+    *******************************************************************************/
+   public QBackendMetaData withVariantOptionsTableClientSecretField(String variantOptionsTableClientSecretField)
+   {
+      this.variantOptionsTableClientSecretField = variantOptionsTableClientSecretField;
+      return (this);
+   }
+
+
 }
