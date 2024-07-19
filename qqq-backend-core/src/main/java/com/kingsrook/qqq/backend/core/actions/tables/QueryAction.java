@@ -297,7 +297,7 @@ public class QueryAction
       {
          if(qPossibleValueTranslator == null)
          {
-            qPossibleValueTranslator = new QPossibleValueTranslator(queryInput.getInstance(), queryInput.getSession());
+            qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
          }
          qPossibleValueTranslator.translatePossibleValuesInRecords(queryInput.getTable(), records, queryInput.getQueryJoins(), queryInput.getFieldsToTranslatePossibleValues());
       }

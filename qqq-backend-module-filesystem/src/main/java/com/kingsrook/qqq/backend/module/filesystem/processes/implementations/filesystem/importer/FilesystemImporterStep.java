@@ -127,8 +127,8 @@ public class FilesystemImporterStep implements BackendStep
       Boolean updateFileIfNameExists = runBackendStepInput.getValueBoolean(FIELD_UPDATE_FILE_IF_NAME_EXISTS);
       Boolean archiveFileEnabled     = runBackendStepInput.getValueBoolean(FIELD_ARCHIVE_FILE_ENABLED);
 
-      QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
-      QTableMetaData importFileTable = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FIELD_IMPORT_FILE_TABLE));
+      QTableMetaData sourceTable     = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_SOURCE_TABLE));
+      QTableMetaData importFileTable = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FIELD_IMPORT_FILE_TABLE));
 
       String missingFieldErrorPrefix = "Process " + runBackendStepInput.getProcessName() + " was misconfigured - missing value in field: ";
       Objects.requireNonNull(fileFormat, missingFieldErrorPrefix + FIELD_FILE_FORMAT);
@@ -137,7 +137,7 @@ public class FilesystemImporterStep implements BackendStep
       // list files in the backend system                                              //
       // todo - can we do this using query action, with this being a "ONE" type table? //
       ///////////////////////////////////////////////////////////////////////////////////
-      QBackendMetaData                    sourceBackend    = runBackendStepInput.getInstance().getBackendForTable(sourceTable.getName());
+      QBackendMetaData                    sourceBackend    = QContext.getQInstance().getBackendForTable(sourceTable.getName());
       FilesystemBackendModuleInterface<F> sourceModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
       AbstractBaseFilesystemAction<F>     sourceActionBase = sourceModule.getActionBase();
       sourceActionBase.preAction(sourceBackend);
@@ -340,7 +340,7 @@ public class FilesystemImporterStep implements BackendStep
       QTableMetaData archiveTable;
       try
       {
-         archiveTable = runBackendStepInput.getInstance().getTable(archiveTableName);
+         archiveTable = QContext.getQInstance().getTable(archiveTableName);
       }
       catch(Exception e)
       {
@@ -349,7 +349,7 @@ public class FilesystemImporterStep implements BackendStep
 
       String archivePath = Objects.requireNonNullElse(runBackendStepInput.getValueString(FIELD_ARCHIVE_PATH), "");
 
-      QBackendMetaData                    archiveBackend    = runBackendStepInput.getInstance().getBackendForTable(archiveTable.getName());
+      QBackendMetaData                    archiveBackend    = QContext.getQInstance().getBackendForTable(archiveTable.getName());
       FilesystemBackendModuleInterface<?> archiveModule     = (FilesystemBackendModuleInterface<?>) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
       AbstractBaseFilesystemAction<?>     archiveActionBase = archiveModule.getActionBase();
       archiveActionBase.preAction(archiveBackend);

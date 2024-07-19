@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -70,11 +71,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          QTableMetaData table = aggregateInput.getTable();
 
          QQueryFilter filter       = clonedOrNewFilter(aggregateInput.getFilter());
-         JoinsContext joinsContext = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
+         JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
 
          List<Serializable> params = new ArrayList<>();
 
-         String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext, params);
+         String       fromClause    = makeFromClause(QContext.getQInstance(), table.getName(), joinsContext, params);
          List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 
          String sql = "SELECT " + StringUtils.join(", ", selectClauses)

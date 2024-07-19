@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -181,10 +182,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       {
          String         widgetLabel = input.getQueryParams().get("widgetLabel");
          String         joinName    = input.getQueryParams().get("joinName");
-         QJoinMetaData  join        = input.getInstance().getJoin(joinName);
+         QJoinMetaData  join        = QContext.getQInstance().getJoin(joinName);
          String         id          = input.getQueryParams().get("id");
-         QTableMetaData leftTable   = input.getInstance().getTable(join.getLeftTable());
-         QTableMetaData rightTable  = input.getInstance().getTable(join.getRightTable());
+         QTableMetaData leftTable   = QContext.getQInstance().getTable(join.getLeftTable());
+         QTableMetaData rightTable  = QContext.getQInstance().getTable(join.getRightTable());
 
          Integer maxRows = null;
          if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
@@ -252,7 +253,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             }
          }
 
-         String tablePath   = input.getInstance().getTablePath(rightTable.getName());
+         String tablePath   = QContext.getQInstance().getTablePath(rightTable.getName());
          String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
 
          ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, rightTable, tablePath, viewAllLink, totalRows);

@@ -124,7 +124,7 @@ public class ExcelFastexcelExportStreamer implements ExportStreamerInterface
          if(workbook == null)
          {
             String    appName = ObjectUtils.tryAndRequireNonNullElse(() -> QContext.getQInstance().getBranding().getAppName(), "QQQ");
-            QInstance instance = exportInput.getInstance();
+            QInstance instance = QContext.getQInstance();
             if(instance != null && instance.getBranding() != null && instance.getBranding().getCompanyName() != null)
             {
                appName = instance.getBranding().getCompanyName();

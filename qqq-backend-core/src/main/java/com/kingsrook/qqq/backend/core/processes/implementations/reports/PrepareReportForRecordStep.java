@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -106,7 +107,7 @@ public class PrepareReportForRecordStep extends PrepareReportStep
       }
 
       String          reportName = runBackendStepInput.getValueString("reportName");
-      QReportMetaData report     = runBackendStepInput.getInstance().getReport(reportName);
+      QReportMetaData report     = QContext.getQInstance().getReport(reportName);
       // runBackendStepOutput.addValue("downloadFileBaseName", runBackendStepInput.getTable().getLabel() + " " + record.getRecordLabel());
       runBackendStepOutput.addValue("downloadFileBaseName", report.getLabel() + " - " + record.getRecordLabel());
 

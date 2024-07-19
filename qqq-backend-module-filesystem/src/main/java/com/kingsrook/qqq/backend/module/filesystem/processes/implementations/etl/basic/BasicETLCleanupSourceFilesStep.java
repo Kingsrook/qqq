@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.processes.implementations.et
 
 import java.io.File;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -68,8 +69,8 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       String                  sourceTableName = runBackendStepInput.getValueString(BasicETLProcess.FIELD_SOURCE_TABLE);
-      QTableMetaData          table           = runBackendStepInput.getInstance().getTable(sourceTableName);
-      QBackendMetaData        backend         = runBackendStepInput.getInstance().getBackendForTable(sourceTableName);
+      QTableMetaData          table           = QContext.getQInstance().getTable(sourceTableName);
+      QBackendMetaData        backend         = QContext.getQInstance().getBackendForTable(sourceTableName);
       QBackendModuleInterface module          = new QBackendModuleDispatcher().getQBackendModule(backend);
 
       if(!(module instanceof FilesystemBackendModuleInterface filesystemModule))
@@ -93,7 +94,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
          if(VALUE_DELETE.equals(moveOrDelete))
          {
             LOG.info("Deleting ETL source file: " + sourceFile);
-            actionBase.deleteFile(runBackendStepInput.getInstance(), table, sourceFile);
+            actionBase.deleteFile(QContext.getQInstance(), table, sourceFile);
          }
          else if(VALUE_MOVE.equals(moveOrDelete))
          {
@@ -105,7 +106,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
             }
             String filePathWithoutBase = actionBase.stripBackendAndTableBasePathsFromFileName(sourceFile, backend, table);
             String destinationPath     = destinationForMoves + File.separator + filePathWithoutBase;
-            actionBase.moveFile(runBackendStepInput.getInstance(), table, sourceFile, destinationPath);
+            actionBase.moveFile(QContext.getQInstance(), table, sourceFile, destinationPath);
          }
          else
          {

@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
@@ -95,10 +96,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          StringBuilder sql = new StringBuilder(makeSelectClause(queryInput));
 
          QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
-         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), filter);
+         JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), tableName, queryInput.getQueryJoins(), filter);
 
          List<Serializable> params = new ArrayList<>();
-         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext, params));
+         sql.append(" FROM ").append(makeFromClause(QContext.getQInstance(), tableName, joinsContext, params));
          sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
@@ -141,7 +142,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          {
             if(queryJoin.getSelect())
             {
-               QTableMetaData joinTable        = queryInput.getInstance().getTable(queryJoin.getJoinTable());
+               QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
                String         tableNameOrAlias = queryJoin.getJoinTableOrItsAlias();
                for(QFieldMetaData joinField : joinTable.getFields().values())
                {
@@ -289,7 +290,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
     *******************************************************************************/
    private String makeSelectClause(QueryInput queryInput) throws QException
    {
-      QInstance       instance   = queryInput.getInstance();
+      QInstance       instance   = QContext.getQInstance();
       String          tableName  = queryInput.getTableName();
       List<QueryJoin> queryJoins = queryInput.getQueryJoins();
       QTableMetaData  table      = instance.getTable(tableName);

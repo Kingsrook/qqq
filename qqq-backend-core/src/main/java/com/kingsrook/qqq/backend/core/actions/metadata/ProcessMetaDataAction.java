@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInput;
@@ -47,7 +48,7 @@ public class ProcessMetaDataAction
       // todo pre-customization - just get to modify the request?
       ProcessMetaDataOutput processMetaDataOutput = new ProcessMetaDataOutput();
 
-      QProcessMetaData process = processMetaDataInput.getInstance().getProcess(processMetaDataInput.getProcessName());
+      QProcessMetaData process = QContext.getQInstance().getProcess(processMetaDataInput.getProcessName());
       if(process == null)
       {
          throw (new QNotFoundException("Process [" + processMetaDataInput.getProcessName() + "] was not found."));

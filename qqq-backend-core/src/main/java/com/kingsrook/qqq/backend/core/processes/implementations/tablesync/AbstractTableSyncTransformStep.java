@@ -365,10 +365,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          {
             if(possibleValueTranslator == null)
             {
-               possibleValueTranslator = new QPossibleValueTranslator(runBackendStepInput.getInstance(), runBackendStepInput.getSession());
+               possibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
             }
 
-            possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
+            possibleValueTranslator.translatePossibleValuesInRecords(QContext.getQInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
    }

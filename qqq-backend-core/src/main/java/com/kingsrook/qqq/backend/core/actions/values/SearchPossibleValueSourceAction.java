@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -69,14 +70,14 @@ public class SearchPossibleValueSourceAction
     *******************************************************************************/
    public SearchPossibleValueSourceOutput execute(SearchPossibleValueSourceInput input) throws QException
    {
-      QInstance            qInstance           = input.getInstance();
+      QInstance            qInstance           = QContext.getQInstance();
       QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(input.getPossibleValueSourceName());
       if(possibleValueSource == null)
       {
          throw new QException("Missing possible value source named [" + input.getPossibleValueSourceName() + "]");
       }
 
-      possibleValueTranslator = new QPossibleValueTranslator(input.getInstance(), input.getSession());
+      possibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
       SearchPossibleValueSourceOutput output = null;
       if(possibleValueSource.getType().equals(QPossibleValueSourceType.ENUM))
       {
@@ -199,7 +200,7 @@ public class SearchPossibleValueSourceAction
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(possibleValueSource.getTableName());
 
-      QTableMetaData table = input.getInstance().getTable(possibleValueSource.getTableName());
+      QTableMetaData table = QContext.getQInstance().getTable(possibleValueSource.getTableName());
 
       QQueryFilter queryFilter = new QQueryFilter();
       queryFilter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.reports;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -56,7 +57,7 @@ public class PrepareReportStep implements BackendStep
          throw (new QException("Process value [reportName] was not given."));
       }
 
-      QReportMetaData report = runBackendStepInput.getInstance().getReport(reportName);
+      QReportMetaData report = QContext.getQInstance().getReport(reportName);
       if(report == null)
       {
          throw (new QException("Process named [" + reportName + "] was not found in this instance."));

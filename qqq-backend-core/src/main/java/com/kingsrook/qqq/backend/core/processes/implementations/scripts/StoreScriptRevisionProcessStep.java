@@ -145,7 +145,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
 
          try
          {
-            scriptRevision.setValue("author", input.getSession().getUser().getFullName());
+            scriptRevision.setValue("author", QContext.getQSession().getUser().getFullName());
          }
          catch(Exception e)
          {

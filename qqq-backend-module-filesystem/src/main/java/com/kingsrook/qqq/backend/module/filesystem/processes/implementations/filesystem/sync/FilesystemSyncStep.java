@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -74,23 +75,23 @@ public class FilesystemSyncStep implements BackendStep
     *******************************************************************************/
    private <F> void doRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      QTableMetaData sourceTable     = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
-      QTableMetaData archiveTable    = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
-      QTableMetaData processingTable = runBackendStepInput.getInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
+      QTableMetaData sourceTable     = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_SOURCE_TABLE));
+      QTableMetaData archiveTable    = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_ARCHIVE_TABLE));
+      QTableMetaData processingTable = QContext.getQInstance().getTable(runBackendStepInput.getValueString(FilesystemSyncProcess.FIELD_PROCESSING_TABLE));
 
-      QBackendMetaData                    sourceBackend    = runBackendStepInput.getInstance().getBackendForTable(sourceTable.getName());
+      QBackendMetaData                    sourceBackend    = QContext.getQInstance().getBackendForTable(sourceTable.getName());
       FilesystemBackendModuleInterface<F> sourceModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(sourceBackend);
       AbstractBaseFilesystemAction<F>     sourceActionBase = sourceModule.getActionBase();
       sourceActionBase.preAction(sourceBackend);
       Map<String, F> sourceFiles = getFileNames(sourceActionBase, sourceTable, sourceBackend);
 
-      QBackendMetaData                    archiveBackend    = runBackendStepInput.getInstance().getBackendForTable(archiveTable.getName());
+      QBackendMetaData                    archiveBackend    = QContext.getQInstance().getBackendForTable(archiveTable.getName());
       FilesystemBackendModuleInterface<F> archiveModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(archiveBackend);
       AbstractBaseFilesystemAction<F>     archiveActionBase = archiveModule.getActionBase();
       archiveActionBase.preAction(archiveBackend);
       Set<String> archiveFiles = getFileNames(archiveActionBase, archiveTable, archiveBackend).keySet();
 
-      QBackendMetaData                    processingBackend    = runBackendStepInput.getInstance().getBackendForTable(processingTable.getName());
+      QBackendMetaData                    processingBackend    = QContext.getQInstance().getBackendForTable(processingTable.getName());
       FilesystemBackendModuleInterface<F> processingModule     = (FilesystemBackendModuleInterface<F>) new QBackendModuleDispatcher().getQBackendModule(processingBackend);
       AbstractBaseFilesystemAction<F>     processingActionBase = processingModule.getActionBase();
       processingActionBase.preAction(processingBackend);

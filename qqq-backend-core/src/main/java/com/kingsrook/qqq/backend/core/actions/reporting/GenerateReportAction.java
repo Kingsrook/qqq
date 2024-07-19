@@ -443,7 +443,13 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
             queryInput.setShouldTranslatePossibleValues(true);
+<<<<<<< HEAD
             queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource));
+||||||| parent of a9eb8946 (Remove all calls to actionInput.getInstance and getSesssion, in favor of the equivallent methods from QContext)
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(reportInput.getInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
+=======
+            queryInput.setFieldsToTranslatePossibleValues(setupFieldsToTranslatePossibleValues(reportInput, dataSource, new JoinsContext(QContext.getQInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryInput.getFilter())));
+>>>>>>> a9eb8946 (Remove all calls to actionInput.getInstance and getSesssion, in favor of the equivallent methods from QContext)
 
             if(dataSource.getQueryInputCustomizer() != null)
             {
@@ -800,6 +806,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       List<QReportView> reportViews = views.stream().filter(v -> v.getType().equals(ReportType.SUMMARY)).toList();
       for(QReportView view : reportViews)
       {
+<<<<<<< HEAD
          QReportDataSource dataSource = getDataSource(view.getDataSourceName());
          if(dataSource == null)
          {
@@ -808,6 +815,15 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
 
          QTableMetaData table         = QContext.getQInstance().getTable(dataSource.getSourceTable());
          SummaryOutput  summaryOutput = computeSummaryRowsForView(reportInput, view, table);
+||||||| parent of a9eb8946 (Remove all calls to actionInput.getInstance and getSesssion, in favor of the equivallent methods from QContext)
+         QReportDataSource dataSource    = getDataSource(view.getDataSourceName());
+         QTableMetaData    table         = reportInput.getInstance().getTable(dataSource.getSourceTable());
+         SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
+=======
+         QReportDataSource dataSource    = getDataSource(view.getDataSourceName());
+         QTableMetaData    table         = QContext.getQInstance().getTable(dataSource.getSourceTable());
+         SummaryOutput     summaryOutput = computeSummaryRowsForView(reportInput, view, table);
+>>>>>>> a9eb8946 (Remove all calls to actionInput.getInstance and getSesssion, in favor of the equivallent methods from QContext)
 
          ExportInput exportInput = new ExportInput();
          exportInput.setReportDestination(reportInput.getReportDestination());

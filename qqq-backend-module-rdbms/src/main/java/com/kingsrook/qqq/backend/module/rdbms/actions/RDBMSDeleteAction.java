@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
@@ -273,7 +274,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
       QTableMetaData     table  = deleteInput.getTable();
 
       String       tableName    = getTableName(table);
-      JoinsContext joinsContext = new JoinsContext(deleteInput.getInstance(), table.getName(), new ArrayList<>(), deleteInput.getQueryFilter());
+      JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), table.getName(), new ArrayList<>(), deleteInput.getQueryFilter());
       String       whereClause  = makeWhereClause(joinsContext, filter, params);
 
       // todo sql customization - can edit sql and/or param list?
