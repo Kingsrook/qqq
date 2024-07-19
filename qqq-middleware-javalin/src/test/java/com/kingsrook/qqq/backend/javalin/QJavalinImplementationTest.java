@@ -954,6 +954,28 @@ class QJavalinImplementationTest extends QJavalinTestBase
     **
     *******************************************************************************/
    @Test
+   void testPossibleValueWithFilter()
+   {
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=")
+         .field("values", """
+         {"email":"tsamples@mmltholdings.com"}
+         """)
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertNotNull(jsonObject.getJSONArray("options"));
+      assertEquals(1, jsonObject.getJSONArray("options").length());
+      assertEquals("Tyler Samples (4)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testPossibleValueWithIds()
    {
       HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/possibleValues/partnerPersonId?ids=4,5").asString();

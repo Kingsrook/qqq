@@ -316,7 +316,10 @@ public class TestUtils
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date"))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date"))
-         .withField(new QFieldMetaData("ownerPersonId", QFieldType.INTEGER).withBackendName("owner_person_id"))
+         .withField(new QFieldMetaData("ownerPersonId", QFieldType.INTEGER).withBackendName("owner_person_id")
+            .withPossibleValueSourceName(TABLE_NAME_PERSON)
+            .withPossibleValueSourceFilter(new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.EQUALS, "${input.email}")))
+         )
          .withField(new QFieldMetaData("name", QFieldType.STRING).withBackendName("name"))
          .withField(new QFieldMetaData("species", QFieldType.STRING).withBackendName("species"));
 
