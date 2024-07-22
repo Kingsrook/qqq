@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting.customizers;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 
 
 /*******************************************************************************
@@ -37,6 +38,6 @@ public interface ReportCustomRecordSourceInterface
    /***************************************************************************
     ** Given the report input, put records into the pipe, for the report.
     ***************************************************************************/
-   void execute(ReportInput reportInput, RecordPipe recordPipe) throws QException;
+   void execute(ReportInput reportInput, QReportDataSource reportDataSource, RecordPipe recordPipe) throws QException;
 
 }

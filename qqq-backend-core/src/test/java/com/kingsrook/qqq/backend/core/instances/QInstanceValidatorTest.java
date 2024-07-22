@@ -2398,7 +2398,7 @@ public class QInstanceValidatorTest extends BaseTest
        **
        ***************************************************************************/
       @Override
-      public void execute(ReportInput reportInput, RecordPipe recordPipe) throws QException
+      public void execute(ReportInput reportInput, QReportDataSource reportDataSource, RecordPipe recordPipe) throws QException
       {
 
       }

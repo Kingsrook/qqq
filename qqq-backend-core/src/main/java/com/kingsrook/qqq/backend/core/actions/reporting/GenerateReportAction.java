@@ -453,7 +453,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          if(dataSource.getCustomRecordSource() != null)
          {
             ReportCustomRecordSourceInterface recordSource = QCodeLoader.getAdHoc(ReportCustomRecordSourceInterface.class, dataSource.getCustomRecordSource());
-            recordSource.execute(reportInput, recordPipe);
+            recordSource.execute(reportInput, dataSource, recordPipe);
             return (true);
          }
          else if(dataSource.getSourceTable() != null)
