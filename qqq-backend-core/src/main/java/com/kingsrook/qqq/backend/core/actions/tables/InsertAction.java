@@ -227,6 +227,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
     *******************************************************************************/
    public void performValidations(InsertInput insertInput, boolean isPreview) throws QException
    {
+      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
+      {
+         return;
+      }
+
       QTableMetaData table = insertInput.getTable();
 
       ///////////////////////////////////////////////////////////////////
