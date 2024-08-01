@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -115,6 +116,14 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             actionTimeoutHelper = new ActionTimeoutHelper(aggregateInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // to avoid counting time spent acquiring a connection, re-set the queryStat startTimestamp here //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            if(queryStat != null)
+            {
+               queryStat.setStartTimestamp(Instant.now());
+            }
 
             QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
