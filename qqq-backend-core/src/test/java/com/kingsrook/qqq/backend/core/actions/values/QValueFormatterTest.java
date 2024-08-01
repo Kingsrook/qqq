@@ -36,10 +36,10 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -89,6 +89,10 @@ class QValueFormatterTest extends BaseTest
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), null));
       assertEquals("Yes", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), true));
       assertEquals("No", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), false));
+      assertEquals("Yes", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), "true"));
+      assertEquals("No", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.BOOLEAN), "false"));
+      assertEquals("true", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.STRING), "true"));
+      assertEquals("false", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.STRING), "false"));
 
       assertNull(QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), null));
       assertEquals("5:00:00 AM", QValueFormatter.formatValue(new QFieldMetaData().withType(QFieldType.TIME), LocalTime.of(5, 0)));
