@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
  **
  ** Note:  One would imagine that this class shouldn't ever implement Serializable...
  *******************************************************************************/
-public class QBackendTransaction
+public class QBackendTransaction implements AutoCloseable
 {
 
    /*******************************************************************************
