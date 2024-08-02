@@ -102,4 +102,80 @@ public class QJavalinUtils
 
       return (null);
    }
+
+
+
+   /***************************************************************************
+    ** get a param value from either the form-body, or query string returning
+    ** the first one found, looking in that order, null if neither is found.
+    ** uses try-catch on reading each of those, as they apparently can throw!
+    ***************************************************************************/
+   static String getFormParamOrQueryParam(Context context, String parameterName)
+   {
+      String value = null;
+      try
+      {
+         value = context.formParam(parameterName);
+      }
+      catch(Exception e)
+      {
+         ////////////////
+         // leave null //
+         ////////////////
+      }
+
+      if(!StringUtils.hasContent(value))
+      {
+         try
+         {
+            value = context.queryParam(parameterName);
+         }
+         catch(Exception e)
+         {
+            ////////////////
+            // leave null //
+            ////////////////
+         }
+      }
+
+      return value;
+   }
+
+
+
+   /***************************************************************************
+    ** get a param value from either the query string, or form-body, returning
+    ** the first one found, looking in that order, null if neither is found.
+    ** uses try-catch on reading each of those, as they apparently can throw!
+    ***************************************************************************/
+   static String getQueryParamOrFormParam(Context context, String parameterName)
+   {
+      String value = null;
+      try
+      {
+         value = context.queryParam(parameterName);
+      }
+      catch(Exception e)
+      {
+         ////////////////
+         // leave null //
+         ////////////////
+      }
+
+      if(!StringUtils.hasContent(value))
+      {
+         try
+         {
+            value = context.formParam(parameterName);
+         }
+         catch(Exception e)
+         {
+            ////////////////
+            // leave null //
+            ////////////////
+         }
+      }
+
+      return value;
+   }
 }

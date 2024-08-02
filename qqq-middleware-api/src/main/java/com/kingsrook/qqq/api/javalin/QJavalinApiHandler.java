@@ -458,11 +458,18 @@ public class QJavalinApiHandler
          ObjectUtils.ifNotNull(fieldsContainer.getRecordIdsField(), fields::add);
          for(QFieldMetaData field : fields)
          {
-            String queryParamValue = paramAccessor.apply(context, field.getName());
-            if(queryParamValue != null)
+            try
             {
-               String backendName = ObjectUtils.requireConditionElse(field.getBackendName(), StringUtils::hasContent, field.getName());
-               parameters.put(backendName, queryParamValue);
+               String value = paramAccessor.apply(context, field.getName());
+               if(value != null)
+               {
+                  String backendName = ObjectUtils.requireConditionElse(field.getBackendName(), StringUtils::hasContent, field.getName());
+                  parameters.put(backendName, value);
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.info("Exception trying to process process input field", e);
             }
          }
       }
