@@ -61,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.module.api.BaseTest;
 import com.kingsrook.qqq.backend.module.api.TestUtils;
 import com.kingsrook.qqq.backend.module.api.exceptions.RateLimitException;
@@ -74,6 +75,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -864,6 +866,72 @@ class BaseAPIActionUtilTest extends BaseTest
             .hasRootCauseInstanceOf(SocketTimeoutException.class)
             .rootCause().hasMessageContaining("timed out");
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuthorizationApiKeyQueryParam() throws QException
+   {
+      APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
+      backend.setAuthorizationType(AuthorizationType.API_KEY_QUERY_PARAM);
+      backend.setApiKeyQueryParamName("apikey");
+      backend.setApiKey("9876-WXYZ");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // this will make it not use the mock makeRequest method,                                 //
+      // but instead the mock executeHttpRequest, so we can test code from the base makeRequest //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      mockApiUtilsHelper.setUseMock(false);
+
+      //////////////////////////////////////////////////////////////////////////////
+      // we'll want to assert that the URL has the api query string - and just    //
+      // one copy of it (as we once had a bug where it got duplicated upon retry) //
+      //////////////////////////////////////////////////////////////////////////////
+      UnsafeConsumer<HttpRequestBase, Exception> asserter = request -> assertThat(request.getURI().toString())
+         .contains("?apikey=9876-WXYZ")
+         .doesNotContain("?apikey=9876-WXYZ&apikey=9876-WXYZ");
+
+      ////////////////////////////////////////
+      // queue up a 429, so we'll try-again //
+      ////////////////////////////////////////
+      mockApiUtilsHelper.setMockRequestAsserter(asserter);
+      mockApiUtilsHelper.enqueueMockResponse(new QHttpResponse().withStatusCode(429).withContent(""));
+
+      //////////////////////
+      // queue a response //
+      //////////////////////
+      mockApiUtilsHelper.setMockRequestAsserter(asserter);
+      mockApiUtilsHelper.enqueueMockResponse("""
+         {"id": 3, "name": "Bart"},
+         """);
+
+      GetOutput getOutput = runSimpleGetAction();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGenerateOutboundApiLogRecord() throws QException
+   {
+      APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
+      backend.setAuthorizationType(AuthorizationType.API_KEY_QUERY_PARAM);
+      backend.setApiKeyQueryParamName("apikey");
+      backend.setApiKey("9876-WXYZ");
+
+      MockApiActionUtils mockApiActionUtils = new MockApiActionUtils();
+      mockApiActionUtils.setBackendMetaData(backend);
+      OutboundAPILog outboundAPILog = mockApiActionUtils.generateOutboundApiLogRecord(new HttpGet("...?apikey=9876-WXYZ"), new QHttpResponse());
+
+      assertThat(outboundAPILog.getUrl())
+         .doesNotContain("9876-WXYZ")
+         .contains("?apikey=*****");
    }
 
 

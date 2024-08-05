@@ -433,6 +433,8 @@ public class ProcessLockUtils
          {
             throw (new QException("Error deleting processLock record: " + deleteOutput.getRecordsWithErrors().get(0).getErrorsAsString()));
          }
+
+         LOG.info("Released process lock", logPair("id", processLock.getId()), logPair("key", processLock.getKey()), logPair("typeId", processLock.getProcessLockTypeId()), logPair("details", processLock.getDetails()));
       }
       catch(QException e)
       {

@@ -733,20 +733,7 @@ public class BaseAPIActionUtil
          case API_KEY_HEADER -> request.setHeader("API-Key", getApiKey());
          case API_TOKEN -> request.setHeader("Authorization", "Token " + getApiKey());
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
-         case API_KEY_QUERY_PARAM ->
-         {
-            try
-            {
-               String uri = request.getURI().toString();
-               uri += (uri.contains("?") ? "&" : "?");
-               uri += backendMetaData.getApiKeyQueryParamName() + "=" + getApiKey();
-               request.setURI(new URI(uri));
-            }
-            catch(URISyntaxException e)
-            {
-               throw (new QException("Error setting authorization query parameter", e));
-            }
-         }
+         case API_KEY_QUERY_PARAM -> addApiKeyQueryParamToRequest(request);
          case CUSTOM -> handleCustomAuthorization(request);
          default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
@@ -822,6 +809,35 @@ public class BaseAPIActionUtil
       }
       Serializable variantId = session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
       return variantId;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected void addApiKeyQueryParamToRequest(HttpRequestBase request) throws QException
+   {
+      try
+      {
+         String uri = request.getURI().toString();
+         String pair = backendMetaData.getApiKeyQueryParamName() + "=" + getApiKey();
+
+         ///////////////////////////////////////////////////////////////////////////////////
+         // avoid re-adding the name=value pair if it's already there (e.g., for a retry) //
+         ///////////////////////////////////////////////////////////////////////////////////
+         if(!uri.contains(pair))
+         {
+            uri += (uri.contains("?") ? "&" : "?");
+            uri += pair;
+         }
+
+         request.setURI(new URI(uri));
+      }
+      catch(URISyntaxException e)
+      {
+         throw (new QException("Error setting authorization query parameter", e));
+      }
    }
 
 
@@ -1329,45 +1345,55 @@ public class BaseAPIActionUtil
             return;
          }
 
-         String requestBody = null;
-         if(request instanceof HttpEntityEnclosingRequest entityRequest)
-         {
-            try
-            {
-               requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent(), StandardCharsets.UTF_8));
-            }
-            catch(Exception e)
-            {
-               // leave it null...
-            }
-         }
-
-         ////////////////////////////////////
-         // mask api keys in query strings //
-         ////////////////////////////////////
-         String url = request.getURI().toString();
-         if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_QUERY_PARAM))
-         {
-            url = url.replaceFirst(backendMetaData.getApiKey(), "******");
-         }
+         OutboundAPILog outboundAPILog = generateOutboundApiLogRecord(request, response);
 
          InsertInput insertInput = new InsertInput();
          insertInput.setTableName(table.getName());
-         insertInput.setRecords(List.of(new OutboundAPILog()
-            .withMethod(request.getMethod())
-            .withUrl(url)
-            .withTimestamp(Instant.now())
-            .withRequestBody(requestBody)
-            .withStatusCode(response.getStatusCode())
-            .withResponseBody(response.getContent())
-            .toQRecord()
-         ));
+         insertInput.setRecords(List.of(outboundAPILog.toQRecord()));
          new InsertAction().executeAsync(insertInput);
       }
       catch(Exception e)
       {
          LOG.warn("Error logging outbound api call", e);
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public OutboundAPILog generateOutboundApiLogRecord(HttpRequestBase request, QHttpResponse response) throws QException
+   {
+      String requestBody = null;
+      if(request instanceof HttpEntityEnclosingRequest entityRequest)
+      {
+         try
+         {
+            requestBody = StringUtils.join("\n", IOUtils.readLines(entityRequest.getEntity().getContent(), StandardCharsets.UTF_8));
+         }
+         catch(Exception e)
+         {
+            // leave it null...
+         }
+      }
+
+      ////////////////////////////////////
+      // mask api keys in query strings //
+      ////////////////////////////////////
+      String url = request.getURI().toString();
+      if(backendMetaData.getAuthorizationType().equals(AuthorizationType.API_KEY_QUERY_PARAM))
+      {
+         url = url.replaceAll(getApiKey(), "******");
+      }
+
+      return new OutboundAPILog()
+         .withMethod(request.getMethod())
+         .withUrl(url)
+         .withTimestamp(Instant.now())
+         .withRequestBody(requestBody)
+         .withStatusCode(response.getStatusCode())
+         .withResponseBody(response.getContent());
    }
 
 

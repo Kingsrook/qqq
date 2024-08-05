@@ -661,7 +661,7 @@ public abstract class AbstractRDBMSAction
             }
             else if(!expectedNoOfParams.equals(values.size()))
             {
-               throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "]");
+               throw new IllegalArgumentException("Incorrect number of values given for criteria [" + field.getName() + "] (expected " + expectedNoOfParams + ", received " + values.size() + ")");
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

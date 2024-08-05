@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -44,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedView;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -78,10 +80,10 @@ public class QuerySavedViewProcess implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       ActionHelper.validateSession(runBackendStepInput);
+      Integer savedViewId = runBackendStepInput.getValueInteger("id");
 
       try
       {
-         Integer savedViewId = runBackendStepInput.getValueInteger("id");
          if(savedViewId != null)
          {
             GetInput input = new GetInput();
@@ -89,6 +91,11 @@ public class QuerySavedViewProcess implements BackendStep
             input.setPrimaryKey(savedViewId);
 
             GetOutput output = new GetAction().execute(input);
+            if(output.getRecord() == null)
+            {
+               throw (new QNotFoundException("The requested view was not found."));
+            }
+
             runBackendStepOutput.addRecord(output.getRecord());
             runBackendStepOutput.addValue("savedView", output.getRecord());
             runBackendStepOutput.addValue("savedViewList", (Serializable) List.of(output.getRecord()));
@@ -107,6 +114,11 @@ public class QuerySavedViewProcess implements BackendStep
             runBackendStepOutput.setRecords(output.getRecords());
             runBackendStepOutput.addValue("savedViewList", (Serializable) output.getRecords());
          }
+      }
+      catch(QNotFoundException qnfe)
+      {
+         LOG.info("View not found", logPair("savedViewId", savedViewId));
+         throw (qnfe);
       }
       catch(Exception e)
       {

@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.backend.core.exceptions;
 
 
-import java.util.Arrays;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -55,33 +55,13 @@ public class QInstanceValidationException extends QException
     *******************************************************************************/
    public QInstanceValidationException(List<String> reasons)
    {
-      super(
-         (reasons != null && reasons.size() > 0)
-            ? "Instance validation failed for the following reasons:\n - " + StringUtils.join("\n - ", reasons)
-            : "Validation failed, but no reasons were provided");
+      super((CollectionUtils.nullSafeHasContents(reasons))
+         ? "Instance validation failed for the following reasons:\n - " + StringUtils.join("\n - ", reasons) + "\n(" + reasons.size() + " Total reason" + StringUtils.plural(reasons) + ")"
+         : "Validation failed, but no reasons were provided");
 
-      if(reasons != null && reasons.size() > 0)
+      if(CollectionUtils.nullSafeHasContents(reasons))
       {
          this.reasons = reasons;
-      }
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor of an array/varargs of reasons.  They feed into the core exception message.
-    **
-    *******************************************************************************/
-   public QInstanceValidationException(String... reasons)
-   {
-      super(
-         (reasons != null && reasons.length > 0)
-            ? "Instance validation failed for the following reasons:  " + StringUtils.joinWithCommasAndAnd(Arrays.stream(reasons).toList())
-            : "Validation failed, but no reasons were provided");
-
-      if(reasons != null && reasons.length > 0)
-      {
-         this.reasons = Arrays.stream(reasons).toList();
       }
    }
 
