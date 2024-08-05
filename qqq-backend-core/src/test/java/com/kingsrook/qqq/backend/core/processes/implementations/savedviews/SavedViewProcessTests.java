@@ -192,6 +192,7 @@ class SavedViewProcessTests extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @SuppressWarnings("unchecked")
    void testNotFoundThrowsProperly() throws QException
    {
       QInstance qInstance = QContext.getQInstance();
