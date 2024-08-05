@@ -83,7 +83,7 @@ class SavedViewProcessTests extends BaseTest
          runProcessInput.addValue("tableName", tableName);
          runProcessInput.addValue("viewJson", JsonUtils.toJson(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 47))));
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
-         List<QRecord> savedViewList = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
+         List<QRecord>    savedViewList    = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
          assertEquals(1, savedViewList.size());
          savedViewId = savedViewList.get(0).getValueInteger("id");
          assertNotNull(savedViewId);
@@ -104,7 +104,7 @@ class SavedViewProcessTests extends BaseTest
          runProcessInput.setProcessName(QuerySavedViewProcess.getProcessMetaData().getName());
          runProcessInput.addValue("tableName", tableName);
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
-         List<QRecord> savedViewList = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
+         List<QRecord>    savedViewList    = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
          assertEquals(1, savedViewList.size());
          assertEquals(1, savedViewList.get(0).getValueInteger("id"));
          assertEquals("My View", savedViewList.get(0).getValueString("label"));
@@ -121,7 +121,7 @@ class SavedViewProcessTests extends BaseTest
          runProcessInput.addValue("tableName", tableName);
          runProcessInput.addValue("viewJson", JsonUtils.toJson(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 47))));
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
-         List<QRecord> savedViewList = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
+         List<QRecord>    savedViewList    = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
          assertEquals(1, savedViewList.size());
          assertEquals(1, savedViewList.get(0).getValueInteger("id"));
          assertEquals("My Updated View", savedViewList.get(0).getValueString("label"));
@@ -152,7 +152,7 @@ class SavedViewProcessTests extends BaseTest
          runProcessInput.addValue("label", "My Updated View");
          runProcessInput.addValue("tableName", tableName);
          runProcessInput.addValue("viewJson", JsonUtils.toJson(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 47))));
-         
+
          //////////////////////////////////////////
          // should throw a "duplicate" exception //
          //////////////////////////////////////////
@@ -184,7 +184,64 @@ class SavedViewProcessTests extends BaseTest
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
          assertEquals(0, ((List<?>) runProcessOutput.getValues().get("savedViewList")).size());
       }
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNotFoundThrowsProperly() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      new SavedViewsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+      String tableName = TestUtils.TABLE_NAME_PERSON_MEMORY;
+
+      {
+         ////////////////////////////////////////////////////////
+         // get one by id when it doesn't exist - should throw //
+         ////////////////////////////////////////////////////////
+         RunProcessInput runProcessInput = new RunProcessInput();
+         runProcessInput.setProcessName(QuerySavedViewProcess.getProcessMetaData().getName());
+         runProcessInput.addValue("tableName", tableName);
+         runProcessInput.addValue("id", -1);
+         assertThatThrownBy(() -> new RunProcessAction().execute(runProcessInput))
+            .hasMessageContaining("view was not found")
+            .isInstanceOf(QUserFacingException.class);
+      }
+
+      Integer savedViewId;
+      {
+         //////////////////////
+         // store a new view //
+         //////////////////////
+         RunProcessInput runProcessInput = new RunProcessInput();
+         runProcessInput.setProcessName(StoreSavedViewProcess.getProcessMetaData().getName());
+         runProcessInput.addValue("label", "My View");
+         runProcessInput.addValue("tableName", tableName);
+         runProcessInput.addValue("viewJson", JsonUtils.toJson(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.EQUALS, 47))));
+         RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
+         List<QRecord>    savedViewList    = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
+         assertEquals(1, savedViewList.size());
+         savedViewId = savedViewList.get(0).getValueInteger("id");
+         assertNotNull(savedViewId);
+      }
+
+      {
+         ////////////////////////////////////////
+         // get now with valid id, should work //
+         ////////////////////////////////////////
+         RunProcessInput runProcessInput = new RunProcessInput();
+         runProcessInput.setProcessName(QuerySavedViewProcess.getProcessMetaData().getName());
+         runProcessInput.addValue("tableName", tableName);
+         runProcessInput.addValue("id", savedViewId);
+         RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
+         List<QRecord>    savedViewList    = (List<QRecord>) runProcessOutput.getValues().get("savedViewList");
+         assertEquals(1, savedViewList.size());
+         assertEquals(1, savedViewList.get(0).getValueInteger("id"));
+         assertEquals("My View", savedViewList.get(0).getValueString("label"));
+      }
    }
 
 }
