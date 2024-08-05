@@ -201,8 +201,7 @@ public class TestUtils
          .withName(TABLE_NAME_PERSON)
          .withType(QPossibleValueSourceType.TABLE)
          .withTableName(TABLE_NAME_PERSON)
-         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
-      );
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
    }
 
 

@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 class GetTableApiFieldsActionTest extends BaseTest
 {
-   private final String TABLE_NAME = "testTable";
+   private static final String TABLE_NAME = "testTable";
 
    Function<List<? extends QFieldMetaData>, Set<String>> fieldListToNameSet = l -> l.stream().map(f -> f.getName()).collect(Collectors.toSet());
 

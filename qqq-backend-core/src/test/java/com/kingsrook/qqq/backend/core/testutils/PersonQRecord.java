@@ -32,6 +32,9 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
  *******************************************************************************/
 public class PersonQRecord extends QRecord
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withLastName(String lastName)
    {
       setValue("lastName", lastName);
@@ -40,6 +43,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withFirstName(String firstName)
    {
       setValue("firstName", firstName);
@@ -48,6 +54,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withBirthDate(LocalDate birthDate)
    {
       setValue("birthDate", birthDate);
@@ -56,6 +65,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withNoOfShoes(Integer noOfShoes)
    {
       setValue("noOfShoes", noOfShoes);
@@ -64,6 +76,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withPrice(BigDecimal price)
    {
       setValue("price", price);
@@ -72,6 +87,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withCost(BigDecimal cost)
    {
       setValue("cost", cost);
@@ -80,6 +98,9 @@ public class PersonQRecord extends QRecord
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public PersonQRecord withHomeStateId(int homeStateId)
    {
       setValue("homeStateId", homeStateId);

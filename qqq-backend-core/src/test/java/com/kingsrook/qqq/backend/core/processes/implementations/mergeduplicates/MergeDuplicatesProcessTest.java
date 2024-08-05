@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  *******************************************************************************/
 class MergeDuplicatesProcessTest extends BaseTest
 {
-   String PROCESS_NAME = "testMergeProcess";
+   private static final String PROCESS_NAME = "testMergeProcess";
 
 
 

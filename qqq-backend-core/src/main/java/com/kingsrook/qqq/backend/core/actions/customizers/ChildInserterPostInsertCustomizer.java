@@ -50,6 +50,9 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInsertCustomizer
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum RelationshipType
    {
       PARENT_POINTS_AT_CHILD,

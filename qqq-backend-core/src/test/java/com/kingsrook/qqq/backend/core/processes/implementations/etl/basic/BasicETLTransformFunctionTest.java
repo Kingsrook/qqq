@@ -64,6 +64,9 @@ class BasicETLTransformFunctionTest extends BaseTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private String doRemoveNonNumericValuesFromMappedRecords(QFieldType fieldType, String inputValue)
    {
       String field = "field";

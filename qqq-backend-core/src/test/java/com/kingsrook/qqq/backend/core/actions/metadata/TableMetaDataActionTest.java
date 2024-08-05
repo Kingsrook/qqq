@@ -65,7 +65,8 @@ class TableMetaDataActionTest extends BaseTest
    @Test
    public void test_notFound()
    {
-      assertThrows(QUserFacingException.class, () -> {
+      assertThrows(QUserFacingException.class, () ->
+      {
          TableMetaDataInput request = new TableMetaDataInput();
          request.setTableName("willNotBeFound");
          new TableMetaDataAction().execute(request);

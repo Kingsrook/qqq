@@ -169,10 +169,10 @@ public class QInstanceValidatorTest extends BaseTest
    public void test_validateNullTablesAndProcesses()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            qInstance.setTables(null);
-            qInstance.setProcesses(null);
-         },
+      {
+         qInstance.setTables(null);
+         qInstance.setProcesses(null);
+      },
          true,
          "At least 1 table must be defined");
    }
@@ -187,10 +187,10 @@ public class QInstanceValidatorTest extends BaseTest
    public void test_validateEmptyTablesAndProcesses()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            qInstance.setTables(new HashMap<>());
-            qInstance.setProcesses(new HashMap<>());
-         },
+      {
+         qInstance.setTables(new HashMap<>());
+         qInstance.setProcesses(new HashMap<>());
+      },
          true,
          "At least 1 table must be defined");
    }
@@ -548,7 +548,8 @@ public class QInstanceValidatorTest extends BaseTest
          ////////////////////////////////////////
          // make sure our always failer fails. //
          ////////////////////////////////////////
-         assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> {
+         assertValidationFailureReasonsAllowingExtraReasons((qInstance) ->
+         {
          }, "always fail");
       }
       finally
@@ -558,7 +559,8 @@ public class QInstanceValidatorTest extends BaseTest
          ////////////////////////////////////////////////////
          // make sure if remove all plugins, we don't fail //
          ////////////////////////////////////////////////////
-         assertValidationSuccess((qInstance) -> {
+         assertValidationSuccess((qInstance) ->
+         {
          });
       }
    }
@@ -627,6 +629,9 @@ public class QInstanceValidatorTest extends BaseTest
     *******************************************************************************/
    public static class CustomizerWithNoVoidConstructor
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public CustomizerWithNoVoidConstructor(boolean b)
       {
 
@@ -640,6 +645,9 @@ public class QInstanceValidatorTest extends BaseTest
     *******************************************************************************/
    private static class CustomizerWithPrivateVisibility extends AbstractPostQueryCustomizer
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public CustomizerWithPrivateVisibility()
       {
          System.out.println("eh?");
@@ -664,6 +672,9 @@ public class QInstanceValidatorTest extends BaseTest
     *******************************************************************************/
    public static class CustomizerWithOnlyPrivateConstructor
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       private CustomizerWithOnlyPrivateConstructor()
       {
 
@@ -1108,15 +1119,16 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    void testPossibleValueSourceMisConfiguredEnum()
    {
-      assertValidationFailureReasons((qInstance) -> {
-            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
-            possibleValueSource.setTableName("person");
-            possibleValueSource.setSearchFields(List.of("id"));
-            possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
-            possibleValueSource.setCustomCodeReference(new QCodeReference());
-            possibleValueSource.setEnumValues(null);
-            possibleValueSource.setType(QPossibleValueSourceType.ENUM);
-         },
+      assertValidationFailureReasons((qInstance) ->
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+         possibleValueSource.setTableName("person");
+         possibleValueSource.setSearchFields(List.of("id"));
+         possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
+         possibleValueSource.setCustomCodeReference(new QCodeReference());
+         possibleValueSource.setEnumValues(null);
+         possibleValueSource.setType(QPossibleValueSourceType.ENUM);
+      },
          "should not have a tableName",
          "should not have searchFields",
          "should not have orderByFields",
@@ -1135,15 +1147,16 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    void testPossibleValueSourceMisConfiguredTable()
    {
-      assertValidationFailureReasons((qInstance) -> {
-            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
-            possibleValueSource.setTableName(null);
-            possibleValueSource.setSearchFields(null);
-            possibleValueSource.setOrderByFields(new ArrayList<>());
-            possibleValueSource.setCustomCodeReference(new QCodeReference());
-            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
-            possibleValueSource.setType(QPossibleValueSourceType.TABLE);
-         },
+      assertValidationFailureReasons((qInstance) ->
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+         possibleValueSource.setTableName(null);
+         possibleValueSource.setSearchFields(null);
+         possibleValueSource.setOrderByFields(new ArrayList<>());
+         possibleValueSource.setCustomCodeReference(new QCodeReference());
+         possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         possibleValueSource.setType(QPossibleValueSourceType.TABLE);
+      },
          "should not have enum values",
          "should not have a customCodeReference",
          "is missing a tableName",
@@ -1165,15 +1178,16 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    void testPossibleValueSourceMisConfiguredCustom()
    {
-      assertValidationFailureReasons((qInstance) -> {
-            QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
-            possibleValueSource.setTableName("person");
-            possibleValueSource.setSearchFields(List.of("id"));
-            possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
-            possibleValueSource.setCustomCodeReference(null);
-            possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
-            possibleValueSource.setType(QPossibleValueSourceType.CUSTOM);
-         },
+      assertValidationFailureReasons((qInstance) ->
+      {
+         QPossibleValueSource possibleValueSource = qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM);
+         possibleValueSource.setTableName("person");
+         possibleValueSource.setSearchFields(List.of("id"));
+         possibleValueSource.setOrderByFields(List.of(new QFilterOrderBy("id")));
+         possibleValueSource.setCustomCodeReference(null);
+         possibleValueSource.setEnumValues(List.of(new QPossibleValue<>("test")));
+         possibleValueSource.setType(QPossibleValueSourceType.CUSTOM);
+      },
          "should not have enum values",
          "should not have a tableName",
          "should not have searchFields",
@@ -1272,10 +1286,10 @@ public class QInstanceValidatorTest extends BaseTest
          "action missing a name");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            List<TableAutomationAction> actions = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getActions();
-            actions.add(actions.get(0));
-         },
+      {
+         List<TableAutomationAction> actions = qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY).getAutomationDetails().getActions();
+         actions.add(actions.get(0));
+      },
          "more than one action named");
    }
 
@@ -1315,19 +1329,19 @@ public class QInstanceValidatorTest extends BaseTest
    void testTableAutomationActionProcessName()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setCodeReference(null);
-            action.setProcessName("notAProcess");
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setCodeReference(null);
+         action.setProcessName("notAProcess");
+      },
          "unrecognized processName");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setCodeReference(null);
-            action.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setCodeReference(null);
+         action.setProcessName(TestUtils.PROCESS_NAME_BASEPULL);
+      },
          "different table");
    }
 
@@ -1340,19 +1354,19 @@ public class QInstanceValidatorTest extends BaseTest
    void testTableAutomationActionCodeReferenceAndProcessName()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setCodeReference(null);
-            action.setProcessName(null);
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setCodeReference(null);
+         action.setProcessName(null);
+      },
          "missing both");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setCodeReference(new QCodeReference(TestUtils.CheckAge.class));
-            action.setProcessName(TestUtils.PROCESS_NAME_INCREASE_BIRTHDATE);
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setCodeReference(new QCodeReference(TestUtils.CheckAge.class));
+         action.setProcessName(TestUtils.PROCESS_NAME_INCREASE_BIRTHDATE);
+      },
          "has both");
    }
 
@@ -1365,21 +1379,21 @@ public class QInstanceValidatorTest extends BaseTest
    void testTableAutomationActionFilter()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setFilter(new QQueryFilter()
-               .withCriteria(new QFilterCriteria())
-            );
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setFilter(new QQueryFilter()
+            .withCriteria(new QFilterCriteria())
+         );
+      },
          "without a field name", "without an operator");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            TableAutomationAction action = getAction0(qInstance);
-            action.setFilter(new QQueryFilter()
-               .withCriteria(new QFilterCriteria("notAField", QCriteriaOperator.EQUALS, Collections.emptyList()))
-            );
-         },
+      {
+         TableAutomationAction action = getAction0(qInstance);
+         action.setFilter(new QQueryFilter()
+            .withCriteria(new QFilterCriteria("notAField", QCriteriaOperator.EQUALS, Collections.emptyList()))
+         );
+      },
          "unrecognized field");
    }
 
@@ -1484,13 +1498,13 @@ public class QInstanceValidatorTest extends BaseTest
    void testQueueProviderSQSAttributes()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            SQSQueueProviderMetaData queueProvider = (SQSQueueProviderMetaData) qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER);
-            queueProvider.setAccessKey(null);
-            queueProvider.setSecretKey("");
-            queueProvider.setRegion(null);
-            queueProvider.setBaseURL("");
-         },
+      {
+         SQSQueueProviderMetaData queueProvider = (SQSQueueProviderMetaData) qInstance.getQueueProvider(TestUtils.DEFAULT_QUEUE_PROVIDER);
+         queueProvider.setAccessKey(null);
+         queueProvider.setSecretKey("");
+         queueProvider.setRegion(null);
+         queueProvider.setBaseURL("");
+      },
          "Missing accessKey", "Missing secretKey", "Missing region", "Missing baseURL");
    }
 
@@ -1607,43 +1621,43 @@ public class QInstanceValidatorTest extends BaseTest
    void testReportDataSourceNames()
    {
       assertValidationFailureReasons((qInstance) ->
-         {
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // enricher will give us a default name if only 1 data source, so, set 1st one to null name, then add a second //
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
-            report.setDataSources(new ArrayList<>(report.getDataSources()));
-            report.getDataSources().get(0).setName(null);
-            report.getDataSources().add(new QReportDataSource()
-               .withName("2nd")
-               .withSourceTable(TestUtils.TABLE_NAME_PERSON)
-            );
-         },
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // enricher will give us a default name if only 1 data source, so, set 1st one to null name, then add a second //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
+         report.setDataSources(new ArrayList<>(report.getDataSources()));
+         report.getDataSources().get(0).setName(null);
+         report.getDataSources().add(new QReportDataSource()
+            .withName("2nd")
+            .withSourceTable(TestUtils.TABLE_NAME_PERSON)
+         );
+      },
          "Missing name for a dataSource",
          "unrecognized dataSourceName");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            ///////////////////////////////////
-            // same as above, but "" vs null //
-            ///////////////////////////////////
-            QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
-            report.setDataSources(new ArrayList<>(report.getDataSources()));
-            report.getDataSources().get(0).setName("");
-            report.getDataSources().add(new QReportDataSource()
-               .withName("2nd")
-               .withSourceTable(TestUtils.TABLE_NAME_PERSON)
-            );
-         },
+      {
+         ///////////////////////////////////
+         // same as above, but "" vs null //
+         ///////////////////////////////////
+         QReportMetaData report = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON);
+         report.setDataSources(new ArrayList<>(report.getDataSources()));
+         report.getDataSources().get(0).setName("");
+         report.getDataSources().add(new QReportDataSource()
+            .withName("2nd")
+            .withSourceTable(TestUtils.TABLE_NAME_PERSON)
+         );
+      },
          "Missing name for a dataSource",
          "unrecognized dataSourceName");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            List<QReportDataSource> dataSources = new ArrayList<>(qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources());
-            dataSources.add(dataSources.get(0));
-            qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setDataSources(dataSources);
-         },
+      {
+         List<QReportDataSource> dataSources = new ArrayList<>(qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources());
+         dataSources.add(dataSources.get(0));
+         qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).setDataSources(dataSources);
+      },
          "More than one dataSource with name");
    }
 
@@ -1702,19 +1716,19 @@ public class QInstanceValidatorTest extends BaseTest
          "has both a sourceTable and a staticDataSupplier");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
-            dataSource.setSourceTable(null);
-            dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA));
-         },
+      {
+         QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+         dataSource.setSourceTable(null);
+         dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA));
+      },
          "missing a code reference name");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
-            dataSource.setSourceTable(null);
-            dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class));
-         },
+      {
+         QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+         dataSource.setSourceTable(null);
+         dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class));
+      },
          "is not of the expected type");
    }
 
@@ -1773,11 +1787,11 @@ public class QInstanceValidatorTest extends BaseTest
          "has a column with no name");
 
       assertValidationFailureReasons((qInstance) ->
-         {
-            List<QReportField> columns = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns();
-            columns.get(0).setName("id");
-            columns.get(1).setName("id");
-         },
+      {
+         List<QReportField> columns = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getViews().get(0).getColumns();
+         columns.get(0).setName("id");
+         columns.get(1).setName("id");
+      },
          "has multiple columns named: id");
 
    }
@@ -1990,35 +2004,35 @@ public class QInstanceValidatorTest extends BaseTest
          "Table A exposedJoin B is missing a label");
 
       assertValidationFailureReasons(qInstance ->
-         {
-            qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("notAJoin"))));
-            qInstance.addTable(newTable("B", "id", "aId"));
-            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
-         },
+      {
+         qInstance.addTable(newTable("A", "id").withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B").withJoinPath(List.of("notAJoin"))));
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      },
          "does not match a valid join connection in the instance");
 
       assertValidationFailureReasons(qInstance ->
-         {
-            qInstance.addTable(newTable("A", "id")
-               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("foo").withJoinPath(List.of("AB")))
-               .withExposedJoin(new ExposedJoin().withJoinTable("C").withLabel("foo").withJoinPath(List.of("AC")))
-            );
-            qInstance.addTable(newTable("B", "id", "aId"));
-            qInstance.addTable(newTable("C", "id", "aId"));
-            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
-            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("C").withName("AC").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
-         },
+      {
+         qInstance.addTable(newTable("A", "id")
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("foo").withJoinPath(List.of("AB")))
+            .withExposedJoin(new ExposedJoin().withJoinTable("C").withLabel("foo").withJoinPath(List.of("AC")))
+         );
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addTable(newTable("C", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("C").withName("AC").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      },
          "more than one join labeled: foo");
 
       assertValidationFailureReasons(qInstance ->
-         {
-            qInstance.addTable(newTable("A", "id")
-               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B1").withJoinPath(List.of("AB")))
-               .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B2").withJoinPath(List.of("AB")))
-            );
-            qInstance.addTable(newTable("B", "id", "aId"));
-            qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
-         },
+      {
+         qInstance.addTable(newTable("A", "id")
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B1").withJoinPath(List.of("AB")))
+            .withExposedJoin(new ExposedJoin().withJoinTable("B").withLabel("B2").withJoinPath(List.of("AB")))
+         );
+         qInstance.addTable(newTable("B", "id", "aId"));
+         qInstance.addJoin(new QJoinMetaData().withLeftTable("A").withRightTable("B").withName("AB").withType(JoinType.ONE_TO_ONE).withJoinOn(new JoinOn("id", "aId")));
+      },
          "than one join with the joinPath: [AB]");
 
       assertValidationSuccess(qInstance ->
@@ -2275,11 +2289,14 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-   ///////////////////////////////////////////////
-   // test classes for validating process steps //
-   ///////////////////////////////////////////////
+   /***************************************************************************
+    ** test classes for validating process steps
+    ***************************************************************************/
    public abstract class TestAbstractClass extends AbstractTransformStep
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
@@ -2287,17 +2304,23 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-   ///////////////////////////////////////////////
-   //                                           //
-   ///////////////////////////////////////////////
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private class TestPrivateClass extends AbstractTransformStep
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
 
 
+      /***************************************************************************
+       **
+       ***************************************************************************/
       @Override
       public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
       {
@@ -2307,11 +2330,14 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
-   ///////////////////////////////////////////////
-   //                                           //
-   ///////////////////////////////////////////////
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public class TestNoArgsConstructorClass extends AbstractTransformStep
    {
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public TestNoArgsConstructorClass(int i)
       {
 
@@ -2319,12 +2345,18 @@ public class QInstanceValidatorTest extends BaseTest
 
 
 
+      /***************************************************************************
+       **
+       ***************************************************************************/
       public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
       {
       }
 
 
 
+      /***************************************************************************
+       **
+       ***************************************************************************/
       @Override
       public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
       {
