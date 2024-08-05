@@ -549,14 +549,17 @@ public class QJavalinImplementation
          }
          else
          {
-            String authorizationFormValue = context.formParam("Authorization");
-            if(StringUtils.hasContent(authorizationFormValue))
+            try
             {
-               processAuthorizationValue(authenticationContext, authorizationFormValue);
+               String authorizationFormValue = context.formParam("Authorization");
+               if(StringUtils.hasContent(authorizationFormValue))
+               {
+                  processAuthorizationValue(authenticationContext, authorizationFormValue);
+               }
             }
-            else
+            catch(Exception e)
             {
-               LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
+               LOG.info("Exception looking for Authorization formParam", e);
             }
          }
 
@@ -567,7 +570,7 @@ public class QJavalinImplementation
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, input);
 
-         String tableVariant = StringUtils.hasContent(context.formParam("tableVariant")) ? context.formParam("tableVariant") : context.queryParam("tableVariant");
+         String tableVariant = QJavalinUtils.getFormParamOrQueryParam(context, "tableVariant");
          if(StringUtils.hasContent(tableVariant))
          {
             JSONObject variant = new JSONObject(tableVariant);
@@ -1185,11 +1188,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
-         filter = QJavalinUtils.stringQueryParam(context, "filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
+         filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(filter != null)
          {
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
@@ -1258,11 +1257,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
-         filter = QJavalinUtils.stringQueryParam(context, "filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
+         filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(filter != null)
          {
             QQueryFilter qQueryFilter = JsonUtils.toObject(filter, QQueryFilter.class);
@@ -1542,23 +1537,13 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
 
-         String fields = QJavalinUtils.stringQueryParam(context, "fields");
-         if(!StringUtils.hasContent(fields))
-         {
-            fields = context.formParam("fields");
-         }
-
+         String fields = QJavalinUtils.getQueryParamOrFormParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
             exportInput.setFieldNames(List.of(fields.split(",")));
          }
 
-         String filter = context.queryParam("filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
-
+         String filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(StringUtils.hasContent(filter))
          {
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
