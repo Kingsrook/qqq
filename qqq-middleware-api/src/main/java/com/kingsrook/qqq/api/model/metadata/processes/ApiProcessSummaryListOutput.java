@@ -48,7 +48,9 @@ import org.eclipse.jetty.http.HttpStatus;
 
 
 /*******************************************************************************
- **
+ ** For a process that puts "processResults" in its output (as a list of
+ ** ProcessSummaryLineInterface objects) - this class converts such an object
+ ** to a suitable ApiProcessOutput.
  *******************************************************************************/
 public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
 {
@@ -143,22 +145,31 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
          {
             if(processSummaryLineInterface instanceof ProcessSummaryLine processSummaryLine)
             {
-               processSummaryLine.setCount(1);
-               processSummaryLine.pickMessage(true);
-
                List<Serializable> primaryKeys = processSummaryLine.getPrimaryKeys();
                if(CollectionUtils.nullSafeHasContents(primaryKeys))
                {
+                  ////////////////////////////////////////////////////////////////////////////
+                  // if there are primary keys in the line, then we'll loop over those, and //
+                  // output an object in the API output for each one - and we'll make the   //
+                  // line appear to be a singular-past-tense line about that individual key //
+                  ////////////////////////////////////////////////////////////////////////////
+                  processSummaryLine.setCount(1);
+                  processSummaryLine.pickMessage(true);
+
                   for(Serializable primaryKey : primaryKeys)
                   {
-                     HashMap<String, Serializable> map = toMap(processSummaryLine);
+                     HashMap<String, Serializable> map = toMap(processSummaryLine, false);
                      map.put("id", primaryKey);
                      apiOutput.add(map);
                   }
                }
                else
                {
-                  apiOutput.add(toMap(processSummaryLine));
+                  //////////////////////////////////////////////////////////////////////////
+                  // otherwise, handle a line without pkeys as a single output map/object //
+                  //////////////////////////////////////////////////////////////////////////
+                  HashMap<String, Serializable> map = toMap(processSummaryLine, true);
+                  apiOutput.add(map);
                }
             }
             else if(processSummaryLineInterface instanceof ProcessSummaryRecordLink processSummaryRecordLink)
@@ -219,12 +230,19 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static HashMap<String, Serializable> toMap(ProcessSummaryLine processSummaryLine)
+   private static HashMap<String, Serializable> toMap(ProcessSummaryLine processSummaryLine, boolean tryToIncludeCount)
    {
       HashMap<String, Serializable> map = initResultMapForProcessSummaryLine(processSummaryLine);
 
       String messagePrefix = getResultMapMessagePrefix(processSummaryLine);
-      map.put("message", messagePrefix + processSummaryLine.getMessage());
+
+      String messageSuffix = processSummaryLine.getMessage();
+      if(tryToIncludeCount && processSummaryLine.getCount() != null)
+      {
+         messageSuffix = processSummaryLine.getCount() + " " + messageSuffix;
+      }
+
+      map.put("message", messagePrefix + messageSuffix);
 
       return (map);
    }
