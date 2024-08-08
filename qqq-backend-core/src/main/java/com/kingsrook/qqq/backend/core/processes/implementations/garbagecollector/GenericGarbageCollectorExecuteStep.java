@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.garbagecollecto
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.AggregateAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -74,6 +75,11 @@ public class GenericGarbageCollectorExecuteStep implements BackendStep
    private ProcessSummaryLine warningLine = new ProcessSummaryLine(Status.WARNING, "had an warning");
    private ProcessSummaryLine errorLine   = new ProcessSummaryLine(Status.ERROR, "had an error");
 
+   private AsyncJobCallback asyncJobCallback;
+
+   private Integer total        = null;
+   private Integer deletedSoFar = 0;
+
 
 
    /***************************************************************************
@@ -113,7 +119,10 @@ public class GenericGarbageCollectorExecuteStep implements BackendStep
          throw new QUserFacingException("Illegal value for maxPageSize: " + maxPageSize + "; Must be positive.");
       }
 
+      asyncJobCallback = runBackendStepInput.getAsyncJobCallback();
+      long start = System.currentTimeMillis();
       execute(table, field, daysBack, maxPageSize);
+      long end = System.currentTimeMillis();
 
       deletedLine.prepareForFrontend(true);
       partitionsLine.prepareForFrontend(true);
@@ -123,6 +132,7 @@ public class GenericGarbageCollectorExecuteStep implements BackendStep
       processSummary.add(deletedLine);
       warningLine.addSelfToListIfAnyCount(processSummary);
       errorLine.addSelfToListIfAnyCount(processSummary);
+      processSummary.add(new ProcessSummaryLine(Status.INFO, "Total time:  " + String.format("%,d", ((end - start) / 1000)) + " seconds"));
       runBackendStepOutput.addValue(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY, processSummary);
    }
 
@@ -133,6 +143,7 @@ public class GenericGarbageCollectorExecuteStep implements BackendStep
     ***************************************************************************/
    private void execute(QTableMetaData table, QFieldMetaData field, Integer daysBack, Integer maxPageSize) throws QException
    {
+      asyncJobCallback.updateStatus("Counting records");
       Instant maxDate = Instant.now().minusSeconds(daysBack * 60 * 60 * 24);
       Instant minDate = findMinDateInTable(table, field);
 
@@ -152,17 +163,29 @@ public class GenericGarbageCollectorExecuteStep implements BackendStep
       Integer count = count(table, field, minDate, maxDate);
       LOG.info("Count", logPair("count", count), logPair("table", table.getName()), logPair("field", field.getName()), logPair("minDate", minDate), logPair("maxDate", maxDate));
 
+      if(this.total == null)
+      {
+         this.total = count;
+      }
+
       if(count == 0)
       {
          LOG.info("0 rows in this partition - nothing to delete", logPair("count", count), logPair("table", table.getName()), logPair("field", field.getName()), logPair("minDate", minDate), logPair("maxDate", maxDate));
       }
       else if(count <= maxPageSize)
       {
+         asyncJobCallback.updateStatus("Deleting records", deletedSoFar, total);
          LOG.info("Deleting", logPair("count", count), logPair("table", table.getName()), logPair("field", field.getName()), logPair("minDate", minDate), logPair("maxDate", maxDate));
          delete(table, field, minDate, maxDate);
+         this.deletedSoFar += count;
       }
       else
       {
+         if(deletedSoFar == 0)
+         {
+            asyncJobCallback.updateStatus("Partitioning table", deletedSoFar, total);
+         }
+
          LOG.info("Too many rows", logPair("count", count), logPair("maxPageSize", maxPageSize), logPair("table", table.getName()), logPair("field", field.getName()), logPair("minDate", minDate), logPair("maxDate", maxDate));
          partition(table, field, minDate, maxDate, count, maxPageSize);
       }
