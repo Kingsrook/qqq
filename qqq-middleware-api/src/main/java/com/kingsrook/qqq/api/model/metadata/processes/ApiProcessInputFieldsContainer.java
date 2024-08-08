@@ -43,6 +43,32 @@ public class ApiProcessInputFieldsContainer
 
 
 
+   /***************************************************************************
+    ** factory method to build one of these containers using all of the input fields
+    ** in a process
+    ***************************************************************************/
+   public static ApiProcessInputFieldsContainer forAllInputFields(QProcessMetaData process)
+   {
+      return forFields(process.getInputFields());
+   }
+
+
+
+   /***************************************************************************
+    ** factory method to build one of these containers using a list of fields.
+    ***************************************************************************/
+   public static ApiProcessInputFieldsContainer forFields(List<QFieldMetaData> fields)
+   {
+      ApiProcessInputFieldsContainer container = new ApiProcessInputFieldsContainer();
+      for(QFieldMetaData inputField : CollectionUtils.nonNullList(fields))
+      {
+         container.withField(inputField);
+      }
+      return (container);
+   }
+
+
+
    /*******************************************************************************
     ** find all input fields in frontend steps of the process, and add them as fields
     ** in this container.
