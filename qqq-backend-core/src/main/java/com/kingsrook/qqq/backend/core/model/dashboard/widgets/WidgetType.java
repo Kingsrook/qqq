@@ -66,11 +66,12 @@ public enum WidgetType
    // record view/edit widgets //
    //////////////////////////////
    CHILD_RECORD_LIST("childRecordList"),
-   DYNAMIC_FORM("dynamicForm"),
    DATA_BAG_VIEWER("dataBagViewer"),
-   PIVOT_TABLE_SETUP("pivotTableSetup"),
+   DYNAMIC_FORM("dynamicForm"),
    FILTER_AND_COLUMNS_SETUP("filterAndColumnsSetup"),
-   SCRIPT_VIEWER("scriptViewer");
+   PIVOT_TABLE_SETUP("pivotTableSetup"),
+   SCRIPT_VIEWER("scriptViewer"),
+   WORKFLOW("workflow");
 
 
    private final String type;
