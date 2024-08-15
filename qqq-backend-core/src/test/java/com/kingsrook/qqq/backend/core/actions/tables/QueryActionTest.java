@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -38,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -54,6 +57,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -539,6 +543,91 @@ class QueryActionTest extends BaseTest
       // confirm that if we query for "SQUARE", we do find it (because query will to-lower-case the criteria) //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertEquals(1, QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "SqUaRe"))).size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValidateFieldNamesToInclude() throws QException
+   {
+      /////////////////////////////
+      // cases that do not throw //
+      /////////////////////////////
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(null));
+
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("id")));
+
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("id", "firstName", "lastName", "birthDate", "modifyDate", "createDate")));
+
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true))
+         .withFieldNamesToInclude(Set.of("id", "firstName", "lastName", "birthDate", "modifyDate", "createDate")));
+
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true))
+         .withFieldNamesToInclude(Set.of("id", "firstName", TestUtils.TABLE_NAME_SHAPE + ".id", TestUtils.TABLE_NAME_SHAPE + ".noOfSides")));
+
+      QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true).withAlias("s"))
+         .withFieldNamesToInclude(Set.of("id", "s.id", "s.noOfSides")));
+
+      //////////////////////////
+      // cases that do throw! //
+      //////////////////////////
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(new HashSet<>())))
+         .hasMessageContaining("empty set of fieldNamesToInclude");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("notAField"))))
+         .hasMessageContaining("1 unrecognized field name: notAField");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(new LinkedHashSet<>(List.of("notAField", "alsoNot")))))
+         .hasMessageContaining("2 unrecognized field names: notAField,alsoNot");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(new LinkedHashSet<>(List.of("notAField", "alsoNot", "join.not")))))
+         .hasMessageContaining("3 unrecognized field names: notAField,alsoNot,join.not");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE)) // oops, didn't select it!
+         .withFieldNamesToInclude(new LinkedHashSet<>(List.of("id", "firstName", TestUtils.TABLE_NAME_SHAPE + ".id", TestUtils.TABLE_NAME_SHAPE + ".noOfSides")))))
+         .hasMessageContaining("2 unrecognized field names: shape.id,shape.noOfSides");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true))
+         .withFieldNamesToInclude(Set.of(TestUtils.TABLE_NAME_SHAPE + ".noField"))))
+         .hasMessageContaining("1 unrecognized field name: shape.noField");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true).withAlias("s")) // oops, not using alias
+         .withFieldNamesToInclude(new LinkedHashSet<>(List.of("id", "firstName", TestUtils.TABLE_NAME_SHAPE + ".id", "s.noOfSides")))))
+         .hasMessageContaining("1 unrecognized field name: shape.id");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_SHAPE).withSelect(true))
+         .withFieldNamesToInclude(new LinkedHashSet<>(List.of("id", "firstName", TestUtils.TABLE_NAME_SHAPE + ".id", "noOfSides")))))
+         .hasMessageContaining("1 unrecognized field name: noOfSides");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withQueryJoin(new QueryJoin("noJoinTable").withSelect(true))
+         .withFieldNamesToInclude(Set.of("noJoinTable.id"))))
+         .hasMessageContaining("1 unrecognized field name: noJoinTable.id");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("noJoin.id"))))
+         .hasMessageContaining("1 unrecognized field name: noJoin.id");
+
+      assertThatThrownBy(() -> QueryAction.validateFieldNamesToInclude(new QueryInput(TestUtils.TABLE_NAME_PERSON)
+         .withFieldNamesToInclude(Set.of("noDb.noJoin.id"))))
+         .hasMessageContaining("1 unrecognized field name: noDb.noJoin.id");
    }
 
 }
