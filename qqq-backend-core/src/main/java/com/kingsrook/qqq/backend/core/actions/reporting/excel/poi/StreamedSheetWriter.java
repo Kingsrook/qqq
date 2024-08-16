@@ -161,7 +161,7 @@ public class StreamedSheetWriter
             }
          }
 
-         Map<String, Integer> m = new HashMap();
+         Map<String, Integer> m = new HashMap<>();
          m.computeIfAbsent("s", (s) -> 3);
 
          value = rs.toString();

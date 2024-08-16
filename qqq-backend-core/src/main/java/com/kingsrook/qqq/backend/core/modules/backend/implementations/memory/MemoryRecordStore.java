@@ -662,7 +662,11 @@ public class MemoryRecordStore
             {
                return (-1);
             }
-            return ((Comparable) a).compareTo(b);
+
+            @SuppressWarnings("unchecked")
+            Comparable<Serializable> comparableSerializableA = (Comparable<Serializable>) a;
+
+            return comparableSerializableA.compareTo(b);
          };
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -769,6 +773,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings({ "rawtypes", "unchecked" })
    private static Serializable computeAggregate(List<QRecord> records, Aggregate aggregate, QTableMetaData table)
    {
       String            fieldName = aggregate.getFieldName();

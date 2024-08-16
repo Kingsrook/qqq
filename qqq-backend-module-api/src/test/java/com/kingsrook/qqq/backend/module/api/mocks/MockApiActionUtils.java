@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.api.actions.BaseAPIActionUtil;
 import com.kingsrook.qqq.backend.module.api.actions.QHttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 
@@ -89,7 +88,7 @@ public class MockApiActionUtils extends BaseAPIActionUtil
     **
     *******************************************************************************/
    @Override
-   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpPost request) throws IOException
+   protected CloseableHttpResponse executeOAuthTokenRequest(CloseableHttpClient client, HttpRequestBase request) throws IOException
    {
       runMockAsserter(request);
       return new MockHttpResponse(mockApiUtilsHelper);

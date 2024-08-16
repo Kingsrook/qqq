@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -49,6 +50,9 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *******************************************************************************/
 public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInsertCustomizer
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum RelationshipType
    {
       PARENT_POINTS_AT_CHILD,
@@ -97,7 +101,7 @@ public abstract class ChildInserterPostInsertCustomizer extends AbstractPostInse
          List<QRecord>  rs               = records;
          List<QRecord>  childrenToInsert = new ArrayList<>();
          QTableMetaData table            = getInsertInput().getTable();
-         QTableMetaData childTable       = getInsertInput().getInstance().getTable(getChildTableName());
+         QTableMetaData childTable       = QContext.getQInstance().getTable(getChildTableName());
 
          ////////////////////////////////////////////////////////////////////////////////
          // iterate over the inserted records, building a list child records to insert //

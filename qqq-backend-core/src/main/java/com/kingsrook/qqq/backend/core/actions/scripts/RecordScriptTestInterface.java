@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.scripts;
 
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.scripts.logging.BuildScriptLogAndScriptLogLineExecutionLogger;
@@ -97,7 +98,7 @@ public class RecordScriptTestInterface implements TestScriptActionInterface
          }
 
          QueryOutput queryOutput = new QueryAction().execute(new QueryInput(tableName)
-            .withFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordPrimaryKeyList.split(","))))
+            .withFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, Arrays.stream(recordPrimaryKeyList.split(",")).toList())))
             .withIncludeAssociations(true));
          if(CollectionUtils.nullSafeIsEmpty(queryOutput.getRecords()))
          {

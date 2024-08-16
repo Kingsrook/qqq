@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for com.kingsrook.qqq.backend.core.logging.LogUtils
  *******************************************************************************/
+@SuppressWarnings("checkstyle:FileTabCharacter")
 class LogUtilsTest extends BaseTest
 {
    private static final QLogger LOG = QLogger.getLogger(LogUtilsTest.class);
@@ -123,6 +124,7 @@ class LogUtilsTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("checkstyle:FileTabCharacter")
    @Test
    void testFilterStackTraceMySqlConnection()
    {

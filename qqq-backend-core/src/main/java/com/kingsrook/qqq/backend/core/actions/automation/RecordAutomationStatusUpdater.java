@@ -344,6 +344,9 @@ public class RecordAutomationStatusUpdater
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private record Key(QTableMetaData table, TriggerEvent triggerEvent) {}
 
 }

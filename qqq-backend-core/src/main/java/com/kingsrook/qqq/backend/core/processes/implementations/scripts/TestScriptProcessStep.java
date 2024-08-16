@@ -139,7 +139,7 @@ public class TestScriptProcessStep implements BackendStep
          //////////////////////////////////
          // send script outputs back out //
          //////////////////////////////////
-         output.addValue("scriptLogLines", CollectionUtils.useOrWrap(testScriptOutput.getScriptLogLines(), TypeToken.get(ArrayList.class)));
+         output.addValue("scriptLogLines", CollectionUtils.useOrWrap(testScriptOutput.getScriptLogLines(), new TypeToken<ArrayList<QRecord>>() {}));
          output.addValue("outputObject", testScriptOutput.getOutputObject());
 
          if(testScriptOutput.getException() != null)

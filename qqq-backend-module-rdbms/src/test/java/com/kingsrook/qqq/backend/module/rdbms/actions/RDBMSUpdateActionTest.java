@@ -118,7 +118,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
       assertEquals(2, updateResult.getRecords().get(0).getValue("id"), "Should have id=2 in the row");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE last_name = 'Kirk'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'Kirk'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -129,7 +130,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          }
          assertEquals(1, rowsFound);
       }));
-      runTestSql("SELECT * FROM person WHERE last_name = 'Maes'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'Maes'", (rs ->
+      {
          if(rs.next())
          {
             fail("Should not have found Maes any more.");
@@ -176,7 +178,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       assertEquals(3, updateResult.getRecords().get(1).getValue("id"), "Should have expected ids in the row");
       assertEquals(5, updateResult.getRecords().get(2).getValue("id"), "Should have expected ids in the row");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE last_name = 'From Bewitched'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'From Bewitched'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -188,7 +191,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          }
          assertEquals(1, rowsFound);
       }));
-      runTestSql("SELECT * FROM person WHERE last_name = 'Chamberlain'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'Chamberlain'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -199,7 +203,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          }
          assertEquals(1, rowsFound);
       }));
-      runTestSql("SELECT * FROM person WHERE last_name = 'Richardson'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'Richardson'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -243,7 +248,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
       assertEquals(3, updateResult.getRecords().get(1).getValue("id"), "Should have expected ids in the row");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE last_name = 'From Bewitched'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'From Bewitched'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -255,7 +261,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          }
          assertEquals(1, rowsFound);
       }));
-      runTestSql("SELECT * FROM person WHERE last_name = 'Tim''s Uncle'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = 'Tim''s Uncle'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -294,7 +301,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
 
       assertEquals(5, updateResult.getRecords().size(), "Should return 5 rows");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");
-      runTestSql("SELECT * FROM person WHERE id <= 5", (rs -> {
+      runTestSql("SELECT * FROM person WHERE id <= 5", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -414,7 +422,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    private String selectModifyDate(Integer id) throws Exception
    {
       StringBuilder modifyDate = new StringBuilder();
-      runTestSql("SELECT modify_date FROM person WHERE id = " + id, (rs -> {
+      runTestSql("SELECT modify_date FROM person WHERE id = " + id, (rs ->
+      {
          if(rs.next())
          {
             modifyDate.append(rs.getString("modify_date"));

@@ -86,7 +86,7 @@ class BulkInsertTransformStepTest extends BaseTest
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
-      TestUtils.insertRecords(instance, table, List.of(
+      TestUtils.insertRecords(table, List.of(
          newQRecord("uuid-A", "SKU-1", 1),
          newQRecord("uuid-B", "SKU-2", 1),
          newQRecord("uuid-C", "SKU-2", 2)
@@ -138,10 +138,12 @@ class BulkInsertTransformStepTest extends BaseTest
 
 
 
-   private QTableMetaData defineTable(QTableMetaData TABLE_NAME, QInstance instance)
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private QTableMetaData defineTable(QTableMetaData table, QInstance instance)
    {
-      QTableMetaData table = TABLE_NAME
-         .withPrimaryKeyField("id")
+      table.withPrimaryKeyField("id")
          .withField(new QFieldMetaData("id", QFieldType.INTEGER))
          .withField(new QFieldMetaData("uuid", QFieldType.STRING))
          .withField(new QFieldMetaData("sku", QFieldType.STRING))
@@ -168,7 +170,7 @@ class BulkInsertTransformStepTest extends BaseTest
       ////////////////////////////////////////////////////////////
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
-      TestUtils.insertRecords(instance, table, List.of(
+      TestUtils.insertRecords(table, List.of(
          newQRecord("uuid-A", "SKU-1", 1),
          newQRecord("uuid-B", "SKU-2", 1),
          newQRecord("uuid-C", "SKU-2", 2)
@@ -203,6 +205,9 @@ class BulkInsertTransformStepTest extends BaseTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private boolean recordEquals(QRecord record, String uuid, String sku, Integer storeId)
    {
       return (record.getValue("uuid").equals(uuid)

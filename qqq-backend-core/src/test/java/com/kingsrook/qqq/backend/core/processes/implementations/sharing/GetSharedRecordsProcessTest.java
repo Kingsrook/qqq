@@ -84,6 +84,7 @@ class GetSharedRecordsProcessTest extends BaseTest
       input.addValue("recordId", 1);
       processStep.run(input, output);
 
+      @SuppressWarnings("unchecked")
       List<QRecord> resultList = (List<QRecord>) output.getValue("resultList");
       assertEquals(1, resultList.size());
 

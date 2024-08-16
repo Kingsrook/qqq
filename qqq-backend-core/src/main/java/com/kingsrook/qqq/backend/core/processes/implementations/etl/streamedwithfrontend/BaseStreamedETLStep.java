@@ -27,6 +27,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
@@ -85,14 +86,14 @@ public class BaseStreamedETLStep
    protected void updateRecordsWithDisplayValuesAndPossibleValues(RunBackendStepInput input, List<QRecord> list)
    {
       String         destinationTable = input.getValueString(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE);
-      QTableMetaData table            = input.getInstance().getTable(destinationTable);
+      QTableMetaData table            = QContext.getQInstance().getTable(destinationTable);
 
       if(table != null && list != null)
       {
          QValueFormatter qValueFormatter = new QValueFormatter();
          qValueFormatter.setDisplayValuesInRecords(table, list);
 
-         QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(input.getInstance(), input.getSession());
+         QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
          qPossibleValueTranslator.translatePossibleValuesInRecords(table, list);
       }
    }

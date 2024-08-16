@@ -19,107 +19,108 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
+package com.kingsrook.qqq.backend.core.utils;
+
+
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableMap;
 
 
 /*******************************************************************************
- ** A tooltip used within a (widget) block.
+ ** Hash that provides "counting" capability -- keys map to Integers that
+ ** are automatically/easily summed to
  **
  *******************************************************************************/
-public class BlockTooltip
+public class CountingHash<K extends Serializable> extends AbstractMap<K, Integer> implements Serializable
 {
-   private String    title;
-   private Placement placement = Placement.BOTTOM;
+   private Map<K, Integer> map = null;
+
+
+
+   /*******************************************************************************
+    ** Default constructor
+    **
+    *******************************************************************************/
+   public CountingHash()
+   {
+      this.map = new HashMap<>();
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor where you can supply a source map (e.g., if you want a specific
+    ** Map type (like LinkedHashMap), or with pre-values.
+    **
+    ** Note - the input map will be wrapped in a MutableMap - so - it'll be mutable.
+    **
+    *******************************************************************************/
+   public CountingHash(Map<K, Integer> sourceMap)
+   {
+      this.map = new MutableMap<>(sourceMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Increment the value for the specified key by 1.
+    **
+    *******************************************************************************/
+   public Integer add(K key)
+   {
+      Integer value = getOrCreateListForKey(key);
+      Integer sum   = value + 1;
+      map.put(key, sum);
+      return (sum);
+   }
+
+
+
+   /*******************************************************************************
+    ** Increment the value for the specified key by the supplied addend
+    **
+    *******************************************************************************/
+   public Integer add(K key, Integer addend)
+   {
+      Integer value = getOrCreateListForKey(key);
+      Integer sum   = value + addend;
+      map.put(key, sum);
+      return (sum);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private Integer getOrCreateListForKey(K key)
+   {
+      Integer value;
+
+      if(!this.map.containsKey(key))
+      {
+         this.map.put(key, 0);
+         value = 0;
+      }
+      else
+      {
+         value = this.map.get(key);
+      }
+      return value;
+   }
 
 
 
    /***************************************************************************
-    **
+    *
     ***************************************************************************/
-   public enum Placement
-   {BOTTOM, LEFT, RIGHT, TOP}
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public BlockTooltip()
+   public Set<Entry<K, Integer>> entrySet()
    {
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public BlockTooltip(String title)
-   {
-      this.title = title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for title
-    *******************************************************************************/
-   public String getTitle()
-   {
-      return (this.title);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for title
-    *******************************************************************************/
-   public void setTitle(String title)
-   {
-      this.title = title;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for title
-    *******************************************************************************/
-   public BlockTooltip withTitle(String title)
-   {
-      this.title = title;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for placement
-    *******************************************************************************/
-   public Placement getPlacement()
-   {
-      return (this.placement);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for placement
-    *******************************************************************************/
-   public void setPlacement(Placement placement)
-   {
-      this.placement = placement;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for placement
-    *******************************************************************************/
-   public BlockTooltip withPlacement(Placement placement)
-   {
-      this.placement = placement;
-      return (this);
+      return this.map.entrySet();
    }
 
 }

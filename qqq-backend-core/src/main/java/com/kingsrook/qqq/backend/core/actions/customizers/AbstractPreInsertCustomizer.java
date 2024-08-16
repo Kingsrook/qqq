@@ -55,10 +55,10 @@ public abstract class AbstractPreInsertCustomizer implements TableCustomizerInte
 
 
 
-   /////////////////////////////////////////////////////////////////////////////////
-   // allow the customizer to specify when it should be executed as part of the   //
-   // insert action.  default (per method in this class) is AFTER_ALL_VALIDATIONS //
-   /////////////////////////////////////////////////////////////////////////////////
+   /***************************************************************************
+    ** allow the customizer to specify when it should be executed as part of the
+    ** insert action.  default (per method in this class) is AFTER_ALL_VALIDATIONS
+    ***************************************************************************/
    public enum WhenToRun
    {
       BEFORE_ALL_VALIDATIONS,

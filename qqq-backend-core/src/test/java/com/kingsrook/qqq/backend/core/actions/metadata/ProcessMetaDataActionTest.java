@@ -67,7 +67,8 @@ class ProcessMetaDataActionTest extends BaseTest
    @Test
    public void test_notFound()
    {
-      assertThrows(QNotFoundException.class, () -> {
+      assertThrows(QNotFoundException.class, () ->
+      {
          ProcessMetaDataInput request = new ProcessMetaDataInput();
          request.setProcessName("willNotBeFound");
          new ProcessMetaDataAction().execute(request);

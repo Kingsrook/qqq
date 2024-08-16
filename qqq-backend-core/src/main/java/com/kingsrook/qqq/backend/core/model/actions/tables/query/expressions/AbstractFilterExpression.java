@@ -40,11 +40,14 @@ public abstract class AbstractFilterExpression<T extends Serializable> implement
 
 
    /*******************************************************************************
+    ** Evaluate the expression, given a map of input values.
     **
+    ** By default, this will defer to the evaluate(void) method - but, a subclass
+    ** (e.g., FilterVariableExpression) may react differently.
     *******************************************************************************/
    public T evaluateInputValues(Map<String, Serializable> inputValues) throws QException
    {
-      return (T) this;
+      return evaluate();
    }
 
 

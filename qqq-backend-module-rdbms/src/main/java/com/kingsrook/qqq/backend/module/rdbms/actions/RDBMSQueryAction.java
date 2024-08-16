@@ -28,6 +28,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -98,10 +99,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          StringBuilder sql = new StringBuilder(selection.selectClause());
 
          QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
-         JoinsContext joinsContext = new JoinsContext(queryInput.getInstance(), tableName, queryInput.getQueryJoins(), filter);
+         JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), tableName, queryInput.getQueryJoins(), filter);
 
          List<Serializable> params = new ArrayList<>();
-         sql.append(" FROM ").append(makeFromClause(queryInput.getInstance(), tableName, joinsContext, params));
+         sql.append(" FROM ").append(makeFromClause(QContext.getQInstance(), tableName, joinsContext, params));
          sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
 
          if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
@@ -150,6 +151,14 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             actionTimeoutHelper = new ActionTimeoutHelper(queryInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // to avoid counting time spent acquiring a connection, re-set the queryStat startTimestamp here //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            if(queryStat != null)
+            {
+               queryStat.setStartTimestamp(Instant.now());
+            }
 
             //////////////////////////////////////////////
             // execute the query - iterate over results //

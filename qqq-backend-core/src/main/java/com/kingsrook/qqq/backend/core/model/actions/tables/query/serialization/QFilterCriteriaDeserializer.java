@@ -79,10 +79,11 @@ public class QFilterCriteriaDeserializer extends StdDeserializer<QFilterCriteria
       /////////////////////////////////
       // get values out of json node //
       /////////////////////////////////
-      List<Serializable> values         = objectMapper.treeToValue(node.get("values"), List.class);
-      String             fieldName      = objectMapper.treeToValue(node.get("fieldName"), String.class);
-      QCriteriaOperator  operator       = objectMapper.treeToValue(node.get("operator"), QCriteriaOperator.class);
-      String             otherFieldName = objectMapper.treeToValue(node.get("otherFieldName"), String.class);
+      @SuppressWarnings("unchecked")
+      List<Serializable> values = objectMapper.treeToValue(node.get("values"), List.class);
+      String            fieldName      = objectMapper.treeToValue(node.get("fieldName"), String.class);
+      QCriteriaOperator operator       = objectMapper.treeToValue(node.get("operator"), QCriteriaOperator.class);
+      String            otherFieldName = objectMapper.treeToValue(node.get("otherFieldName"), String.class);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // look at all the values - if any of them are actually meant to be an Expression (instance of subclass of AbstractFilterExpression)     //

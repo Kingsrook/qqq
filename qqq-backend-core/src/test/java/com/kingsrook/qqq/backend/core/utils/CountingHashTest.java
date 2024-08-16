@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,58 +19,58 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.metadata;
+package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
-import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Unit test for TableMetaDataAction
- **
+ ** Unit test for CountingHash 
  *******************************************************************************/
-class TableMetaDataActionTest extends BaseTest
+class CountingHashTest extends BaseTest
 {
 
    /*******************************************************************************
-    ** Test basic success case.
     **
     *******************************************************************************/
    @Test
-   public void test() throws QException
+   void test()
    {
-      TableMetaDataInput request = new TableMetaDataInput();
-      request.setTableName("person");
-      TableMetaDataOutput result = new TableMetaDataAction().execute(request);
-      assertNotNull(result);
-      assertNotNull(result.getTable());
-      assertEquals("person", result.getTable().getName());
-      assertEquals("Person", result.getTable().getLabel());
+      CountingHash<String> countingHash = new CountingHash<>();
+
+      assertNull(countingHash.get("a"));
+
+      countingHash.add("a");
+      assertEquals(1, countingHash.get("a"));
+
+      countingHash.add("a");
+      assertEquals(2, countingHash.get("a"));
+
+      countingHash.add("a", 2);
+      assertEquals(4, countingHash.get("a"));
+
+      countingHash.add("b", 5);
+      assertEquals(5, countingHash.get("b"));
    }
 
 
 
    /*******************************************************************************
-    ** Test exeption is thrown for the "not-found" case.
     **
     *******************************************************************************/
    @Test
-   public void test_notFound()
+   void testAlwaysMutable()
    {
-      assertThrows(QUserFacingException.class, () ->
-      {
-         TableMetaDataInput request = new TableMetaDataInput();
-         request.setTableName("willNotBeFound");
-         new TableMetaDataAction().execute(request);
-      });
+      CountingHash<String> alwaysMutable = new CountingHash<>(Map.of("A", 5));
+      alwaysMutable.add("A");
+      alwaysMutable.add("B");
+      assertEquals(6, alwaysMutable.get("A"));
+      assertEquals(1, alwaysMutable.get("B"));
    }
 
 }

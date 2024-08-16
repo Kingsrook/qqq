@@ -54,8 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 class TableSyncProcessTest extends BaseTest
 {
-   String PROCESS_NAME           = "testSyncProcess";
-   String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
+   private static final String PROCESS_NAME           = "testSyncProcess";
+   private static final String TABLE_NAME_PEOPLE_SYNC = "peopleSync";
 
 
 
@@ -116,7 +116,7 @@ class TableSyncProcessTest extends BaseTest
          .withFields(personTable.getFields())
          .withField(new QFieldMetaData("sourcePersonId", QFieldType.INTEGER)));
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin"),
          new QRecord().withValue("id", 2).withValue("firstName", "Tim"),
          new QRecord().withValue("id", 3).withValue("firstName", "Tyler"),
@@ -124,7 +124,7 @@ class TableSyncProcessTest extends BaseTest
          new QRecord().withValue("id", 5).withValue("firstName", "Homer")
       ));
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TABLE_NAME_PEOPLE_SYNC), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TABLE_NAME_PEOPLE_SYNC), List.of(
          new QRecord().withValue("sourcePersonId", 3).withValue("firstName", "Garret"),
          new QRecord().withValue("sourcePersonId", 5).withValue("firstName", "Homer")
       ));

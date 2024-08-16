@@ -109,7 +109,7 @@ class ProcessWidgetRendererTest extends BaseTest
          .getWidgetMetaData();
       qInstance.addWidget(widget);
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1)
       ));
 
@@ -140,12 +140,12 @@ class ProcessWidgetRendererTest extends BaseTest
          .getWidgetMetaData();
       qInstance.addWidget(widget);
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
          new QRecord().withValue("id", 1),
          new QRecord().withValue("id", 2)
       ));
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
          new QRecord().withValue("orderId", 1).withValue("sku", "ABC").withValue("lineNumber", 2),
          new QRecord().withValue("orderId", 1).withValue("sku", "BCD").withValue("lineNumber", 1),
          new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.

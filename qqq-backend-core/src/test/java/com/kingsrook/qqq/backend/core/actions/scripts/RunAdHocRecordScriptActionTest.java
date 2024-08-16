@@ -120,12 +120,12 @@ class RunAdHocRecordScriptActionTest extends BaseTest
 
       new ScriptsMetaDataProvider().defineAll(instance, TestUtils.MEMORY_BACKEND_NAME, null);
 
-      TestUtils.insertRecords(instance, personMemory, List.of(
+      TestUtils.insertRecords(personMemory, List.of(
          new QRecord().withValue("id", 1),
          new QRecord().withValue("id", 2)
       ));
 
-      TestUtils.insertRecords(instance, instance.getTable("scriptType"), List.of(
+      TestUtils.insertRecords(instance.getTable("scriptType"), List.of(
          new QRecord().withValue("id", 1).withValue("name", "Test Script Type")
       ));
    }

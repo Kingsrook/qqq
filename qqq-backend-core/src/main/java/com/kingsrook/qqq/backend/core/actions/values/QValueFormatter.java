@@ -68,7 +68,7 @@ public class QValueFormatter
     *******************************************************************************/
    public static String formatValue(QFieldMetaData field, Serializable value)
    {
-      return (formatValue(field.getDisplayFormat(), field.getName(), value));
+      return (formatValue(field.getDisplayFormat(), field.getType(), field.getName(), value));
    }
 
 
@@ -78,7 +78,7 @@ public class QValueFormatter
     *******************************************************************************/
    public static String formatValue(String displayFormat, Serializable value)
    {
-      return (formatValue(displayFormat, "", value));
+      return (formatValue(displayFormat, null, "", value));
    }
 
 
@@ -87,7 +87,7 @@ public class QValueFormatter
     ** For a display format string, an optional fieldName (only used for logging),
     ** and a value, apply the format.
     *******************************************************************************/
-   private static String formatValue(String displayFormat, String fieldName, Serializable value)
+   private static String formatValue(String displayFormat, QFieldType fieldType, String fieldName, Serializable value)
    {
       //////////////////////////////////
       // null values get null results //
@@ -105,6 +105,11 @@ public class QValueFormatter
          if(value instanceof Boolean b)
          {
             return formatBoolean(b);
+         }
+
+         if(QFieldType.BOOLEAN.equals(fieldType))
+         {
+            return formatBoolean(ValueUtils.getValueAsBoolean(value));
          }
 
          if(value instanceof LocalTime lt)
@@ -404,6 +409,7 @@ public class QValueFormatter
    }
 
 
+
    /*******************************************************************************
     ** For a single record, set its display values - where caller (meant to stay private)
     ** can specify if they've already done fieldBehaviors (to avoid re-doing).
@@ -563,6 +569,7 @@ public class QValueFormatter
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // heavy fields that weren't fetched - they should have a backend-detail specifying their length (or null if null) //
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            @SuppressWarnings("unchecked")
             Map<String, Serializable> heavyFieldLengths = (Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS);
             if(heavyFieldLengths != null)
             {

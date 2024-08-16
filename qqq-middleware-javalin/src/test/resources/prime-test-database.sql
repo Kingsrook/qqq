@@ -42,3 +42,18 @@ INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (3, 'Ti
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (4, 'Tyler', 'Samples', '1990-01-01', 'tsamples@mmltholdings.com');
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com');
 INSERT INTO person (id, first_name, last_name, birth_date, email) VALUES (6, 'Linda', 'Kelkhoff', '1976-01-01', 'not-linda.kelkhoff@gmail.com');
+
+DROP TABLE IF EXISTS pet;
+CREATE TABLE pet
+(
+   id INT AUTO_INCREMENT,
+   create_date TIMESTAMP DEFAULT now(),
+   modify_date TIMESTAMP DEFAULT now(),
+
+   name VARCHAR(80) NOT NULL,
+   species VARCHAR(80) NOT NULL,
+   owner_person_id INT
+);
+
+INSERT INTO pet (id, name, species, owner_person_id) VALUES (1, 'Chester', 'dog', 1);
+INSERT INTO pet (id, name, species, owner_person_id) VALUES (2, 'Lucy', 'dog', 1);

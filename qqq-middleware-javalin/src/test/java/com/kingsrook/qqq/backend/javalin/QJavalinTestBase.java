@@ -96,7 +96,7 @@ public class QJavalinTestBase
    /*******************************************************************************
     **
     *******************************************************************************/
-   static protected void restartServerWithInstance(QInstance qInstance) throws QInstanceValidationException
+   protected static void restartServerWithInstance(QInstance qInstance) throws QInstanceValidationException
    {
       if(qJavalinImplementation != null)
       {

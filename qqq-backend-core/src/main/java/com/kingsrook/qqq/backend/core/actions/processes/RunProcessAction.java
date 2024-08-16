@@ -99,7 +99,7 @@ public class RunProcessAction
    {
       ActionHelper.validateSession(runProcessInput);
 
-      QProcessMetaData process = runProcessInput.getInstance().getProcess(runProcessInput.getProcessName());
+      QProcessMetaData process = QContext.getQInstance().getProcess(runProcessInput.getProcessName());
       if(process == null)
       {
          throw new QException("Process [" + runProcessInput.getProcessName() + "] is not defined in this instance.");

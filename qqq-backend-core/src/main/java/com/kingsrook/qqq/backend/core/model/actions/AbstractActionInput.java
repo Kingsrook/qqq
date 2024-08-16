@@ -32,7 +32,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 
 
@@ -89,17 +88,6 @@ public class AbstractActionInput
             throw (new IllegalArgumentException("QInstance failed validation" + e.getMessage(), e));
          }
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @JsonIgnore
-   public QAuthenticationMetaData getAuthenticationMetaData()
-   {
-      return (getInstance().getAuthentication());
    }
 
 

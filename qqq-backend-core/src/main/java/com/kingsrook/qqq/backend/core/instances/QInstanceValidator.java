@@ -923,7 +923,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private <T extends FieldBehavior<T>> void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
+   private void validateTableField(QInstance qInstance, String tableName, String fieldName, QTableMetaData table, QFieldMetaData field)
    {
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
@@ -945,12 +945,13 @@ public class QInstanceValidator
          assertCondition(field.getMaxLength() != null, prefix + "specifies a ValueTooLongBehavior, but not a maxLength.");
       }
 
-      Set<Class<FieldBehavior<T>>> usedFieldBehaviorTypes = new HashSet<>();
+      Set<Class<FieldBehavior<?>>> usedFieldBehaviorTypes = new HashSet<>();
       if(field.getBehaviors() != null)
       {
          for(FieldBehavior<?> fieldBehavior : field.getBehaviors())
          {
-            Class<FieldBehavior<T>> behaviorClass = (Class<FieldBehavior<T>>) fieldBehavior.getClass();
+            @SuppressWarnings("unchecked")
+            Class<FieldBehavior<?>> behaviorClass = (Class<FieldBehavior<?>>) fieldBehavior.getClass();
 
             errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
 

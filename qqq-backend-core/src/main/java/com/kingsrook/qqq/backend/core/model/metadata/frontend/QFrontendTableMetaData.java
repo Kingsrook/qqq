@@ -168,11 +168,11 @@ public class QFrontendTableMetaData
       editPermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.EDIT);
       deletePermission = PermissionsHelper.hasTablePermission(actionInput, tableMetaData.getName(), TablePermissionSubType.DELETE);
 
-      QBackendMetaData backend = actionInput.getInstance().getBackend(tableMetaData.getBackendName());
+      QBackendMetaData backend = QContext.getQInstance().getBackend(tableMetaData.getBackendName());
       if(backend != null && backend.getUsesVariants())
       {
          usesVariants = true;
-         variantTableLabel = actionInput.getInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
+         variantTableLabel = QContext.getQInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
       }
 
       this.helpContents = tableMetaData.getHelpContent();

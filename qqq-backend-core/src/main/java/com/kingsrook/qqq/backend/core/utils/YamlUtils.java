@@ -48,7 +48,11 @@ public class YamlUtils
    {
       ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
       objectMapper.findAndRegisterModules();
-      return (objectMapper.readValue(yaml, Map.class));
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = objectMapper.readValue(yaml, Map.class);
+
+      return map;
    }
 
 

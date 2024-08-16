@@ -984,6 +984,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
+   @SuppressWarnings("unchecked")
    void testHeavyFields() throws QException
    {
       //////////////////////////////////////////////////////////

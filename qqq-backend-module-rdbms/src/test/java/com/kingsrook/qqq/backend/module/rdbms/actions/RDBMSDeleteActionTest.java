@@ -103,7 +103,8 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should delete one row");
       assertEquals(0, deleteResult.getRecordsWithErrors().size(), "should have no errors");
-      runTestSql("SELECT id FROM person", (rs -> {
+      runTestSql("SELECT id FROM person", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -177,7 +178,8 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       assertTrue(deleteResult.getRecordsWithErrors().stream().noneMatch(r -> r.getErrors().isEmpty()), "All we got back should have errors");
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should get back that 3 were deleted");
 
-      runTestSql("SELECT id FROM child_table", (rs -> {
+      runTestSql("SELECT id FROM child_table", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -223,7 +225,8 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       assertEquals(1, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should get back that 3 were deleted");
 
-      runTestSql("SELECT id FROM child_table", (rs -> {
+      runTestSql("SELECT id FROM child_table", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {
@@ -275,7 +278,8 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       assertTrue(deleteResult.getRecordsWithErrors().stream().noneMatch(r -> r.getErrors().isEmpty()), "All we got back should have errors");
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should get back that 3 were deleted");
 
-      runTestSql("SELECT id FROM child_table", (rs -> {
+      runTestSql("SELECT id FROM child_table", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {

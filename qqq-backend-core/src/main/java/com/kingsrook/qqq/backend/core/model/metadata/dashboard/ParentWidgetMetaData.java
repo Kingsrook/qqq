@@ -39,6 +39,9 @@ public class ParentWidgetMetaData extends QWidgetMetaData
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum LayoutType
    {
       GRID,
