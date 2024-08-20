@@ -51,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.SparseQRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -177,7 +178,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                {
                   setQueryStatFirstResultTime();
 
-                  QRecord record = new QRecord();
+                  QRecord record = queryInput.getFieldNamesToInclude() == null ? new QRecord() : new SparseQRecord(queryInput.getFieldNamesToInclude());
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
                   record.setValues(values);
@@ -330,6 +331,8 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       StringBuilder        selectClause       = new StringBuilder((requiresDistinct) ? "SELECT DISTINCT " : "SELECT ").append(columns);
       List<QFieldMetaData> selectionFieldList = new ArrayList<>(fieldList);
 
+      boolean needCommaBeforeJoinFields = !columns.isEmpty();
+
       ///////////////////////////////////
       // add any 'selected' queryJoins //
       ///////////////////////////////////
@@ -350,6 +353,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             List<QFieldMetaData> joinFieldList = joinTable.getFields().values()
                .stream().filter(field -> fieldNamesToInclude == null || fieldNamesToInclude.contains(tableNameOrAlias + "." + field.getName()))
                .toList();
+            if(joinFieldList.isEmpty())
+            {
+               continue;
+            }
 
             /////////////////////////////////////////////////////
             // map to columns, wrapping heavy fields as needed //
@@ -363,7 +370,13 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             // append to output objects.                                                                  //
             // note that fields are cloned, since we are changing their names to have table/alias prefix. //
             ////////////////////////////////////////////////////////////////////////////////////////////////
-            selectClause.append(", ").append(joinColumns);
+            if(needCommaBeforeJoinFields)
+            {
+               selectClause.append(", ");
+            }
+            selectClause.append(joinColumns);
+            needCommaBeforeJoinFields = true;
+
             selectionFieldList.addAll(joinFieldList.stream().map(field -> field.clone().withName(tableNameOrAlias + "." + field.getName())).toList());
          }
       }

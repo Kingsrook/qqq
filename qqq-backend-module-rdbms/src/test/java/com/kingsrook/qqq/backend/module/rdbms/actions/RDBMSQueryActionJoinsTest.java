@@ -1077,6 +1077,24 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
       assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() > 2);
+
+      ////////////////////////////////////////////////////////////////////////////
+      // regression from original build - where only join fields made sql error //
+      ////////////////////////////////////////////////////////////////////////////
+      queryInput.withFieldNamesToInclude(Set.of(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 1);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // similar regression to above, if one of the join tables didn't have anything selected //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("id2").withSelect(true));
+      queryInput.withFieldNamesToInclude(Set.of("firstName", "id2.idNumber"));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("id2.idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 2);
    }
 
 }
