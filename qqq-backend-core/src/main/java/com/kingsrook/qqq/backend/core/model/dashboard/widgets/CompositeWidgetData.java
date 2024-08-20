@@ -40,9 +40,10 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
 {
    private List<AbstractBlockWidgetData<?, ?, ?, ?>> blocks = new ArrayList<>();
 
-   private Map<String, Serializable> styleOverrides = new HashMap<>();
-
-   private Layout layout;
+   private Layout                    layout;
+   private Map<String, Serializable> styleOverrides        = new HashMap<>();
+   private String                    overlayHtml;
+   private Map<String, Serializable> overlayStyleOverrides = new HashMap<>();
 
 
 
@@ -216,6 +217,93 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
    {
       this.layout = layout;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overlayHtml
+    *******************************************************************************/
+   public String getOverlayHtml()
+   {
+      return (this.overlayHtml);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overlayHtml
+    *******************************************************************************/
+   public void setOverlayHtml(String overlayHtml)
+   {
+      this.overlayHtml = overlayHtml;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overlayHtml
+    *******************************************************************************/
+   public CompositeWidgetData withOverlayHtml(String overlayHtml)
+   {
+      this.overlayHtml = overlayHtml;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for overlayStyleOverrides
+    *******************************************************************************/
+   public Map<String, Serializable> getOverlayStyleOverrides()
+   {
+      return (this.overlayStyleOverrides);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overlayStyleOverrides
+    *******************************************************************************/
+   public void setOverlayStyleOverrides(Map<String, Serializable> overlayStyleOverrides)
+   {
+      this.overlayStyleOverrides = overlayStyleOverrides;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overlayStyleOverrides
+    *******************************************************************************/
+   public CompositeWidgetData withOverlayStyleOverrides(Map<String, Serializable> overlayStyleOverrides)
+   {
+      this.overlayStyleOverrides = overlayStyleOverrides;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public CompositeWidgetData withOverlayStyleOverride(String key, Serializable value)
+   {
+      addOverlayStyleOverride(key, value);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addOverlayStyleOverride(String key, Serializable value)
+   {
+      if(this.overlayStyleOverrides == null)
+      {
+         this.overlayStyleOverrides = new HashMap<>();
+      }
+      this.overlayStyleOverrides.put(key, value);
    }
 
 }
