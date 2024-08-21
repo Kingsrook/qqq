@@ -18,6 +18,6 @@ fi
 
 POM=$(dirname $0)/../pom.xml
 
-echo "Updating $POM <revision> to: $SLUG-SNAPSHOT"
-sed -i "s/<revision>.*/<revision>$SLUG-SNAPSHOT<\/revision>/" $POM
+echo "Updating $POM <revision> to: $SLUG"
+sed -i "s/<revision>.*/<revision>$SLUG<\/revision>/" $POM
 git diff $POM
