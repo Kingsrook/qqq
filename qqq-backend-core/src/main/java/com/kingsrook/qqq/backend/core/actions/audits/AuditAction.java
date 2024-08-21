@@ -272,7 +272,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             List<QRecord> auditDetailRecords = new ArrayList<>();
             for(AuditSingleInput auditSingleInput : CollectionUtils.nonNullList(input.getAuditSingleInputList()))
             {
-               Integer auditId = insertOutput.getRecords().get(i++).getValueInteger("id");
+               Long auditId = insertOutput.getRecords().get(i++).getValueLong("id");
                if(auditId == null)
                {
                   LOG.warn("Missing an id for inserted audit - so won't be able to store its child details...");
