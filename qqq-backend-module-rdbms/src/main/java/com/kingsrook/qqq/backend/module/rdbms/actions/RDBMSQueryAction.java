@@ -51,7 +51,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.data.SparseQRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -178,7 +177,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
                {
                   setQueryStatFirstResultTime();
 
-                  QRecord record = queryInput.getFieldNamesToInclude() == null ? new QRecord() : new SparseQRecord(queryInput.getFieldNamesToInclude());
+                  QRecord record = new QRecord();
                   record.setTableName(table.getName());
                   LinkedHashMap<String, Serializable> values = new LinkedHashMap<>();
                   record.setValues(values);
