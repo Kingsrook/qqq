@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -45,7 +46,7 @@ public class FilterVariableExpression extends AbstractFilterExpression<Serializa
     **
     *******************************************************************************/
    @Override
-   public Serializable evaluate() throws QException
+   public Serializable evaluate(QFieldMetaData field) throws QException
    {
       throw (new QUserFacingException("Missing variable value."));
    }
