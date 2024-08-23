@@ -102,6 +102,14 @@ class C3P0PooledConnectionProviderTest extends BaseTest
       backend.setConnectionProvider(new QCodeReference(C3P0PooledConnectionProvider.class));
       QContext.init(qInstance, new QSession());
 
+      /////////////////////////////////////////////////////////////////////////////////
+      // sometimes we're seeing this test fail w/ only 2 connections in the pool...  //
+      // theory is, maybe, the pool doesn't quite have enough time to open them all? //
+      // so, try adding a little sleep here.                                         //
+      /////////////////////////////////////////////////////////////////////////////////
+      new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON));
+      SleepUtils.sleep(500, TimeUnit.MILLISECONDS);
+
       for(int i = 0; i < 5; i++)
       {
          new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON));
@@ -110,17 +118,18 @@ class C3P0PooledConnectionProviderTest extends BaseTest
       JSONObject debugValues = getDebugStateValues(true);
       assertThat(debugValues.getInt("numConnections")).isBetween(3, 6); // due to potential timing issues, sometimes pool will acquire another 3 conns, so 3 or 6 seems ok.
 
-      ////////////////////////////////////////////////////////////////////
-      // open up 4 transactions - confirm the pool opens some new conns //
-      ////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////
+      // open up several transactions - confirm the pool opens some new conns //
+      //////////////////////////////////////////////////////////////////////////
+      int noTransactions = 7;
       List<QBackendTransaction> transactions = new ArrayList<>();
-      for(int i = 0; i < 5; i++)
+      for(int i = 0; i < noTransactions; i++)
       {
          transactions.add(QBackendTransaction.openFor(new InsertInput(TestUtils.TABLE_NAME_PERSON)));
       }
 
       debugValues = getDebugStateValues(true);
-      assertThat(debugValues.getInt("numConnections")).isGreaterThan(3);
+      assertThat(debugValues.getInt("numConnections")).isGreaterThanOrEqualTo(noTransactions);
 
       transactions.forEach(transaction -> transaction.close());
 
@@ -128,7 +137,7 @@ class C3P0PooledConnectionProviderTest extends BaseTest
       // might take a second for the pool to re-claim the closed connections //
       /////////////////////////////////////////////////////////////////////////
       boolean foundMatch = false;
-      for(int i = 0; i < 5; i++)
+      for(int i = 0; i < noTransactions; i++)
       {
          debugValues = getDebugStateValues(true);
          if(debugValues.getInt("numConnections") == debugValues.getInt("numIdleConnections"))
