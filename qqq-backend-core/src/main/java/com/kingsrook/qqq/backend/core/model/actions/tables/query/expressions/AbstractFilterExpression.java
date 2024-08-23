@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
 /*******************************************************************************
@@ -35,7 +36,7 @@ public abstract class AbstractFilterExpression<T extends Serializable> implement
    /*******************************************************************************
     **
     *******************************************************************************/
-   public abstract T evaluate() throws QException;
+   public abstract T evaluate(QFieldMetaData field) throws QException;
 
 
 
@@ -47,7 +48,7 @@ public abstract class AbstractFilterExpression<T extends Serializable> implement
     *******************************************************************************/
    public T evaluateInputValues(Map<String, Serializable> inputValues) throws QException
    {
-      return evaluate();
+      return evaluate(null);
    }
 
 

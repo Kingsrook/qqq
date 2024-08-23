@@ -58,6 +58,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -170,6 +171,8 @@ public class MemoryRecordStore
       Collection<QRecord> tableData = getTableData(input.getTable()).values();
       List<QRecord>       records   = new ArrayList<>();
 
+      QQueryFilter filter       = clonedOrNewFilter(input.getFilter());
+      JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), input.getTableName(), input.getQueryJoins(), filter);
       if(CollectionUtils.nullSafeHasContents(input.getQueryJoins()))
       {
          tableData = buildJoinCrossProduct(input);
@@ -185,7 +188,7 @@ public class MemoryRecordStore
             qRecord.setTableName(input.getTableName());
          }
 
-         boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), qRecord);
+         boolean recordMatches = BackendQueryFilterUtils.doesRecordMatch(input.getFilter(), joinsContext, qRecord);
 
          if(recordMatches)
          {
@@ -224,8 +227,7 @@ public class MemoryRecordStore
     *******************************************************************************/
    private Collection<QRecord> buildJoinCrossProduct(QueryInput input) throws QException
    {
-      QInstance    qInstance    = QContext.getQInstance();
-      JoinsContext joinsContext = new JoinsContext(qInstance, input.getTableName(), input.getQueryJoins(), input.getFilter());
+      QInstance qInstance = QContext.getQInstance();
 
       List<QRecord>  crossProduct = new ArrayList<>();
       QTableMetaData leftTable    = input.getTable();
@@ -900,5 +902,22 @@ public class MemoryRecordStore
       };
 
       return ValueUtils.getValueAsFieldType(fieldType, aggregateValue);
+   }
+
+
+
+   /*******************************************************************************
+    ** Either clone the input filter (so we can change it safely), or return a new blank filter.
+    *******************************************************************************/
+   protected QQueryFilter clonedOrNewFilter(QQueryFilter filter)
+   {
+      if(filter == null)
+      {
+         return (new QQueryFilter());
+      }
+      else
+      {
+         return (filter.clone());
+      }
    }
 }
