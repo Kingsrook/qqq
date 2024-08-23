@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -54,6 +55,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -992,6 +995,48 @@ class MongoDBQueryActionTest extends BaseTest
       assertThat(new QueryAction().execute(queryInput).getRecords())
          .hasSize(3)
          .allMatch(r -> r.getValueInteger("storeKey").equals(1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNamesToInclude() throws QException
+   {
+      QQueryFilter  filter     = new QQueryFilter().withCriteria("firstName", QCriteriaOperator.EQUALS, "Darin");
+      QueryInput    queryInput = new QueryInput(TestUtils.TABLE_NAME_PERSON).withFilter(filter);
+
+      QRecord record = new QueryAction().execute(queryInput.withFieldNamesToInclude(null)).getRecords().get(0);
+      assertTrue(record.getValues().containsKey("id"));
+      assertTrue(record.getValues().containsKey("firstName"));
+      assertTrue(record.getValues().containsKey("createDate"));
+      //////////////////////////////////////////////////////////////////////////////
+      // note, we get an extra "metaData" field (??), which, i guess is expected? //
+      //////////////////////////////////////////////////////////////////////////////
+      assertEquals(QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON).getFields().size() + 1, record.getValues().size());
+
+      record = new QueryAction().execute(queryInput.withFieldNamesToInclude(Set.of("id", "firstName"))).getRecords().get(0);
+      assertTrue(record.getValues().containsKey("id"));
+      assertTrue(record.getValues().containsKey("firstName"));
+      assertFalse(record.getValues().containsKey("createDate"));
+      assertEquals(2, record.getValues().size());
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // here, we'd have put _id (which mongo always returns) as "id", since caller requested it. //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      assertFalse(record.getValues().containsKey("_id"));
+
+      record = new QueryAction().execute(queryInput.withFieldNamesToInclude(Set.of("homeTown"))).getRecords().get(0);
+      assertFalse(record.getValues().containsKey("id"));
+      assertFalse(record.getValues().containsKey("firstName"));
+      assertFalse(record.getValues().containsKey("createDate"));
+      assertTrue(record.getValues().containsKey("homeTown"));
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // here, mongo always gives back _id (but, we won't have re-mapped it to "id", since caller didn't request it), so, do expect 2 fields here //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(2, record.getValues().size());
+      assertTrue(record.getValues().containsKey("_id"));
    }
 
 }

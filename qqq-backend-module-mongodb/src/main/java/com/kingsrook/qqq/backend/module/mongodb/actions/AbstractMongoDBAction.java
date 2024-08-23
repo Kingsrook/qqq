@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -176,10 +177,20 @@ public class AbstractMongoDBAction
    /*******************************************************************************
     ** Convert a mongodb document to a QRecord.
     *******************************************************************************/
-   protected QRecord documentToRecord(QTableMetaData table, Document document)
+   protected QRecord documentToRecord(QueryInput queryInput, Document document)
    {
-      QRecord record = new QRecord();
+      QTableMetaData table  = queryInput.getTable();
+      QRecord        record = new QRecord();
+
       record.setTableName(table.getName());
+
+      /////////////////////////////////////////////
+      // build the set of field names to include //
+      /////////////////////////////////////////////
+      Set<String> fieldNamesToInclude = queryInput.getFieldNamesToInclude();
+      List<QFieldMetaData> selectedFields = table.getFields().values()
+         .stream().filter(field -> fieldNamesToInclude == null || fieldNamesToInclude.contains(field.getName()))
+         .toList();
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       // first iterate over the table's fields, looking for them (at their backend name (path,    //
@@ -187,7 +198,7 @@ public class AbstractMongoDBAction
       // as we go - then after this loop, will handle all remaining values as unstructured fields //
       //////////////////////////////////////////////////////////////////////////////////////////////
       Map<String, Serializable> values = record.getValues();
-      for(QFieldMetaData field : table.getFields().values())
+      for(QFieldMetaData field : selectedFields)
       {
          String fieldName        = field.getName();
          String fieldBackendName = getFieldBackendName(field);

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.instances;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +39,8 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarCh
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
+import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
+import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -45,6 +48,7 @@ import com.kingsrook.qqq.backend.core.instances.validation.plugins.AlwaysFailsPr
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -1712,7 +1716,7 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    void testReportDataSourceStaticDataSupplier()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).withStaticDataSupplier(new QCodeReference()),
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0).withStaticDataSupplier(new QCodeReference(TestReportStaticDataSupplier.class)),
          "has both a sourceTable and a staticDataSupplier");
 
       assertValidationFailureReasons((qInstance) ->
@@ -1720,16 +1724,43 @@ public class QInstanceValidatorTest extends BaseTest
          QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
          dataSource.setSourceTable(null);
          dataSource.setStaticDataSupplier(new QCodeReference(null, QCodeType.JAVA));
-      },
-         "missing a code reference name");
+      }, "missing a code reference name");
 
       assertValidationFailureReasons((qInstance) ->
       {
          QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
          dataSource.setSourceTable(null);
          dataSource.setStaticDataSupplier(new QCodeReference(ArrayList.class));
-      },
-         "is not of the expected type");
+      }, "is not of the expected type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testReportDataSourceCustomRecordSource()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0)
+            .withSourceTable(null)
+            .withStaticDataSupplier(new QCodeReference(TestReportStaticDataSupplier.class))
+            .withCustomRecordSource(new QCodeReference(TestReportCustomRecordSource.class)),
+         "has both a staticDataSupplier and a customRecordSource");
+
+      assertValidationFailureReasons((qInstance) ->
+      {
+         QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+         dataSource.setSourceTable(null);
+         dataSource.setCustomRecordSource(new QCodeReference(null, QCodeType.JAVA));
+      }, "missing a code reference name");
+
+      assertValidationFailureReasons((qInstance) ->
+      {
+         QReportDataSource dataSource = qInstance.getReport(TestUtils.REPORT_NAME_SHAPES_PERSON).getDataSources().get(0);
+         dataSource.setSourceTable(null);
+         dataSource.setCustomRecordSource(new QCodeReference(ArrayList.class));
+      }, "is not of the expected type");
    }
 
 
@@ -2371,5 +2402,38 @@ public class QInstanceValidatorTest extends BaseTest
     *******************************************************************************/
    public static class ValidAuthCustomizer implements QAuthenticationModuleCustomizerInterface {}
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class TestReportStaticDataSupplier implements Supplier<List<List<Serializable>>>
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public List<List<Serializable>> get()
+      {
+         return List.of();
+      }
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class TestReportCustomRecordSource implements ReportCustomRecordSourceInterface
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public void execute(ReportInput reportInput, QReportDataSource reportDataSource, RecordPipe recordPipe) throws QException
+      {
+
+      }
+   }
 }
 

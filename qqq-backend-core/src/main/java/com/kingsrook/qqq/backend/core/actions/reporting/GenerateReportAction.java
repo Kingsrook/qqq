@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncRecordPipeLoop;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.DataSourceQueryInputCustomizer;
+import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportViewCustomizer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -302,10 +303,19 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       JoinsContext joinsContext = null;
       if(dataSource != null)
       {
+         ///////////////////////////////////////////////////////////////////////////////////////
+         // count records, if applicable, from the data source - for populating into the      //
+         // countByDataSource map, as well as for checking if too many rows (e.g., for excel) //
+         ///////////////////////////////////////////////////////////////////////////////////////
+         countDataSourceRecords(reportInput, dataSource, reportFormat);
+
+         ///////////////////////////////////////////////////////////////////////////////////////////
+         // if there's a source table, set up a joins context, to use below for looking up fields //
+         ///////////////////////////////////////////////////////////////////////////////////////////
          if(StringUtils.hasContent(dataSource.getSourceTable()))
          {
-            joinsContext = new JoinsContext(QContext.getQInstance(), dataSource.getSourceTable(), cloneDataSourceQueryJoins(dataSource), dataSource.getQueryFilter() == null ? null : dataSource.getQueryFilter().clone());
-            countDataSourceRecords(reportInput, dataSource, reportFormat);
+            QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
+            joinsContext = new JoinsContext(QContext.getQInstance(), dataSource.getSourceTable(), dataSource.getQueryJoins(), queryFilter);
          }
       }
 
@@ -329,6 +339,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             field.setName(column.getName());
             if(StringUtils.hasContent(column.getLabel()))
             {
+
                field.setLabel(column.getLabel());
             }
             fields.add(field);
@@ -346,23 +357,33 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
     *******************************************************************************/
    private void countDataSourceRecords(ReportInput reportInput, QReportDataSource dataSource, ReportFormat reportFormat) throws QException
    {
-      QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
-      setInputValuesInQueryFilter(reportInput, queryFilter);
-
-      CountInput countInput = new CountInput();
-      countInput.setTableName(dataSource.getSourceTable());
-      countInput.setFilter(queryFilter);
-      countInput.setQueryJoins(cloneDataSourceQueryJoins(dataSource));
-      CountOutput countOutput = new CountAction().execute(countInput);
-
-      if(countOutput.getCount() != null)
+      Integer count = null;
+      if(dataSource.getCustomRecordSource() != null)
       {
-         countByDataSource.put(dataSource.getName(), countOutput.getCount());
+         // todo - add `count` method to interface?
+      }
+      else if(StringUtils.hasContent(dataSource.getSourceTable()))
+      {
+         QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
+         setInputValuesInQueryFilter(reportInput, queryFilter);
 
-         if(reportFormat.getMaxRows() != null && countOutput.getCount() > reportFormat.getMaxRows())
+         CountInput countInput = new CountInput();
+         countInput.setTableName(dataSource.getSourceTable());
+         countInput.setFilter(queryFilter);
+         countInput.setQueryJoins(cloneDataSourceQueryJoins(dataSource));
+         CountOutput countOutput = new CountAction().execute(countInput);
+
+         count = countOutput.getCount();
+      }
+
+      if(count != null)
+      {
+         countByDataSource.put(dataSource.getName(), count);
+
+         if(reportFormat.getMaxRows() != null && count > reportFormat.getMaxRows())
          {
             throw (new QUserFacingException("The requested report would include more rows ("
-               + String.format("%,d", countOutput.getCount()) + ") than the maximum allowed ("
+               + String.format("%,d", count) + ") than the maximum allowed ("
                + String.format("%,d", reportFormat.getMaxRows()) + ") for the selected file format (" + reportFormat + ")."));
          }
       }
@@ -423,13 +444,19 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       String        tableLabel    = ObjectUtils.tryElse(() -> QContext.getQInstance().getTable(dataSource.getSourceTable()).getLabel(), Objects.requireNonNullElse(dataSource.getSourceTable(), ""));
       AtomicInteger consumedCount = new AtomicInteger(0);
 
-      /////////////////////////////////////////////////////////////////
-      // run a record pipe loop, over the query for this data source //
-      /////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // run a record pipe loop, over the query (or other data-supplier/source) for this data source //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
       RecordPipe recordPipe = new BufferedRecordPipe(1000);
       new AsyncRecordPipeLoop().run("Report[" + reportInput.getReportName() + "]", null, recordPipe, (callback) ->
       {
-         if(dataSource.getSourceTable() != null)
+         if(dataSource.getCustomRecordSource() != null)
+         {
+            ReportCustomRecordSourceInterface recordSource = QCodeLoader.getAdHoc(ReportCustomRecordSourceInterface.class, dataSource.getCustomRecordSource());
+            recordSource.execute(reportInput, dataSource, recordPipe);
+            return (true);
+         }
+         else if(dataSource.getSourceTable() != null)
          {
             QQueryFilter queryFilter = dataSource.getQueryFilter() == null ? new QQueryFilter() : dataSource.getQueryFilter().clone();
             setInputValuesInQueryFilter(reportInput, queryFilter);

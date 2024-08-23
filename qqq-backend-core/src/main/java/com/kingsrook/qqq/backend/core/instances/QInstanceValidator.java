@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
+import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
@@ -1660,9 +1661,12 @@ public class QInstanceValidator
 
                   String dataSourceErrorPrefix = "Report " + reportName + " data source " + dataSource.getName() + " ";
 
+                  boolean hasASource = false;
+
                   if(StringUtils.hasContent(dataSource.getSourceTable()))
                   {
-                     assertCondition(dataSource.getStaticDataSupplier() == null, dataSourceErrorPrefix + "has both a sourceTable and a staticDataSupplier (exactly 1 is required).");
+                     hasASource = true;
+                     assertCondition(dataSource.getStaticDataSupplier() == null, dataSourceErrorPrefix + "has both a sourceTable and a staticDataSupplier (not compatible together).");
                      if(assertCondition(qInstance.getTable(dataSource.getSourceTable()) != null, dataSourceErrorPrefix + "source table " + dataSource.getSourceTable() + " is not a table in this instance."))
                      {
                         if(dataSource.getQueryFilter() != null)
@@ -1671,14 +1675,21 @@ public class QInstanceValidator
                         }
                      }
                   }
-                  else if(dataSource.getStaticDataSupplier() != null)
+
+                  if(dataSource.getStaticDataSupplier() != null)
                   {
+                     assertCondition(dataSource.getCustomRecordSource() == null, dataSourceErrorPrefix + "has both a staticDataSupplier and a customRecordSource (not compatible together).");
+                     hasASource = true;
                      validateSimpleCodeReference(dataSourceErrorPrefix, dataSource.getStaticDataSupplier(), Supplier.class);
                   }
-                  else
+
+                  if(dataSource.getCustomRecordSource() != null)
                   {
-                     errors.add(dataSourceErrorPrefix + "does not have a sourceTable or a staticDataSupplier (exactly 1 is required).");
+                     hasASource = true;
+                     validateSimpleCodeReference(dataSourceErrorPrefix, dataSource.getCustomRecordSource(), ReportCustomRecordSourceInterface.class);
                   }
+
+                  assertCondition(hasASource, dataSourceErrorPrefix + "does not have a sourceTable, customRecordSource, or a staticDataSupplier.");
                }
             }
 

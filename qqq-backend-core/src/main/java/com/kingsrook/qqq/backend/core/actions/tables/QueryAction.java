@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -64,6 +66,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -100,6 +103,8 @@ public class QueryAction
       {
          throw (new QException("A table named [" + queryInput.getTableName() + "] was not found in the active QInstance"));
       }
+
+      validateFieldNamesToInclude(queryInput);
 
       QBackendMetaData backend = queryInput.getBackend();
       postQueryRecordCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_QUERY_RECORD.getRole());
@@ -154,6 +159,109 @@ public class QueryAction
       }
 
       return queryOutput;
+   }
+
+
+
+   /***************************************************************************
+    ** if QueryInput contains a set of FieldNamesToInclude, then validate that
+    ** those are known field names in the table being queried, or a selected
+    ** queryJoin.
+    ***************************************************************************/
+   static void validateFieldNamesToInclude(QueryInput queryInput) throws QException
+   {
+      Set<String> fieldNamesToInclude = queryInput.getFieldNamesToInclude();
+      if(fieldNamesToInclude == null)
+      {
+         ////////////////////////////////
+         // null set means select all. //
+         ////////////////////////////////
+         return;
+      }
+
+      if(fieldNamesToInclude.isEmpty())
+      {
+         /////////////////////////////////////
+         // empty set, however, is an error //
+         /////////////////////////////////////
+         throw (new QException("An empty set of fieldNamesToInclude was given as queryInput, which is not allowed."));
+      }
+
+      List<String>                unrecognizedFieldNames = new ArrayList<>();
+      Map<String, QTableMetaData> selectedQueryJoins     = null;
+      for(String fieldName : fieldNamesToInclude)
+      {
+         if(fieldName.contains("."))
+         {
+            ////////////////////////////////////////////////
+            // handle names with dots - fields from joins //
+            ////////////////////////////////////////////////
+            String[] parts = fieldName.split("\\.");
+            if(parts.length != 2)
+            {
+               unrecognizedFieldNames.add(fieldName);
+            }
+            else
+            {
+               String tableOrAlias  = parts[0];
+               String fieldNamePart = parts[1];
+
+               ////////////////////////////////////////////
+               // build map of queryJoins being selected //
+               ////////////////////////////////////////////
+               if(selectedQueryJoins == null)
+               {
+                  selectedQueryJoins = new HashMap<>();
+                  for(QueryJoin queryJoin : CollectionUtils.nonNullList(queryInput.getQueryJoins()))
+                  {
+                     if(queryJoin.getSelect())
+                     {
+                        String         joinTableOrAlias = queryJoin.getJoinTableOrItsAlias();
+                        QTableMetaData joinTable        = QContext.getQInstance().getTable(queryJoin.getJoinTable());
+                        if(joinTable != null)
+                        {
+                           selectedQueryJoins.put(joinTableOrAlias, joinTable);
+                        }
+                     }
+                  }
+               }
+
+               if(!selectedQueryJoins.containsKey(tableOrAlias))
+               {
+                  ///////////////////////////////////////////
+                  // unrecognized tableOrAlias is an error //
+                  ///////////////////////////////////////////
+                  unrecognizedFieldNames.add(fieldName);
+               }
+               else
+               {
+                  QTableMetaData joinTable = selectedQueryJoins.get(tableOrAlias);
+                  if(!joinTable.getFields().containsKey(fieldNamePart))
+                  {
+                     //////////////////////////////////////////////////////////
+                     // unrecognized field within the join table is an error //
+                     //////////////////////////////////////////////////////////
+                     unrecognizedFieldNames.add(fieldName);
+                  }
+               }
+            }
+         }
+         else
+         {
+            ///////////////////////////////////////////////////////////////////////
+            // non-join fields - just ensure field name is in table's fields map //
+            ///////////////////////////////////////////////////////////////////////
+            if(!queryInput.getTable().getFields().containsKey(fieldName))
+            {
+               unrecognizedFieldNames.add(fieldName);
+            }
+         }
+      }
+
+      if(!unrecognizedFieldNames.isEmpty())
+      {
+         throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
+      }
    }
 
 

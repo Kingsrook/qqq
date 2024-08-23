@@ -24,10 +24,12 @@ package com.kingsrook.qqq.backend.core.actions.customizers;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -141,6 +143,21 @@ public interface RecordCustomizerUtilityInterface
       {
          record.addError(new BadInputStatusMessage(errorMessage));
       }
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   default Map<Serializable, QRecord> getOldRecordMap(List<QRecord> oldRecordList, UpdateInput updateInput)
+   {
+      Map<Serializable, QRecord> oldRecordMap = new HashMap<>();
+      for(QRecord qRecord : oldRecordList)
+      {
+         oldRecordMap.put(qRecord.getValue(updateInput.getTable().getPrimaryKeyField()), qRecord);
+      }
+
+      return (oldRecordMap);
    }
 
 }

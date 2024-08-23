@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -48,11 +49,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -166,7 +168,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").equals(email)), "Should NOT find expected email address");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").equals(email)), "Should NOT find expected email address");
    }
 
 
@@ -199,7 +201,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
             .withValues(List.of(1_000_000))));
       queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> Objects.equals(1_000_000, r.getValueInteger("annualSalary"))), "Should NOT find expected salary");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> Objects.equals(1_000_000, r.getValueInteger("annualSalary"))), "Should NOT find expected salary");
    }
 
 
@@ -219,7 +221,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(2) || r.getValueInteger("id").equals(4)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(2) || r.getValueInteger("id").equals(4)), "Should find expected ids");
    }
 
 
@@ -239,7 +241,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(5)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(5)), "Should find expected ids");
    }
 
 
@@ -259,7 +261,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches("darin.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches("darin.*")), "Should find matching email address");
    }
 
 
@@ -279,7 +281,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
    }
 
 
@@ -299,7 +301,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
    }
 
 
@@ -319,7 +321,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
    }
 
 
@@ -339,7 +341,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*gmail.com")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueString("email").matches(".*gmail.com")), "Should find matching email address");
    }
 
 
@@ -359,7 +361,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches("darin.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches("darin.*")), "Should find matching email address");
    }
 
 
@@ -379,7 +381,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*kelkhoff.*")), "Should find matching email address");
    }
 
 
@@ -399,7 +401,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(4, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*gmail.com")), "Should find matching email address");
+      assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueString("email").matches(".*gmail.com")), "Should find matching email address");
    }
 
 
@@ -419,7 +421,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(2)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(2)), "Should find expected ids");
    }
 
 
@@ -439,7 +441,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(2)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(2)), "Should find expected ids");
    }
 
 
@@ -459,7 +461,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5)), "Should find expected ids");
    }
 
 
@@ -479,7 +481,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       );
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(4) || r.getValueInteger("id").equals(5)), "Should find expected ids");
    }
 
 
@@ -498,7 +500,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          ));
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("birthDate") == null), "Should find expected row");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("birthDate") == null), "Should find expected row");
    }
 
 
@@ -517,7 +519,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          ));
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("firstName") != null), "Should find expected rows");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValue("firstName") != null), "Should find expected rows");
    }
 
 
@@ -537,7 +539,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          ));
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(3, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(2) || r.getValueInteger("id").equals(3) || r.getValueInteger("id").equals(4)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(2) || r.getValueInteger("id").equals(3) || r.getValueInteger("id").equals(4)), "Should find expected ids");
    }
 
 
@@ -557,7 +559,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
          ));
       QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
       assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-      Assertions.assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(5)), "Should find expected ids");
+      assertTrue(queryOutput.getRecords().stream().allMatch(r -> r.getValueInteger("id").equals(1) || r.getValueInteger("id").equals(5)), "Should find expected ids");
    }
 
 
@@ -583,7 +585,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
             .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withValues(List.of(new Now()))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-         Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
+         assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
       }
 
       {
@@ -593,7 +595,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
             .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.LESS_THAN).withValues(List.of(NowWithOffset.plus(2, ChronoUnit.DAYS)))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows");
-         Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
+         assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
       }
 
       {
@@ -603,8 +605,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
             .withCriteria(new QFilterCriteria().withFieldName("birthDate").withOperator(QCriteriaOperator.GREATER_THAN).withValues(List.of(NowWithOffset.minus(5, ChronoUnit.DAYS)))));
          QueryOutput queryOutput = new RDBMSQueryAction().execute(queryInput);
          assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows");
-         Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
-         Assertions.assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("future")), "Should find expected row");
+         assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("past")), "Should find expected row");
+         assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValue("firstName").equals("future")), "Should find expected row");
       }
    }
 
@@ -1005,7 +1007,36 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
       queryInput.setShouldFetchHeavyFields(true);
       records = new QueryAction().execute(queryInput).getRecords();
       assertThat(records).describedAs("Some records should have the heavy homeTown field set when heavies are requested").anyMatch(r -> r.getValue("homeTown") != null);
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNamesToInclude() throws QException
+   {
+      QQueryFilter  filter     = new QQueryFilter().withCriteria("id", QCriteriaOperator.EQUALS, 1);
+      QueryInput    queryInput = new QueryInput(TestUtils.TABLE_NAME_PERSON).withFilter(filter);
+
+      QRecord record = new QueryAction().execute(queryInput.withFieldNamesToInclude(null)).getRecords().get(0);
+      assertTrue(record.getValues().containsKey("id"));
+      assertTrue(record.getValues().containsKey("firstName"));
+      assertTrue(record.getValues().containsKey("createDate"));
+      assertEquals(QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON).getFields().size(), record.getValues().size());
+
+      record = new QueryAction().execute(queryInput.withFieldNamesToInclude(Set.of("id", "firstName"))).getRecords().get(0);
+      assertTrue(record.getValues().containsKey("id"));
+      assertTrue(record.getValues().containsKey("firstName"));
+      assertFalse(record.getValues().containsKey("createDate"));
+      assertEquals(2, record.getValues().size());
+
+      record = new QueryAction().execute(queryInput.withFieldNamesToInclude(Set.of("homeTown"))).getRecords().get(0);
+      assertFalse(record.getValues().containsKey("id"));
+      assertFalse(record.getValues().containsKey("firstName"));
+      assertFalse(record.getValues().containsKey("createDate"));
+      assertEquals(1, record.getValues().size());
    }
 
 }
