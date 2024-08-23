@@ -25,11 +25,13 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -63,7 +65,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          QTableMetaData table = countInput.getTable();
 
          QQueryFilter                          filter                   = clonedOrNewFilter(countInput.getFilter());
-         JoinsContext                          joinsContext             = new JoinsContext(countInput.getInstance(), countInput.getTableName(), countInput.getQueryJoins(), filter);
+         JoinsContext                          joinsContext             = new JoinsContext(QContext.getQInstance(), countInput.getTableName(), countInput.getQueryJoins(), filter);
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(table.getPrimaryKeyField());
 
          boolean requiresDistinct = doesSelectClauseRequireDistinct(table);
@@ -77,17 +79,17 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
 
          List<Serializable> params = new ArrayList<>();
          String sql = clausePrefix + " AS record_count "
-            + " FROM " + makeFromClause(countInput.getInstance(), table.getName(), joinsContext, params)
+            + " FROM " + makeFromClause(QContext.getQInstance(), table.getName(), joinsContext, params)
             + " WHERE " + makeWhereClause(joinsContext, filter, params);
          // todo sql customization - can edit sql and/or param list
 
          setSqlAndJoinsInQueryStat(sql, joinsContext);
 
          CountOutput rs = new CountOutput();
+         long mark = System.currentTimeMillis();
+
          try(Connection connection = getConnection(countInput))
          {
-            long mark = System.currentTimeMillis();
-
             statement = connection.prepareStatement(sql);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +98,15 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
             actionTimeoutHelper = new ActionTimeoutHelper(countInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // to avoid counting time spent acquiring a connection, re-set the queryStat startTimestamp here //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            if(queryStat != null)
+            {
+               queryStat.setStartTimestamp(Instant.now());
+            }
+
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //
@@ -116,7 +126,9 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                setQueryStatFirstResultTime();
 
             }), params);
-
+         }
+         finally
+         {
             logSQL(sql, params, mark);
          }
 

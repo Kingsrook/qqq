@@ -85,7 +85,7 @@ class BulkEditTest extends BaseTest
       // insert some test records //
       //////////////////////////////
       QInstance qInstance = QContext.getQInstance();
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("lastName", "Kelkhoff").withValue("email", "darin.kelkhoff@kingsrook.com"),
          new QRecord().withValue("id", 2).withValue("firstName", "Tim").withValue("lastName", "Chamberlain").withValue("email", "tim.chamberlain@kingsrook.com"),
          new QRecord().withValue("id", 3).withValue("firstName", "James").withValue("lastName", "Maes").withValue("email", "james.maes@kingsrook.com")

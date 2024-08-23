@@ -46,12 +46,11 @@
    </modules>
 
    <properties>
-      <revision>0.20.0</revision>
+      <revision>0.21.0</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-      <maven.compiler.source>17</maven.compiler.source>
-      <maven.compiler.target>17</maven.compiler.target>
+      <maven.compiler.release>17</maven.compiler.release>
       <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
       <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
       <coverage.haltOnFailure>true</coverage.haltOnFailure>
@@ -168,6 +167,7 @@
                      <violationSeverity>warning</violationSeverity>
                      <excludes>**/target/generated-sources/*.*</excludes>
                      <!-- <linkXRef>false</linkXRef> -->
+                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                   </configuration>
                   <goals>
                      <goal>check</goal>

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  *******************************************************************************/
 class MergeDuplicatesProcessTest extends BaseTest
 {
-   String PROCESS_NAME = "testMergeProcess";
+   private static final String PROCESS_NAME = "testMergeProcess";
 
 
 
@@ -61,7 +61,7 @@ class MergeDuplicatesProcessTest extends BaseTest
       QInstance qInstance = QContext.getQInstance();
       addProcessToInstance();
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new QRecord().withValue("id", 1).withValue("firstName", "Darin").withValue("noOfShoes", 1).withValue("favoriteShapeId", 11),
          new QRecord().withValue("id", 2).withValue("firstName", "Tim").withValue("noOfShoes", 2).withValue("favoriteShapeId", 12),
          new QRecord().withValue("id", 3).withValue("firstName", "Tyler").withValue("noOfShoes", 1).withValue("favoriteShapeId", 13),
@@ -71,7 +71,7 @@ class MergeDuplicatesProcessTest extends BaseTest
          new QRecord().withValue("id", 7).withValue("firstName", "James").withValue("noOfShoes", 1).withValue("favoriteShapeId", 17)
       ));
 
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_SHAPE), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_SHAPE), List.of(
          new QRecord().withValue("id", 11).withValue("favoredByNoOfPeople", 1),
          new QRecord().withValue("id", 12).withValue("favoredByNoOfPeople", 1),
          new QRecord().withValue("id", 13).withValue("favoredByNoOfPeople", 1),

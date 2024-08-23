@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,7 +130,7 @@ public class QPicoCliImplementation
       if(args.length > 0 && args[0].startsWith("--qInstanceJsonFile="))
       {
          String filePath      = args[0].replaceFirst("--.*=", "");
-         String qInstanceJson = FileUtils.readFileToString(new File(filePath));
+         String qInstanceJson = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
          qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
 
          String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
@@ -716,7 +717,7 @@ public class QPicoCliImplementation
          try
          {
             String path = subParseResult.matchedOptionValue("--jsonFile", "");
-            String json = FileUtils.readFileToString(new File(path));
+            String json = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
             recordList = new JsonToQRecordAdapter().buildRecordsFromJson(json, table, mapping);
          }
          catch(IOException e)
@@ -729,7 +730,7 @@ public class QPicoCliImplementation
          try
          {
             String path = subParseResult.matchedOptionValue("--csvFile", "");
-            String csv  = FileUtils.readFileToString(new File(path));
+            String csv  = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
             recordList = new CsvToQRecordAdapter().buildRecordsFromCsv(csv, table, mapping);
          }
          catch(IOException e)

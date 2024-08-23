@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.CompositeWidgetData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidgetData;
 
 
@@ -74,6 +75,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withTooltip(S key, String value)
    {
       addTooltip(key, value);
@@ -99,6 +101,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withTooltip(S key, BlockTooltip value)
    {
       addTooltip(key, value);
@@ -144,6 +147,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     ** Fluent setter for tooltipMap
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withTooltipMap(Map<S, BlockTooltip> tooltipMap)
    {
       this.tooltipMap = tooltipMap;
@@ -178,6 +182,7 @@ public abstract class AbstractBlockWidgetData<
     ** Fluent setter for tooltip
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withTooltip(String tooltip)
    {
       this.tooltip = new BlockTooltip(tooltip);
@@ -190,6 +195,7 @@ public abstract class AbstractBlockWidgetData<
     ** Fluent setter for tooltip
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withTooltip(BlockTooltip tooltip)
    {
       this.tooltip = tooltip;
@@ -199,8 +205,22 @@ public abstract class AbstractBlockWidgetData<
 
 
    /*******************************************************************************
+    ** Fluent setter for tooltip
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public T withTooltip(CompositeWidgetData data)
+   {
+      this.tooltip = new BlockTooltip(data);
+      return (T) (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withLink(S key, String value)
    {
       addLink(key, value);
@@ -226,6 +246,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withLink(S key, BlockLink value)
    {
       addLink(key, value);
@@ -271,6 +292,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     ** Fluent setter for linkMap
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withLinkMap(Map<S, BlockLink> linkMap)
    {
       this.linkMap = linkMap;
@@ -305,6 +327,7 @@ public abstract class AbstractBlockWidgetData<
     ** Fluent setter for link
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withLink(String link)
    {
       this.link = new BlockLink(link);
@@ -317,6 +340,7 @@ public abstract class AbstractBlockWidgetData<
     ** Fluent setter for link
     **
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withLink(BlockLink link)
    {
       this.link = link;
@@ -348,6 +372,7 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     ** Fluent setter for values
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withValues(V values)
    {
       this.values = values;
@@ -379,11 +404,13 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     ** Fluent setter for styles
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withStyles(SX styles)
    {
       this.styles = styles;
       return (T) this;
    }
+
 
 
    /*******************************************************************************
@@ -409,11 +436,11 @@ public abstract class AbstractBlockWidgetData<
    /*******************************************************************************
     ** Fluent setter for blockId
     *******************************************************************************/
+   @SuppressWarnings("unchecked")
    public T withBlockId(String blockId)
    {
       this.blockId = blockId;
       return (T) this;
    }
-
 
 }

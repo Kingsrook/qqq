@@ -66,7 +66,7 @@ class LoadViaInsertOrUpdateStepTest extends BaseTest
       List<QRecord> existingRecordList = List.of(
          new QRecord().withValue("id", 47).withValue("firstName", "Tom")
       );
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), existingRecordList);
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), existingRecordList);
 
       List<QRecord> inputRecordList = List.of(
          new QRecord().withValue("id", 47).withValue("firstName", "Tim"),

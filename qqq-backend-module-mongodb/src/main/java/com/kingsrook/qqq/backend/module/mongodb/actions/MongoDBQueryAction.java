@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.module.mongodb.model.metadata.MongoDBBackendMet
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -96,6 +97,15 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
          ////////////////////////////////////////////////////////////
          FindIterable<Document> cursor = collection.find(mongoClientContainer.getMongoSession(), searchQuery);
 
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // if input specifies a set of field names to include, then add a 'projection' to the cursor //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         if(queryInput.getFieldNamesToInclude() != null)
+         {
+            List<String> backendFieldNames = queryInput.getFieldNamesToInclude().stream().map(f -> getFieldBackendName(table.getField(f))).toList();
+            cursor.projection(Projections.include(backendFieldNames));
+         }
+
          ///////////////////////////////////
          // add a sort operator if needed //
          ///////////////////////////////////
@@ -138,7 +148,7 @@ public class MongoDBQueryAction extends AbstractMongoDBAction implements QueryIn
             actionTimeoutHelper.cancel();
             setQueryStatFirstResultTime();
 
-            QRecord record = documentToRecord(table, document);
+            QRecord record = documentToRecord(queryInput, document);
             queryOutput.addRecord(record);
 
             if(queryInput.getAsyncJobCallback().wasCancelRequested())

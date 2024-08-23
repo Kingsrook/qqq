@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportActionTest
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *******************************************************************************/
 class BasicRunReportProcessTest extends BaseTest
 {
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -74,6 +76,18 @@ class BasicRunReportProcessTest extends BaseTest
       runProcessOutput = new RunProcessAction().execute(runProcessInput);
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo(BasicRunReportProcess.STEP_NAME_ACCESS);
       assertThat(runProcessOutput.getValues()).containsKeys("downloadFileName", "serverFilePath");
+
+      ///////////////////////////////////
+      // assert we get xlsx by default //
+      ///////////////////////////////////
+      assertThat(runProcessOutput.getValueString("downloadFileName")).endsWith(".xlsx");
+
+      /////////////////////////////////////////////////////
+      // re-run, requesting CSV, then assert we get that //
+      /////////////////////////////////////////////////////
+      runProcessInput.addValue(BasicRunReportProcess.FIELD_REPORT_FORMAT, ReportFormat.CSV.name());
+      runProcessOutput = new RunProcessAction().execute(runProcessInput);
+      assertThat(runProcessOutput.getValueString("downloadFileName")).endsWith(".csv");
    }
 
 }

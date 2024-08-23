@@ -562,7 +562,7 @@ public class GenerateReportActionTest extends BaseTest
     *******************************************************************************/
    public static void insertPersonRecords(QInstance qInstance) throws QException
    {
-      TestUtils.insertRecords(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), List.of(
          new PersonQRecord().withFirstName("Darin").withLastName("Jonson").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(null).withHomeStateId(1).withPrice(null).withCost(new BigDecimal("0.50")), // wrong last initial
          new PersonQRecord().withFirstName("Darin").withLastName("Jones").withBirthDate(LocalDate.of(1980, Month.JANUARY, 31)).withNoOfShoes(3).withHomeStateId(1).withPrice(new BigDecimal("1.00")).withCost(new BigDecimal("0.50")), // wrong last initial
          new PersonQRecord().withFirstName("Darin").withLastName("Kelly").withBirthDate(LocalDate.of(1979, Month.DECEMBER, 30)).withNoOfShoes(4).withHomeStateId(1).withPrice(new BigDecimal("1.20")).withCost(new BigDecimal("0.50")), // bad birthdate

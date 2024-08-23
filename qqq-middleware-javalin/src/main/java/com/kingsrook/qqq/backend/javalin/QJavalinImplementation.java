@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
@@ -223,7 +225,7 @@ public class QJavalinImplementation
    public QJavalinImplementation(String qInstanceFilePath) throws IOException
    {
       LOG.info("Loading qInstance from file (assuming json): " + qInstanceFilePath);
-      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath));
+      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath), StandardCharsets.UTF_8);
       QJavalinImplementation.qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
       QJavalinImplementation.javalinMetaData = new QJavalinMetaData();
    }
@@ -547,14 +549,17 @@ public class QJavalinImplementation
          }
          else
          {
-            String authorizationFormValue = context.formParam("Authorization");
-            if(StringUtils.hasContent(authorizationFormValue))
+            try
             {
-               processAuthorizationValue(authenticationContext, authorizationFormValue);
+               String authorizationFormValue = context.formParam("Authorization");
+               if(StringUtils.hasContent(authorizationFormValue))
+               {
+                  processAuthorizationValue(authenticationContext, authorizationFormValue);
+               }
             }
-            else
+            catch(Exception e)
             {
-               LOG.debug("Neither [" + SESSION_ID_COOKIE_NAME + "] cookie nor [Authorization] header was present in request.");
+               LOG.info("Exception looking for Authorization formParam", e);
             }
          }
 
@@ -565,7 +570,7 @@ public class QJavalinImplementation
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, input);
 
-         String tableVariant = StringUtils.hasContent(context.formParam("tableVariant")) ? context.formParam("tableVariant") : context.queryParam("tableVariant");
+         String tableVariant = QJavalinUtils.getFormParamOrQueryParam(context, "tableVariant");
          if(StringUtils.hasContent(tableVariant))
          {
             JSONObject variant = new JSONObject(tableVariant);
@@ -1183,11 +1188,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(countInput, TablePermissionSubType.READ);
 
-         filter = QJavalinUtils.stringQueryParam(context, "filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
+         filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(filter != null)
          {
             countInput.setFilter(JsonUtils.toObject(filter, QQueryFilter.class));
@@ -1256,11 +1257,7 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(queryInput, TablePermissionSubType.READ);
 
-         filter = QJavalinUtils.stringQueryParam(context, "filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
+         filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(filter != null)
          {
             QQueryFilter qQueryFilter = JsonUtils.toObject(filter, QQueryFilter.class);
@@ -1540,23 +1537,13 @@ public class QJavalinImplementation
 
          PermissionsHelper.checkTablePermissionThrowing(exportInput, TablePermissionSubType.READ);
 
-         String fields = QJavalinUtils.stringQueryParam(context, "fields");
-         if(!StringUtils.hasContent(fields))
-         {
-            fields = context.formParam("fields");
-         }
-
+         String fields = QJavalinUtils.getQueryParamOrFormParam(context, "fields");
          if(StringUtils.hasContent(fields))
          {
             exportInput.setFieldNames(List.of(fields.split(",")));
          }
 
-         String filter = context.queryParam("filter");
-         if(!StringUtils.hasContent(filter))
-         {
-            filter = context.formParam("filter");
-         }
-
+         String filter = QJavalinUtils.getQueryParamOrFormParam(context, "filter");
          if(StringUtils.hasContent(filter))
          {
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
@@ -1800,7 +1787,7 @@ public class QJavalinImplementation
             if(CollectionUtils.nullSafeHasContents(valuesParamList))
             {
                String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, Map.class);
+               values = JsonUtils.toObject(valuesParam, new TypeReference<>(){});
             }
          }
 
@@ -1816,7 +1803,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws IOException, QException
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
@@ -1825,6 +1812,7 @@ public class QJavalinImplementation
       setupSession(context, input);
       input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
+      input.setDefaultQueryFilter(defaultFilter);
 
       if(StringUtils.hasContent(ids))
       {
@@ -1837,7 +1825,6 @@ public class QJavalinImplementation
       Map<String, Object> result = new HashMap<>();
       result.put("options", output.getResults());
       context.result(JsonUtils.toJson(result));
-
    }
 
 

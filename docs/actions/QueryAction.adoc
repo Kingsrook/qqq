@@ -33,9 +33,6 @@ If the {link-table} has a `POST_QUERY_CUSTOMIZER` defined, then after records ar
 * `table` - *String, Required* - Name of the table being queried against.
 * `filter` - *<<QQueryFilter>> object* - Specification for what records should be returned, based on *<<QFilterCriteria>>* objects, and how they should be sorted, based on *<<QFilterOrderBy>>* objects.
 If a `filter` is not given, then all rows in the table will be returned by the query.
-* `skip` - *Integer* - Optional number of records to be skipped at the beginning of the result set.
-e.g., for implementing pagination.
-* `limit` - *Integer* - Optional maximum number of records to be returned by the query.
 * `transaction` - *QBackendTransaction object* - Optional transaction object.
 ** Behavior for this object is backend-dependant.
 In an RDBMS backend, this object is generally needed if you want your query to see data that may have been modified within the same transaction.
@@ -55,6 +52,14 @@ But if running a query to provide data as part of a process, then this can gener
 * `shouldMaskPassword` - *boolean, default: true* - Controls whether or not fields with `type` = `PASSWORD` should be masked, or if their actual values should be returned.
 * `queryJoins` - *List of <<QueryJoin>> objects* - Optional list of tables to be joined with the main table being queried.
 See QueryJoin below for further details.
+* `fieldNamesToInclude` - *Set of String* - Optional set of field names to be included in the records.
+** Fields from a queryJoin must be prefixed by the join table's name or alias, and a period.
+Field names from the table being queried should not have any sort of prefix.
+** A `null` set here (default) means to include all fields from the table and any queryJoins set as select=true.
+** An empty set will cause an error, as well any unrecognized field names.
+** `QueryAction` will validate the set of field names, and throw an exception if any unrecognized names are given.
+** _Note that this is an optional feature, which some backend modules may not implement.
+Meaning, they would always return all fields._
 
 ==== QQueryFilter
 A key component of *<<QueryInput>>*, a *QQueryFilter* defines both what records should be included in a query's results (e.g., an SQL `WHERE`), as well as how those results should be sorted (SQL `ORDER BY`).
@@ -68,6 +73,9 @@ In general, multiple *orderBys* can be given (depending on backend implementatio
 ** Each *subFilter* can include its own additional *subFilters*.
 ** Each *subFilter* can specify a different *booleanOperator*.
 ** For example, consider the following *QQueryFilter*, that uses two *subFilters*, and a mix of *booleanOperators*
+* `skip` - *Integer* - Optional number of records to be skipped at the beginning of the result set.
+e.g., for implementing pagination.
+* `limit` - *Integer* - Optional maximum number of records to be returned by the query.
 
 [source,java]
 ----

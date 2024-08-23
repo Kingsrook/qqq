@@ -25,11 +25,13 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.interfaces.AggregateInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -70,11 +72,11 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
          QTableMetaData table = aggregateInput.getTable();
 
          QQueryFilter filter       = clonedOrNewFilter(aggregateInput.getFilter());
-         JoinsContext joinsContext = new JoinsContext(aggregateInput.getInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
+         JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
 
          List<Serializable> params = new ArrayList<>();
 
-         String       fromClause    = makeFromClause(aggregateInput.getInstance(), table.getName(), joinsContext, params);
+         String       fromClause    = makeFromClause(QContext.getQInstance(), table.getName(), joinsContext, params);
          List<String> selectClauses = buildSelectClauses(aggregateInput, joinsContext);
 
          String sql = "SELECT " + StringUtils.join(", ", selectClauses)
@@ -116,7 +118,15 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
             actionTimeoutHelper = new ActionTimeoutHelper(aggregateInput.getTimeoutSeconds(), TimeUnit.SECONDS, new StatementTimeoutCanceller(statement, sql));
             actionTimeoutHelper.start();
 
-            QueryManager.executeStatement(statement, ((ResultSet resultSet) ->
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // to avoid counting time spent acquiring a connection, re-set the queryStat startTimestamp here //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            if(queryStat != null)
+            {
+               queryStat.setStartTimestamp(Instant.now());
+            }
+
+            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //
@@ -168,8 +178,10 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
 
             }), params);
          }
-
-         logSQL(sql, params, mark);
+         finally
+         {
+            logSQL(sql, params, mark);
+         }
 
          return rs;
       }

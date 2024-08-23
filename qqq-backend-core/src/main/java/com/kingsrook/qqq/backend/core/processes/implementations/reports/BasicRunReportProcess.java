@@ -46,7 +46,8 @@ public class BasicRunReportProcess
    public static final String STEP_NAME_EXECUTE = "execute";
    public static final String STEP_NAME_ACCESS  = "accessReport";
 
-   public static final String FIELD_REPORT_NAME = "reportName";
+   public static final String FIELD_REPORT_NAME   = "reportName";
+   public static final String FIELD_REPORT_FORMAT = "reportFormat";
 
 
 

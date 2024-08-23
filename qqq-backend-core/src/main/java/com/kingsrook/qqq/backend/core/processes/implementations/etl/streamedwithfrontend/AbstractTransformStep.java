@@ -46,29 +46,14 @@ public abstract class AbstractTransformStep implements ProcessSummaryProviderInt
 
 
    /*******************************************************************************
-    **
+    ** Do the transform logic for one page of records
     *******************************************************************************/
-   @Deprecated
-   public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-   {
-      runOnePage(runBackendStepInput, runBackendStepOutput);
-   }
+   public abstract void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException;
 
 
 
    /*******************************************************************************
-    ** todo - make abstract when run is deleted.
-    *******************************************************************************/
-   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
-   {
-
-   }
-
-
-
-   /*******************************************************************************
-    ** Allow subclasses to do an action before the run is complete - before any
-    ** pages of records are passed in.
+    ** Allow subclasses to do an action before any pages of records are processed.
     *******************************************************************************/
    public void preRun(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {

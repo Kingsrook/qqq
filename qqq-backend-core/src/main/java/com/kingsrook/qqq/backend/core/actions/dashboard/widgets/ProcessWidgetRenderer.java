@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 import java.util.HashMap;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
@@ -57,7 +58,7 @@ public class ProcessWidgetRenderer extends AbstractWidgetRenderer
             setupDropdowns(input, widgetMetaData, data);
 
             String           processName     = (String) widgetMetaData.getDefaultValues().get(WIDGET_PROCESS_NAME);
-            QProcessMetaData processMetaData = input.getInstance().getProcess(processName);
+            QProcessMetaData processMetaData = QContext.getQInstance().getProcess(processName);
             data.setProcessMetaData(processMetaData);
 
             data.setDefaultValues(new HashMap<>(input.getQueryParams()));

@@ -39,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Disabled("This was okay for POC, but shouldn't run in CI")
 class ConnectionManagerTest extends BaseTest
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @Test
    public void test() throws SQLException
    {
@@ -101,6 +104,9 @@ class ConnectionManagerTest extends BaseTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private RDBMSBackendMetaData getAuroraBacked()
    {
       QMetaDataVariableInterpreter interpreter  = new QMetaDataVariableInterpreter();

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -54,7 +55,7 @@ public class CancelProcessAction extends RunProcessAction
    {
       ActionHelper.validateSession(runProcessInput);
 
-      QProcessMetaData process = runProcessInput.getInstance().getProcess(runProcessInput.getProcessName());
+      QProcessMetaData process = QContext.getQInstance().getProcess(runProcessInput.getProcessName());
       if(process == null)
       {
          throw new QBadRequestException("Process [" + runProcessInput.getProcessName() + "] is not defined in this instance.");

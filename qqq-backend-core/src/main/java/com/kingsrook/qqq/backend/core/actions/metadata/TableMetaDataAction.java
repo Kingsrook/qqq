@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
@@ -48,12 +49,12 @@ public class TableMetaDataAction
       // todo pre-customization - just get to modify the request?
       TableMetaDataOutput tableMetaDataOutput = new TableMetaDataOutput();
 
-      QTableMetaData table = tableMetaDataInput.getInstance().getTable(tableMetaDataInput.getTableName());
+      QTableMetaData table = QContext.getQInstance().getTable(tableMetaDataInput.getTableName());
       if(table == null)
       {
          throw (new QNotFoundException("Table [" + tableMetaDataInput.getTableName() + "] was not found."));
       }
-      QBackendMetaData backendForTable = tableMetaDataInput.getInstance().getBackendForTable(table.getName());
+      QBackendMetaData backendForTable = QContext.getQInstance().getBackendForTable(table.getName());
       tableMetaDataOutput.setTable(new QFrontendTableMetaData(tableMetaDataInput, backendForTable, table, true, true));
 
       // todo post-customization - can do whatever w/ the result if you want

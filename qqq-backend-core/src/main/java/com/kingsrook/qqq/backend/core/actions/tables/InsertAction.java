@@ -227,6 +227,11 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
     *******************************************************************************/
    public void performValidations(InsertInput insertInput, boolean isPreview) throws QException
    {
+      if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
+      {
+         return;
+      }
+
       QTableMetaData table = insertInput.getTable();
 
       ///////////////////////////////////////////////////////////////////
@@ -241,7 +246,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
-      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, insertInput.getInstance(), table, insertInput.getRecords(), null);
+      ValueBehaviorApplier.applyFieldBehaviors(ValueBehaviorApplier.Action.INSERT, QContext.getQInstance(), table, insertInput.getRecords(), null);
 
       runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_UNIQUE_KEY_CHECKS);
       setErrorsIfUniqueKeyErrors(insertInput, table);

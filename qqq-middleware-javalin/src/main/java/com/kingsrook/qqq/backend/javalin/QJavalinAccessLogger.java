@@ -383,11 +383,13 @@ public class QJavalinAccessLogger
             {
                if(runProcessOutput.getValues().containsKey(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY))
                {
+                  @SuppressWarnings("unchecked")
                   List<ProcessSummaryLineInterface> processSummaryLines = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY);
                   processSummaryListToLogPairs(logPairs, processSummaryLines);
                }
                else if(runProcessOutput.getValues().containsKey(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY))
                {
+                  @SuppressWarnings("unchecked")
                   List<ProcessSummaryLineInterface> processSummaryLines = (List<ProcessSummaryLineInterface>) runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_VALIDATION_SUMMARY);
                   processSummaryListToLogPairs(logPairs, processSummaryLines);
                }

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 /*******************************************************************************
@@ -69,10 +71,6 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
-
-      AbstractRDBMSAction.setLogSQL(true);
-      AbstractRDBMSAction.setLogSQLReformat(true);
-      AbstractRDBMSAction.setLogSQLOutput("system.out");
    }
 
 
@@ -909,7 +907,7 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
     **
     *******************************************************************************/
    @Test
-   void testMultipleReversedDirectionJoinsBetweenSameTables() throws QException
+   void testMultipleReversedDirectionJoinsBetweenSameTablesAllAccessKey() throws QException
    {
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
 
@@ -993,6 +991,32 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
 
 
    /*******************************************************************************
+    ** We had, at one time, a bug where, for tables with 2 joins between each other,
+    ** an ON clause could get written using the wrong table name in one part.
+    **
+    ** With that bug, this QueryAction.execute would throw an SQL Exception.
+    **
+    ** So this test, just makes sure that no such exception gets thrown.
+    *******************************************************************************/
+   @Test
+   void testFlippedJoinForOnClause() throws QException
+   {
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_ORDER_INSTRUCTIONS);
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_ORDER));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertFalse(queryOutput.getRecords().isEmpty());
+
+      ////////////////////////////////////
+      // if no exception, then we pass. //
+      ////////////////////////////////////
+   }
+
+
+
+   /*******************************************************************************
     ** Addressing a regression where a table was brought into a query for its
     ** security field, but it was a write-scope lock, so, it shouldn't have been.
     *******************************************************************************/
@@ -1027,6 +1051,50 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////////////////////////////////
       personTable.getRecordSecurityLocks().get(0).setLockScope(RecordSecurityLock.LockScope.WRITE);
       assertEquals(5, new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_PERSON)).getRecords().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNamesToInclude() throws QException
+   {
+      QueryInput queryInput = initQueryRequest();
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withSelect(true));
+      queryInput.withFieldNamesToInclude(Set.of("firstName", TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 2);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // re-run w/ null fieldNamesToInclude -- and should still see those 2, and more (values size > 2) //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.withFieldNamesToInclude(null);
+      queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() > 2);
+
+      ////////////////////////////////////////////////////////////////////////////
+      // regression from original build - where only join fields made sql error //
+      ////////////////////////////////////////////////////////////////////////////
+      queryInput.withFieldNamesToInclude(Set.of(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey(TestUtils.TABLE_NAME_PERSONAL_ID_CARD + ".idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 1);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // similar regression to above, if one of the join tables didn't have anything selected //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      queryInput.withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_PERSONAL_ID_CARD).withAlias("id2").withSelect(true));
+      queryInput.withFieldNamesToInclude(Set.of("firstName", "id2.idNumber"));
+      queryOutput = new QueryAction().execute(queryInput);
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("firstName"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().containsKey("id2.idNumber"));
+      assertThat(queryOutput.getRecords()).allMatch(r -> r.getValues().size() == 2);
    }
 
 }

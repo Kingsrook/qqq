@@ -66,6 +66,14 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
    private List<QueryJoin> queryJoins     = null;
    private boolean         selectDistinct = false;
 
+   /////////////////////////////////////////////////////////////////////////////
+   // if this set is null, then the default (all fields) should be included   //
+   // if it's an empty set, that should throw an error                        //
+   // or if there are any fields in it that aren't valid fields on the table, //
+   // or in a selected queryJoin.                                             //
+   /////////////////////////////////////////////////////////////////////////////
+   private Set<String> fieldNamesToInclude;
+
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // if you say you want to includeAssociations, you can limit which ones by passing them in associationNamesToInclude. //
    // if you leave it null, you get all associations defined on the table.  if you pass it as empty, you get none.       //
@@ -684,6 +692,37 @@ public class QueryInput extends AbstractTableActionInput implements QueryOrGetIn
       }
 
       return (queryHints.contains(queryHint));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNamesToInclude
+    *******************************************************************************/
+   public Set<String> getFieldNamesToInclude()
+   {
+      return (this.fieldNamesToInclude);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNamesToInclude
+    *******************************************************************************/
+   public void setFieldNamesToInclude(Set<String> fieldNamesToInclude)
+   {
+      this.fieldNamesToInclude = fieldNamesToInclude;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldNamesToInclude
+    *******************************************************************************/
+   public QueryInput withFieldNamesToInclude(Set<String> fieldNamesToInclude)
+   {
+      this.fieldNamesToInclude = fieldNamesToInclude;
+      return (this);
    }
 
 }

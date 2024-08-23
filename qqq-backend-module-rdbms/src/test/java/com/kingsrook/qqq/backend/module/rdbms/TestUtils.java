@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms;
 
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -91,7 +92,7 @@ public class TestUtils
       {
          InputStream primeTestDatabaseSqlStream = RDBMSActionTest.class.getResourceAsStream("/" + sqlFileName);
          assertNotNull(primeTestDatabaseSqlStream);
-         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream);
+         List<String> lines = (List<String>) IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
          lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
          String joinedSQL = String.join("\n", lines);
          for(String sql : joinedSQL.split(";"))
@@ -200,8 +201,7 @@ public class TestUtils
          .withName(TABLE_NAME_PERSON)
          .withType(QPossibleValueSourceType.TABLE)
          .withTableName(TABLE_NAME_PERSON)
-         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY)
-      );
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
    }
 
 
@@ -273,6 +273,7 @@ public class TestUtils
             .withJoinNameChain(List.of("orderInstructionsJoinOrder")))
          .withField(new QFieldMetaData("orderId", QFieldType.INTEGER).withBackendName("order_id"))
          .withField(new QFieldMetaData("instructions", QFieldType.STRING))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_ORDER).withJoinPath(List.of("orderInstructionsJoinOrder")))
       );
 
       qInstance.addTable(defineBaseTable(TABLE_NAME_ITEM, "item")
@@ -395,10 +396,10 @@ public class TestUtils
 
       qInstance.addJoin(new QJoinMetaData()
          .withName("orderInstructionsJoinOrder")
-         .withLeftTable(TABLE_NAME_ORDER_INSTRUCTIONS)
-         .withRightTable(TABLE_NAME_ORDER)
+         .withRightTable(TABLE_NAME_ORDER_INSTRUCTIONS)
+         .withLeftTable(TABLE_NAME_ORDER)
          .withType(JoinType.MANY_TO_ONE)
-         .withJoinOn(new JoinOn("orderId", "id"))
+         .withJoinOn(new JoinOn("id", "orderId"))
       );
 
       qInstance.addPossibleValueSource(new QPossibleValueSource()

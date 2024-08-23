@@ -68,7 +68,7 @@ class QueryActionCacheHelperTest extends BaseTest
       /////////////////////////////////////
       // insert rows in the source table //
       /////////////////////////////////////
-      TestUtils.insertRecords(qInstance, qInstance.getTable(sourceTableName), List.of(
+      TestUtils.insertRecords(qInstance.getTable(sourceTableName), List.of(
          new QRecord().withValue("id", 1).withValue("name", "Triangle").withValue("noOfSides", 3),
          new QRecord().withValue("id", 2).withValue("name", "Square").withValue("noOfSides", 4),
          new QRecord().withValue("id", 3).withValue("name", "Pentagon").withValue("noOfSides", 5),

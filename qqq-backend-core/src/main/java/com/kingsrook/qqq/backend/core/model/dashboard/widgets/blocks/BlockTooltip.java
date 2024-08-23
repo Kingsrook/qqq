@@ -22,17 +22,24 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
 
 
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.CompositeWidgetData;
+
+
 /*******************************************************************************
  ** A tooltip used within a (widget) block.
  **
  *******************************************************************************/
 public class BlockTooltip
 {
-   private String    title;
-   private Placement placement = Placement.BOTTOM;
+   private CompositeWidgetData blockData;
+   private String              title;
+   private Placement           placement = Placement.BOTTOM;
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum Placement
    {BOTTOM, LEFT, RIGHT, TOP}
 
@@ -55,6 +62,17 @@ public class BlockTooltip
    public BlockTooltip(String title)
    {
       this.title = title;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public BlockTooltip(CompositeWidgetData blockData)
+   {
+      this.blockData = blockData;
    }
 
 
@@ -116,6 +134,37 @@ public class BlockTooltip
    public BlockTooltip withPlacement(Placement placement)
    {
       this.placement = placement;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for blockData
+    *******************************************************************************/
+   public CompositeWidgetData getBlockData()
+   {
+      return (this.blockData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for blockData
+    *******************************************************************************/
+   public void setBlockData(CompositeWidgetData blockData)
+   {
+      this.blockData = blockData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for blockData
+    *******************************************************************************/
+   public BlockTooltip withBlockData(CompositeWidgetData blockData)
+   {
+      this.blockData = blockData;
       return (this);
    }
 

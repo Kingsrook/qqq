@@ -188,9 +188,13 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private void assertAnInsertedPersonRecord(String firstName, String lastName, Integer id) throws Exception
    {
-      runTestSql("SELECT * FROM person WHERE last_name = '" + lastName + "'", (rs -> {
+      runTestSql("SELECT * FROM person WHERE last_name = '" + lastName + "'", (rs ->
+      {
          int rowsFound = 0;
          while(rs.next())
          {

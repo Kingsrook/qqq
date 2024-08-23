@@ -43,6 +43,9 @@ public class ThisOrLastPeriod extends AbstractFilterExpression<Instant>
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum Operator
    {THIS, LAST}
 

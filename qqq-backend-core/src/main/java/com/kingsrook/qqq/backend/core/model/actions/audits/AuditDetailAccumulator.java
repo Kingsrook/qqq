@@ -152,5 +152,8 @@ public class AuditDetailAccumulator implements Serializable
    }
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private record TableNameAndPrimaryKey(String tableName, Serializable primaryKey) {}
 }

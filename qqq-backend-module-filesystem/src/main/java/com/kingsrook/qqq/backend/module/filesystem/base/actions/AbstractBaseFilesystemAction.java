@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem.base.actions;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -222,7 +223,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                   {
                      case CSV:
                      {
-                        String fileContents = IOUtils.toString(inputStream);
+                        String fileContents = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
                         fileContents = customizeFileContentsAfterReading(table, fileContents);
 
                         if(queryInput.getRecordPipe() != null)
@@ -245,7 +246,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                      }
                      case JSON:
                      {
-                        String fileContents = IOUtils.toString(inputStream);
+                        String fileContents = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
                         fileContents = customizeFileContentsAfterReading(table, fileContents);
 
                         // todo - pipe support!!

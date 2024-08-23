@@ -115,7 +115,7 @@ public class QSlackImplementation
    public QSlackImplementation(String qInstanceFilePath) throws IOException
    {
       LOG.info("Loading qInstance from file (assuming json): " + qInstanceFilePath);
-      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath));
+      String qInstanceJson = FileUtils.readFileToString(new File(qInstanceFilePath), StandardCharsets.UTF_8);
       QSlackImplementation.qInstance = new QInstanceAdapter().jsonToQInstanceIncludingBackends(qInstanceJson);
    }
 

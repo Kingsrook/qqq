@@ -174,7 +174,7 @@ class StandardScheduledExecutorTest extends BaseTest
       @Override
       public void execute(RecordAutomationInput recordAutomationInput) throws QException
       {
-         sessionId = recordAutomationInput.getSession().getIdReference();
+         sessionId = QContext.getQSession().getIdReference();
       }
 
    }

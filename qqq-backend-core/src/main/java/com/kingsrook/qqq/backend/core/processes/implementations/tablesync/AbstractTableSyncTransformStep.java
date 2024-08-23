@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperat
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -364,10 +365,10 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          {
             if(possibleValueTranslator == null)
             {
-               possibleValueTranslator = new QPossibleValueTranslator(runBackendStepInput.getInstance(), runBackendStepInput.getSession());
+               possibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
             }
 
-            possibleValueTranslator.translatePossibleValuesInRecords(runBackendStepInput.getInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
+            possibleValueTranslator.translatePossibleValuesInRecords(QContext.getQInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
    }
@@ -430,6 +431,12 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          queryInput.setAssociationNamesToInclude(associationNamesToInclude);
       }
 
+      Collection<QueryJoin> joins = getQueryJoins();
+      if(CollectionUtils.nullSafeHasContents(joins))
+      {
+         queryInput.setQueryJoins(getQueryJoins());
+      }
+
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       return (buildExistingRecordsMap(destinationTableForeignKeyField, queryOutput.getRecords()));
    }
@@ -443,7 +450,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     ** Note, if you're overriding this method, you'll likely also want & need to
     ** override getExistingRecord.
     *******************************************************************************/
-   protected Map<Pair<String, Serializable>, QRecord> buildExistingRecordsMap(String destinationTableForeignKeyField, List<QRecord> existingRecordList)
+   protected Map<Pair<String, Serializable>, QRecord> buildExistingRecordsMap(String destinationTableForeignKeyField, List<QRecord> existingRecordList) throws QException
    {
       Map<Pair<String, Serializable>, QRecord> existingRecordsByForeignKey = new HashMap<>();
       for(QRecord record : existingRecordList)
@@ -451,6 +458,16 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          existingRecordsByForeignKey.put(Pair.of(destinationTableForeignKeyField, record.getValue(destinationTableForeignKeyField)), record);
       }
       return (existingRecordsByForeignKey);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected List<QueryJoin> getQueryJoins()
+   {
+      return null;
    }
 
 

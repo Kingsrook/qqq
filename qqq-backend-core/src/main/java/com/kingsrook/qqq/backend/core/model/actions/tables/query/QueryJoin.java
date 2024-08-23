@@ -56,7 +56,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** JoinsContext is constructed before executing a query, and not meant to be set
  ** by users.
  *******************************************************************************/
-public class QueryJoin
+public class QueryJoin implements Cloneable
 {
    private String        baseTableOrAlias;
    private String        joinTable;
@@ -66,6 +66,40 @@ public class QueryJoin
    private Type          type   = Type.INNER;
 
    private List<QFilterCriteria> securityCriteria = new ArrayList<>();
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public QueryJoin clone()
+   {
+      try
+      {
+         QueryJoin clone = (QueryJoin) super.clone();
+
+         if(joinMetaData != null)
+         {
+            clone.joinMetaData = joinMetaData.clone();
+         }
+
+         if(securityCriteria != null)
+         {
+            clone.securityCriteria = new ArrayList<>();
+            for(QFilterCriteria securityCriterion : securityCriteria)
+            {
+               clone.securityCriteria.add(securityCriterion.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 

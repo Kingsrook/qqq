@@ -303,9 +303,16 @@ class ValueUtilsTest extends BaseTest
       assertEquals(3, ValueUtils.getFirstNonNull(null, null, 3));
 
       assertNull(ValueUtils.getFirstNonNull());
-      assertNull(ValueUtils.getFirstNonNull(new Object[] { }));
-      assertNull(ValueUtils.getFirstNonNull(null));
-      assertNull(ValueUtils.getFirstNonNull(null, null));
+
+      Object[] emptyArray = { };
+      assertNull(ValueUtils.getFirstNonNull(emptyArray));
+
+      Object nullObject = null;
+      assertNull(ValueUtils.getFirstNonNull(nullObject));
+      assertNull(ValueUtils.getFirstNonNull(null, nullObject));
+      assertNull(ValueUtils.getFirstNonNull(nullObject, null));
+      assertNull(ValueUtils.getFirstNonNull(nullObject, nullObject));
+      assertNull(ValueUtils.getFirstNonNull(nullObject, nullObject, nullObject));
 
    }
 

@@ -73,6 +73,7 @@ class LoadScriptTestDetailsProcessStepTest extends BaseTest
 
       Serializable inputFields = output.getValue("testInputFields");
       assertThat(inputFields).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
       List<QFieldMetaData> inputFieldsList = (List<QFieldMetaData>) inputFields;
       assertEquals(1, inputFieldsList.size());
       assertEquals("recordPrimaryKeyList", inputFieldsList.get(0).getName());

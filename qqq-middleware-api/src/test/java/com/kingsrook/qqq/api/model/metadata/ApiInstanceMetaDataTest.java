@@ -80,8 +80,8 @@ class ApiInstanceMetaDataTest
    {
       assertValidationErrors(makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))
-            .withSupportedVersions(List.of(new APIVersion("2022.Q3"), new APIVersion("2022.Q4")))
-         , List.of("supportedVersions [[2022.Q3, 2022.Q4]] does not contain currentVersion [2023.Q1]"));
+            .withSupportedVersions(List.of(new APIVersion("2022.Q3"), new APIVersion("2022.Q4"))),
+         List.of("supportedVersions [[2022.Q3, 2022.Q4]] does not contain currentVersion [2023.Q1]"));
 
       assertValidationErrors(makeBaselineValidApiInstanceMetaData()
             .withCurrentVersion(new APIVersion("2023.Q1"))

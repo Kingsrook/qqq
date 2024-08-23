@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQFieldMappingAdapter;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -85,7 +86,7 @@ public class BasicETLTransformFunction implements BackendStep
          throw (new QException("Mapping was not a Key-based mapping type.  Was a : " + mapping.getClass().getName()));
       }
 
-      QTableMetaData table         = runBackendStepInput.getInstance().getTable(tableName);
+      QTableMetaData table         = QContext.getQInstance().getTable(tableName);
       List<QRecord>  mappedRecords = applyMapping(runBackendStepInput.getRecords(), table, keyBasedFieldMapping);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////

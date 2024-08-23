@@ -150,10 +150,7 @@ public class ConnectionManager
 
       return switch(backend.getVendor())
       {
-         ////////////////////////////////////////////////////////////////////////////
-         // todo - remove "aurora" - it's a legacy value here for a staged rollout //
-         ////////////////////////////////////////////////////////////////////////////
-         case RDBMSBackendMetaData.VENDOR_MYSQL, RDBMSBackendMetaData.VENDOR_AURORA_MYSQL, "aurora" -> "com.mysql.cj.jdbc.Driver";
+         case RDBMSBackendMetaData.VENDOR_MYSQL, RDBMSBackendMetaData.VENDOR_AURORA_MYSQL -> "com.mysql.cj.jdbc.Driver";
          case RDBMSBackendMetaData.VENDOR_H2 -> "org.h2.Driver";
          default -> throw (new IllegalStateException("We do not know what jdbc driver to use for vendor name [" + backend.getVendor() + "].  Try setting jdbcDriverClassName in your backend meta data."));
       };
@@ -178,10 +175,7 @@ public class ConnectionManager
          ////////////////////////////////////////////////////////////////
          // jdbcURL = "jdbc:mysql:aws://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=CONVERT_TO_NULL";
 
-         ////////////////////////////////////////////////////////////////////////////
-         // todo - remove "aurora" - it's a legacy value here for a staged rollout //
-         ////////////////////////////////////////////////////////////////////////////
-         case RDBMSBackendMetaData.VENDOR_AURORA_MYSQL, "aurora" -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
+         case RDBMSBackendMetaData.VENDOR_AURORA_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
          case RDBMSBackendMetaData.VENDOR_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
          case RDBMSBackendMetaData.VENDOR_H2 -> "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
          default -> throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
