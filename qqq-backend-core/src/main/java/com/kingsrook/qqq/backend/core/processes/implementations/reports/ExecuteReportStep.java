@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -50,6 +51,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 public class ExecuteReportStep implements BackendStep
 {
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -58,9 +60,10 @@ public class ExecuteReportStep implements BackendStep
    {
       try
       {
-         String          reportName = runBackendStepInput.getValueString("reportName");
-         QReportMetaData report     = QContext.getQInstance().getReport(reportName);
-         File            tmpFile    = File.createTempFile(reportName, ".xlsx", new File("/tmp/"));
+         ReportFormat    reportFormat = getReportFormat(runBackendStepInput);
+         String          reportName   = runBackendStepInput.getValueString("reportName");
+         QReportMetaData report       = QContext.getQInstance().getReport(reportName);
+         File            tmpFile      = File.createTempFile(reportName, "." + reportFormat.getExtension());
 
          runBackendStepInput.getAsyncJobCallback().updateStatus("Generating Report");
 
@@ -69,7 +72,7 @@ public class ExecuteReportStep implements BackendStep
             ReportInput reportInput = new ReportInput();
             reportInput.setReportName(reportName);
             reportInput.setReportDestination(new ReportDestination()
-               .withReportFormat(ReportFormat.XLSX) // todo - variable
+               .withReportFormat(reportFormat)
                .withReportOutputStream(reportOutputStream));
 
             Map<String, Serializable> values = runBackendStepInput.getValues();
@@ -79,7 +82,7 @@ public class ExecuteReportStep implements BackendStep
 
             String downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, report);
 
-            runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + ".xlsx");
+            runBackendStepOutput.addValue("downloadFileName", downloadFileBaseName + "." + reportFormat.getExtension());
             runBackendStepOutput.addValue("serverFilePath", tmpFile.getCanonicalPath());
          }
       }
@@ -87,6 +90,22 @@ public class ExecuteReportStep implements BackendStep
       {
          throw (new QException("Error running report", e));
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private ReportFormat getReportFormat(RunBackendStepInput runBackendStepInput) throws QUserFacingException
+   {
+      String reportFormatInput = runBackendStepInput.getValueString(BasicRunReportProcess.FIELD_REPORT_FORMAT);
+      if(StringUtils.hasContent(reportFormatInput))
+      {
+         return (ReportFormat.fromString(reportFormatInput));
+      }
+
+      return (ReportFormat.XLSX);
    }
 
 

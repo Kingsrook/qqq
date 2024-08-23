@@ -124,10 +124,11 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    private Writer              activeSheetWriter = null;
    private StreamedSheetWriter sheetWriter       = null;
 
-   private QReportView                       currentView      = null;
-   private Map<String, List<QFieldMetaData>> fieldsPerView    = new HashMap<>();
-   private Map<String, Integer>              rowsPerView      = new HashMap<>();
-   private Map<String, String>               labelViewsByName = new HashMap<>();
+   private QReportView                       currentView              = null;
+   private Map<String, List<QFieldMetaData>> fieldsPerView            = new HashMap<>();
+   private Map<String, Integer>              rowsPerView              = new HashMap<>();
+   private Map<String, String>               labelViewsByName         = new HashMap<>();
+   private Map<String, String>               sheetReferenceByViewName = new HashMap<>();
 
 
 
@@ -180,6 +181,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
             String    sheetReference = sheet.getPackagePart().getPartName().getName().substring(1);
             sheetMapByExcelReference.put(sheetReference, sheet);
             sheetMapByViewName.put(view.getName(), sheet);
+            sheetReferenceByViewName.put(view.getName(), sheetReference);
             sheetCounter++;
          }
 
@@ -446,7 +448,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          // - with a new output stream writer    //
          // - and with a SpreadsheetWriter       //
          //////////////////////////////////////////
-         zipOutputStream.putNextEntry(new ZipEntry("xl/worksheets/sheet" + this.sheetIndex++ + ".xml"));
+         zipOutputStream.putNextEntry(new ZipEntry(sheetReferenceByViewName.get(view.getName())));
          activeSheetWriter = new OutputStreamWriter(zipOutputStream);
          sheetWriter = new StreamedSheetWriter(activeSheetWriter);
 
