@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.CompositeWidgetData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.QWidgetData;
 
 
@@ -198,6 +199,19 @@ public abstract class AbstractBlockWidgetData<
    public T withTooltip(BlockTooltip tooltip)
    {
       this.tooltip = tooltip;
+      return (T) (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tooltip
+    **
+    *******************************************************************************/
+   @SuppressWarnings("unchecked")
+   public T withTooltip(CompositeWidgetData data)
+   {
+      this.tooltip = new BlockTooltip(data);
       return (T) (this);
    }
 
@@ -398,6 +412,7 @@ public abstract class AbstractBlockWidgetData<
    }
 
 
+
    /*******************************************************************************
     ** Getter for blockId
     *******************************************************************************/
@@ -427,6 +442,5 @@ public abstract class AbstractBlockWidgetData<
       this.blockId = blockId;
       return (T) this;
    }
-
 
 }
