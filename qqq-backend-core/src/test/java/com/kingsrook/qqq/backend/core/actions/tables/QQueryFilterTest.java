@@ -29,6 +29,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaMissingInputValueBehavior;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.FilterUseCase;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
@@ -36,9 +38,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Fil
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.BETWEEN;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.EQUALS;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.FALSE;
 import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.IS_BLANK;
+import static com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator.TRUE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -140,4 +145,230 @@ class QQueryFilterTest extends BaseTest
       assertEquals("joinTableSomeFieldIdEquals", fve7.getVariableName());
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInterpretValueVariableExpressionNotFoundUseCases() throws QException
+   {
+      Map<String, Serializable> inputValues = new HashMap<>();
+
+      AbstractFilterExpression<Serializable> expression = new FilterVariableExpression()
+         .withVariableName("clientId");
+
+      ////////////////////////////////////////
+      // Control - where the value IS found //
+      ////////////////////////////////////////
+      inputValues.put("clientId", 47);
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         filter.interpretValues(inputValues);
+         assertEquals(47, filter.getCriteria().get(0).getValues().get(0));
+         assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
+      }
+
+      //////////////////////////////////////////////////////
+      // now - remove the value for the next set of cases //
+      //////////////////////////////////////////////////////
+      inputValues.remove("clientId");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // a use-case that says to remove-from-filter, which, means translate to a criteria of "TRUE" //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         filter.interpretValues(inputValues, new RemoveFromFilterUseCase());
+         assertEquals(0, filter.getCriteria().get(0).getValues().size());
+         assertEquals(TRUE, filter.getCriteria().get(0).getOperator());
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // a use-case that says to make-no-matches, which, means translate to a criteria of "FALSE" //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         filter.interpretValues(inputValues, new MakeNoMatchesUseCase());
+         assertEquals(0, filter.getCriteria().get(0).getValues().size());
+         assertEquals(FALSE, filter.getCriteria().get(0).getOperator());
+      }
+
+      ///////////////////////////////////////////
+      // a use-case that says to treat as null //
+      ///////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         filter.interpretValues(inputValues, new InterpretAsNullValueUseCase());
+         assertNull(filter.getCriteria().get(0).getValues().get(0));
+         assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
+      }
+
+      ///////////////////////////////////
+      // a use-case that says to throw //
+      ///////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+            .isInstanceOf(QUserFacingException.class)
+            .hasMessageContaining("Missing value for variable: clientId");
+      }
+
+      //////////////////////////////////////////////////////////
+      // verify that empty-string is treated as not-found too //
+      //////////////////////////////////////////////////////////
+      inputValues.put("clientId", "");
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
+         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+            .isInstanceOf(QUserFacingException.class)
+            .hasMessageContaining("Missing value for criteria on field: id");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInterpretValueStringStyleNotFoundUseCases() throws QException
+   {
+      Map<String, Serializable> inputValues = new HashMap<>();
+
+      ////////////////////////////////////////
+      // Control - where the value IS found //
+      ////////////////////////////////////////
+      inputValues.put("clientId", 47);
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         filter.interpretValues(inputValues);
+         assertEquals(47, filter.getCriteria().get(0).getValues().get(0));
+         assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
+      }
+
+      //////////////////////////////////////////////////////
+      // now - remove the value for the next set of cases //
+      //////////////////////////////////////////////////////
+      inputValues.remove("clientId");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // a use-case that says to remove-from-filter, which, means translate to a criteria of "TRUE" //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         filter.interpretValues(inputValues, new RemoveFromFilterUseCase());
+         assertEquals(0, filter.getCriteria().get(0).getValues().size());
+         assertEquals(TRUE, filter.getCriteria().get(0).getOperator());
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // a use-case that says to make-no-matches, which, means translate to a criteria of "FALSE" //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         filter.interpretValues(inputValues, new MakeNoMatchesUseCase());
+         assertEquals(0, filter.getCriteria().get(0).getValues().size());
+         assertEquals(FALSE, filter.getCriteria().get(0).getOperator());
+      }
+
+      ///////////////////////////////////////////
+      // a use-case that says to treat as null //
+      ///////////////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         filter.interpretValues(inputValues, new InterpretAsNullValueUseCase());
+         assertNull(filter.getCriteria().get(0).getValues().get(0));
+         assertEquals(EQUALS, filter.getCriteria().get(0).getOperator());
+      }
+
+      ///////////////////////////////////
+      // a use-case that says to throw //
+      ///////////////////////////////////
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+            .isInstanceOf(QUserFacingException.class)
+            .hasMessageContaining("Missing value for criteria on field: id");
+      }
+
+      //////////////////////////////////////////////////////////
+      // verify that empty-string is treated as not-found too //
+      //////////////////////////////////////////////////////////
+      inputValues.put("clientId", "");
+      {
+         QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, "${input.clientId}"));
+         assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
+            .isInstanceOf(QUserFacingException.class)
+            .hasMessageContaining("Missing value for criteria on field: id");
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class RemoveFromFilterUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.REMOVE_FROM_FILTER;
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class MakeNoMatchesUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.MAKE_NO_MATCHES;
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class InterpretAsNullValueUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.INTERPRET_AS_NULL_VALUE;
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class ThrowExceptionUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.THROW_EXCEPTION;
+      }
+   }
 }
