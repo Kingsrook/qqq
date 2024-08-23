@@ -222,7 +222,7 @@ class QQueryFilterTest extends BaseTest
          QQueryFilter filter = new QQueryFilter(new QFilterCriteria("id", EQUALS, expression));
          assertThatThrownBy(() -> filter.interpretValues(inputValues, new ThrowExceptionUseCase()))
             .isInstanceOf(QUserFacingException.class)
-            .hasMessageContaining("Missing value for criteria on field: id");
+            .hasMessageContaining("Missing value for variable: clientId");
       }
    }
 
