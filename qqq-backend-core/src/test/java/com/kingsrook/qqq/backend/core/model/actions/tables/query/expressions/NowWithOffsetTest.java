@@ -22,11 +22,16 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -46,23 +51,39 @@ class NowWithOffsetTest extends BaseTest
    {
       long now = System.currentTimeMillis();
 
-      long oneWeekAgoMillis = NowWithOffset.minus(1, ChronoUnit.WEEKS).evaluate().toEpochMilli();
-      assertThat(oneWeekAgoMillis).isCloseTo(now - (7 * DAY_IN_MILLIS), Offset.offset(10_000L));
+      QFieldMetaData dateTimeField = new QFieldMetaData("myDateTime", QFieldType.DATE_TIME);
+      QFieldMetaData dateField     = new QFieldMetaData("myDate", QFieldType.DATE);
 
-      long oneWeekFromNowMillis = NowWithOffset.plus(2, ChronoUnit.WEEKS).evaluate().toEpochMilli();
-      assertThat(oneWeekFromNowMillis).isCloseTo(now + (14 * DAY_IN_MILLIS), Offset.offset(10_000L));
+      {
+         Offset<Long> allowedDiff            = Offset.offset(100L);
+         Offset<Long> allowedDiffPlusOneDay  = Offset.offset(100L + DAY_IN_MILLIS);
+         Offset<Long> allowedDiffPlusTwoDays = Offset.offset(100L + 2 * DAY_IN_MILLIS);
 
-      long oneMonthAgoMillis = NowWithOffset.minus(1, ChronoUnit.MONTHS).evaluate().toEpochMilli();
-      assertThat(oneMonthAgoMillis).isCloseTo(now - (30 * DAY_IN_MILLIS), Offset.offset(10_000L + 2 * DAY_IN_MILLIS));
+         long oneWeekAgoMillis = ((Instant) NowWithOffset.minus(1, ChronoUnit.WEEKS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(oneWeekAgoMillis).isCloseTo(now - (7 * DAY_IN_MILLIS), allowedDiff);
 
-      long oneMonthFromNowMillis = NowWithOffset.plus(2, ChronoUnit.MONTHS).evaluate().toEpochMilli();
-      assertThat(oneMonthFromNowMillis).isCloseTo(now + (60 * DAY_IN_MILLIS), Offset.offset(10_000L + 3 * DAY_IN_MILLIS));
+         long twoWeeksFromNowMillis = ((Instant) NowWithOffset.plus(2, ChronoUnit.WEEKS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(twoWeeksFromNowMillis).isCloseTo(now + (14 * DAY_IN_MILLIS), allowedDiff);
 
-      long oneYearAgoMillis = NowWithOffset.minus(1, ChronoUnit.YEARS).evaluate().toEpochMilli();
-      assertThat(oneYearAgoMillis).isCloseTo(now - (365 * DAY_IN_MILLIS), Offset.offset(10_000L + 2 * DAY_IN_MILLIS));
+         long oneMonthAgoMillis = ((Instant) NowWithOffset.minus(1, ChronoUnit.MONTHS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(oneMonthAgoMillis).isCloseTo(now - (30 * DAY_IN_MILLIS), allowedDiffPlusOneDay);
 
-      long oneYearFromNowMillis = NowWithOffset.plus(2, ChronoUnit.YEARS).evaluate().toEpochMilli();
-      assertThat(oneYearFromNowMillis).isCloseTo(now + (730 * DAY_IN_MILLIS), Offset.offset(10_000L + 3 * DAY_IN_MILLIS));
+         long twoMonthsFromNowMillis = ((Instant) NowWithOffset.plus(2, ChronoUnit.MONTHS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(twoMonthsFromNowMillis).isCloseTo(now + (60 * DAY_IN_MILLIS), allowedDiffPlusTwoDays);
+
+         long oneYearAgoMillis = ((Instant) NowWithOffset.minus(1, ChronoUnit.YEARS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(oneYearAgoMillis).isCloseTo(now - (365 * DAY_IN_MILLIS), allowedDiffPlusOneDay);
+
+         long twoYearsFromNowMillis = ((Instant) NowWithOffset.plus(2, ChronoUnit.YEARS).evaluate(dateTimeField)).toEpochMilli();
+         assertThat(twoYearsFromNowMillis).isCloseTo(now + (730 * DAY_IN_MILLIS), allowedDiffPlusTwoDays);
+      }
+
+      {
+         assertThat(NowWithOffset.minus(1, ChronoUnit.WEEKS).evaluate(dateField)).isInstanceOf(LocalDate.class);
+
+         assertEquals(LocalDate.now().minusDays(1), NowWithOffset.minus(1, ChronoUnit.DAYS).evaluate(dateField));
+         assertEquals(LocalDate.now().minusDays(7), NowWithOffset.minus(1, ChronoUnit.WEEKS).evaluate(dateField));
+      }
    }
 
 }
