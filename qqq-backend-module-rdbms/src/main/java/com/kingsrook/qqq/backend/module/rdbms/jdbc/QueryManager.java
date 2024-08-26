@@ -51,10 +51,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -529,7 +527,7 @@ public class QueryManager
    /*******************************************************************************
     ** todo - needs (specific) unit test
     *******************************************************************************/
-   public static List<Serializable> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params, Map<String, QFieldMetaData> fields) throws SQLException
+   public static List<Serializable> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params, QFieldType idType) throws SQLException
    {
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
@@ -538,23 +536,11 @@ public class QueryManager
          statement.executeUpdate();
 
          /////////////////////////////////////////////////////////////
-         // We default to idType of INTEGER but if we are passed in //
-         // fields attempt to find the dataType of the id field     //
+         // We default to idType of INTEGER if it was not passed in //
          /////////////////////////////////////////////////////////////
-         QFieldType idType = QFieldType.INTEGER;
-         if(fields != null && !fields.isEmpty())
+         if(idType == null)
          {
-            Optional<QFieldMetaData> field = fields.values().stream()
-               .filter(f -> f.getName().equals("id"))
-               .findFirst();
-
-            if(field.isPresent())
-            {
-               /////////////////////////////////////////////////////////
-               // if we find "id" field get the type and use it below //
-               /////////////////////////////////////////////////////////
-               idType = field.get().getType();
-            }
+            idType = QFieldType.INTEGER;
          }
 
          ResultSet          generatedKeys = statement.getGeneratedKeys();
