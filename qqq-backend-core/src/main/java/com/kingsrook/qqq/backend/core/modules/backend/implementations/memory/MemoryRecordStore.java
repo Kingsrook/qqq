@@ -373,7 +373,14 @@ public class MemoryRecordStore
          /////////////////////////////////////////////////
          if(recordToInsert.getValue(primaryKeyField.getName()) == null && (primaryKeyField.getType().equals(QFieldType.INTEGER) || primaryKeyField.getType().equals(QFieldType.LONG)))
          {
-            recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
+            if(primaryKeyField.getType().equals(QFieldType.LONG))
+            {
+               recordToInsert.setValue(primaryKeyField.getName(), (nextSerial++).longValue());
+            }
+            else
+            {
+               recordToInsert.setValue(primaryKeyField.getName(), nextSerial++);
+            }
          }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -383,7 +390,7 @@ public class MemoryRecordStore
          {
             nextSerial = recordToInsert.getValueInteger(primaryKeyField.getName()) + 1;
          }
-         else if(primaryKeyField.getType().equals(QFieldType.LONG) && recordToInsert.getValueLong(primaryKeyField.getName()) > nextSerial)
+         else if(primaryKeyField.getType().equals(QFieldType.LONG) && recordToInsert.getValueInteger(primaryKeyField.getName()) > nextSerial)
          {
             //////////////////////////////////////
             // todo - mmm, could overflow here? //
