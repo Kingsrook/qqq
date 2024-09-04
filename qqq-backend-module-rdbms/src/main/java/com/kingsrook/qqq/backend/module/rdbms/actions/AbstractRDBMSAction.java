@@ -676,7 +676,7 @@ public abstract class AbstractRDBMSAction
                {
                   try
                   {
-                     valueListIterator.set(expression.evaluate());
+                     valueListIterator.set(expression.evaluate(field));
                   }
                   catch(QException qe)
                   {

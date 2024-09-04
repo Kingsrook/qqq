@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -51,6 +52,8 @@ import com.kingsrook.qqq.backend.core.model.session.QSession;
  *******************************************************************************/
 public class ValueUtils
 {
+   private static final QLogger LOG = QLogger.getLogger(ValueUtils.class);
+
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMddWithDashes = DateTimeFormatter.ofPattern("yyyy-MM-dd");
    private static final DateTimeFormatter dateTimeFormatter_MdyyyyWithSlashes  = DateTimeFormatter.ofPattern("M/d/yyyy");
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMdd           = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -931,4 +934,48 @@ public class ValueUtils
       return (ZoneId.of(QContext.getQInstance().getDefaultTimeZoneId()));
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static QFieldType inferQFieldTypeFromValue(Serializable value, QFieldType defaultIfCannotInfer)
+   {
+      if(value instanceof String)
+      {
+         return QFieldType.STRING;
+      }
+      else if(value instanceof Integer)
+      {
+         return QFieldType.INTEGER;
+      }
+      else if(value instanceof Long)
+      {
+         return QFieldType.LONG;
+      }
+      else if(value instanceof BigDecimal)
+      {
+         return QFieldType.DECIMAL;
+      }
+      else if(value instanceof Boolean)
+      {
+         return QFieldType.BOOLEAN;
+      }
+      else if(value instanceof Instant)
+      {
+         return QFieldType.DATE_TIME;
+      }
+      else if(value instanceof LocalDate)
+      {
+         return QFieldType.DATE;
+      }
+      else if(value instanceof LocalTime)
+      {
+         return QFieldType.TIME;
+      }
+
+      LOG.debug("Could not infer QFieldType from value [" + (value == null ? "null" : value.getClass().getSimpleName()) + "]");
+
+      return defaultIfCannotInfer;
+   }
 }

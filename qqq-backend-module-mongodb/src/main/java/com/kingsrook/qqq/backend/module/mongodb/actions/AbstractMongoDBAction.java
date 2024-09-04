@@ -569,7 +569,7 @@ public class AbstractMongoDBAction
             {
                try
                {
-                  valueListIterator.set(expression.evaluate());
+                  valueListIterator.set(expression.evaluate(field));
                }
                catch(QException qe)
                {

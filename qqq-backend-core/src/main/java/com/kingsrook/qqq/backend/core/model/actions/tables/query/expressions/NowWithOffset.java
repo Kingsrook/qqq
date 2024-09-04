@@ -22,19 +22,24 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
+import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class NowWithOffset extends AbstractFilterExpression<Instant>
+public class NowWithOffset extends AbstractFilterExpression<Serializable>
 {
    private Operator   operator;
    private int        amount;
@@ -123,7 +128,30 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
     **
     *******************************************************************************/
    @Override
-   public Instant evaluate() throws QException
+   public Serializable evaluate(QFieldMetaData field) throws QException
+   {
+      QFieldType type = field == null ? QFieldType.DATE_TIME : field.getType();
+
+      if(type.equals(QFieldType.DATE_TIME))
+      {
+         return (evaluateForDateTime());
+      }
+      else if(type.equals(QFieldType.DATE))
+      {
+         return (evaluateForDate());
+      }
+      else
+      {
+         throw (new QException("Unsupported field type [" + type + "]"));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Instant evaluateForDateTime()
    {
       /////////////////////////////////////////////////////////////////////////////
       // Instant doesn't let us plus/minus WEEK, MONTH, or YEAR...               //
@@ -143,6 +171,26 @@ public class NowWithOffset extends AbstractFilterExpression<Instant>
       }
 
       return (then.toInstant(ZoneOffset.UTC));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private LocalDate evaluateForDate()
+   {
+      ZoneId    zoneId = ValueUtils.getSessionOrInstanceZoneId();
+      LocalDate now    = Instant.now().atZone(zoneId).toLocalDate();
+
+      if(operator.equals(Operator.PLUS))
+      {
+         return (now.plus(amount, timeUnit));
+      }
+      else
+      {
+         return (now.minus(amount, timeUnit));
+      }
    }
 
 

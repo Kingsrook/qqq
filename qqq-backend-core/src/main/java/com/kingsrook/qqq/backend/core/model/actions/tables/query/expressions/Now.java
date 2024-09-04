@@ -22,23 +22,42 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions;
 
 
+import java.io.Serializable;
 import java.time.Instant;
+import java.time.ZoneId;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class Now extends AbstractFilterExpression<Instant>
+public class Now extends AbstractFilterExpression<Serializable>
 {
 
    /*******************************************************************************
     **
     *******************************************************************************/
    @Override
-   public Instant evaluate() throws QException
+   public Serializable evaluate(QFieldMetaData field) throws QException
    {
-      return (Instant.now());
+      QFieldType type = field == null ? QFieldType.DATE_TIME : field.getType();
+
+      if(type.equals(QFieldType.DATE_TIME))
+      {
+         return (Instant.now());
+      }
+      else if(type.equals(QFieldType.DATE))
+      {
+         ZoneId zoneId = ValueUtils.getSessionOrInstanceZoneId();
+         return (Instant.now().atZone(zoneId).toLocalDate());
+      }
+      else
+      {
+         throw (new QException("Unsupported field type [" + type + "]"));
+      }
    }
 
 }
