@@ -950,24 +950,138 @@ class QJavalinImplementationTest extends QJavalinTestBase
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private JSONArray assertPossibleValueSuccessfulResponseAndGetOptionsArray(HttpResponse<String> response)
+   {
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      return (jsonObject.getJSONArray("options"));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void assertPossibleValueSuccessfulResponseWithNoOptions(HttpResponse<String> response)
+   {
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      assertFalse(jsonObject.has("options")); // no results comes back as result w/o options array.
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
    void testPossibleValueWithFilter()
    {
+      /////////////////////////////////////////////////////////////
+      // post with no search term, and values that find a result //
+      /////////////////////////////////////////////////////////////
       HttpResponse<String> response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=")
          .field("values", """
-         {"email":"tsamples@mmltholdings.com"}
-         """)
+            {"email":"tsamples@mmltholdings.com"}
+            """)
          .asString();
 
-      assertEquals(200, response.getStatus());
-      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
-      assertNotNull(jsonObject);
-      assertNotNull(jsonObject.getJSONArray("options"));
-      assertEquals(1, jsonObject.getJSONArray("options").length());
-      assertEquals("Tyler Samples (4)", jsonObject.getJSONArray("options").getJSONObject(0).getString("label"));
+      JSONArray options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      assertNotNull(options);
+      assertEquals(1, options.length());
+      assertEquals("Tyler Samples (4)", options.getJSONObject(0).getString("label"));
+
+      ///////////////////////////////////////////////////////////
+      // post with search term and values that find no results //
+      ///////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=notFound")
+         .field("values", """
+            {"email":"tsamples@mmltholdings.com"}
+            """)
+         .asString();
+      assertPossibleValueSuccessfulResponseWithNoOptions(response);
+
+      ////////////////////////////////////////////////////////////////
+      // post with no search term, but values that cause no matches //
+      ////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=")
+         .field("values", """
+            {"email":"noUser@mmltholdings.com"}
+            """)
+         .asString();
+      assertPossibleValueSuccessfulResponseWithNoOptions(response);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueWithFilterMissingValue()
+   {
+      /////////////////////////////////////////////////////////////
+      // filter use-case, with no values, should return options. //
+      /////////////////////////////////////////////////////////////
+      HttpResponse<String> response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=filter").asString();
+      JSONArray options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      assertNotNull(options);
+      assertThat(options.length()).isGreaterThanOrEqualTo(5);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // similarly, values map, but not the 'email' value, that this PVS field is based on, should return options. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=filter")
+         .field("values", """
+            {"userId":"123"}
+            """)
+         .asString();
+      options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      assertNotNull(options);
+      assertThat(options.length()).isGreaterThanOrEqualTo(5);
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // similarly, values map, with the email value, but an empty string in there - should act the same as if it's missing, and not filter the values. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=filter")
+         .field("values", """
+            {"email":""}
+            """)
+         .asString();
+      options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      assertNotNull(options);
+      assertThat(options.length()).isGreaterThanOrEqualTo(5);
+
+      /////////////////////////////////////////////////////////////////////////
+      // versus form use-case with no values, which should return 0 options. //
+      /////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=form").asString();
+      assertPossibleValueSuccessfulResponseWithNoOptions(response);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // versus form use-case with expected value, which should return some options. //
+      /////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=form")
+         .field("values", """
+            {"email":"tsamples@mmltholdings.com"}
+            """)
+         .asString();
+      options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      assertNotNull(options);
+      assertEquals(1, options.length());
+      assertEquals("Tyler Samples (4)", options.getJSONObject(0).getString("label"));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // finally an unrecognized useCase (or missing or empty), should behave the same as a form, and return 0 options if the filter-value is missing. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertPossibleValueSuccessfulResponseWithNoOptions(Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=notAUseCase").asString());
+      assertPossibleValueSuccessfulResponseWithNoOptions(Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=").asString());
+      assertPossibleValueSuccessfulResponseWithNoOptions(Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=").asString());
    }
 
 
