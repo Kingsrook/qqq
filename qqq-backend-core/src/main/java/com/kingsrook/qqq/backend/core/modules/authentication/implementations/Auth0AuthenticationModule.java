@@ -313,7 +313,11 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          //////////////////////////////////////////////////////////////
          if(getCustomizer() != null)
          {
-            getCustomizer().finalCustomizeSession(qInstance, qSession);
+            QContext.withTemporaryContext(QContext.capture(), () ->
+            {
+               QContext.setQSession(getChickenAndEggSession());
+               getCustomizer().finalCustomizeSession(qInstance, qSession);
+            });
          }
 
          return (qSession);
