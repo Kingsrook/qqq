@@ -180,7 +180,7 @@ class AuditActionTest extends BaseTest
       QRecord auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId1);
       assertEquals("Test Audit", auditRecord.getValueString("message"));
 
-      List<QRecord> auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValue("id"));
+      List<QRecord> auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValueLong("id"));
       assertEquals(2, auditDetails.size());
       assertThat(auditDetails).anyMatch(r -> r.getValueString("message").equals("Detail1"));
       assertThat(auditDetails).anyMatch(r -> r.getValueString("message").equals("Detail2"));
@@ -188,13 +188,13 @@ class AuditActionTest extends BaseTest
       auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId2);
       assertEquals("Test Another Audit", auditRecord.getValueString("message"));
       assertEquals(47, auditRecord.getValueInteger(TestUtils.SECURITY_KEY_TYPE_STORE));
-      auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValue("id"));
+      auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValueLong("id"));
       assertEquals(0, auditDetails.size());
 
       auditRecord = GeneralProcessUtils.getRecordByFieldOrElseThrow("audit", "recordId", recordId3);
       assertEquals("Audit 3", auditRecord.getValueString("message"));
       assertEquals(42, auditRecord.getValueInteger(TestUtils.SECURITY_KEY_TYPE_STORE));
-      auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValue("id"));
+      auditDetails = GeneralProcessUtils.getRecordListByField("auditDetail", "auditId", auditRecord.getValueLong("id"));
       assertEquals(1, auditDetails.size());
       assertThat(auditDetails).anyMatch(r -> r.getValueString("message").equals("Detail3"));
    }

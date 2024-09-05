@@ -146,8 +146,8 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             // todo sql customization - can edit sql and/or param list
             // todo - non-serial-id style tables
             // todo - other generated values, e.g., createDate...  maybe need to re-select?
-            List<Integer> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params);
-            int           index  = 0;
+            List<Serializable> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params, table.getField(table.getPrimaryKeyField()).getType());
+            int                index  = 0;
             for(QRecord record : page)
             {
                QRecord outputRecord = new QRecord(record);
@@ -155,7 +155,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
                if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
                {
-                  Integer id = idList.get(index++);
+                  Serializable id = idList.get(index++);
                   outputRecord.setValue(table.getPrimaryKeyField(), id);
                }
             }
