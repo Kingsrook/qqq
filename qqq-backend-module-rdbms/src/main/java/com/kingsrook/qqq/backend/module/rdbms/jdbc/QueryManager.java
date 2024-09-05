@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -526,18 +527,45 @@ public class QueryManager
    /*******************************************************************************
     ** todo - needs (specific) unit test
     *******************************************************************************/
-   public static List<Integer> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params) throws SQLException
+   public static List<Serializable> executeInsertForGeneratedIds(Connection connection, String sql, List<Object> params, QFieldType idType) throws SQLException
    {
       try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
       {
          bindParams(params.toArray(), statement);
          incrementStatistic(STAT_QUERIES_RAN);
          statement.executeUpdate();
-         ResultSet     generatedKeys = statement.getGeneratedKeys();
-         List<Integer> rs            = new ArrayList<>();
+
+         /////////////////////////////////////////////////////////////
+         // We default to idType of INTEGER if it was not passed in //
+         /////////////////////////////////////////////////////////////
+         if(idType == null)
+         {
+            idType = QFieldType.INTEGER;
+         }
+
+         ResultSet          generatedKeys = statement.getGeneratedKeys();
+         List<Serializable> rs            = new ArrayList<>();
          while(generatedKeys.next())
          {
-            rs.add(getInteger(generatedKeys, 1));
+            switch(idType)
+            {
+               case INTEGER:
+               {
+                  rs.add(getInteger(generatedKeys, 1));
+                  break;
+               }
+               case LONG:
+               {
+                  rs.add(getLong(generatedKeys, 1));
+                  break;
+               }
+               default:
+               {
+                  LOG.warn("Unknown id data type, attempting to getInteger.", logPair("sql", sql));
+                  rs.add(getInteger(generatedKeys, 1));
+                  break;
+               }
+            }
          }
          return (rs);
       }
