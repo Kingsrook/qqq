@@ -102,7 +102,7 @@ public class QJavalinTestBase
       {
          qJavalinImplementation.stopJavalinServer();
       }
-      qJavalinImplementation = new QJavalinImplementation(qInstance);
+      qJavalinImplementation = new QJavalinImplementation(qInstance, new QJavalinMetaData());
       QJavalinProcessHandler.setAsyncStepTimeoutMillis(250);
       qJavalinImplementation.startJavalinServer(PORT);
    }
