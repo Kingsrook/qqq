@@ -528,8 +528,27 @@ public class QQueryFilter implements Serializable, Cloneable
     ** Note - it may be very important that you call this method on a clone of a
     ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
     ** want to be (permanently) changed!!
-    *******************************************************************************/
+    **
+    ** This overload does not take in a FilterUseCase - it uses FilterUseCase.DEFAULT
+    ******************************************************************************/
    public void interpretValues(Map<String, Serializable> inputValues) throws QException
+   {
+      interpretValues(inputValues, FilterUseCase.DEFAULT);
+   }
+
+
+
+   /*******************************************************************************
+    ** Replace any criteria values that look like ${input.XXX} with the value of XXX
+    ** from the supplied inputValues map - where the handling of missing values
+    ** is specified in the inputted FilterUseCase parameter
+    **
+    ** Note - it may be very important that you call this method on a clone of a
+    ** QQueryFilter - e.g., if it's one that defined in metaData, and that we don't
+    ** want to be (permanently) changed!!
+    **
+    *******************************************************************************/
+   public void interpretValues(Map<String, Serializable> inputValues, FilterUseCase useCase) throws QException
    {
       List<Exception> caughtExceptions = new ArrayList<>();
 
@@ -545,6 +564,9 @@ public class QQueryFilter implements Serializable, Cloneable
             {
                try
                {
+                  Serializable interpretedValue = value;
+                  Exception    caughtException  = null;
+
                   if(value instanceof AbstractFilterExpression<?>)
                   {
                      ///////////////////////////////////////////////////////////////////////
@@ -553,17 +575,54 @@ public class QQueryFilter implements Serializable, Cloneable
                      ///////////////////////////////////////////////////////////////////////
                      if(value instanceof FilterVariableExpression filterVariableExpression)
                      {
-                        newValues.add(filterVariableExpression.evaluateInputValues(inputValues));
-                     }
-                     else
-                     {
-                        newValues.add(value);
+                        try
+                        {
+                           interpretedValue = filterVariableExpression.evaluateInputValues(inputValues);
+                        }
+                        catch(Exception e)
+                        {
+                           caughtException = e;
+                           interpretedValue = InputNotFound.instance;
+                        }
                      }
                   }
                   else
                   {
-                     String       valueAsString    = ValueUtils.getValueAsString(value);
-                     Serializable interpretedValue = variableInterpreter.interpretForObject(valueAsString);
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // for non-expressions, cast the value to a string, and see if it can be resolved a variable.          //
+                     // there are 3 possible cases here:                                                                    //
+                     // 1: it doesn't look like a variable, so it just comes back as a string version of whatever went in.  //
+                     // 2: it was resolved from a variable to a value, e.g., ${input.someVar} => someValue                  //
+                     // 3: it looked like a variable, but no value for that variable was present in the interpreter's value //
+                     // map - so we'll get back the InputNotFound.instance.                                                 //
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     String valueAsString = ValueUtils.getValueAsString(value);
+                     interpretedValue = variableInterpreter.interpretForObject(valueAsString, InputNotFound.instance);
+                  }
+
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if interpreting a value returned the not-found value, or an empty string,                                            //
+                  // then decide how to handle the missing value, based on the use-case input                                             //
+                  // Note: questionable, using "" here, but that's what reality is passing a lot for cases we want to treat as missing... //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  if(interpretedValue == InputNotFound.instance || "".equals(interpretedValue))
+                  {
+                     CriteriaMissingInputValueBehavior missingInputValueBehavior = getMissingInputValueBehavior(useCase);
+
+                     switch(missingInputValueBehavior)
+                     {
+                        case REMOVE_FROM_FILTER -> criterion.setOperator(QCriteriaOperator.TRUE);
+                        case MAKE_NO_MATCHES -> criterion.setOperator(QCriteriaOperator.FALSE);
+                        case INTERPRET_AS_NULL_VALUE -> newValues.add(null);
+
+                        /////////////////////////////////////////////////
+                        // handle case in the default: THROW_EXCEPTION //
+                        /////////////////////////////////////////////////
+                        default -> throw (Objects.requireNonNullElseGet(caughtException, () -> new QUserFacingException("Missing value for criteria on field: " + criterion.getFieldName())));
+                     }
+                  }
+                  else
+                  {
                      newValues.add(interpretedValue);
                   }
                }
@@ -582,6 +641,44 @@ public class QQueryFilter implements Serializable, Cloneable
          boolean allUserFacing = caughtExceptions.stream().allMatch(QUserFacingException.class::isInstance);
          throw (allUserFacing ? new QUserFacingException(message) : new QException(message));
       }
+   }
+
+
+
+   /***************************************************************************
+    ** Note:  in the original build of this, it felt like we *might* want to be
+    ** able to specify these behaviors at the individual criteria level, where
+    ** the implementation would be to add to QFilterCriteria:
+    ** - Map<FilterUseCase, CriteriaMissingInputValueBehavior> missingInputValueBehaviors;
+    ** - CriteriaMissingInputValueBehavior getMissingInputValueBehaviorForUseCase(FilterUseCase useCase) {}
+    *
+    ** (and maybe do that in a sub-class of QFilterCriteria, so it isn't always
+    ** there?  idk...) and then here we'd call:
+    ** - CriteriaMissingInputValueBehavior missingInputValueBehavior = criterion.getMissingInputValueBehaviorForUseCase(useCase);
+    *
+    ** But, we don't actually have that use-case at hand now, so - let's keep it
+    ** just at the level we need for now.
+    **
+    ***************************************************************************/
+   private CriteriaMissingInputValueBehavior getMissingInputValueBehavior(FilterUseCase useCase)
+   {
+      if(useCase == null)
+      {
+         useCase = FilterUseCase.DEFAULT;
+      }
+
+      CriteriaMissingInputValueBehavior missingInputValueBehavior = useCase.getDefaultCriteriaMissingInputValueBehavior();
+      if(missingInputValueBehavior == null)
+      {
+         missingInputValueBehavior = useCase.getDefaultCriteriaMissingInputValueBehavior();
+      }
+
+      if(missingInputValueBehavior == null)
+      {
+         missingInputValueBehavior = FilterUseCase.DEFAULT.getDefaultCriteriaMissingInputValueBehavior();
+      }
+
+      return (missingInputValueBehavior);
    }
 
 
@@ -678,4 +775,28 @@ public class QQueryFilter implements Serializable, Cloneable
    {
       return Objects.hash(criteria, orderBys, booleanOperator, subFilters, skip, limit);
    }
+
+
+
+   /***************************************************************************
+    ** "Token" object to be used as the defaultIfLooksLikeVariableButNotFound
+    ** parameter to variableInterpreter.interpretForObject, so we can be
+    ** very clear that we got this default back (e.g., instead of a null,
+    ** which could maybe mean something else?)
+    ***************************************************************************/
+   private static final class InputNotFound implements Serializable
+   {
+      private static InputNotFound instance = new InputNotFound();
+
+
+
+      /*******************************************************************************
+       ** private singleton constructor
+       *******************************************************************************/
+      private InputNotFound()
+      {
+
+      }
+   }
+
 }

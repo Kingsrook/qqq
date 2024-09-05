@@ -32,12 +32,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -331,6 +333,30 @@ class ValueUtilsTest extends BaseTest
 
       QContext.getQSession().setValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES, "-300");
       assertEquals(ZoneId.of("UTC-05:00"), ValueUtils.getSessionOrInstanceZoneId());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInferQFieldTypeFromValue()
+   {
+      assertNull(ValueUtils.inferQFieldTypeFromValue(null, null));
+      assertNull(ValueUtils.inferQFieldTypeFromValue(new ArrayList<>(), null));
+      assertEquals(QFieldType.HTML, ValueUtils.inferQFieldTypeFromValue(new ArrayList<>(), QFieldType.HTML));
+
+      assertEquals(QFieldType.STRING, ValueUtils.inferQFieldTypeFromValue("value", null));
+      assertEquals(QFieldType.INTEGER, ValueUtils.inferQFieldTypeFromValue(1, null));
+      assertEquals(QFieldType.INTEGER, ValueUtils.inferQFieldTypeFromValue(Integer.valueOf("1"), null));
+      assertEquals(QFieldType.LONG, ValueUtils.inferQFieldTypeFromValue(10_000_000_000L, null));
+      assertEquals(QFieldType.DECIMAL, ValueUtils.inferQFieldTypeFromValue(BigDecimal.ZERO, null));
+      assertEquals(QFieldType.BOOLEAN, ValueUtils.inferQFieldTypeFromValue(true, null));
+      assertEquals(QFieldType.BOOLEAN, ValueUtils.inferQFieldTypeFromValue(Boolean.FALSE, null));
+      assertEquals(QFieldType.DATE_TIME, ValueUtils.inferQFieldTypeFromValue(Instant.now(), null));
+      assertEquals(QFieldType.DATE, ValueUtils.inferQFieldTypeFromValue(LocalDate.now(), null));
+      assertEquals(QFieldType.TIME, ValueUtils.inferQFieldTypeFromValue(LocalTime.now(), null));
    }
 
 }

@@ -63,6 +63,8 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaMissingInputValueBehavior;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.FilterUseCase;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -614,7 +616,56 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          return;
       }
 
-      queryFilter.interpretValues(reportInput.getInputValues());
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // for reports defined in meta-data, the established rule is, that missing input variable values are discarded. //
+      // but for non-meta-data reports (e.g., user-saved), we expect an exception for missing values.                 //
+      // so, set those use-cases up.                                                                                  //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      FilterUseCase filterUseCase;
+      if(StringUtils.hasContent(reportInput.getReportName()) && QContext.getQInstance().getReport(reportInput.getReportName()) != null)
+      {
+         filterUseCase = new ReportFromMetaDataFilterUseCase();
+      }
+      else
+      {
+         filterUseCase = new ReportNotFromMetaDataFilterUseCase();
+      }
+
+      queryFilter.interpretValues(reportInput.getInputValues(), filterUseCase);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class ReportFromMetaDataFilterUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.REMOVE_FROM_FILTER;
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class ReportNotFromMetaDataFilterUseCase implements FilterUseCase
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public CriteriaMissingInputValueBehavior getDefaultCriteriaMissingInputValueBehavior()
+      {
+         return CriteriaMissingInputValueBehavior.THROW_EXCEPTION;
+      }
    }
 
 

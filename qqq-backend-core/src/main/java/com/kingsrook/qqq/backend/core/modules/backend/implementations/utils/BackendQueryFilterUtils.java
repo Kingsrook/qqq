@@ -34,14 +34,18 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -58,8 +62,22 @@ public class BackendQueryFilterUtils
 
    /*******************************************************************************
     ** Test if record matches filter.
-    *******************************************************************************/
+    ******************************************************************************/
    public static boolean doesRecordMatch(QQueryFilter filter, QRecord qRecord)
+   {
+      return doesRecordMatch(filter, null, qRecord);
+   }
+
+
+
+   /*******************************************************************************
+    ** Test if record matches filter - where we are executing a QueryAction, and
+    ** we have a JoinsContext.  Note, if you don't have one of those, you can call
+    ** the overload of this method that doesn't take one, and everything downstream
+    ** /should/ be tolerant of that being absent...  You just might not have the
+    ** benefit of things like knowing field-meta-data associated with criteria...
+    *******************************************************************************/
+   public static boolean doesRecordMatch(QQueryFilter filter, JoinsContext joinsContext, QRecord qRecord)
    {
       if(filter == null || !filter.hasAnyCriteria())
       {
@@ -97,7 +115,36 @@ public class BackendQueryFilterUtils
             }
          }
 
-         boolean criterionMatches = doesCriteriaMatch(criterion, fieldName, value);
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // Test if this criteria(on) matches the record.                                             //
+         // As criteria have become more sophisticated over time, we would like to be able to know    //
+         // what field they are for. In general, we'll try to get that from the query's JoinsContext. //
+         // But, in some scenarios, that isn't available - so - be safe and defer to simpler methods  //
+         // that might not have the full field, when necessary.                                       //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         Boolean criterionMatches = null;
+         if(joinsContext != null)
+         {
+            JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = null;
+            try
+            {
+               fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
+            }
+            catch(Exception e)
+            {
+               LOG.debug("Exception getting field from joinsContext", e, logPair("fieldName", criterion.getFieldName()));
+            }
+
+            if(fieldAndTableNameOrAlias != null)
+            {
+               criterionMatches = doesCriteriaMatch(criterion, fieldAndTableNameOrAlias.field(), value);
+            }
+         }
+
+         if(criterionMatches == null)
+         {
+            criterionMatches = doesCriteriaMatch(criterion, criterion.getFieldName(), value);
+         }
 
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // add this new value to the existing recordMatches value - and if we can short circuit the remaining checks, do so. //
@@ -131,11 +178,24 @@ public class BackendQueryFilterUtils
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
+   {
+      QFieldMetaData field = new QFieldMetaData(fieldName, ValueUtils.inferQFieldTypeFromValue(value, QFieldType.STRING));
+      return doesCriteriaMatch(criterion, field, value);
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static boolean doesCriteriaMatch(QFilterCriteria criterion, String fieldName, Serializable value)
+   private static boolean doesCriteriaMatch(QFilterCriteria criterion, QFieldMetaData field, Serializable value)
    {
+      String fieldName = field == null ? "__unknownField" : field.getName();
+
       ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();
       while(valueListIterator.hasNext())
       {
@@ -144,7 +204,7 @@ public class BackendQueryFilterUtils
          {
             try
             {
-               valueListIterator.set(expression.evaluate());
+               valueListIterator.set(expression.evaluate(field));
             }
             catch(QException qe)
             {

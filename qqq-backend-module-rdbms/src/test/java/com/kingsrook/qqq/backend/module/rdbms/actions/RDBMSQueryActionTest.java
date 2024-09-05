@@ -24,11 +24,14 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -38,20 +41,26 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.Now;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.NowWithOffset;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.ThisOrLastPeriod;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,6 +93,7 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    void afterEach()
    {
       AbstractRDBMSAction.setLogSQL(false);
+      QContext.getQSession().removeValue(QSession.VALUE_KEY_USER_TIMEZONE);
    }
 
 
@@ -613,6 +623,101 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
 
 
    /*******************************************************************************
+    ** Adding additional test conditions, specifically for DATE-precision
+    *******************************************************************************/
+   @ParameterizedTest()
+   @ValueSource(strings = { "UTC", "US/Eastern", "UTC+12" })
+   void testMoreFilterExpressions(String userTimezone) throws QException
+   {
+      QContext.getQSession().setValue(QSession.VALUE_KEY_USER_TIMEZONE, userTimezone);
+
+      LocalDate today     = Instant.now().atZone(ZoneId.of(userTimezone)).toLocalDate();
+      LocalDate yesterday = today.minusDays(1);
+      LocalDate tomorrow  = today.plusDays(1);
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecords(List.of(
+         new QRecord().withValue("email", "-").withValue("firstName", "yesterday").withValue("lastName", "ExpressionTest").withValue("birthDate", yesterday),
+         new QRecord().withValue("email", "-").withValue("firstName", "today").withValue("lastName", "ExpressionTest").withValue("birthDate", today),
+         new QRecord().withValue("email", "-").withValue("firstName", "tomorrow").withValue("lastName", "ExpressionTest").withValue("birthDate", tomorrow))
+      ));
+
+      UnsafeFunction<Consumer<QQueryFilter>, List<QRecord>, QException> testFunction = (filterConsumer) ->
+      {
+         QQueryFilter filter = new QQueryFilter().withCriteria("lastName", QCriteriaOperator.EQUALS, "ExpressionTest");
+         filter.withOrderBy(new QFilterOrderBy("birthDate"));
+         filterConsumer.accept(filter);
+
+         return QueryAction.execute(TestUtils.TABLE_NAME_PERSON, filter);
+      };
+
+      assertOneRecordWithFirstName("today", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.EQUALS, new Now()))));
+      assertOneRecordWithFirstName("tomorrow", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, new Now()))));
+      assertOneRecordWithFirstName("yesterday", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, new Now()))));
+      assertTwoRecordsWithFirstNames("yesterday", "today", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN_OR_EQUALS, new Now()))));
+      assertTwoRecordsWithFirstNames("today", "tomorrow", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN_OR_EQUALS, new Now()))));
+
+      assertNoOfRecords(0, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, NowWithOffset.minus(1, ChronoUnit.DAYS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN_OR_EQUALS, NowWithOffset.plus(1, ChronoUnit.DAYS)))));
+      assertOneRecordWithFirstName("yesterday", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.EQUALS, NowWithOffset.minus(1, ChronoUnit.DAYS)))));
+      assertOneRecordWithFirstName("tomorrow", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.EQUALS, NowWithOffset.plus(1, ChronoUnit.DAYS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, NowWithOffset.plus(1, ChronoUnit.WEEKS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, NowWithOffset.plus(1, ChronoUnit.MONTHS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, NowWithOffset.plus(1, ChronoUnit.YEARS)))));
+
+      assertThatThrownBy(() -> testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, NowWithOffset.plus(1, ChronoUnit.HOURS)))))
+         .hasRootCauseMessage("Unsupported unit: Hours");
+
+      assertOneRecordWithFirstName("today", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.EQUALS, ThisOrLastPeriod.this_(ChronoUnit.DAYS)))));
+      assertOneRecordWithFirstName("yesterday", testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.EQUALS, ThisOrLastPeriod.last(ChronoUnit.DAYS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, ThisOrLastPeriod.last(ChronoUnit.WEEKS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, ThisOrLastPeriod.last(ChronoUnit.MONTHS)))));
+      assertNoOfRecords(3, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, ThisOrLastPeriod.last(ChronoUnit.YEARS)))));
+      assertNoOfRecords(0, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, ThisOrLastPeriod.last(ChronoUnit.WEEKS)))));
+      assertNoOfRecords(0, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, ThisOrLastPeriod.last(ChronoUnit.MONTHS)))));
+      assertNoOfRecords(0, testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, ThisOrLastPeriod.last(ChronoUnit.YEARS)))));
+
+      assertThatThrownBy(() -> testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, ThisOrLastPeriod.this_(ChronoUnit.HOURS)))))
+         .hasRootCauseMessage("Unsupported unit: Hours");
+      assertThatThrownBy(() -> testFunction.apply(filter -> filter.withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.LESS_THAN, ThisOrLastPeriod.last(ChronoUnit.MINUTES)))))
+         .hasRootCauseMessage("Unsupported unit: Minutes");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void assertNoOfRecords(Integer expectedSize, List<QRecord> actualRecords)
+   {
+      assertEquals(expectedSize, actualRecords.size());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void assertOneRecordWithFirstName(String expectedFirstName, List<QRecord> actualRecords)
+   {
+      assertEquals(1, actualRecords.size());
+      assertEquals(expectedFirstName, actualRecords.get(0).getValueString("firstName"));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void assertTwoRecordsWithFirstNames(String expectedFirstName0, String expectedFirstName1, List<QRecord> actualRecords)
+   {
+      assertEquals(2, actualRecords.size());
+      assertEquals(expectedFirstName0, actualRecords.get(0).getValueString("firstName"));
+      assertEquals(expectedFirstName1, actualRecords.get(1).getValueString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private QueryInput initQueryRequest()
@@ -1017,8 +1122,8 @@ public class RDBMSQueryActionTest extends RDBMSActionTest
    @Test
    void testFieldNamesToInclude() throws QException
    {
-      QQueryFilter  filter     = new QQueryFilter().withCriteria("id", QCriteriaOperator.EQUALS, 1);
-      QueryInput    queryInput = new QueryInput(TestUtils.TABLE_NAME_PERSON).withFilter(filter);
+      QQueryFilter filter     = new QQueryFilter().withCriteria("id", QCriteriaOperator.EQUALS, 1);
+      QueryInput   queryInput = new QueryInput(TestUtils.TABLE_NAME_PERSON).withFilter(filter);
 
       QRecord record = new QueryAction().execute(queryInput.withFieldNamesToInclude(null)).getRecords().get(0);
       assertTrue(record.getValues().containsKey("id"));
