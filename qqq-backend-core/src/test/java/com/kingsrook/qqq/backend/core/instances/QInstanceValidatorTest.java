@@ -266,6 +266,38 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableFieldInlinePossibleValueSource()
+   {
+      ////////////////////////////////////////////////////
+      // make sure can't have both named and inline PVS //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.TABLE).withTableName("person")),
+         "both a possibleValueSourceName and an inlinePossibleValueSource");
+
+      /////////////////////////////////////////////
+      // make require inline PVS to be enum type //
+      /////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withPossibleValueSourceName(null)
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.TABLE)),
+         "must have a type of ENUM");
+
+      ////////////////////////////////////////////////////
+      // make sure validation on the inline PVS happens //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withPossibleValueSourceName(null)
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.ENUM)),
+         "missing enum values");
+   }
+
+
+
+   /*******************************************************************************
     ** Test that if a process specifies a table that doesn't exist, that it fails.
     **
     *******************************************************************************/
@@ -717,8 +749,8 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    public void test_validateFieldWithMissingPossibleValueSource()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
-         "Unrecognized possibleValueSourceName");
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
+         "unrecognized possibleValueSourceName");
    }
 
 
