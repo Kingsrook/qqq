@@ -30,6 +30,8 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
@@ -40,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,6 +86,7 @@ class AuditActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @Disabled("this behavior has been changed to just log... should this be a setting?")
    void testFailWithoutSecurityKey() throws QException
    {
       QInstance qInstance = TestUtils.defineInstance();
@@ -113,6 +117,50 @@ class AuditActionTest extends BaseTest
       /////////////////////////////////////
       auditRecord = GeneralProcessUtils.getRecordByField("audit", "recordId", recordId);
       assertTrue(auditRecord.isPresent());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testLogWithoutSecurityKey() throws QException
+   {
+      int recordId = 1701;
+
+      QInstance qInstance = TestUtils.defineInstance();
+      new AuditsMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      String userName = "John Doe";
+      QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
+
+      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(AuditAction.class);
+      AuditAction.execute(TestUtils.TABLE_NAME_ORDER, recordId, Map.of(), "Test Audit");
+
+      ///////////////////////////////////////////////////////////////////
+      // it should not throw, but it should also not insert the audit. //
+      ///////////////////////////////////////////////////////////////////
+      Optional<QRecord> auditRecord = GeneralProcessUtils.getRecordByField("audit", "recordId", recordId);
+      assertTrue(auditRecord.isPresent());
+
+      assertThat(collectingLogger.getCollectedMessages()).anyMatch(m -> m.getMessage().contains("Missing securityKeyValue in audit request"));
+      collectingLogger.clear();
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // try again with a null value in the key - that should be ok - as at least you were thinking //
+      // about the key and put in SOME value (null has its own semantics in security keys)          //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      Map<String, Serializable> securityKeys = new HashMap<>();
+      securityKeys.put(TestUtils.SECURITY_KEY_TYPE_STORE, null);
+      AuditAction.execute(TestUtils.TABLE_NAME_ORDER, recordId, securityKeys, "Test Audit");
+
+      /////////////////////////////////////
+      // now the audit should be stored. //
+      /////////////////////////////////////
+      auditRecord = GeneralProcessUtils.getRecordByField("audit", "recordId", recordId);
+      assertTrue(auditRecord.isPresent());
+      assertThat(collectingLogger.getCollectedMessages()).noneMatch(m -> m.getMessage().contains("Missing securityKeyValue in audit request"));
    }
 
 
