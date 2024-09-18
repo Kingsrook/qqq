@@ -1279,6 +1279,11 @@ public class QJavalinImplementation
             queryInput.getFilter().setLimit(limit);
          }
 
+         if(queryInput.getFilter() == null || queryInput.getFilter().getLimit() == null)
+         {
+            handleQueryNullLimit(context, queryInput);
+         }
+
          List<QueryJoin> queryJoins = processQueryJoinsParam(context);
          queryInput.setQueryJoins(queryJoins);
 
@@ -1294,6 +1299,28 @@ public class QJavalinImplementation
       {
          QJavalinAccessLogger.logEndFail(e, logPair("filter", filter));
          handleException(context, e);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void handleQueryNullLimit(Context context, QueryInput queryInput)
+   {
+      boolean allowed = javalinMetaData.getQueryWithoutLimitAllowed();
+      if(!allowed)
+      {
+         if(queryInput.getFilter() == null)
+         {
+            queryInput.setFilter(new QQueryFilter());
+         }
+
+         queryInput.getFilter().setLimit(javalinMetaData.getQueryWithoutLimitDefault());
+         LOG.log(javalinMetaData.getQueryWithoutLimitLogLevel(), "Query request did not specify a limit, which is not allowed.  Using default instead", null,
+            logPair("defaultLimit", javalinMetaData.getQueryWithoutLimitDefault()),
+            logPair("path", context.path()));
       }
    }
 

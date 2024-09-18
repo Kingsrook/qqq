@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 
 import java.util.function.Function;
+import org.apache.logging.log4j.Level;
 
 
 /*******************************************************************************
@@ -35,6 +36,10 @@ public class QJavalinMetaData
    private boolean loggerDisabled = false;
 
    private Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter;
+
+   private boolean queryWithoutLimitAllowed  = false;
+   private Integer queryWithoutLimitDefault  = 1000;
+   private Level   queryWithoutLimitLogLevel = Level.INFO;
 
 
 
@@ -140,6 +145,99 @@ public class QJavalinMetaData
    public QJavalinMetaData withLogFilter(Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter)
    {
       this.logFilter = logFilter;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryWithoutLimitAllowed
+    *******************************************************************************/
+   public boolean getQueryWithoutLimitAllowed()
+   {
+      return (this.queryWithoutLimitAllowed);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryWithoutLimitAllowed
+    *******************************************************************************/
+   public void setQueryWithoutLimitAllowed(boolean queryWithoutLimitAllowed)
+   {
+      this.queryWithoutLimitAllowed = queryWithoutLimitAllowed;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryWithoutLimitAllowed
+    *******************************************************************************/
+   public QJavalinMetaData withQueryWithoutLimitAllowed(boolean queryWithoutLimitAllowed)
+   {
+      this.queryWithoutLimitAllowed = queryWithoutLimitAllowed;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryWithoutLimitDefault
+    *******************************************************************************/
+   public Integer getQueryWithoutLimitDefault()
+   {
+      return (this.queryWithoutLimitDefault);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryWithoutLimitDefault
+    *******************************************************************************/
+   public void setQueryWithoutLimitDefault(Integer queryWithoutLimitDefault)
+   {
+      this.queryWithoutLimitDefault = queryWithoutLimitDefault;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryWithoutLimitDefault
+    *******************************************************************************/
+   public QJavalinMetaData withQueryWithoutLimitDefault(Integer queryWithoutLimitDefault)
+   {
+      this.queryWithoutLimitDefault = queryWithoutLimitDefault;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryWithoutLimitLogLevel
+    *******************************************************************************/
+   public Level getQueryWithoutLimitLogLevel()
+   {
+      return (this.queryWithoutLimitLogLevel);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryWithoutLimitLogLevel
+    *******************************************************************************/
+   public void setQueryWithoutLimitLogLevel(Level queryWithoutLimitLogLevel)
+   {
+      this.queryWithoutLimitLogLevel = queryWithoutLimitLogLevel;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryWithoutLimitLogLevel
+    *******************************************************************************/
+   public QJavalinMetaData withQueryWithoutLimitLogLevel(Level queryWithoutLimitLogLevel)
+   {
+      this.queryWithoutLimitLogLevel = queryWithoutLimitLogLevel;
       return (this);
    }
 
