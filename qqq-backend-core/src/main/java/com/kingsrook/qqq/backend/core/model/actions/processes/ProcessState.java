@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 
 
 /*******************************************************************************
@@ -42,10 +41,7 @@ public class ProcessState implements Serializable
    private List<String>              stepList     = new ArrayList<>();
    private Optional<String>          nextStepName = Optional.empty();
 
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   // maybe, remove this altogether - just let the frontend compute & send if needed... but how does it know last version...? //
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private List<QFrontendStepMetaData> updatedFrontendStepList = null;
+   private ProcessMetaDataAdjustment processMetaDataAdjustment = null;
 
 
 
@@ -148,33 +144,36 @@ public class ProcessState implements Serializable
 
 
 
+
+
    /*******************************************************************************
-    ** Getter for updatedFrontendStepList
+    ** Getter for processMetaDataAdjustment
     *******************************************************************************/
-   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   public ProcessMetaDataAdjustment getProcessMetaDataAdjustment()
    {
-      return (this.updatedFrontendStepList);
+      return (this.processMetaDataAdjustment);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for updatedFrontendStepList
+    ** Setter for processMetaDataAdjustment
     *******************************************************************************/
-   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public void setProcessMetaDataAdjustment(ProcessMetaDataAdjustment processMetaDataAdjustment)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
+      this.processMetaDataAdjustment = processMetaDataAdjustment;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for updatedFrontendStepList
+    ** Fluent setter for processMetaDataAdjustment
     *******************************************************************************/
-   public ProcessState withUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public ProcessState withProcessMetaDataAdjustment(ProcessMetaDataAdjustment processMetaDataAdjustment)
    {
-      this.updatedFrontendStepList = updatedFrontendStepList;
+      this.processMetaDataAdjustment = processMetaDataAdjustment;
       return (this);
    }
+
 
 }

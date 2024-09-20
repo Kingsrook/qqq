@@ -335,12 +335,12 @@ public class RunProcessAction
          ///////////////////////////////////////////////////
          runProcessInput.seedFromProcessState(optionalProcessState.get());
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
-         // if we're restoring an old state, we can discard a previously stored updatedFrontendStepList - //
-         // it is only needed on the transitional edge from a backend-step to a frontend step, but not    //
-         // in the other directly                                                                         //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
-         optionalProcessState.get().setUpdatedFrontendStepList(null);
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're restoring an old state, we can discard a previously stored processMetaDataAdjustment - //
+         // it is only needed on the transitional edge from a backend-step to a frontend step, but not      //
+         // in the other directly                                                                           //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         optionalProcessState.get().setProcessMetaDataAdjustment(null);
 
          ///////////////////////////////////////////////////////////////////////////
          // if there were values from the caller, put those (back) in the request //

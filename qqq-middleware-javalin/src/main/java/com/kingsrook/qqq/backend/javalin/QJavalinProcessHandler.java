@@ -453,10 +453,18 @@ public class QJavalinProcessHandler
       resultForCaller.put("values", runProcessOutput.getValues());
       runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
 
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - delete after all frontends look for processMetaDataAdjustment instead of updatedFrontendStepList //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<QFrontendStepMetaData> updatedFrontendStepList = runProcessOutput.getUpdatedFrontendStepList();
       if(updatedFrontendStepList != null)
       {
          resultForCaller.put("updatedFrontendStepList", updatedFrontendStepList);
+      }
+
+      if(runProcessOutput.getProcessMetaDataAdjustment() != null)
+      {
+         resultForCaller.put("processMetaDataAdjustment", runProcessOutput.getProcessMetaDataAdjustment());
       }
    }
 
