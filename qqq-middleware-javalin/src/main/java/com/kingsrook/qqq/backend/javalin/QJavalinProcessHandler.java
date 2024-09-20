@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
@@ -432,7 +433,18 @@ public class QJavalinProcessHandler
          QJavalinAccessLogger.logEndSuccess();
       }
 
-      context.result(JsonUtils.toJson(resultForCaller));
+      ///////////////////////////////////////////////////////////////////////////////////
+      // Note:  originally we did not have this serializationInclusion:ALWAYS here -   //
+      // which meant that null and empty values from backend would not go to frontend, //
+      // which made things like clearing out a value in a field not happen.            //
+      // So, this is added to get that beneficial effect.  Unclear if there are any    //
+      // negative side-effects - but be aware.                                         //
+      // One could imagine that we'd need this to be configurable in the future?       //
+      ///////////////////////////////////////////////////////////////////////////////////
+      context.result(JsonUtils.toJson(resultForCaller, mapper ->
+      {
+         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+      }));
    }
 
 
