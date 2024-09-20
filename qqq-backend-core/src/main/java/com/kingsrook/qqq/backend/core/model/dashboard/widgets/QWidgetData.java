@@ -31,7 +31,7 @@ import java.util.Map;
  ** Base class for the data returned by rendering a Widget.
  **
  *******************************************************************************/
-public abstract class QWidgetData
+public abstract class QWidgetData implements Serializable
 {
    private String       label;
    private String       sublabel;
