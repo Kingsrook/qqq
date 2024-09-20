@@ -54,10 +54,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPer
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
@@ -75,6 +77,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEd
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadReceiveFileStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
@@ -411,9 +414,26 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void enrichStep(QStepMetaData step)
    {
+      enrichStep(step, false);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void enrichStep(QStepMetaData step, boolean isSubStep)
+   {
       if(!StringUtils.hasContent(step.getLabel()))
       {
-         step.setLabel(nameToLabel(step.getName()));
+         if(isSubStep && (step.getName().endsWith(".backend") || step.getName().endsWith(".frontend")))
+         {
+            step.setLabel(nameToLabel(step.getName().replaceFirst("\\.(backend|frontend)", "")));
+         }
+         else
+         {
+            step.setLabel(nameToLabel(step.getName()));
+         }
       }
 
       step.getInputFields().forEach(this::enrichField);
@@ -432,6 +452,13 @@ public class QInstanceEnricher
          if(frontendStepMetaData.getRecordListFields() != null)
          {
             frontendStepMetaData.getRecordListFields().forEach(this::enrichField);
+         }
+      }
+      else if(step instanceof QStateMachineStep stateMachineStep)
+      {
+         for(QStepMetaData subStep : CollectionUtils.nonNullList(stateMachineStep.getSubSteps()))
+         {
+            enrichStep(subStep, true);
          }
       }
    }
@@ -846,6 +873,22 @@ public class QInstanceEnricher
          }
       }
 
+      QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
+         .withName("fileMapping")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_MAPPING));
+      process.addStep(0, fileMappingScreen);
+
+      //////////////////////////////////////////////////////////////////
+      // add a backend step to receive the file before the ETL starts //
+      //////////////////////////////////////////////////////////////////
+      QBackendStepMetaData receiveFileStep = new QBackendStepMetaData()
+         .withName("receiveFile")
+         .withCode(new QCodeReference(BulkLoadReceiveFileStep.class));
+      process.addStep(0, receiveFileStep);
+
+      //////////////////////////////////////
+      // add an upload screen before that //
+      //////////////////////////////////////
       String fieldsForHelpText = editableFields.stream()
          .map(QFieldMetaData::getLabel)
          .collect(Collectors.joining(", "));
@@ -862,6 +905,7 @@ public class QInstanceEnricher
 
       process.addStep(0, uploadScreen);
       process.getFrontendStep("review").setRecordListFields(editableFields);
+
       qInstance.addProcess(process);
    }
 

@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -50,6 +51,7 @@ public class QFrontendProcessMetaData
    private String iconName;
 
    private List<QFrontendStepMetaData> frontendSteps;
+   private String                      stepFlow;
 
    private boolean hasPermission;
 
@@ -68,15 +70,27 @@ public class QFrontendProcessMetaData
       this.label = processMetaData.getLabel();
       this.tableName = processMetaData.getTableName();
       this.isHidden = processMetaData.getIsHidden();
+      this.stepFlow = processMetaData.getStepFlow().toString();
 
       if(includeSteps)
       {
          if(CollectionUtils.nullSafeHasContents(processMetaData.getStepList()))
          {
-            this.frontendSteps = processMetaData.getStepList().stream()
-               .filter(QFrontendStepMetaData.class::isInstance)
-               .map(QFrontendStepMetaData.class::cast)
-               .collect(Collectors.toList());
+            this.frontendSteps = switch(processMetaData.getStepFlow())
+            {
+               case LINEAR -> processMetaData.getStepList().stream()
+                  .filter(QFrontendStepMetaData.class::isInstance)
+                  .map(QFrontendStepMetaData.class::cast)
+                  .collect(Collectors.toList());
+
+               case STATE_MACHINE -> processMetaData.getAllSteps().values().stream()
+                  .filter(QStateMachineStep.class::isInstance)
+                  .map(QStateMachineStep.class::cast)
+                  .flatMap(step -> step.getSubSteps().stream())
+                  .filter(QFrontendStepMetaData.class::isInstance)
+                  .map(QFrontendStepMetaData.class::cast)
+                  .collect(Collectors.toList());
+            };
          }
          else
          {
@@ -180,4 +194,14 @@ public class QFrontendProcessMetaData
       return hasPermission;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for stepFlow
+    **
+    *******************************************************************************/
+   public String getStepFlow()
+   {
+      return stepFlow;
+   }
 }

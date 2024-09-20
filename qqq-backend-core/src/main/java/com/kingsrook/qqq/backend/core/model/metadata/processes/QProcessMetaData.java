@@ -57,6 +57,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    private Integer minInputRecords = null;
    private Integer maxInputRecords = null;
 
+   private ProcessStepFlow            stepFlow = ProcessStepFlow.LINEAR;
    private List<QStepMetaData>        stepList; // these are the steps that are ran, by-default, in the order they are ran in
    private Map<String, QStepMetaData> steps; // this is the full map of possible steps
 
@@ -213,11 +214,10 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
 
 
-   /*******************************************************************************
-    ** add a step to the stepList and map
+   /***************************************************************************
     **
-    *******************************************************************************/
-   public QProcessMetaData addStep(QStepMetaData step)
+    ***************************************************************************/
+   public QProcessMetaData withStep(QStepMetaData step)
    {
       int index = 0;
       if(this.stepList != null)
@@ -232,10 +232,22 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
 
    /*******************************************************************************
+    ** add a step to the stepList and map
+    **
+    *******************************************************************************/
+   @Deprecated(since = "withStep was added")
+   public QProcessMetaData addStep(QStepMetaData step)
+   {
+      return (withStep(step));
+   }
+
+
+
+   /*******************************************************************************
     ** add a step to the stepList (at the specified index) and the step map
     **
     *******************************************************************************/
-   public QProcessMetaData addStep(int index, QStepMetaData step)
+   public QProcessMetaData withStep(int index, QStepMetaData step)
    {
       if(this.stepList == null)
       {
@@ -261,10 +273,22 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
 
    /*******************************************************************************
+    ** add a step to the stepList (at the specified index) and the step map
+    **
+    *******************************************************************************/
+   @Deprecated(since = "withStep was added")
+   public QProcessMetaData addStep(int index, QStepMetaData step)
+   {
+      return (withStep(index, step));
+   }
+
+
+
+   /*******************************************************************************
     ** add a step ONLY to the step map - NOT the list w/ default execution order.
     **
     *******************************************************************************/
-   public QProcessMetaData addOptionalStep(QStepMetaData step)
+   public QProcessMetaData withOptionalStep(QStepMetaData step)
    {
       if(this.steps == null)
       {
@@ -279,6 +303,18 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       this.steps.put(step.getName(), step);
 
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** add a step ONLY to the step map - NOT the list w/ default execution order.
+    **
+    *******************************************************************************/
+   @Deprecated(since = "withOptionalStep was added")
+   public QProcessMetaData addOptionalStep(QStepMetaData step)
+   {
+      return (withOptionalStep(step));
    }
 
 
@@ -299,7 +335,26 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
     *******************************************************************************/
    public QStepMetaData getStep(String stepName)
    {
-      return (steps.get(stepName));
+      if(steps.containsKey(stepName))
+      {
+         return steps.get(stepName);
+      }
+
+      for(QStepMetaData step : steps.values())
+      {
+         if(step instanceof QStateMachineStep stateMachineStep)
+         {
+            for(QStepMetaData subStep : stateMachineStep.getSubSteps())
+            {
+               if(subStep.getName().equals(stepName))
+               {
+                  return (subStep);
+               }
+            }
+         }
+      }
+
+      return (null);
    }
 
 
@@ -777,6 +832,37 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public QProcessMetaData withCancelStep(QBackendStepMetaData cancelStep)
    {
       this.cancelStep = cancelStep;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for stepFlow
+    *******************************************************************************/
+   public ProcessStepFlow getStepFlow()
+   {
+      return (this.stepFlow);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for stepFlow
+    *******************************************************************************/
+   public void setStepFlow(ProcessStepFlow stepFlow)
+   {
+      this.stepFlow = stepFlow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for stepFlow
+    *******************************************************************************/
+   public QProcessMetaData withStepFlow(ProcessStepFlow stepFlow)
+   {
+      this.stepFlow = stepFlow;
       return (this);
    }
 
