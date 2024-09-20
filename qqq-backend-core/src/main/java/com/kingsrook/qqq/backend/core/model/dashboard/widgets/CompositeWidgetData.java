@@ -52,12 +52,13 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
     *******************************************************************************/
    public enum Layout
    {
-      /////////////////////////////////////////////////////////////
-      // note, these are used in QQQ FMD CompositeWidgetData.tsx //
-      /////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////
+      // note, these are used in QQQ FMD CompositeWidget.tsx //
+      /////////////////////////////////////////////////////////
       FLEX_COLUMN,
       FLEX_ROW_WRAPPED,
       FLEX_ROW_SPACE_BETWEEN,
+      FLEX_ROW_CENTER,
       TABLE_SUB_ROW_DETAILS,
       BADGES_WRAPPER
    }
