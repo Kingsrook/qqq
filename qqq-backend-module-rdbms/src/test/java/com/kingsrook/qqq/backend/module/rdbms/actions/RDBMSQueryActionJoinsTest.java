@@ -772,6 +772,61 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
 
 
    /*******************************************************************************
+    ** Error seen in CTLive - query for a record in a sub-table, but whose security
+    ** key comes from a main table, but the main-table record doesn't exist.
+    **
+    ** In this QInstance, our warehouse table's security key comes from
+    ** storeWarehouseInt.storeId - so if we insert a warehouse, but no stores, we
+    ** might not be able to find it (if this bug exists!)
+    *******************************************************************************/
+   @Test
+   void testRequestedJoinWithTableWhoseSecurityFieldIsInMainTableAndNoRowIsInMainTable() throws Exception
+   {
+      runTestSql("INSERT INTO warehouse (name) VALUES ('Springfield')", null);
+
+      QueryInput queryInput = new QueryInput();
+      queryInput.setTableName(TestUtils.TABLE_NAME_WAREHOUSE);
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Springfield")));
+
+      /////////////////////////////////////////
+      // with all access key, should find it //
+      /////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(1);
+
+      ////////////////////////////////////////////
+      // with a regular key, should not find it //
+      ////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(0);
+
+      /////////////////////////////////////////
+      // now assign the warehouse to a store //
+      /////////////////////////////////////////
+      runTestSql("INSERT INTO warehouse_store_int (store_id, warehouse_id) SELECT 1, id FROM warehouse WHERE name='Springfield'", null);
+
+      /////////////////////////////////////////
+      // with all access key, should find it //
+      /////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(1);
+
+      ///////////////////////////////////////////////////////
+      // with a regular key, should find it if key matches //
+      ///////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(1);
+
+      //////////////////////////////////////////////////////////////////
+      // with a regular key, should not find it if key does not match //
+      //////////////////////////////////////////////////////////////////
+      QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 2));
+      assertThat(new QueryAction().execute(queryInput).getRecords()).hasSize(0);
+
+   }
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    @Test
@@ -888,7 +943,10 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
 
 
    /*******************************************************************************
-    **
+    ** Note, this test was originally written asserting size=1... but reading
+    ** the data, for an all-access key, that seems wrong - as the user should see
+    ** all the records in this table, not just ones associated with a store...
+    ** so, switching to 4 (same issue in CountActionTest too).
     *******************************************************************************/
    @Test
    void testRecordSecurityWithLockFromJoinTableWhereTheKeyIsOnTheManySide() throws QException
@@ -897,8 +955,9 @@ public class RDBMSQueryActionJoinsTest extends RDBMSActionTest
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(TestUtils.TABLE_NAME_WAREHOUSE);
 
-      assertThat(new QueryAction().execute(queryInput).getRecords())
-         .hasSize(1);
+      List<QRecord> records = new QueryAction().execute(queryInput).getRecords();
+      assertThat(records)
+         .hasSize(4);
    }
 
 

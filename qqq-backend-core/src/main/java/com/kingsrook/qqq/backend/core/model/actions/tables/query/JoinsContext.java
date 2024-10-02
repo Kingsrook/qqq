@@ -82,7 +82,7 @@ public class JoinsContext
    /////////////////////////////////////////////////////////////////////////////
    // we will get a TON of more output if this gets turned up, so be cautious //
    /////////////////////////////////////////////////////////////////////////////
-   private Level logLevel = Level.OFF;
+   private Level logLevel          = Level.OFF;
    private Level logLevelForFilter = Level.OFF;
 
 
@@ -404,6 +404,12 @@ public class JoinsContext
                chainIsInner = false;
             }
 
+            if(hasAllAccessKey(recordSecurityLock))
+            {
+               queryJoin.withType(QueryJoin.Type.LEFT);
+               chainIsInner = false;
+            }
+
             addQueryJoin(queryJoin, "forRecordSecurityLock (non-flipped)", "- ");
             addedQueryJoins.add(queryJoin);
             tmpTable = instance.getTable(join.getRightTable());
@@ -418,6 +424,12 @@ public class JoinsContext
                .withAlias(securityFieldTableAlias);
 
             if(securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.OR)
+            {
+               queryJoin.withType(QueryJoin.Type.LEFT);
+               chainIsInner = false;
+            }
+
+            if(hasAllAccessKey(recordSecurityLock))
             {
                queryJoin.withType(QueryJoin.Type.LEFT);
                chainIsInner = false;
@@ -456,44 +468,53 @@ public class JoinsContext
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private boolean hasAllAccessKey(RecordSecurityLock recordSecurityLock)
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QSecurityKeyType securityKeyType = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
+      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+      {
+         QSession session = QContext.getQSession();
+         if(session.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+         {
+            return (true);
+         }
+      }
+
+      return (false);
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    private void addSubFilterForRecordSecurityLock(RecordSecurityLock recordSecurityLock, QTableMetaData table, String tableNameOrAlias, boolean isOuter, QueryJoin sourceQueryJoin)
    {
-      QSession session = QContext.getQSession();
-
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // check if the key type has an all-access key, and if so, if it's set to true for the current user/session //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      QSecurityKeyType securityKeyType  = instance.getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
-      boolean          haveAllAccessKey = false;
-      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()))
+      boolean haveAllAccessKey = hasAllAccessKey(recordSecurityLock);
+      if(haveAllAccessKey)
       {
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // if we have all-access on this key, then we don't need a criterion for it (as long as we're in an AND filter) //
-         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(session.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+         if(sourceQueryJoin != null)
          {
-            haveAllAccessKey = true;
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
+            // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
+         }
 
-            if(sourceQueryJoin != null)
-            {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // in case the queryJoin object is re-used between queries, and its security criteria need to be different (!!), reset it //
-               // this can be exposed in tests - maybe not entirely expected in real-world, but seems safe enough                        //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               sourceQueryJoin.withSecurityCriteria(new ArrayList<>());
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
-            ////////////////////////////////////////////////////////////////////////////////////////
-            boolean inAnAndFilter = securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.AND;
-            if(inAnAndFilter)
-            {
-               return;
-            }
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // if we're in an AND filter, then we don't need a criteria for this lock, so return. //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         boolean inAnAndFilter = securityFilterCursor.getBooleanOperator() == QQueryFilter.BooleanOperator.AND;
+         if(inAnAndFilter)
+         {
+            return;
          }
       }
 
@@ -545,7 +566,7 @@ public class JoinsContext
       }
       else
       {
-         List<Serializable> securityKeyValues = session.getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
+         List<Serializable> securityKeyValues = QContext.getQSession().getSecurityKeyValues(recordSecurityLock.getSecurityKeyType(), type);
          if(CollectionUtils.nullSafeIsEmpty(securityKeyValues))
          {
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1193,15 +1214,15 @@ public class JoinsContext
 
       if(isStart)
       {
-         System.out.println("\n" + StringUtils.safeTruncate("--- Start [main table: " + this.mainTableName + "] " + "-".repeat(full), full));
+         System.out.println("\n" + StringUtils.safeTruncate("--- Start [main table: " + this.mainTableName + "] " + "-" .repeat(full), full));
       }
 
       StringBuilder rs           = new StringBuilder();
       String        formatString = "| %-" + md + "s | %-" + md + "s %-" + md + "s | %-" + lg + "s | %-" + sm + "s |\n";
       rs.append(String.format(formatString, "Base Table", "Join Table", "(Alias)", "Join Meta Data", "Type"));
-      String dashesLg = "-".repeat(lg);
-      String dashesMd = "-".repeat(md);
-      String dashesSm = "-".repeat(sm);
+      String dashesLg = "-" .repeat(lg);
+      String dashesMd = "-" .repeat(md);
+      String dashesSm = "-" .repeat(sm);
       rs.append(String.format(formatString, dashesMd, dashesMd, dashesMd, dashesLg, dashesSm));
       if(CollectionUtils.nullSafeHasContents(queryJoins))
       {
@@ -1227,11 +1248,11 @@ public class JoinsContext
 
       if(isEnd)
       {
-         System.out.println(StringUtils.safeTruncate("--- End " + "-".repeat(full), full) + "\n");
+         System.out.println(StringUtils.safeTruncate("--- End " + "-" .repeat(full), full) + "\n");
       }
       else
       {
-         System.out.println(StringUtils.safeTruncate("-".repeat(full), full));
+         System.out.println(StringUtils.safeTruncate("-" .repeat(full), full));
       }
    }
 }
