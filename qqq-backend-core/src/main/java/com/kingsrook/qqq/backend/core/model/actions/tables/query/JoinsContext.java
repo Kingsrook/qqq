@@ -1214,15 +1214,15 @@ public class JoinsContext
 
       if(isStart)
       {
-         System.out.println("\n" + StringUtils.safeTruncate("--- Start [main table: " + this.mainTableName + "] " + "-" .repeat(full), full));
+         System.out.println("\n" + StringUtils.safeTruncate("--- Start [main table: " + this.mainTableName + "] " + "-".repeat(full), full));
       }
 
       StringBuilder rs           = new StringBuilder();
       String        formatString = "| %-" + md + "s | %-" + md + "s %-" + md + "s | %-" + lg + "s | %-" + sm + "s |\n";
       rs.append(String.format(formatString, "Base Table", "Join Table", "(Alias)", "Join Meta Data", "Type"));
-      String dashesLg = "-" .repeat(lg);
-      String dashesMd = "-" .repeat(md);
-      String dashesSm = "-" .repeat(sm);
+      String dashesLg = "-".repeat(lg);
+      String dashesMd = "-".repeat(md);
+      String dashesSm = "-".repeat(sm);
       rs.append(String.format(formatString, dashesMd, dashesMd, dashesMd, dashesLg, dashesSm));
       if(CollectionUtils.nullSafeHasContents(queryJoins))
       {
@@ -1248,11 +1248,11 @@ public class JoinsContext
 
       if(isEnd)
       {
-         System.out.println(StringUtils.safeTruncate("--- End " + "-" .repeat(full), full) + "\n");
+         System.out.println(StringUtils.safeTruncate("--- End " + "-".repeat(full), full) + "\n");
       }
       else
       {
-         System.out.println(StringUtils.safeTruncate("-" .repeat(full), full));
+         System.out.println(StringUtils.safeTruncate("-".repeat(full), full));
       }
    }
 }
