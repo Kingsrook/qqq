@@ -72,33 +72,33 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public abstract class AbstractTableSyncTransformStep extends AbstractTransformStep
 {
-   private static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
+   protected static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
 
-   private ProcessSummaryLine okToInsert = StandardProcessSummaryLineProducer.getOkToInsertLine();
-   private ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
+   protected ProcessSummaryLine okToInsert = StandardProcessSummaryLineProducer.getOkToInsertLine();
+   protected ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
 
-   private ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
+   protected ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because this process is not configured to insert records.")
       .withSingularFutureMessage("will not be inserted ")
       .withPluralFutureMessage("will not be inserted ")
       .withSingularPastMessage("was not inserted ")
       .withPluralPastMessage("were not inserted ");
 
-   private ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
+   protected ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because this process is not configured to update records.")
       .withSingularFutureMessage("will not be updated ")
       .withPluralFutureMessage("will not be updated ")
       .withSingularPastMessage("was not updated ")
       .withPluralPastMessage("were not updated ");
 
-   private ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
+   protected ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("missing a value for the key field.")
       .withSingularFutureMessage("will not be synced, because it is ")
       .withPluralFutureMessage("will not be synced, because they are ")
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
 
-   private ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
+   protected ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("of an unexpected error: ")
       .withSingularFutureMessage("will not be synced, ")
       .withPluralFutureMessage("will not be synced, ")
@@ -109,7 +109,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    protected RunBackendStepOutput runBackendStepOutput = null;
    protected RecordLookupHelper   recordLookupHelper   = null;
 
-   private QPossibleValueTranslator possibleValueTranslator;
+   protected QPossibleValueTranslator possibleValueTranslator;
 
 
 
@@ -372,6 +372,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          }
       }
    }
+
 
 
    /*******************************************************************************
