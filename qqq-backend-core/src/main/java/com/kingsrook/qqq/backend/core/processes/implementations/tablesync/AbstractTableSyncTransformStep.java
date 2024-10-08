@@ -262,7 +262,6 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          config.setPerformUpdates(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY)));
       }
-
       String sourceTableKeyField             = config.sourceTableKeyField;
       String destinationTableForeignKeyField = config.destinationTableForeignKey;
       String destinationTableName            = config.destinationTable;
@@ -413,7 +412,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          }
       }
 
-      if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY) != null)
+      if(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY)))
       {
          logResults(runBackendStepInput, config);
       }
