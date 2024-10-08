@@ -79,6 +79,7 @@ public class RunProcessAction
 {
    private static final QLogger LOG = QLogger.getLogger(RunProcessAction.class);
 
+   public static final String BASEPULL_KEY_VALUE        = "basepullKeyValue";
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
@@ -517,9 +518,13 @@ public class RunProcessAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String determineBasepullKeyValue(QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
+   protected String determineBasepullKeyValue(QProcessMetaData process, RunProcessInput runProcessInput, BasepullConfiguration basepullConfiguration) throws QException
    {
       String basepullKeyValue = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+      if(runProcessInput.getValueString(BASEPULL_KEY_VALUE) != null)
+      {
+         basepullKeyValue = runProcessInput.getValueString(BASEPULL_KEY_VALUE);
+      }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if process specifies that it uses variants, look for that data in the session and append to our basepull key //
@@ -551,7 +556,7 @@ public class RunProcessAction
       String basepullTableName            = basepullConfiguration.getTableName();
       String basepullKeyFieldName         = basepullConfiguration.getKeyField();
       String basepullLastRunTimeFieldName = basepullConfiguration.getLastRunTimeFieldName();
-      String basepullKeyValue             = determineBasepullKeyValue(process, basepullConfiguration);
+      String basepullKeyValue             = determineBasepullKeyValue(process, runProcessInput, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //
@@ -631,7 +636,7 @@ public class RunProcessAction
       String  basepullKeyFieldName                 = basepullConfiguration.getKeyField();
       String  basepullLastRunTimeFieldName         = basepullConfiguration.getLastRunTimeFieldName();
       Integer basepullHoursBackForInitialTimestamp = basepullConfiguration.getHoursBackForInitialTimestamp();
-      String  basepullKeyValue                     = determineBasepullKeyValue(process, basepullConfiguration);
+      String  basepullKeyValue                     = determineBasepullKeyValue(process, runProcessInput, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //

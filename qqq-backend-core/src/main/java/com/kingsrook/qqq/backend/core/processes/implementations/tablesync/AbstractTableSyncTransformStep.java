@@ -111,6 +111,9 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
    protected QPossibleValueTranslator possibleValueTranslator;
 
+   protected static final String SYNC_TABLE_PERFORM_INSERTS_KEY = "syncTablePerformInsertsKey";
+   protected static final String SYNC_TABLE_PERFORM_UPDATES_KEY = "syncTablePerformUpdatesKey";
+
 
 
    /*******************************************************************************
@@ -194,6 +197,26 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
 
       /*******************************************************************************
+       **
+       *******************************************************************************/
+      void setPerformInserts(boolean performInserts)
+      {
+         this.setPerformInserts(performInserts);
+      }
+
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      void setPerformUpdates(boolean performUpdates)
+      {
+         this.setPerformUpdates(performUpdates);
+      }
+
+
+
+      /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
        *******************************************************************************/
@@ -221,6 +244,18 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       this.runBackendStepOutput = runBackendStepOutput;
 
       SyncProcessConfig config = getSyncProcessConfig();
+
+      ////////////////////////////////////////////////////////////
+      // see if these fields have been updated via input fields //
+      ////////////////////////////////////////////////////////////
+      if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY) != null)
+      {
+         config.setPerformInserts(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY)));
+      }
+      if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY) != null)
+      {
+         config.setPerformUpdates(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY)));
+      }
 
       String sourceTableKeyField             = config.sourceTableKeyField;
       String destinationTableForeignKeyField = config.destinationTableForeignKey;
