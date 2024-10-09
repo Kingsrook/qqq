@@ -202,26 +202,6 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
 
       /*******************************************************************************
-       **
-       *******************************************************************************/
-      void setPerformInserts(boolean performInserts)
-      {
-         this.setPerformInserts(performInserts);
-      }
-
-
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      void setPerformUpdates(boolean performUpdates)
-      {
-         this.setPerformUpdates(performUpdates);
-      }
-
-
-
-      /*******************************************************************************
        ** artificial method, here to make jacoco see that this class is indeed
        ** included in test coverage...
        *******************************************************************************/
@@ -256,11 +236,11 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       ////////////////////////////////////////////////////////////
       if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY) != null)
       {
-         config.setPerformInserts(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY)));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, true, config.performUpdates);
       }
       if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY) != null)
       {
-         config.setPerformUpdates(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY)));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, config.performUpdates, true);
       }
       String sourceTableKeyField             = config.sourceTableKeyField;
       String destinationTableForeignKeyField = config.destinationTableForeignKey;
@@ -412,7 +392,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
          }
       }
 
-      if(Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY)))
+      if(Boolean.parseBoolean(runBackendStepInput.getValueString(LOG_TRANSFORM_RESULTS)))
       {
          logResults(runBackendStepInput, config);
       }
