@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -411,7 +412,13 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       {
          timezone = QContext.getQInstance().getDefaultTimeZoneId();
       }
-      ZonedDateTime dateTime = runBackendStepInput.getBasepullLastRunTime().atZone(ZoneId.of(timezone));
+      Instant lastRunTime = Instant.now();
+      if(runBackendStepInput.getBasepullLastRunTime() != null)
+      {
+         lastRunTime = runBackendStepInput.getBasepullLastRunTime();
+      }
+
+      ZonedDateTime dateTime = lastRunTime.atZone(ZoneId.of(timezone));
 
       if(syncProcessConfig.performInserts)
       {
