@@ -212,7 +212,7 @@ public class RDBMSCountActionTest extends RDBMSActionTest
       CountInput countInput = new CountInput();
       countInput.setTableName(TestUtils.TABLE_NAME_WAREHOUSE);
 
-      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(1);
+      assertThat(new CountAction().execute(countInput).getCount()).isEqualTo(4);
    }
 
 }
