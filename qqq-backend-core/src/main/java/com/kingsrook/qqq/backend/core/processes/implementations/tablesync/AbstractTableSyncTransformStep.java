@@ -237,11 +237,13 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       ////////////////////////////////////////////////////////////
       if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY) != null)
       {
-         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, true, config.performUpdates);
+         boolean performInserts = Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, performInserts, config.performUpdates);
       }
       if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY) != null)
       {
-         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, config.performUpdates, true);
+         boolean performUpdates = Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, config.performUpdates, performUpdates);
       }
       String sourceTableKeyField             = config.sourceTableKeyField;
       String destinationTableForeignKeyField = config.destinationTableForeignKey;
