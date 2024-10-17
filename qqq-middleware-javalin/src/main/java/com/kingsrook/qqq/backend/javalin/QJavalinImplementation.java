@@ -106,7 +106,6 @@ import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSo
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -123,6 +122,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -178,7 +178,8 @@ public class QJavalinImplementation
 
    private static int DEFAULT_PORT = 8001;
 
-   private static Javalin service;
+   private static Javalin             service;
+   private static List<EndpointGroup> endpointGroups;
 
    private static long startTime = 0;
 
@@ -241,8 +242,18 @@ public class QJavalinImplementation
    {
       // todo port from arg
       // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
-      service = Javalin.create().start(port);
-      service.routes(getRoutes());
+
+      service = Javalin.create(config ->
+         {
+            config.router.apiBuilder(getRoutes());
+
+            for(EndpointGroup endpointGroup : CollectionUtils.nonNullList(endpointGroups))
+            {
+               config.router.apiBuilder(endpointGroup);
+            }
+         }
+      ).start(port);
+
       service.before(QJavalinImplementation::hotSwapQInstance);
       service.before((Context context) -> context.header("Content-Type", "application/json"));
       service.after(QJavalinImplementation::clearQContext);
@@ -292,7 +303,7 @@ public class QJavalinImplementation
             ////////////////////////////////////////////////////////////////////////////////
             // clear the cache of classes in this class, so that new classes can be found //
             ////////////////////////////////////////////////////////////////////////////////
-            MetaDataProducerHelper.clearTopLevelClassCache();
+            ClassPathUtils.clearTopLevelClassCache();
 
             /////////////////////////////////////////////////
             // try to get a new instance from the supplier //
@@ -1014,8 +1025,7 @@ public class QJavalinImplementation
          QRecord record = getOutput.getRecord();
          if(record == null)
          {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
          QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
@@ -1078,8 +1088,7 @@ public class QJavalinImplementation
          ///////////////////////////////////////////////////////
          if(getOutput.getRecord() == null)
          {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
          String                   mimeType              = null;
@@ -1789,7 +1798,7 @@ public class QJavalinImplementation
             if(CollectionUtils.nullSafeHasContents(valuesParamList))
             {
                String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, new TypeReference<>(){});
+               values = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
             }
          }
 
@@ -1919,7 +1928,7 @@ public class QJavalinImplementation
     ** Getter for javalinMetaData
     **
     *******************************************************************************/
-   public QJavalinMetaData getJavalinMetaData()
+   public static QJavalinMetaData getJavalinMetaData()
    {
       return javalinMetaData;
    }
@@ -1948,11 +1957,21 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    ** Getter for qInstanceHotSwapSupplier
+    ** Getter for qInstance
     *******************************************************************************/
    public static QInstance getQInstance()
    {
       return (QJavalinImplementation.qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qInstance
+    *******************************************************************************/
+   public static void setQInstance(QInstance qInstance)
+   {
+      QJavalinImplementation.qInstance = qInstance;
    }
 
 
@@ -1983,5 +2002,19 @@ public class QJavalinImplementation
    public static long getStartTimeMillis()
    {
       return (startTime);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void addJavalinRoutes(EndpointGroup routes)
+   {
+      if(endpointGroups == null)
+      {
+         endpointGroups = new ArrayList<>();
+      }
+      endpointGroups.add(routes);
    }
 }
