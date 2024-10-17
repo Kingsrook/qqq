@@ -177,7 +177,7 @@ public class QAuthenticationMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QAuthenticationMetaData withVales(Map<String, String> values)
+   public QAuthenticationMetaData withValues(Map<String, String> values)
    {
       this.values = values;
       return (this);
