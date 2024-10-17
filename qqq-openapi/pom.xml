@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ QQQ - Low-code Application Framework for Engineers.
-  ~ Copyright (C) 2021-2023.  Kingsrook, LLC
+  ~ Copyright (C) 2021-2022.  Kingsrook, LLC
   ~ 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
   ~ contact@kingsrook.com
   ~ https://github.com/Kingsrook/
@@ -23,7 +23,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
 
-   <artifactId>qqq-middleware-api</artifactId>
+   <artifactId>qqq-openapi</artifactId>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
@@ -34,6 +34,7 @@
    <properties>
       <!-- props specifically to this module -->
       <!-- none at this time -->
+
    </properties>
 
    <dependencies>
@@ -42,29 +43,6 @@
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
          <version>${revision}</version>
-      </dependency>
-      <dependency>
-         <groupId>com.kingsrook.qqq</groupId>
-         <artifactId>qqq-middleware-javalin</artifactId>
-         <version>${revision}</version>
-      </dependency>
-      <dependency>
-         <groupId>com.kingsrook.qqq</groupId>
-         <artifactId>qqq-openapi</artifactId>
-         <version>${revision}</version>
-      </dependency>
-
-      <!-- 3rd party deps specifically for this module -->
-      <dependency>
-         <groupId>com.konghq</groupId>
-         <artifactId>unirest-java</artifactId>
-         <version>3.13.12</version>
-         <scope>test</scope>
-      </dependency>
-      <dependency>
-         <groupId>org.slf4j</groupId>
-         <artifactId>slf4j-simple</artifactId>
-         <version>1.7.36</version>
       </dependency>
 
       <!-- Common deps for all qqq modules -->
@@ -94,15 +72,9 @@
 
    <build>
       <plugins>
-         <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <configuration>
-               <excludes>
-                  <exclude>com/kingsrook/qqq/api/model/**/*.class</exclude>
-               </excludes>
-            </configuration>
-         </plugin>
+         <!-- plugins specifically for this module -->
+         <!-- none at this time -->
+
       </plugins>
    </build>
 

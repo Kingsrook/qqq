@@ -19,56 +19,59 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
+package com.kingsrook.qqq.openapi.model;
 
 
-import java.io.Serializable;
 import java.util.Map;
-import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.openapi.model.Response;
-import org.eclipse.jetty.http.HttpStatus;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiProcessOutputInterface
+public class OAuth2 extends SecurityScheme
 {
+   private Map<String, OAuth2Flow> flows;
+
+
 
    /*******************************************************************************
+    ** Constructor
     **
     *******************************************************************************/
-   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
+   public OAuth2()
    {
-      return (HttpStatus.Code.NO_CONTENT);
+      setType(SecuritySchemeType.OAUTH2);
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Getter for flows
     *******************************************************************************/
-   default Map<Integer, Response> getSpecResponses(String apiName)
+   public Map<String, OAuth2Flow> getFlows()
    {
-      return (MapBuilder.of(
-         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
-            .withDescription("Process has been successfully executed.")
-      ));
+      return (this.flows);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
-   {
 
+
+   /*******************************************************************************
+    ** Setter for flows
+    *******************************************************************************/
+   public void setFlows(Map<String, OAuth2Flow> flows)
+   {
+      this.flows = flows;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for flows
+    *******************************************************************************/
+   public OAuth2 withFlows(Map<String, OAuth2Flow> flows)
+   {
+      this.flows = flows;
+      return (this);
    }
 
 }

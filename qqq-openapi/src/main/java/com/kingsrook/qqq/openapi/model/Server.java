@@ -19,56 +19,77 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
-
-
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.openapi.model.Response;
-import org.eclipse.jetty.http.HttpStatus;
+package com.kingsrook.qqq.openapi.model;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiProcessOutputInterface
+public class Server
 {
+   private String description;
+   private String url;
+
+
 
    /*******************************************************************************
-    **
+    ** Getter for description
     *******************************************************************************/
-   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
+   public String getDescription()
    {
-      return (HttpStatus.Code.NO_CONTENT);
+      return (this.description);
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Setter for description
     *******************************************************************************/
-   default Map<Integer, Response> getSpecResponses(String apiName)
+   public void setDescription(String description)
    {
-      return (MapBuilder.of(
-         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
-            .withDescription("Process has been successfully executed.")
-      ));
+      this.description = description;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
-   {
 
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public Server withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for url
+    *******************************************************************************/
+   public String getUrl()
+   {
+      return (this.url);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for url
+    *******************************************************************************/
+   public void setUrl(String url)
+   {
+      this.url = url;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for url
+    *******************************************************************************/
+   public Server withUrl(String url)
+   {
+      this.url = url;
+      return (this);
    }
 
 }

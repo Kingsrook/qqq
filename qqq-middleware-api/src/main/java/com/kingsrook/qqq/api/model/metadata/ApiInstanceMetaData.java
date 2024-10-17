@@ -32,13 +32,13 @@ import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
-import com.kingsrook.qqq.api.model.openapi.SecurityScheme;
-import com.kingsrook.qqq.api.model.openapi.Server;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.openapi.model.SecurityScheme;
+import com.kingsrook.qqq.openapi.model.Server;
 import org.apache.commons.lang.BooleanUtils;
 
 

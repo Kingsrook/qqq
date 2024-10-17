@@ -19,112 +19,113 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
+package com.kingsrook.qqq.openapi.model;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.openapi.model.OpenAPI;
+import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonGetter;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GenerateOpenApiSpecOutput extends AbstractActionOutput
+public class Response
 {
-   private OpenAPI openAPI;
-   private String  yaml;
-   private String  json;
+   private String               description;
+   private Map<String, Content> content;
+   private String               ref;
 
 
 
    /*******************************************************************************
-    ** Getter for openAPI
+    ** Getter for description
     *******************************************************************************/
-   public OpenAPI getOpenAPI()
+   public String getDescription()
    {
-      return (this.openAPI);
+      return (this.description);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for openAPI
+    ** Setter for description
     *******************************************************************************/
-   public void setOpenAPI(OpenAPI openAPI)
+   public void setDescription(String description)
    {
-      this.openAPI = openAPI;
+      this.description = description;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for openAPI
+    ** Fluent setter for description
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withOpenAPI(OpenAPI openAPI)
+   public Response withDescription(String description)
    {
-      this.openAPI = openAPI;
+      this.description = description;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for yaml
+    ** Getter for ref
     *******************************************************************************/
-   public String getYaml()
+   @JsonGetter("$ref")
+   public String getRef()
    {
-      return (this.yaml);
+      return (this.ref);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for yaml
+    ** Setter for ref
     *******************************************************************************/
-   public void setYaml(String yaml)
+   public void setRef(String ref)
    {
-      this.yaml = yaml;
+      this.ref = ref;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for yaml
+    ** Fluent setter for ref
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withYaml(String yaml)
+   public Response withRef(String ref)
    {
-      this.yaml = yaml;
+      this.ref = ref;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for json
+    ** Getter for content
     *******************************************************************************/
-   public String getJson()
+   public Map<String, Content> getContent()
    {
-      return (this.json);
+      return (this.content);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for json
+    ** Setter for content
     *******************************************************************************/
-   public void setJson(String json)
+   public void setContent(Map<String, Content> content)
    {
-      this.json = json;
+      this.content = content;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for json
+    ** Fluent setter for content
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withJson(String json)
+   public Response withContent(Map<String, Content> content)
    {
-      this.json = json;
+      this.content = content;
       return (this);
    }
 

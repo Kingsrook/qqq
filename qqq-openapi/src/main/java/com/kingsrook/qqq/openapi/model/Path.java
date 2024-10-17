@@ -19,112 +19,172 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
-
-
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.openapi.model.OpenAPI;
+package com.kingsrook.qqq.openapi.model;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GenerateOpenApiSpecOutput extends AbstractActionOutput
+public class Path
 {
-   private OpenAPI openAPI;
-   private String  yaml;
-   private String  json;
+   private Method get;
+   private Method patch;
+   private Method put;
+   private Method delete;
+   private Method post;
 
 
 
    /*******************************************************************************
-    ** Getter for openAPI
+    ** Getter for get
     *******************************************************************************/
-   public OpenAPI getOpenAPI()
+   public Method getGet()
    {
-      return (this.openAPI);
+      return (this.get);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for openAPI
+    ** Setter for get
     *******************************************************************************/
-   public void setOpenAPI(OpenAPI openAPI)
+   public void setGet(Method get)
    {
-      this.openAPI = openAPI;
+      this.get = get;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for openAPI
+    ** Fluent setter for get
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withOpenAPI(OpenAPI openAPI)
+   public Path withGet(Method get)
    {
-      this.openAPI = openAPI;
+      this.get = get;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for yaml
+    ** Getter for post
     *******************************************************************************/
-   public String getYaml()
+   public Method getPost()
    {
-      return (this.yaml);
+      return (this.post);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for yaml
+    ** Setter for post
     *******************************************************************************/
-   public void setYaml(String yaml)
+   public void setPost(Method post)
    {
-      this.yaml = yaml;
+      this.post = post;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for yaml
+    ** Fluent setter for post
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withYaml(String yaml)
+   public Path withPost(Method post)
    {
-      this.yaml = yaml;
+      this.post = post;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for json
+    ** Getter for put
     *******************************************************************************/
-   public String getJson()
+   public Method getPut()
    {
-      return (this.json);
+      return (this.put);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for json
+    ** Setter for put
     *******************************************************************************/
-   public void setJson(String json)
+   public void setPut(Method put)
    {
-      this.json = json;
+      this.put = put;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for json
+    ** Fluent setter for put
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withJson(String json)
+   public Path withPut(Method put)
    {
-      this.json = json;
+      this.put = put;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for patch
+    *******************************************************************************/
+   public Method getPatch()
+   {
+      return (this.patch);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for patch
+    *******************************************************************************/
+   public void setPatch(Method patch)
+   {
+      this.patch = patch;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for patch
+    *******************************************************************************/
+   public Path withPatch(Method patch)
+   {
+      this.patch = patch;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for delete
+    *******************************************************************************/
+   public Method getDelete()
+   {
+      return (this.delete);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for delete
+    *******************************************************************************/
+   public void setDelete(Method delete)
+   {
+      this.delete = delete;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for delete
+    *******************************************************************************/
+   public Path withDelete(Method delete)
+   {
+      this.delete = delete;
       return (this);
    }
 

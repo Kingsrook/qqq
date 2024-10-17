@@ -19,112 +19,143 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
+package com.kingsrook.qqq.openapi.model;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.openapi.model.OpenAPI;
+import java.util.Map;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GenerateOpenApiSpecOutput extends AbstractActionOutput
+public class Components
 {
-   private OpenAPI openAPI;
-   private String  yaml;
-   private String  json;
+   private Map<String, Example>        examples;
+   private Map<String, Schema>         schemas;
+   private Map<String, Response>       responses;
+   private Map<String, SecurityScheme> securitySchemes;
 
 
 
    /*******************************************************************************
-    ** Getter for openAPI
+    ** Getter for examples
     *******************************************************************************/
-   public OpenAPI getOpenAPI()
+   public Map<String, Example> getExamples()
    {
-      return (this.openAPI);
+      return (this.examples);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for openAPI
+    ** Setter for examples
     *******************************************************************************/
-   public void setOpenAPI(OpenAPI openAPI)
+   public void setExamples(Map<String, Example> examples)
    {
-      this.openAPI = openAPI;
+      this.examples = examples;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for openAPI
+    ** Fluent setter for examples
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withOpenAPI(OpenAPI openAPI)
+   public Components withExamples(Map<String, Example> examples)
    {
-      this.openAPI = openAPI;
+      this.examples = examples;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for yaml
+    ** Getter for schemas
     *******************************************************************************/
-   public String getYaml()
+   public Map<String, Schema> getSchemas()
    {
-      return (this.yaml);
+      return (this.schemas);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for yaml
+    ** Setter for schemas
     *******************************************************************************/
-   public void setYaml(String yaml)
+   public void setSchemas(Map<String, Schema> schemas)
    {
-      this.yaml = yaml;
+      this.schemas = schemas;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for yaml
+    ** Fluent setter for schemas
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withYaml(String yaml)
+   public Components withSchemas(Map<String, Schema> schemas)
    {
-      this.yaml = yaml;
+      this.schemas = schemas;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for json
+    ** Getter for responses
     *******************************************************************************/
-   public String getJson()
+   public Map<String, Response> getResponses()
    {
-      return (this.json);
+      return (this.responses);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for json
+    ** Setter for responses
     *******************************************************************************/
-   public void setJson(String json)
+   public void setResponses(Map<String, Response> responses)
    {
-      this.json = json;
+      this.responses = responses;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for json
+    ** Fluent setter for responses
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withJson(String json)
+   public Components withResponses(Map<String, Response> responses)
    {
-      this.json = json;
+      this.responses = responses;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for securitySchemes
+    *******************************************************************************/
+   public Map<String, SecurityScheme> getSecuritySchemes()
+   {
+      return (this.securitySchemes);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for securitySchemes
+    *******************************************************************************/
+   public void setSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
+   {
+      this.securitySchemes = securitySchemes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for securitySchemes
+    *******************************************************************************/
+   public Components withSecuritySchemes(Map<String, SecurityScheme> securitySchemes)
+   {
+      this.securitySchemes = securitySchemes;
       return (this);
    }
 

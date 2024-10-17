@@ -19,56 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
-
-
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.openapi.model.Response;
-import org.eclipse.jetty.http.HttpStatus;
+package com.kingsrook.qqq.openapi.model;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiProcessOutputInterface
+public class Contact
 {
+   private String email;
+
+
 
    /*******************************************************************************
-    **
+    ** Getter for email
     *******************************************************************************/
-   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
+   public String getEmail()
    {
-      return (HttpStatus.Code.NO_CONTENT);
+      return (this.email);
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Setter for email
     *******************************************************************************/
-   default Map<Integer, Response> getSpecResponses(String apiName)
+   public void setEmail(String email)
    {
-      return (MapBuilder.of(
-         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
-            .withDescription("Process has been successfully executed.")
-      ));
+      this.email = email;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
-   {
 
+
+   /*******************************************************************************
+    ** Fluent setter for email
+    *******************************************************************************/
+   public Contact withEmail(String email)
+   {
+      this.email = email;
+      return (this);
    }
 
 }

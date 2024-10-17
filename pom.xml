@@ -36,6 +36,7 @@
       <module>qqq-backend-module-rdbms</module>
       <module>qqq-backend-module-mongodb</module>
       <module>qqq-language-support-javascript</module>
+      <module>qqq-openapi</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
       <module>qqq-middleware-lambda</module>

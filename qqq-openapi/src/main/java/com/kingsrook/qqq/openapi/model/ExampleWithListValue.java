@@ -19,56 +19,60 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
+package com.kingsrook.qqq.openapi.model;
 
 
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.openapi.model.Response;
-import org.eclipse.jetty.http.HttpStatus;
+import java.util.List;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiProcessOutputInterface
+public class ExampleWithListValue extends Example
 {
+   private List<String> value;
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
+   @Override
+   public ExampleWithListValue withSummary(String summary)
    {
-      return (HttpStatus.Code.NO_CONTENT);
+      super.withSummary(summary);
+      return (this);
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Getter for value
     *******************************************************************************/
-   default Map<Integer, Response> getSpecResponses(String apiName)
+   public List<String> getValue()
    {
-      return (MapBuilder.of(
-         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
-            .withDescription("Process has been successfully executed.")
-      ));
+      return (this.value);
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
-   {
 
+
+   /*******************************************************************************
+    ** Setter for value
+    *******************************************************************************/
+   public void setValue(List<String> value)
+   {
+      this.value = value;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for value
+    *******************************************************************************/
+   public ExampleWithListValue withValue(List<String> value)
+   {
+      this.value = value;
+      return (this);
    }
 
 }

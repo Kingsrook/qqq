@@ -19,207 +19,90 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.fields;
+package com.kingsrook.qqq.openapi.model;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.openapi.model.Example;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiFieldMetaData
+public class Method
 {
-   private String initialVersion;
-   private String finalVersion;
+   private String                 method;
+   private String                 summary;
+   private String                 description;
+   private String                 operationId;
+   private List<String>           tags;
+   private RequestBody            requestBody;
+   private List<Parameter>        parameters;
+   private Map<Integer, Response> responses;
 
-   private String apiFieldName;
-   private String description;
-   private boolean listEnumPossibleValues = true;
-
-   private Boolean        isExcluded;
-   private String         replacedByFieldName;
-   private QCodeReference customValueMapper;
-
-   private Example              example;
-   private Map<String, Example> examples;
+   private List<Map<String, List<String>>> security;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for method
     *******************************************************************************/
-   public static String getEffectiveApiFieldName(String apiName, QFieldMetaData field)
+   public String getMethod()
    {
-      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.of(field);
-      if(apiFieldMetaDataContainer != null)
-      {
-         ApiFieldMetaData apiFieldMetaData = apiFieldMetaDataContainer.getApiFieldMetaData(apiName);
-         if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.apiFieldName))
-         {
-            return (apiFieldMetaData.apiFieldName);
-         }
-      }
-
-      return (field.getName());
+      return (this.method);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for initialVersion
+    ** Setter for method
     *******************************************************************************/
-   public String getInitialVersion()
+   public void setMethod(String method)
    {
-      return (this.initialVersion);
+      this.method = method;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for initialVersion
+    ** Fluent setter for method
     *******************************************************************************/
-   public void setInitialVersion(String initialVersion)
+   public Method withMethod(String method)
    {
-      this.initialVersion = initialVersion;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for initialVersion
-    *******************************************************************************/
-   public ApiFieldMetaData withInitialVersion(String initialVersion)
-   {
-      this.initialVersion = initialVersion;
+      this.method = method;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for finalVersion
+    ** Getter for summary
     *******************************************************************************/
-   public String getFinalVersion()
+   public String getSummary()
    {
-      return (this.finalVersion);
+      return (this.summary);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for finalVersion
+    ** Setter for summary
     *******************************************************************************/
-   public void setFinalVersion(String finalVersion)
+   public void setSummary(String summary)
    {
-      this.finalVersion = finalVersion;
+      this.summary = summary;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for finalVersion
+    ** Fluent setter for summary
     *******************************************************************************/
-   public ApiFieldMetaData withFinalVersion(String finalVersion)
+   public Method withSummary(String summary)
    {
-      this.finalVersion = finalVersion;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for replacedByFieldName
-    *******************************************************************************/
-   public String getReplacedByFieldName()
-   {
-      return (this.replacedByFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for replacedByFieldName
-    *******************************************************************************/
-   public void setReplacedByFieldName(String replacedByFieldName)
-   {
-      this.replacedByFieldName = replacedByFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for replacedByFieldName
-    *******************************************************************************/
-   public ApiFieldMetaData withReplacedByFieldName(String replacedByFieldName)
-   {
-      this.replacedByFieldName = replacedByFieldName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isExcluded
-    *******************************************************************************/
-   public Boolean getIsExcluded()
-   {
-      return (this.isExcluded);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isExcluded
-    *******************************************************************************/
-   public void setIsExcluded(Boolean isExcluded)
-   {
-      this.isExcluded = isExcluded;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for isExcluded
-    *******************************************************************************/
-   public ApiFieldMetaData withIsExcluded(Boolean isExcluded)
-   {
-      this.isExcluded = isExcluded;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apiFieldName
-    *******************************************************************************/
-   public String getApiFieldName()
-   {
-      return (this.apiFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for apiFieldName
-    *******************************************************************************/
-   public void setApiFieldName(String apiFieldName)
-   {
-      this.apiFieldName = apiFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for apiFieldName
-    *******************************************************************************/
-   public ApiFieldMetaData withApiFieldName(String apiFieldName)
-   {
-      this.apiFieldName = apiFieldName;
+      this.summary = summary;
       return (this);
    }
 
@@ -248,7 +131,7 @@ public class ApiFieldMetaData
    /*******************************************************************************
     ** Fluent setter for description
     *******************************************************************************/
-   public ApiFieldMetaData withDescription(String description)
+   public Method withDescription(String description)
    {
       this.description = description;
       return (this);
@@ -257,124 +140,216 @@ public class ApiFieldMetaData
 
 
    /*******************************************************************************
-    ** Getter for example
+    ** Getter for operationId
     *******************************************************************************/
-   public Example getExample()
+   public String getOperationId()
    {
-      return (this.example);
+      return (this.operationId);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for example
+    ** Setter for operationId
     *******************************************************************************/
-   public void setExample(Example example)
+   public void setOperationId(String operationId)
    {
-      this.example = example;
+      this.operationId = operationId;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for example
+    ** Fluent setter for operationId
     *******************************************************************************/
-   public ApiFieldMetaData withExample(Example example)
+   public Method withOperationId(String operationId)
    {
-      this.example = example;
+      this.operationId = operationId;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for examples
+    ** Getter for tags
     *******************************************************************************/
-   public Map<String, Example> getExamples()
+   public List<String> getTags()
    {
-      return (this.examples);
+      return (this.tags);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for examples
+    ** Setter for tags
     *******************************************************************************/
-   public void setExamples(Map<String, Example> examples)
+   public void setTags(List<String> tags)
    {
-      this.examples = examples;
+      this.tags = tags;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for examples
+    ** Fluent setter for tags
     *******************************************************************************/
-   public ApiFieldMetaData withExamples(Map<String, Example> examples)
+   public Method withTags(List<String> tags)
    {
-      this.examples = examples;
+      this.tags = tags;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for customValueMapper
+    ** Fluent setter for tags
     *******************************************************************************/
-   public QCodeReference getCustomValueMapper()
+   public Method withTag(String tag)
    {
-      return (this.customValueMapper);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for customValueMapper
-    *******************************************************************************/
-   public void setCustomValueMapper(QCodeReference customValueMapper)
-   {
-      this.customValueMapper = customValueMapper;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for customValueMapper
-    *******************************************************************************/
-   public ApiFieldMetaData withCustomValueMapper(QCodeReference customValueMapper)
-   {
-      this.customValueMapper = customValueMapper;
+      if(this.tags == null)
+      {
+         this.tags = new ArrayList<>();
+      }
+      this.tags.add(tag);
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for listEnumPossibleValues
+    ** Getter for requestBody
     *******************************************************************************/
-   public boolean getListEnumPossibleValues()
+   public RequestBody getRequestBody()
    {
-      return (this.listEnumPossibleValues);
+      return (this.requestBody);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for listEnumPossibleValues
+    ** Setter for requestBody
     *******************************************************************************/
-   public void setListEnumPossibleValues(boolean listEnumPossibleValues)
+   public void setRequestBody(RequestBody requestBody)
    {
-      this.listEnumPossibleValues = listEnumPossibleValues;
+      this.requestBody = requestBody;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for listEnumPossibleValues
+    ** Fluent setter for requestBody
     *******************************************************************************/
-   public ApiFieldMetaData withListEnumPossibleValues(boolean listEnumPossibleValues)
+   public Method withRequestBody(RequestBody requestBody)
    {
-      this.listEnumPossibleValues = listEnumPossibleValues;
+      this.requestBody = requestBody;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for parameters
+    *******************************************************************************/
+   public List<Parameter> getParameters()
+   {
+      return (this.parameters);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for parameters
+    *******************************************************************************/
+   public void setParameters(List<Parameter> parameters)
+   {
+      this.parameters = parameters;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for parameters
+    *******************************************************************************/
+   public Method withParameters(List<Parameter> parameters)
+   {
+      this.parameters = parameters;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for responses
+    *******************************************************************************/
+   public Map<Integer, Response> getResponses()
+   {
+      return (this.responses);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for responses
+    *******************************************************************************/
+   public void setResponses(Map<Integer, Response> responses)
+   {
+      this.responses = responses;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for responses
+    *******************************************************************************/
+   public Method withResponses(Map<Integer, Response> responses)
+   {
+      this.responses = responses;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public Method withResponse(Integer code, Response response)
+   {
+      if(this.responses == null)
+      {
+         this.responses = new LinkedHashMap<>();
+      }
+      this.responses.put(code, response);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for security
+    *******************************************************************************/
+   public List<Map<String, List<String>>> getSecurity()
+   {
+      return (this.security);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for security
+    *******************************************************************************/
+   public void setSecurity(List<Map<String, List<String>>> security)
+   {
+      this.security = security;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for security
+    *******************************************************************************/
+   public Method withSecurity(List<Map<String, List<String>>> security)
+   {
+      this.security = security;
       return (this);
    }
 

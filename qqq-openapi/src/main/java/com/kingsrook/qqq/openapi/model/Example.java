@@ -19,113 +19,113 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
+package com.kingsrook.qqq.openapi.model;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.openapi.model.OpenAPI;
+import com.fasterxml.jackson.annotation.JsonGetter;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GenerateOpenApiSpecOutput extends AbstractActionOutput
+public class Example
 {
-   private OpenAPI openAPI;
-   private String  yaml;
-   private String  json;
+   private String summary;
+   private String ref;
+   private Object value;
 
 
 
    /*******************************************************************************
-    ** Getter for openAPI
+    ** Getter for summary
     *******************************************************************************/
-   public OpenAPI getOpenAPI()
+   public String getSummary()
    {
-      return (this.openAPI);
+      return (this.summary);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for openAPI
+    ** Setter for summary
     *******************************************************************************/
-   public void setOpenAPI(OpenAPI openAPI)
+   public void setSummary(String summary)
    {
-      this.openAPI = openAPI;
+      this.summary = summary;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for openAPI
+    ** Fluent setter for summary
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withOpenAPI(OpenAPI openAPI)
+   public Example withSummary(String summary)
    {
-      this.openAPI = openAPI;
+      this.summary = summary;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for yaml
+    ** Getter for ref
     *******************************************************************************/
-   public String getYaml()
+   @JsonGetter("$ref")
+   public String getRef()
    {
-      return (this.yaml);
+      return (this.ref);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for yaml
+    ** Setter for ref
     *******************************************************************************/
-   public void setYaml(String yaml)
+   public void setRef(String ref)
    {
-      this.yaml = yaml;
+      this.ref = ref;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for yaml
+    ** Fluent setter for ref
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withYaml(String yaml)
+   public Example withRef(String ref)
    {
-      this.yaml = yaml;
+      this.ref = ref;
       return (this);
    }
 
 
-
    /*******************************************************************************
-    ** Getter for json
+    ** Getter for value
     *******************************************************************************/
-   public String getJson()
+   public Object getValue()
    {
-      return (this.json);
+      return (this.value);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for json
+    ** Setter for value
     *******************************************************************************/
-   public void setJson(String json)
+   public void setValue(Object value)
    {
-      this.json = json;
+      this.value = value;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for json
+    ** Fluent setter for value
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withJson(String json)
+   public Example withValue(Object value)
    {
-      this.json = json;
+      this.value = value;
       return (this);
    }
+
 
 }

@@ -78,9 +78,9 @@ class QJavalinApiHandlerPermissionsTest extends BaseTest
       }
 
       qJavalinImplementation = new QJavalinImplementation(qInstance);
-      qJavalinImplementation.startJavalinServer(PORT);
       EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
-      qJavalinImplementation.getJavalinService().routes(routes);
+      qJavalinImplementation.addJavalinRoutes(routes);
+      qJavalinImplementation.startJavalinServer(PORT);
    }
 
 

@@ -19,207 +19,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.fields;
+package com.kingsrook.qqq.openapi.model;
 
 
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.openapi.model.Example;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiFieldMetaData
+public class Parameter
 {
-   private String initialVersion;
-   private String finalVersion;
-
-   private String apiFieldName;
-   private String description;
-   private boolean listEnumPossibleValues = true;
-
-   private Boolean        isExcluded;
-   private String         replacedByFieldName;
-   private QCodeReference customValueMapper;
-
-   private Example              example;
+   private String               name;
+   private String               description;
+   private Boolean              required;
+   private String               in;
+   private Schema               schema;
+   private Boolean              explode;
    private Map<String, Example> examples;
+   private Object               example;
 
 
 
    /*******************************************************************************
-    **
+    ** Getter for name
     *******************************************************************************/
-   public static String getEffectiveApiFieldName(String apiName, QFieldMetaData field)
+   public String getName()
    {
-      ApiFieldMetaDataContainer apiFieldMetaDataContainer = ApiFieldMetaDataContainer.of(field);
-      if(apiFieldMetaDataContainer != null)
-      {
-         ApiFieldMetaData apiFieldMetaData = apiFieldMetaDataContainer.getApiFieldMetaData(apiName);
-         if(apiFieldMetaData != null && StringUtils.hasContent(apiFieldMetaData.apiFieldName))
-         {
-            return (apiFieldMetaData.apiFieldName);
-         }
-      }
-
-      return (field.getName());
+      return (this.name);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for initialVersion
+    ** Setter for name
     *******************************************************************************/
-   public String getInitialVersion()
+   public void setName(String name)
    {
-      return (this.initialVersion);
+      this.name = name;
    }
 
 
 
    /*******************************************************************************
-    ** Setter for initialVersion
+    ** Fluent setter for name
     *******************************************************************************/
-   public void setInitialVersion(String initialVersion)
+   public Parameter withName(String name)
    {
-      this.initialVersion = initialVersion;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for initialVersion
-    *******************************************************************************/
-   public ApiFieldMetaData withInitialVersion(String initialVersion)
-   {
-      this.initialVersion = initialVersion;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for finalVersion
-    *******************************************************************************/
-   public String getFinalVersion()
-   {
-      return (this.finalVersion);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for finalVersion
-    *******************************************************************************/
-   public void setFinalVersion(String finalVersion)
-   {
-      this.finalVersion = finalVersion;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for finalVersion
-    *******************************************************************************/
-   public ApiFieldMetaData withFinalVersion(String finalVersion)
-   {
-      this.finalVersion = finalVersion;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for replacedByFieldName
-    *******************************************************************************/
-   public String getReplacedByFieldName()
-   {
-      return (this.replacedByFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for replacedByFieldName
-    *******************************************************************************/
-   public void setReplacedByFieldName(String replacedByFieldName)
-   {
-      this.replacedByFieldName = replacedByFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for replacedByFieldName
-    *******************************************************************************/
-   public ApiFieldMetaData withReplacedByFieldName(String replacedByFieldName)
-   {
-      this.replacedByFieldName = replacedByFieldName;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for isExcluded
-    *******************************************************************************/
-   public Boolean getIsExcluded()
-   {
-      return (this.isExcluded);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for isExcluded
-    *******************************************************************************/
-   public void setIsExcluded(Boolean isExcluded)
-   {
-      this.isExcluded = isExcluded;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for isExcluded
-    *******************************************************************************/
-   public ApiFieldMetaData withIsExcluded(Boolean isExcluded)
-   {
-      this.isExcluded = isExcluded;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for apiFieldName
-    *******************************************************************************/
-   public String getApiFieldName()
-   {
-      return (this.apiFieldName);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for apiFieldName
-    *******************************************************************************/
-   public void setApiFieldName(String apiFieldName)
-   {
-      this.apiFieldName = apiFieldName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for apiFieldName
-    *******************************************************************************/
-   public ApiFieldMetaData withApiFieldName(String apiFieldName)
-   {
-      this.apiFieldName = apiFieldName;
+      this.name = name;
       return (this);
    }
 
@@ -248,7 +95,7 @@ public class ApiFieldMetaData
    /*******************************************************************************
     ** Fluent setter for description
     *******************************************************************************/
-   public ApiFieldMetaData withDescription(String description)
+   public Parameter withDescription(String description)
    {
       this.description = description;
       return (this);
@@ -257,31 +104,116 @@ public class ApiFieldMetaData
 
 
    /*******************************************************************************
-    ** Getter for example
+    ** Getter for in
     *******************************************************************************/
-   public Example getExample()
+   public String getIn()
    {
-      return (this.example);
+      return (this.in);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for example
+    ** Setter for in
     *******************************************************************************/
-   public void setExample(Example example)
+   @Deprecated(since = "Use version that takes enum")
+   public void setIn(String in)
    {
-      this.example = example;
+      this.in = In.valueOf(in.toUpperCase()).toString().toLowerCase();
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for example
+    ** Fluent setter for in
     *******************************************************************************/
-   public ApiFieldMetaData withExample(Example example)
+   @Deprecated(since = "Use version that takes enum")
+   public Parameter withIn(String in)
    {
-      this.example = example;
+      setIn(in);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for in
+    *******************************************************************************/
+   public void setIn(In in)
+   {
+      this.in = in.toString().toLowerCase();
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for in
+    *******************************************************************************/
+   public Parameter withIn(In in)
+   {
+      setIn(in);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for schema
+    *******************************************************************************/
+   public Schema getSchema()
+   {
+      return (this.schema);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for schema
+    *******************************************************************************/
+   public void setSchema(Schema schema)
+   {
+      this.schema = schema;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for schema
+    *******************************************************************************/
+   public Parameter withSchema(Schema schema)
+   {
+      this.schema = schema;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for explode
+    *******************************************************************************/
+   public Boolean getExplode()
+   {
+      return (this.explode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for explode
+    *******************************************************************************/
+   public void setExplode(Boolean explode)
+   {
+      this.explode = explode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for explode
+    *******************************************************************************/
+   public Parameter withExplode(Boolean explode)
+   {
+      this.explode = explode;
       return (this);
    }
 
@@ -310,7 +242,7 @@ public class ApiFieldMetaData
    /*******************************************************************************
     ** Fluent setter for examples
     *******************************************************************************/
-   public ApiFieldMetaData withExamples(Map<String, Example> examples)
+   public Parameter withExamples(Map<String, Example> examples)
    {
       this.examples = examples;
       return (this);
@@ -319,62 +251,82 @@ public class ApiFieldMetaData
 
 
    /*******************************************************************************
-    ** Getter for customValueMapper
+    ** Getter for required
     *******************************************************************************/
-   public QCodeReference getCustomValueMapper()
+   public Boolean getRequired()
    {
-      return (this.customValueMapper);
+      return (this.required);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for customValueMapper
+    ** Setter for required
     *******************************************************************************/
-   public void setCustomValueMapper(QCodeReference customValueMapper)
+   public void setRequired(Boolean required)
    {
-      this.customValueMapper = customValueMapper;
+      this.required = required;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for customValueMapper
+    ** Fluent setter for required
     *******************************************************************************/
-   public ApiFieldMetaData withCustomValueMapper(QCodeReference customValueMapper)
+   public Parameter withRequired(Boolean required)
    {
-      this.customValueMapper = customValueMapper;
+      this.required = required;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for listEnumPossibleValues
+    ** Getter for example
     *******************************************************************************/
-   public boolean getListEnumPossibleValues()
+   public Object getExample()
    {
-      return (this.listEnumPossibleValues);
+      return (this.example);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for listEnumPossibleValues
+    ** Setter for example
     *******************************************************************************/
-   public void setListEnumPossibleValues(boolean listEnumPossibleValues)
+   public void setExample(Example example)
    {
-      this.listEnumPossibleValues = listEnumPossibleValues;
+      this.example = example;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for listEnumPossibleValues
+    ** Fluent setter for example
     *******************************************************************************/
-   public ApiFieldMetaData withListEnumPossibleValues(boolean listEnumPossibleValues)
+   public Parameter withExample(Example example)
    {
-      this.listEnumPossibleValues = listEnumPossibleValues;
+      this.example = example;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Setter for example
+    *******************************************************************************/
+   public void setExample(String example)
+   {
+      this.example = example;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for example
+    *******************************************************************************/
+   public Parameter withExample(String example)
+   {
+      this.example = example;
       return (this);
    }
 

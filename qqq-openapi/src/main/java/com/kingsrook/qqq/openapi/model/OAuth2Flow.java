@@ -19,112 +19,111 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.actions;
+package com.kingsrook.qqq.openapi.model;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
-import com.kingsrook.qqq.openapi.model.OpenAPI;
+import java.util.Map;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class GenerateOpenApiSpecOutput extends AbstractActionOutput
+public class OAuth2Flow
 {
-   private OpenAPI openAPI;
-   private String  yaml;
-   private String  json;
+   private String              authorizationUrl;
+   private String              tokenUrl;
+   private Map<String, String> scopes;
 
 
 
    /*******************************************************************************
-    ** Getter for openAPI
+    ** Getter for authorizationUrl
     *******************************************************************************/
-   public OpenAPI getOpenAPI()
+   public String getAuthorizationUrl()
    {
-      return (this.openAPI);
+      return (this.authorizationUrl);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for openAPI
+    ** Setter for authorizationUrl
     *******************************************************************************/
-   public void setOpenAPI(OpenAPI openAPI)
+   public void setAuthorizationUrl(String authorizationUrl)
    {
-      this.openAPI = openAPI;
+      this.authorizationUrl = authorizationUrl;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for openAPI
+    ** Fluent setter for authorizationUrl
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withOpenAPI(OpenAPI openAPI)
+   public OAuth2Flow withAuthorizationUrl(String authorizationUrl)
    {
-      this.openAPI = openAPI;
+      this.authorizationUrl = authorizationUrl;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for yaml
+    ** Getter for tokenUrl
     *******************************************************************************/
-   public String getYaml()
+   public String getTokenUrl()
    {
-      return (this.yaml);
+      return (this.tokenUrl);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for yaml
+    ** Setter for tokenUrl
     *******************************************************************************/
-   public void setYaml(String yaml)
+   public void setTokenUrl(String tokenUrl)
    {
-      this.yaml = yaml;
+      this.tokenUrl = tokenUrl;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for yaml
+    ** Fluent setter for tokenUrl
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withYaml(String yaml)
+   public OAuth2Flow withTokenUrl(String tokenUrl)
    {
-      this.yaml = yaml;
+      this.tokenUrl = tokenUrl;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for json
+    ** Getter for scopes
     *******************************************************************************/
-   public String getJson()
+   public Map<String, String> getScopes()
    {
-      return (this.json);
+      return (this.scopes);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for json
+    ** Setter for scopes
     *******************************************************************************/
-   public void setJson(String json)
+   public void setScopes(Map<String, String> scopes)
    {
-      this.json = json;
+      this.scopes = scopes;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for json
+    ** Fluent setter for scopes
     *******************************************************************************/
-   public GenerateOpenApiSpecOutput withJson(String json)
+   public OAuth2Flow withScopes(Map<String, String> scopes)
    {
-      this.json = json;
+      this.scopes = scopes;
       return (this);
    }
 

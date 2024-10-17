@@ -19,56 +19,77 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.model.metadata.processes;
-
-
-import java.io.Serializable;
-import java.util.Map;
-import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
-import com.kingsrook.qqq.openapi.model.Response;
-import org.eclipse.jetty.http.HttpStatus;
+package com.kingsrook.qqq.openapi.model;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface ApiProcessOutputInterface
+public class Tag
 {
+   private String name;
+   private String description;
+
+
 
    /*******************************************************************************
-    **
+    ** Getter for name
     *******************************************************************************/
-   Serializable getOutputForProcess(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException;
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default HttpStatus.Code getSuccessStatusCode(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput)
+   public String getName()
    {
-      return (HttpStatus.Code.NO_CONTENT);
+      return (this.name);
    }
 
+
+
    /*******************************************************************************
-    **
+    ** Setter for name
     *******************************************************************************/
-   default Map<Integer, Response> getSpecResponses(String apiName)
+   public void setName(String name)
    {
-      return (MapBuilder.of(
-         HttpStatus.Code.NO_CONTENT.getCode(), new Response()
-            .withDescription("Process has been successfully executed.")
-      ));
+      this.name = name;
    }
 
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default void customizeHttpApiResponse(HttpApiResponse httpApiResponse, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws QException
-   {
 
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public Tag withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for description
+    *******************************************************************************/
+   public String getDescription()
+   {
+      return (this.description);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for description
+    *******************************************************************************/
+   public void setDescription(String description)
+   {
+      this.description = description;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public Tag withDescription(String description)
+   {
+      this.description = description;
+      return (this);
    }
 
 }
