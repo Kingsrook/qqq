@@ -22,7 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -30,14 +29,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -50,8 +47,6 @@ public class MetaDataProducerHelper
 
    private static Map<Class<?>, Integer> comparatorValuesByType = new HashMap<>();
    private static Integer                defaultComparatorValue;
-
-   private static ImmutableSet<ClassPath.ClassInfo> topLevelClasses;
 
    static
    {
@@ -87,7 +82,7 @@ public class MetaDataProducerHelper
          ////////////////////////////////////////////////////////////////////////
          // find all the meta data producer classes in (and under) the package //
          ////////////////////////////////////////////////////////////////////////
-         classesInPackage = getClassesInPackage(packageName);
+         classesInPackage = ClassPathUtils.getClassesInPackage(packageName);
       }
       catch(Exception e)
       {
@@ -174,53 +169,6 @@ public class MetaDataProducerHelper
          }
       }
 
-   }
-
-
-
-   /*******************************************************************************
-    ** from https://stackoverflow.com/questions/520328/can-you-find-all-classes-in-a-package-using-reflection
-    ** (since the original, from ChatGPT, didn't work in jars, despite GPT hallucinating that it would)
-    *******************************************************************************/
-   private static List<Class<?>> getClassesInPackage(String packageName) throws IOException
-   {
-      List<Class<?>> classes = new ArrayList<>();
-      ClassLoader    loader  = Thread.currentThread().getContextClassLoader();
-
-      for(ClassPath.ClassInfo info : getTopLevelClasses(loader))
-      {
-         if(info.getName().startsWith(packageName))
-         {
-            classes.add(info.load());
-         }
-      }
-
-      return (classes);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static ImmutableSet<ClassPath.ClassInfo> getTopLevelClasses(ClassLoader loader) throws IOException
-   {
-      if(topLevelClasses == null)
-      {
-         topLevelClasses = ClassPath.from(loader).getTopLevelClasses();
-      }
-
-      return (topLevelClasses);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void clearTopLevelClassCache()
-   {
-      topLevelClasses = null;
    }
 
 }
