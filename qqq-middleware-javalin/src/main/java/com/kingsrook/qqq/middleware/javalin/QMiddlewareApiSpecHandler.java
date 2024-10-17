@@ -159,7 +159,7 @@ public class QMiddlewareApiSpecHandler
    {
       try
       {
-         OpenAPI openAPI = new MiddlewareVersionV1().generate(basePath);
+         OpenAPI openAPI = new MiddlewareVersionV1().generateOpenAPIModel(basePath);
          context.contentType(ContentType.APPLICATION_YAML);
          context.result(YamlUtils.toYaml(openAPI));
       }
@@ -178,7 +178,7 @@ public class QMiddlewareApiSpecHandler
    {
       try
       {
-         OpenAPI openAPI = new MiddlewareVersionV1().generate(basePath);
+         OpenAPI openAPI = new MiddlewareVersionV1().generateOpenAPIModel(basePath);
          context.contentType(ContentType.APPLICATION_JSON);
          context.result(JsonUtils.toJson(openAPI));
       }
@@ -246,7 +246,7 @@ public class QMiddlewareApiSpecHandler
             throw (new QUserFacingException("Unrecognized version: " + version));
          }
 
-         OpenAPI openAPI = middlewareSpec.get().generate(basePath);
+         OpenAPI openAPI = middlewareSpec.get().generateOpenAPIModel(basePath);
          html = html.replace("{title}", openAPI.getInfo().getTitle() + " - " + version);
 
          StringBuilder otherVersionOptions = new StringBuilder();

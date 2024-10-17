@@ -103,7 +103,7 @@ public class PublishAPI implements Callable<Integer>
       // build the openapi spec - then run it through a "grouping" function, which will make several //
       // subsets of it (e.g., grouped by table mostly) - then we'll write out each such file         //
       /////////////////////////////////////////////////////////////////////////////////////////////////
-      OpenAPI openAPI = middlewareVersion.generate("qqq");
+      OpenAPI openAPI = middlewareVersion.generateOpenAPIModel("qqq");
       String yaml = YamlUtils.toYaml(openAPI, mapper ->
       {
          if(sortFileContentsForHuman)
