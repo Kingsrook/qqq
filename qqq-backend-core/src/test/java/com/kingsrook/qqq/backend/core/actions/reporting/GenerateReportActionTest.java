@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -80,6 +81,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -341,13 +343,23 @@ public class GenerateReportActionTest extends BaseTest
     *******************************************************************************/
    private String runToString(ReportFormat reportFormat, String reportName) throws Exception
    {
+      return (runToString(reportFormat, reportName, Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now())));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String runToString(ReportFormat reportFormat, String reportName, Map<String, Serializable> inputValues) throws Exception
+   {
       String name = "/tmp/report." + reportFormat.getExtension();
       try(FileOutputStream fileOutputStream = new FileOutputStream(name))
       {
          ReportInput reportInput = new ReportInput();
          reportInput.setReportName(reportName);
          reportInput.setReportDestination(new ReportDestination().withReportFormat(reportFormat).withReportOutputStream(fileOutputStream));
-         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         reportInput.setInputValues(inputValues);
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
          return (FileUtils.readFileToString(new File(name), StandardCharsets.UTF_8));
@@ -974,6 +986,57 @@ public class GenerateReportActionTest extends BaseTest
       row = iterator.next();
       assertThat(row.get("Home State Id")).isEqualTo("1");
       assertThat(row.get("Home State Name")).isEqualTo("IL");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilterMissingValue() throws Exception
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // define a report in the instance, with an input field - then we'll run it w/o supplying the value //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      QReportMetaData report = new QReportMetaData()
+         .withName(REPORT_NAME)
+         .withDataSources(List.of(
+            new QReportDataSource()
+               .withName("persons")
+               .withSourceTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+               .withQueryFilter(new QQueryFilter()
+                  .withCriteria(new QFilterCriteria("birthDate", QCriteriaOperator.GREATER_THAN, List.of("${input.startDate}"))))))
+         .withViews(List.of(
+            new QReportView()
+               .withName("table1")
+               .withLabel("Table 1")
+               .withDataSourceName("persons")
+               .withType(ReportType.TABLE)
+               .withColumns(List.of(new QReportField().withName("id")))
+         ));
+
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.addReport(report);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // the report should run, but with the filter removed, so it should find all (6) person records //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      insertPersonRecords(qInstance);
+      String json = runToString(ReportFormat.JSON, report.getName(), Collections.emptyMap());
+      JSONArray reportJsonArray = new JSONArray(json);
+      assertEquals(6, reportJsonArray.length());
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // re-run now, pretending to be a report that wasn't defined in meta-data, but instead was //
+      // ah-hoc-style, in which case, a missing input is defined as, should throw exception.     //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ReportInput reportInput = new ReportInput();
+      report.setName(null);
+      reportInput.setReportMetaData(report);
+      reportInput.setReportDestination(new ReportDestination().withReportFormat(ReportFormat.JSON).withReportOutputStream(new ByteArrayOutputStream()));
+      assertThatThrownBy(() -> new GenerateReportAction().execute(reportInput))
+         .hasMessageContaining("Missing value for criteria on field: birthDate");
    }
 
 }
