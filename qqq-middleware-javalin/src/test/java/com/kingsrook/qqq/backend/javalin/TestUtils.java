@@ -200,6 +200,9 @@ public class TestUtils
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private static void defineApps(QInstance qInstance)
    {
       QAppMetaData childApp = new QAppMetaData()
@@ -440,7 +443,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName("greet")
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -472,13 +475,13 @@ public class TestUtils
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
          .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("setup")
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -497,7 +500,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -528,7 +531,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SIMPLE_SLEEP)
          .withIsHidden(true)
-         .addStep(SleeperStep.getMetaData());
+         .withStep(SleeperStep.getMetaData());
    }
 
 
@@ -540,11 +543,11 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SLEEP_INTERACTIVE)
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName(SCREEN_0)
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)))
-         .addStep(SleeperStep.getMetaData())
-         .addStep(new QFrontendStepMetaData()
+         .withStep(SleeperStep.getMetaData())
+         .withStep(new QFrontendStepMetaData()
             .withName(SCREEN_1)
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
    }
@@ -558,7 +561,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SIMPLE_THROW)
-         .addStep(ThrowerStep.getMetaData());
+         .withStep(ThrowerStep.getMetaData());
    }
 
 

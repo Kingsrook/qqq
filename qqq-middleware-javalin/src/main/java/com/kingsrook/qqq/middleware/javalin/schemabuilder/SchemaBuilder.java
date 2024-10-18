@@ -65,12 +65,14 @@ public class SchemaBuilder
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
    public static class SchemaFromBuilder extends Schema
    {
       private Class<?> originalClass;
+
 
 
       /*******************************************************************************
@@ -93,6 +95,7 @@ public class SchemaBuilder
       {
          this.originalClass = originalClass;
       }
+
 
 
       /*******************************************************************************
@@ -187,23 +190,13 @@ public class SchemaBuilder
       }
       else
       {
-         OpenAPIOneOf           openAPIOneOfAnnotation           = element.getAnnotation(OpenAPIOneOf.class);
-         OpenAPIMapKnownEntries openAPIMapKnownEntriesAnnotation = element.getAnnotation(OpenAPIMapKnownEntries.class);
-
+         OpenAPIOneOf openAPIOneOfAnnotation = element.getAnnotation(OpenAPIOneOf.class);
          if(openAPIOneOfAnnotation != null)
          {
             String       description = "[" + element + "]";
             List<Schema> oneOfList   = processOneOfAnnotation(openAPIOneOfAnnotation, c, description);
             schema.withOneOf(oneOfList);
          }
-        // todo no, lot like this else if(openAPIMapKnownEntriesAnnotation != null)
-        // todo no, lot like this {
-        // todo no, lot like this    schema.withRef("#/components/schemas/" + openAPIMapKnownEntriesAnnotation.value().getSimpleName());
-        // todo no, lot like this    //            if(openAPIMapKnownEntriesAnnotation.additionalProperties())
-        // todo no, lot like this    //            {
-        // todo no, lot like this    //               schema.withAdditionalProperties(true);
-        // todo no, lot like this    //            }
-        // todo no, lot like this }
          else
          {
             /////////////////////////////////////////////////////////////////////////////////////////////

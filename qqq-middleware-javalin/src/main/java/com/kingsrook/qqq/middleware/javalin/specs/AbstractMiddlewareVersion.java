@@ -167,6 +167,7 @@ public abstract class AbstractMiddlewareVersion
                warnIfPathMethodAlreadyUsed(path.getDelete(), completeOperation, spec);
                path.withDelete(method);
             }
+            default -> throw new IllegalStateException("Unexpected value: " + completeOperation.getHttpMethod());
          }
 
          for(Map.Entry<String, Schema> entry : CollectionUtils.nonNullMap(spec.defineComponentSchemas()).entrySet())

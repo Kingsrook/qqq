@@ -153,6 +153,7 @@ public abstract class AbstractEndpointSpec<
          case PUT -> ApiBuilder.put(fullPath, handler);
          case PATCH -> ApiBuilder.patch(fullPath, handler);
          case DELETE -> ApiBuilder.delete(fullPath, handler);
+         default -> throw new IllegalStateException("Unexpected value: " + completeOperation.getHttpMethod());
       }
    }
 

@@ -36,6 +36,9 @@ import java.util.EnumSet;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface OpenAPIEnumSubSet
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
    Class<? extends EnumSubSet<?>> value();
 
 
