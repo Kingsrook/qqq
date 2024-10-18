@@ -57,6 +57,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a process
     **
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processGreetInit()
@@ -73,6 +74,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a process that requires rows, but we didn't tell it how to get them.
     **
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processRequiresRowsButNotSpecified()
@@ -90,6 +92,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a process and telling it rows to load via recordIds param
     **
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processRequiresRowsWithRecordIdParam()
@@ -108,6 +111,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a process and telling it rows to load via filter JSON
     **
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processRequiresRowsWithFilterJSON()
@@ -169,6 +173,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a process with field values on the query string
     **
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processGreetInitWithQueryValues()
@@ -185,6 +190,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test init'ing a process that goes async
     **
+    ** Note: ported to v1, but needs todo more - the status part too in a higher-level
     *******************************************************************************/
    @Test
    public void test_processInitGoingAsync() throws InterruptedException
@@ -221,6 +227,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test init'ing a process that does NOT goes async
     **
+    ** Note: not ported to v1, but feels redundant, so, not going to.
     *******************************************************************************/
    @Test
    public void test_processInitNotGoingAsync()

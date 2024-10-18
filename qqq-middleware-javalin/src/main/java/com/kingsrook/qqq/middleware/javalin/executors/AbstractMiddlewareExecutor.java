@@ -19,20 +19,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
+package com.kingsrook.qqq.middleware.javalin.executors;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.middleware.javalin.executors.io.AbstractMiddlewareInput;
+import com.kingsrook.qqq.middleware.javalin.executors.io.AbstractMiddlewareOutputInterface;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public abstract class AbstractMiddlewareExecutor<INPUT extends AbstractMiddlewareInput, OUTPUT extends AbstractMiddlewareOutputInterface>
 {
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public abstract void execute(INPUT input, OUTPUT output) throws QException;
+
 }

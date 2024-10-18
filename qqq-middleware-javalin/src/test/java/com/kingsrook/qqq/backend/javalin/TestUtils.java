@@ -62,6 +62,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -189,7 +193,31 @@ public class TestUtils
          throw new IllegalStateException("Error adding script tables to instance");
       }
 
+      defineApps(qInstance);
+
       return (qInstance);
+   }
+
+
+
+   private static void defineApps(QInstance qInstance)
+   {
+      QAppMetaData childApp = new QAppMetaData()
+         .withName("childApp")
+         .withLabel("Child App")
+         .withIcon(new QIcon().withName("child_friendly"))
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE));
+      qInstance.addApp(childApp);
+
+      QAppMetaData exampleApp = new QAppMetaData()
+         .withName("homeApp")
+         .withLabel("Home App")
+         .withIcon(new QIcon().withName("home"))
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withChild(childApp)
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON));
+      qInstance.addApp(exampleApp);
    }
 
 
@@ -690,7 +718,7 @@ public class TestUtils
       {
          return (new RenderWidgetOutput(new RawHTML("title",
             QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES)
-               + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
+            + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
          )));
       }
    }

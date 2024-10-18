@@ -236,13 +236,13 @@ public class QJavalinProcessHandler
 
                if(inputField.getIsRequired() && !setValue)
                {
-                  QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Missing query param value for required input field: [" + inputField.getName() + "]");
+                  QJavalinUtils.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Missing query param value for required input field: [" + inputField.getName() + "]");
                   return;
                }
             }
             catch(Exception e)
             {
-               QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Error processing query param [" + inputField.getName() + "]: " + e.getClass().getSimpleName() + " (" + e.getMessage() + ")");
+               QJavalinUtils.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Error processing query param [" + inputField.getName() + "]: " + e.getClass().getSimpleName() + " (" + e.getMessage() + ")");
                return;
             }
          }

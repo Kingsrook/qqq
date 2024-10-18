@@ -19,20 +19,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.Serializable;
+import java.util.Map;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public interface ManageSessionOutputInterface extends AbstractMiddlewareOutputInterface
 {
+   /***************************************************************************
+    ** Setter for Uuid
+    ***************************************************************************/
+   void setUuid(String uuid);
+
+
+   /*******************************************************************************
+    ** Setter for values
+    *******************************************************************************/
+   void setValues(Map<String, Serializable> values);
+
 }

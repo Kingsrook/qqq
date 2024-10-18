@@ -19,20 +19,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
+package com.kingsrook.qqq.middleware.javalin.executors;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
+import com.kingsrook.qqq.middleware.javalin.executors.io.MetaDataInput;
+import com.kingsrook.qqq.middleware.javalin.executors.io.MetaDataOutputInterface;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public class MetaDataExecutor extends AbstractMiddlewareExecutor<MetaDataInput, MetaDataOutputInterface>
 {
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void execute(MetaDataInput input, MetaDataOutputInterface output) throws QException
+   {
+      MetaDataAction metaDataAction = new MetaDataAction();
+      MetaDataOutput metaDataOutput = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
+      output.setMetaDataOutput(metaDataOutput);
+   }
+
 }

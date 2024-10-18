@@ -19,20 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
-
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public interface AbstractMiddlewareOutputInterface
 {
 }

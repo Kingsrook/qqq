@@ -19,20 +19,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
+package com.kingsrook.qqq.middleware.javalin.executors;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.middleware.javalin.executors.io.AuthenticationMetaDataInput;
+import com.kingsrook.qqq.middleware.javalin.executors.io.AuthenticationMetaDataOutputInterface;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public class AuthenticationMetaDataExecutor extends AbstractMiddlewareExecutor<AuthenticationMetaDataInput, AuthenticationMetaDataOutputInterface>
 {
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void execute(AuthenticationMetaDataInput input, AuthenticationMetaDataOutputInterface output) throws QException
+   {
+      output.setAuthenticationMetaData(QContext.getQInstance().getAuthentication());
+   }
+
 }

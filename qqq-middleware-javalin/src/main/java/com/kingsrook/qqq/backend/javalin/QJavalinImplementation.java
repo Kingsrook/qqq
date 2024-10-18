@@ -63,12 +63,10 @@ import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAc
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
-import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
-import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -1709,7 +1707,7 @@ public class QJavalinImplementation
       }
       catch(QUserFacingException e)
       {
-         handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+         QJavalinUtils.handleException(HttpStatus.Code.BAD_REQUEST, context, e);
          return null;
       }
       return reportFormat;
@@ -1849,67 +1847,7 @@ public class QJavalinImplementation
     *******************************************************************************/
    public static void handleException(Context context, Exception e)
    {
-      handleException(null, context, e);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
-   {
-      QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
-      if(userFacingException != null)
-      {
-         if(userFacingException instanceof QNotFoundException)
-         {
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-         else if(userFacingException instanceof QBadRequestException)
-         {
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.BAD_REQUEST); // 400
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-         else
-         {
-            LOG.info("User-facing exception", e);
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR); // 500
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-      }
-      else
-      {
-         if(e instanceof QAuthenticationException)
-         {
-            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
-            return;
-         }
-
-         if(e instanceof QPermissionDeniedException)
-         {
-            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage()); // 403
-            return;
-         }
-
-         ////////////////////////////////
-         // default exception handling //
-         ////////////////////////////////
-         LOG.warn("Exception in javalin request", e);
-         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")"); // 500
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
-   {
-      context.status(statusCode.getCode());
-      context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
+      QJavalinUtils.handleException(null, context, e);
    }
 
 

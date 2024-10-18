@@ -19,20 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OpenAPIHasAdditionalProperties
+public interface ProcessMetaDataOutputInterface extends AbstractMiddlewareOutputInterface
 {
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   void setProcessMetaData(QFrontendProcessMetaData processMetaData);
 }

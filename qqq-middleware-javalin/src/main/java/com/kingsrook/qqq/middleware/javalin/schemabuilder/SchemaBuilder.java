@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
@@ -64,13 +65,57 @@ public class SchemaBuilder
    }
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class SchemaFromBuilder extends Schema
+   {
+      private Class<?> originalClass;
+
+
+      /*******************************************************************************
+       ** Getter for originalClass
+       **
+       *******************************************************************************/
+      @JsonIgnore
+      public Class<?> getOriginalClass()
+      {
+         return originalClass;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for originalClass
+       **
+       *******************************************************************************/
+      public void setOriginalClass(Class<?> originalClass)
+      {
+         this.originalClass = originalClass;
+      }
+
+
+      /*******************************************************************************
+       ** Fluent setter for originalClass
+       **
+       *******************************************************************************/
+      public SchemaFromBuilder withOriginalClass(Class<?> originalClass)
+      {
+         this.originalClass = originalClass;
+         return (this);
+      }
+
+   }
+
+
 
    /***************************************************************************
     **
     ***************************************************************************/
    private Schema classToSchema(Class<?> c, AnnotatedElement element)
    {
-      Schema schema = new Schema();
+      SchemaFromBuilder schema = new SchemaFromBuilder();
+      schema.setOriginalClass(c);
 
       if(c.isEnum())
       {
@@ -121,10 +166,10 @@ public class SchemaBuilder
          if(openAPIMapKnownEntriesAnnotation != null)
          {
             schema.withRef("#/components/schemas/" + openAPIMapKnownEntriesAnnotation.value().getSimpleName());
-//            if(openAPIMapKnownEntriesAnnotation.additionalProperties())
-//            {
-//               schema.withAdditionalProperties(true);
-//            }
+            //            if(openAPIMapKnownEntriesAnnotation.additionalProperties())
+            //            {
+            //               schema.withAdditionalProperties(true);
+            //            }
          }
 
          OpenAPIMapValueType openAPIMapValueTypeAnnotation = element.getAnnotation(OpenAPIMapValueType.class);
@@ -142,13 +187,23 @@ public class SchemaBuilder
       }
       else
       {
-         OpenAPIOneOf openAPIOneOfAnnotation = element.getAnnotation(OpenAPIOneOf.class);
+         OpenAPIOneOf           openAPIOneOfAnnotation           = element.getAnnotation(OpenAPIOneOf.class);
+         OpenAPIMapKnownEntries openAPIMapKnownEntriesAnnotation = element.getAnnotation(OpenAPIMapKnownEntries.class);
+
          if(openAPIOneOfAnnotation != null)
          {
             String       description = "[" + element + "]";
             List<Schema> oneOfList   = processOneOfAnnotation(openAPIOneOfAnnotation, c, description);
             schema.withOneOf(oneOfList);
          }
+        // todo no, lot like this else if(openAPIMapKnownEntriesAnnotation != null)
+        // todo no, lot like this {
+        // todo no, lot like this    schema.withRef("#/components/schemas/" + openAPIMapKnownEntriesAnnotation.value().getSimpleName());
+        // todo no, lot like this    //            if(openAPIMapKnownEntriesAnnotation.additionalProperties())
+        // todo no, lot like this    //            {
+        // todo no, lot like this    //               schema.withAdditionalProperties(true);
+        // todo no, lot like this    //            }
+        // todo no, lot like this }
          else
          {
             /////////////////////////////////////////////////////////////////////////////////////////////
@@ -295,6 +350,5 @@ public class SchemaBuilder
       }
       return oneOfList;
    }
-
 
 }
