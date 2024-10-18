@@ -98,7 +98,9 @@ public abstract class SpecTestBase
       {
          service = Javalin.create(config ->
             {
-               config.router.apiBuilder(() -> getSpec().defineRoute(getVersion()));
+               AbstractEndpointSpec<?, ?, ?> spec = getSpec();
+               spec.setQInstance(TestUtils.defineInstance());
+               config.router.apiBuilder(() -> spec.defineRoute(getVersion()));
             }
          ).start(PORT);
       }
