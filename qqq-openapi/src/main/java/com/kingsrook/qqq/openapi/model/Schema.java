@@ -92,7 +92,7 @@ public class Schema
     *******************************************************************************/
    public void setType(Type type)
    {
-      this.type = type.toString().toLowerCase();
+      this.type = type == null ? null : type.toString().toLowerCase();
    }
 
 
@@ -695,6 +695,16 @@ public class Schema
    {
       this.additionalProperties = additionalProperties;
       return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public Schema withRefToSchema(String componentName)
+   {
+      return withRef("#/components/schemas/" + componentName);
    }
 
 }
