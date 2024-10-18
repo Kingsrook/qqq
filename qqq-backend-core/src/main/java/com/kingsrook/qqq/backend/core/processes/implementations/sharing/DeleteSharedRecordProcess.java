@@ -27,12 +27,12 @@ import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -87,9 +87,9 @@ public class DeleteSharedRecordProcess implements BackendStep, MetaDataProducerI
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      String tableName        = runBackendStepInput.getValueString("tableName");
-      String recordIdString   = runBackendStepInput.getValueString("recordId");
-      Integer shareId         = runBackendStepInput.getValueInteger("shareId");
+      String  tableName      = runBackendStepInput.getValueString("tableName");
+      String  recordIdString = runBackendStepInput.getValueString("recordId");
+      Integer shareId        = runBackendStepInput.getValueInteger("shareId");
 
       Objects.requireNonNull(tableName, "Missing required input: tableName");
       Objects.requireNonNull(recordIdString, "Missing required input: recordId");
