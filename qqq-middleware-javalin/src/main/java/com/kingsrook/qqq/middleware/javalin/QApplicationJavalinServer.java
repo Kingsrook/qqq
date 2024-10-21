@@ -74,6 +74,8 @@ public class QApplicationJavalinServer
    private long                millisBetweenHotSwaps = 2500;
    private Consumer<QInstance> hotSwapCustomizer     = null;
 
+   private Javalin service;
+
 
 
    /*******************************************************************************
@@ -94,7 +96,7 @@ public class QApplicationJavalinServer
    {
       QInstance qInstance = application.defineValidatedQInstance();
 
-      Javalin service = Javalin.create(config ->
+      service = Javalin.create(config ->
       {
          if(serveFrontendMaterialDashboard)
          {
@@ -183,6 +185,22 @@ public class QApplicationJavalinServer
       }
 
       service.start(port);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void stop()
+   {
+      if(this.service == null)
+      {
+         LOG.info("Stop called, but there is no javalin service, so noop.");
+         return;
+      }
+
+      this.service.stop();
    }
 
 
@@ -440,10 +458,12 @@ public class QApplicationJavalinServer
    /*******************************************************************************
     ** Fluent setter for MILLIS_BETWEEN_HOT_SWAPS
     *******************************************************************************/
-   public void withMillisBetweenHotSwaps(long millisBetweenHotSwaps)
+   public QApplicationJavalinServer withMillisBetweenHotSwaps(long millisBetweenHotSwaps)
    {
       this.millisBetweenHotSwaps = millisBetweenHotSwaps;
+      return (this);
    }
+
 
 
    /*******************************************************************************
@@ -505,6 +525,5 @@ public class QApplicationJavalinServer
       this.javalinConfigurationCustomizer = javalinConfigurationCustomizer;
       return (this);
    }
-
 
 }
