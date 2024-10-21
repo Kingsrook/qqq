@@ -190,7 +190,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test init'ing a process that goes async
     **
-    ** Note: ported to v1, but needs todo more - the status part too in a higher-level
+    ** Note: ported to v1
     *******************************************************************************/
    @Test
    public void test_processInitGoingAsync() throws InterruptedException
@@ -242,6 +242,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test running a step a process that goes async
     **
+    ** Note:  ported to v1
     *******************************************************************************/
    @Test
    public void test_processStepGoingAsync() throws InterruptedException
@@ -348,6 +349,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
    /*******************************************************************************
     ** test init'ing a process that goes async and then throws
     **
+    ** Note:  ported to v1
     *******************************************************************************/
    @Test
    public void test_processInitGoingAsyncThenThrowing() throws InterruptedException

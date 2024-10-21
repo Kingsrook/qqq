@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.middleware.javalin.specs;
 
 
+import java.util.Collections;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
 import io.javalin.Javalin;
@@ -45,6 +48,18 @@ public abstract class SpecTestBase
     **
     ***************************************************************************/
    protected abstract AbstractEndpointSpec<?, ?, ?> getSpec();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected List<AbstractEndpointSpec<?, ?, ?>> getAdditionalSpecs()
+   {
+      return (Collections.emptyList());
+   }
+
+
 
    /***************************************************************************
     **
@@ -98,9 +113,17 @@ public abstract class SpecTestBase
       {
          service = Javalin.create(config ->
             {
+               QInstance qInstance = TestUtils.defineInstance();
+
                AbstractEndpointSpec<?, ?, ?> spec = getSpec();
-               spec.setQInstance(TestUtils.defineInstance());
+               spec.setQInstance(qInstance);
                config.router.apiBuilder(() -> spec.defineRoute(getVersion()));
+
+               for(AbstractEndpointSpec<?, ?, ?> additionalSpec : getAdditionalSpecs())
+               {
+                  additionalSpec.setQInstance(qInstance);
+                  config.router.apiBuilder(() -> additionalSpec.defineRoute(getVersion()));
+               }
             }
          ).start(PORT);
       }

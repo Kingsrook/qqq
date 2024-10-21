@@ -80,7 +80,7 @@ class ExecutorCodeGenerator
    /***************************************************************************
     **
     ***************************************************************************/
-   private void writeAllFiles(String rootPath, String baseName) throws IOException
+   void writeAllFiles(String rootPath, String baseName) throws IOException
    {
       if(baseName.endsWith("Executor"))
       {

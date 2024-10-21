@@ -89,7 +89,7 @@ class SpecCodeGenerator
    /***************************************************************************
     **
     ***************************************************************************/
-   private void writeAllFiles(String rootPath, String version, String baseName) throws IOException
+   void writeAllFiles(String rootPath, String version, String baseName) throws IOException
    {
       writeAllFiles(rootPath, version, baseName, baseName);
    }
