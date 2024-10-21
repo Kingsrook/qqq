@@ -1955,4 +1955,16 @@ public class QJavalinImplementation
       }
       endpointGroups.add(routes);
    }
+
+
+
+   /***************************************************************************
+    ** if restarting this class, and you want to re-run addJavalinRoutes, but
+    ** not create duplicates, well, you might want to call this method!
+    ***************************************************************************/
+   public void clearJavalinRoutes()
+   {
+      endpointGroups = null;
+   }
+
 }
