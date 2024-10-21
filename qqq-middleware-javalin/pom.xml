@@ -144,7 +144,7 @@
             <configuration>
                <excludes>
                   <exclude>com/kingsrook/qqq/middleware/javalin/executors/io/*.class</exclude>
-                  <exclude>com/kingsrook/qqq/middleware/javalin/tools/codegenerators/*.class</exclude>
+                  <exclude>com/kingsrook/qqq/middleware/javalin/tools/**/*.class</exclude>
                   <exclude>com/kingsrook/qqq/middleware/javalin/specs/**/*.class</exclude>
                </excludes>
             </configuration>
