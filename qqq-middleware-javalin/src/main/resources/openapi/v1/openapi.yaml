@@ -344,8 +344,8 @@ components:
         widgets:
           additionalProperties:
             $ref: "#/components/schemas/ProcessMetaDataLight"
-          description: "Map of all widget within the QQQ Instance (that the user has\
-            \ permission to see that they exist)."
+          description: "Map of all widgets within the QQQ Instance (that the user\
+            \ has permission to see that they exist)."
           type: "object"
       type: "object"
     ProcessMetaData:
@@ -1519,8 +1519,8 @@ paths:
                         - "TABLE_QUERY"
                         - "QUERY_STATS"
                         - "TABLE_INSERT"
-                        - "TABLE_DELETE"
                         - "TABLE_UPDATE"
+                        - "TABLE_DELETE"
                         deletePermission: true
                         editPermission: true
                         icon:

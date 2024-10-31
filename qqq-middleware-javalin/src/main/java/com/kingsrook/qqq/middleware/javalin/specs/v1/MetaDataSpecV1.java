@@ -22,9 +22,11 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -194,6 +196,13 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
          .withBackendType(MemoryBackendModule.class);
       exampleInstance.addBackend(exampleBackend);
 
+      //////////////////////////////////////
+      // create stable sorting of entries //
+      //////////////////////////////////////
+      TreeSet<Capability> capabilities = new TreeSet<>(Comparator.comparing((Capability c) -> c.name()));
+      capabilities.addAll(Capability.allReadCapabilities());
+      capabilities.addAll(Capability.allWriteCapabilities());
+
       QTableMetaData exampleTable = new QTableMetaData()
          .withName("person")
          .withLabel("Person")
@@ -201,8 +210,7 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
          .withPrimaryKeyField("id")
          .withIsHidden(false)
          .withIcon(new QIcon().withName("person_outline"))
-         .withCapabilities(Capability.allReadCapabilities())
-         .withCapabilities(Capability.allWriteCapabilities())
+         .withEnabledCapabilities(capabilities)
          .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
          .withField(new QFieldMetaData("id", QFieldType.INTEGER));
       exampleInstance.addTable(exampleTable);
