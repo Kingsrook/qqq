@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.io.MetaDataOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
@@ -63,6 +64,10 @@ public class MetaDataResponseV1 implements MetaDataOutputInterface, ToSchema
    @OpenAPIMapValueType(value = ProcessMetaDataLight.class, useRef = true)
    private Map<String, ProcessMetaDataLight> processes;
 
+   @OpenAPIDescription("Map of all widget within the QQQ Instance (that the user has permission to see that they exist).")
+   @OpenAPIMapValueType(value = ProcessMetaDataLight.class, useRef = true)
+   private Map<String, WidgetMetaData> widgets;
+
 
 
    /***************************************************************************
@@ -94,6 +99,13 @@ public class MetaDataResponseV1 implements MetaDataOutputInterface, ToSchema
       {
          processes.put(process.getName(), new ProcessMetaDataLight(process));
       }
+
+      widgets = new HashMap<>();
+      for(QFrontendWidgetMetaData widget : CollectionUtils.nonNullMap(metaDataOutput.getWidgets()).values())
+      {
+         widgets.put(widget.getName(), new WidgetMetaData(widget));
+      }
+
    }
 
 
@@ -152,4 +164,14 @@ public class MetaDataResponseV1 implements MetaDataOutputInterface, ToSchema
       return processes;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for widgets
+    **
+    *******************************************************************************/
+   public Map<String, WidgetMetaData> getWidgets()
+   {
+      return widgets;
+   }
 }
