@@ -23,6 +23,7 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
@@ -54,7 +55,10 @@ import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.MetaDataResponseV
 import com.kingsrook.qqq.middleware.javalin.specs.v1.utils.TagsV1;
 import com.kingsrook.qqq.openapi.model.Example;
 import com.kingsrook.qqq.openapi.model.HttpMethod;
+import com.kingsrook.qqq.openapi.model.In;
+import com.kingsrook.qqq.openapi.model.Parameter;
 import com.kingsrook.qqq.openapi.model.Schema;
+import com.kingsrook.qqq.openapi.model.Type;
 import io.javalin.http.Context;
 
 
@@ -98,9 +102,65 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
     **
     ***************************************************************************/
    @Override
+   public List<Parameter> defineRequestParameters()
+   {
+      return List.of(
+
+         new Parameter()
+            .withName("frontendName")
+            .withDescription("""
+               Name of the frontend requesting the meta-data.
+               Generally a QQQ frontend library, unless a custom application frontend has been built.""")
+            .withIn(In.QUERY)
+            .withSchema(new Schema().withType(Type.STRING))
+            .withExample("qqq-frontend-material-dashboard"),
+
+         new Parameter()
+            .withName("frontendVersion")
+            .withDescription("Version of the frontend requesting the meta-data.")
+            .withIn(In.QUERY)
+            .withSchema(new Schema().withType(Type.STRING))
+            .withExample("0.23.0"),
+
+         new Parameter()
+            .withName("applicationName")
+            .withDescription("""
+               Name of the application requesting the meta-data.  e.g., an instance of a specific frontend
+               (i.e., an application might be deployed with 2 different qqq-frontend-material-dashboard frontends, 
+               in which case this attribute allows differentiation between them).""")
+            .withIn(In.QUERY)
+            .withSchema(new Schema().withType(Type.STRING))
+            .withExample("my-admin-web-app"),
+
+         new Parameter()
+            .withName("applicationVersion")
+            .withDescription("Version of the application requesting the meta-data.")
+            .withIn(In.QUERY)
+            .withSchema(new Schema().withType(Type.STRING))
+            .withExample("20241021")
+
+      );
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
    public MetaDataInput buildInput(Context context) throws Exception
    {
       MetaDataInput input = new MetaDataInput();
+
+      input.setMiddlewareName("qqq-middleware-javalin");
+      input.setMiddlewareVersion("v1");
+
+      input.setFrontendName(getRequestParam(context, "frontendName"));
+      input.setFrontendVersion(getRequestParam(context, "frontendVersion"));
+
+      input.setApplicationName(getRequestParam(context, "applicationName"));
+      input.setApplicationVersion(getRequestParam(context, "applicationVersion"));
+
       return (input);
    }
 

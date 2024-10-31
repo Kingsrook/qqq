@@ -41,8 +41,17 @@ public class MetaDataExecutor extends AbstractMiddlewareExecutor<MetaDataInput, 
    @Override
    public void execute(MetaDataInput input, MetaDataOutputInterface output) throws QException
    {
+      com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput actionInput = new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput();
+
+      actionInput.setMiddlewareName(input.getMiddlewareName());
+      actionInput.setMiddlewareVersion(input.getMiddlewareVersion());
+      actionInput.setFrontendName(input.getFrontendName());
+      actionInput.setFrontendVersion(input.getFrontendVersion());
+      actionInput.setApplicationName(input.getApplicationName());
+      actionInput.setApplicationVersion(input.getApplicationVersion());
+
       MetaDataAction metaDataAction = new MetaDataAction();
-      MetaDataOutput metaDataOutput = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
+      MetaDataOutput metaDataOutput = metaDataAction.execute(actionInput);
       output.setMetaDataOutput(metaDataOutput);
    }
 
