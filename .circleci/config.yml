@@ -86,9 +86,11 @@ commands:
             keys:
               - v1-dependencies-{{ checksum "pom.xml" }}
         - run:
-            name: Placeholder
+            name: Build and Run ValidateApiVersions
             command: |
-              false
+              mvn -s .circleci/mvn-settings.xml -T4 install -DskipTests
+              mvn -s .circleci/mvn-settings.xml -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
+              qqq-middleware-javalin/target/appassembler/bin/ValidateApiVersions -r $(pwd)
 
   mvn_jar_deploy:
     steps:
