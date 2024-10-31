@@ -42,10 +42,17 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
 
    private ModalMode modalMode;
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public enum ModalMode
    {
       MODAL
    }
+
+
 
    private Layout                    layout;
    private Map<String, Serializable> styleOverrides        = new HashMap<>();
@@ -316,6 +323,7 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
    }
 
 
+
    /*******************************************************************************
     ** Getter for modalMode
     *******************************************************************************/
@@ -344,6 +352,5 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
       this.modalMode = modalMode;
       return (this);
    }
-
 
 }
