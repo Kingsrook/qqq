@@ -22,49 +22,27 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.image;
 
 
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockStylesInterface;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseStyles;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ImageStyles implements BlockStylesInterface
+public class ImageStyles extends BaseStyles
 {
-   private String  width;
-   private String  height;
-   private boolean bordered = false;
-
-
-
-   /*******************************************************************************
-    ** Getter for bordered
-    *******************************************************************************/
-   public boolean getBordered()
-   {
-      return (this.bordered);
-   }
-
+   private String width;
+   private String height;
 
 
    /*******************************************************************************
-    ** Setter for bordered
+    ** Fluent setter for padding
     *******************************************************************************/
-   public void setBordered(boolean bordered)
+   @Override
+   public ImageStyles withPadding(Directional<String> padding)
    {
-      this.bordered = bordered;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for bordered
-    *******************************************************************************/
-   public ImageStyles withBordered(boolean bordered)
-   {
-      this.bordered = bordered;
+      super.setPadding(padding);
       return (this);
    }
-
 
 
    /*******************************************************************************

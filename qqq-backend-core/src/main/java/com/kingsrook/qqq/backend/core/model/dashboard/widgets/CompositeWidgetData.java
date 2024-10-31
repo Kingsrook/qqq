@@ -40,6 +40,13 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
 {
    private List<AbstractBlockWidgetData<?, ?, ?, ?>> blocks = new ArrayList<>();
 
+   private ModalMode modalMode;
+
+   public enum ModalMode
+   {
+      MODAL
+   }
+
    private Layout                    layout;
    private Map<String, Serializable> styleOverrides        = new HashMap<>();
    private String                    overlayHtml;
@@ -54,6 +61,7 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
    {
       /////////////////////////////////////////////////////////
       // note, these are used in QQQ FMD CompositeWidget.tsx //
+      // and qqq-android CompositeWidgetBlock.kt             //
       /////////////////////////////////////////////////////////
       FLEX_COLUMN,
       FLEX_ROW_WRAPPED,
@@ -306,5 +314,36 @@ public class CompositeWidgetData extends AbstractBlockWidgetData<CompositeWidget
       }
       this.overlayStyleOverrides.put(key, value);
    }
+
+
+   /*******************************************************************************
+    ** Getter for modalMode
+    *******************************************************************************/
+   public ModalMode getModalMode()
+   {
+      return (this.modalMode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for modalMode
+    *******************************************************************************/
+   public void setModalMode(ModalMode modalMode)
+   {
+      this.modalMode = modalMode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for modalMode
+    *******************************************************************************/
+   public CompositeWidgetData withModalMode(ModalMode modalMode)
+   {
+      this.modalMode = modalMode;
+      return (this);
+   }
+
 
 }

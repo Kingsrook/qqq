@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text.TextStyles;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseStyles;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 
@@ -30,19 +30,19 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExc
 /*******************************************************************************
  **
  *******************************************************************************/
-public final class WidgetBlockTextStyles implements WidgetBlockStyles
+public final class WidgetBlockBaseStyles implements WidgetBlockStyles
 {
    @OpenAPIExclude()
-   private TextStyles wrapped;
+   private BaseStyles wrapped;
 
 
 
    /***************************************************************************
     **
     ***************************************************************************/
-   public WidgetBlockTextStyles(TextStyles textStyles)
+   public WidgetBlockBaseStyles(BaseStyles baseStyles)
    {
-      this.wrapped = textStyles;
+      this.wrapped = baseStyles;
    }
 
 
@@ -51,7 +51,7 @@ public final class WidgetBlockTextStyles implements WidgetBlockStyles
     ** Constructor
     **
     *******************************************************************************/
-   public WidgetBlockTextStyles()
+   public WidgetBlockBaseStyles()
    {
    }
 
@@ -60,47 +60,20 @@ public final class WidgetBlockTextStyles implements WidgetBlockStyles
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("A Color to display the text in.  May be specified as a StandardColor (one of: "
-                       + "SUCCESS, WARNING, ERROR, INFO, MUTED) or an RGB code.")
-   public String getColor()
+   @OpenAPIDescription("Optional padding to apply to the block")
+   public BaseStyles.Directional<String> getPadding()
    {
-      return (this.wrapped.getColor());
+      return (this.wrapped.getPadding());
    }
-
 
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("An optional indicator of the screen format preferred by the application to be used for this block.  "
-                       + "Different frontends may support different formats, and implement them differently.")
-   public String getFormat()
+   @OpenAPIDescription("A background color to use for the block")
+   public String getBackgroundColor()
    {
-      return (this.wrapped.getFormat());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("An optional indicator of the weight at which the text should be rendered.  May be a named value (one of"
-                       + "extralight, thin, medium, black, semibold, bold, extrabold) or a numeric, e.g., 100, 200, ..., 900")
-   public String getWeight()
-   {
-      return (this.wrapped.getWeight());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("An optional indicator of the size at which the text should be rendered.  May be a named value (one of"
-                       + "largest, headline, title, body, smallest) or a numeric size - both are up to the frontend to interpret.")
-   public String getSize()
-   {
-      return (this.wrapped.getSize());
+      return (this.wrapped.getBackgroundColor());
    }
 
 }

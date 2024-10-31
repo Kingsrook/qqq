@@ -22,22 +22,19 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
-import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button.ButtonValues;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
-import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIListItems;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class FrontendStep implements ToSchema
+@OpenAPIDescription("Values used for a BUTTON type widget block")
+public final class WidgetBlockButtonValues implements WidgetBlockValues
 {
    @OpenAPIExclude()
-   private QFrontendStepMetaData wrapped;
+   private ButtonValues wrapped;
 
 
 
@@ -45,9 +42,9 @@ public class FrontendStep implements ToSchema
     ** Constructor
     **
     *******************************************************************************/
-   public FrontendStep(QFrontendStepMetaData wrapped)
+   public WidgetBlockButtonValues(ButtonValues buttonValues)
    {
-      this.wrapped = wrapped;
+      this.wrapped = buttonValues;
    }
 
 
@@ -56,7 +53,7 @@ public class FrontendStep implements ToSchema
     ** Constructor
     **
     *******************************************************************************/
-   public FrontendStep()
+   public WidgetBlockButtonValues()
    {
    }
 
@@ -65,18 +62,7 @@ public class FrontendStep implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("The unique name for this step within its process")
-   public String getName()
-   {
-      return (this.wrapped.getName());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("The user-facing name for this step")
+   @OpenAPIDescription("User-facing label to display in the button")
    public String getLabel()
    {
       return (this.wrapped.getLabel());
@@ -87,10 +73,10 @@ public class FrontendStep implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("An optional indicator of the screen format preferred by the application to be used for this screen.  Different frontends may support different formats, and implement them differently.")
-   public String getFormat()
+   @OpenAPIDescription("Code used within the app as the value submitted when the button is clicked")
+   public String getActionCode()
    {
-      return (this.wrapped.getFormat());
+      return (this.wrapped.getActionCode());
    }
 
 
@@ -98,11 +84,18 @@ public class FrontendStep implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("The components that make up this screen")
-   @OpenAPIListItems(value = FrontendComponent.class, useRef = true)
-   public List<FrontendComponent> getComponents()
+   @OpenAPIDescription("""
+      Instructions for what should happen in the frontend (e.g., within a screen), when the button is clicked.
+      
+      To show a modal composite block, use format:  `showModal:${blockId}` (e.g., `showModal:myBlock`)
+      
+      To hide a modal composite block, use format:  `hideModal:${blockId}` (e.g., `hideModal:myBlock`)
+      
+      To toggle visibility of a modal composite block, use format:  `toggleModal:${blockId}` (e.g., `toggleModal:myBlock`)
+      """)
+   public String getControlCode()
    {
-      return (CollectionUtils.nonNullList(this.wrapped.getComponents()).stream().map(f -> new FrontendComponent(f)).toList());
+      return (this.wrapped.getControlCode());
    }
 
 
@@ -110,11 +103,10 @@ public class FrontendStep implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Fields used as form fields (inputs) on this step/screen")
-   @OpenAPIListItems(value = FieldMetaData.class, useRef = true)
-   public List<FieldMetaData> getFormFields()
+   @OpenAPIDescription("An optional icon to display before the text in the button")
+   public Icon getStartIcon()
    {
-      return (CollectionUtils.nonNullList(this.wrapped.getFormFields()).stream().map(f -> new FieldMetaData(f)).toList());
+      return (this.wrapped.getStartIcon() == null ? null : new Icon(this.wrapped.getStartIcon()));
    }
 
 
@@ -122,23 +114,10 @@ public class FrontendStep implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Fields used as view-only fields on this step/screen")
-   @OpenAPIListItems(value = FieldMetaData.class, useRef = true)
-   public List<FieldMetaData> getViewFields()
+   @OpenAPIDescription("An optional icon to display after the text in the button")
+   public Icon getEndIcon()
    {
-      return (CollectionUtils.nonNullList(this.wrapped.getViewFields()).stream().map(f -> new FieldMetaData(f)).toList());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Fields used in record-lists shown on the step/screen.")
-   @OpenAPIListItems(value = FieldMetaData.class, useRef = true)
-   public List<FieldMetaData> getRecordListFields()
-   {
-      return (CollectionUtils.nonNullList(this.wrapped.getRecordListFields()).stream().map(f -> new FieldMetaData(f)).toList());
+      return (this.wrapped.getEndIcon() == null ? null : new Icon(this.wrapped.getEndIcon()));
    }
 
 }

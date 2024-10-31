@@ -32,8 +32,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 public class InputFieldValues implements BlockValuesInterface
 {
    private QFieldMetaData fieldMetaData;
-   private Boolean        autoFocus;
-   private Boolean        submitOnEnter;
+
+   private Boolean autoFocus;
+   private Boolean submitOnEnter;
+   private Boolean hideSoftKeyboard;
+   private String  placeholder;
 
 
 
@@ -148,5 +151,67 @@ public class InputFieldValues implements BlockValuesInterface
       this.submitOnEnter = submitOnEnter;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for placeholder
+    *******************************************************************************/
+   public String getPlaceholder()
+   {
+      return (this.placeholder);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for placeholder
+    *******************************************************************************/
+   public void setPlaceholder(String placeholder)
+   {
+      this.placeholder = placeholder;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for placeholder
+    *******************************************************************************/
+   public InputFieldValues withPlaceholder(String placeholder)
+   {
+      this.placeholder = placeholder;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for hideSoftKeyboard
+    *******************************************************************************/
+   public Boolean getHideSoftKeyboard()
+   {
+      return (this.hideSoftKeyboard);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hideSoftKeyboard
+    *******************************************************************************/
+   public void setHideSoftKeyboard(Boolean hideSoftKeyboard)
+   {
+      this.hideSoftKeyboard = hideSoftKeyboard;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hideSoftKeyboard
+    *******************************************************************************/
+   public InputFieldValues withHideSoftKeyboard(Boolean hideSoftKeyboard)
+   {
+      this.hideSoftKeyboard = hideSoftKeyboard;
+      return (this);
+   }
+
 
 }

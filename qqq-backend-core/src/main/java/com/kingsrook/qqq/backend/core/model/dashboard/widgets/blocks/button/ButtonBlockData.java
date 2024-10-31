@@ -19,20 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.actionbutton;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button;
 
 
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.AbstractBlockWidgetData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseSlots;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseStyles;
 
 
 /*******************************************************************************
  ** a button (for a process - not sure yet what this could do in a standalone
  ** widget?) to submit the process screen to run a specific action (e.g., not just
- ** 'next')
+ ** 'next'), or do other control-ish things
  *******************************************************************************/
-public class ActionButtonBlockData extends AbstractBlockWidgetData<ActionButtonBlockData, ActionButtonValues, BaseSlots, BaseStyles>
+public class ButtonBlockData extends AbstractBlockWidgetData<ButtonBlockData, ButtonValues, BaseSlots, ButtonStyles>
 {
 
    /*******************************************************************************
@@ -41,7 +40,7 @@ public class ActionButtonBlockData extends AbstractBlockWidgetData<ActionButtonB
    @Override
    public String getBlockTypeName()
    {
-      return "ACTION_BUTTON";
+      return "BUTTON";
    }
 
 }

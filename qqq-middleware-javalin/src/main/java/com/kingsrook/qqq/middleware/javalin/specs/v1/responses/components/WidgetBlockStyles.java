@@ -24,6 +24,9 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockStylesInterface;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseStyles;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button.ButtonStyles;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.image.ImageStyles;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text.TextStyles;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
@@ -33,6 +36,9 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExc
  **
  *******************************************************************************/
 public sealed interface WidgetBlockStyles extends ToSchema permits
+   WidgetBlockBaseStyles,
+   WidgetBlockButtonStyles,
+   WidgetBlockImageStyles,
    WidgetBlockTextStyles
 {
    @OpenAPIExclude
@@ -49,9 +55,24 @@ public sealed interface WidgetBlockStyles extends ToSchema permits
          return (null);
       }
 
-      if(blockStyles instanceof TextStyles s)
+      if(blockStyles instanceof ButtonStyles s)
+      {
+         return (new WidgetBlockButtonStyles(s));
+      }
+      else if(blockStyles instanceof ImageStyles s)
+      {
+         return (new WidgetBlockImageStyles(s));
+      }
+      else if(blockStyles instanceof TextStyles s)
       {
          return (new WidgetBlockTextStyles(s));
+      }
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // note - important for this one to be last, since it's a base class to some of the above!! //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      else if(blockStyles instanceof BaseStyles s)
+      {
+         return (new WidgetBlockBaseStyles(s));
       }
 
       LOG.warn("Unrecognized block value type: " + blockStyles.getClass().getName());

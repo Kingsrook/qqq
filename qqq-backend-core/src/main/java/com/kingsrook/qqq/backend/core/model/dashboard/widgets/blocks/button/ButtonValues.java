@@ -19,19 +19,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.actionbutton;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button;
 
 
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ActionButtonValues implements BlockValuesInterface
+public class ButtonValues implements BlockValuesInterface
 {
    private String label;
    private String actionCode;
+   private String controlCode;
+
+   private QIcon startIcon;
+   private QIcon endIcon;
 
 
 
@@ -39,7 +44,7 @@ public class ActionButtonValues implements BlockValuesInterface
     ** Constructor
     **
     *******************************************************************************/
-   public ActionButtonValues()
+   public ButtonValues()
    {
    }
 
@@ -49,7 +54,7 @@ public class ActionButtonValues implements BlockValuesInterface
     ** Constructor
     **
     *******************************************************************************/
-   public ActionButtonValues(String label, String actionCode)
+   public ButtonValues(String label, String actionCode)
    {
       setLabel(label);
       setActionCode(actionCode);
@@ -80,7 +85,7 @@ public class ActionButtonValues implements BlockValuesInterface
    /*******************************************************************************
     ** Fluent setter for label
     *******************************************************************************/
-   public ActionButtonValues withLabel(String label)
+   public ButtonValues withLabel(String label)
    {
       this.label = label;
       return (this);
@@ -111,9 +116,102 @@ public class ActionButtonValues implements BlockValuesInterface
    /*******************************************************************************
     ** Fluent setter for actionCode
     *******************************************************************************/
-   public ActionButtonValues withActionCode(String actionCode)
+   public ButtonValues withActionCode(String actionCode)
    {
       this.actionCode = actionCode;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for startIcon
+    *******************************************************************************/
+   public QIcon getStartIcon()
+   {
+      return (this.startIcon);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for startIcon
+    *******************************************************************************/
+   public void setStartIcon(QIcon startIcon)
+   {
+      this.startIcon = startIcon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for startIcon
+    *******************************************************************************/
+   public ButtonValues withStartIcon(QIcon startIcon)
+   {
+      this.startIcon = startIcon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for endIcon
+    *******************************************************************************/
+   public QIcon getEndIcon()
+   {
+      return (this.endIcon);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for endIcon
+    *******************************************************************************/
+   public void setEndIcon(QIcon endIcon)
+   {
+      this.endIcon = endIcon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for endIcon
+    *******************************************************************************/
+   public ButtonValues withEndIcon(QIcon endIcon)
+   {
+      this.endIcon = endIcon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for controlCode
+    *******************************************************************************/
+   public String getControlCode()
+   {
+      return (this.controlCode);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for controlCode
+    *******************************************************************************/
+   public void setControlCode(String controlCode)
+   {
+      this.controlCode = controlCode;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for controlCode
+    *******************************************************************************/
+   public ButtonValues withControlCode(String controlCode)
+   {
+      this.controlCode = controlCode;
       return (this);
    }
 

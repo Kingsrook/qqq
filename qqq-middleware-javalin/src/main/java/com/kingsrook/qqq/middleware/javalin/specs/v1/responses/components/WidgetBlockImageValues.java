@@ -22,7 +22,7 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.actionbutton.ActionButtonValues;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.image.ImageValues;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 
@@ -30,11 +30,11 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExc
 /*******************************************************************************
  **
  *******************************************************************************/
-@OpenAPIDescription("Values used for an ACTION_BUTTON type widget block")
-public final class WidgetBlockActionButtonValues implements WidgetBlockValues
+@OpenAPIDescription("Values used for an IMAGE type widget block")
+public final class WidgetBlockImageValues implements WidgetBlockValues
 {
    @OpenAPIExclude()
-   private ActionButtonValues wrapped;
+   private ImageValues wrapped;
 
 
 
@@ -42,9 +42,9 @@ public final class WidgetBlockActionButtonValues implements WidgetBlockValues
     ** Constructor
     **
     *******************************************************************************/
-   public WidgetBlockActionButtonValues(ActionButtonValues actionButtonValues)
+   public WidgetBlockImageValues(ImageValues textValues)
    {
-      this.wrapped = actionButtonValues;
+      this.wrapped = textValues;
    }
 
 
@@ -53,7 +53,7 @@ public final class WidgetBlockActionButtonValues implements WidgetBlockValues
     ** Constructor
     **
     *******************************************************************************/
-   public WidgetBlockActionButtonValues()
+   public WidgetBlockImageValues()
    {
    }
 
@@ -62,21 +62,10 @@ public final class WidgetBlockActionButtonValues implements WidgetBlockValues
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("User-facing label to display in the button")
-   public String getLabel()
+   @OpenAPIDescription("The path to the image on the server")
+   public String getPath()
    {
-      return (this.wrapped.getLabel());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Code used within the app as the value submitted when the button is clicked")
-   public String getActionCode()
-   {
-      return (this.wrapped.getActionCode());
+      return (this.wrapped.getPath());
    }
 
 }

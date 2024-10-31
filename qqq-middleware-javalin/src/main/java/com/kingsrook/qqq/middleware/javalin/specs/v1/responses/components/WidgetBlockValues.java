@@ -24,7 +24,9 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.actionbutton.ActionButtonValues;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.audio.AudioValues;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button.ButtonValues;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.image.ImageValues;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.inputfield.InputFieldValues;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text.TextValues;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
@@ -35,9 +37,11 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExc
  **
  *******************************************************************************/
 public sealed interface WidgetBlockValues extends ToSchema permits
-   WidgetBlockActionButtonValues,
-   WidgetBlockTextValues,
-   WidgetBlockInputFieldValues
+   WidgetBlockAudioValues,
+   WidgetBlockButtonValues,
+   WidgetBlockImageValues,
+   WidgetBlockInputFieldValues,
+   WidgetBlockTextValues
 {
    @OpenAPIExclude
    QLogger LOG = QLogger.getLogger(WidgetBlockValues.class);
@@ -53,17 +57,25 @@ public sealed interface WidgetBlockValues extends ToSchema permits
          return (null);
       }
 
-      if(blockValues instanceof TextValues v)
+      if(blockValues instanceof AudioValues v)
       {
-         return (new WidgetBlockTextValues(v));
+         return (new WidgetBlockAudioValues(v));
+      }
+      else if(blockValues instanceof ButtonValues v)
+      {
+         return (new WidgetBlockButtonValues(v));
+      }
+      else if(blockValues instanceof ImageValues v)
+      {
+         return (new WidgetBlockImageValues(v));
       }
       else if(blockValues instanceof InputFieldValues v)
       {
          return (new WidgetBlockInputFieldValues(v));
       }
-      else if(blockValues instanceof ActionButtonValues v)
+      else if(blockValues instanceof TextValues v)
       {
-         return (new WidgetBlockActionButtonValues(v));
+         return (new WidgetBlockTextValues(v));
       }
 
       LOG.warn("Unrecognized block value type: " + blockValues.getClass().getName());

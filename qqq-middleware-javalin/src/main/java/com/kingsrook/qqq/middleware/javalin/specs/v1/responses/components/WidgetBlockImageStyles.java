@@ -22,7 +22,8 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.inputfield.InputFieldValues;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.base.BaseStyles;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.image.ImageStyles;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 
@@ -30,11 +31,20 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExc
 /*******************************************************************************
  **
  *******************************************************************************/
-@OpenAPIDescription("Values used for an INPUT_FIELD type widget block")
-public final class WidgetBlockInputFieldValues implements WidgetBlockValues
+public final class WidgetBlockImageStyles implements WidgetBlockStyles
 {
    @OpenAPIExclude()
-   private InputFieldValues wrapped;
+   private ImageStyles wrapped;
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public WidgetBlockImageStyles(ImageStyles imageStyles)
+   {
+      this.wrapped = imageStyles;
+   }
 
 
 
@@ -42,18 +52,7 @@ public final class WidgetBlockInputFieldValues implements WidgetBlockValues
     ** Constructor
     **
     *******************************************************************************/
-   public WidgetBlockInputFieldValues(InputFieldValues textValues)
-   {
-      this.wrapped = textValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public WidgetBlockInputFieldValues()
+   public WidgetBlockImageStyles()
    {
    }
 
@@ -62,10 +61,10 @@ public final class WidgetBlockInputFieldValues implements WidgetBlockValues
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Metadata to define the field that this block controls")
-   public FieldMetaData getFieldMetaData()
+   @OpenAPIDescription("A request to render the image at a specified width.")
+   public String getWidth()
    {
-      return (new FieldMetaData(this.wrapped.getFieldMetaData()));
+      return (this.wrapped.getWidth());
    }
 
 
@@ -73,10 +72,10 @@ public final class WidgetBlockInputFieldValues implements WidgetBlockValues
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Indicate whether this field should auto-focus when it is rendered")
-   public Boolean getAutoFocus()
+   @OpenAPIDescription("A request to render the image at a specified height.")
+   public String getHeight()
    {
-      return (this.wrapped.getAutoFocus());
+      return (this.wrapped.getHeight());
    }
 
 
@@ -84,32 +83,10 @@ public final class WidgetBlockInputFieldValues implements WidgetBlockValues
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Indicate whether the form that this field is on should be submitted when Enter is pressed")
-   public Boolean getSubmitOnEnter()
+   @OpenAPIDescription("Optional padding to apply to the image")
+   public BaseStyles.Directional<String> getPadding()
    {
-      return (this.wrapped.getSubmitOnEnter());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Indicate if the frontend uses a software/on-screen keyboard, if the application should try to hide it (e.g., upon auto-focus).")
-   public Boolean getHideSoftKeyboard()
-   {
-      return (this.wrapped.getHideSoftKeyboard());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Optional placeholder text to display in the input box.")
-   public String getPlaceholder()
-   {
-      return (this.wrapped.getPlaceholder());
+      return (this.wrapped.getPadding());
    }
 
 }

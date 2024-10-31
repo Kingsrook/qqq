@@ -68,4 +68,26 @@ public final class WidgetBlockTextValues implements WidgetBlockValues
       return (this.wrapped.getText());
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("An optional icon to display before the text")
+   public Icon getStartIcon()
+   {
+      return (this.wrapped.getStartIcon() == null ? null : new Icon(this.wrapped.getStartIcon()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("An optional icon to display after the text")
+   public Icon getEndIcon()
+   {
+      return (this.wrapped.getEndIcon() == null ? null : new Icon(this.wrapped.getEndIcon()));
+   }
+
 }

@@ -75,7 +75,7 @@ public class WidgetBlock implements Serializable, ToSchema
     ***************************************************************************/
    public enum BlockType
    {
-      ACTION_BUTTON,
+      BUTTON,
       AUDIO,
       BIG_NUMBER,
       COMPOSITE,
@@ -152,6 +152,22 @@ public class WidgetBlock implements Serializable, ToSchema
       if(this.wrapped instanceof CompositeWidgetData compositeWidgetData)
       {
          return (compositeWidgetData.getBlocks() == null ? null : compositeWidgetData.getBlocks().stream().map(b -> new WidgetBlock(b)).toList());
+      }
+
+      return (null);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("For COMPOSITE type blocks, optional control to make the widget appear modally")
+   public CompositeWidgetData.ModalMode getModalMode()
+   {
+      if(this.wrapped instanceof CompositeWidgetData compositeWidgetData)
+      {
+         return (compositeWidgetData.getModalMode());
       }
 
       return (null);

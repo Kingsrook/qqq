@@ -19,135 +19,125 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text;
+package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.button;
 
 
-import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockStylesInterface;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class TextValues implements BlockValuesInterface
+public class ButtonStyles implements BlockStylesInterface
 {
-   private String text;
-
-   private QIcon startIcon;
-   private QIcon endIcon;
+   private String color;
+   private String format;
 
 
 
-   /*******************************************************************************
-    ** Constructor
+   /***************************************************************************
     **
-    *******************************************************************************/
-   public TextValues()
+    ***************************************************************************/
+   public enum StandardColor
    {
+      SUCCESS,
+      WARNING,
+      ERROR,
+      INFO,
+      MUTED
    }
 
 
 
-   /*******************************************************************************
-    ** Constructor
+   /***************************************************************************
     **
-    *******************************************************************************/
-   public TextValues(String text)
+    ***************************************************************************/
+   public enum StandardFormat
    {
-      setText(text);
+      OUTLINED,
+      FILLED,
+      TEXT
    }
 
 
 
    /*******************************************************************************
-    ** Getter for text
+    ** Getter for color
     *******************************************************************************/
-   public String getText()
+   public String getColor()
    {
-      return (this.text);
+      return (this.color);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for text
+    ** Setter for color
     *******************************************************************************/
-   public void setText(String text)
+   public void setColor(String color)
    {
-      this.text = text;
+      this.color = color;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for text
+    ** Fluent setter for color
     *******************************************************************************/
-   public TextValues withText(String text)
+   public ButtonStyles withColor(String color)
    {
-      this.text = text;
-      return (this);
-   }
-
-
-   /*******************************************************************************
-    ** Getter for startIcon
-    *******************************************************************************/
-   public QIcon getStartIcon()
-   {
-      return (this.startIcon);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for startIcon
-    *******************************************************************************/
-   public void setStartIcon(QIcon startIcon)
-   {
-      this.startIcon = startIcon;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for startIcon
-    *******************************************************************************/
-   public TextValues withStartIcon(QIcon startIcon)
-   {
-      this.startIcon = startIcon;
+      this.color = color;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for endIcon
+    ** Getter for format
     *******************************************************************************/
-   public QIcon getEndIcon()
+   public String getFormat()
    {
-      return (this.endIcon);
+      return (this.format);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for endIcon
+    ** Setter for format
     *******************************************************************************/
-   public void setEndIcon(QIcon endIcon)
+   public void setFormat(String format)
    {
-      this.endIcon = endIcon;
+      this.format = format;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for endIcon
+    ** Fluent setter for format
     *******************************************************************************/
-   public TextValues withEndIcon(QIcon endIcon)
+   public ButtonStyles withFormat(String format)
    {
-      this.endIcon = endIcon;
+      this.format = format;
       return (this);
    }
 
+   /*******************************************************************************
+    ** Setter for format
+    *******************************************************************************/
+   public void setFormat(StandardFormat format)
+   {
+      this.format = (format == null ? null : format.name().toLowerCase());
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for format
+    *******************************************************************************/
+   public ButtonStyles withFormat(StandardFormat format)
+   {
+      setFormat(format);
+      return (this);
+   }
 
 }
