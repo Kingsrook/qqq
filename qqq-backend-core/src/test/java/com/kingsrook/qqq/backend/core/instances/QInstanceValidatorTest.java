@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.metadata.AllowAllMetaDataFilter;
 import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
@@ -135,6 +136,21 @@ public class QInstanceValidatorTest extends BaseTest
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
       qInstance.setBackends(null);
       new QInstanceValidator().validate(qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMetaDataFilter()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.setMetaDataFilter(new QCodeReference(QInstanceValidator.class)),
+         "Instance metaDataFilter CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class)));
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(null));
    }
 
 

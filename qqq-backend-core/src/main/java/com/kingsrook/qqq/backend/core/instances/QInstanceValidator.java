@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataFilterInterface;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
@@ -186,6 +187,7 @@ public class QInstanceValidator
       //////////////////////////////////////////////////////////////////////////
       try
       {
+         validateInstanceAttributes(qInstance);
          validateBackends(qInstance);
          validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
@@ -222,6 +224,19 @@ public class QInstanceValidator
       //////////////////////////////
       qInstance.setJoinGraph(validationKey, joinGraph);
       qInstance.setHasBeenValidated(validationKey);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void validateInstanceAttributes(QInstance qInstance)
+   {
+      if(qInstance.getMetaDataFilter() != null)
+      {
+         validateSimpleCodeReference("Instance metaDataFilter ", qInstance.getMetaDataFilter(), MetaDataFilterInterface.class);
+      }
    }
 
 

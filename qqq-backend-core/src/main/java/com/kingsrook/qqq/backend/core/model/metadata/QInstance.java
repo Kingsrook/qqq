@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
@@ -112,6 +113,8 @@ public class QInstance
 
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
+
+   private QCodeReference metaDataFilter = null;
 
    //////////////////////////////////////////////////////////////////////////////////////
    // todo - lock down the object (no more changes allowed) after it's been validated? //
@@ -1484,5 +1487,36 @@ public class QInstance
 
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
+
+
+   /*******************************************************************************
+    ** Getter for metaDataFilter
+    *******************************************************************************/
+   public QCodeReference getMetaDataFilter()
+   {
+      return (this.metaDataFilter);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for metaDataFilter
+    *******************************************************************************/
+   public void setMetaDataFilter(QCodeReference metaDataFilter)
+   {
+      this.metaDataFilter = metaDataFilter;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for metaDataFilter
+    *******************************************************************************/
+   public QInstance withMetaDataFilter(QCodeReference metaDataFilter)
+   {
+      this.metaDataFilter = metaDataFilter;
+      return (this);
+   }
+
 
 }
