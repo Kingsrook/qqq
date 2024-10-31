@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessMetaDataAdjustment;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.AbstractBlockWidgetData;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -46,9 +47,11 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessInitOrStepOrStatusOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.ProcessInitOrStepOrStatusResponseV1;
+import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components.WidgetBlock;
 import com.kingsrook.qqq.openapi.model.Example;
 import com.kingsrook.qqq.openapi.model.Schema;
 import io.javalin.http.Context;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -167,19 +170,92 @@ public class ProcessSpecUtilsV1
 
       if(typedOutput instanceof ProcessInitOrStepOrStatusResponseV1.ProcessStepComplete complete)
       {
+         ////////////////////////////////////////////////////////////////////////////////////
+         // here's where we'll handle the values map specially - note - that we'll also    //
+         // be mapping some specific object types into their API-versioned responses types //
+         ////////////////////////////////////////////////////////////////////////////////////
          Map<String, Serializable> values = complete.getValues();
          if(values != null)
          {
-            String serializedValues = JsonUtils.toJson(values, mapper ->
+            JSONObject valuesAsJsonObject = new JSONObject();
+            for(Map.Entry<String, Serializable> valueEntry : values.entrySet())
             {
-               mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-            });
+               String       name  = valueEntry.getKey();
+               Serializable value = valueEntry.getValue();
 
-            outputJsonObject.put("values", new JSONObject(serializedValues));
+               Serializable valueToMakeIntoJson = value;
+               if(value instanceof String s)
+               {
+                  valuesAsJsonObject.put(name, s);
+                  continue;
+               }
+               else if(value instanceof Boolean b)
+               {
+                  valuesAsJsonObject.put(name, b);
+                  continue;
+               }
+               else if(value instanceof Number n)
+               {
+                  valuesAsJsonObject.put(name, n);
+                  continue;
+               }
+               else if(value == null)
+               {
+                  valuesAsJsonObject.put(name, (Object) null);
+                  continue;
+               }
+               //////////////////////////////////////////////////////////////////////////////////
+               // if there are any types that we want to make sure we send back using this API //
+               // version's mapped objects, then add cases for them here, and wrap them.       //
+               //////////////////////////////////////////////////////////////////////////////////
+               else if(value instanceof AbstractBlockWidgetData<?, ?, ?, ?> abstractBlockWidgetData)
+               {
+                  valueToMakeIntoJson = new WidgetBlock(abstractBlockWidgetData);
+               }
+
+               String valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+               {
+                  mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+               });
+
+               if(valueAsJsonString.startsWith("["))
+               {
+                  valuesAsJsonObject.put(name, new JSONArray(valueAsJsonString));
+               }
+               else if(valueAsJsonString.startsWith("{"))
+               {
+                  valuesAsJsonObject.put(name, new JSONObject(valueAsJsonString));
+               }
+               else
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////
+                  // curious, if/when this ever happens, since we should get all "primitive" types //
+                  // above, and everything else, I think, would be an object or an array, right?   //
+                  ///////////////////////////////////////////////////////////////////////////////////
+                  valuesAsJsonObject.put(name, valueAsJsonString);
+               }
+            }
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // ... this might be a concept for us at some point in time - but might be better to not do as a value itself? //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Serializable backendOnlyValues = values.get("_qqqBackendOnlyValues");
+            // if(backendOnlyValues instanceof String backendOnlyValuesString)
+            // {
+            //    for(String key : backendOnlyValuesString.split(","))
+            //    {
+            //       jsonObject.remove(key);
+            //    }
+            //    jsonObject.remove("_qqqBackendOnlyValues");
+            // }
+
+            outputJsonObject.put("values", valuesAsJsonObject);
          }
       }
 
-      context.result(outputJsonObject.toString());
+      String json = outputJsonObject.toString(3);
+      System.out.println(json);
+      context.result(json);
    }
 
 
