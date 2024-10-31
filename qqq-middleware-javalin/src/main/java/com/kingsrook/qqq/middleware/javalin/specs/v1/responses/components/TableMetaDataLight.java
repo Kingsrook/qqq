@@ -31,6 +31,7 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIListItems;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 
 
 /***************************************************************************
@@ -100,10 +101,11 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Name of an icon for the table, from the material UI icon set")
-   public String getIconName()
+   @OpenAPIDescription("Icon to display for the table")
+   @OpenAPIMapKnownEntries(value = Icon.class, useRef = true)
+   public Icon getIcon()
    {
-      return (this.wrapped.getIconName());
+      return (this.wrapped.getIcon() == null ? null : new Icon(this.wrapped.getIcon()));
    }
 
 

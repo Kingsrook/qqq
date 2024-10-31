@@ -28,6 +28,7 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIListItems;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 
 
 /***************************************************************************
@@ -60,6 +61,7 @@ public class AppTreeNode implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -68,6 +70,7 @@ public class AppTreeNode implements ToSchema
    {
       return (this.wrapped.getType() == null ? null : this.wrapped.getType().name());
    }
+
 
 
    /***************************************************************************
@@ -91,6 +94,7 @@ public class AppTreeNode implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -101,5 +105,16 @@ public class AppTreeNode implements ToSchema
       return (CollectionUtils.nonNullList(this.wrapped.getChildren()).stream().map(a -> new AppTreeNode(a)).toList());
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("Icon to display for the item.")
+   @OpenAPIMapKnownEntries(value = Icon.class, useRef = true)
+   public Icon getIcon()
+   {
+      return (this.wrapped.getIcon() == null ? null : new Icon(this.wrapped.getIcon()));
+   }
 
 }

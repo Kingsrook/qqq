@@ -32,6 +32,7 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIListItems;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapValueType;
 
 
@@ -91,10 +92,11 @@ public class AppMetaData implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Name of an icon for the app, from the material UI icon set")
-   public String getIconName()
+   @OpenAPIDescription("Icon to display for the app.")
+   @OpenAPIMapKnownEntries(value = Icon.class, useRef = true)
+   public Icon getIcon()
    {
-      return (this.wrapped.getIconName());
+      return (this.wrapped.getIcon() == null ? null : new Icon(this.wrapped.getIcon()));
    }
 
 

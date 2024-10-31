@@ -26,6 +26,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMe
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 
 
 /***************************************************************************
@@ -117,10 +118,11 @@ public class ProcessMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Name of an icon for the process, from the material UI icon set")
-   public String getIconName()
+   @OpenAPIDescription("Icon to display for the process.")
+   @OpenAPIMapKnownEntries(value = Icon.class, useRef = true)
+   public Icon getIcon()
    {
-      return (this.wrapped.getIconName());
+      return (this.wrapped.getIcon() == null ? null : new Icon(this.wrapped.getIcon()));
    }
 
 

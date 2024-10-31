@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep;
@@ -48,7 +49,7 @@ public class QFrontendProcessMetaData
    private String  tableName;
    private boolean isHidden;
 
-   private String iconName;
+   private QIcon icon;
 
    private List<QFrontendStepMetaData> frontendSteps;
    private String                      stepFlow;
@@ -98,10 +99,7 @@ public class QFrontendProcessMetaData
          }
       }
 
-      if(processMetaData.getIcon() != null)
-      {
-         this.iconName = processMetaData.getIcon().getName();
-      }
+      this.icon = processMetaData.getIcon();
 
       hasPermission = PermissionsHelper.hasProcessPermission(actionInput, name);
    }
@@ -180,7 +178,7 @@ public class QFrontendProcessMetaData
     *******************************************************************************/
    public String getIconName()
    {
-      return iconName;
+      return icon == null ? null : icon.getName();
    }
 
 
@@ -203,5 +201,16 @@ public class QFrontendProcessMetaData
    public String getStepFlow()
    {
       return stepFlow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
    }
 }
