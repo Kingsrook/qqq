@@ -79,6 +79,17 @@ commands:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
+  check_middleware_api_versions:
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - v1-dependencies-{{ checksum "pom.xml" }}
+        - run:
+            name: Placeholder
+            command: |
+              false
+
   mvn_jar_deploy:
     steps:
       - checkout
@@ -130,6 +141,7 @@ jobs:
       ## - localstack/startup
       - install_java17
       - mvn_verify
+      - check_middleware_api_versions
 
   mvn_deploy:
     executor: localstack/default
@@ -137,6 +149,7 @@ jobs:
       ## - localstack/startup
       - install_java17
       - mvn_verify
+      - check_middleware_api_versions
       - mvn_jar_deploy
 
   publish_asciidoc:
