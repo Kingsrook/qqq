@@ -64,7 +64,7 @@ public class MetaDataResponseV1 implements MetaDataOutputInterface, ToSchema
    @OpenAPIMapValueType(value = ProcessMetaDataLight.class, useRef = true)
    private Map<String, ProcessMetaDataLight> processes;
 
-   @OpenAPIDescription("Map of all widget within the QQQ Instance (that the user has permission to see that they exist).")
+   @OpenAPIDescription("Map of all widgets within the QQQ Instance (that the user has permission to see that they exist).")
    @OpenAPIMapValueType(value = ProcessMetaDataLight.class, useRef = true)
    private Map<String, WidgetMetaData> widgets;
 

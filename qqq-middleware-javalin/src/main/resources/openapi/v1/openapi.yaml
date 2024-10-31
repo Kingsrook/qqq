@@ -15,9 +15,9 @@ components:
           items:
             $ref: "#/components/schemas/AppTreeNode"
           type: "array"
-        iconName:
-          description: "Name of an icon for the app, from the material UI icon set"
-          type: "string"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the app."
         label:
           description: "User-facing name for this app"
           type: "string"
@@ -76,6 +76,9 @@ components:
           items:
             $ref: "#/components/schemas/AppTreeNode"
           type: "array"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the item."
         label:
           description: "User-facing name of the element."
           type: "string"
@@ -193,7 +196,6 @@ components:
           enum:
           - "HELP_TEXT"
           - "BULK_EDIT_FORM"
-          - "BULK_LOAD_MAPPING"
           - "VALIDATION_REVIEW_SCREEN"
           - "EDIT_FORM"
           - "VIEW_FORM"
@@ -267,6 +269,11 @@ components:
           items:
             $ref: "#/components/schemas/FieldMetaData"
           type: "array"
+        format:
+          description: "An optional indicator of the screen format preferred by the\
+            \ application to be used for this screen.  Different frontends may support\
+            \ different formats, and implement them differently."
+          type: "string"
         label:
           description: "The user-facing name for this step"
           type: "string"
@@ -334,6 +341,12 @@ components:
           description: "Map of all tables within the QQQ Instance (that the user has\
             \ permission to see that they exist)."
           type: "object"
+        widgets:
+          additionalProperties:
+            $ref: "#/components/schemas/ProcessMetaDataLight"
+          description: "Map of all widget within the QQQ Instance (that the user has\
+            \ permission to see that they exist)."
+          type: "object"
       type: "object"
     ProcessMetaData:
       properties:
@@ -345,10 +358,9 @@ components:
         hasPermission:
           description: "Boolean to indicate if the user has permission for the process."
           type: "boolean"
-        iconName:
-          description: "Name of an icon for the process, from the material UI icon\
-            \ set"
-          type: "string"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the process."
         isHidden:
           description: "Boolean indicator of whether the process should be shown to\
             \ users or not"
@@ -388,10 +400,9 @@ components:
         hasPermission:
           description: "Boolean to indicate if the user has permission for the process."
           type: "boolean"
-        iconName:
-          description: "Name of an icon for the process, from the material UI icon\
-            \ set"
-          type: "string"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the process."
         isHidden:
           description: "Boolean indicator of whether the process should be shown to\
             \ users or not"
@@ -421,10 +432,20 @@ components:
         hasPermission:
           description: "Boolean to indicate if the user has permission for the process."
           type: "boolean"
-        iconName:
-          description: "Name of an icon for the process, from the material UI icon\
-            \ set"
-          type: "string"
+        icon:
+          description: "Icon to display for the process."
+          properties:
+            color:
+              description: "A color code to use for displaying the icon"
+              type: "string"
+            name:
+              description: "A material UI icon name."
+              type: "string"
+            path:
+              description: "A path to an image file that can be requested from the\
+                \ server, to serve as the icon image instead of a material UI icon."
+              type: "string"
+          type: "object"
         isHidden:
           description: "Boolean indicator of whether the process should be shown to\
             \ users or not"
@@ -477,6 +498,12 @@ components:
                     items:
                       $ref: "#/components/schemas/FieldMetaData"
                     type: "array"
+                  format:
+                    description: "An optional indicator of the screen format preferred\
+                      \ by the application to be used for this screen.  Different\
+                      \ frontends may support different formats, and implement them\
+                      \ differently."
+                    type: "string"
                   label:
                     description: "The user-facing name for this step"
                     type: "string"
@@ -576,6 +603,12 @@ components:
                       items:
                         $ref: "#/components/schemas/FieldMetaData"
                       type: "array"
+                    format:
+                      description: "An optional indicator of the screen format preferred\
+                        \ by the application to be used for this screen.  Different\
+                        \ frontends may support different formats, and implement them\
+                        \ differently."
+                      type: "string"
                     label:
                       description: "The user-facing name for this step"
                       type: "string"
@@ -701,9 +734,9 @@ components:
         helpContents:
           description: "Help Contents for this table."
           type: "object"
-        iconName:
-          description: "Name of an icon for the table, from the material UI icon set"
-          type: "string"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the table"
         insertPermission:
           description: "Boolean to indicate if the user has insert permission for\
             \ the table."
@@ -736,7 +769,7 @@ components:
         blockType:
           description: "What type of block to render."
           enum:
-          - "ACTION_BUTTON"
+          - "BUTTON"
           - "AUDIO"
           - "BIG_NUMBER"
           - "COMPOSITE"
@@ -765,24 +798,88 @@ components:
           - "TABLE_SUB_ROW_DETAILS"
           - "BADGES_WRAPPER"
           type: "string"
+        modalMode:
+          description: "For COMPOSITE type blocks, optional control to make the widget\
+            \ appear modally"
+          enum:
+          - "MODAL"
+          type: "string"
         styles:
           $ref: "#/components/schemas/WidgetBlockStyles"
           description: "Styles to apply to the block.  Different fields based on blockType."
           oneOf:
           - properties:
-              isAlert:
-                description: "Indicate if the text should be displayed as an alert\
-                  \ (e.g., modal popup)"
-                type: "boolean"
-              standardColor:
-                description: "A Standard Color to display the text in (e.g., not a\
-                  \ hex or RGB code)."
-                enum:
-                - "SUCCESS"
-                - "WARNING"
-                - "ERROR"
-                - "INFO"
-                - "MUTED"
+              backgroundColor:
+                description: "A background color to use for the block"
+                type: "string"
+              padding:
+                description: "Optional padding to apply to the block"
+                properties:
+                  bottom:
+                    type: "object"
+                  left:
+                    type: "object"
+                  right:
+                    type: "object"
+                  top:
+                    type: "object"
+                type: "object"
+            type: "object"
+          - properties:
+              color:
+                description: "A Color to use for the button.  May be specified as\
+                  \ a StandardColor (one of: SUCCESS, WARNING, ERROR, INFO, MUTED)\
+                  \ or an RGB code."
+                type: "string"
+              format:
+                description: "An optional indicator of the screen format preferred\
+                  \ by the application to be used for this block, such as OUTLINED,\
+                  \ FILLED, or TEXT.  Different frontends may support different formats,\
+                  \ and implement them differently."
+                type: "string"
+            type: "object"
+          - properties:
+              height:
+                description: "A request to render the image at a specified height."
+                type: "string"
+              padding:
+                description: "Optional padding to apply to the image"
+                properties:
+                  bottom:
+                    type: "object"
+                  left:
+                    type: "object"
+                  right:
+                    type: "object"
+                  top:
+                    type: "object"
+                type: "object"
+              width:
+                description: "A request to render the image at a specified width."
+                type: "string"
+            type: "object"
+          - properties:
+              color:
+                description: "A Color to display the text in.  May be specified as\
+                  \ a StandardColor (one of: SUCCESS, WARNING, ERROR, INFO, MUTED)\
+                  \ or an RGB code."
+                type: "string"
+              format:
+                description: "An optional indicator of the screen format preferred\
+                  \ by the application to be used for this block.  Different frontends\
+                  \ may support different formats, and implement them differently."
+                type: "string"
+              size:
+                description: "An optional indicator of the size at which the text\
+                  \ should be rendered.  May be a named value (one oflargest, headline,\
+                  \ title, body, smallest) or a numeric size - both are up to the\
+                  \ frontend to interpret."
+                type: "string"
+              weight:
+                description: "An optional indicator of the weight at which the text\
+                  \ should be rendered.  May be a named value (one ofextralight, thin,\
+                  \ medium, black, semibold, bold, extrabold) or a numeric, e.g.,\
+                  \ 100, 200, ..., 900"
                 type: "string"
             type: "object"
         subBlocks:
@@ -795,20 +892,73 @@ components:
           description: "Values to show in the block, or otherwise control its behavior.\
             \  Different fields based on blockType."
           oneOf:
-          - description: "Values used for an ACTION_BUTTON type widget block"
+          - description: "Values used for an AUDIO type widget block"
+            properties:
+              autoPlay:
+                description: "Control if the file should automatically play when the\
+                  \ block is rendered"
+                type: "boolean"
+              path:
+                description: "The path to the audio file on the server"
+                type: "string"
+              showControls:
+                description: "Control if on-screen controls should be shown to allow\
+                  \ the user to control playback"
+                type: "boolean"
+            type: "object"
+          - description: "Values used for a BUTTON type widget block"
             properties:
               actionCode:
                 description: "Code used within the app as the value submitted when\
                   \ the button is clicked"
                 type: "string"
+              controlCode:
+                description: "Instructions for what should happen in the frontend\
+                  \ (e.g., within a screen), when the button is clicked.\n\nTo show\
+                  \ a modal composite block, use format:  `showModal:${blockId}` (e.g.,\
+                  \ `showModal:myBlock`)\n\nTo hide a modal composite block, use format:\
+                  \  `hideModal:${blockId}` (e.g., `hideModal:myBlock`)\n\nTo toggle\
+                  \ visibility of a modal composite block, use format:  `toggleModal:${blockId}`\
+                  \ (e.g., `toggleModal:myBlock`)\n"
+                type: "string"
+              endIcon:
+                description: "An optional icon to display after the text in the button"
+                properties:
+                  color:
+                    description: "A color code to use for displaying the icon"
+                    type: "string"
+                  name:
+                    description: "A material UI icon name."
+                    type: "string"
+                  path:
+                    description: "A path to an image file that can be requested from\
+                      \ the server, to serve as the icon image instead of a material\
+                      \ UI icon."
+                    type: "string"
+                type: "object"
               label:
                 description: "User-facing label to display in the button"
                 type: "string"
+              startIcon:
+                description: "An optional icon to display before the text in the button"
+                properties:
+                  color:
+                    description: "A color code to use for displaying the icon"
+                    type: "string"
+                  name:
+                    description: "A material UI icon name."
+                    type: "string"
+                  path:
+                    description: "A path to an image file that can be requested from\
+                      \ the server, to serve as the icon image instead of a material\
+                      \ UI icon."
+                    type: "string"
+                type: "object"
             type: "object"
-          - description: "Values used for a TEXT type widget block"
+          - description: "Values used for an IMAGE type widget block"
             properties:
-              text:
-                description: "The text to display in the block"
+              path:
+                description: "The path to the image on the server"
                 type: "string"
             type: "object"
           - description: "Values used for an INPUT_FIELD type widget block"
@@ -877,21 +1027,152 @@ components:
                     description: "Data-type for this field"
                     type: "string"
                 type: "object"
+              hideSoftKeyboard:
+                description: "Indicate if the frontend uses a software/on-screen keyboard,\
+                  \ if the application should try to hide it (e.g., upon auto-focus)."
+                type: "boolean"
+              placeholder:
+                description: "Optional placeholder text to display in the input box."
+                type: "string"
               submitOnEnter:
                 description: "Indicate whether the form that this field is on should\
                   \ be submitted when Enter is pressed"
                 type: "boolean"
             type: "object"
+          - description: "Values used for a TEXT type widget block"
+            properties:
+              endIcon:
+                description: "An optional icon to display after the text"
+                properties:
+                  color:
+                    description: "A color code to use for displaying the icon"
+                    type: "string"
+                  name:
+                    description: "A material UI icon name."
+                    type: "string"
+                  path:
+                    description: "A path to an image file that can be requested from\
+                      \ the server, to serve as the icon image instead of a material\
+                      \ UI icon."
+                    type: "string"
+                type: "object"
+              startIcon:
+                description: "An optional icon to display before the text"
+                properties:
+                  color:
+                    description: "A color code to use for displaying the icon"
+                    type: "string"
+                  name:
+                    description: "A material UI icon name."
+                    type: "string"
+                  path:
+                    description: "A path to an image file that can be requested from\
+                      \ the server, to serve as the icon image instead of a material\
+                      \ UI icon."
+                    type: "string"
+                type: "object"
+              text:
+                description: "The text to display in the block"
+                type: "string"
+            type: "object"
       type: "object"
-    WidgetBlockActionButtonValues:
-      description: "Values used for an ACTION_BUTTON type widget block"
+    WidgetBlockAudioValues:
+      description: "Values used for an AUDIO type widget block"
+      properties:
+        autoPlay:
+          description: "Control if the file should automatically play when the block\
+            \ is rendered"
+          type: "boolean"
+        path:
+          description: "The path to the audio file on the server"
+          type: "string"
+        showControls:
+          description: "Control if on-screen controls should be shown to allow the\
+            \ user to control playback"
+          type: "boolean"
+      type: "object"
+    WidgetBlockBaseStyles:
+      properties:
+        backgroundColor:
+          description: "A background color to use for the block"
+          type: "string"
+        padding:
+          description: "Optional padding to apply to the block"
+          properties:
+            bottom:
+              type: "object"
+            left:
+              type: "object"
+            right:
+              type: "object"
+            top:
+              type: "object"
+          type: "object"
+      type: "object"
+    WidgetBlockButtonStyles:
+      properties:
+        color:
+          description: "A Color to use for the button.  May be specified as a StandardColor\
+            \ (one of: SUCCESS, WARNING, ERROR, INFO, MUTED) or an RGB code."
+          type: "string"
+        format:
+          description: "An optional indicator of the screen format preferred by the\
+            \ application to be used for this block, such as OUTLINED, FILLED, or\
+            \ TEXT.  Different frontends may support different formats, and implement\
+            \ them differently."
+          type: "string"
+      type: "object"
+    WidgetBlockButtonValues:
+      description: "Values used for a BUTTON type widget block"
       properties:
         actionCode:
           description: "Code used within the app as the value submitted when the button\
             \ is clicked"
           type: "string"
+        controlCode:
+          description: "Instructions for what should happen in the frontend (e.g.,\
+            \ within a screen), when the button is clicked.\n\nTo show a modal composite\
+            \ block, use format:  `showModal:${blockId}` (e.g., `showModal:myBlock`)\n\
+            \nTo hide a modal composite block, use format:  `hideModal:${blockId}`\
+            \ (e.g., `hideModal:myBlock`)\n\nTo toggle visibility of a modal composite\
+            \ block, use format:  `toggleModal:${blockId}` (e.g., `toggleModal:myBlock`)\n"
+          type: "string"
+        endIcon:
+          $ref: "#/components/schemas/Icon"
+          description: "An optional icon to display after the text in the button"
         label:
           description: "User-facing label to display in the button"
+          type: "string"
+        startIcon:
+          $ref: "#/components/schemas/Icon"
+          description: "An optional icon to display before the text in the button"
+      type: "object"
+    WidgetBlockImageStyles:
+      properties:
+        height:
+          description: "A request to render the image at a specified height."
+          type: "string"
+        padding:
+          description: "Optional padding to apply to the image"
+          properties:
+            bottom:
+              type: "object"
+            left:
+              type: "object"
+            right:
+              type: "object"
+            top:
+              type: "object"
+          type: "object"
+        width:
+          description: "A request to render the image at a specified width."
+          type: "string"
+      type: "object"
+    WidgetBlockImageValues:
+      description: "Values used for an IMAGE type widget block"
+      properties:
+        path:
+          description: "The path to the image on the server"
           type: "string"
       type: "object"
     WidgetBlockInputFieldValues:
@@ -903,6 +1184,13 @@ components:
         fieldMetaData:
           $ref: "#/components/schemas/FieldMetaData"
           description: "Metadata to define the field that this block controls"
+        hideSoftKeyboard:
+          description: "Indicate if the frontend uses a software/on-screen keyboard,\
+            \ if the application should try to hide it (e.g., upon auto-focus)."
+          type: "boolean"
+        placeholder:
+          description: "Optional placeholder text to display in the input box."
+          type: "string"
         submitOnEnter:
           description: "Indicate whether the form that this field is on should be\
             \ submitted when Enter is pressed"
@@ -912,24 +1200,36 @@ components:
       type: "object"
     WidgetBlockTextStyles:
       properties:
-        isAlert:
-          description: "Indicate if the text should be displayed as an alert (e.g.,\
-            \ modal popup)"
-          type: "boolean"
-        standardColor:
-          description: "A Standard Color to display the text in (e.g., not a hex or\
-            \ RGB code)."
-          enum:
-          - "SUCCESS"
-          - "WARNING"
-          - "ERROR"
-          - "INFO"
-          - "MUTED"
+        color:
+          description: "A Color to display the text in.  May be specified as a StandardColor\
+            \ (one of: SUCCESS, WARNING, ERROR, INFO, MUTED) or an RGB code."
+          type: "string"
+        format:
+          description: "An optional indicator of the screen format preferred by the\
+            \ application to be used for this block.  Different frontends may support\
+            \ different formats, and implement them differently."
+          type: "string"
+        size:
+          description: "An optional indicator of the size at which the text should\
+            \ be rendered.  May be a named value (one oflargest, headline, title,\
+            \ body, smallest) or a numeric size - both are up to the frontend to interpret."
+          type: "string"
+        weight:
+          description: "An optional indicator of the weight at which the text should\
+            \ be rendered.  May be a named value (one ofextralight, thin, medium,\
+            \ black, semibold, bold, extrabold) or a numeric, e.g., 100, 200, ...,\
+            \ 900"
           type: "string"
       type: "object"
     WidgetBlockTextValues:
       description: "Values used for a TEXT type widget block"
       properties:
+        endIcon:
+          $ref: "#/components/schemas/Icon"
+          description: "An optional icon to display after the text"
+        startIcon:
+          $ref: "#/components/schemas/Icon"
+          description: "An optional icon to display before the text"
         text:
           description: "The text to display in the block"
           type: "string"
@@ -1059,6 +1359,35 @@ paths:
         - Tables (but without all details, e.g., fields),\n- Processes (also without\
         \ full details, e.g., screens),\n- Reports\n- Widgets\n- Branding\n- Help\
         \ Contents\n- Environment values\n"
+      parameters:
+      - description: "Name of the frontend requesting the meta-data.\nGenerally a\
+          \ QQQ frontend library, unless a custom application frontend has been built."
+        example: "qqq-frontend-material-dashboard"
+        in: "query"
+        name: "frontendName"
+        schema:
+          type: "string"
+      - description: "Version of the frontend requesting the meta-data."
+        example: "0.23.0"
+        in: "query"
+        name: "frontendVersion"
+        schema:
+          type: "string"
+      - description: "Name of the application requesting the meta-data.  e.g., an\
+          \ instance of a specific frontend\n(i.e., an application might be deployed\
+          \ with 2 different qqq-frontend-material-dashboard frontends,\nin which\
+          \ case this attribute allows differentiation between them)."
+        example: "my-admin-web-app"
+        in: "query"
+        name: "applicationName"
+        schema:
+          type: "string"
+      - description: "Version of the application requesting the meta-data."
+        example: "20241021"
+        in: "query"
+        name: "applicationVersion"
+        schema:
+          type: "string"
       responses:
         200:
           content:
@@ -1069,15 +1398,23 @@ paths:
                     appTree:
                     - children:
                       - children:
-                        - label: "Sample Person Process"
+                        - icon:
+                            name: "person_add"
+                          label: "Sample Person Process"
                           name: "samplePersonProcess"
                           type: "PROCESS"
+                        icon:
+                          name: "child_friendly"
                         label: "Child App"
                         name: "childApp"
                         type: "APP"
-                      - label: "Person"
+                      - icon:
+                          name: "person_outline"
+                        label: "Person"
                         name: "person"
                         type: "TABLE"
+                      icon:
+                        name: "home"
                       label: "Home App"
                       name: "homeApp"
                       type: "APP"
@@ -1085,21 +1422,30 @@ paths:
                       homeApp:
                         childMap:
                           person:
+                            icon:
+                              name: "person_outline"
                             label: "Person"
                             name: "person"
                             type: "TABLE"
                           childApp:
+                            icon:
+                              name: "child_friendly"
                             label: "Child App"
                             name: "childApp"
                             type: "APP"
                         children:
-                        - label: "Child App"
+                        - icon:
+                            name: "child_friendly"
+                          label: "Child App"
                           name: "childApp"
                           type: "APP"
-                        - label: "Person"
+                        - icon:
+                            name: "person_outline"
+                          label: "Person"
                           name: "person"
                           type: "TABLE"
-                        iconName: "home"
+                        icon:
+                          name: "home"
                         label: "Home App"
                         name: "homeApp"
                         sections:
@@ -1112,14 +1458,19 @@ paths:
                       childApp:
                         childMap:
                           samplePersonProcess:
+                            icon:
+                              name: "person_add"
                             label: "Sample Person Process"
                             name: "samplePersonProcess"
                             type: "PROCESS"
                         children:
-                        - label: "Sample Person Process"
+                        - icon:
+                            name: "person_add"
+                          label: "Sample Person Process"
                           name: "samplePersonProcess"
                           type: "PROCESS"
-                        iconName: "child_friendly"
+                        icon:
+                          name: "child_friendly"
                         label: "Child App"
                         name: "childApp"
                         sections:
@@ -1146,7 +1497,8 @@ paths:
                         tableName: "person"
                       samplePersonProcess:
                         hasPermission: true
-                        iconName: "person_add"
+                        icon:
+                          name: "person_add"
                         isHidden: false
                         label: "Sample Person Process"
                         name: "samplePersonProcess"
@@ -1171,7 +1523,8 @@ paths:
                         - "TABLE_UPDATE"
                         deletePermission: true
                         editPermission: true
-                        iconName: "person_outline"
+                        icon:
+                          name: "person_outline"
                         insertPermission: true
                         isHidden: false
                         label: "Person"
