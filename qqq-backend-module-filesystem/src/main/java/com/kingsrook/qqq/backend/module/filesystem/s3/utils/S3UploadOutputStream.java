@@ -98,8 +98,12 @@ public class S3UploadOutputStream extends OutputStream
     *******************************************************************************/
    private void uploadIfNeeded()
    {
-      ObjectMetadata objectMetadata = new ObjectMetadata();
-      objectMetadata.setContentType(this.contentType);
+      ObjectMetadata objectMetadata = null;
+      if(this.contentType != null)
+      {
+         objectMetadata = new ObjectMetadata();
+         objectMetadata.setContentType(this.contentType);
+      }
 
       if(offset == buffer.length)
       {
@@ -173,8 +177,12 @@ public class S3UploadOutputStream extends OutputStream
          return;
       }
 
-      ObjectMetadata objectMetadata = new ObjectMetadata();
-      objectMetadata.setContentType(this.contentType);
+      ObjectMetadata objectMetadata = null;
+      if(this.contentType != null)
+      {
+         objectMetadata = new ObjectMetadata();
+         objectMetadata.setContentType(this.contentType);
+      }
 
       if(initiateMultipartUploadResult != null)
       {
@@ -204,6 +212,11 @@ public class S3UploadOutputStream extends OutputStream
       }
       else
       {
+         if(objectMetadata == null)
+         {
+            objectMetadata = new ObjectMetadata();
+         }
+
          LOG.info("Putting object (non-multipart)", logPair("key", key), logPair("length", offset));
          objectMetadata.setContentLength(offset);
          PutObjectResult putObjectResult = amazonS3.putObject(bucketName, key, new ByteArrayInputStream(buffer, 0, offset), objectMetadata);
