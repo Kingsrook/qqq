@@ -40,6 +40,10 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
  *******************************************************************************/
 public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements BasepullExtractStepInterface
 {
+   protected static final String SECONDS_TO_SUBTRACT_FROM_THIS_RUN_TIME_KEY = "secondsToSubtractFromThisRunTimeForTimestampQuery";
+   protected static final String SECONDS_TO_SUBTRACT_FROM_LAST_RUN_TIME_KEY = "secondsToSubtractFromLastRunTimeForTimestampQuery";
+
+
 
    /*******************************************************************************
     **
@@ -124,7 +128,8 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements 
     *******************************************************************************/
    protected String getLastRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
    {
-      Instant lastRunTime = runBackendStepInput.getBasepullLastRunTime();
+      Instant lastRunTime    = runBackendStepInput.getBasepullLastRunTime();
+      Instant updatedRunTime = lastRunTime;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       // allow the timestamps to be adjusted by the specified number of seconds.                  //
@@ -135,10 +140,19 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements 
       Serializable basepullConfigurationValue = runBackendStepInput.getValue(RunProcessAction.BASEPULL_CONFIGURATION);
       if(basepullConfigurationValue instanceof BasepullConfiguration basepullConfiguration && basepullConfiguration.getSecondsToSubtractFromLastRunTimeForTimestampQuery() != null)
       {
-         lastRunTime = lastRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromLastRunTimeForTimestampQuery());
+         updatedRunTime = lastRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromLastRunTimeForTimestampQuery());
       }
 
-      return (lastRunTime.toString());
+      //////////////////////////////////////////////////////////////
+      // if an override was found in the params, use that instead //
+      //////////////////////////////////////////////////////////////
+      if(runBackendStepInput.getValueString(SECONDS_TO_SUBTRACT_FROM_LAST_RUN_TIME_KEY) != null)
+      {
+         int secondsBack = Integer.parseInt(runBackendStepInput.getValueString(SECONDS_TO_SUBTRACT_FROM_LAST_RUN_TIME_KEY));
+         updatedRunTime = lastRunTime.minusSeconds(secondsBack);
+      }
+
+      return (updatedRunTime.toString());
    }
 
 
@@ -148,14 +162,24 @@ public class ExtractViaBasepullQueryStep extends ExtractViaQueryStep implements 
     *******************************************************************************/
    protected String getThisRunTimeString(RunBackendStepInput runBackendStepInput) throws QException
    {
-      Instant thisRunTime = runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY);
+      Instant thisRunTime    = runBackendStepInput.getValueInstant(RunProcessAction.BASEPULL_THIS_RUNTIME_KEY);
+      Instant updatedRunTime = thisRunTime;
 
       Serializable basepullConfigurationValue = runBackendStepInput.getValue(RunProcessAction.BASEPULL_CONFIGURATION);
       if(basepullConfigurationValue instanceof BasepullConfiguration basepullConfiguration && basepullConfiguration.getSecondsToSubtractFromThisRunTimeForTimestampQuery() != null)
       {
-         thisRunTime = thisRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromThisRunTimeForTimestampQuery());
+         updatedRunTime = thisRunTime.minusSeconds(basepullConfiguration.getSecondsToSubtractFromThisRunTimeForTimestampQuery());
       }
 
-      return (thisRunTime.toString());
+      //////////////////////////////////////////////////////////////
+      // if an override was found in the params, use that instead //
+      //////////////////////////////////////////////////////////////
+      if(runBackendStepInput.getValueString(SECONDS_TO_SUBTRACT_FROM_THIS_RUN_TIME_KEY) != null)
+      {
+         int secondsBack = Integer.parseInt(runBackendStepInput.getValueString(SECONDS_TO_SUBTRACT_FROM_THIS_RUN_TIME_KEY));
+         updatedRunTime = thisRunTime.minusSeconds(secondsBack);
+      }
+
+      return (updatedRunTime.toString());
    }
 }
