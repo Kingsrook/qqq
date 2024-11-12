@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -49,24 +50,22 @@ import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessAction;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
-import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -78,9 +77,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMeta
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.state.StateType;
-import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
-import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -490,7 +486,7 @@ public class QJavalinProcessHandler
     ** todo - make query params have a "field-" type of prefix??
     **
     *******************************************************************************/
-   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException
+   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException, QException
    {
       //////////////////////////
       // process query string //
@@ -521,20 +517,41 @@ public class QJavalinProcessHandler
       ////////////////////////////
       // process uploaded files //
       ////////////////////////////
-      for(UploadedFile uploadedFile : context.uploadedFiles())
+      for(Map.Entry<String, List<UploadedFile>> entry : context.uploadedFileMap().entrySet())
       {
-         try(InputStream content = uploadedFile.content())
+         String                  name          = entry.getKey();
+         List<UploadedFile>      uploadedFiles = entry.getValue();
+         ArrayList<StorageInput> storageInputs = new ArrayList<>();
+         runProcessInput.addValue(name, storageInputs);
+
+         String storageTableName = QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName();
+         if(!StringUtils.hasContent(storageTableName))
          {
-            QUploadedFile qUploadedFile = new QUploadedFile();
-            qUploadedFile.setBytes(content.readAllBytes());
-            qUploadedFile.setFilename(uploadedFile.filename());
+            throw (new QException("UploadFileArchiveTableName was not specified in javalinMetaData.  Cannot accept file uploads."));
+         }
 
-            UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
-            TempFileStateProvider.getInstance().put(key, qUploadedFile);
-            LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
-            runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
+         for(UploadedFile uploadedFile : uploadedFiles)
+         {
+            String reference = QValueFormatter.formatDate(LocalDate.now())
+                               + File.separator + runProcessInput.getProcessName()
+                               + File.separator + UUID.randomUUID() + "-" + uploadedFile.filename();
 
-            archiveUploadedFile(runProcessInput, qUploadedFile);
+            StorageInput storageInput = new StorageInput(storageTableName).withReference(reference);
+            storageInputs.add(storageInput);
+
+            try
+               (
+                  InputStream content = uploadedFile.content();
+                  OutputStream outputStream = new StorageAction().createOutputStream(storageInput);
+               )
+            {
+               content.transferTo(outputStream);
+               LOG.info("Streamed uploaded file", logPair("storageTable", storageTableName), logPair("reference", reference), logPair("processName", runProcessInput.getProcessName()), logPair("uploadFileName", uploadedFile.filename()));
+            }
+            catch(QException e)
+            {
+               throw (new QException("Error creating output stream in table [" + storageTableName + "] for storage action", e));
+            }
          }
       }
 
@@ -561,27 +578,6 @@ public class QJavalinProcessHandler
             }
          });
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void archiveUploadedFile(RunProcessInput runProcessInput, QUploadedFile qUploadedFile)
-   {
-      String fileName = QValueFormatter.formatDate(LocalDate.now())
-         + File.separator + runProcessInput.getProcessName()
-         + File.separator + qUploadedFile.getFilename();
-
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName());
-      insertInput.setRecords(List.of(new QRecord()
-         .withValue("fileName", fileName)
-         .withValue("contents", qUploadedFile.getBytes())
-      ));
-
-      new InsertAction().executeAsync(insertInput);
    }
 
 
