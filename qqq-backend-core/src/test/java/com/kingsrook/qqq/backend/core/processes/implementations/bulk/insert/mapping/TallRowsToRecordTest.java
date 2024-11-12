@@ -167,9 +167,9 @@ class TallRowsToRecordTest extends BaseTest
    @Test
    void testOrderLinesWithLineExtrinsicsAndOrderExtrinsic() throws QException
    {
-      Integer DEFAULT_STORE_ID                = 101;
-      Integer DEFAULT_LINE_NO                 = 102;
-      String  DEFAULT_ORDER_LINE_EXTRA_SOURCE = "file";
+      Integer defaultStoreId              = 101;
+      Integer defaultLineNo               = 102;
+      String  defaultOrderLineExtraSource = "file";
 
       CsvFileToRows fileToRows = CsvFileToRows.forString("""
          orderNo, Ship To, lastName, SKU,       Quantity, Extrinsic Key, Extrinsic Value, Line Extrinsic Key, Line Extrinsic Value
@@ -197,9 +197,9 @@ class TallRowsToRecordTest extends BaseTest
             "orderLine.extrinsics.value", "Line Extrinsic Value"
          ))
          .withFieldNameToDefaultValueMap(Map.of(
-            "storeId", DEFAULT_STORE_ID,
-            "orderLine.lineNumber", DEFAULT_LINE_NO,
-            "orderLine.extrinsics.source", DEFAULT_ORDER_LINE_EXTRA_SOURCE
+            "storeId", defaultStoreId,
+            "orderLine.lineNumber", defaultLineNo,
+            "orderLine.extrinsics.source", defaultOrderLineExtraSource
          ))
          .withFieldNameToValueMapping(Map.of("orderLine.sku", Map.of("DONUT", "D'OH-NUT")))
          .withTallLayoutGroupByIndexMap(Map.of(
@@ -219,17 +219,17 @@ class TallRowsToRecordTest extends BaseTest
       QRecord order = records.get(0);
       assertEquals(1, order.getValueInteger("orderNo"));
       assertEquals("Homer", order.getValueString("shipToName"));
-      assertEquals(DEFAULT_STORE_ID, order.getValue("storeId"));
+      assertEquals(defaultStoreId, order.getValue("storeId"));
       assertEquals(List.of("D'OH-NUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of("12", "500", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
-      assertEquals(List.of(DEFAULT_LINE_NO, DEFAULT_LINE_NO, DEFAULT_LINE_NO), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
+      assertEquals(List.of(defaultLineNo, defaultLineNo, defaultLineNo), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
       assertEquals(List.of("Store Name", "Coupon Code"), getValues(order.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("QQQ Mart", "10QOff"), getValues(order.getAssociatedRecords().get("extrinsics"), "value"));
 
       QRecord lineItem = order.getAssociatedRecords().get("orderLine").get(0);
       assertEquals(List.of("Flavor", "Size"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("Chocolate", "Large"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "value"));
-      assertEquals(List.of(DEFAULT_ORDER_LINE_EXTRA_SOURCE, DEFAULT_ORDER_LINE_EXTRA_SOURCE), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "source"));
+      assertEquals(List.of(defaultOrderLineExtraSource, defaultOrderLineExtraSource), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "source"));
 
       lineItem = order.getAssociatedRecords().get("orderLine").get(1);
       assertEquals(List.of("Flavor"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "key"));
@@ -238,16 +238,16 @@ class TallRowsToRecordTest extends BaseTest
       order = records.get(1);
       assertEquals(2, order.getValueInteger("orderNo"));
       assertEquals("Ned", order.getValueString("shipToName"));
-      assertEquals(DEFAULT_STORE_ID, order.getValue("storeId"));
+      assertEquals(defaultStoreId, order.getValue("storeId"));
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of("7", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
-      assertEquals(List.of(DEFAULT_LINE_NO, DEFAULT_LINE_NO), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
+      assertEquals(List.of(defaultLineNo, defaultLineNo), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
       assertThat(order.getAssociatedRecords().get("extrinsics")).isNullOrEmpty();
 
       lineItem = order.getAssociatedRecords().get("orderLine").get(0);
       assertEquals(List.of("Flavor"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("King James"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "value"));
-      assertEquals(List.of(DEFAULT_ORDER_LINE_EXTRA_SOURCE), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "source"));
+      assertEquals(List.of(defaultOrderLineExtraSource), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "source"));
    }
 
 
