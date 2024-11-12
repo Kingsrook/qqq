@@ -88,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *******************************************************************************/
 public class GenerateReportActionTest extends BaseTest
 {
-   private static final String REPORT_NAME = "personReport1";
+   public static final String REPORT_NAME = "personReport1";
 
 
 
@@ -651,7 +651,7 @@ public class GenerateReportActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QReportMetaData defineTableOnlyReport()
+   public static QReportMetaData defineTableOnlyReport()
    {
       QReportMetaData report = new QReportMetaData()
          .withName(REPORT_NAME)
