@@ -1,0 +1,503 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping;
+
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
+
+
+/*******************************************************************************
+ **
+ *******************************************************************************/
+public class BulkInsertMapping implements Serializable
+{
+   private String  tableName;
+   private Boolean hasHeaderRow;
+
+   private Layout layout;
+
+   /////////////////////////////////////////////////////////////////////
+   // keys in here are:                                               //
+   // fieldName (for the main table)                                  //
+   // association.fieldName (for an associated child table)           //
+   // association.association.fieldName (for grandchild associations) //
+   /////////////////////////////////////////////////////////////////////
+   private Map<String, String>                    fieldNameToHeaderNameMap   = new HashMap<>();
+   private Map<String, Integer>                   fieldNameToIndexMap        = new HashMap<>();
+   private Map<String, Serializable>              fieldNameToDefaultValueMap = new HashMap<>();
+   private Map<String, Map<String, Serializable>> fieldNameToValueMapping    = new HashMap<>();
+
+   private Map<String, List<Integer>> tallLayoutGroupByIndexMap = new HashMap<>();
+   private List<String>               mappedAssociations        = new ArrayList<>();
+
+   private Memoization<Pair<String, String>, Boolean> shouldProcessFieldForTable = new Memoization<>();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public enum Layout
+   {
+      FLAT(FlatRowsToRecord::new),
+      TALL(TallRowsToRecord::new),
+      WIDE(WideRowsToRecord::new);
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      private final Supplier<? extends RowsToRecordInterface> supplier;
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      Layout(Supplier<? extends RowsToRecordInterface> supplier)
+      {
+         this.supplier = supplier;
+      }
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public RowsToRecordInterface newRowsToRecordInterface()
+      {
+         return (supplier.get());
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @JsonIgnore
+   public Map<String, Integer> getFieldIndexes(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow) throws QException
+   {
+      if(hasHeaderRow && fieldNameToHeaderNameMap != null)
+      {
+         return (getFieldIndexesForHeaderMappedUseCase(table, associationNameChain, headerRow));
+      }
+      else if(fieldNameToIndexMap != null)
+      {
+         return (fieldNameToIndexMap);
+      }
+
+      throw (new QException("Mapping was not properly configured."));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @JsonIgnore
+   public Map<String, Map<String, Serializable>> getFieldNameToValueMappingForTable(String associatedTableName)
+   {
+      Map<String, Map<String, Serializable>> rs = new HashMap<>();
+
+      for(Map.Entry<String, Map<String, Serializable>> entry : CollectionUtils.nonNullMap(fieldNameToValueMapping).entrySet())
+      {
+         if(shouldProcessFieldForTable(entry.getKey(), associatedTableName))
+         {
+            String key = StringUtils.hasContent(associatedTableName) ? entry.getKey().substring(associatedTableName.length() + 1) : entry.getKey();
+            rs.put(key, entry.getValue());
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   boolean shouldProcessFieldForTable(String fieldNameWithAssociationPrefix, String associationChain)
+   {
+      return shouldProcessFieldForTable.getResult(Pair.of(fieldNameWithAssociationPrefix, associationChain), p ->
+      {
+         List<String> fieldNameParts   = new ArrayList<>();
+         List<String> associationParts = new ArrayList<>();
+
+         if(StringUtils.hasContent(fieldNameWithAssociationPrefix))
+         {
+            fieldNameParts.addAll(Arrays.asList(fieldNameWithAssociationPrefix.split("\\.")));
+         }
+
+         if(StringUtils.hasContent(associationChain))
+         {
+            associationParts.addAll(Arrays.asList(associationChain.split("\\.")));
+         }
+
+         if(!fieldNameParts.isEmpty())
+         {
+            fieldNameParts.remove(fieldNameParts.size() - 1);
+         }
+
+         return (fieldNameParts.equals(associationParts));
+      }).orElse(false);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Map<String, Integer> getFieldIndexesForHeaderMappedUseCase(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow)
+   {
+      Map<String, Integer> rs = new HashMap<>();
+
+      ////////////////////////////////////////////////////////
+      // for the current file, map header values to indexes //
+      ////////////////////////////////////////////////////////
+      Map<String, Integer> headerToIndexMap = new HashMap<>();
+      for(int i = 0; i < headerRow.size(); i++)
+      {
+         String headerValue = ValueUtils.getValueAsString(headerRow.getValue(i));
+         headerToIndexMap.put(headerValue, i);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // loop over fields - finding what header name they are mapped to - then what index that header is at. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      String fieldNamePrefix = !StringUtils.hasContent(associationNameChain) ? "" : associationNameChain + ".";
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         String headerName = fieldNameToHeaderNameMap.get(fieldNamePrefix + field.getName());
+         if(headerName != null)
+         {
+            Integer headerIndex = headerToIndexMap.get(headerName);
+            if(headerIndex != null)
+            {
+               rs.put(field.getName(), headerIndex);
+            }
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableName
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return (this.tableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    *******************************************************************************/
+   public BulkInsertMapping withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hasHeaderRow
+    *******************************************************************************/
+   public Boolean getHasHeaderRow()
+   {
+      return (this.hasHeaderRow);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hasHeaderRow
+    *******************************************************************************/
+   public void setHasHeaderRow(Boolean hasHeaderRow)
+   {
+      this.hasHeaderRow = hasHeaderRow;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hasHeaderRow
+    *******************************************************************************/
+   public BulkInsertMapping withHasHeaderRow(Boolean hasHeaderRow)
+   {
+      this.hasHeaderRow = hasHeaderRow;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNameToHeaderNameMap
+    *******************************************************************************/
+   public Map<String, String> getFieldNameToHeaderNameMap()
+   {
+      return (this.fieldNameToHeaderNameMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNameToHeaderNameMap
+    *******************************************************************************/
+   public void setFieldNameToHeaderNameMap(Map<String, String> fieldNameToHeaderNameMap)
+   {
+      this.fieldNameToHeaderNameMap = fieldNameToHeaderNameMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldNameToHeaderNameMap
+    *******************************************************************************/
+   public BulkInsertMapping withFieldNameToHeaderNameMap(Map<String, String> fieldNameToHeaderNameMap)
+   {
+      this.fieldNameToHeaderNameMap = fieldNameToHeaderNameMap;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNameToIndexMap
+    *******************************************************************************/
+   public Map<String, Integer> getFieldNameToIndexMap()
+   {
+      return (this.fieldNameToIndexMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNameToIndexMap
+    *******************************************************************************/
+   public void setFieldNameToIndexMap(Map<String, Integer> fieldNameToIndexMap)
+   {
+      this.fieldNameToIndexMap = fieldNameToIndexMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldNameToIndexMap
+    *******************************************************************************/
+   public BulkInsertMapping withFieldNameToIndexMap(Map<String, Integer> fieldNameToIndexMap)
+   {
+      this.fieldNameToIndexMap = fieldNameToIndexMap;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for mappedAssociations
+    *******************************************************************************/
+   public List<String> getMappedAssociations()
+   {
+      return (this.mappedAssociations);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for mappedAssociations
+    *******************************************************************************/
+   public void setMappedAssociations(List<String> mappedAssociations)
+   {
+      this.mappedAssociations = mappedAssociations;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for mappedAssociations
+    *******************************************************************************/
+   public BulkInsertMapping withMappedAssociations(List<String> mappedAssociations)
+   {
+      this.mappedAssociations = mappedAssociations;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNameToDefaultValueMap
+    *******************************************************************************/
+   public Map<String, Serializable> getFieldNameToDefaultValueMap()
+   {
+      if(this.fieldNameToDefaultValueMap == null)
+      {
+         this.fieldNameToDefaultValueMap = new HashMap<>();
+      }
+
+      return (this.fieldNameToDefaultValueMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNameToDefaultValueMap
+    *******************************************************************************/
+   public void setFieldNameToDefaultValueMap(Map<String, Serializable> fieldNameToDefaultValueMap)
+   {
+      this.fieldNameToDefaultValueMap = fieldNameToDefaultValueMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldNameToDefaultValueMap
+    *******************************************************************************/
+   public BulkInsertMapping withFieldNameToDefaultValueMap(Map<String, Serializable> fieldNameToDefaultValueMap)
+   {
+      this.fieldNameToDefaultValueMap = fieldNameToDefaultValueMap;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for fieldNameToValueMapping
+    *******************************************************************************/
+   public Map<String, Map<String, Serializable>> getFieldNameToValueMapping()
+   {
+      return (this.fieldNameToValueMapping);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for fieldNameToValueMapping
+    *******************************************************************************/
+   public void setFieldNameToValueMapping(Map<String, Map<String, Serializable>> fieldNameToValueMapping)
+   {
+      this.fieldNameToValueMapping = fieldNameToValueMapping;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for fieldNameToValueMapping
+    *******************************************************************************/
+   public BulkInsertMapping withFieldNameToValueMapping(Map<String, Map<String, Serializable>> fieldNameToValueMapping)
+   {
+      this.fieldNameToValueMapping = fieldNameToValueMapping;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for layout
+    *******************************************************************************/
+   public Layout getLayout()
+   {
+      return (this.layout);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for layout
+    *******************************************************************************/
+   public void setLayout(Layout layout)
+   {
+      this.layout = layout;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for layout
+    *******************************************************************************/
+   public BulkInsertMapping withLayout(Layout layout)
+   {
+      this.layout = layout;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tallLayoutGroupByIndexMap
+    *******************************************************************************/
+   public Map<String, List<Integer>> getTallLayoutGroupByIndexMap()
+   {
+      return (this.tallLayoutGroupByIndexMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tallLayoutGroupByIndexMap
+    *******************************************************************************/
+   public void setTallLayoutGroupByIndexMap(Map<String, List<Integer>> tallLayoutGroupByIndexMap)
+   {
+      this.tallLayoutGroupByIndexMap = tallLayoutGroupByIndexMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tallLayoutGroupByIndexMap
+    *******************************************************************************/
+   public BulkInsertMapping withTallLayoutGroupByIndexMap(Map<String, List<Integer>> tallLayoutGroupByIndexMap)
+   {
+      this.tallLayoutGroupByIndexMap = tallLayoutGroupByIndexMap;
+      return (this);
+   }
+
+}
