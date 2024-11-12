@@ -64,6 +64,8 @@ public class SampleJavalinServer
       {
          qInstance = SampleMetaDataProvider.defineInstance();
 
+         SampleMetaDataProvider.primeTestDatabase("prime-test-database.sql");
+
          QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
          javalinService = Javalin.create(config ->
          {

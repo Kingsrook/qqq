@@ -22,7 +22,10 @@
 package com.kingsrook.sampleapp.metadata;
 
 
+import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +40,10 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -48,8 +54,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QuickSightChartMe
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
@@ -58,6 +69,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMet
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionOutputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QRecordListMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -70,9 +82,13 @@ import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinali
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
+import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
 import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
+import org.apache.commons.io.IOUtils;
 
 
 /*******************************************************************************
@@ -80,7 +96,7 @@ import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
  *******************************************************************************/
 public class SampleMetaDataProvider
 {
-   public static boolean USE_MYSQL = true;
+   public static boolean USE_MYSQL = false;
 
    public static final String RDBMS_BACKEND_NAME      = "rdbms";
    public static final String FILESYSTEM_BACKEND_NAME = "filesystem";
@@ -97,6 +113,7 @@ public class SampleMetaDataProvider
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE = "sleepInteractive";
 
    public static final String TABLE_NAME_PERSON  = "person";
+   public static final String TABLE_NAME_PET     = "pet";
    public static final String TABLE_NAME_CARRIER = "carrier";
    public static final String TABLE_NAME_CITY    = "city";
 
@@ -105,6 +122,9 @@ public class SampleMetaDataProvider
 
    public static final String SCREEN_0 = "screen0";
    public static final String SCREEN_1 = "screen1";
+
+   public static final String BACKEND_NAME_UPLOAD_ARCHIVE    = "uploadArchive";
+   public static final String UPLOAD_FILE_ARCHIVE_TABLE_NAME = "uploadFileArchive";
 
 
 
@@ -120,6 +140,10 @@ public class SampleMetaDataProvider
       qInstance.addBackend(defineFilesystemBackend());
       qInstance.addTable(defineTableCarrier());
       qInstance.addTable(defineTablePerson());
+      qInstance.addPossibleValueSource(QPossibleValueSource.newForTable(TABLE_NAME_PERSON));
+      qInstance.addPossibleValueSource(QPossibleValueSource.newForEnum(PetSpecies.NAME, PetSpecies.values()));
+      qInstance.addTable(defineTablePet());
+      qInstance.addJoin(defineTablePersonJoinPet());
       qInstance.addTable(defineTableCityFile());
       qInstance.addProcess(defineProcessGreetPeople());
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
@@ -128,6 +152,9 @@ public class SampleMetaDataProvider
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
+      qInstance.add(defineUploadArchiveBackend());
+      qInstance.add(defineTableUploadFileArchive());
+
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, SampleMetaDataProvider.class.getPackageName());
 
       defineWidgets(qInstance);
@@ -135,6 +162,26 @@ public class SampleMetaDataProvider
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void primeTestDatabase(String sqlFileName) throws Exception
+   {
+      try(Connection connection = ConnectionManager.getConnection(SampleMetaDataProvider.defineRdbmsBackend()))
+      {
+         InputStream  primeTestDatabaseSqlStream = SampleMetaDataProvider.class.getResourceAsStream("/" + sqlFileName);
+         List<String> lines                      = IOUtils.readLines(primeTestDatabaseSqlStream, StandardCharsets.UTF_8);
+         lines = lines.stream().filter(line -> !line.startsWith("-- ")).toList();
+         String joinedSQL = String.join("\n", lines);
+         for(String sql : joinedSQL.split(";"))
+         {
+            QueryManager.executeUpdate(connection, sql);
+         }
+      }
    }
 
 
@@ -192,6 +239,7 @@ public class SampleMetaDataProvider
          .withIcon(new QIcon().withName("emoji_people"))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET).withIcon(new QIcon().withName("emoji_people")))
          .withChild(qInstance.getTable(TABLE_NAME_PERSON).withIcon(new QIcon().withName("person")))
+         .withChild(qInstance.getTable(TABLE_NAME_PET).withIcon(new QIcon().withName("pets")))
          .withChild(qInstance.getTable(TABLE_NAME_CITY).withIcon(new QIcon().withName("location_city")))
          .withChild(qInstance.getProcess(PROCESS_NAME_GREET_INTERACTIVE).withIcon(new QIcon().withName("waving_hand")))
          .withWidgets(List.of(PersonsByCreateDateBarChart.class.getSimpleName(), QuickSightChartRenderer.class.getSimpleName()))
@@ -340,7 +388,58 @@ public class SampleMetaDataProvider
 
       QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);
 
+      qTableMetaData.withAssociation(new Association()
+         .withAssociatedTableName(TABLE_NAME_PET)
+         .withName("pets")
+         .withJoinName(QJoinMetaData.makeInferredJoinName(TABLE_NAME_PERSON, TABLE_NAME_PET)));
+
       return (qTableMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QTableMetaData defineTablePet()
+   {
+      QTableMetaData qTableMetaData = new QTableMetaData()
+         .withName(TABLE_NAME_PET)
+         .withLabel("Pet")
+         .withBackendName(RDBMS_BACKEND_NAME)
+         .withPrimaryKeyField("id")
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("name")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER).withIsEditable(false))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withBackendName("create_date").withIsEditable(false))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withBackendName("modify_date").withIsEditable(false))
+         .withField(new QFieldMetaData("name", QFieldType.STRING).withBackendName("name").withIsRequired(true))
+         .withField(new QFieldMetaData("personId", QFieldType.INTEGER).withBackendName("person_id").withIsRequired(true).withPossibleValueSourceName(TABLE_NAME_PERSON))
+         .withField(new QFieldMetaData("speciesId", QFieldType.INTEGER).withBackendName("species_id").withIsRequired(true).withPossibleValueSourceName(PetSpecies.NAME))
+         .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
+
+         .withSection(new QFieldSection("identity", "Identity", new QIcon("badge"), Tier.T1, List.of("id", "name")))
+         .withSection(new QFieldSection("basicInfo", "Basic Info", new QIcon("dataset"), Tier.T2, List.of("personId", "speciesId", "birthDate")))
+         .withSection(new QFieldSection("dates", "Dates", new QIcon("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
+
+      QInstanceEnricher.setInferredFieldBackendNames(qTableMetaData);
+
+      return (qTableMetaData);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static QJoinMetaData defineTablePersonJoinPet()
+   {
+      return new QJoinMetaData()
+         .withLeftTable(TABLE_NAME_PERSON)
+         .withRightTable(TABLE_NAME_PET)
+         .withInferredName()
+         .withType(JoinType.ONE_TO_MANY)
+         .withJoinOn(new JoinOn("id", "personId"));
    }
 
 
@@ -525,6 +624,40 @@ public class SampleMetaDataProvider
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QBackendMetaData defineUploadArchiveBackend()
+   {
+      return new FilesystemBackendMetaData()
+         .withName(BACKEND_NAME_UPLOAD_ARCHIVE)
+         .withBasePath("/tmp/" + BACKEND_NAME_UPLOAD_ARCHIVE);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private static QTableMetaData defineTableUploadFileArchive()
+   {
+      return (new QTableMetaData()
+         .withName(UPLOAD_FILE_ARCHIVE_TABLE_NAME)
+         .withBackendName(BACKEND_NAME_UPLOAD_ARCHIVE)
+         .withPrimaryKeyField("fileName")
+         // .withSupplementalMetaData(new ApiTableMetaDataContainer()) // empty container means no apis for this table
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB))
+         .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
+         .withBackendDetails(new S3TableBackendDetails()
+            .withCardinality(Cardinality.ONE)
+            .withFileNameFieldName("fileName")
+            .withContentsFieldName("contents")
+            .withBasePath("upload-file-archive")));
+   }
+
+
+
+   /*******************************************************************************
     ** Testing backend step - just sleeps however long you ask it to (or, throws if
     ** you don't provide a number of seconds to sleep).
     *******************************************************************************/
@@ -622,6 +755,55 @@ public class SampleMetaDataProvider
                .withCodeType(QCodeType.JAVA))
             .withInputData(new QFunctionInputMetaData()
                .withField(new QFieldMetaData(ThrowerStep.FIELD_SLEEP_MILLIS, QFieldType.INTEGER))));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public enum PetSpecies implements PossibleValueEnum<Integer>
+   {
+      DOG(1, "Dog"),
+      CAT(1, "Cat");
+
+      private final Integer id;
+      private final String label;
+
+      public static final String NAME = "petSpecies";
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      PetSpecies(int id, String label)
+      {
+         this.id = id;
+         this.label = label;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public Integer getPossibleValueId()
+      {
+         return (id);
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public String getPossibleValueLabel()
+      {
+         return (label);
       }
    }
 
