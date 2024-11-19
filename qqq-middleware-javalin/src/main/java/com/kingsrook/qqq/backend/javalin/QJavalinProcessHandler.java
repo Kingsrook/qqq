@@ -534,7 +534,8 @@ public class QJavalinProcessHandler
          {
             String reference = QValueFormatter.formatDate(LocalDate.now())
                                + File.separator + runProcessInput.getProcessName()
-                               + File.separator + UUID.randomUUID() + "-" + uploadedFile.filename();
+                               + File.separator + UUID.randomUUID()
+                               + File.separator + uploadedFile.filename();
 
             StorageInput storageInput = new StorageInput(storageTableName).withReference(reference);
             storageInputs.add(storageInput);
