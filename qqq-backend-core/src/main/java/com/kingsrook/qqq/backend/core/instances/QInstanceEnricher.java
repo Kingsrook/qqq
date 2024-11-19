@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPer
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
@@ -74,7 +75,13 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEd
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareValueMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertV2ExtractStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
@@ -862,6 +869,116 @@ public class QInstanceEnricher
 
       process.addStep(0, uploadScreen);
       process.getFrontendStep("review").setRecordListFields(editableFields);
+      qInstance.addProcess(process);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void defineTableBulkInsertV2(QInstance qInstance, QTableMetaData table, String processName)
+   {
+      qInstance.addPossibleValueSource(QPossibleValueSource.newForEnum("bulkInsertFileLayout", BulkInsertMapping.Layout.values()));
+
+      Map<String, Serializable> values = new HashMap<>();
+      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
+
+      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
+            BulkInsertV2ExtractStep.class,
+            BulkInsertTransformStep.class,
+            BulkInsertLoadStep.class,
+            values
+         )
+         .withName(processName)
+         .withIcon(new QIcon().withName("library_add"))
+         .withLabel(table.getLabel() + " Bulk Insert")
+         .withTableName(table.getName())
+         .withIsHidden(true)
+         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
+            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
+
+      List<QFieldMetaData> editableFields = new ArrayList<>();
+      for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
+      {
+         for(String fieldName : CollectionUtils.nonNullList(section.getFieldNames()))
+         {
+            try
+            {
+               QFieldMetaData field = table.getField(fieldName);
+               if(field.getIsEditable() && !field.getType().equals(QFieldType.BLOB))
+               {
+                  editableFields.add(field);
+               }
+            }
+            catch(Exception e)
+            {
+               // shrug?
+            }
+         }
+      }
+
+      String fieldsForHelpText = editableFields.stream()
+         .map(QFieldMetaData::getLabel)
+         .collect(Collectors.joining(", "));
+
+      QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
+         .withName("upload")
+         .withLabel("Upload File")
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
+         .withComponent(new QFrontendComponentMetaData()
+            .withType(QComponentType.HELP_TEXT)
+            .withValue("previewText", "file upload instructions")
+            .withValue("text", "Upload a CSV or Excel (.xlsx) file with the following columns:\n" + fieldsForHelpText))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
+
+      QBackendStepMetaData prepareFileMappingStep = new QBackendStepMetaData()
+         .withName("prepareFileMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareFileMappingStep.class));
+
+      QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
+         .withName("fileMapping")
+         .withLabel("File Mapping")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM));
+
+      QBackendStepMetaData receiveFileMappingStep = new QBackendStepMetaData()
+         .withName("receiveFileMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveFileMappingStep.class));
+
+      QBackendStepMetaData prepareValueMappingStep = new QBackendStepMetaData()
+         .withName("prepareValueMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareValueMappingStep.class));
+
+      QFrontendStepMetaData valueMappingScreen = new QFrontendStepMetaData()
+         .withName("valueMapping")
+         .withLabel("Value Mapping")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_VALUE_MAPPING_FORM));
+
+      QBackendStepMetaData receiveValueMappingStep = new QBackendStepMetaData()
+         .withName("receiveValueMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
+
+      int i = 0;
+      process.addStep(i++, uploadScreen);
+
+      process.addStep(i++, prepareFileMappingStep);
+      process.addStep(i++, fileMappingScreen);
+      process.addStep(i++, receiveFileMappingStep);
+
+      process.addStep(i++, prepareValueMappingStep);
+      process.addStep(i++, valueMappingScreen);
+      process.addStep(i++, receiveValueMappingStep);
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW).setRecordListFields(editableFields);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // put the bulk-load profile form (e.g., for saving it) on the review & result screens) //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW)
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_RESULT)
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
       qInstance.addProcess(process);
    }
 
