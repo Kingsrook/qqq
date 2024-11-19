@@ -40,6 +40,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedbulkloadprofiles.DeleteSavedBulkLoadProfileProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedbulkloadprofiles.QuerySavedBulkLoadProfileProcess;
+import com.kingsrook.qqq.backend.core.processes.implementations.savedbulkloadprofiles.StoreSavedBulkLoadProfileProcess;
 
 
 /*******************************************************************************
@@ -68,6 +71,13 @@ public class SavedBulkLoadProfileMetaDataProvider
       {
          instance.addPossibleValueSource(new ShareScopePossibleValueMetaDataProducer().produce(new QInstance()));
       }
+
+      ////////////////////////////////////
+      // processes for working with 'em //
+      ////////////////////////////////////
+      instance.add(StoreSavedBulkLoadProfileProcess.getProcessMetaData());
+      instance.add(QuerySavedBulkLoadProfileProcess.getProcessMetaData());
+      instance.add(DeleteSavedBulkLoadProfileProcess.getProcessMetaData());
    }
 
 
