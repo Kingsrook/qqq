@@ -42,7 +42,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  *
  *******************************************************************************/
 @JsonInclude(Include.NON_NULL)
-public class QFrontendFieldMetaData
+public class QFrontendFieldMetaData implements Serializable
 {
    private String       name;
    private String       label;
