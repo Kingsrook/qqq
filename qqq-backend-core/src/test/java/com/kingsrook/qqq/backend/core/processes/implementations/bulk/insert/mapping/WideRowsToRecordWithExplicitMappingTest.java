@@ -83,13 +83,13 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
       assertEquals(1, order.getValueInteger("orderNo"));
       assertEquals("Homer", order.getValueString("shipToName"));
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("12", "500", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
 
       order = records.get(1);
       assertEquals(2, order.getValueInteger("orderNo"));
       assertEquals("Ned", order.getValueString("shipToName"));
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("7", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
    }
 
 
@@ -139,7 +139,7 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
       assertEquals(1, order.getValueInteger("orderNo"));
       assertEquals("Homer", order.getValueString("shipToName"));
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("12", "500", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
       assertEquals(List.of("Store Name", "Coupon Code"), getValues(order.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("QQQ Mart", "10QOff"), getValues(order.getAssociatedRecords().get("extrinsics"), "value"));
 
@@ -147,7 +147,7 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
       assertEquals(2, order.getValueInteger("orderNo"));
       assertEquals("Ned", order.getValueString("shipToName"));
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("7", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
       assertThat(order.getAssociatedRecords().get("extrinsics")).isNullOrEmpty();
    }
 
@@ -166,7 +166,7 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
          """;
 
       Integer defaultStoreId        = 42;
-      Integer defaultLineNo         = 47;
+      String  defaultLineNo         = "47";
       String  defaultLineExtraValue = "bar";
 
       CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
@@ -197,8 +197,8 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
                new BulkInsertWideLayoutMapping.ChildRecordMapping(
                   Map.of("sku", "SKU 3", "quantity", "Quantity 3"),
                   Map.of("extrinsics", new BulkInsertWideLayoutMapping(List.of(
-                        new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.1", "value", "Line Extrinsic Value 3.1")),
-                        new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.2", "value", "Line Extrinsic Value 3.2"))
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.1", "value", "Line Extrinsic Value 3.1")),
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.2", "value", "Line Extrinsic Value 3.2"))
                   ))))
             )),
             "extrinsics", new BulkInsertWideLayoutMapping(List.of(
@@ -225,7 +225,7 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
       assertEquals("Homer", order.getValueString("shipToName"));
       assertEquals(defaultStoreId, order.getValue("storeId"));
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("12", "500", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
       assertEquals(List.of(defaultLineNo, defaultLineNo, defaultLineNo), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
       assertEquals(List.of("Store Name", "Coupon Code"), getValues(order.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("QQQ Mart", "10QOff"), getValues(order.getAssociatedRecords().get("extrinsics"), "value"));
@@ -247,7 +247,7 @@ class WideRowsToRecordWithExplicitMappingTest extends BaseTest
       assertEquals("Ned", order.getValueString("shipToName"));
       assertEquals(defaultStoreId, order.getValue("storeId"));
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of("7", "1"), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
       assertEquals(List.of(defaultLineNo, defaultLineNo), getValues(order.getAssociatedRecords().get("orderLine"), "lineNumber"));
       assertThat(order.getAssociatedRecords().get("extrinsics")).isNullOrEmpty();
 

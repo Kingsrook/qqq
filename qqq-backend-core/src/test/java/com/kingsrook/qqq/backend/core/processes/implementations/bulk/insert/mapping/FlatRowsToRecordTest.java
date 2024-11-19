@@ -84,7 +84,7 @@ class FlatRowsToRecordTest extends BaseTest
       records = rowsToRecord.nextPage(fileToRows, header, mapping, 2);
       assertEquals(List.of("Marge", "Bart"), getValues(records, "firstName"));
       assertEquals(List.of(2, 2), getValues(records, "noOfShoes"));
-      assertEquals(ListBuilder.of("", "99.95"), getValues(records, "cost"));
+      assertEquals(ListBuilder.of(null, new BigDecimal("99.95")), getValues(records, "cost"));
 
       records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
       assertEquals(List.of("Ned"), getValues(records, "firstName"));

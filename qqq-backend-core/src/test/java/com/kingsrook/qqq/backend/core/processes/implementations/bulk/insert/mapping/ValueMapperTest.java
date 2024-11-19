@@ -52,15 +52,15 @@ class ValueMapperTest extends BaseTest
       BulkInsertMapping mapping = new BulkInsertMapping().withFieldNameToValueMapping(Map.of(
          "storeId", Map.of("QQQMart", 1, "Q'R'Us", 2),
          "shipToName", Map.of("HoJu", "Homer", "Bart", "Bartholomew"),
-         "lineItem.sku", Map.of("ABC", "Alphabet"),
-         "lineItem.extrinsics.value", Map.of("foo", "bar", "bar", "baz"),
+         "orderLine.sku", Map.of("ABC", "Alphabet"),
+         "orderLine.extrinsics.value", Map.of("foo", "bar", "bar", "baz"),
          "extrinsics.key", Map.of("1", "one", "2", "two")
       ));
 
       QRecord inputRecord = new QRecord()
          .withValue("storeId", "QQQMart")
          .withValue("shipToName", "HoJu")
-         .withAssociatedRecord("lineItem", new QRecord()
+         .withAssociatedRecord("orderLine", new QRecord()
             .withValue("sku", "ABC")
             .withAssociatedRecord("extrinsics", new QRecord()
                .withValue("key", "myKey")
@@ -80,7 +80,7 @@ class ValueMapperTest extends BaseTest
       QRecord expectedRecord = new QRecord()
          .withValue("storeId", 1)
          .withValue("shipToName", "Homer")
-         .withAssociatedRecord("lineItem", new QRecord()
+         .withAssociatedRecord("orderLine", new QRecord()
             .withValue("sku", "Alphabet")
             .withAssociatedRecord("extrinsics", new QRecord()
                .withValue("key", "myKey")

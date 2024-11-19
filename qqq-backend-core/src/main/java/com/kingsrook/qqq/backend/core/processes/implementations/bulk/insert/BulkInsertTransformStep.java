@@ -233,7 +233,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       /////////////////////////////////////////////////////////////////////////////////
       // run all validation from the insert action - in Preview mode (boolean param) //
       /////////////////////////////////////////////////////////////////////////////////
-      insertInput.setRecords(recordsWithoutAnyErrors);
+      insertInput.setRecords(recordsWithoutUkErrors);
       InsertAction insertAction = new InsertAction();
       insertAction.performValidations(insertInput, true);
       List<QRecord> validationResultRecords = insertInput.getRecords();
