@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 
 
 /***************************************************************************

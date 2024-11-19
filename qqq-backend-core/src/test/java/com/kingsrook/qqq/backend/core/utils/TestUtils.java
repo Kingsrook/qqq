@@ -644,6 +644,7 @@ public class TestUtils
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
+         .withField(new QFieldMetaData("shipToName", QFieldType.STRING))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()
@@ -700,7 +701,8 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("lineItemId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("key", QFieldType.STRING))
-         .withField(new QFieldMetaData("value", QFieldType.STRING));
+         .withField(new QFieldMetaData("value", QFieldType.STRING))
+         .withField(new QFieldMetaData("source", QFieldType.STRING)); // doesn't really make sense, but useful to have an extra field here in some bulk-load tests
    }
 
 

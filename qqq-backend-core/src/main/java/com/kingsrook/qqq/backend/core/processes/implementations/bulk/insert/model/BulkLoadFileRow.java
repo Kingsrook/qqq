@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model;
 
 
 import java.io.Serializable;

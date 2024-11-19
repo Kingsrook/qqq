@@ -28,8 +28,8 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.CsvFileToRows;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /*******************************************************************************
  ** Unit test for WideRowsToRecord
  *******************************************************************************/
-class WideRowsToRecordTest extends BaseTest
+class WideRowsToRecordWithExplicitMappingTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -48,46 +48,28 @@ class WideRowsToRecordTest extends BaseTest
    @Test
    void testOrderAndLinesWithoutDupes() throws QException
    {
-      testOrderAndLines("""
+      String csv = """
          orderNo, Ship To, lastName, SKU 1,     Quantity 1, SKU 2,     Quantity 2, SKU 3, Quantity 3
          1,       Homer,   Simpson,  DONUT,     12,         BEER,      500,        COUCH,  1
          2,       Ned,     Flanders, BIBLE,     7,          LAWNMOWER, 1
-         """);
-   }
+         """;
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testOrderAndLinesWithDupes() throws QException
-   {
-      testOrderAndLines("""
-         orderNo, Ship To, lastName, SKU,   Quantity, SKU,       Quantity, SKU,   Quantity
-         1,       Homer,   Simpson,  DONUT, 12,       BEER,      500,      COUCH, 1
-         2,       Ned,     Flanders, BIBLE, 7,        LAWNMOWER, 1
-         """);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private void testOrderAndLines(String csv) throws QException
-   {
       CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
       BulkLoadFileRow header     = fileToRows.next();
 
-      WideRowsToRecord rowsToRecord = new WideRowsToRecord();
+      WideRowsToRecordWithExplicitMapping rowsToRecord = new WideRowsToRecordWithExplicitMapping();
 
       BulkInsertMapping mapping = new BulkInsertMapping()
          .withFieldNameToHeaderNameMap(Map.of(
             "orderNo", "orderNo",
-            "shipToName", "Ship To",
-            "orderLine.sku", "SKU",
-            "orderLine.quantity", "Quantity"
+            "shipToName", "Ship To"
+         ))
+         .withWideLayoutMapping(Map.of(
+            "orderLine", new BulkInsertWideLayoutMapping(List.of(
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 1", "quantity", "Quantity 1")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 2", "quantity", "Quantity 2")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 3", "quantity", "Quantity 3"))
+            ))
          ))
          .withMappedAssociations(List.of("orderLine"))
          .withTableName(TestUtils.TABLE_NAME_ORDER)
@@ -118,48 +100,32 @@ class WideRowsToRecordTest extends BaseTest
    @Test
    void testOrderLinesAndOrderExtrinsicWithoutDupes() throws QException
    {
-      testOrderLinesAndOrderExtrinsic("""
+      String csv = """
          orderNo, Ship To, lastName, SKU 1, Quantity 1, SKU 2,     Quantity 2, SKU 3, Quantity 3, Extrinsic Key 1, Extrinsic Value 1, Extrinsic Key 2, Extrinsic Value 2
          1,       Homer,   Simpson,  DONUT, 12,         BEER,      500,        COUCH, 1,          Store Name,      QQQ Mart,          Coupon Code,     10QOff
          2,       Ned,     Flanders, BIBLE, 7,          LAWNMOWER, 1
-         """);
-   }
+         """;
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testOrderLinesAndOrderExtrinsicWithDupes() throws QException
-   {
-      testOrderLinesAndOrderExtrinsic("""
-         orderNo, Ship To, lastName, SKU,   Quantity, SKU,       Quantity, SKU,   Quantity, Extrinsic Key, Extrinsic Value, Extrinsic Key, Extrinsic Value
-         1,       Homer,   Simpson,  DONUT, 12,       BEER,      500,      COUCH, 1,        Store Name,    QQQ Mart,        Coupon Code,   10QOff
-         2,       Ned,     Flanders, BIBLE, 7,        LAWNMOWER, 1
-         """);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private void testOrderLinesAndOrderExtrinsic(String csv) throws QException
-   {
       CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
       BulkLoadFileRow header     = fileToRows.next();
 
-      WideRowsToRecord rowsToRecord = new WideRowsToRecord();
+      WideRowsToRecordWithExplicitMapping rowsToRecord = new WideRowsToRecordWithExplicitMapping();
 
       BulkInsertMapping mapping = new BulkInsertMapping()
          .withFieldNameToHeaderNameMap(Map.of(
             "orderNo", "orderNo",
-            "shipToName", "Ship To",
-            "orderLine.sku", "SKU",
-            "orderLine.quantity", "Quantity",
-            "extrinsics.key", "Extrinsic Key",
-            "extrinsics.value", "Extrinsic Value"
+            "shipToName", "Ship To"
+         ))
+         .withWideLayoutMapping(Map.of(
+            "orderLine", new BulkInsertWideLayoutMapping(List.of(
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 1", "quantity", "Quantity 1")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 2", "quantity", "Quantity 2")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("sku", "SKU 3", "quantity", "Quantity 3"))
+            )),
+            "extrinsics", new BulkInsertWideLayoutMapping(List.of(
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Extrinsic Key 1", "value", "Extrinsic Value 1")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Extrinsic Key 2", "value", "Extrinsic Value 2"))
+            ))
          ))
          .withMappedAssociations(List.of("orderLine", "extrinsics"))
          .withTableName(TestUtils.TABLE_NAME_ORDER)
@@ -193,35 +159,12 @@ class WideRowsToRecordTest extends BaseTest
    @Test
    void testOrderLinesWithLineExtrinsicsAndOrderExtrinsicWithoutDupes() throws QException
    {
-      testOrderLinesWithLineExtrinsicsAndOrderExtrinsic("""
-         orderNo, Ship To, lastName,  Extrinsic Key 1, Extrinsic Value 1, Extrinsic Key 2, Extrinsic Value 2, SKU 1, Quantity 1, Line Extrinsic Key 1, Line Extrinsic Value 1, Line Extrinsic Key 2, Line Extrinsic Value 2, SKU 2,     Quantity 2, Line Extrinsic Key 1, Line Extrinsic Value 1, SKU 3, Quantity 3, Line Extrinsic Key 1, Line Extrinsic Value 1, Line Extrinsic Key 2
-         1,       Homer,   Simpson,   Store Name,      QQQ Mart,          Coupon Code,     10QOff,            DONUT, 12,         Flavor,               Chocolate,              Size,                 Large,                  BEER,      500,        Flavor,               Hops,                   COUCH, 1,          Color,                Brown,                  foo,
-         2,       Ned,     Flanders,  ,                ,                  ,                ,                  BIBLE, 7,          Flavor,               King James,             Size,                 X-Large,                LAWNMOWER, 1
-         """);
-   }
+      String csv = """
+         orderNo, Ship To, lastName,  Extrinsic Key 1, Extrinsic Value 1, Extrinsic Key 2, Extrinsic Value 2, SKU 1, Quantity 1, Line Extrinsic Key 1.1, Line Extrinsic Value 1.1, Line Extrinsic Key 1.2, Line Extrinsic Value 1.2, SKU 2,     Quantity 2, Line Extrinsic Key 2.1, Line Extrinsic Value 2.1, SKU 3, Quantity 3, Line Extrinsic Key 3.1, Line Extrinsic Value 3.1, Line Extrinsic Key 3.2
+         1,       Homer,   Simpson,   Store Name,      QQQ Mart,          Coupon Code,     10QOff,            DONUT, 12,         Flavor,                 Chocolate,                Size,                   Large,                    BEER,      500,        Flavor,                 Hops,                     COUCH, 1,          Color,                  Brown,                    foo,
+         2,       Ned,     Flanders,  ,                ,                  ,                ,                  BIBLE, 7,          Flavor,                 King James,               Size,                   X-Large,                  LAWNMOWER, 1
+         """;
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testOrderLinesWithLineExtrinsicsAndOrderExtrinsicWithDupes() throws QException
-   {
-      testOrderLinesWithLineExtrinsicsAndOrderExtrinsic("""
-         orderNo, Ship To, lastName,  Extrinsic Key, Extrinsic Value, Extrinsic Key, Extrinsic Value, SKU,   Quantity, Line Extrinsic Key, Line Extrinsic Value, Line Extrinsic Key, Line Extrinsic Value, SKU,       Quantity, Line Extrinsic Key, Line Extrinsic Value, SKU,   Quantity, Line Extrinsic Key, Line Extrinsic Value, Line Extrinsic Key
-         1,       Homer,   Simpson,   Store Name,    QQQ Mart,        Coupon Code,   10QOff,          DONUT, 12,       Flavor,             Chocolate,            Size,               Large,                BEER,      500,      Flavor,             Hops,                 COUCH, 1,        Color,              Brown,                foo
-         2,       Ned,     Flanders,  ,              ,                ,              ,                BIBLE, 7,        Flavor,             King James,           Size,               X-Large,              LAWNMOWER, 1
-         """);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private void testOrderLinesWithLineExtrinsicsAndOrderExtrinsic(String csv) throws QException
-   {
       Integer defaultStoreId        = 42;
       Integer defaultLineNo         = 47;
       String  defaultLineExtraValue = "bar";
@@ -229,20 +172,41 @@ class WideRowsToRecordTest extends BaseTest
       CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
       BulkLoadFileRow header     = fileToRows.next();
 
-      WideRowsToRecord rowsToRecord = new WideRowsToRecord();
+      WideRowsToRecordWithExplicitMapping rowsToRecord = new WideRowsToRecordWithExplicitMapping();
 
       BulkInsertMapping mapping = new BulkInsertMapping()
          .withFieldNameToHeaderNameMap(Map.of(
             "orderNo", "orderNo",
-            "shipToName", "Ship To",
-            "orderLine.sku", "SKU",
-            "orderLine.quantity", "Quantity",
-            "extrinsics.key", "Extrinsic Key",
-            "extrinsics.value", "Extrinsic Value",
-            "orderLine.extrinsics.key", "Line Extrinsic Key",
-            "orderLine.extrinsics.value", "Line Extrinsic Value"
+            "shipToName", "Ship To"
          ))
          .withMappedAssociations(List.of("orderLine", "extrinsics", "orderLine.extrinsics"))
+         .withWideLayoutMapping(Map.of(
+            "orderLine", new BulkInsertWideLayoutMapping(List.of(
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(
+                  Map.of("sku", "SKU 1", "quantity", "Quantity 1"),
+                  Map.of("extrinsics", new BulkInsertWideLayoutMapping(List.of(
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 1.1", "value", "Line Extrinsic Value 1.1")),
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 1.2", "value", "Line Extrinsic Value 1.2"))
+                  )))),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(
+                  Map.of("sku", "SKU 2", "quantity", "Quantity 2"),
+                  Map.of("extrinsics", new BulkInsertWideLayoutMapping(List.of(
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 2.1", "value", "Line Extrinsic Value 2.1")),
+                     new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 2.2", "value", "Line Extrinsic Value 2.2"))
+                  )))),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(
+                  Map.of("sku", "SKU 3", "quantity", "Quantity 3"),
+                  Map.of("extrinsics", new BulkInsertWideLayoutMapping(List.of(
+                        new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.1", "value", "Line Extrinsic Value 3.1")),
+                        new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Line Extrinsic Key 3.2", "value", "Line Extrinsic Value 3.2"))
+                  ))))
+            )),
+            "extrinsics", new BulkInsertWideLayoutMapping(List.of(
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Extrinsic Key 1", "value", "Extrinsic Value 1")),
+               new BulkInsertWideLayoutMapping.ChildRecordMapping(Map.of("key", "Extrinsic Key 2", "value", "Extrinsic Value 2"))
+            ))
+         ))
+
          .withFieldNameToValueMapping(Map.of("orderLine.extrinsics.value", Map.of("Large", "L", "X-Large", "XL")))
          .withFieldNameToDefaultValueMap(Map.of(
             "storeId", defaultStoreId,

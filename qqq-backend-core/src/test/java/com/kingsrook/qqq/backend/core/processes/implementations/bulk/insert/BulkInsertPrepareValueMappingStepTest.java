@@ -19,22 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
-import java.io.ByteArrayInputStream;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 /*******************************************************************************
- ** Unit test for CsvFileToRows 
+ ** Unit test for BulkInsertPrepareValueMappingStep 
  *******************************************************************************/
-class CsvFileToRowsTest extends BaseTest
+class BulkInsertPrepareValueMappingStepTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -43,18 +41,15 @@ class CsvFileToRowsTest extends BaseTest
    @Test
    void test() throws QException
    {
-      byte[] csvBytes = """
-         one,two,three
-         1,2,3,4
-         """.getBytes();
-      FileToRowsInterface fileToRowsInterface = FileToRowsInterface.forFile("someFile.csv", new ByteArrayInputStream(csvBytes));
+      assertEquals(TestUtils.TABLE_NAME_ORDER, BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderNo").table().getName());
+      assertEquals("orderNo", BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderNo").field().getName());
 
-      BulkLoadFileRow headerRow = fileToRowsInterface.next();
-      BulkLoadFileRow bodyRow   = fileToRowsInterface.next();
+      assertEquals(TestUtils.TABLE_NAME_LINE_ITEM, BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderLine.sku").table().getName());
+      assertEquals("sku", BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderLine.sku").field().getName());
 
-      assertEquals(new BulkLoadFileRow(new String[] { "one", "two", "three" }), headerRow);
-      assertEquals(new BulkLoadFileRow(new String[] { "1", "2", "3", "4" }), bodyRow);
-      assertFalse(fileToRowsInterface.hasNext());
+      assertEquals(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC, BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderLine.extrinsics.key").table().getName());
+      assertEquals("key", BulkInsertPrepareValueMappingStep.getTableAndField(TestUtils.TABLE_NAME_ORDER, "orderLine.extrinsics.key").field().getName());
+
    }
 
 }

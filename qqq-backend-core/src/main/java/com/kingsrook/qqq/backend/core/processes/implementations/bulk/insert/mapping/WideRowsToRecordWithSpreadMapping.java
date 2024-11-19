@@ -37,8 +37,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -48,7 +48,7 @@ import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class WideRowsToRecord implements RowsToRecordInterface
+public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
 {
    private Memoization<Pair<String, String>, Boolean> shouldProcesssAssociationMemoization = new Memoization<>();
 
@@ -77,7 +77,7 @@ public class WideRowsToRecord implements RowsToRecordInterface
 
          for(QFieldMetaData field : table.getFields().values())
          {
-            setValueOrDefault(record, field.getName(), null, mapping, row, fieldIndexes.get(field.getName()));
+            setValueOrDefault(record, field, null, mapping, row, fieldIndexes.get(field.getName()));
          }
 
          processAssociations("", headerRow, mapping, table, row, record, 0, headerRow.size());
@@ -85,7 +85,7 @@ public class WideRowsToRecord implements RowsToRecordInterface
          rs.add(record);
       }
 
-      ValueMapper.valueMapping(rs, mapping);
+      ValueMapper.valueMapping(rs, mapping, table);
 
       return (rs);
    }
@@ -199,7 +199,7 @@ public class WideRowsToRecord implements RowsToRecordInterface
                   gotAnyValues = true;
                }
 
-               setValueOrDefault(associatedRecord, fieldName, associationName, mapping, row, i);
+               setValueOrDefault(associatedRecord, table.getField(fieldName), associationName, mapping, row, i);
             }
          }
       }
@@ -228,76 +228,10 @@ public class WideRowsToRecord implements RowsToRecordInterface
       {
          if(!processedFieldNames.contains(field.getName()))
          {
-            setValueOrDefault(associatedRecord, field.getName(), associationNameChain, mapping, null, null);
+            setValueOrDefault(associatedRecord, field, associationNameChain, mapping, null, null);
          }
       }
    }
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   // private List<QRecord> processAssociation(String associationName, String associationNameChain, QTableMetaData table, BulkInsertMapping mapping, Row row, Row headerRow, QRecord record) throws QException
-   // {
-   //    List<QRecord> rs                                    = new ArrayList<>();
-   //    String        associationNameChainForRecursiveCalls = associationName;
-
-   //    Map<String, String> fieldNameToHeaderNameMapForThisAssociation = new HashMap<>();
-   //    for(Map.Entry<String, String> entry : mapping.getFieldNameToHeaderNameMap().entrySet())
-   //    {
-   //       if(entry.getKey().startsWith(associationNameChainForRecursiveCalls + "."))
-   //       {
-   //          fieldNameToHeaderNameMapForThisAssociation.put(entry.getKey().substring(associationNameChainForRecursiveCalls.length() + 1), entry.getValue());
-   //       }
-   //    }
-
-   //    Map<String, List<Integer>> indexes = new HashMap<>();
-   //    for(int i = 0; i < headerRow.size(); i++)
-   //    {
-   //       String headerValue = ValueUtils.getValueAsString(headerRow.getValue(i));
-   //       for(Map.Entry<String, String> entry : fieldNameToHeaderNameMapForThisAssociation.entrySet())
-   //       {
-   //          if(headerValue.equals(entry.getValue()) || headerValue.matches(entry.getValue() + " ?\\d+"))
-   //          {
-   //             indexes.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(i);
-   //          }
-   //       }
-   //    }
-
-   //    int maxIndex = indexes.values().stream().map(l -> l.size()).max(Integer::compareTo).orElse(0);
-
-   //    //////////////////////////////////////////////////////
-   //    // figure out how many sub-rows we'll be processing //
-   //    //////////////////////////////////////////////////////
-   //    for(int i = 0; i < maxIndex; i++)
-   //    {
-   //       QRecord associatedRecord = new QRecord();
-   //       boolean gotAnyValues     = false;
-
-   //       for(Map.Entry<String, String> entry : fieldNameToHeaderNameMapForThisAssociation.entrySet())
-   //       {
-   //          String fieldName = entry.getKey();
-   //          if(indexes.containsKey(fieldName) && indexes.get(fieldName).size() > i)
-   //          {
-   //             Integer      index = indexes.get(fieldName).get(i);
-   //             Serializable value = row.getValueElseNull(index);
-   //             if(value != null && !"".equals(value))
-   //             {
-   //                gotAnyValues = true;
-   //             }
-
-   //             setValueOrDefault(associatedRecord, fieldName, mapping, row, index);
-   //          }
-   //       }
-
-   //       if(gotAnyValues)
-   //       {
-   //          processAssociations(associationNameChainForRecursiveCalls, headerRow, mapping, table, row, associatedRecord, 0, headerRow.size());
-   //          rs.add(associatedRecord);
-   //       }
-   //    }
-
-   //    return (rs);
-   // }
 
 
 

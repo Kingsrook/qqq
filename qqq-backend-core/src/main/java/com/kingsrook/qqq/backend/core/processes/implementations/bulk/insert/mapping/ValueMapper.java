@@ -25,9 +25,19 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -35,12 +45,16 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class ValueMapper
 {
+   private static final QLogger LOG = QLogger.getLogger(ValueMapper.class);
+
+
+
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void valueMapping(List<QRecord> records, BulkInsertMapping mapping)
+   public static void valueMapping(List<QRecord> records, BulkInsertMapping mapping, QTableMetaData table) throws QException
    {
-      valueMapping(records, mapping, null);
+      valueMapping(records, mapping, table, null);
    }
 
 
@@ -48,7 +62,7 @@ public class ValueMapper
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void valueMapping(List<QRecord> records, BulkInsertMapping mapping, String associationNameChain)
+   private static void valueMapping(List<QRecord> records, BulkInsertMapping mapping, QTableMetaData table, String associationNameChain) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(records))
       {
@@ -58,20 +72,58 @@ public class ValueMapper
       Map<String, Map<String, Serializable>> mappingForTable = mapping.getFieldNameToValueMappingForTable(associationNameChain);
       for(QRecord record : records)
       {
-         for(Map.Entry<String, Map<String, Serializable>> entry : mappingForTable.entrySet())
+         for(Map.Entry<String, Serializable> valueEntry : record.getValues().entrySet())
          {
-            String                    fieldName = entry.getKey();
-            Map<String, Serializable> map       = entry.getValue();
-            String                    value     = record.getValueString(fieldName);
-            if(value != null && map.containsKey(value))
+            QFieldMetaData field = table.getField(valueEntry.getKey());
+            Serializable   value = valueEntry.getValue();
+
+            ///////////////////
+            // value mappin' //
+            ///////////////////
+            if(mappingForTable.containsKey(field.getName()) && value != null)
             {
-               record.setValue(fieldName, map.get(value));
+               Serializable mappedValue = mappingForTable.get(field.getName()).get(ValueUtils.getValueAsString(value));
+               if(mappedValue != null)
+               {
+                  value = mappedValue;
+               }
             }
+
+            /////////////////////
+            // type convertin' //
+            /////////////////////
+            if(value != null)
+            {
+               QFieldType type = field.getType();
+               try
+               {
+                  value = ValueUtils.getValueAsFieldType(type, value);
+               }
+               catch(Exception e)
+               {
+                  record.addError(new BadInputStatusMessage("Value [" + value + "] for field [" + field.getLabel() + "] could not be converted to type [" + type + "]"));
+               }
+            }
+
+            record.setValue(field.getName(), value);
          }
 
+         //////////////////////////////////////
+         // recursively process associations //
+         //////////////////////////////////////
          for(Map.Entry<String, List<QRecord>> entry : record.getAssociatedRecords().entrySet())
          {
-            valueMapping(entry.getValue(), mapping, StringUtils.hasContent(associationNameChain) ? associationNameChain + "." + entry.getKey() : entry.getKey());
+            String                associationName = entry.getKey();
+            Optional<Association> association     = table.getAssociations().stream().filter(a -> a.getName().equals(associationName)).findFirst();
+            if(association.isPresent())
+            {
+               QTableMetaData associatedTable = QContext.getQInstance().getTable(association.get().getAssociatedTableName());
+               valueMapping(entry.getValue(), mapping, associatedTable, StringUtils.hasContent(associationNameChain) ? associationNameChain + "." + associationName : associationName);
+            }
+            else
+            {
+               throw new QException("Missing association [" + associationName + "] on table [" + table.getName() + "]");
+            }
          }
       }
    }

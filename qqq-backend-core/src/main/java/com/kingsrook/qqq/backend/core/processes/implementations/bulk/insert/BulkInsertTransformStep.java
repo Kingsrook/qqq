@@ -111,6 +111,11 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // since we're doing a unique key check in this class, we can tell the loadViaInsert step that it (rather, the InsertAction) doesn't need to re-do one. //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       runBackendStepOutput.addValue(LoadViaInsertStep.FIELD_SKIP_UNIQUE_KEY_CHECK, true);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure that if a saved profile was selected on a review screen, that the result screen knows about it. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      BulkInsertStepUtils.handleSavedBulkLoadProfileIdValue(runBackendStepInput, runBackendStepOutput);
    }
 
 
@@ -121,8 +126,43 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    @Override
    public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      int            rowsInThisPage = runBackendStepInput.getRecords().size();
-      QTableMetaData table          = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
+      int            recordsInThisPage = runBackendStepInput.getRecords().size();
+      QTableMetaData table             = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
+
+      // split the records w/o UK errors into those w/ e
+      List<QRecord> recordsWithoutAnyErrors = new ArrayList<>();
+      List<QRecord> recordsWithSomeErrors   = new ArrayList<>();
+      for(QRecord record : runBackendStepInput.getRecords())
+      {
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            recordsWithSomeErrors.add(record);
+         }
+         else
+         {
+            recordsWithoutAnyErrors.add(record);
+         }
+      }
+
+      //////////////////////////////////////////////////////////////////
+      // propagate errors that came into this step out to the summary //
+      //////////////////////////////////////////////////////////////////
+      if(!recordsWithSomeErrors.isEmpty())
+      {
+         for(QRecord record : recordsWithSomeErrors)
+         {
+            String message = record.getErrors().get(0).getMessage();
+            processSummaryWarningsAndErrorsRollup.addError(message, null);
+         }
+      }
+
+      if(recordsWithoutAnyErrors.isEmpty())
+      {
+         ////////////////////////////////////////////////////////////////////////////////
+         // skip th rest of this method if there aren't any records w/o errors in them //
+         ////////////////////////////////////////////////////////////////////////////////
+         this.rowsProcessed += recordsInThisPage;
+      }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //
@@ -130,7 +170,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       InsertInput insertInput = new InsertInput();
       insertInput.setInputSource(QInputSource.USER);
       insertInput.setTableName(runBackendStepInput.getTableName());
-      insertInput.setRecords(runBackendStepInput.getRecords());
+      insertInput.setRecords(recordsWithoutAnyErrors);
       insertInput.setSkipUniqueKeyCheck(true);
 
       //////////////////////////////////////////////////////////////////////
@@ -145,7 +185,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          AbstractPreInsertCustomizer.WhenToRun whenToRun = preInsertCustomizer.get().whenToRunPreInsert(insertInput, true);
          if(WhenToRun.BEFORE_ALL_VALIDATIONS.equals(whenToRun) || WhenToRun.BEFORE_UNIQUE_KEY_CHECKS.equals(whenToRun))
          {
-            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, runBackendStepInput.getRecords(), true);
+            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, recordsWithoutAnyErrors, true);
             runBackendStepInput.setRecords(recordsAfterCustomizer);
 
             ///////////////////////////////////////////////////////////////////////////////////////
@@ -159,13 +199,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<UniqueKey>                         uniqueKeys   = CollectionUtils.nonNullList(table.getUniqueKeys());
       for(UniqueKey uniqueKey : uniqueKeys)
       {
-         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(null, table, runBackendStepInput.getRecords(), uniqueKey).keySet());
+         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(null, table, recordsWithoutAnyErrors, uniqueKey).keySet());
          ukErrorSummaries.computeIfAbsent(uniqueKey, x -> new ProcessSummaryLineWithUKSampleValues(Status.ERROR));
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //
       // record count is null, and the ValidateStep won't be setting status counters - so - do it here in that case. //
+      // todo - move this up (before the early return?)                                                              //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE))
       {
@@ -187,12 +228,12 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // Note, we want to do our own UK checking here, even though InsertAction also tries to do it, because InsertAction //
       // will only be getting the records in pages, but in here, we'll track UK's across pages!!                          //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      List<QRecord> recordsWithoutUkErrors = getRecordsWithoutUniqueKeyErrors(runBackendStepInput, existingKeys, uniqueKeys, table);
+      List<QRecord> recordsWithoutUkErrors = getRecordsWithoutUniqueKeyErrors(recordsWithoutAnyErrors, existingKeys, uniqueKeys, table);
 
       /////////////////////////////////////////////////////////////////////////////////
       // run all validation from the insert action - in Preview mode (boolean param) //
       /////////////////////////////////////////////////////////////////////////////////
-      insertInput.setRecords(recordsWithoutUkErrors);
+      insertInput.setRecords(recordsWithoutAnyErrors);
       InsertAction insertAction = new InsertAction();
       insertAction.performValidations(insertInput, true);
       List<QRecord> validationResultRecords = insertInput.getRecords();
@@ -222,8 +263,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       }
 
       runBackendStepOutput.setRecords(outputRecords);
-
-      this.rowsProcessed += rowsInThisPage;
+      this.rowsProcessed += recordsInThisPage;
    }
 
 
@@ -231,7 +271,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QRecord> getRecordsWithoutUniqueKeyErrors(RunBackendStepInput runBackendStepInput, Map<UniqueKey, Set<List<Serializable>>> existingKeys, List<UniqueKey> uniqueKeys, QTableMetaData table)
+   private List<QRecord> getRecordsWithoutUniqueKeyErrors(List<QRecord> records, Map<UniqueKey, Set<List<Serializable>>> existingKeys, List<UniqueKey> uniqueKeys, QTableMetaData table)
    {
       ////////////////////////////////////////////////////
       // if there are no UK's, proceed with all records //
@@ -239,7 +279,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<QRecord> recordsWithoutUkErrors = new ArrayList<>();
       if(existingKeys.isEmpty())
       {
-         recordsWithoutUkErrors.addAll(runBackendStepInput.getRecords());
+         recordsWithoutUkErrors.addAll(records);
       }
       else
       {
@@ -255,7 +295,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          // else, get each records keys and see if it already exists or not       //
          // also, build a set of keys we've seen (within this page (or overall?)) //
          ///////////////////////////////////////////////////////////////////////////
-         for(QRecord record : runBackendStepInput.getRecords())
+         for(QRecord record : records)
          {
             if(CollectionUtils.nullSafeHasContents(record.getErrors()))
             {
@@ -333,8 +373,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
          ukErrorSummary
             .withMessageSuffix(" inserted, because of duplicate values in a unique key on the fields (" + uniqueKey.getDescription(table) + "), with values"
-               + (ukErrorSummary.areThereMoreSampleValues ? " such as: " : ": ")
-               + StringUtils.joinWithCommasAndAnd(new ArrayList<>(ukErrorSummary.sampleValues)))
+                               + (ukErrorSummary.areThereMoreSampleValues ? " such as: " : ": ")
+                               + StringUtils.joinWithCommasAndAnd(new ArrayList<>(ukErrorSummary.sampleValues)))
 
             .withSingularFutureMessage(" record will not be")
             .withPluralFutureMessage(" records will not be")

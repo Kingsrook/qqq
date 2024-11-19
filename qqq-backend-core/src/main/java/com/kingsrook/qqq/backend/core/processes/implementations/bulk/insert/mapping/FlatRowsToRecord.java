@@ -30,8 +30,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 
 
 /*******************************************************************************
@@ -62,13 +62,13 @@ public class FlatRowsToRecord implements RowsToRecordInterface
 
          for(QFieldMetaData field : table.getFields().values())
          {
-            setValueOrDefault(record, field.getName(), null, mapping, row, fieldIndexes.get(field.getName()));
+            setValueOrDefault(record, field, null, mapping, row, fieldIndexes.get(field.getName()));
          }
 
          rs.add(record);
       }
 
-      ValueMapper.valueMapping(rs, mapping);
+      ValueMapper.valueMapping(rs, mapping, table);
 
       return (rs);
    }

@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 
 
 /*******************************************************************************

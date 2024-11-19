@@ -26,8 +26,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,7 @@ class ValueMapperTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void test()
+   void test() throws QException
    {
       BulkInsertMapping mapping = new BulkInsertMapping().withFieldNameToValueMapping(Map.of(
          "storeId", Map.of("QQQMart", 1, "Q'R'Us", 2),
@@ -94,7 +97,7 @@ class ValueMapperTest extends BaseTest
          );
       JSONObject expectedJson = recordToJson(expectedRecord);
 
-      ValueMapper.valueMapping(List.of(inputRecord), mapping);
+      ValueMapper.valueMapping(List.of(inputRecord), mapping, QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER));
       JSONObject actualJson = recordToJson(inputRecord);
 
       System.out.println("Before");

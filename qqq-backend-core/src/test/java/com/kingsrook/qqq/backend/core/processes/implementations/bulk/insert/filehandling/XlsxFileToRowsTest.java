@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportActionTest.REPORT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;

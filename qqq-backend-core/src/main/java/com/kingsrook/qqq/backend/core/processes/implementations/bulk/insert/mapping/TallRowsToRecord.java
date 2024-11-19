@@ -35,8 +35,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -75,7 +75,12 @@ public class TallRowsToRecord implements RowsToRecordInterface
       {
          BulkLoadFileRow row = fileToRowsInterface.next();
 
-         List<Integer>      groupByIndexes   = mapping.getTallLayoutGroupByIndexMap().get(table.getName());
+         List<Integer> groupByIndexes = mapping.getTallLayoutGroupByIndexMap().get(table.getName());
+         if(CollectionUtils.nullSafeIsEmpty(groupByIndexes))
+         {
+            groupByIndexes = groupByAllIndexesFromTable(mapping, table, headerRow, null);
+         }
+
          List<Serializable> rowGroupByValues = getGroupByValues(row, groupByIndexes);
          if(rowGroupByValues == null)
          {
@@ -126,9 +131,20 @@ public class TallRowsToRecord implements RowsToRecordInterface
          rs.add(makeRecordFromRows(table, associationNameChain, mapping, headerRow, rowsForCurrentRecord));
       }
 
-      ValueMapper.valueMapping(rs, mapping);
+      ValueMapper.valueMapping(rs, mapping, table);
 
       return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private List<Integer> groupByAllIndexesFromTable(BulkInsertMapping mapping, QTableMetaData table, BulkLoadFileRow headerRow, String name) throws QException
+   {
+      Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, name, headerRow);
+      return new ArrayList<>(fieldIndexes.values());
    }
 
 
@@ -148,7 +164,7 @@ public class TallRowsToRecord implements RowsToRecordInterface
       BulkLoadFileRow row = rows.get(0);
       for(QFieldMetaData field : table.getFields().values())
       {
-         setValueOrDefault(record, field.getName(), associationNameChain, mapping, row, fieldIndexes.get(field.getName()));
+         setValueOrDefault(record, field, associationNameChain, mapping, row, fieldIndexes.get(field.getName()));
       }
 
       /////////////////////////////
@@ -230,7 +246,8 @@ public class TallRowsToRecord implements RowsToRecordInterface
          List<Integer> groupByIndexes = mapping.getTallLayoutGroupByIndexMap().get(associationNameChainForRecursiveCalls);
          if(CollectionUtils.nullSafeIsEmpty(groupByIndexes))
          {
-            throw (new QException("Missing group-by-index(es) for association: " + associationNameChainForRecursiveCalls));
+            groupByIndexes = groupByAllIndexesFromTable(mapping, table, headerRow, associationNameChainForRecursiveCalls);
+            // throw (new QException("Missing group-by-index(es) for association: " + associationNameChainForRecursiveCalls));
          }
 
          List<Serializable> rowGroupByValues = getGroupByValues(row, groupByIndexes);

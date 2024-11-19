@@ -32,8 +32,9 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -62,8 +63,10 @@ public class BulkInsertMapping implements Serializable
    private Map<String, Serializable>              fieldNameToDefaultValueMap = new HashMap<>();
    private Map<String, Map<String, Serializable>> fieldNameToValueMapping    = new HashMap<>();
 
-   private Map<String, List<Integer>> tallLayoutGroupByIndexMap = new HashMap<>();
-   private List<String>               mappedAssociations        = new ArrayList<>();
+   private Map<String, List<Integer>>               tallLayoutGroupByIndexMap = new HashMap<>();
+   private Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping         = new HashMap<>();
+
+   private List<String> mappedAssociations = new ArrayList<>();
 
    private Memoization<Pair<String, String>, Boolean> shouldProcessFieldForTable = new Memoization<>();
 
@@ -72,11 +75,11 @@ public class BulkInsertMapping implements Serializable
    /***************************************************************************
     **
     ***************************************************************************/
-   public enum Layout
+   public enum Layout implements PossibleValueEnum<String>
    {
       FLAT(FlatRowsToRecord::new),
       TALL(TallRowsToRecord::new),
-      WIDE(WideRowsToRecord::new);
+      WIDE(WideRowsToRecordWithExplicitMapping::new);
 
 
       /***************************************************************************
@@ -95,12 +98,35 @@ public class BulkInsertMapping implements Serializable
       }
 
 
+
       /***************************************************************************
        **
        ***************************************************************************/
       public RowsToRecordInterface newRowsToRecordInterface()
       {
          return (supplier.get());
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public String getPossibleValueId()
+      {
+         return name();
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public String getPossibleValueLabel()
+      {
+         return StringUtils.ucFirst(name().toLowerCase());
       }
    }
 
@@ -497,6 +523,37 @@ public class BulkInsertMapping implements Serializable
    public BulkInsertMapping withTallLayoutGroupByIndexMap(Map<String, List<Integer>> tallLayoutGroupByIndexMap)
    {
       this.tallLayoutGroupByIndexMap = tallLayoutGroupByIndexMap;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for wideLayoutMapping
+    *******************************************************************************/
+   public Map<String, BulkInsertWideLayoutMapping> getWideLayoutMapping()
+   {
+      return (this.wideLayoutMapping);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for wideLayoutMapping
+    *******************************************************************************/
+   public void setWideLayoutMapping(Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping)
+   {
+      this.wideLayoutMapping = wideLayoutMapping;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for wideLayoutMapping
+    *******************************************************************************/
+   public BulkInsertMapping withWideLayoutMapping(Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping)
+   {
+      this.wideLayoutMapping = wideLayoutMapping;
       return (this);
    }
 

@@ -23,7 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.fil
 
 
 import java.util.Iterator;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 
 
 /*******************************************************************************

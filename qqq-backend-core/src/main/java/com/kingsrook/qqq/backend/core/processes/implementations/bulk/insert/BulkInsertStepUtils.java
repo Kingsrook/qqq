@@ -22,10 +22,22 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -55,4 +67,88 @@ public class BulkInsertStepUtils
       return (storageInput);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setNextStepStreamedETLPreview(RunBackendStepOutput runBackendStepOutput)
+   {
+      runBackendStepOutput.setOverrideLastStepName("receiveValueMapping");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setNextStepPrepareValueMapping(RunBackendStepOutput runBackendStepOutput)
+   {
+      runBackendStepOutput.setOverrideLastStepName("receiveFileMapping");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static BulkLoadProfile getBulkLoadProfile(RunBackendStepInput runBackendStepInput)
+   {
+      String version = runBackendStepInput.getValueString("version");
+      if("v1".equals(version))
+      {
+         String  layout       = runBackendStepInput.getValueString("layout");
+         Boolean hasHeaderRow = runBackendStepInput.getValueBoolean("hasHeaderRow");
+
+         ArrayList<BulkLoadProfileField> fieldList = new ArrayList<>();
+
+         JSONArray array = new JSONArray(runBackendStepInput.getValueString("fieldListJSON"));
+         for(int i = 0; i < array.length(); i++)
+         {
+            JSONObject           jsonObject           = array.getJSONObject(i);
+            BulkLoadProfileField bulkLoadProfileField = new BulkLoadProfileField();
+            fieldList.add(bulkLoadProfileField);
+            bulkLoadProfileField.setFieldName(jsonObject.optString("fieldName"));
+            bulkLoadProfileField.setColumnIndex(jsonObject.has("columnIndex") ? jsonObject.getInt("columnIndex") : null);
+            bulkLoadProfileField.setDefaultValue((Serializable) jsonObject.opt("defaultValue"));
+            bulkLoadProfileField.setDoValueMapping(jsonObject.optBoolean("doValueMapping"));
+
+            if(BooleanUtils.isTrue(bulkLoadProfileField.getDoValueMapping()) && jsonObject.has("valueMappings"))
+            {
+               bulkLoadProfileField.setValueMappings(new HashMap<>());
+               JSONObject valueMappingsJsonObject = jsonObject.getJSONObject("valueMappings");
+               for(String fileValue : valueMappingsJsonObject.keySet())
+               {
+                  bulkLoadProfileField.getValueMappings().put(fileValue, ValueUtils.getValueAsString(valueMappingsJsonObject.get(fileValue)));
+               }
+            }
+         }
+
+         BulkLoadProfile bulkLoadProfile = new BulkLoadProfile()
+            .withFieldList(fieldList)
+            .withHasHeaderRow(hasHeaderRow)
+            .withLayout(layout);
+
+         return (bulkLoadProfile);
+      }
+      else
+      {
+         throw (new IllegalArgumentException("Unexpected version for bulk load profile: " + version));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void handleSavedBulkLoadProfileIdValue(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      Integer savedBulkLoadProfileId = runBackendStepInput.getValueInteger("savedBulkLoadProfileId");
+      if(savedBulkLoadProfileId != null)
+      {
+         QRecord savedBulkLoadProfileRecord = GetAction.execute(SavedBulkLoadProfile.TABLE_NAME, savedBulkLoadProfileId);
+         runBackendStepOutput.addValue("savedBulkLoadProfileRecord", savedBulkLoadProfileRecord);
+      }
+   }
 }
