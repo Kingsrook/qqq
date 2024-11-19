@@ -35,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Unit test for ProcessAlertWidget 
+ ** Unit test for AlertWidgetRenderer
  *******************************************************************************/
-class ProcessAlertWidgetTest extends BaseTest
+class AlertWidgetRendererTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -46,10 +46,10 @@ class ProcessAlertWidgetTest extends BaseTest
    @Test
    void test() throws QException
    {
-      MetaDataProducerHelper.processAllMetaDataProducersInPackage(QContext.getQInstance(), ProcessAlertWidget.class.getPackageName());
+      MetaDataProducerHelper.processAllMetaDataProducersInPackage(QContext.getQInstance(), AlertWidgetRenderer.class.getPackageName());
 
       RenderWidgetInput input = new RenderWidgetInput();
-      input.setWidgetMetaData(QContext.getQInstance().getWidget(ProcessAlertWidget.NAME));
+      input.setWidgetMetaData(QContext.getQInstance().getWidget(AlertWidgetRenderer.NAME));
 
       ///////////////////////////////////////////////////////////////////////////////////////////
       // make sure we run w/o exceptions (and w/ default outputs) if there are no query params //

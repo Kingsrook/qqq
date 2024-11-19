@@ -39,6 +39,7 @@ public class ChildRecordListData extends QWidgetData
    private QueryOutput    queryOutput;
    private QTableMetaData childTableMetaData;
 
+   private String  tableName;
    private String  tablePath;
    private String  viewAllLink;
    private Integer totalRows;
@@ -349,6 +350,48 @@ public class ChildRecordListData extends QWidgetData
    public ChildRecordListData withTotalRows(Integer totalRows)
    {
       this.totalRows = totalRows;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableName
+    *******************************************************************************/
+   public String getTableName()
+   {
+      return (this.tableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableName
+    *******************************************************************************/
+   public void setTableName(String tableName)
+   {
+      this.tableName = tableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    *******************************************************************************/
+   public ChildRecordListData withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tablePath
+    *******************************************************************************/
+   public ChildRecordListData withTablePath(String tablePath)
+   {
+      this.tablePath = tablePath;
       return (this);
    }
 
