@@ -76,7 +76,7 @@ class QSessionTest extends BaseTest
    void testMixedValueTypes()
    {
       QSession session = new QSession().withSecurityKeyValues(Map.of(
-         "storeId", List.of("100", "200", 300)
+         "storeId", List.of("100", "200", 300, "four-hundred")
       ));
 
       for(int i : List.of(100, 200, 300))
@@ -86,6 +86,18 @@ class QSessionTest extends BaseTest
          assertTrue(session.hasSecurityKeyValue("storeId", i, QFieldType.STRING), "Should contain: " + i);
          assertTrue(session.hasSecurityKeyValue("storeId", String.valueOf(i), QFieldType.STRING), "Should contain: " + i);
       }
+
+      ////////////////////////////////////////////////////////////////////////////
+      // next two blocks - used to throw exceptions - now, gracefully be false. //
+      ////////////////////////////////////////////////////////////////////////////
+      int i = 400;
+      assertFalse(session.hasSecurityKeyValue("storeId", i, QFieldType.INTEGER), "Should not contain: " + i);
+      assertFalse(session.hasSecurityKeyValue("storeId", String.valueOf(i), QFieldType.INTEGER), "Should not contain: " + i);
+      assertFalse(session.hasSecurityKeyValue("storeId", i, QFieldType.STRING), "Should not contain: " + i);
+      assertFalse(session.hasSecurityKeyValue("storeId", String.valueOf(i), QFieldType.STRING), "Should not contain: " + i);
+
+      assertFalse(session.hasSecurityKeyValue("storeId", "one-hundred", QFieldType.INTEGER), "Should not contain: " + i);
+      assertFalse(session.hasSecurityKeyValue("storeId", "one-hundred", QFieldType.STRING), "Should not contain: " + i);
    }
 
 

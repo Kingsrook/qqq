@@ -48,7 +48,7 @@ public class QSession implements Serializable, Cloneable
    private QUser  user;
    private String uuid;
 
-   private Set<String>                     permissions;
+   private Set<String> permissions;
 
    private Map<String, List<Serializable>> securityKeyValues;
    private Map<String, Serializable>       backendVariants;
@@ -360,12 +360,38 @@ public class QSession implements Serializable, Cloneable
          return (false);
       }
 
-      List<Serializable> values      = securityKeyValues.get(keyName);
-      Serializable       valueAsType = ValueUtils.getValueAsFieldType(fieldType, value);
+      List<Serializable> values = securityKeyValues.get(keyName);
+
+      Serializable valueAsType;
+      try
+      {
+         valueAsType = ValueUtils.getValueAsFieldType(fieldType, value);
+      }
+      catch(Exception e)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // an exception in getValueAsFieldType would indicate, e.g., a non-number string trying to come back as integer. //
+         // so - assume that any such mismatch means the value isn't in the session.                                      //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         return (false);
+      }
+
       for(Serializable keyValue : values)
       {
-         Serializable keyValueAsType = ValueUtils.getValueAsFieldType(fieldType, keyValue);
-         if(keyValueAsType.equals(valueAsType))
+         Serializable keyValueAsType = null;
+         try
+         {
+            keyValueAsType = ValueUtils.getValueAsFieldType(fieldType, keyValue);
+         }
+         catch(Exception e)
+         {
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // an exception in getValueAsFieldType would indicate, e.g., a non-number string trying to come back as integer. //
+            // so - assume that any such mismatch means this key isn't a match.
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         }
+
+         if(valueAsType.equals(keyValueAsType))
          {
             return (true);
          }
@@ -561,6 +587,7 @@ public class QSession implements Serializable, Cloneable
    }
 
 
+
    /*******************************************************************************
     ** Getter for valuesForFrontend
     *******************************************************************************/
@@ -591,6 +618,7 @@ public class QSession implements Serializable, Cloneable
    }
 
 
+
    /*******************************************************************************
     ** Fluent setter for a single valuesForFrontend
     *******************************************************************************/
@@ -603,6 +631,5 @@ public class QSession implements Serializable, Cloneable
       this.valuesForFrontend.put(key, value);
       return (this);
    }
-
 
 }
