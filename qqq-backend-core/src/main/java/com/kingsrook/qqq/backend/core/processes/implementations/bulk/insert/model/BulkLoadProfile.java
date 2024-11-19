@@ -33,8 +33,10 @@ import java.util.ArrayList;
 public class BulkLoadProfile implements Serializable
 {
    private ArrayList<BulkLoadProfileField> fieldList;
-   private Boolean                         hasHeaderRow;
-   private String                          layout;
+
+   private Boolean hasHeaderRow;
+   private String  layout;
+   private String  version;
 
 
 
@@ -45,7 +47,6 @@ public class BulkLoadProfile implements Serializable
    {
       return (this.fieldList);
    }
-
 
 
 
@@ -110,6 +111,7 @@ public class BulkLoadProfile implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Setter for fieldList
     *******************************************************************************/
@@ -126,6 +128,36 @@ public class BulkLoadProfile implements Serializable
    public BulkLoadProfile withFieldList(ArrayList<BulkLoadProfileField> fieldList)
    {
       this.fieldList = fieldList;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for version
+    *******************************************************************************/
+   public String getVersion()
+   {
+      return (this.version);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for version
+    *******************************************************************************/
+   public void setVersion(String version)
+   {
+      this.version = version;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for version
+    *******************************************************************************/
+   public BulkLoadProfile withVersion(String version)
+   {
+      this.version = version;
       return (this);
    }
 

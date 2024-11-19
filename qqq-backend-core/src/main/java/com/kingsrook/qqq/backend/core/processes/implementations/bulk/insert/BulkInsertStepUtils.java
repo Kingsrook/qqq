@@ -125,6 +125,7 @@ public class BulkInsertStepUtils
          }
 
          BulkLoadProfile bulkLoadProfile = new BulkLoadProfile()
+            .withVersion(version)
             .withFieldList(fieldList)
             .withHasHeaderRow(hasHeaderRow)
             .withLayout(layout);
