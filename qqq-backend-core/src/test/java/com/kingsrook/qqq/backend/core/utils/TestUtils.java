@@ -142,6 +142,7 @@ public class TestUtils
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
    public static final String TABLE_NAME_TWO_KEYS            = "twoKeys";
+   public static final String TABLE_NAME_MEMORY_STORAGE      = "memoryStorage";
    public static final String TABLE_NAME_PERSON              = "person";
    public static final String TABLE_NAME_SHAPE               = "shape";
    public static final String TABLE_NAME_SHAPE_CACHE         = "shapeCache";
@@ -204,6 +205,7 @@ public class TestUtils
 
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(defineTableTwoKeys());
+      qInstance.addTable(defineTableMemoryStorage());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(definePersonMemoryTable());
       qInstance.addTable(definePersonMemoryCacheTable());
@@ -590,6 +592,22 @@ public class TestUtils
          .withUniqueKey(new UniqueKey("key1", "key2"))
          .withField(new QFieldMetaData("key1", QFieldType.INTEGER))
          .withField(new QFieldMetaData("key2", QFieldType.INTEGER));
+   }
+
+
+
+   /*******************************************************************************
+    ** Define a table in the memory store that can be used for the StorageAction
+    *******************************************************************************/
+   public static QTableMetaData defineTableMemoryStorage()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_STORAGE)
+         .withLabel("Memory Storage")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("reference")
+         .withField(new QFieldMetaData("reference", QFieldType.STRING).withIsEditable(false))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB));
    }
 
 
