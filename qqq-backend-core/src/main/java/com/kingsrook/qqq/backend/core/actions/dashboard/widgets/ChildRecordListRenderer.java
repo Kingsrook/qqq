@@ -301,6 +301,9 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             }
          }
 
+         widgetData.setAllowRecordEdit(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("allowRecordEdit"))));
+         widgetData.setAllowRecordDelete(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("allowRecordDelete"))));
+
          return (new RenderWidgetOutput(widgetData));
       }
       catch(Exception e)

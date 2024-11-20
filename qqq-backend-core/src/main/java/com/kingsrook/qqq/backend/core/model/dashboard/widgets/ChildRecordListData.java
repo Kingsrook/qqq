@@ -43,6 +43,9 @@ public class ChildRecordListData extends QWidgetData
    private String  tablePath;
    private String  viewAllLink;
    private Integer totalRows;
+   private Boolean disableRowClick   = false;
+   private Boolean allowRecordEdit   = false;
+   private Boolean allowRecordDelete = false;
 
    private boolean                   canAddChildRecord = false;
    private Map<String, Serializable> defaultValuesForNewChildRecords;
@@ -395,4 +398,99 @@ public class ChildRecordListData extends QWidgetData
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for disableRowClick
+    *******************************************************************************/
+   public Boolean getDisableRowClick()
+   {
+      return (this.disableRowClick);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for disableRowClick
+    *******************************************************************************/
+   public void setDisableRowClick(Boolean disableRowClick)
+   {
+      this.disableRowClick = disableRowClick;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for disableRowClick
+    *******************************************************************************/
+   public ChildRecordListData withDisableRowClick(Boolean disableRowClick)
+   {
+      this.disableRowClick = disableRowClick;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for allowRecordEdit
+    *******************************************************************************/
+   public Boolean getAllowRecordEdit()
+   {
+      return (this.allowRecordEdit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for allowRecordEdit
+    *******************************************************************************/
+   public void setAllowRecordEdit(Boolean allowRecordEdit)
+   {
+      this.allowRecordEdit = allowRecordEdit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for allowRecordEdit
+    *******************************************************************************/
+   public ChildRecordListData withAllowRecordEdit(Boolean allowRecordEdit)
+   {
+      this.allowRecordEdit = allowRecordEdit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for allowRecordDelete
+    *******************************************************************************/
+   public Boolean getAllowRecordDelete()
+   {
+      return (this.allowRecordDelete);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for allowRecordDelete
+    *******************************************************************************/
+   public void setAllowRecordDelete(Boolean allowRecordDelete)
+   {
+      this.allowRecordDelete = allowRecordDelete;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for allowRecordDelete
+    *******************************************************************************/
+   public ChildRecordListData withAllowRecordDelete(Boolean allowRecordDelete)
+   {
+      this.allowRecordDelete = allowRecordDelete;
+      return (this);
+   }
 }
+
+
+
