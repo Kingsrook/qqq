@@ -1,23 +1,34 @@
 #!/bin/bash
 
-if [ -z "$CIRCLE_BRANCH" ] && [ -z "$CIRCLE_TAG" ]; then
-   echo "Error:  env vars CIRCLE_BRANCH and CIRCLE_TAG were not set."
-   exit 1;
-fi
+## todo - some version of:
+## - main (or -version tag?) noop?
+## - dev ... replace -SNAPSHOT w/ -${timestamp}
+## - other tags ... replace -SNAPSHOT w/ -${tag}-${timestamp}
 
-if [ "$CIRCLE_BRANCH" == "dev" ] || [ "$CIRCLE_BRANCH" == "staging" ] || [ "$CIRCLE_BRANCH" == "main" ] || [ \! -z $(echo "$CIRCLE_TAG" | grep "^version-") ]; then
-   echo "On a primary branch or tag [${CIRCLE_BRANCH}${CIRCLE_TAG}] - will not edit the pom version.";
+POM=$(dirname $0)/../pom.xml
+echo "On branch: $CIRCLE_BRANCH, tag: $CIRCLE_TAG..."
+
+REVISION=$(grep '<revision>' $POM | sed 's/.*<revision>//;s/<.*//');
+echo "<revision> in pom.xml is: $REVISION"
+if [ \! $(echo "$REVISION" | grep SNAPSHOT) ]; then
+   echo "Not on a SNAPSHOT revision, so nothing to do here."
    exit 0;
 fi
 
-if [ -n "$CIRCLE_BRANCH" ]; then
-   SLUG=$(echo $CIRCLE_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-else
-   SLUG=$(echo $CIRCLE_TAG | sed 's/^snapshot-//g')
+SLUG=""
+if [ $(echo "$CIRCLE_TAG" | grep ^snapshot-) ]; then
+   SLUG=$(echo "$CIRCLE_TAG" | sed "s/^snapshot-//")-
+   echo "Using slug [$SLUG] from tag [$CIRCLE_TAG]"
+
+elif [ $(echo "$CIRCLE_BRANCH" |  grep ^integration/) ]; then
+   SLUG=$(echo "$CIRCLE_BRANCH" | sed "s,/,-,g")-
+   echo "Using slug [$SLUG] from branch [$CIRCLE_BRANCH]"
 fi
 
-POM=$(dirname $0)/../pom.xml
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+REPLACEMENT=${SLUG}${TIMESTAMP}
 
-echo "Updating $POM <revision> to: $SLUG-SNAPSHOT"
-sed -i "s/<revision>.*/<revision>$SLUG-SNAPSHOT<\/revision>/" $POM
+echo "Updating $POM -SNAPSHOT to: -$REPLACEMENT"
+sed -i "s/-SNAPSHOT<\/revision>/-$REPLACEMENT<\/revision>/" $POM
 git diff $POM
+
