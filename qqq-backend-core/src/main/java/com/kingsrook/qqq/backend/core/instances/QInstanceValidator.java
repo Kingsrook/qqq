@@ -43,6 +43,7 @@ import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataFilterInterface;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
 import com.kingsrook.qqq.backend.core.actions.scripts.TestScriptActionInterface;
@@ -74,6 +75,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
@@ -185,6 +187,7 @@ public class QInstanceValidator
       //////////////////////////////////////////////////////////////////////////
       try
       {
+         validateInstanceAttributes(qInstance);
          validateBackends(qInstance);
          validateAuthentication(qInstance);
          validateAutomationProviders(qInstance);
@@ -221,6 +224,19 @@ public class QInstanceValidator
       //////////////////////////////
       qInstance.setJoinGraph(validationKey, joinGraph);
       qInstance.setHasBeenValidated(validationKey);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void validateInstanceAttributes(QInstance qInstance)
+   {
+      if(qInstance.getMetaDataFilter() != null)
+      {
+         validateSimpleCodeReference("Instance metaDataFilter ", qInstance.getMetaDataFilter(), MetaDataFilterInterface.class);
+      }
    }
 
 
@@ -928,13 +944,8 @@ public class QInstanceValidator
       assertCondition(Objects.equals(fieldName, field.getName()),
          "Inconsistent naming in table " + tableName + " for field " + fieldName + "/" + field.getName() + ".");
 
-      if(field.getPossibleValueSourceName() != null)
-      {
-         assertCondition(qInstance.getPossibleValueSource(field.getPossibleValueSourceName()) != null,
-            "Unrecognized possibleValueSourceName " + field.getPossibleValueSourceName() + " in table " + tableName + " for field " + fieldName + ".");
-      }
-
       String prefix = "Field " + fieldName + " in table " + tableName + " ";
+      validateFieldPossibleValueSourceAttributes(qInstance, field, prefix);
 
       ///////////////////////////////////////////////////
       // validate things we know about field behaviors //
@@ -1033,6 +1044,31 @@ public class QInstanceValidator
                   // no validations by default
                }
             }
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void validateFieldPossibleValueSourceAttributes(QInstance qInstance, QFieldMetaData field, String prefix)
+   {
+      if(field.getPossibleValueSourceName() != null)
+      {
+         assertCondition(qInstance.getPossibleValueSource(field.getPossibleValueSourceName()) != null,
+            prefix + "has an unrecognized possibleValueSourceName " + field.getPossibleValueSourceName());
+
+         assertCondition(field.getInlinePossibleValueSource() == null, prefix.trim() + " has both a possibleValueSourceName and an inlinePossibleValueSource, which is not allowed.");
+      }
+
+      if(field.getInlinePossibleValueSource() != null)
+      {
+         String name = "inlinePossibleValueSource for " + prefix.trim();
+         if(assertCondition(QPossibleValueSourceType.ENUM.equals(field.getInlinePossibleValueSource().getType()), name + " must have a type of ENUM."))
+         {
+            validatePossibleValueSource(qInstance, name, field.getInlinePossibleValueSource());
          }
       }
    }
@@ -1546,6 +1582,16 @@ public class QInstanceValidator
                }
             }
 
+            for(QFieldMetaData field : process.getInputFields())
+            {
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName());
+            }
+
+            for(QFieldMetaData field : process.getOutputFields())
+            {
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName());
+            }
+
             if(process.getCancelStep() != null)
             {
                if(assertCondition(process.getCancelStep().getCode() != null, "Cancel step is missing a code reference, in process " + processName))
@@ -1948,78 +1994,88 @@ public class QInstanceValidator
          qInstance.getPossibleValueSources().forEach((pvsName, possibleValueSource) ->
          {
             assertCondition(Objects.equals(pvsName, possibleValueSource.getName()), "Inconsistent naming for possibleValueSource: " + pvsName + "/" + possibleValueSource.getName() + ".");
-            if(assertCondition(possibleValueSource.getType() != null, "Missing type for possibleValueSource: " + pvsName))
+            validatePossibleValueSource(qInstance, pvsName, possibleValueSource);
+         });
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void validatePossibleValueSource(QInstance qInstance, String name, QPossibleValueSource possibleValueSource)
+   {
+      if(assertCondition(possibleValueSource.getType() != null, "Missing type for possibleValueSource: " + name))
+      {
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         // assert about fields that should and should not be set, based on possible value source type //
+         // do additional type-specific validations as well                                            //
+         ////////////////////////////////////////////////////////////////////////////////////////////////
+         switch(possibleValueSource.getType())
+         {
+            case ENUM ->
             {
-               ////////////////////////////////////////////////////////////////////////////////////////////////
-               // assert about fields that should and should not be set, based on possible value source type //
-               // do additional type-specific validations as well                                            //
-               ////////////////////////////////////////////////////////////////////////////////////////////////
-               switch(possibleValueSource.getType())
+               assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "enum-type possibleValueSource " + name + " should not have a tableName.");
+               assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "enum-type possibleValueSource " + name + " should not have searchFields.");
+               assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "enum-type possibleValueSource " + name + " should not have orderByFields.");
+               assertCondition(possibleValueSource.getCustomCodeReference() == null, "enum-type possibleValueSource " + name + " should not have a customCodeReference.");
+
+               assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()), "enum-type possibleValueSource " + name + " is missing enum values");
+            }
+            case TABLE ->
+            {
+               assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "table-type possibleValueSource " + name + " should not have enum values.");
+               assertCondition(possibleValueSource.getCustomCodeReference() == null, "table-type possibleValueSource " + name + " should not have a customCodeReference.");
+
+               QTableMetaData tableMetaData = null;
+               if(assertCondition(StringUtils.hasContent(possibleValueSource.getTableName()), "table-type possibleValueSource " + name + " is missing a tableName."))
                {
-                  case ENUM ->
-                  {
-                     assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "enum-type possibleValueSource " + pvsName + " should not have a tableName.");
-                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "enum-type possibleValueSource " + pvsName + " should not have searchFields.");
-                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "enum-type possibleValueSource " + pvsName + " should not have orderByFields.");
-                     assertCondition(possibleValueSource.getCustomCodeReference() == null, "enum-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
-
-                     assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()), "enum-type possibleValueSource " + pvsName + " is missing enum values");
-                  }
-                  case TABLE ->
-                  {
-                     assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "table-type possibleValueSource " + pvsName + " should not have enum values.");
-                     assertCondition(possibleValueSource.getCustomCodeReference() == null, "table-type possibleValueSource " + pvsName + " should not have a customCodeReference.");
-
-                     QTableMetaData tableMetaData = null;
-                     if(assertCondition(StringUtils.hasContent(possibleValueSource.getTableName()), "table-type possibleValueSource " + pvsName + " is missing a tableName."))
-                     {
-                        tableMetaData = qInstance.getTable(possibleValueSource.getTableName());
-                        assertCondition(tableMetaData != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + pvsName + ".");
-                     }
-
-                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "table-type possibleValueSource " + pvsName + " is missing searchFields."))
-                     {
-                        if(tableMetaData != null)
-                        {
-                           QTableMetaData finalTableMetaData = tableMetaData;
-                           for(String searchField : possibleValueSource.getSearchFields())
-                           {
-                              assertNoException(() -> finalTableMetaData.getField(searchField), "possibleValueSource " + pvsName + " has an unrecognized searchField: " + searchField);
-                           }
-                        }
-                     }
-
-                     if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "table-type possibleValueSource " + pvsName + " is missing orderByFields."))
-                     {
-                        if(tableMetaData != null)
-                        {
-                           QTableMetaData finalTableMetaData = tableMetaData;
-
-                           for(QFilterOrderBy orderByField : possibleValueSource.getOrderByFields())
-                           {
-                              assertNoException(() -> finalTableMetaData.getField(orderByField.getFieldName()), "possibleValueSource " + pvsName + " has an unrecognized orderByField: " + orderByField.getFieldName());
-                           }
-                        }
-                     }
-                  }
-                  case CUSTOM ->
-                  {
-                     assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "custom-type possibleValueSource " + pvsName + " should not have enum values.");
-                     assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "custom-type possibleValueSource " + pvsName + " should not have a tableName.");
-                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "custom-type possibleValueSource " + pvsName + " should not have searchFields.");
-                     assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "custom-type possibleValueSource " + pvsName + " should not have orderByFields.");
-
-                     if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + pvsName + " is missing a customCodeReference."))
-                     {
-                        validateSimpleCodeReference("PossibleValueSource " + pvsName + " custom code reference: ", possibleValueSource.getCustomCodeReference(), QCustomPossibleValueProvider.class);
-                     }
-                  }
-                  default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
+                  tableMetaData = qInstance.getTable(possibleValueSource.getTableName());
+                  assertCondition(tableMetaData != null, "Unrecognized table " + possibleValueSource.getTableName() + " for possibleValueSource " + name + ".");
                }
 
-               runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
+               if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "table-type possibleValueSource " + name + " is missing searchFields."))
+               {
+                  if(tableMetaData != null)
+                  {
+                     QTableMetaData finalTableMetaData = tableMetaData;
+                     for(String searchField : possibleValueSource.getSearchFields())
+                     {
+                        assertNoException(() -> finalTableMetaData.getField(searchField), "possibleValueSource " + name + " has an unrecognized searchField: " + searchField);
+                     }
+                  }
+               }
+
+               if(assertCondition(CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "table-type possibleValueSource " + name + " is missing orderByFields."))
+               {
+                  if(tableMetaData != null)
+                  {
+                     QTableMetaData finalTableMetaData = tableMetaData;
+
+                     for(QFilterOrderBy orderByField : possibleValueSource.getOrderByFields())
+                     {
+                        assertNoException(() -> finalTableMetaData.getField(orderByField.getFieldName()), "possibleValueSource " + name + " has an unrecognized orderByField: " + orderByField.getFieldName());
+                     }
+                  }
+               }
             }
-         });
+            case CUSTOM ->
+            {
+               assertCondition(CollectionUtils.nullSafeIsEmpty(possibleValueSource.getEnumValues()), "custom-type possibleValueSource " + name + " should not have enum values.");
+               assertCondition(!StringUtils.hasContent(possibleValueSource.getTableName()), "custom-type possibleValueSource " + name + " should not have a tableName.");
+               assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getSearchFields()), "custom-type possibleValueSource " + name + " should not have searchFields.");
+               assertCondition(!CollectionUtils.nullSafeHasContents(possibleValueSource.getOrderByFields()), "custom-type possibleValueSource " + name + " should not have orderByFields.");
+
+               if(assertCondition(possibleValueSource.getCustomCodeReference() != null, "custom-type possibleValueSource " + name + " is missing a customCodeReference."))
+               {
+                  validateSimpleCodeReference("PossibleValueSource " + name + " custom code reference: ", possibleValueSource.getCustomCodeReference(), QCustomPossibleValueProvider.class);
+               }
+            }
+            default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
+         }
+
+         runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
       }
    }
 

@@ -22,8 +22,8 @@
 package com.kingsrook.qqq.api.model.actions;
 
 
-import com.kingsrook.qqq.api.model.openapi.OpenAPI;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.openapi.model.OpenAPI;
 
 
 /*******************************************************************************

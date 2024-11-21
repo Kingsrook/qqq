@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
+import com.kingsrook.qqq.backend.core.actions.metadata.AllowAllMetaDataFilter;
 import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
@@ -135,6 +136,21 @@ public class QInstanceValidatorTest extends BaseTest
       qInstance.setHasBeenValidated(new QInstanceValidationKey());
       qInstance.setBackends(null);
       new QInstanceValidator().validate(qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMetaDataFilter()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.setMetaDataFilter(new QCodeReference(QInstanceValidator.class)),
+         "Instance metaDataFilter CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class)));
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(null));
    }
 
 
@@ -261,6 +277,38 @@ public class QInstanceValidatorTest extends BaseTest
    {
       assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").withRecordLabelFields("notAField"),
          "not a field");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableFieldInlinePossibleValueSource()
+   {
+      ////////////////////////////////////////////////////
+      // make sure can't have both named and inline PVS //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.TABLE).withTableName("person")),
+         "both a possibleValueSourceName and an inlinePossibleValueSource");
+
+      /////////////////////////////////////////////
+      // make require inline PVS to be enum type //
+      /////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withPossibleValueSourceName(null)
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.TABLE)),
+         "must have a type of ENUM");
+
+      ////////////////////////////////////////////////////
+      // make sure validation on the inline PVS happens //
+      ////////////////////////////////////////////////////
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId")
+            .withPossibleValueSourceName(null)
+            .withInlinePossibleValueSource(new QPossibleValueSource().withType(QPossibleValueSourceType.ENUM)),
+         "missing enum values");
    }
 
 
@@ -717,8 +765,8 @@ public class QInstanceValidatorTest extends BaseTest
    @Test
    public void test_validateFieldWithMissingPossibleValueSource()
    {
-      assertValidationFailureReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
-         "Unrecognized possibleValueSourceName");
+      assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.getTable("person").getField("homeStateId").setPossibleValueSourceName("not a real possible value source"),
+         "unrecognized possibleValueSourceName");
    }
 
 

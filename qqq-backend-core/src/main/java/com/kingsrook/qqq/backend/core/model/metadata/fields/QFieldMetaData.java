@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -73,10 +74,12 @@ public class QFieldMetaData implements Cloneable
    // propose doing that in a secondary field, e.g., "onlyEditableOn=insert|update" //
    ///////////////////////////////////////////////////////////////////////////////////
 
-   private String displayFormat = "%s";
+   private String       displayFormat = "%s";
    private Serializable defaultValue;
-   private String       possibleValueSourceName;
-   private QQueryFilter possibleValueSourceFilter;
+
+   private String               possibleValueSourceName;
+   private QQueryFilter         possibleValueSourceFilter;
+   private QPossibleValueSource inlinePossibleValueSource;
 
    private Integer               maxLength;
    private Set<FieldBehavior<?>> behaviors;
@@ -1057,5 +1060,36 @@ public class QFieldMetaData implements Cloneable
    {
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
+
+
+   /*******************************************************************************
+    ** Getter for inlinePossibleValueSource
+    *******************************************************************************/
+   public QPossibleValueSource getInlinePossibleValueSource()
+   {
+      return (this.inlinePossibleValueSource);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for inlinePossibleValueSource
+    *******************************************************************************/
+   public void setInlinePossibleValueSource(QPossibleValueSource inlinePossibleValueSource)
+   {
+      this.inlinePossibleValueSource = inlinePossibleValueSource;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for inlinePossibleValueSource
+    *******************************************************************************/
+   public QFieldMetaData withInlinePossibleValueSource(QPossibleValueSource inlinePossibleValueSource)
+   {
+      this.inlinePossibleValueSource = inlinePossibleValueSource;
+      return (this);
+   }
+
 
 }

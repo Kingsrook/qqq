@@ -62,6 +62,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -189,7 +193,34 @@ public class TestUtils
          throw new IllegalStateException("Error adding script tables to instance");
       }
 
+      defineApps(qInstance);
+
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void defineApps(QInstance qInstance)
+   {
+      QAppMetaData childApp = new QAppMetaData()
+         .withName("childApp")
+         .withLabel("Child App")
+         .withIcon(new QIcon().withName("child_friendly"))
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withChild(qInstance.getProcess(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE));
+      qInstance.addApp(childApp);
+
+      QAppMetaData exampleApp = new QAppMetaData()
+         .withName("homeApp")
+         .withLabel("Home App")
+         .withIcon(new QIcon().withName("home"))
+         .withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.NOT_PROTECTED))
+         .withChild(childApp)
+         .withChild(qInstance.getTable(TABLE_NAME_PERSON));
+      qInstance.addApp(exampleApp);
    }
 
 
@@ -412,7 +443,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName("greet")
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -444,13 +475,13 @@ public class TestUtils
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
          .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("setup")
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -469,7 +500,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -500,7 +531,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SIMPLE_SLEEP)
          .withIsHidden(true)
-         .addStep(SleeperStep.getMetaData());
+         .withStep(SleeperStep.getMetaData());
    }
 
 
@@ -512,11 +543,11 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SLEEP_INTERACTIVE)
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName(SCREEN_0)
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)))
-         .addStep(SleeperStep.getMetaData())
-         .addStep(new QFrontendStepMetaData()
+         .withStep(SleeperStep.getMetaData())
+         .withStep(new QFrontendStepMetaData()
             .withName(SCREEN_1)
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
    }
@@ -530,7 +561,7 @@ public class TestUtils
    {
       return new QProcessMetaData()
          .withName(PROCESS_NAME_SIMPLE_THROW)
-         .addStep(ThrowerStep.getMetaData());
+         .withStep(ThrowerStep.getMetaData());
    }
 
 
@@ -690,7 +721,7 @@ public class TestUtils
       {
          return (new RenderWidgetOutput(new RawHTML("title",
             QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES)
-               + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
+            + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
          )));
       }
    }

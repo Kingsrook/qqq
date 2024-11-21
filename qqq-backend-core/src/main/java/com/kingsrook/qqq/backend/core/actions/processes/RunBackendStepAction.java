@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
@@ -257,11 +258,20 @@ public class RunBackendStepAction
       {
          runBackendStepOutput.seedFromRequest(runBackendStepInput);
 
-         Class<?> codeClass  = Class.forName(code.getName());
-         Object   codeObject = codeClass.getConstructor().newInstance();
+         Object codeObject;
+         if(code instanceof QCodeReferenceLambda<?> qCodeReferenceLambda)
+         {
+            codeObject = qCodeReferenceLambda.getLambda();
+         }
+         else
+         {
+            Class<?> codeClass = Class.forName(code.getName());
+            codeObject = codeClass.getConstructor().newInstance();
+         }
+
          if(!(codeObject instanceof BackendStep backendStepCodeObject))
          {
-            throw (new QException("The supplied code [" + codeClass.getName() + "] is not an instance of BackendStep"));
+            throw (new QException("The supplied codeReference [" + code + "] is not a reference to a BackendStep"));
          }
 
          backendStepCodeObject.run(runBackendStepInput, runBackendStepOutput);

@@ -25,11 +25,11 @@ package com.kingsrook.qqq.api.model.metadata.processes;
 import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
-import com.kingsrook.qqq.api.model.openapi.Response;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import com.kingsrook.qqq.openapi.model.Response;
 import org.eclipse.jetty.http.HttpStatus;
 
 
