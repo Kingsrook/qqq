@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- ** Unit test for S3UploadOutputStream 
+ ** Unit test for S3UploadOutputStream
  *******************************************************************************/
 class S3UploadOutputStreamTest extends BaseS3Test
 {
@@ -57,7 +57,7 @@ class S3UploadOutputStreamTest extends BaseS3Test
       outputStream.write("\n]\n".getBytes(StandardCharsets.UTF_8));
       outputStream.close();
 
-      S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(getS3Utils().getAmazonS3(), bucketName, key);
+      S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(getS3Utils().getAmazonS3(), bucketName, key, null);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 5 * 1024 * 1024);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 3 * 1024 * 1024);
       s3UploadOutputStream.write(outputStream.toByteArray(), 0, 3 * 1024 * 1024);

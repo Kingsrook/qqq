@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
- ** Unit test for CountingHash 
+ ** Unit test for CountingHash
  *******************************************************************************/
 class CountingHashTest extends BaseTest
 {
@@ -71,6 +71,21 @@ class CountingHashTest extends BaseTest
       alwaysMutable.add("B");
       assertEquals(6, alwaysMutable.get("A"));
       assertEquals(1, alwaysMutable.get("B"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPut()
+   {
+      CountingHash<String> alwaysMutable = new CountingHash<>(Map.of("A", 5));
+      alwaysMutable.put("A", 25);
+      assertEquals(25, alwaysMutable.get("A"));
+      alwaysMutable.put("A");
+      assertEquals(26, alwaysMutable.get("A"));
    }
 
 }

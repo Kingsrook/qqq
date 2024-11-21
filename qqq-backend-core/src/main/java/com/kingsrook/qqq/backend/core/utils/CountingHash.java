@@ -95,6 +95,29 @@ public class CountingHash<K extends Serializable> extends AbstractMap<K, Integer
 
 
    /*******************************************************************************
+    ** increment the value for the specified key
+    **
+    *******************************************************************************/
+   public Integer put(K key)
+   {
+      return (add(key));
+   }
+
+
+
+   /*******************************************************************************
+    ** Set the value for the specified key by the supplied value
+    **
+    *******************************************************************************/
+   public Integer put(K key, Integer value)
+   {
+      this.map.put(key, value);
+      return (value);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private Integer getOrCreateListForKey(K key)

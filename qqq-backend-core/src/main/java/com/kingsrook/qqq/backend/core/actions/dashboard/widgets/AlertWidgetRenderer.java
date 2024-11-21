@@ -40,9 +40,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
  ** - alertType - name of entry in AlertType enum (ERROR, WARNING, SUCCESS)
  ** - alertHtml - html to display inside the alert (other than its icon)
  *******************************************************************************/
-public class ProcessAlertWidget extends AbstractWidgetRenderer implements MetaDataProducerInterface<QWidgetMetaData>
+public class AlertWidgetRenderer extends AbstractWidgetRenderer implements MetaDataProducerInterface<QWidgetMetaData>
 {
-   public static final String NAME = "ProcessAlertWidget";
+   public static final String NAME = "AlertWidgetRenderer";
 
 
 
