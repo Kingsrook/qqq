@@ -58,7 +58,7 @@ public class S3StorageAction extends AbstractS3Action implements QStorageInterfa
 
          AmazonS3             amazonS3             = getS3Utils().getAmazonS3();
          String               fullPath             = getFullPath(storageInput);
-         S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(amazonS3, backend.getBucketName(), fullPath);
+         S3UploadOutputStream s3UploadOutputStream = new S3UploadOutputStream(amazonS3, backend.getBucketName(), fullPath, storageInput.getContentType());
          return (s3UploadOutputStream);
       }
       catch(Exception e)
