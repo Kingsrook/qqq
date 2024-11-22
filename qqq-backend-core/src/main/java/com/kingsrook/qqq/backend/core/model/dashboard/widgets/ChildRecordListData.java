@@ -46,6 +46,7 @@ public class ChildRecordListData extends QWidgetData
    private Boolean disableRowClick   = false;
    private Boolean allowRecordEdit   = false;
    private Boolean allowRecordDelete = false;
+   private Boolean isInProcess       = false;
 
    private boolean                   canAddChildRecord = false;
    private Map<String, Serializable> defaultValuesForNewChildRecords;
@@ -490,6 +491,38 @@ public class ChildRecordListData extends QWidgetData
       this.allowRecordDelete = allowRecordDelete;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isInProcess
+    *******************************************************************************/
+   public Boolean getIsInProcess()
+   {
+      return (this.isInProcess);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isInProcess
+    *******************************************************************************/
+   public void setIsInProcess(Boolean isInProcess)
+   {
+      this.isInProcess = isInProcess;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isInProcess
+    *******************************************************************************/
+   public ChildRecordListData withIsInProcess(Boolean isInProcess)
+   {
+      this.isInProcess = isInProcess;
+      return (this);
+   }
+
 }
 
 
