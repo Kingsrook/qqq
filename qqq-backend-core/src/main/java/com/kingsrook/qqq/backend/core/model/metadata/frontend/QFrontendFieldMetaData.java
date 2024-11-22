@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehaviorForFron
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -56,6 +57,7 @@ public class QFrontendFieldMetaData
 
    private List<FieldAdornment> adornments;
    private List<QHelpContent>   helpContents;
+   private QPossibleValueSource inlinePossibleValueSource;
 
    private List<FieldBehaviorForFrontend> behaviors;
 
@@ -81,6 +83,7 @@ public class QFrontendFieldMetaData
       this.adornments = fieldMetaData.getAdornments();
       this.defaultValue = fieldMetaData.getDefaultValue();
       this.helpContents = fieldMetaData.getHelpContents();
+      this.inlinePossibleValueSource = fieldMetaData.getInlinePossibleValueSource();
 
       for(FieldBehavior<?> behavior : CollectionUtils.nonNullCollection(fieldMetaData.getBehaviors()))
       {
@@ -214,6 +217,17 @@ public class QFrontendFieldMetaData
    public List<QHelpContent> getHelpContents()
    {
       return helpContents;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for inlinePossibleValueSource
+    **
+    *******************************************************************************/
+   public QPossibleValueSource getInlinePossibleValueSource()
+   {
+      return inlinePossibleValueSource;
    }
 
 

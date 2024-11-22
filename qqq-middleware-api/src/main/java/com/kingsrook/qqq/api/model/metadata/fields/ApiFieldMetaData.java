@@ -23,10 +23,10 @@ package com.kingsrook.qqq.api.model.metadata.fields;
 
 
 import java.util.Map;
-import com.kingsrook.qqq.api.model.openapi.Example;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.openapi.model.Example;
 
 
 /*******************************************************************************

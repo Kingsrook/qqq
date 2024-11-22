@@ -27,15 +27,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.api.model.actions.HttpApiResponse;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessOutputInterface;
-import com.kingsrook.qqq.api.model.openapi.Content;
-import com.kingsrook.qqq.api.model.openapi.Response;
-import com.kingsrook.qqq.api.model.openapi.Schema;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.openapi.model.Content;
+import com.kingsrook.qqq.openapi.model.Response;
+import com.kingsrook.qqq.openapi.model.Schema;
 import org.eclipse.jetty.http.HttpStatus;
 
 

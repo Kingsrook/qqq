@@ -33,6 +33,7 @@ import java.util.Optional;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -336,7 +337,12 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
     *******************************************************************************/
    public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
    {
-      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
+      if(this.processState.getProcessMetaDataAdjustment() == null)
+      {
+         this.processState.setProcessMetaDataAdjustment(new ProcessMetaDataAdjustment());
+      }
+
+      this.processState.getProcessMetaDataAdjustment().setUpdatedFrontendStepList(updatedFrontendStepList);
    }
 
 
@@ -346,7 +352,27 @@ public class RunProcessOutput extends AbstractActionOutput implements Serializab
     *******************************************************************************/
    public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
    {
-      return this.processState.getUpdatedFrontendStepList();
+      return ObjectUtils.tryElse(() -> this.processState.getProcessMetaDataAdjustment().getUpdatedFrontendStepList(), null);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for processMetaDataAdjustment
+    *******************************************************************************/
+   public ProcessMetaDataAdjustment getProcessMetaDataAdjustment()
+   {
+      return (this.processState.getProcessMetaDataAdjustment());
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processMetaDataAdjustment
+    *******************************************************************************/
+   public void setProcessMetaDataAdjustment(ProcessMetaDataAdjustment processMetaDataAdjustment)
+   {
+      this.processState.setProcessMetaDataAdjustment(processMetaDataAdjustment);
    }
 
 }

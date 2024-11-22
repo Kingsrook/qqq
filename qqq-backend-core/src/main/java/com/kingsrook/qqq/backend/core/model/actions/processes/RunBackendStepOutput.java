@@ -374,7 +374,13 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
          .map(step -> (QFrontendStepMetaData) step)
          .toList());
 
-      setUpdatedFrontendStepList(updatedFrontendStepList);
+      ProcessMetaDataAdjustment processMetaDataAdjustment = getProcessMetaDataAdjustment();
+      if(processMetaDataAdjustment == null)
+      {
+         processMetaDataAdjustment = new ProcessMetaDataAdjustment();
+      }
+      processMetaDataAdjustment.setUpdatedFrontendStepList(updatedFrontendStepList);
+      setProcessMetaDataAdjustment(processMetaDataAdjustment);
    }
 
 
@@ -411,21 +417,21 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
 
 
    /*******************************************************************************
-    ** Getter for updatedFrontendStepList
+    ** Getter for ProcessMetaDataAdjustment (pass-through to processState)
     *******************************************************************************/
-   public List<QFrontendStepMetaData> getUpdatedFrontendStepList()
+   public ProcessMetaDataAdjustment getProcessMetaDataAdjustment()
    {
-      return (this.processState.getUpdatedFrontendStepList());
+      return (this.processState.getProcessMetaDataAdjustment());
    }
 
 
 
    /*******************************************************************************
-    ** Setter for updatedFrontendStepList
+    ** Setter for updatedFrontendStepList (pass-through to processState)
     *******************************************************************************/
-   public void setUpdatedFrontendStepList(List<QFrontendStepMetaData> updatedFrontendStepList)
+   public void setProcessMetaDataAdjustment(ProcessMetaDataAdjustment processMetaDataAdjustment)
    {
-      this.processState.setUpdatedFrontendStepList(updatedFrontendStepList);
+      this.processState.setProcessMetaDataAdjustment(processMetaDataAdjustment);
    }
 
 }

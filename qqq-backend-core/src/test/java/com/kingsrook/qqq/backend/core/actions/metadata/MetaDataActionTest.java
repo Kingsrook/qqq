@@ -31,9 +31,13 @@ import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
@@ -41,9 +45,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendProcessMe
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -348,6 +356,120 @@ class MetaDataActionTest extends BaseTest
       assertFalse(personMemoryTable.getInsertPermission());
       assertFalse(personMemoryTable.getEditPermission());
       assertTrue(personMemoryTable.getDeletePermission());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFilter() throws QException
+   {
+      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(MetaDataAction.class);
+
+      //////////////////////////////////////////////////////
+      // run default version, and assert tables are found //
+      //////////////////////////////////////////////////////
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
+      assertFalse(result.getTables().isEmpty(), "should be some tables");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new MetaDataAction().execute(new MetaDataInput());
+      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("Using new default")).hasSize(1);
+
+      /////////////////////////////////////////////////////////////
+      // set up new instance to use a custom filter, to deny all //
+      /////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      instance.setMetaDataFilter(new QCodeReference(DenyAllFilter.class));
+      reInitInstanceInContext(instance);
+
+      /////////////////////////////////////////////////////
+      // re-run, and assert all tables are filtered away //
+      /////////////////////////////////////////////////////
+      result = new MetaDataAction().execute(new MetaDataInput());
+      assertTrue(result.getTables().isEmpty(), "should be no tables");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new MetaDataAction().execute(new MetaDataInput());
+      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("filter of type: DenyAllFilter")).hasSize(1);
+
+      QLogger.deactivateCollectingLoggerForClass(MetaDataAction.class);
+
+      ////////////////////////////////////////////////////////////
+      // run now with the AllowAllFilter, confirm we get tables //
+      ////////////////////////////////////////////////////////////
+      instance = TestUtils.defineInstance();
+      instance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class));
+      reInitInstanceInContext(instance);
+      result = new MetaDataAction().execute(new MetaDataInput());
+      assertFalse(result.getTables().isEmpty(), "should be some tables");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class DenyAllFilter implements MetaDataFilterInterface
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowTable(MetaDataInput input, QTableMetaData table)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowProcess(MetaDataInput input, QProcessMetaData process)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowReport(MetaDataInput input, QReportMetaData report)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowApp(MetaDataInput input, QAppMetaData app)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget)
+      {
+         return false;
+      }
    }
 
 }

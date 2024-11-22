@@ -112,9 +112,10 @@ class QJavalinApiHandlerTest extends BaseTest
             .withInitialVersion(TestUtils.V2022_Q4))));
 
       qJavalinImplementation = new QJavalinImplementation(qInstance);
-      qJavalinImplementation.startJavalinServer(PORT);
+      qJavalinImplementation.clearJavalinRoutes();
       EndpointGroup routes = new QJavalinApiHandler(qInstance).getRoutes();
-      qJavalinImplementation.getJavalinService().routes(routes);
+      qJavalinImplementation.addJavalinRoutes(routes);
+      qJavalinImplementation.startJavalinServer(PORT);
    }
 
 

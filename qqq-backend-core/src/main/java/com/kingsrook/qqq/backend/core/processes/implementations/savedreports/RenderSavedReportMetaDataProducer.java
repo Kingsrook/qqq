@@ -23,10 +23,10 @@ package com.kingsrook.qqq.backend.core.processes.implementations.savedreports;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.nocode.WidgetHtmlLine;
@@ -58,7 +58,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
    public static final String FIELD_NAME_STORAGE_TABLE_NAME = "storageTableName";
    public static final String FIELD_NAME_REPORT_FORMAT      = "reportFormat";
    public static final String FIELD_NAME_EMAIL_ADDRESS      = "reportDestinationEmailAddress";
-   public static final String FIELD_NAME_EMAIL_SUBJECT = "emailSubject";
+   public static final String FIELD_NAME_EMAIL_SUBJECT      = "emailSubject";
 
 
 
