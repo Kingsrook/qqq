@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
  *******************************************************************************/
 public abstract class SpecTestBase
 {
-   private static int PORT = 6263;
+   private static int PORT = 6273;
 
    protected static Javalin service;
 
