@@ -52,6 +52,11 @@ public abstract class AbstractBlockWidgetData<
    private V  values;
    private SX styles;
 
+   ///////////////////////////////////////////////////////////////////////////////////
+   // optional field name to act as a 'guard' for the block - e.g., only include it //
+   // if the value for this field is true                                           //
+   ///////////////////////////////////////////////////////////////////////////////////
+   private String conditional;
 
 
    /*******************************************************************************
@@ -442,5 +447,36 @@ public abstract class AbstractBlockWidgetData<
       this.blockId = blockId;
       return (T) this;
    }
+
+
+   /*******************************************************************************
+    ** Getter for conditional
+    *******************************************************************************/
+   public String getConditional()
+   {
+      return (this.conditional);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for conditional
+    *******************************************************************************/
+   public void setConditional(String conditional)
+   {
+      this.conditional = conditional;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for conditional
+    *******************************************************************************/
+   public AbstractBlockWidgetData withConditional(String conditional)
+   {
+      this.conditional = conditional;
+      return (this);
+   }
+
 
 }

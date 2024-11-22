@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -262,6 +263,22 @@ public class QueryAction
       {
          throw (new QException("QueryInput contained " + unrecognizedFieldNames.size() + " unrecognized field name" + StringUtils.plural(unrecognizedFieldNames) + ": " + StringUtils.join(",", unrecognizedFieldNames)));
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** shorthand way to call for the most common use-case, when you just want the
+    ** entities to be returned, and you just want to pass in a table name and filter.
+    *******************************************************************************/
+   public static <T extends QRecordEntity> List<T> execute(String tableName, Class<T> entityClass, QQueryFilter filter) throws QException
+   {
+      QueryAction queryAction = new QueryAction();
+      QueryInput  queryInput  = new QueryInput();
+      queryInput.setTableName(tableName);
+      queryInput.setFilter(filter);
+      QueryOutput queryOutput = queryAction.execute(queryInput);
+      return (queryOutput.getRecordEntities(entityClass));
    }
 
 

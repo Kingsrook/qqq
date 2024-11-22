@@ -47,6 +47,8 @@ public class QFrontendStepMetaData extends QStepMetaData
    private List<QFieldMetaData>             recordListFields;
    private Map<String, QFieldMetaData>      formFieldMap;
 
+   private String format;
+
    private List<QHelpContent> helpContents;
 
 
@@ -402,5 +404,36 @@ public class QFrontendStepMetaData extends QStepMetaData
    {
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, this.helpContents);
    }
+
+
+   /*******************************************************************************
+    ** Getter for format
+    *******************************************************************************/
+   public String getFormat()
+   {
+      return (this.format);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for format
+    *******************************************************************************/
+   public void setFormat(String format)
+   {
+      this.format = format;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for format
+    *******************************************************************************/
+   public QFrontendStepMetaData withFormat(String format)
+   {
+      this.format = format;
+      return (this);
+   }
+
 
 }

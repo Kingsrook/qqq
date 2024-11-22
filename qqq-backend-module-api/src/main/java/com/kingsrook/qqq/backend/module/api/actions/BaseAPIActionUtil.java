@@ -748,7 +748,7 @@ public class BaseAPIActionUtil
    {
       try
       {
-         String uri = request.getURI().toString();
+         String uri  = request.getURI().toString();
          String pair = backendMetaData.getApiKeyQueryParamName() + "=" + getApiKey();
 
          ///////////////////////////////////////////////////////////////////////////////////
@@ -1170,6 +1170,16 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
+   protected void logRequestDetails(QTableMetaData table, HttpRequestBase request) throws QException
+   {
+      LOG.info("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
       int     rateLimitSleepMillis      = getInitialRateLimitBackoffMillis();
@@ -1192,7 +1202,7 @@ public class BaseAPIActionUtil
             setupContentTypeInRequest(request);
             setupAdditionalHeaders(request);
 
-            LOG.info("Making [" + request.getMethod() + "] request to URL [" + request.getURI() + "] on table [" + table.getName() + "].");
+            logRequestDetails(table, request);
             if("POST".equals(request.getMethod()))
             {
                LOG.info("POST contents [" + ((HttpPost) request).getEntity().toString() + "]");

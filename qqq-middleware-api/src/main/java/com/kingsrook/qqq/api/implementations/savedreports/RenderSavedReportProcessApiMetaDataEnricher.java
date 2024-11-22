@@ -31,14 +31,14 @@ import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInput;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessInputFieldsContainer;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaData;
 import com.kingsrook.qqq.api.model.metadata.processes.ApiProcessMetaDataContainer;
-import com.kingsrook.qqq.api.model.openapi.ExampleWithListValue;
-import com.kingsrook.qqq.api.model.openapi.ExampleWithSingleValue;
-import com.kingsrook.qqq.api.model.openapi.HttpMethod;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormatPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.openapi.model.ExampleWithListValue;
+import com.kingsrook.qqq.openapi.model.ExampleWithSingleValue;
+import com.kingsrook.qqq.openapi.model.HttpMethod;
 
 
 /*******************************************************************************

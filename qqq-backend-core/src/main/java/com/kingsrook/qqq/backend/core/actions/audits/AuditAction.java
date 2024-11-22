@@ -225,7 +225,13 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                {
                   if(auditSingleInput.getSecurityKeyValues() == null || !auditSingleInput.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
                   {
-                     throw (new QException("Missing securityKeyValue [" + recordSecurityLock.getSecurityKeyType() + "] in audit request for table " + auditSingleInput.getAuditTableName()));
+                     ///////////////////////////////////////////////////////
+                     // originally, this case threw...                    //
+                     // but i think it's better to record the audit, just //
+                     // missing its security key value, then to fail...   //
+                     ///////////////////////////////////////////////////////
+                     // throw (new QException("Missing securityKeyValue [" + recordSecurityLock.getSecurityKeyType() + "] in audit request for table " + auditSingleInput.getAuditTableName()));
+                     LOG.info("Missing securityKeyValue in audit request", logPair("table", auditSingleInput.getAuditTableName()), logPair("securityKey", recordSecurityLock.getSecurityKeyType()));
                   }
                }
 

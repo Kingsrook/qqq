@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
@@ -58,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
@@ -79,6 +81,7 @@ public class RunProcessAction
 {
    private static final QLogger LOG = QLogger.getLogger(RunProcessAction.class);
 
+   public static final String BASEPULL_KEY_VALUE        = "basepullKeyValue";
    public static final String BASEPULL_THIS_RUNTIME_KEY = "basepullThisRuntimeKey";
    public static final String BASEPULL_LAST_RUNTIME_KEY = "basepullLastRuntimeKey";
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
@@ -133,90 +136,11 @@ public class RunProcessAction
 
       try
       {
-         String lastStepName = runProcessInput.getStartAfterStep();
-
-         STEP_LOOP:
-         while(true)
+         switch(Objects.requireNonNull(process.getStepFlow(), "Process [" + process.getName() + "] has a null stepFlow."))
          {
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            // always refresh the step list - as any step that runs can modify it (in the process state).        //
-            // this is why we don't do a loop over the step list - as we'd get ConcurrentModificationExceptions. //
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            List<QStepMetaData> stepList = getAvailableStepList(processState, process, lastStepName);
-            if(stepList.isEmpty())
-            {
-               break;
-            }
-
-            QStepMetaData step = stepList.get(0);
-            lastStepName = step.getName();
-
-            if(step instanceof QFrontendStepMetaData frontendStep)
-            {
-               ////////////////////////////////////////////////////////////////
-               // Handle what to do with frontend steps, per request setting //
-               ////////////////////////////////////////////////////////////////
-               switch(runProcessInput.getFrontendStepBehavior())
-               {
-                  case BREAK ->
-                  {
-                     LOG.trace("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
-                     processFrontendStepFieldDefaultValues(processState, frontendStep);
-                     processFrontendComponents(processState, frontendStep);
-                     processState.setNextStepName(step.getName());
-                     break STEP_LOOP;
-                  }
-                  case SKIP ->
-                  {
-                     LOG.trace("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
-
-                     //////////////////////////////////////////////////////////////////////
-                     // much less error prone in case this code changes in the future... //
-                     //////////////////////////////////////////////////////////////////////
-                     // noinspection UnnecessaryContinue
-                     continue;
-                  }
-                  case FAIL ->
-                  {
-                     LOG.trace("Throwing error for frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
-                     throw (new QException("Failing process at step " + step.getName() + " (as requested, to fail on frontend steps)"));
-                  }
-                  default -> throw new IllegalStateException("Unexpected value: " + runProcessInput.getFrontendStepBehavior());
-               }
-            }
-            else if(step instanceof QBackendStepMetaData backendStepMetaData)
-            {
-               ///////////////////////
-               // Run backend steps //
-               ///////////////////////
-               LOG.debug("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
-               RunBackendStepOutput runBackendStepOutput = runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
-
-               /////////////////////////////////////////////////////////////////////////////////////////
-               // if the step returned an override lastStepName, use that to determine how we proceed //
-               /////////////////////////////////////////////////////////////////////////////////////////
-               if(runBackendStepOutput.getOverrideLastStepName() != null)
-               {
-                  LOG.debug("Process step [" + lastStepName + "] returned an overrideLastStepName [" + runBackendStepOutput.getOverrideLastStepName() + "]!");
-                  lastStepName = runBackendStepOutput.getOverrideLastStepName();
-               }
-
-               /////////////////////////////////////////////////////////////////////////////////////////////
-               // similarly, if the step produced an updatedFrontendStepList, propagate that data outward //
-               /////////////////////////////////////////////////////////////////////////////////////////////
-               if(runBackendStepOutput.getUpdatedFrontendStepList() != null)
-               {
-                  LOG.debug("Process step [" + lastStepName + "] generated an updatedFrontendStepList [" + runBackendStepOutput.getUpdatedFrontendStepList().stream().map(s -> s.getName()).toList() + "]!");
-                  runProcessOutput.setUpdatedFrontendStepList(runBackendStepOutput.getUpdatedFrontendStepList());
-               }
-            }
-            else
-            {
-               //////////////////////////////////////////////////
-               // in case we have a different step type, throw //
-               //////////////////////////////////////////////////
-               throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
-            }
+            case LINEAR -> runLinearStepLoop(process, processState, stateKey, runProcessInput, runProcessOutput);
+            case STATE_MACHINE -> runStateMachineStep(runProcessInput.getStartAfterStep(), process, processState, stateKey, runProcessInput, runProcessOutput, 0);
+            default -> throw (new QException("Unhandled process step flow: " + process.getStepFlow()));
          }
 
          ///////////////////////////////////////////////////////////////////////////
@@ -254,6 +178,270 @@ public class RunProcessAction
       }
 
       return (runProcessOutput);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void runLinearStepLoop(QProcessMetaData process, ProcessState processState, UUIDAndTypeStateKey stateKey, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws Exception
+   {
+      String lastStepName = runProcessInput.getStartAfterStep();
+
+      while(true)
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         // always refresh the step list - as any step that runs can modify it (in the process state).        //
+         // this is why we don't do a loop over the step list - as we'd get ConcurrentModificationExceptions. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////
+         List<QStepMetaData> stepList = getAvailableStepList(processState, process, lastStepName);
+         if(stepList.isEmpty())
+         {
+            break;
+         }
+
+         QStepMetaData step = stepList.get(0);
+         lastStepName = step.getName();
+
+         if(step instanceof QFrontendStepMetaData frontendStep)
+         {
+            LoopTodo loopTodo = prepareForFrontendStep(runProcessInput, process, frontendStep, processState);
+            if(loopTodo == LoopTodo.BREAK)
+            {
+               break;
+            }
+         }
+         else if(step instanceof QBackendStepMetaData backendStepMetaData)
+         {
+            RunBackendStepOutput runBackendStepOutput = runBackendStep(process, processState, stateKey, runProcessInput, runProcessOutput, backendStepMetaData, step);
+
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // if the step returned an override lastStepName, use that to determine how we proceed //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            if(runBackendStepOutput.getOverrideLastStepName() != null)
+            {
+               LOG.debug("Process step [" + lastStepName + "] returned an overrideLastStepName [" + runBackendStepOutput.getOverrideLastStepName() + "]!");
+               lastStepName = runBackendStepOutput.getOverrideLastStepName();
+            }
+         }
+         else
+         {
+            //////////////////////////////////////////////////
+            // in case we have a different step type, throw //
+            //////////////////////////////////////////////////
+            throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private enum LoopTodo
+   {
+      BREAK,
+      CONTINUE
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private LoopTodo prepareForFrontendStep(RunProcessInput runProcessInput, QProcessMetaData process, QFrontendStepMetaData step, ProcessState processState) throws QException
+   {
+      ////////////////////////////////////////////////////////////////
+      // Handle what to do with frontend steps, per request setting //
+      ////////////////////////////////////////////////////////////////
+      switch(runProcessInput.getFrontendStepBehavior())
+      {
+         case BREAK ->
+         {
+            LOG.trace("Breaking process [" + process.getName() + "] at frontend step (as requested by caller): " + step.getName());
+            processFrontendStepFieldDefaultValues(processState, step);
+            processFrontendComponents(processState, step);
+            processState.setNextStepName(step.getName());
+            return LoopTodo.BREAK;
+         }
+         case SKIP ->
+         {
+            LOG.trace("Skipping frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+            return LoopTodo.CONTINUE;
+         }
+         case FAIL ->
+         {
+            LOG.trace("Throwing error for frontend step [" + step.getName() + "] in process [" + process.getName() + "] (as requested by caller)");
+            throw (new QException("Failing process at step " + step.getName() + " (as requested, to fail on frontend steps)"));
+         }
+         default -> throw new IllegalStateException("Unexpected value: " + runProcessInput.getFrontendStepBehavior());
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void runStateMachineStep(String lastStepName, QProcessMetaData process, ProcessState processState, UUIDAndTypeStateKey stateKey, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput, int stackDepth) throws Exception
+   {
+      //////////////////////////////
+      // check for stack-overflow //
+      //////////////////////////////
+      Integer maxStateMachineProcessStepFlowStackDepth = Objects.requireNonNullElse(runProcessInput.getValueInteger("maxStateMachineProcessStepFlowStackDepth"), 20);
+      if(stackDepth > maxStateMachineProcessStepFlowStackDepth)
+      {
+         throw (new QException("StateMachine process recurred too many times (exceeded maxStateMachineProcessStepFlowStackDepth of " + maxStateMachineProcessStepFlowStackDepth + ")"));
+      }
+
+      //////////////////////////////////
+      // figure out what step to run: //
+      //////////////////////////////////
+      QStepMetaData step = null;
+      if(!StringUtils.hasContent(lastStepName))
+      {
+         ////////////////////////////////////////////////////////////////////
+         // if no lastStepName is given, start at the process's first step //
+         ////////////////////////////////////////////////////////////////////
+         if(CollectionUtils.nullSafeIsEmpty(process.getStepList()))
+         {
+            throw (new QException("Process [" + process.getName() + "] does not have a step list defined."));
+         }
+         step = process.getStepList().get(0);
+      }
+      else
+      {
+         /////////////////////////////////////
+         // else run the given lastStepName //
+         /////////////////////////////////////
+         processState.clearNextStepName();
+         step = process.getStep(lastStepName);
+         if(step == null)
+         {
+            throw (new QException("Could not find step by name [" + lastStepName + "]"));
+         }
+      }
+
+      /////////////////////////////////////////////////////////////////////////
+      // for the flow of:                                                    //
+      // we were on a frontend step (as a sub-step of a state machine step), //
+      // and now we're here to run that state-step's backend step -          //
+      // find the state-machine step containing this frontend step.          //
+      /////////////////////////////////////////////////////////////////////////
+      String skipSubStepsUntil = null;
+      if(step instanceof QFrontendStepMetaData frontendStepMetaData)
+      {
+         QStateMachineStep stateMachineStep = getStateMachineStepContainingSubStep(process, frontendStepMetaData.getName());
+         if(stateMachineStep == null)
+         {
+            throw (new QException("Could not find stateMachineStep that contains last-frontend step: " + frontendStepMetaData.getName()));
+         }
+         step = stateMachineStep;
+
+         //////////////////////////////////////////////////////////////////////////////////
+         // set this flag, to know to skip this frontend step in the sub-step loop below //
+         //////////////////////////////////////////////////////////////////////////////////
+         skipSubStepsUntil = frontendStepMetaData.getName();
+      }
+
+      if(!(step instanceof QStateMachineStep stateMachineStep))
+      {
+         throw (new QException("Have a non-stateMachineStep in a process using stateMachine flow... " + step.getClass().getName()));
+      }
+
+      ///////////////////////
+      // run the sub-steps //
+      ///////////////////////
+      boolean ranAnySubSteps = false;
+      for(QStepMetaData subStep : stateMachineStep.getSubSteps())
+      {
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // ok, well, skip them if this flag is set (and clear the flag once we've hit this sub-step) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         if(skipSubStepsUntil != null)
+         {
+            if(skipSubStepsUntil.equals(subStep.getName()))
+            {
+               skipSubStepsUntil = null;
+            }
+            continue;
+         }
+
+         ranAnySubSteps = true;
+         if(subStep instanceof QFrontendStepMetaData frontendStep)
+         {
+            LoopTodo loopTodo = prepareForFrontendStep(runProcessInput, process, frontendStep, processState);
+            if(loopTodo == LoopTodo.BREAK)
+            {
+               return;
+            }
+         }
+         else if(subStep instanceof QBackendStepMetaData backendStepMetaData)
+         {
+            RunBackendStepOutput runBackendStepOutput = runBackendStep(process, processState, stateKey, runProcessInput, runProcessOutput, backendStepMetaData, step);
+            Optional<String>     nextStepName         = runBackendStepOutput.getProcessState().getNextStepName();
+
+            if(nextStepName.isEmpty() && StringUtils.hasContent(stateMachineStep.getDefaultNextStepName()))
+            {
+               nextStepName = Optional.of(stateMachineStep.getDefaultNextStepName());
+            }
+
+            if(nextStepName.isPresent())
+            {
+               //////////////////////////////////////////////////////////////////////////////////////////////////////
+               // if we've been given a next-step-name, go to that step now.                                       //
+               // it might be a backend-only stateMachineStep, in which case, we should run that backend step now. //
+               // or it might be a frontend-then-backend step, in which case, we want to go to that frontend step. //
+               // if we weren't given a next-step-name, then we should stay in the same state - either to finish   //
+               // its sub-steps, or, to fall out of the loop and end the process.                                  //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////
+               processState.clearNextStepName();
+               runStateMachineStep(nextStepName.get(), process, processState, stateKey, runProcessInput, runProcessOutput, stackDepth + 1);
+               return;
+            }
+         }
+         else
+         {
+            //////////////////////////////////////////////////
+            // in case we have a different step type, throw //
+            //////////////////////////////////////////////////
+            throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
+         }
+      }
+
+      if(!ranAnySubSteps)
+      {
+         if(StringUtils.hasContent(stateMachineStep.getDefaultNextStepName()))
+         {
+            runStateMachineStep(stateMachineStep.getDefaultNextStepName(), process, processState, stateKey, runProcessInput, runProcessOutput, stackDepth + 1);
+         }
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QStateMachineStep getStateMachineStepContainingSubStep(QProcessMetaData process, String stepName)
+   {
+      for(QStepMetaData step : process.getAllSteps().values())
+      {
+         if(step instanceof QStateMachineStep stateMachineStep)
+         {
+            for(QStepMetaData subStep : stateMachineStep.getSubSteps())
+            {
+               if(subStep.getName().equals(stepName))
+               {
+                  return (stateMachineStep);
+               }
+            }
+         }
+      }
+
+      return (null);
    }
 
 
@@ -335,12 +523,12 @@ public class RunProcessAction
          ///////////////////////////////////////////////////
          runProcessInput.seedFromProcessState(optionalProcessState.get());
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
-         // if we're restoring an old state, we can discard a previously stored updatedFrontendStepList - //
-         // it is only needed on the transitional edge from a backend-step to a frontend step, but not    //
-         // in the other directly                                                                         //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
-         optionalProcessState.get().setUpdatedFrontendStepList(null);
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we're restoring an old state, we can discard a previously stored processMetaDataAdjustment - //
+         // it is only needed on the transitional edge from a backend-step to a frontend step, but not      //
+         // in the other directly                                                                           //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         optionalProcessState.get().setProcessMetaDataAdjustment(null);
 
          ///////////////////////////////////////////////////////////////////////////
          // if there were values from the caller, put those (back) in the request //
@@ -355,8 +543,32 @@ public class RunProcessAction
       }
 
       ProcessState processState = optionalProcessState.get();
-      processState.clearNextStepName();
       return processState;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private RunBackendStepOutput runBackendStep(QProcessMetaData process, ProcessState processState, UUIDAndTypeStateKey stateKey, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput, QBackendStepMetaData backendStepMetaData, QStepMetaData step) throws Exception
+   {
+      ///////////////////////
+      // Run backend steps //
+      ///////////////////////
+      LOG.debug("Running backend step [" + step.getName() + "] in process [" + process.getName() + "]");
+      RunBackendStepOutput runBackendStepOutput = runBackendStep(runProcessInput, process, runProcessOutput, stateKey, backendStepMetaData, process, processState);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // similarly, if the step produced a processMetaDataAdjustment, propagate that data outward //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      if(runBackendStepOutput.getProcessMetaDataAdjustment() != null)
+      {
+         LOG.debug("Process step [" + step.getName() + "] generated a ProcessMetaDataAdjustment [" + runBackendStepOutput.getProcessMetaDataAdjustment() + "]!");
+         runProcessOutput.setProcessMetaDataAdjustment(runBackendStepOutput.getProcessMetaDataAdjustment());
+      }
+
+      return runBackendStepOutput;
    }
 
 
@@ -364,7 +576,7 @@ public class RunProcessAction
    /*******************************************************************************
     ** Run a single backend step.
     *******************************************************************************/
-   protected RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
+   RunBackendStepOutput runBackendStep(RunProcessInput runProcessInput, QProcessMetaData process, RunProcessOutput runProcessOutput, UUIDAndTypeStateKey stateKey, QBackendStepMetaData backendStep, QProcessMetaData qProcessMetaData, ProcessState processState) throws Exception
    {
       RunBackendStepInput runBackendStepInput = new RunBackendStepInput(processState);
       runBackendStepInput.setProcessName(process.getName());
@@ -517,9 +729,13 @@ public class RunProcessAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String determineBasepullKeyValue(QProcessMetaData process, BasepullConfiguration basepullConfiguration) throws QException
+   protected String determineBasepullKeyValue(QProcessMetaData process, RunProcessInput runProcessInput, BasepullConfiguration basepullConfiguration) throws QException
    {
       String basepullKeyValue = (basepullConfiguration.getKeyValue() != null) ? basepullConfiguration.getKeyValue() : process.getName();
+      if(runProcessInput.getValueString(BASEPULL_KEY_VALUE) != null)
+      {
+         basepullKeyValue = runProcessInput.getValueString(BASEPULL_KEY_VALUE);
+      }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if process specifies that it uses variants, look for that data in the session and append to our basepull key //
@@ -551,7 +767,7 @@ public class RunProcessAction
       String basepullTableName            = basepullConfiguration.getTableName();
       String basepullKeyFieldName         = basepullConfiguration.getKeyField();
       String basepullLastRunTimeFieldName = basepullConfiguration.getLastRunTimeFieldName();
-      String basepullKeyValue             = determineBasepullKeyValue(process, basepullConfiguration);
+      String basepullKeyValue             = determineBasepullKeyValue(process, runProcessInput, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //
@@ -631,7 +847,7 @@ public class RunProcessAction
       String  basepullKeyFieldName                 = basepullConfiguration.getKeyField();
       String  basepullLastRunTimeFieldName         = basepullConfiguration.getLastRunTimeFieldName();
       Integer basepullHoursBackForInitialTimestamp = basepullConfiguration.getHoursBackForInitialTimestamp();
-      String  basepullKeyValue                     = determineBasepullKeyValue(process, basepullConfiguration);
+      String  basepullKeyValue                     = determineBasepullKeyValue(process, runProcessInput, basepullConfiguration);
 
       ///////////////////////////////////////
       // get the stored basepull timestamp //

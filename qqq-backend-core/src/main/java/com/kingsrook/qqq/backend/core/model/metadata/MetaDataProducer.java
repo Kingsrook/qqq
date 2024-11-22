@@ -22,9 +22,6 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
-
-
 /*******************************************************************************
  ** Abstract class that knows how to produce meta data objects.  Useful with
  ** MetaDataProducerHelper, to put point at a package full of these, and populate

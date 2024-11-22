@@ -36,6 +36,7 @@
       <module>qqq-backend-module-rdbms</module>
       <module>qqq-backend-module-mongodb</module>
       <module>qqq-language-support-javascript</module>
+      <module>qqq-openapi</module>
       <module>qqq-middleware-picocli</module>
       <module>qqq-middleware-javalin</module>
       <module>qqq-middleware-lambda</module>
@@ -46,7 +47,7 @@
    </modules>
 
    <properties>
-      <revision>0.22.1</revision>
+      <revision>0.23.0</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

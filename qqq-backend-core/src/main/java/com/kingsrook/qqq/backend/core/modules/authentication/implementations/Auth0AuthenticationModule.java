@@ -247,10 +247,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             //////////////////////////////////////////////////////////////
             // allow customizer to do custom things here, if so desired //
             //////////////////////////////////////////////////////////////
-            if(getCustomizer() != null)
-            {
-               getCustomizer().finalCustomizeSession(qInstance, qSession);
-            }
+            finalCustomizeSession(qInstance, qSession);
 
             return (qSession);
          }
@@ -311,10 +308,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
          //////////////////////////////////////////////////////////////
          // allow customizer to do custom things here, if so desired //
          //////////////////////////////////////////////////////////////
-         if(getCustomizer() != null)
-         {
-            getCustomizer().finalCustomizeSession(qInstance, qSession);
-         }
+         finalCustomizeSession(qInstance, qSession);
 
          return (qSession);
       }
@@ -355,6 +349,23 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
       finally
       {
          QContext.setQInstance(contextInstanceBefore);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void finalCustomizeSession(QInstance qInstance, QSession qSession)
+   {
+      if(getCustomizer() != null)
+      {
+         QContext.withTemporaryContext(QContext.capture(), () ->
+         {
+            QContext.setQSession(getChickenAndEggSession());
+            getCustomizer().finalCustomizeSession(qInstance, qSession);
+         });
       }
    }
 

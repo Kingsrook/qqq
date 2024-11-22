@@ -48,13 +48,13 @@
          <artifactId>qqq-middleware-javalin</artifactId>
          <version>${revision}</version>
       </dependency>
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-openapi</artifactId>
+         <version>${revision}</version>
+      </dependency>
 
       <!-- 3rd party deps specifically for this module -->
-      <dependency>
-         <groupId>io.javalin</groupId>
-         <artifactId>javalin</artifactId>
-         <version>5.1.4</version>
-      </dependency>
       <dependency>
          <groupId>com.konghq</groupId>
          <artifactId>unirest-java</artifactId>

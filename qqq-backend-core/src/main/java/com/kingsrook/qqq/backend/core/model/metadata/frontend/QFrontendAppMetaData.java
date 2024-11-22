@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QSupplementalAppMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
@@ -45,7 +46,7 @@ public class QFrontendAppMetaData
 {
    private String name;
    private String label;
-   private String iconName;
+   private QIcon  icon;
 
    private List<String>             widgets  = new ArrayList<>();
    private List<AppTreeNode>        children = new ArrayList<>();
@@ -56,6 +57,7 @@ public class QFrontendAppMetaData
    private Map<String, QSupplementalAppMetaData> supplementalAppMetaData;
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -63,11 +65,7 @@ public class QFrontendAppMetaData
    {
       this.name = appMetaData.getName();
       this.label = appMetaData.getLabel();
-
-      if(appMetaData.getIcon() != null)
-      {
-         this.iconName = appMetaData.getIcon().getName();
-      }
+      this.icon = appMetaData.getIcon();
 
       List<String> filteredWidgets = CollectionUtils.nonNullList(appMetaData.getWidgets()).stream().filter(n -> metaDataOutput.getWidgets().containsKey(n)).toList();
       if(CollectionUtils.nullSafeHasContents(filteredWidgets))
@@ -81,6 +79,10 @@ public class QFrontendAppMetaData
          List<String> filteredTables    = CollectionUtils.nonNullList(section.getTables()).stream().filter(n -> metaDataOutput.getTables().containsKey(n)).toList();
          List<String> filteredProcesses = CollectionUtils.nonNullList(section.getProcesses()).stream().filter(n -> metaDataOutput.getProcesses().containsKey(n)).toList();
          List<String> filteredReports   = CollectionUtils.nonNullList(section.getReports()).stream().filter(n -> metaDataOutput.getReports().containsKey(n)).toList();
+
+         //////////////////////////////////////////////////////
+         // only include the section if it has some contents //
+         //////////////////////////////////////////////////////
          if(!filteredTables.isEmpty() || !filteredProcesses.isEmpty() || !filteredReports.isEmpty())
          {
             QAppSection clonedSection = section.clone();
@@ -174,18 +176,7 @@ public class QFrontendAppMetaData
     *******************************************************************************/
    public String getIconName()
    {
-      return iconName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for iconName
-    **
-    *******************************************************************************/
-   public void setIconName(String iconName)
-   {
-      this.iconName = iconName;
+      return (icon == null ? null : icon.getName());
    }
 
 
@@ -234,5 +225,16 @@ public class QFrontendAppMetaData
    public Map<String, QSupplementalAppMetaData> getSupplementalAppMetaData()
    {
       return supplementalAppMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
    }
 }

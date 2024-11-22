@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -45,6 +47,7 @@ import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.apache.logging.log4j.Level;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -465,6 +468,101 @@ class QJavalinImplementationTest extends QJavalinTestBase
       JSONObject record0 = records.getJSONObject(0);
       JSONObject values0 = record0.getJSONObject("values");
       assertEquals("Tim", values0.getString("firstName"));
+   }
+
+
+
+   /*******************************************************************************
+    ** test a table query using an actual filter via POST, with no limit specified,
+    ** and with that not being allowed.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilterPOSTWithoutLimitNotAllowed() throws QInstanceValidationException
+   {
+      try
+      {
+         qJavalinImplementation.getJavalinMetaData()
+            .withQueryWithoutLimitAllowed(false)
+            .withQueryWithoutLimitDefault(3)
+            .withQueryWithoutLimitLogLevel(Level.WARN);
+
+         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+
+         String filterJson = """
+            {"criteria":[]}""";
+
+         HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/query")
+            .field("filter", filterJson)
+            .asString();
+
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertTrue(jsonObject.has("records"));
+         JSONArray records = jsonObject.getJSONArray("records");
+         assertEquals(3, records.length());
+
+         assertThat(collectingLogger.getCollectedMessages())
+            .anyMatch(m -> m.getLevel().equals(Level.WARN) && m.getMessage().contains("Query request did not specify a limit"));
+      }
+      finally
+      {
+         QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         resetMetaDataQueryWithoutLimitSettings();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** test a table query using an actual filter via POST, with no limit specified,
+    ** but with that being allowed.
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataQueryWithFilterPOSTWithoutLimitAllowed() throws QInstanceValidationException
+   {
+      try
+      {
+         qJavalinImplementation.getJavalinMetaData()
+            .withQueryWithoutLimitAllowed(true);
+
+         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+
+         String filterJson = """
+            {"criteria":[]}""";
+
+         HttpResponse<String> response = Unirest.post(BASE_URL + "/data/person/query")
+            .field("filter", filterJson)
+            .asString();
+
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertTrue(jsonObject.has("records"));
+         JSONArray records = jsonObject.getJSONArray("records");
+         assertEquals(6, records.length());
+
+         assertThat(collectingLogger.getCollectedMessages())
+            .noneMatch(m -> m.getMessage().contains("Query request did not specify a limit"));
+      }
+      finally
+      {
+         QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         resetMetaDataQueryWithoutLimitSettings();
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void resetMetaDataQueryWithoutLimitSettings()
+   {
+      qJavalinImplementation.getJavalinMetaData()
+         .withQueryWithoutLimitAllowed(false)
+         .withQueryWithoutLimitDefault(1000)
+         .withQueryWithoutLimitLogLevel(Level.INFO);
    }
 
 
@@ -1029,7 +1127,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       // filter use-case, with no values, should return options. //
       /////////////////////////////////////////////////////////////
       HttpResponse<String> response = Unirest.post(BASE_URL + "/data/pet/possibleValues/ownerPersonId?searchTerm=&useCase=filter").asString();
-      JSONArray options = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
+      JSONArray            options  = assertPossibleValueSuccessfulResponseAndGetOptionsArray(response);
       assertNotNull(options);
       assertThat(options.length()).isGreaterThanOrEqualTo(5);
 

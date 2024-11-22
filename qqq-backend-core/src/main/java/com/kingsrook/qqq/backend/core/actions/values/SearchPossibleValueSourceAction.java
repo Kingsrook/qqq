@@ -260,9 +260,6 @@ public class SearchPossibleValueSourceAction
          }
       }
 
-      // todo - skip & limit as params
-      queryFilter.setLimit(250);
-
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       // if given a default filter, make it the 'top level' filter and the one we just created a subfilter //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,6 +268,9 @@ public class SearchPossibleValueSourceAction
          input.getDefaultQueryFilter().addSubFilter(queryFilter);
          queryFilter = input.getDefaultQueryFilter();
       }
+
+      // todo - skip & limit as params
+      queryFilter.setLimit(250);
 
       queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
 

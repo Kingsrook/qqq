@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.text;
 
 
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValuesInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 
 
 /*******************************************************************************
@@ -31,6 +32,9 @@ import com.kingsrook.qqq.backend.core.model.dashboard.widgets.blocks.BlockValues
 public class TextValues implements BlockValuesInterface
 {
    private String text;
+
+   private QIcon startIcon;
+   private QIcon endIcon;
 
 
 
@@ -83,5 +87,67 @@ public class TextValues implements BlockValuesInterface
       this.text = text;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for startIcon
+    *******************************************************************************/
+   public QIcon getStartIcon()
+   {
+      return (this.startIcon);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for startIcon
+    *******************************************************************************/
+   public void setStartIcon(QIcon startIcon)
+   {
+      this.startIcon = startIcon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for startIcon
+    *******************************************************************************/
+   public TextValues withStartIcon(QIcon startIcon)
+   {
+      this.startIcon = startIcon;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for endIcon
+    *******************************************************************************/
+   public QIcon getEndIcon()
+   {
+      return (this.endIcon);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for endIcon
+    *******************************************************************************/
+   public void setEndIcon(QIcon endIcon)
+   {
+      this.endIcon = endIcon;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for endIcon
+    *******************************************************************************/
+   public TextValues withEndIcon(QIcon endIcon)
+   {
+      this.endIcon = endIcon;
+      return (this);
+   }
+
 
 }

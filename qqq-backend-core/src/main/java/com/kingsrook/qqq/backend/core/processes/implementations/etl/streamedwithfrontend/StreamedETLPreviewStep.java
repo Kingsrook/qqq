@@ -148,9 +148,9 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       //////////////////////////////////////////////////////////////////////
       // propagate data from inner-step state to process-level step state //
       //////////////////////////////////////////////////////////////////////
-      if(postRunOutput.getUpdatedFrontendStepList() != null)
+      if(postRunOutput.getProcessMetaDataAdjustment() != null)
       {
-         runBackendStepOutput.setUpdatedFrontendStepList(postRunOutput.getUpdatedFrontendStepList());
+         runBackendStepOutput.setProcessMetaDataAdjustment(postRunOutput.getProcessMetaDataAdjustment());
       }
    }
 
@@ -219,10 +219,9 @@ public class StreamedETLPreviewStep extends BaseStreamedETLStep implements Backe
       //////////////////////////////////////////////////////////////////////
       // propagate data from inner-step state to process-level step state //
       //////////////////////////////////////////////////////////////////////
-      if(streamedBackendStepOutput.getUpdatedFrontendStepList() != null)
+      if(streamedBackendStepOutput.getProcessMetaDataAdjustment() != null)
       {
-         runBackendStepOutput.getProcessState().setStepList(streamedBackendStepOutput.getProcessState().getStepList());
-         runBackendStepOutput.setUpdatedFrontendStepList(streamedBackendStepOutput.getUpdatedFrontendStepList());
+         runBackendStepOutput.getProcessState().setProcessMetaDataAdjustment(streamedBackendStepOutput.getProcessMetaDataAdjustment());
       }
 
       ////////////////////////////////////////////////////

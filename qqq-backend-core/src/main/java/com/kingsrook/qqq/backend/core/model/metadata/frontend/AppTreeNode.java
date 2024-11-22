@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -45,7 +46,7 @@ public class AppTreeNode
    private String            label;
    private List<AppTreeNode> children;
 
-   private String iconName;
+   private QIcon icon;
 
 
 
@@ -82,7 +83,7 @@ public class AppTreeNode
       if(appChildMetaData.getIcon() != null)
       {
          // todo - propagate icons from parents, if they aren't set here...
-         this.iconName = appChildMetaData.getIcon().getName();
+         this.icon = appChildMetaData.getIcon();
       }
    }
 
@@ -138,7 +139,18 @@ public class AppTreeNode
     *******************************************************************************/
    public String getIconName()
    {
-      return iconName;
+      return (icon == null ? null : icon.getName());
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
    }
 
 

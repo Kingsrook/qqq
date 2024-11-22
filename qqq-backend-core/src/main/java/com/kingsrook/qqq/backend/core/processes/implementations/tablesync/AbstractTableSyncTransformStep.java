@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.processes.implementations.tablesync;
 
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
+import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -53,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.StandardProcessSummaryLineProducer;
@@ -72,33 +77,33 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public abstract class AbstractTableSyncTransformStep extends AbstractTransformStep
 {
-   private static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
+   protected static final QLogger LOG = QLogger.getLogger(AbstractTableSyncTransformStep.class);
 
-   private ProcessSummaryLine okToInsert = StandardProcessSummaryLineProducer.getOkToInsertLine();
-   private ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
+   protected ProcessSummaryLine okToInsert = StandardProcessSummaryLineProducer.getOkToInsertLine();
+   protected ProcessSummaryLine okToUpdate = StandardProcessSummaryLineProducer.getOkToUpdateLine();
 
-   private ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
+   protected ProcessSummaryLine willNotInsert = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because this process is not configured to insert records.")
       .withSingularFutureMessage("will not be inserted ")
       .withPluralFutureMessage("will not be inserted ")
       .withSingularPastMessage("was not inserted ")
       .withPluralPastMessage("were not inserted ");
 
-   private ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
+   protected ProcessSummaryLine willNotUpdate = new ProcessSummaryLine(Status.INFO)
       .withMessageSuffix("because this process is not configured to update records.")
       .withSingularFutureMessage("will not be updated ")
       .withPluralFutureMessage("will not be updated ")
       .withSingularPastMessage("was not updated ")
       .withPluralPastMessage("were not updated ");
 
-   private ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
+   protected ProcessSummaryLine errorMissingKeyField = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("missing a value for the key field.")
       .withSingularFutureMessage("will not be synced, because it is ")
       .withPluralFutureMessage("will not be synced, because they are ")
       .withSingularPastMessage("was not synced, because it is ")
       .withPluralPastMessage("were not synced, because they are ");
 
-   private ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
+   protected ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
       .withMessageSuffix("of an unexpected error: ")
       .withSingularFutureMessage("will not be synced, ")
       .withPluralFutureMessage("will not be synced, ")
@@ -109,7 +114,11 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    protected RunBackendStepOutput runBackendStepOutput = null;
    protected RecordLookupHelper   recordLookupHelper   = null;
 
-   private QPossibleValueTranslator possibleValueTranslator;
+   protected QPossibleValueTranslator possibleValueTranslator;
+
+   protected static final String SYNC_TABLE_PERFORM_INSERTS_KEY = "syncTablePerformInsertsKey";
+   protected static final String SYNC_TABLE_PERFORM_UPDATES_KEY = "syncTablePerformUpdatesKey";
+   protected static final String LOG_TRANSFORM_RESULTS          = "logTransformResults";
 
 
 
@@ -214,6 +223,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
+         LOG.info("No input records were found.");
          return;
       }
 
@@ -222,6 +232,19 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
 
       SyncProcessConfig config = getSyncProcessConfig();
 
+      ////////////////////////////////////////////////////////////
+      // see if these fields have been updated via input fields //
+      ////////////////////////////////////////////////////////////
+      if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY) != null)
+      {
+         boolean performInserts = Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_INSERTS_KEY));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, performInserts, config.performUpdates);
+      }
+      if(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY) != null)
+      {
+         boolean performUpdates = Boolean.parseBoolean(runBackendStepInput.getValueString(SYNC_TABLE_PERFORM_UPDATES_KEY));
+         config = new SyncProcessConfig(config.sourceTable, config.sourceTableKeyField, config.destinationTable, config.destinationTableForeignKey, config.performUpdates, performUpdates);
+      }
       String sourceTableKeyField             = config.sourceTableKeyField;
       String destinationTableForeignKeyField = config.destinationTableForeignKey;
       String destinationTableName            = config.destinationTable;
@@ -371,7 +394,61 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             possibleValueTranslator.translatePossibleValuesInRecords(QContext.getQInstance().getTable(destinationTableName), runBackendStepOutput.getRecords());
          }
       }
+
+      if(Boolean.parseBoolean(runBackendStepInput.getValueString(LOG_TRANSFORM_RESULTS)))
+      {
+         logResults(runBackendStepInput, config);
+      }
    }
+
+
+
+   /*******************************************************************************
+    ** Log results of transformation
+    **
+    *******************************************************************************/
+   protected void logResults(RunBackendStepInput runBackendStepInput, SyncProcessConfig syncProcessConfig)
+   {
+      String timezone = QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE);
+      if(timezone == null)
+      {
+         timezone = QContext.getQInstance().getDefaultTimeZoneId();
+      }
+      Instant lastRunTime = Instant.now();
+      if(runBackendStepInput.getBasepullLastRunTime() != null)
+      {
+         lastRunTime = runBackendStepInput.getBasepullLastRunTime();
+      }
+
+      ZonedDateTime dateTime = lastRunTime.atZone(ZoneId.of(timezone));
+
+      if(syncProcessConfig.performInserts)
+      {
+         if(okToInsert.getCount() == 0)
+         {
+            LOG.info("No Records were found to insert since " + QValueFormatter.formatDateTimeWithZone(dateTime) + ".");
+         }
+         else
+         {
+            String pluralized = okToInsert.getCount() > 1 ? " Records were " : " Record was ";
+            LOG.info(okToInsert.getCount() + pluralized + " found to insert since " + QValueFormatter.formatDateTimeWithZone(dateTime) + ".", logPair("primaryKeys", okToInsert.getPrimaryKeys()));
+         }
+      }
+
+      if(syncProcessConfig.performUpdates)
+      {
+         if(okToUpdate.getCount() == 0)
+         {
+            LOG.info("No Records were found to update since " + QValueFormatter.formatDateTimeWithZone(dateTime) + ".");
+         }
+         else
+         {
+            String pluralized = okToUpdate.getCount() > 1 ? " Records were " : " Record was ";
+            LOG.info(okToUpdate.getCount() + pluralized + " found to update since " + QValueFormatter.formatDateTimeWithZone(dateTime) + ".", logPair("primaryKeys", okToInsert.getPrimaryKeys()));
+         }
+      }
+   }
+
 
 
    /*******************************************************************************
