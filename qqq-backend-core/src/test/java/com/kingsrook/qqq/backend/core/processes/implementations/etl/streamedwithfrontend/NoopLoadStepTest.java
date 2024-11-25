@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,32 +22,29 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import org.junit.jupiter.api.Test;
 
 
 /*******************************************************************************
- ** Load step that does nothing.
- **
+ ** Unit test for NoopLoadStep 
  *******************************************************************************/
-public class NoopLoadStep extends AbstractLoadStep
+class NoopLoadStepTest extends BaseTest
 {
-   private static final QLogger LOG = QLogger.getLogger(NoopLoadStep.class);
-
 
    /*******************************************************************************
-    ** Execute the backend step - using the request as input, and the result as output.
     **
     *******************************************************************************/
-   @Override
-   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   @Test
+   void test() throws QException
    {
-      ///////////
-      // noop. //
-      ///////////
-      LOG.trace("noop");
+      //////////////////////////////////////
+      // sorry, just here for coverage... //
+      //////////////////////////////////////
+      new NoopLoadStep().runOnePage(new RunBackendStepInput(), new RunBackendStepOutput());
    }
 
 }

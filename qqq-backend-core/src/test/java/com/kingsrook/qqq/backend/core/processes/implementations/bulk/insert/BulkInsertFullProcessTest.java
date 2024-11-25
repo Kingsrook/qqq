@@ -188,7 +188,7 @@ class BulkInsertFullProcessTest extends BaseTest
             new BulkLoadProfileField().withFieldName("firstName").withColumnIndex(3),
             new BulkLoadProfileField().withFieldName("lastName").withColumnIndex(4),
             new BulkLoadProfileField().withFieldName("email").withDefaultValue(defaultEmail),
-            new BulkLoadProfileField().withFieldName("homeStateId").withColumnIndex(7).withDoValueMapping(true),
+            new BulkLoadProfileField().withFieldName("homeStateId").withColumnIndex(7).withDoValueMapping(true).withValueMappings(Map.of("Illinois", 1)),
             new BulkLoadProfileField().withFieldName("noOfShoes").withColumnIndex(8)
          )));
       };
@@ -204,6 +204,7 @@ class BulkInsertFullProcessTest extends BaseTest
       assertEquals("homeStateId", ((QFrontendFieldMetaData) valueMappingField).getName());
       assertEquals(List.of("Missouri", "Illinois"), runProcessOutput.getValue("fileValues"));
       assertEquals(List.of("homeStateId"), runProcessOutput.getValue("fieldNamesToDoValueMapping"));
+      assertEquals(Map.of(1, "IL"), runProcessOutput.getValue("mappedValueLabels"));
       assertEquals(0, runProcessOutput.getValue("valueMappingFieldIndex"));
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("valueMapping");
 

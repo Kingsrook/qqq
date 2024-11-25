@@ -73,13 +73,13 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertV2ExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
@@ -819,7 +819,7 @@ public class QInstanceEnricher
       values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
 
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
-            BulkInsertV2ExtractStep.class,
+            BulkInsertExtractStep.class,
             BulkInsertTransformStep.class,
             BulkInsertLoadStep.class,
             values
