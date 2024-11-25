@@ -25,27 +25,19 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
-import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
-import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadMappingSuggester;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadTableStructureBuilder;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadTableStructure;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -62,7 +54,26 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       buildFileDetailsForMappingStep(runBackendStepInput, runBackendStepOutput);
-      buildFieldsForMappingStep(runBackendStepInput, runBackendStepOutput);
+
+      String                 tableName      = runBackendStepInput.getValueString("tableName");
+      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName);
+      runBackendStepOutput.addValue("tableStructure", tableStructure);
+
+      @SuppressWarnings("unchecked")
+      List<String> headerValues = (List<String>) runBackendStepOutput.getValue("headerValues");
+      buildSuggestedMapping(headerValues, tableStructure, runBackendStepOutput);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void buildSuggestedMapping(List<String> headerValues, BulkLoadTableStructure tableStructure, RunBackendStepOutput runBackendStepOutput)
+   {
+      BulkLoadMappingSuggester bulkLoadMappingSuggester = new BulkLoadMappingSuggester();
+      BulkLoadProfile          bulkLoadProfile          = bulkLoadMappingSuggester.suggestBulkLoadMappingProfile(tableStructure, headerValues);
+      runBackendStepOutput.addValue("bulkLoadProfile", bulkLoadProfile);
    }
 
 
@@ -121,6 +132,7 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
             }
          }
          runBackendStepOutput.addValue("bodyValuesPreview", bodyValues);
+
       }
       catch(Exception e)
       {
@@ -145,96 +157,6 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       while(i >= 0);
 
       return (rs.toString());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private static void buildFieldsForMappingStep(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
-   {
-      String                 tableName      = runBackendStepInput.getValueString("tableName");
-      BulkLoadTableStructure tableStructure = buildTableStructure(tableName, null, null);
-      runBackendStepOutput.addValue("tableStructure", tableStructure);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private static BulkLoadTableStructure buildTableStructure(String tableName, Association association, String parentAssociationPath)
-   {
-      QTableMetaData table = QContext.getQInstance().getTable(tableName);
-
-      BulkLoadTableStructure tableStructure = new BulkLoadTableStructure();
-      tableStructure.setTableName(tableName);
-      tableStructure.setLabel(table.getLabel());
-
-      Set<String> associationJoinFieldNamesToExclude = new HashSet<>();
-
-      if(association == null)
-      {
-         tableStructure.setIsMain(true);
-         tableStructure.setIsMany(false);
-         tableStructure.setAssociationPath(null);
-      }
-      else
-      {
-         tableStructure.setIsMain(false);
-
-         QJoinMetaData join = QContext.getQInstance().getJoin(association.getJoinName());
-         if(join.getType().equals(JoinType.ONE_TO_MANY) || join.getType().equals(JoinType.MANY_TO_ONE))
-         {
-            tableStructure.setIsMany(true);
-         }
-
-         for(JoinOn joinOn : join.getJoinOns())
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            // don't allow the user to map the "join field" from a child up to its parent                 //
-            // (e.g., you can't map lineItem.orderId -- that'll happen automatically via the association) //
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            if(join.getLeftTable().equals(tableName))
-            {
-               associationJoinFieldNamesToExclude.add(joinOn.getLeftField());
-            }
-            else if(join.getRightTable().equals(tableName))
-            {
-               associationJoinFieldNamesToExclude.add(joinOn.getRightField());
-            }
-         }
-
-         if(!StringUtils.hasContent(parentAssociationPath))
-         {
-            tableStructure.setAssociationPath(association.getName());
-         }
-         else
-         {
-            tableStructure.setAssociationPath(parentAssociationPath + "." + association.getName());
-         }
-      }
-
-      ArrayList<QFieldMetaData> fields = new ArrayList<>();
-      tableStructure.setFields(fields);
-      for(QFieldMetaData field : table.getFields().values())
-      {
-         if(field.getIsEditable() && !associationJoinFieldNamesToExclude.contains(field.getName()))
-         {
-            fields.add(field);
-         }
-      }
-
-      fields.sort(Comparator.comparing(f -> f.getLabel()));
-
-      for(Association childAssociation : CollectionUtils.nonNullList(table.getAssociations()))
-      {
-         BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, parentAssociationPath);
-         tableStructure.addAssociation(associatedStructure);
-      }
-
-      return (tableStructure);
    }
 
 }

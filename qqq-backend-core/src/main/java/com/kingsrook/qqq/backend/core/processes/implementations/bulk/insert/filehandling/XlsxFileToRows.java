@@ -25,9 +25,14 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.fil
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import org.dhatim.fastexcel.reader.Cell;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
 import org.dhatim.fastexcel.reader.Sheet;
 
@@ -74,7 +79,41 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
 
       for(int i = 0; i < readerRow.getCellCount(); i++)
       {
-         values[i] = readerRow.getCell(i).getText();
+         Cell cell = readerRow.getCell(i);
+         if(cell.getType() != null)
+         {
+            values[i] = switch(cell.getType())
+            {
+               case NUMBER ->
+               {
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // ... with fastexcel reader, we don't get styles... so, we just know type = number, for dates and ints & decimals... //
+                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  Optional<LocalDateTime> dateTime = readerRow.getCellAsDate(i);
+                  if(dateTime.isPresent() && dateTime.get().getYear() > 1915 && dateTime.get().getYear() < 2100)
+                  {
+                     yield dateTime.get();
+                  }
+
+                  Optional<BigDecimal> optionalBigDecimal = readerRow.getCellAsNumber(i);
+                  if(optionalBigDecimal.isPresent())
+                  {
+                     BigDecimal bigDecimal = optionalBigDecimal.get();
+                     if(bigDecimal.subtract(bigDecimal.round(new MathContext(0))).compareTo(BigDecimal.ZERO) == 0)
+                     {
+                        yield bigDecimal.intValue();
+                     }
+
+                     yield bigDecimal;
+                  }
+
+                  yield (null);
+               }
+               case BOOLEAN -> readerRow.getCellAsBoolean(i).orElse(null);
+               case STRING, FORMULA -> cell.getText();
+               case EMPTY, ERROR -> null;
+            };
+         }
       }
 
       return new BulkLoadFileRow(values);

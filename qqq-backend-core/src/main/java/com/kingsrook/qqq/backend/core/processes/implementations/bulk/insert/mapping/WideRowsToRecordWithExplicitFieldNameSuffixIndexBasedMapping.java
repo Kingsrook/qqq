@@ -22,15 +22,11 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping;
 
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -40,16 +36,17 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 
 
 /*******************************************************************************
- **
+ ** use a flatter mapping object, where field names look like:
+ ** associationChain.fieldName,index.subIndex
  *******************************************************************************/
-public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
+public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implements RowsToRecordInterface
 {
    private Memoization<Pair<String, String>, Boolean> shouldProcesssAssociationMemoization = new Memoization<>();
 
@@ -74,15 +71,7 @@ public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
       while(fileToRowsInterface.hasNext() && rs.size() < limit)
       {
          BulkLoadFileRow row    = fileToRowsInterface.next();
-         QRecord         record = new QRecord();
-
-         for(QFieldMetaData field : table.getFields().values())
-         {
-            setValueOrDefault(record, field, null, mapping, row, fieldIndexes.get(field.getName()));
-         }
-
-         processAssociations("", headerRow, mapping, table, row, record, 0, headerRow.size());
-
+         QRecord         record = makeRecordFromRow(mapping, table, "", row, fieldIndexes, headerRow, new ArrayList<>());
          rs.add(record);
       }
 
@@ -94,11 +83,29 @@ public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
 
 
    /***************************************************************************
-    **
+    ** may return null, if there were no values in the row for this (sub-wide) record.
     ***************************************************************************/
-   private void processAssociations(String associationNameChain, BulkLoadFileRow headerRow, BulkInsertMapping mapping, QTableMetaData table, BulkLoadFileRow row, QRecord record, int startIndex, int endIndex) throws QException
+   private QRecord makeRecordFromRow(BulkInsertMapping mapping, QTableMetaData table, String associationNameChain, BulkLoadFileRow row, Map<String, Integer> fieldIndexes, BulkLoadFileRow headerRow, List<Integer> wideAssociationIndexes) throws QException
    {
-      for(String associationName : mapping.getMappedAssociations())
+      //////////////////////////////////////////////////////
+      // start by building the record with its own fields //
+      //////////////////////////////////////////////////////
+      QRecord record            = new QRecord();
+      boolean hadAnyValuesInRow = false;
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         hadAnyValuesInRow = setValueOrDefault(record, field, associationNameChain, mapping, row, fieldIndexes.get(field.getName()), wideAssociationIndexes) || hadAnyValuesInRow;
+      }
+
+      if(!hadAnyValuesInRow)
+      {
+         return (null);
+      }
+
+      /////////////////////////////
+      // associations (children) //
+      /////////////////////////////
+      for(String associationName : CollectionUtils.nonNullList(mapping.getMappedAssociations()))
       {
          boolean processAssociation = shouldProcessAssociation(associationNameChain, associationName);
 
@@ -116,11 +123,12 @@ public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
 
             QTableMetaData associatedTable = QContext.getQInstance().getTable(association.get().getAssociatedTableName());
 
-            // List<QRecord> associatedRecords = processAssociation(associationName, associationNameChain, associatedTable, mapping, row, headerRow, record);
-            List<QRecord> associatedRecords = processAssociationV2(associationName, associationNameChain, associatedTable, mapping, row, headerRow, record, startIndex, endIndex);
+            List<QRecord> associatedRecords = processAssociation(associationNameMinusChain, associationNameChain, associatedTable, mapping, row, headerRow);
             record.withAssociatedRecords(associationNameMinusChain, associatedRecords);
          }
       }
+
+      return record;
    }
 
 
@@ -128,110 +136,30 @@ public class WideRowsToRecordWithSpreadMapping implements RowsToRecordInterface
    /***************************************************************************
     **
     ***************************************************************************/
-   private List<QRecord> processAssociationV2(String associationName, String associationNameChain, QTableMetaData table, BulkInsertMapping mapping, BulkLoadFileRow row, BulkLoadFileRow headerRow, QRecord record, int startIndex, int endIndex) throws QException
+   private List<QRecord> processAssociation(String associationName, String associationNameChain, QTableMetaData associatedTable, BulkInsertMapping mapping, BulkLoadFileRow row, BulkLoadFileRow headerRow) throws QException
    {
       List<QRecord> rs = new ArrayList<>();
 
-      Map<String, String> fieldNameToHeaderNameMapForThisAssociation = new HashMap<>();
-      for(Map.Entry<String, String> entry : mapping.getFieldNameToHeaderNameMap().entrySet())
+      String associationNameChainForRecursiveCalls = "".equals(associationNameChain) ? associationName : associationNameChain + "." + associationName;
+
+      for(int i = 0; true; i++)
       {
-         if(entry.getKey().startsWith(associationName + "."))
+         // todo - doesn't support grand-children
+         List<Integer>        wideAssociationIndexes = List.of(i);
+         Map<String, Integer> fieldIndexes           = mapping.getFieldIndexes(associatedTable, associationNameChainForRecursiveCalls, headerRow, wideAssociationIndexes);
+         if(fieldIndexes.isEmpty())
          {
-            String fieldName = entry.getKey().substring(associationName.length() + 1);
-
-            //////////////////////////////////////////////////////////////////////////
-            // make sure the name here is for this table - not a sub-table under it //
-            //////////////////////////////////////////////////////////////////////////
-            if(!fieldName.contains("."))
-            {
-               fieldNameToHeaderNameMapForThisAssociation.put(fieldName, entry.getValue());
-            }
+            break;
          }
-      }
 
-      /////////////////////////////////////////////////////////////////////
-      // loop over the length of the record, building associated records //
-      /////////////////////////////////////////////////////////////////////
-      QRecord     associatedRecord    = new QRecord();
-      Set<String> processedFieldNames = new HashSet<>();
-      boolean     gotAnyValues        = false;
-      int         subStartIndex       = -1;
-
-      for(int i = startIndex; i < endIndex; i++)
-      {
-         String headerValue = ValueUtils.getValueAsString(headerRow.getValue(i));
-
-         for(Map.Entry<String, String> entry : fieldNameToHeaderNameMapForThisAssociation.entrySet())
+         QRecord record = makeRecordFromRow(mapping, associatedTable, associationNameChainForRecursiveCalls, row, fieldIndexes, headerRow, wideAssociationIndexes);
+         if(record != null)
          {
-            if(headerValue.equals(entry.getValue()) || headerValue.matches(entry.getValue() + " ?\\d+"))
-            {
-               ///////////////////////////////////////////////
-               // ok - this is a value for this association //
-               ///////////////////////////////////////////////
-               if(subStartIndex == -1)
-               {
-                  subStartIndex = i;
-               }
-
-               String fieldName = entry.getKey();
-               if(processedFieldNames.contains(fieldName))
-               {
-                  /////////////////////////////////////////////////
-                  // this means we're starting a new sub-record! //
-                  /////////////////////////////////////////////////
-                  if(gotAnyValues)
-                  {
-                     addDefaultValuesToAssociatedRecord(processedFieldNames, table, associatedRecord, mapping, associationName);
-                     processAssociations(associationName, headerRow, mapping, table, row, associatedRecord, subStartIndex, i);
-                     rs.add(associatedRecord);
-                  }
-
-                  associatedRecord = new QRecord();
-                  processedFieldNames = new HashSet<>();
-                  gotAnyValues = false;
-                  subStartIndex = i + 1;
-               }
-
-               processedFieldNames.add(fieldName);
-
-               Serializable value = row.getValueElseNull(i);
-               if(value != null && !"".equals(value))
-               {
-                  gotAnyValues = true;
-               }
-
-               setValueOrDefault(associatedRecord, table.getField(fieldName), associationName, mapping, row, i);
-            }
+            rs.add(record);
          }
-      }
-
-      ////////////////////////
-      // handle final value //
-      ////////////////////////
-      if(gotAnyValues)
-      {
-         addDefaultValuesToAssociatedRecord(processedFieldNames, table, associatedRecord, mapping, associationName);
-         processAssociations(associationName, headerRow, mapping, table, row, associatedRecord, subStartIndex, endIndex);
-         rs.add(associatedRecord);
       }
 
       return (rs);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private void addDefaultValuesToAssociatedRecord(Set<String> processedFieldNames, QTableMetaData table, QRecord associatedRecord, BulkInsertMapping mapping, String associationNameChain)
-   {
-      for(QFieldMetaData field : table.getFields().values())
-      {
-         if(!processedFieldNames.contains(field.getName()))
-         {
-            setValueOrDefault(associatedRecord, field, associationNameChain, mapping, null, null);
-         }
-      }
    }
 
 

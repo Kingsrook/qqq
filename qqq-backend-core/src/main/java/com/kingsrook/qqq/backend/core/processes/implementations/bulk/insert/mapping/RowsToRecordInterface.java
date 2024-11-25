@@ -27,9 +27,10 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -48,41 +49,48 @@ public interface RowsToRecordInterface
    /***************************************************************************
     ** returns true if value from row was used, else false.
     ***************************************************************************/
-   default boolean setValueOrDefault(QRecord record, QFieldMetaData field, String associationNameChain, BulkInsertMapping mapping, BulkLoadFileRow row, Integer index)
+   default boolean setValueOrDefault(QRecord record, QFieldMetaData field, String associationNameChain, BulkInsertMapping mapping, BulkLoadFileRow row, Integer columnIndex)
    {
-      String     fieldName = field.getName();
-      QFieldType type      = field.getType();
+      return setValueOrDefault(record, field, associationNameChain, mapping, row, columnIndex, null);
+   }
 
-      boolean valueFromRowWasUsed            = false;
-      String  fieldNameWithAssociationPrefix = StringUtils.hasContent(associationNameChain) ? associationNameChain + "." + fieldName : fieldName;
+   /***************************************************************************
+    ** returns true if value from row was used, else false.
+    ***************************************************************************/
+   default boolean setValueOrDefault(QRecord record, QFieldMetaData field, String associationNameChain, BulkInsertMapping mapping, BulkLoadFileRow row, Integer columnIndex, List<Integer> wideAssociationIndexes)
+   {
+      boolean valueFromRowWasUsed = false;
 
-      Serializable value = null;
-      if(index != null && row != null)
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // build full field-name -- possibly associations, then field name, then possibly index-suffix //
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      String fieldName = field.getName();
+      String fieldNameWithAssociationPrefix = StringUtils.hasContent(associationNameChain) ? associationNameChain + "." + fieldName : fieldName;
+
+      String wideAssociationSuffix = "";
+      if(CollectionUtils.nullSafeHasContents(wideAssociationIndexes))
       {
-         value = row.getValueElseNull(index);
+         wideAssociationSuffix = "," + StringUtils.join(".", wideAssociationIndexes);
+      }
+
+      String fullFieldName = fieldNameWithAssociationPrefix + wideAssociationSuffix;
+
+      //////////////////////////////////////////////
+      // ok - look in the row - then the defaults //
+      //////////////////////////////////////////////
+      Serializable value = null;
+      if(columnIndex != null && row != null)
+      {
+         value = row.getValueElseNull(columnIndex);
          if(value != null && !"".equals(value))
          {
             valueFromRowWasUsed = true;
          }
       }
-      else if(mapping.getFieldNameToDefaultValueMap().containsKey(fieldNameWithAssociationPrefix))
+      else if(mapping.getFieldNameToDefaultValueMap().containsKey(fullFieldName))
       {
-         value = mapping.getFieldNameToDefaultValueMap().get(fieldNameWithAssociationPrefix);
+         value = mapping.getFieldNameToDefaultValueMap().get(fullFieldName);
       }
-
-      /* note - moving this to ValueMapper...
-      if(value != null)
-      {
-         try
-         {
-            value = ValueUtils.getValueAsFieldType(type, value);
-         }
-         catch(Exception e)
-         {
-            record.addError(new BadInputStatusMessage("Value [" + value + "] for field [" + field.getLabel() + "] could not be converted to type [" + type + "]"));
-         }
-      }
-      */
 
       if(value != null)
       {

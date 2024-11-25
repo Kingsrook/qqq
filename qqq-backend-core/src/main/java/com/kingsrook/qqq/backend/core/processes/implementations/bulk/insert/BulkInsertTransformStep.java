@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
@@ -67,7 +68,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
    private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted");
 
-   private Map<UniqueKey, ProcessSummaryLineWithUKSampleValues> ukErrorSummaries = new HashMap<>();
+   private Map<UniqueKey, ProcessSummaryLineWithUKSampleValues> ukErrorSummaries              = new HashMap<>();
+   private Map<String, ProcessSummaryLine>                      associationsToInsertSummaries = new HashMap<>();
 
    private QTableMetaData table;
 
@@ -259,6 +261,13 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          {
             okSummary.incrementCountAndAddPrimaryKey(null);
             outputRecords.add(record);
+
+            for(Map.Entry<String, List<QRecord>> entry : CollectionUtils.nonNullMap(record.getAssociatedRecords()).entrySet())
+            {
+               String             associationName         = entry.getKey();
+               ProcessSummaryLine associationToInsertLine = associationsToInsertSummaries.computeIfAbsent(associationName, x -> new ProcessSummaryLine(Status.OK));
+               associationToInsertLine.incrementCount(CollectionUtils.nonNullList(entry.getValue()).size());
+            }
          }
       }
 
@@ -365,6 +374,24 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       okSummary.setPluralPastMessage(tableLabel + " records were inserted" + noWarningsSuffix + ".");
       okSummary.pickMessage(isForResultScreen);
       okSummary.addSelfToListIfAnyCount(rs);
+
+      for(Map.Entry<String, ProcessSummaryLine> entry : associationsToInsertSummaries.entrySet())
+      {
+         Optional<Association> association = table.getAssociations().stream().filter(a -> a.getName().equals(entry.getKey())).findFirst();
+         if(association.isPresent())
+         {
+            QTableMetaData associationTable = QContext.getQInstance().getTable(association.get().getAssociatedTableName());
+            String         associationLabel = associationTable.getLabel();
+
+            ProcessSummaryLine line = entry.getValue();
+            line.setSingularFutureMessage(associationLabel + " record will be inserted.");
+            line.setPluralFutureMessage(associationLabel + " records will be inserted.");
+            line.setSingularPastMessage(associationLabel + " record was inserted.");
+            line.setPluralPastMessage(associationLabel + " records were inserted.");
+            line.pickMessage(isForResultScreen);
+            line.addSelfToListIfAnyCount(rs);
+         }
+      }
 
       for(Map.Entry<UniqueKey, ProcessSummaryLineWithUKSampleValues> entry : ukErrorSummaries.entrySet())
       {

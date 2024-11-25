@@ -33,6 +33,7 @@ public class BulkLoadProfileField
 {
    private String                    fieldName;
    private Integer                   columnIndex;
+   private String                    headerName;
    private Serializable              defaultValue;
    private Boolean                   doValueMapping;
    private Map<String, Serializable> valueMappings;
@@ -191,5 +192,36 @@ public class BulkLoadProfileField
       this.valueMappings = valueMappings;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for headerName
+    *******************************************************************************/
+   public String getHeaderName()
+   {
+      return (this.headerName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for headerName
+    *******************************************************************************/
+   public void setHeaderName(String headerName)
+   {
+      this.headerName = headerName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for headerName
+    *******************************************************************************/
+   public BulkLoadProfileField withHeaderName(String headerName)
+   {
+      this.headerName = headerName;
+      return (this);
+   }
+
 
 }

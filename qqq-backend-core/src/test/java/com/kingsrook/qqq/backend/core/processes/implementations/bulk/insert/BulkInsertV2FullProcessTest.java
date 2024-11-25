@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendFieldMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -58,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for full bulk insert process
  *******************************************************************************/
-class BulkInsertV2Test extends BaseTest
+class BulkInsertV2FullProcessTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -124,7 +125,7 @@ class BulkInsertV2Test extends BaseTest
 
       QInstance qInstance   = QContext.getQInstance();
       String    processName = "PersonBulkInsertV2";
-      new QInstanceEnricher(qInstance).defineTableBulkInsertV2(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), processName);
+      new QInstanceEnricher(qInstance).defineTableBulkInsert(qInstance, qInstance.getTable(TestUtils.TABLE_NAME_PERSON_MEMORY), processName);
 
       /////////////////////////////////////////////////////////
       // start the process - expect to go to the upload step //
@@ -159,6 +160,16 @@ class BulkInsertV2Test extends BaseTest
       runProcessOutput = new RunProcessAction().execute(runProcessInput);
       assertEquals(List.of("Id", "Create Date", "Modify Date", "First Name", "Last Name", "Birth Date", "Email", "Home State", "noOfShoes"), runProcessOutput.getValue("headerValues"));
       assertEquals(List.of("A", "B", "C", "D", "E", "F", "G", "H", "I"), runProcessOutput.getValue("headerLetters"));
+
+      //////////////////////////////////////////////////////
+      // assert about the suggested mapping that was done //
+      //////////////////////////////////////////////////////
+      Serializable bulkLoadProfile = runProcessOutput.getValue("bulkLoadProfile");
+      assertThat(bulkLoadProfile).isInstanceOf(BulkLoadProfile.class);
+      assertThat(((BulkLoadProfile) bulkLoadProfile).getFieldList()).hasSizeGreaterThan(5);
+      assertEquals("birthDate", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getFieldName());
+      assertEquals(5, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getColumnIndex());
+
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("fileMapping");
 
       ////////////////////////////////////////////////////////////////////////////////

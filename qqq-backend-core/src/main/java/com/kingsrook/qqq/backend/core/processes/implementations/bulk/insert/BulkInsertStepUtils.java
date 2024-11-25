@@ -109,6 +109,7 @@ public class BulkInsertStepUtils
             BulkLoadProfileField bulkLoadProfileField = new BulkLoadProfileField();
             fieldList.add(bulkLoadProfileField);
             bulkLoadProfileField.setFieldName(jsonObject.optString("fieldName"));
+            bulkLoadProfileField.setHeaderName(jsonObject.has("headerName") ? jsonObject.getString("headerName") : null);
             bulkLoadProfileField.setColumnIndex(jsonObject.has("columnIndex") ? jsonObject.getInt("columnIndex") : null);
             bulkLoadProfileField.setDefaultValue((Serializable) jsonObject.opt("defaultValue"));
             bulkLoadProfileField.setDoValueMapping(jsonObject.optBoolean("doValueMapping"));

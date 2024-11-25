@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInpu
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkInsertMapping;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
@@ -102,7 +102,12 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
                BulkLoadFileRow headerRow = fileToRowsInterface.next();
                for(BulkLoadProfileField bulkLoadProfileField : bulkLoadProfile.getFieldList())
                {
-                  if(bulkLoadProfileField.getColumnIndex() != null)
+                  if(bulkLoadProfileField.getHeaderName() != null)
+                  {
+                     String headerName = bulkLoadProfileField.getHeaderName();
+                     fieldNameToHeaderNameMap.put(bulkLoadProfileField.getFieldName(), headerName);
+                  }
+                  else if(bulkLoadProfileField.getColumnIndex() != null)
                   {
                      String headerName = ValueUtils.getValueAsString(headerRow.getValueElseNull(bulkLoadProfileField.getColumnIndex()));
                      fieldNameToHeaderNameMap.put(bulkLoadProfileField.getFieldName(), headerName);
@@ -164,7 +169,11 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
          {
             if(bulkLoadProfileField.getFieldName().contains("."))
             {
-               associationNameSet.add(bulkLoadProfileField.getFieldName().substring(0, bulkLoadProfileField.getFieldName().lastIndexOf('.')));
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // handle parent.child.grandchild.fieldName,index.index.index if we do sub-indexes for grandchildren... //
+               //////////////////////////////////////////////////////////////////////////////////////////////////////////
+               String fieldNameBeforeIndex = bulkLoadProfileField.getFieldName().split(",")[0];
+               associationNameSet.add(fieldNameBeforeIndex.substring(0, fieldNameBeforeIndex.lastIndexOf('.')));
             }
          }
          bulkInsertMapping.setMappedAssociations(new ArrayList<>(associationNameSet));

@@ -73,7 +73,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.delete.BulkDeleteTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareValueMappingStep;
@@ -81,7 +80,6 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertV2ExtractStep;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
@@ -815,72 +813,8 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void defineTableBulkInsert(QInstance qInstance, QTableMetaData table, String processName)
+   public void defineTableBulkInsert(QInstance qInstance, QTableMetaData table, String processName)
    {
-      Map<String, Serializable> values = new HashMap<>();
-      values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
-
-      QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
-            BulkInsertExtractStep.class,
-            BulkInsertTransformStep.class,
-            BulkInsertLoadStep.class,
-            values
-         )
-         .withName(processName)
-         .withLabel(table.getLabel() + " Bulk Insert")
-         .withTableName(table.getName())
-         .withIsHidden(true)
-         .withPermissionRules(qInstance.getDefaultPermissionRules().clone()
-            .withCustomPermissionChecker(new QCodeReference(BulkTableActionProcessPermissionChecker.class)));
-
-      List<QFieldMetaData> editableFields = new ArrayList<>();
-      for(QFieldSection section : CollectionUtils.nonNullList(table.getSections()))
-      {
-         for(String fieldName : CollectionUtils.nonNullList(section.getFieldNames()))
-         {
-            try
-            {
-               QFieldMetaData field = table.getField(fieldName);
-               if(field.getIsEditable() && !field.getType().equals(QFieldType.BLOB))
-               {
-                  editableFields.add(field);
-               }
-            }
-            catch(Exception e)
-            {
-               // shrug?
-            }
-         }
-      }
-
-      String fieldsForHelpText = editableFields.stream()
-         .map(QFieldMetaData::getLabel)
-         .collect(Collectors.joining(", "));
-
-      QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
-         .withName("upload")
-         .withLabel("Upload File")
-         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("previewText", "file upload instructions")
-            .withValue("text", "Upload a CSV file with the following columns:\n" + fieldsForHelpText))
-         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
-
-      process.addStep(0, uploadScreen);
-      process.getFrontendStep("review").setRecordListFields(editableFields);
-      qInstance.addProcess(process);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void defineTableBulkInsertV2(QInstance qInstance, QTableMetaData table, String processName)
-   {
-      qInstance.addPossibleValueSource(QPossibleValueSource.newForEnum("bulkInsertFileLayout", BulkInsertMapping.Layout.values()));
-
       Map<String, Serializable> values = new HashMap<>();
       values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
 

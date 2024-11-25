@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model;
 
 
 import java.io.Serializable;
@@ -34,7 +34,10 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.FlatRowsToRecord;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.RowsToRecordInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.TallRowsToRecord;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -63,8 +66,7 @@ public class BulkInsertMapping implements Serializable
    private Map<String, Serializable>              fieldNameToDefaultValueMap = new HashMap<>();
    private Map<String, Map<String, Serializable>> fieldNameToValueMapping    = new HashMap<>();
 
-   private Map<String, List<Integer>>               tallLayoutGroupByIndexMap = new HashMap<>();
-   private Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping         = new HashMap<>();
+   private Map<String, List<Integer>> tallLayoutGroupByIndexMap = new HashMap<>();
 
    private List<String> mappedAssociations = new ArrayList<>();
 
@@ -79,7 +81,7 @@ public class BulkInsertMapping implements Serializable
    {
       FLAT(FlatRowsToRecord::new),
       TALL(TallRowsToRecord::new),
-      WIDE(WideRowsToRecordWithExplicitMapping::new);
+      WIDE(WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping::new);
 
 
       /***************************************************************************
@@ -138,9 +140,20 @@ public class BulkInsertMapping implements Serializable
    @JsonIgnore
    public Map<String, Integer> getFieldIndexes(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow) throws QException
    {
+      return getFieldIndexes(table, associationNameChain, headerRow, null);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @JsonIgnore
+   public Map<String, Integer> getFieldIndexes(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow, List<Integer> wideAssociationIndexes) throws QException
+   {
       if(hasHeaderRow && fieldNameToHeaderNameMap != null)
       {
-         return (getFieldIndexesForHeaderMappedUseCase(table, associationNameChain, headerRow));
+         return (getFieldIndexesForHeaderMappedUseCase(table, associationNameChain, headerRow, wideAssociationIndexes));
       }
       else if(fieldNameToIndexMap != null)
       {
@@ -208,7 +221,7 @@ public class BulkInsertMapping implements Serializable
    /***************************************************************************
     **
     ***************************************************************************/
-   private Map<String, Integer> getFieldIndexesForHeaderMappedUseCase(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow)
+   private Map<String, Integer> getFieldIndexesForHeaderMappedUseCase(QTableMetaData table, String associationNameChain, BulkLoadFileRow headerRow, List<Integer> wideAssociationIndexes)
    {
       Map<String, Integer> rs = new HashMap<>();
 
@@ -222,13 +235,19 @@ public class BulkInsertMapping implements Serializable
          headerToIndexMap.put(headerValue, i);
       }
 
+      String wideAssociationSuffix = "";
+      if(CollectionUtils.nullSafeHasContents(wideAssociationIndexes))
+      {
+         wideAssociationSuffix = "," + StringUtils.join(".", wideAssociationIndexes);
+      }
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       // loop over fields - finding what header name they are mapped to - then what index that header is at. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       String fieldNamePrefix = !StringUtils.hasContent(associationNameChain) ? "" : associationNameChain + ".";
       for(QFieldMetaData field : table.getFields().values())
       {
-         String headerName = fieldNameToHeaderNameMap.get(fieldNamePrefix + field.getName());
+         String headerName = fieldNameToHeaderNameMap.get(fieldNamePrefix + field.getName() + wideAssociationSuffix);
          if(headerName != null)
          {
             Integer headerIndex = headerToIndexMap.get(headerName);
@@ -526,35 +545,5 @@ public class BulkInsertMapping implements Serializable
       return (this);
    }
 
-
-
-   /*******************************************************************************
-    ** Getter for wideLayoutMapping
-    *******************************************************************************/
-   public Map<String, BulkInsertWideLayoutMapping> getWideLayoutMapping()
-   {
-      return (this.wideLayoutMapping);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for wideLayoutMapping
-    *******************************************************************************/
-   public void setWideLayoutMapping(Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping)
-   {
-      this.wideLayoutMapping = wideLayoutMapping;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for wideLayoutMapping
-    *******************************************************************************/
-   public BulkInsertMapping withWideLayoutMapping(Map<String, BulkInsertWideLayoutMapping> wideLayoutMapping)
-   {
-      this.wideLayoutMapping = wideLayoutMapping;
-      return (this);
-   }
 
 }
