@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for full bulk insert process
  *******************************************************************************/
-class BulkInsertV2FullProcessTest extends BaseTest
+class BulkInsertFullProcessTest extends BaseTest
 {
 
    /*******************************************************************************
