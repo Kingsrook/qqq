@@ -28,7 +28,6 @@ import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 import io.javalin.Javalin;
-import io.javalin.plugin.bundled.CorsPluginConfig;
 
 
 /*******************************************************************************
@@ -73,10 +72,10 @@ public class SampleJavalinServer
 
          javalinService = Javalin.create(config ->
          {
+            config.router.apiBuilder(qJavalinImplementation.getRoutes());
             // todo - not all?
-            config.plugins.enableCors(cors -> cors.add(CorsPluginConfig::anyHost));
+            config.bundledPlugins.enableCors(cors -> cors.addRule(corsRule -> corsRule.anyHost()));
          }).start(PORT);
-         javalinService.routes(qJavalinImplementation.getRoutes());
 
          /////////////////////////////////////////////////////////////////
          // set the server to hot-swap the q instance before all routes //

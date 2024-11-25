@@ -161,9 +161,19 @@ class RenderSavedReportProcessTest extends BaseTest
     *******************************************************************************/
    private static InputStream getInputStream(RunProcessOutput runProcessOutput) throws QException
    {
-      String      storageTableName = runProcessOutput.getValueString("storageTableName");
-      String      storageReference = runProcessOutput.getValueString("storageReference");
-      InputStream inputStream      = new MemoryStorageAction().getInputStream(new StorageInput(storageTableName).withReference(storageReference));
+      String              storageTableName    = runProcessOutput.getValueString("storageTableName");
+      String              storageReference    = runProcessOutput.getValueString("storageReference");
+
+      MemoryStorageAction memoryStorageAction = new MemoryStorageAction();
+      StorageInput        storageInput        = new StorageInput(storageTableName).withReference(storageReference);
+      InputStream         inputStream         = memoryStorageAction.getInputStream(storageInput);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // to help add a little bit of class-level code coverage, for the QStorageInterface, call a method //
+      // that has a defualt implementation in there                                                      //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      memoryStorageAction.getDownloadURL(storageInput);
+
       return inputStream;
    }
 

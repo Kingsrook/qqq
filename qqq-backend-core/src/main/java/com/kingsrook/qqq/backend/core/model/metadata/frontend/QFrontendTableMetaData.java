@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
@@ -61,7 +62,7 @@ public class QFrontendTableMetaData
    private String  label;
    private boolean isHidden;
    private String  primaryKeyField;
-   private String  iconName;
+   private QIcon   icon;
 
    private Map<String, QFrontendFieldMetaData>     fields;
    private List<QFieldSection>                     sections;
@@ -156,10 +157,7 @@ public class QFrontendTableMetaData
          }
       }
 
-      if(tableMetaData.getIcon() != null)
-      {
-         this.iconName = tableMetaData.getIcon().getName();
-      }
+      this.icon = tableMetaData.getIcon();
 
       setCapabilities(backendForTable, tableMetaData);
 
@@ -185,7 +183,7 @@ public class QFrontendTableMetaData
     *******************************************************************************/
    private void setCapabilities(QBackendMetaData backend, QTableMetaData table)
    {
-      Set<Capability> enabledCapabilities = new HashSet<>();
+      Set<Capability> enabledCapabilities = new LinkedHashSet<>();
       for(Capability capability : Capability.values())
       {
          if(table.isCapabilityEnabled(backend, capability))
@@ -275,7 +273,7 @@ public class QFrontendTableMetaData
     *******************************************************************************/
    public String getIconName()
    {
-      return iconName;
+      return (icon == null ? null : icon.getName());
    }
 
 
@@ -397,4 +395,16 @@ public class QFrontendTableMetaData
    {
       return helpContents;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for icon
+    **
+    *******************************************************************************/
+   public QIcon getIcon()
+   {
+      return icon;
+   }
+
 }

@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
@@ -231,13 +232,13 @@ public class QJavalinProcessHandler
 
                if(inputField.getIsRequired() && !setValue)
                {
-                  QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Missing query param value for required input field: [" + inputField.getName() + "]");
+                  QJavalinUtils.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Missing query param value for required input field: [" + inputField.getName() + "]");
                   return;
                }
             }
             catch(Exception e)
             {
-               QJavalinImplementation.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Error processing query param [" + inputField.getName() + "]: " + e.getClass().getSimpleName() + " (" + e.getMessage() + ")");
+               QJavalinUtils.respondWithError(context, HttpStatus.Code.BAD_REQUEST, "Error processing query param [" + inputField.getName() + "]: " + e.getClass().getSimpleName() + " (" + e.getMessage() + ")");
                return;
             }
          }
@@ -428,7 +429,18 @@ public class QJavalinProcessHandler
          QJavalinAccessLogger.logEndSuccess();
       }
 
-      context.result(JsonUtils.toJson(resultForCaller));
+      ///////////////////////////////////////////////////////////////////////////////////
+      // Note:  originally we did not have this serializationInclusion:ALWAYS here -   //
+      // which meant that null and empty values from backend would not go to frontend, //
+      // which made things like clearing out a value in a field not happen.            //
+      // So, this is added to get that beneficial effect.  Unclear if there are any    //
+      // negative side-effects - but be aware.                                         //
+      // One could imagine that we'd need this to be configurable in the future?       //
+      ///////////////////////////////////////////////////////////////////////////////////
+      context.result(JsonUtils.toJson(resultForCaller, mapper ->
+      {
+         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+      }));
    }
 
 
@@ -449,10 +461,18 @@ public class QJavalinProcessHandler
       resultForCaller.put("values", runProcessOutput.getValues());
       runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
 
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - delete after all frontends look for processMetaDataAdjustment instead of updatedFrontendStepList //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<QFrontendStepMetaData> updatedFrontendStepList = runProcessOutput.getUpdatedFrontendStepList();
       if(updatedFrontendStepList != null)
       {
          resultForCaller.put("updatedFrontendStepList", updatedFrontendStepList);
+      }
+
+      if(runProcessOutput.getProcessMetaDataAdjustment() != null)
+      {
+         resultForCaller.put("processMetaDataAdjustment", runProcessOutput.getProcessMetaDataAdjustment());
       }
    }
 

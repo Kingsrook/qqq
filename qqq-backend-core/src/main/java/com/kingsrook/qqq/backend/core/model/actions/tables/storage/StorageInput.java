@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 public class StorageInput extends AbstractTableActionInput implements Serializable
 {
    private String reference;
+   private String contentType;
 
 
 
@@ -72,6 +73,37 @@ public class StorageInput extends AbstractTableActionInput implements Serializab
    public StorageInput withReference(String reference)
    {
       this.reference = reference;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contentType
+    *******************************************************************************/
+   public String getContentType()
+   {
+      return (this.contentType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentType
+    *******************************************************************************/
+   public void setContentType(String contentType)
+   {
+      this.contentType = contentType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentType
+    *******************************************************************************/
+   public StorageInput withContentType(String contentType)
+   {
+      this.contentType = contentType;
       return (this);
    }
 

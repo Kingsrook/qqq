@@ -1,0 +1,101 @@
+<!--
+  ~ QQQ - Low-code Application Framework for Engineers.
+  ~ Copyright (C) 2021-2023.  Kingsrook, LLC
+  ~ 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+  ~ contact@kingsrook.com
+  ~ https://github.com/Kingsrook/
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<!doctype html>
+<html lang="en-US">
+<head>
+   <title>{title}</title>
+   <meta charset="utf-8">
+   <!-- <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script> -->
+   <script type="module" src="/api/docs/js/rapidoc.min.js"></script>
+   <link rel="stylesheet" href="/api/docs/css/qqq-api-styles.css">
+</head>
+<body>
+<rapi-doc
+        id="the-rapi-doc"
+        spec-url="{spec-url}"
+        regular-font="SF Pro Display,Roboto,Helvetica,Arial,sans-serif"
+        mono-font="Monaco, Menlo, Consolas, source-code-pro, monospace"
+        font-size="large"
+        show-header="false"
+        allow-spec-file-download="true"
+        primary-color="{primaryColor}"
+        sort-endpoints-by="none"
+        allow-authentication="false"
+        persist-auth="false"
+        render-style="focused"
+        show-method-in-nav-bar="as-colored-block"
+        nav-item-spacing="relaxed"
+        css-file="qqq-api-styles.css"
+        css-classes="qqqApi"
+        info-description-headings-in-navbar="true"
+        show-curl-before-try="true"
+        show-components="true"
+        sort-schemas="true"
+        schema-expand-level="1"
+>
+   {navLogoImg}
+   <div slot="overview" id="otherVersions">
+      <label for="otherVersionsSelect">Other Versions of this API:</label>
+      <select id="otherVersionsSelect" onchange=changeVersion()>
+         <option value="/api/">--</option>
+         {otherVersionOptions}
+      </select>
+   </div>
+</rapi-doc>
+<script>
+   window.addEventListener('DOMContentLoaded', (event) => {
+      const rapidocEl = document.getElementById('the-rapi-doc');
+      rapidocEl.addEventListener('spec-loaded', (e) => {
+
+         const shadowRoot = rapidocEl.shadowRoot;
+         const collapseButton = shadowRoot.querySelector(".nav-bar-collapse-all");
+         if(collapseButton)
+         {
+            collapseButton.click();
+         }
+
+         const otherVersions = document.querySelector("#otherVersions");
+         if(otherVersions)
+         {
+            otherVersions.style.visibility = "visible";
+         }
+
+         const navLogo = document.querySelector("#navLogo");
+         if(navLogo)
+         {
+            navLogo.style.visibility = "visible";
+         }
+      });
+   });
+
+   function changeApi()
+   {
+      document.location.href = document.getElementById("otherApisSelect").value;
+   }
+
+   function changeVersion()
+   {
+      document.location.href = document.getElementById("otherVersionsSelect").value;
+   }
+</script>
+</body>
+</html>

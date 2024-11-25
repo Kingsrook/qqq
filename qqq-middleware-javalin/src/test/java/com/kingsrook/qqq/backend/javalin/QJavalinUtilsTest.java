@@ -24,11 +24,17 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import io.javalin.config.Key;
 import io.javalin.http.Context;
 import io.javalin.http.HandlerType;
 import io.javalin.http.HttpStatus;
+import io.javalin.json.JsonMapper;
+import io.javalin.plugin.ContextPlugin;
+import io.javalin.security.RouteRole;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -133,6 +139,14 @@ class QJavalinUtilsTest
 
 
 
+      @Override
+      public boolean strictContentTypes()
+      {
+         return false;
+      }
+
+
+
       /***************************************************************************
        **
        ***************************************************************************/
@@ -151,17 +165,6 @@ class QJavalinUtilsTest
       @NotNull
       @Override
       public HttpServletResponse res()
-      {
-         return null;
-      }
-
-
-
-      /***************************************************************************
-       **
-       ***************************************************************************/
-      @Override
-      public <T> T appAttribute(@NotNull String s)
       {
          return null;
       }
@@ -204,6 +207,30 @@ class QJavalinUtilsTest
 
 
 
+      @Override
+      public <T> T appData(@NotNull Key<T> key)
+      {
+         return null;
+      }
+
+
+
+      @Override
+      public @NotNull JsonMapper jsonMapper()
+      {
+         return null;
+      }
+
+
+
+      @Override
+      public <T> T with(@NotNull Class<? extends ContextPlugin<?, T>> aClass)
+      {
+         return null;
+      }
+
+
+
       /***************************************************************************
        **
        ***************************************************************************/
@@ -234,6 +261,14 @@ class QJavalinUtilsTest
       @NotNull
       @Override
       public ServletOutputStream outputStream()
+      {
+         return null;
+      }
+
+
+
+      @Override
+      public @NotNull Context minSizeForCompression(int i)
       {
          return null;
       }
@@ -282,6 +317,30 @@ class QJavalinUtilsTest
       public void redirect(@NotNull String s, @NotNull HttpStatus httpStatus)
       {
 
+      }
+
+
+
+      @Override
+      public void writeJsonStream(@NotNull Stream<?> stream)
+      {
+
+      }
+
+
+
+      @Override
+      public @NotNull Context skipRemainingHandlers()
+      {
+         return null;
+      }
+
+
+
+      @Override
+      public @NotNull Set<RouteRole> routeRoles()
+      {
+         return Set.of();
       }
    }
 }

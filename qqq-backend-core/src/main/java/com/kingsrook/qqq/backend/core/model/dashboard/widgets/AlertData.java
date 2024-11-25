@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
+import java.util.List;
+
+
 /*******************************************************************************
  ** Model containing datastructure expected by frontend alert widget
  **
@@ -40,8 +43,10 @@ public class AlertData extends QWidgetData
 
 
 
-   private String    html;
-   private AlertType alertType;
+   private String       html;
+   private AlertType    alertType;
+   private Boolean      hideWidget = false;
+   private List<String> bulletList;
 
 
 
@@ -136,6 +141,68 @@ public class AlertData extends QWidgetData
    public AlertData withAlertType(AlertType alertType)
    {
       this.alertType = alertType;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hideWidget
+    *******************************************************************************/
+   public boolean getHideWidget()
+   {
+      return (this.hideWidget);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hideWidget
+    *******************************************************************************/
+   public void setHideWidget(boolean hideWidget)
+   {
+      this.hideWidget = hideWidget;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hideWidget
+    *******************************************************************************/
+   public AlertData withHideWidget(boolean hideWidget)
+   {
+      this.hideWidget = hideWidget;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for bulletList
+    *******************************************************************************/
+   public List<String> getBulletList()
+   {
+      return (this.bulletList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for bulletList
+    *******************************************************************************/
+   public void setBulletList(List<String> bulletList)
+   {
+      this.bulletList = bulletList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for bulletList
+    *******************************************************************************/
+   public AlertData withBulletList(List<String> bulletList)
+   {
+      this.bulletList = bulletList;
       return (this);
    }
 

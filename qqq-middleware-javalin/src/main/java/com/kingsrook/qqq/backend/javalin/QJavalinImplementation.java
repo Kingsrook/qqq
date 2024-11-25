@@ -63,12 +63,10 @@ import com.kingsrook.qqq.backend.core.actions.values.SearchPossibleValueSourceAc
 import com.kingsrook.qqq.backend.core.adapters.QInstanceAdapter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
-import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.exceptions.QModuleDispatchException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
-import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -106,7 +104,6 @@ import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSo
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
-import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -123,6 +120,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -178,7 +176,8 @@ public class QJavalinImplementation
 
    private static int DEFAULT_PORT = 8001;
 
-   private static Javalin service;
+   private static Javalin             service;
+   private static List<EndpointGroup> endpointGroups;
 
    private static long startTime = 0;
 
@@ -241,8 +240,18 @@ public class QJavalinImplementation
    {
       // todo port from arg
       // todo base path from arg? - and then potentially multiple instances too (chosen based on the root path??)
-      service = Javalin.create().start(port);
-      service.routes(getRoutes());
+
+      service = Javalin.create(config ->
+         {
+            config.router.apiBuilder(getRoutes());
+
+            for(EndpointGroup endpointGroup : CollectionUtils.nonNullList(endpointGroups))
+            {
+               config.router.apiBuilder(endpointGroup);
+            }
+         }
+      ).start(port);
+
       service.before(QJavalinImplementation::hotSwapQInstance);
       service.before((Context context) -> context.header("Content-Type", "application/json"));
       service.after(QJavalinImplementation::clearQContext);
@@ -292,7 +301,7 @@ public class QJavalinImplementation
             ////////////////////////////////////////////////////////////////////////////////
             // clear the cache of classes in this class, so that new classes can be found //
             ////////////////////////////////////////////////////////////////////////////////
-            MetaDataProducerHelper.clearTopLevelClassCache();
+            ClassPathUtils.clearTopLevelClassCache();
 
             /////////////////////////////////////////////////
             // try to get a new instance from the supplier //
@@ -1014,8 +1023,7 @@ public class QJavalinImplementation
          QRecord record = getOutput.getRecord();
          if(record == null)
          {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
          QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
@@ -1078,8 +1086,7 @@ public class QJavalinImplementation
          ///////////////////////////////////////////////////////
          if(getOutput.getRecord() == null)
          {
-            throw (new QNotFoundException("Could not find " + table.getLabel() + " with "
-               + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
+            throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
          String                   mimeType              = null;
@@ -1727,7 +1734,7 @@ public class QJavalinImplementation
       }
       catch(QUserFacingException e)
       {
-         handleException(HttpStatus.Code.BAD_REQUEST, context, e);
+         QJavalinUtils.handleException(HttpStatus.Code.BAD_REQUEST, context, e);
          return null;
       }
       return reportFormat;
@@ -1816,7 +1823,7 @@ public class QJavalinImplementation
             if(CollectionUtils.nullSafeHasContents(valuesParamList))
             {
                String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, new TypeReference<>(){});
+               values = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
             }
          }
 
@@ -1867,67 +1874,7 @@ public class QJavalinImplementation
     *******************************************************************************/
    public static void handleException(Context context, Exception e)
    {
-      handleException(null, context, e);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void handleException(HttpStatus.Code statusCode, Context context, Exception e)
-   {
-      QUserFacingException userFacingException = ExceptionUtils.findClassInRootChain(e, QUserFacingException.class);
-      if(userFacingException != null)
-      {
-         if(userFacingException instanceof QNotFoundException)
-         {
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.NOT_FOUND); // 404
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-         else if(userFacingException instanceof QBadRequestException)
-         {
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.BAD_REQUEST); // 400
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-         else
-         {
-            LOG.info("User-facing exception", e);
-            statusCode = Objects.requireNonNullElse(statusCode, HttpStatus.Code.INTERNAL_SERVER_ERROR); // 500
-            respondWithError(context, statusCode, userFacingException.getMessage());
-         }
-      }
-      else
-      {
-         if(e instanceof QAuthenticationException)
-         {
-            respondWithError(context, HttpStatus.Code.UNAUTHORIZED, e.getMessage()); // 401
-            return;
-         }
-
-         if(e instanceof QPermissionDeniedException)
-         {
-            respondWithError(context, HttpStatus.Code.FORBIDDEN, e.getMessage()); // 403
-            return;
-         }
-
-         ////////////////////////////////
-         // default exception handling //
-         ////////////////////////////////
-         LOG.warn("Exception in javalin request", e);
-         respondWithError(context, HttpStatus.Code.INTERNAL_SERVER_ERROR, e.getClass().getSimpleName() + " (" + e.getMessage() + ")"); // 500
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static void respondWithError(Context context, HttpStatus.Code statusCode, String errorMessage)
-   {
-      context.status(statusCode.getCode());
-      context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
+      QJavalinUtils.handleException(null, context, e);
    }
 
 
@@ -1946,7 +1893,7 @@ public class QJavalinImplementation
     ** Getter for javalinMetaData
     **
     *******************************************************************************/
-   public QJavalinMetaData getJavalinMetaData()
+   public static QJavalinMetaData getJavalinMetaData()
    {
       return javalinMetaData;
    }
@@ -1975,11 +1922,21 @@ public class QJavalinImplementation
 
 
    /*******************************************************************************
-    ** Getter for qInstanceHotSwapSupplier
+    ** Getter for qInstance
     *******************************************************************************/
    public static QInstance getQInstance()
    {
       return (QJavalinImplementation.qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qInstance
+    *******************************************************************************/
+   public static void setQInstance(QInstance qInstance)
+   {
+      QJavalinImplementation.qInstance = qInstance;
    }
 
 
@@ -2011,4 +1968,30 @@ public class QJavalinImplementation
    {
       return (startTime);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void addJavalinRoutes(EndpointGroup routes)
+   {
+      if(endpointGroups == null)
+      {
+         endpointGroups = new ArrayList<>();
+      }
+      endpointGroups.add(routes);
+   }
+
+
+
+   /***************************************************************************
+    ** if restarting this class, and you want to re-run addJavalinRoutes, but
+    ** not create duplicates, well, you might want to call this method!
+    ***************************************************************************/
+   public void clearJavalinRoutes()
+   {
+      endpointGroups = null;
+   }
+
 }

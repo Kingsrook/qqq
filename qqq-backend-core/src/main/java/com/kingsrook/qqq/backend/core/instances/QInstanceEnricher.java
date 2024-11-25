@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
@@ -416,9 +417,26 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void enrichStep(QStepMetaData step)
    {
+      enrichStep(step, false);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void enrichStep(QStepMetaData step, boolean isSubStep)
+   {
       if(!StringUtils.hasContent(step.getLabel()))
       {
-         step.setLabel(nameToLabel(step.getName()));
+         if(isSubStep && (step.getName().endsWith(".backend") || step.getName().endsWith(".frontend")))
+         {
+            step.setLabel(nameToLabel(step.getName().replaceFirst("\\.(backend|frontend)", "")));
+         }
+         else
+         {
+            step.setLabel(nameToLabel(step.getName()));
+         }
       }
 
       step.getInputFields().forEach(this::enrichField);
@@ -437,6 +455,13 @@ public class QInstanceEnricher
          if(frontendStepMetaData.getRecordListFields() != null)
          {
             frontendStepMetaData.getRecordListFields().forEach(this::enrichField);
+         }
+      }
+      else if(step instanceof QStateMachineStep stateMachineStep)
+      {
+         for(QStepMetaData subStep : CollectionUtils.nonNullList(stateMachineStep.getSubSteps()))
+         {
+            enrichStep(subStep, true);
          }
       }
    }

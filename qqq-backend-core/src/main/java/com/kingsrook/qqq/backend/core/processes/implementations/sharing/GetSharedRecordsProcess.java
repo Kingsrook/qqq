@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -47,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -134,7 +134,7 @@ public class GetSharedRecordsProcess implements BackendStep, MetaDataProducerInt
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // iterate results, building QRecords to output - note - we'll need to collect ids, then look them up in audience-source tables //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         ArrayList<QRecord> resultList = new ArrayList<>();
+         ArrayList<QRecord>                resultList  = new ArrayList<>();
          ListingHash<String, Serializable> audienceIds = new ListingHash<>();
          for(QRecord record : queryOutput.getRecords())
          {

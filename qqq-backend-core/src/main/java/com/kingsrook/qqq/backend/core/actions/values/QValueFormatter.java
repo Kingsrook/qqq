@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -468,7 +467,8 @@ public class QValueFormatter
    {
       for(QFieldMetaData field : table.getFields().values())
       {
-         if(field.getType().equals(QFieldType.BLOB))
+         Optional<FieldAdornment> fileDownloadAdornment = field.getAdornment(AdornmentType.FILE_DOWNLOAD);
+         if(fileDownloadAdornment.isPresent())
          {
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // file name comes from:                                                                                            //
@@ -478,20 +478,7 @@ public class QValueFormatter
             // - tableLabel primaryKey fieldLabel                                                                               //
             // - and - if the FILE_DOWNLOAD adornment had a DEFAULT_EXTENSION, then it gets added (preceded by a dot)           //
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            Optional<FieldAdornment>  fileDownloadAdornment = field.getAdornment(AdornmentType.FILE_DOWNLOAD);
-            Map<String, Serializable> adornmentValues       = Collections.emptyMap();
-
-            if(fileDownloadAdornment.isPresent())
-            {
-               adornmentValues = fileDownloadAdornment.get().getValues();
-            }
-            else
-            {
-               ///////////////////////////////////////////////////////
-               // don't change blobs unless they are file-downloads //
-               ///////////////////////////////////////////////////////
-               continue;
-            }
+            Map<String, Serializable> adornmentValues = fileDownloadAdornment.get().getValues();
 
             String fileNameField    = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FIELD));
             String fileNameFormat   = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT));
@@ -542,7 +529,13 @@ public class QValueFormatter
                   }
                }
 
-               record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
+               /////////////////////////////////////////////
+               // if field type is blob, update its value //
+               /////////////////////////////////////////////
+               if(QFieldType.BLOB.equals(field.getType()))
+               {
+                  record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
+               }
                record.setDisplayValue(field.getName(), fileName);
             }
          }

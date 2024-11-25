@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 /*******************************************************************************
@@ -62,6 +63,21 @@ class EmailMessagingProviderTest extends BaseTest
          .withContent(new Content().withContentRole(EmailContentRole.TEXT).withBody("This is a text body"))
          .withContent(new Content().withContentRole(EmailContentRole.HTML).withBody("This <u>is</u> an <b>HTML</b> body!"))
       );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMissingInputs()
+   {
+      assertThatThrownBy(() -> new SendMessageAction().execute(new SendMessageInput()))
+         .hasMessageContaining("provider name was not given");
+
+      assertThatThrownBy(() -> new SendMessageAction().execute(new SendMessageInput().withMessagingProviderName("notFound")))
+         .hasMessageContaining("was not found");
    }
 
 }
