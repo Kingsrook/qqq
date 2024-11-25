@@ -24,7 +24,10 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.fil
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -54,7 +57,7 @@ class XlsxFileToRowsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void test() throws QException
+   void test() throws QException, IOException
    {
       byte[] byteArray = writeExcelBytes();
 
@@ -63,8 +66,8 @@ class XlsxFileToRowsTest extends BaseTest
       BulkLoadFileRow headerRow = fileToRowsInterface.next();
       BulkLoadFileRow bodyRow   = fileToRowsInterface.next();
 
-      assertEquals(new BulkLoadFileRow(new String[] {"Id", "First Name", "Last Name"}), headerRow);
-      assertEquals(new BulkLoadFileRow(new String[] {"1", "Darin", "Jonson"}), bodyRow);
+      assertEquals(new BulkLoadFileRow(new String[] {"Id", "First Name", "Last Name", "Birth Date"}), headerRow);
+      assertEquals(new BulkLoadFileRow(new Serializable[] {1, "Darin", "Jonson", LocalDateTime.of(1980, Month.JANUARY, 31, 0, 0)}), bodyRow);
 
       ///////////////////////////////////////////////////////////////////////////////////////
       // make sure there's at least a limit (less than 20) to how many more rows there are //
@@ -83,7 +86,7 @@ class XlsxFileToRowsTest extends BaseTest
    /***************************************************************************
     **
     ***************************************************************************/
-   private static byte[] writeExcelBytes() throws QException
+   private static byte[] writeExcelBytes() throws QException, IOException
    {
       ReportFormat          format = ReportFormat.XLSX;
       ByteArrayOutputStream baos   = new ByteArrayOutputStream();
@@ -100,6 +103,7 @@ class XlsxFileToRowsTest extends BaseTest
       new GenerateReportAction().execute(reportInput);
 
       byte[] byteArray = baos.toByteArray();
+      // FileUtils.writeByteArrayToFile(new File("/tmp/xlsx.xlsx"), byteArray);
       return byteArray;
    }
 

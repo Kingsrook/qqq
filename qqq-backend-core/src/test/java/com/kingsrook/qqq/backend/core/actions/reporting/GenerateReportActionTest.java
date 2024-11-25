@@ -643,7 +643,7 @@ public class GenerateReportActionTest extends BaseTest
       Iterator<Map<String, String>> iterator = list.iterator();
       Map<String, String>           row      = iterator.next();
       assertEquals(5, list.size());
-      assertThat(row).containsOnlyKeys("Id", "First Name", "Last Name");
+      assertThat(row).containsOnlyKeys("Id", "First Name", "Last Name", "Birth Date");
    }
 
 
@@ -674,7 +674,9 @@ public class GenerateReportActionTest extends BaseTest
                .withColumns(List.of(
                   new QReportField().withName("id"),
                   new QReportField().withName("firstName"),
-                  new QReportField().withName("lastName")))));
+                  new QReportField().withName("lastName"),
+                  new QReportField().withName("birthDate")
+               ))));
 
       return report;
    }

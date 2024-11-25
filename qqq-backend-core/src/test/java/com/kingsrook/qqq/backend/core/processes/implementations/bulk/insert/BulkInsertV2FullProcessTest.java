@@ -167,8 +167,12 @@ class BulkInsertV2FullProcessTest extends BaseTest
       Serializable bulkLoadProfile = runProcessOutput.getValue("bulkLoadProfile");
       assertThat(bulkLoadProfile).isInstanceOf(BulkLoadProfile.class);
       assertThat(((BulkLoadProfile) bulkLoadProfile).getFieldList()).hasSizeGreaterThan(5);
-      assertEquals("birthDate", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getFieldName());
-      assertEquals(5, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getColumnIndex());
+      assertEquals("firstName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getFieldName());
+      assertEquals(3, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getColumnIndex());
+      assertEquals("lastName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getFieldName());
+      assertEquals(4, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getColumnIndex());
+      assertEquals("birthDate", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getFieldName());
+      assertEquals(5, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getColumnIndex());
 
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("fileMapping");
 
