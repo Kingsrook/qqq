@@ -25,6 +25,7 @@ package com.kingsrook.sampleapp;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 import io.javalin.Javalin;
 import io.javalin.plugin.bundled.CorsPluginConfig;
@@ -67,6 +68,9 @@ public class SampleJavalinServer
          SampleMetaDataProvider.primeTestDatabase("prime-test-database.sql");
 
          QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
+         qJavalinImplementation.setJavalinMetaData(new QJavalinMetaData()
+            .withUploadedFileArchiveTableName(SampleMetaDataProvider.UPLOAD_FILE_ARCHIVE_TABLE_NAME));
+
          javalinService = Javalin.create(config ->
          {
             // todo - not all?

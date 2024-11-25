@@ -376,7 +376,7 @@ public class SampleMetaDataProvider
          .withField(new QFieldMetaData("firstName", QFieldType.STRING).withBackendName("first_name").withIsRequired(true))
          .withField(new QFieldMetaData("lastName", QFieldType.STRING).withBackendName("last_name").withIsRequired(true))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE).withBackendName("birth_date"))
-         .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("email", QFieldType.STRING).withIsRequired(true))
          .withField(new QFieldMetaData("isEmployed", QFieldType.BOOLEAN).withBackendName("is_employed"))
          .withField(new QFieldMetaData("annualSalary", QFieldType.DECIMAL).withBackendName("annual_salary").withDisplayFormat(DisplayFormat.CURRENCY))
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked").withDisplayFormat(DisplayFormat.COMMAS))
@@ -769,7 +769,7 @@ public class SampleMetaDataProvider
       CAT(1, "Cat");
 
       private final Integer id;
-      private final String label;
+      private final String  label;
 
       public static final String NAME = "petSpecies";
 
