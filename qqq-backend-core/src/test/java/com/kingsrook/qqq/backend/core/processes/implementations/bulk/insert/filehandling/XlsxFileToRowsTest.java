@@ -66,8 +66,8 @@ class XlsxFileToRowsTest extends BaseTest
       BulkLoadFileRow headerRow = fileToRowsInterface.next();
       BulkLoadFileRow bodyRow   = fileToRowsInterface.next();
 
-      assertEquals(new BulkLoadFileRow(new String[] {"Id", "First Name", "Last Name", "Birth Date"}), headerRow);
-      assertEquals(new BulkLoadFileRow(new Serializable[] {1, "Darin", "Jonson", LocalDateTime.of(1980, Month.JANUARY, 31, 0, 0)}), bodyRow);
+      assertEquals(new BulkLoadFileRow(new String[] {"Id", "First Name", "Last Name", "Birth Date"}, 1), headerRow);
+      assertEquals(new BulkLoadFileRow(new Serializable[] {1, "Darin", "Jonson", LocalDateTime.of(1980, Month.JANUARY, 31, 0, 0)}, 2), bodyRow);
 
       ///////////////////////////////////////////////////////////////////////////////////////
       // make sure there's at least a limit (less than 20) to how many more rows there are //

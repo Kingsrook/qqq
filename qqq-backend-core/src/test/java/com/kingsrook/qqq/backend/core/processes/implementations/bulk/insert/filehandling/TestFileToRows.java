@@ -81,6 +81,6 @@ public class TestFileToRows extends AbstractIteratorBasedFileToRows<Serializable
    @Override
    public BulkLoadFileRow makeRow(Serializable[] values)
    {
-      return (new BulkLoadFileRow(values));
+      return (new BulkLoadFileRow(values, getRowNo()));
    }
 }

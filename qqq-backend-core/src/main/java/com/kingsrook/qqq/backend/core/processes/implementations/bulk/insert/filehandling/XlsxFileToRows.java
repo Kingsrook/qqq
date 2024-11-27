@@ -116,7 +116,7 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
          }
       }
 
-      return new BulkLoadFileRow(values);
+      return new BulkLoadFileRow(values, getRowNo());
    }
 
 

@@ -52,8 +52,8 @@ class CsvFileToRowsTest extends BaseTest
       BulkLoadFileRow headerRow = fileToRowsInterface.next();
       BulkLoadFileRow bodyRow   = fileToRowsInterface.next();
 
-      assertEquals(new BulkLoadFileRow(new String[] { "one", "two", "three" }), headerRow);
-      assertEquals(new BulkLoadFileRow(new String[] { "1", "2", "3", "4" }), bodyRow);
+      assertEquals(new BulkLoadFileRow(new String[] { "one", "two", "three" }, 1), headerRow);
+      assertEquals(new BulkLoadFileRow(new String[] { "1", "2", "3", "4" }, 2), bodyRow);
       assertFalse(fileToRowsInterface.hasNext());
    }
 

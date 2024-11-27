@@ -36,6 +36,7 @@ public abstract class AbstractIteratorBasedFileToRows<E> implements FileToRowsIn
    private boolean         useLast = false;
    private BulkLoadFileRow last;
 
+   int rowNo = 0;
 
 
    /***************************************************************************
@@ -65,6 +66,7 @@ public abstract class AbstractIteratorBasedFileToRows<E> implements FileToRowsIn
    @Override
    public BulkLoadFileRow next()
    {
+      rowNo++;
       if(iterator == null)
       {
          throw new IllegalStateException("Object was not init'ed");
@@ -99,6 +101,7 @@ public abstract class AbstractIteratorBasedFileToRows<E> implements FileToRowsIn
    @Override
    public void unNext()
    {
+      rowNo--;
       useLast = true;
    }
 
@@ -122,4 +125,15 @@ public abstract class AbstractIteratorBasedFileToRows<E> implements FileToRowsIn
       this.iterator = iterator;
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for rowNo
+    **
+    *******************************************************************************/
+   @Override
+   public int getRowNo()
+   {
+      return rowNo;
+   }
 }

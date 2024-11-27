@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  *******************************************************************************/
 public class BulkLoadFileRow implements Serializable
 {
+   private int            rowNo;
    private Serializable[] values;
 
 
@@ -41,9 +42,10 @@ public class BulkLoadFileRow implements Serializable
     ** Constructor
     **
     *******************************************************************************/
-   public BulkLoadFileRow(Serializable[] values)
+   public BulkLoadFileRow(Serializable[] values, int rowNo)
    {
       this.values = values;
+      this.rowNo = rowNo;
    }
 
 
@@ -150,8 +152,8 @@ public class BulkLoadFileRow implements Serializable
          return false;
       }
 
-      BulkLoadFileRow row = (BulkLoadFileRow) o;
-      return Objects.deepEquals(values, row.values);
+      BulkLoadFileRow that = (BulkLoadFileRow) o;
+      return rowNo == that.rowNo && Objects.deepEquals(values, that.values);
    }
 
 
@@ -162,6 +164,38 @@ public class BulkLoadFileRow implements Serializable
    @Override
    public int hashCode()
    {
-      return Arrays.hashCode(values);
+      return Objects.hash(rowNo, Arrays.hashCode(values));
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for rowNo
+    *******************************************************************************/
+   public int getRowNo()
+   {
+      return (this.rowNo);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for rowNo
+    *******************************************************************************/
+   public void setRowNo(int rowNo)
+   {
+      this.rowNo = rowNo;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for rowNo
+    *******************************************************************************/
+   public BulkLoadFileRow withRowNo(int rowNo)
+   {
+      this.rowNo = rowNo;
+      return (this);
+   }
+
 }

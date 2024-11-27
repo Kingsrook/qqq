@@ -92,7 +92,7 @@ public class CsvFileToRows extends AbstractIteratorBasedFileToRows<CSVRecord> im
          values[i++] = s;
       }
 
-      return (new BulkLoadFileRow(values));
+      return (new BulkLoadFileRow(values, getRowNo()));
    }
 
 
