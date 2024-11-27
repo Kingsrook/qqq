@@ -1483,6 +1483,8 @@ paths:
                     processes:
                       person.bulkInsert:
                         hasPermission: true
+                        icon:
+                          name: "library_add"
                         isHidden: true
                         label: "Person Bulk Insert"
                         name: "person.bulkInsert"
