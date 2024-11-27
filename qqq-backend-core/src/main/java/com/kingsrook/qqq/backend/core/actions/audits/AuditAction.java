@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -173,22 +174,49 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
       Map<String, Serializable> securityKeyValues = new HashMap<>();
       for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
       {
-         Serializable keyValue = record == null ? null : record.getValue(recordSecurityLock.getFieldName());
-
-         if(keyValue == null && oldRecord.isPresent())
-         {
-            LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()));
-            keyValue = oldRecord.get().getValue(recordSecurityLock.getFieldName());
-         }
-
-         if(keyValue == null)
-         {
-            LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()), logPair("oldRecordIsPresent", oldRecord.isPresent()));
-         }
-
-         securityKeyValues.put(recordSecurityLock.getSecurityKeyType(), keyValue);
+         getRecordSecurityKeyValues(table, record, oldRecord, recordSecurityLock, securityKeyValues);
       }
       return securityKeyValues;
+   }
+
+
+
+   /***************************************************************************
+    ** recursive implementation of getRecordSecurityKeyValues, for dealing with
+    ** multi-locks
+    ***************************************************************************/
+   private static void getRecordSecurityKeyValues(QTableMetaData table, QRecord record, Optional<QRecord> oldRecord, RecordSecurityLock recordSecurityLock, Map<String, Serializable> securityKeyValues)
+   {
+      //////////////////////////////////////////////////////
+      // special case with recursive call for multi-locks //
+      //////////////////////////////////////////////////////
+      if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
+      {
+         for(RecordSecurityLock subLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks())))
+         {
+            getRecordSecurityKeyValues(table, record, oldRecord, subLock, securityKeyValues);
+         }
+
+         return;
+      }
+
+      ///////////////////////////////////////////
+      // by default, deal with non-multi locks //
+      ///////////////////////////////////////////
+      Serializable keyValue = record == null ? null : record.getValue(recordSecurityLock.getFieldName());
+
+      if(keyValue == null && oldRecord.isPresent())
+      {
+         LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()));
+         keyValue = oldRecord.get().getValue(recordSecurityLock.getFieldName());
+      }
+
+      if(keyValue == null)
+      {
+         LOG.debug("Table with a securityLock, but value not found in field", logPair("table", table.getName()), logPair("field", recordSecurityLock.getFieldName()), logPair("oldRecordIsPresent", oldRecord.isPresent()));
+      }
+
+      securityKeyValues.put(recordSecurityLock.getSecurityKeyType(), keyValue);
    }
 
 
@@ -218,21 +246,16 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
                   throw (new QException("Requested audit for an unrecognized table name: " + auditSingleInput.getAuditTableName()));
                }
 
-               ///////////////////////////////////////////////////
-               // validate security keys on the table are given //
-               ///////////////////////////////////////////////////
-               for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
+               ///////////////////////////////////////////////////////
+               // validate security keys on the table are given     //
+               // originally, this case threw...                    //
+               // but i think it's better to record the audit, just //
+               // missing its security key value, then to fail...   //
+               // but, maybe should be configurable, etc...         //
+               ///////////////////////////////////////////////////////
+               if(!validateSecurityKeys(auditSingleInput, table))
                {
-                  if(auditSingleInput.getSecurityKeyValues() == null || !auditSingleInput.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
-                  {
-                     ///////////////////////////////////////////////////////
-                     // originally, this case threw...                    //
-                     // but i think it's better to record the audit, just //
-                     // missing its security key value, then to fail...   //
-                     ///////////////////////////////////////////////////////
-                     // throw (new QException("Missing securityKeyValue [" + recordSecurityLock.getSecurityKeyType() + "] in audit request for table " + auditSingleInput.getAuditTableName()));
-                     LOG.info("Missing securityKeyValue in audit request", logPair("table", auditSingleInput.getAuditTableName()), logPair("securityKey", recordSecurityLock.getSecurityKeyType()));
-                  }
+                  LOG.debug("Missing securityKeyValue in audit request", logPair("table", auditSingleInput.getAuditTableName()), logPair("auditMessage", auditSingleInput.getMessage()), logPair("recordId", auditSingleInput.getRecordId()));
                }
 
                ////////////////////////////////////////////////
@@ -306,6 +329,70 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
       }
 
       return (auditOutput);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static boolean validateSecurityKeys(AuditSingleInput auditSingleInput, QTableMetaData table)
+   {
+      boolean allAreValid = true;
+      for(RecordSecurityLock recordSecurityLock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(table.getRecordSecurityLocks())))
+      {
+         boolean lockIsValid = validateSecurityKeysForLock(auditSingleInput, recordSecurityLock);
+         if(!lockIsValid)
+         {
+            allAreValid = false;
+         }
+      }
+
+      return (allAreValid);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static boolean validateSecurityKeysForLock(AuditSingleInput auditSingleInput, RecordSecurityLock recordSecurityLock)
+   {
+      if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
+      {
+         boolean allSubLocksAreValid = true;
+         boolean anySubLocksAreValid = false;
+         for(RecordSecurityLock lock : RecordSecurityLockFilters.filterForReadLocks(CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks())))
+         {
+            boolean subLockIsValid = validateSecurityKeysForLock(auditSingleInput, lock);
+            if(subLockIsValid)
+            {
+               anySubLocksAreValid = true;
+            }
+            else
+            {
+               allSubLocksAreValid = false;
+            }
+         }
+
+         if(multiRecordSecurityLock.getOperator().equals(MultiRecordSecurityLock.BooleanOperator.OR))
+         {
+            return (anySubLocksAreValid);
+         }
+         else if(multiRecordSecurityLock.getOperator().equals(MultiRecordSecurityLock.BooleanOperator.AND))
+         {
+            return (allSubLocksAreValid);
+         }
+      }
+      else
+      {
+         if(auditSingleInput.getSecurityKeyValues() == null || !auditSingleInput.getSecurityKeyValues().containsKey(recordSecurityLock.getSecurityKeyType()))
+         {
+            return (false);
+         }
+      }
+
+      return (true);
    }
 
 
