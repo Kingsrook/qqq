@@ -898,6 +898,7 @@ public class QInstanceEnricher
       QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
          .withName("fileMapping")
          .withLabel("File Mapping")
+         .withBackStepName("upload")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM));
 
       QBackendStepMetaData receiveFileMappingStep = new QBackendStepMetaData()
@@ -911,6 +912,7 @@ public class QInstanceEnricher
       QFrontendStepMetaData valueMappingScreen = new QFrontendStepMetaData()
          .withName("valueMapping")
          .withLabel("Value Mapping")
+         .withBackStepName("prepareFileMapping")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_VALUE_MAPPING_FORM));
 
       QBackendStepMetaData receiveValueMappingStep = new QBackendStepMetaData()
@@ -934,7 +936,9 @@ public class QInstanceEnricher
       // put the bulk-load profile form (e.g., for saving it) on the review & result screens) //
       //////////////////////////////////////////////////////////////////////////////////////////
       process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW)
+         .withBackStepName("prepareFileMapping")
          .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
       process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_RESULT)
          .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
 

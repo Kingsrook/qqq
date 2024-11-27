@@ -190,6 +190,7 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
             // it's also where the value-mapping loop of steps points.                      //
             // and, this will actually be the default (e.g., the step after this one).      //
             //////////////////////////////////////////////////////////////////////////////////
+            runBackendStepInput.addValue("valueMappingFieldIndex", -1);
          }
          else
          {
