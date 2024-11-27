@@ -157,10 +157,42 @@ public class BulkInsertMapping implements Serializable
       }
       else if(fieldNameToIndexMap != null)
       {
-         return (fieldNameToIndexMap);
+         return (getFieldIndexesForNoHeaderUseCase(table, associationNameChain, wideAssociationIndexes));
       }
 
       throw (new QException("Mapping was not properly configured."));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @JsonIgnore
+   private Map<String, Integer> getFieldIndexesForNoHeaderUseCase(QTableMetaData table, String associationNameChain, List<Integer> wideAssociationIndexes)
+   {
+      Map<String, Integer> rs = new HashMap<>();
+
+      String wideAssociationSuffix = "";
+      if(CollectionUtils.nullSafeHasContents(wideAssociationIndexes))
+      {
+         wideAssociationSuffix = "," + StringUtils.join(".", wideAssociationIndexes);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // loop over fields - finding what header name they are mapped to - then what index that header is at. //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      String fieldNamePrefix = !StringUtils.hasContent(associationNameChain) ? "" : associationNameChain + ".";
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         Integer index = fieldNameToIndexMap.get(fieldNamePrefix + field.getName() + wideAssociationSuffix);
+         if(index != null)
+         {
+            rs.put(field.getName(), index);
+         }
+      }
+
+      return (rs);
    }
 
 

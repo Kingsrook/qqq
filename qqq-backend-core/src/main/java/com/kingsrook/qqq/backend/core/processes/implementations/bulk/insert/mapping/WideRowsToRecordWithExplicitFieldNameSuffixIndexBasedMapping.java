@@ -90,7 +90,9 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
       //////////////////////////////////////////////////////
       // start by building the record with its own fields //
       //////////////////////////////////////////////////////
-      QRecord record            = new QRecord();
+      QRecord record = new QRecord();
+      BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, row);
+
       boolean hadAnyValuesInRow = false;
       for(QFieldMetaData field : table.getFields().values())
       {

@@ -60,6 +60,7 @@ public class FlatRowsToRecord implements RowsToRecordInterface
       {
          BulkLoadFileRow row    = fileToRowsInterface.next();
          QRecord         record = new QRecord();
+         BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, row);
 
          for(QFieldMetaData field : table.getFields().values())
          {

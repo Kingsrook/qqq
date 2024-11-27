@@ -89,6 +89,11 @@ class TallRowsToRecordTest extends BaseTest
       assertEquals(3, order.getAssociatedRecords().get("orderLine").size());
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Rows 2-4", order.getBackendDetail("rowNos"));
+      assertEquals(3, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 3", order.getAssociatedRecords().get("orderLine").get(1).getBackendDetail("rowNos"));
+      assertEquals("Row 4", order.getAssociatedRecords().get("orderLine").get(2).getBackendDetail("rowNos"));
 
       order = records.get(1);
       assertEquals(2, order.getValueInteger("orderNo"));
@@ -96,6 +101,68 @@ class TallRowsToRecordTest extends BaseTest
       assertEquals(2, order.getAssociatedRecords().get("orderLine").size());
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Rows 5-6", order.getBackendDetail("rowNos"));
+      assertEquals(2, ((List<?>) order.getBackendDetail("fileRows")).size());
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOrderAndLinesWithoutHeader() throws QException
+   {
+      // 0, 1,     2,        3,         4
+      CsvFileToRows fileToRows = CsvFileToRows.forString("""
+         1, Homer, Simpson,  DONUT,     12
+         ,  Homer, Simpson,  BEER,      500
+         ,  Homer, Simpson,  COUCH,     1
+         2, Ned,   Flanders, BIBLE,     7
+         ,  Ned,   Flanders, LAWNMOWER, 1
+         """);
+
+      BulkLoadFileRow header = null;
+
+      TallRowsToRecord rowsToRecord = new TallRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToIndexMap(Map.of(
+            "orderNo", 0,
+            "shipToName", 1,
+            "orderLine.sku", 3,
+            "orderLine.quantity", 4
+         ))
+         .withTallLayoutGroupByIndexMap(Map.of(
+            TestUtils.TABLE_NAME_ORDER, List.of(1, 2),
+            "orderLine", List.of(3)
+         ))
+         .withMappedAssociations(List.of("orderLine"))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.TALL)
+         .withHasHeaderRow(false);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(2, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(3, order.getAssociatedRecords().get("orderLine").size());
+      assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Rows 1-3", order.getBackendDetail("rowNos"));
+      assertEquals(3, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 1", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(1).getBackendDetail("rowNos"));
+      assertEquals("Row 3", order.getAssociatedRecords().get("orderLine").get(2).getBackendDetail("rowNos"));
+
+      order = records.get(1);
+      assertEquals(2, order.getValueInteger("orderNo"));
+      assertEquals("Ned", order.getValueString("shipToName"));
+      assertEquals(2, order.getAssociatedRecords().get("orderLine").size());
+      assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Rows 4-5", order.getBackendDetail("rowNos"));
+      assertEquals(2, ((List<?>) order.getBackendDetail("fileRows")).size());
    }
 
 
@@ -334,6 +401,113 @@ class TallRowsToRecordTest extends BaseTest
       assertEquals(List.of("Flavor"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "key"));
       assertEquals(List.of("King James"), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "value"));
       assertEquals(List.of(defaultOrderLineExtraSource), getValues(lineItem.getAssociatedRecords().get("extrinsics"), "source"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSingleLine() throws QException
+   {
+      Integer defaultStoreId = 101;
+
+      CsvFileToRows fileToRows = CsvFileToRows.forString("""
+         orderNo, Ship To, lastName
+         1,       Homer,   Simpson
+         """);
+
+      BulkLoadFileRow header = fileToRows.next();
+
+      TallRowsToRecord rowsToRecord = new TallRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToHeaderNameMap(Map.of(
+            "orderNo", "orderNo",
+            "shipToName", "Ship To"
+         ))
+         .withFieldNameToDefaultValueMap(Map.of(
+            "storeId", defaultStoreId
+         ))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.TALL)
+         .withHasHeaderRow(true);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(1, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(defaultStoreId, order.getValue("storeId"));
+      assertEquals("Row 2", order.getBackendDetail("rowNos"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+   }
+
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPagination() throws QException
+   {
+      CsvFileToRows fileToRows = CsvFileToRows.forString("""
+         orderNo, Ship To, lastName, SKU,       Quantity
+         1,       Homer,   Simpson,  DONUT,     12
+         2,       Ned,     Flanders, BIBLE,     7
+         2,       Ned,     Flanders, LAWNMOWER, 1
+         3,       Bart,    Simpson,  SKATEBOARD,1
+         3,       Bart,    Simpson,  SLINGSHOT, 1
+         """);
+
+      BulkLoadFileRow header = fileToRows.next();
+
+      TallRowsToRecord rowsToRecord = new TallRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToHeaderNameMap(Map.of(
+            "orderNo", "orderNo",
+            "shipToName", "Ship To",
+            "orderLine.sku", "SKU",
+            "orderLine.quantity", "Quantity"
+         ))
+         .withTallLayoutGroupByIndexMap(Map.of(
+            TestUtils.TABLE_NAME_ORDER, List.of(1, 2),
+            "orderLine", List.of(3)
+         ))
+         .withMappedAssociations(List.of("orderLine"))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.TALL)
+         .withHasHeaderRow(true);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, 2);
+      assertEquals(2, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(List.of("DONUT"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals("Row 2", order.getBackendDetail("rowNos"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+
+      order = records.get(1);
+      assertEquals(2, order.getValueInteger("orderNo"));
+      assertEquals("Ned", order.getValueString("shipToName"));
+      assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals("Rows 3-4", order.getBackendDetail("rowNos"));
+      assertEquals(2, ((List<?>) order.getBackendDetail("fileRows")).size());
+
+      records = rowsToRecord.nextPage(fileToRows, header, mapping, 2);
+      assertEquals(1, records.size());
+      order = records.get(0);
+      assertEquals(3, order.getValueInteger("orderNo"));
+      assertEquals("Bart", order.getValueString("shipToName"));
+      assertEquals(List.of("SKATEBOARD", "SLINGSHOT"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals("Rows 5-6", order.getBackendDetail("rowNos"));
+      assertEquals(2, ((List<?>) order.getBackendDetail("fileRows")).size());
    }
 
 

@@ -76,21 +76,86 @@ class FlatRowsToRecordTest extends BaseTest
          .withHasHeaderRow(true);
 
       List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, 1);
+      assertEquals(1, records.size());
       assertEquals(List.of("Homer"), getValues(records, "firstName"));
       assertEquals(List.of("Simpson"), getValues(records, "lastName"));
       assertEquals(List.of(2), getValues(records, "noOfShoes"));
       assertEquals(List.of(new BigDecimal("3.50")), getValues(records, "cost"));
       assertEquals(4, records.get(0).getValues().size()); // make sure no additional values were set
+      assertEquals(1, ((List<?>) records.get(0).getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", records.get(0).getBackendDetail("rowNos"));
 
       records = rowsToRecord.nextPage(fileToRows, header, mapping, 2);
+      assertEquals(2, records.size());
       assertEquals(List.of("Marge", "Bart"), getValues(records, "firstName"));
       assertEquals(List.of(2, 2), getValues(records, "noOfShoes"));
       assertEquals(ListBuilder.of(null, new BigDecimal("99.95")), getValues(records, "cost"));
+      assertEquals(1, ((List<?>) records.get(0).getBackendDetail("fileRows")).size());
+      assertEquals("Row 3", records.get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 4", records.get(1).getBackendDetail("rowNos"));
 
       records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(1, records.size());
       assertEquals(List.of("Ned"), getValues(records, "firstName"));
       assertEquals(List.of(2), getValues(records, "noOfShoes"));
       assertEquals(ListBuilder.of(new BigDecimal("1.00")), getValues(records, "cost"));
+      assertEquals("Row 5", records.get(0).getBackendDetail("rowNos"));
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldNameToColumnIndexMapping() throws QException
+   {
+      TestFileToRows fileToRows = new TestFileToRows(List.of(
+         //                   0, 1,       2,         3,    4
+         new Serializable[] { 1, "Homer", "Simpson", true, "three fifty" },
+         new Serializable[] { 2, "Marge", "Simpson", false, "" },
+         new Serializable[] { 3, "Bart", "Simpson", "A", "99.95" },
+         new Serializable[] { 4, "Ned", "Flanders", 3.1, "one$" }
+      ));
+
+      FlatRowsToRecord rowsToRecord = new FlatRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToIndexMap(Map.of(
+            "firstName", 1,
+            "lastName", 2,
+            "cost", 4
+         ))
+         .withFieldNameToDefaultValueMap(Map.of(
+            "noOfShoes", 2
+         ))
+         .withFieldNameToValueMapping(Map.of("cost", Map.of("three fifty", new BigDecimal("3.50"), "one$", new BigDecimal("1.00"))))
+         .withTableName(TestUtils.TABLE_NAME_PERSON)
+         .withHasHeaderRow(false);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, null, mapping, 1);
+      assertEquals(1, records.size());
+      assertEquals(List.of("Homer"), getValues(records, "firstName"));
+      assertEquals(List.of("Simpson"), getValues(records, "lastName"));
+      assertEquals(List.of(2), getValues(records, "noOfShoes"));
+      assertEquals(List.of(new BigDecimal("3.50")), getValues(records, "cost"));
+      assertEquals(4, records.get(0).getValues().size()); // make sure no additional values were set
+      assertEquals(1, ((List<?>) records.get(0).getBackendDetail("fileRows")).size());
+      assertEquals("Row 1", records.get(0).getBackendDetail("rowNos"));
+
+      records = rowsToRecord.nextPage(fileToRows, null, mapping, 2);
+      assertEquals(2, records.size());
+      assertEquals(List.of("Marge", "Bart"), getValues(records, "firstName"));
+      assertEquals(List.of(2, 2), getValues(records, "noOfShoes"));
+      assertEquals(ListBuilder.of(null, new BigDecimal("99.95")), getValues(records, "cost"));
+      assertEquals(1, ((List<?>) records.get(0).getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", records.get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 3", records.get(1).getBackendDetail("rowNos"));
+
+      records = rowsToRecord.nextPage(fileToRows, null, mapping, Integer.MAX_VALUE);
+      assertEquals(1, records.size());
+      assertEquals(List.of("Ned"), getValues(records, "firstName"));
+      assertEquals(List.of(2), getValues(records, "noOfShoes"));
+      assertEquals(ListBuilder.of(new BigDecimal("1.00")), getValues(records, "cost"));
+      assertEquals("Row 4", records.get(0).getBackendDetail("rowNos"));
    }
 
 

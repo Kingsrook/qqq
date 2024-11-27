@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -67,8 +68,8 @@ public class TallRowsToRecord implements RowsToRecordInterface
 
       List<QRecord> rs = new ArrayList<>();
 
-      List<BulkLoadFileRow> rowsForCurrentRecord = new ArrayList<>();
-      List<Serializable>    recordGroupByValues  = null;
+      ArrayList<BulkLoadFileRow> rowsForCurrentRecord = new ArrayList<>();
+      List<Serializable>         recordGroupByValues  = null;
 
       String associationNameChain = "";
 
@@ -82,6 +83,9 @@ public class TallRowsToRecord implements RowsToRecordInterface
             groupByIndexes = groupByAllIndexesFromTable(mapping, table, headerRow, null);
          }
 
+         ////////////////////////
+         // this is suspect... //
+         ////////////////////////
          List<Serializable> rowGroupByValues = getGroupByValues(row, groupByIndexes);
          if(rowGroupByValues == null)
          {
@@ -108,18 +112,19 @@ public class TallRowsToRecord implements RowsToRecordInterface
             //////////////////////////////////////////////////////////////
             // not first, and not a match, so we can finish this record //
             //////////////////////////////////////////////////////////////
-            rs.add(makeRecordFromRows(table, associationNameChain, mapping, headerRow, rowsForCurrentRecord));
+            QRecord record = makeRecordFromRows(table, associationNameChain, mapping, headerRow, rowsForCurrentRecord);
+            rs.add(record);
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            // we need to push this row back onto the fileToRows object, so it'll be handled in the next record //
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            fileToRowsInterface.unNext();
 
             ////////////////////////////////////////
             // reset these record-specific values //
             ////////////////////////////////////////
             rowsForCurrentRecord = new ArrayList<>();
             recordGroupByValues = null;
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            // we need to push this row back onto the fileToRows object, so it'll be handled in the next record //
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            fileToRowsInterface.unNext();
          }
       }
 
@@ -129,7 +134,8 @@ public class TallRowsToRecord implements RowsToRecordInterface
       /////////////////////////////////////////////////////////////////////////////////////////////////
       if(!rowsForCurrentRecord.isEmpty())
       {
-         rs.add(makeRecordFromRows(table, associationNameChain, mapping, headerRow, rowsForCurrentRecord));
+         QRecord record = makeRecordFromRows(table, associationNameChain, mapping, headerRow, rowsForCurrentRecord);
+         rs.add(record);
       }
 
       ValueMapper.valueMapping(rs, mapping, table);
@@ -156,6 +162,7 @@ public class TallRowsToRecord implements RowsToRecordInterface
    private QRecord makeRecordFromRows(QTableMetaData table, String associationNameChain, BulkInsertMapping mapping, BulkLoadFileRow headerRow, List<BulkLoadFileRow> rows) throws QException
    {
       QRecord record = new QRecord();
+      BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, CollectionUtils.useOrWrap(rows, new TypeToken<ArrayList<BulkLoadFileRow>>() {}));
 
       Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, associationNameChain, headerRow);
 

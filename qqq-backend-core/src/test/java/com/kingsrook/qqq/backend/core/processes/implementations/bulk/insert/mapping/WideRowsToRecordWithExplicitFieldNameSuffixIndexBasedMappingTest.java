@@ -86,12 +86,72 @@ class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMappingTest extends B
       assertEquals("Homer", order.getValueString("shipToName"));
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
 
       order = records.get(1);
       assertEquals(2, order.getValueInteger("orderNo"));
       assertEquals("Ned", order.getValueString("shipToName"));
       assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
       assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 3", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOrderAndLinesWithoutHeader() throws QException
+   {
+      // 0, 1,     2,        3,     4,  5,         6,   7,     8
+      String csv = """
+         1, Homer, Simpson,  DONUT, 12, BEER,      500, COUCH, 1
+         2, Ned,   Flanders, BIBLE, 7,  LAWNMOWER, 1
+         """;
+
+      CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
+      BulkLoadFileRow header     = null;
+
+      WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping rowsToRecord = new WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToIndexMap(Map.of(
+            "orderNo", 0,
+            "shipToName", 1,
+            "orderLine.sku,0", 3,
+            "orderLine.quantity,0", 4,
+            "orderLine.sku,1", 5,
+            "orderLine.quantity,1", 6,
+            "orderLine.sku,2", 7,
+            "orderLine.quantity,2", 8
+         ))
+         .withMappedAssociations(List.of("orderLine"))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.WIDE)
+         .withHasHeaderRow(false);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(2, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 1", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 1", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+      assertEquals("Row 1", order.getAssociatedRecords().get("orderLine").get(1).getBackendDetail("rowNos"));
+      assertEquals("Row 1", order.getAssociatedRecords().get("orderLine").get(2).getBackendDetail("rowNos"));
+
+      order = records.get(1);
+      assertEquals(2, order.getValueInteger("orderNo"));
+      assertEquals("Ned", order.getValueString("shipToName"));
+      assertEquals(List.of("BIBLE", "LAWNMOWER"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(7, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
    }
 
 
