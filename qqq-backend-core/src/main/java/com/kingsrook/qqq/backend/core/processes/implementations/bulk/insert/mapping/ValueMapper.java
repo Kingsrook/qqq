@@ -34,7 +34,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -70,6 +69,9 @@ public class ValueMapper
          return;
       }
 
+      String associationNamePrefixForFields = StringUtils.hasContent(associationNameChain) ? associationNameChain + "." : "";
+      String tableLabelPrefix = StringUtils.hasContent(associationNameChain) ? table.getLabel() + ": " : "";
+
       Map<String, Map<String, Serializable>> mappingForTable = mapping.getFieldNameToValueMappingForTable(associationNameChain);
       for(QRecord record : records)
       {
@@ -102,7 +104,7 @@ public class ValueMapper
                }
                catch(Exception e)
                {
-                  record.addError(new BadInputStatusMessage("Value [" + value + "] for field [" + field.getLabel() + "] could not be converted to type [" + type + "]"));
+                  record.addError(new BulkLoadValueTypeError(associationNamePrefixForFields + field.getName(), value, type, tableLabelPrefix + field.getLabel()));
                }
             }
 

@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
@@ -47,16 +48,25 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadRecordUtils;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadValueTypeError;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
@@ -66,7 +76,11 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 {
    private ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
 
-   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted");
+   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted")
+      .withDoReplaceSingletonCountLinesWithSuffixOnly(false);
+
+   private ListingHash<String, RowValue> errorToExampleRowValueMap = new ListingHash<>();
+   private ListingHash<String, String>   errorToExampleRowsMap     = new ListingHash<>();
 
    private Map<UniqueKey, ProcessSummaryLineWithUKSampleValues> ukErrorSummaries              = new HashMap<>();
    private Map<String, ProcessSummaryLine>                      associationsToInsertSummaries = new HashMap<>();
@@ -77,6 +91,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
    private int rowsProcessed = 0;
 
+   private final int EXAMPLE_ROW_LIMIT = 10;
 
 
    /*******************************************************************************
@@ -118,6 +133,44 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // make sure that if a saved profile was selected on a review screen, that the result screen knows about it. //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
       BulkInsertStepUtils.handleSavedBulkLoadProfileIdValue(runBackendStepInput, runBackendStepOutput);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set up the validationReview widget to render preview records using the table layout, and including the associations //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      runBackendStepOutput.addValue("formatPreviewRecordUsingTableLayout", table.getName());
+
+      BulkInsertMapping bulkInsertMapping = (BulkInsertMapping) runBackendStepOutput.getValue("bulkInsertMapping");
+      if(bulkInsertMapping != null)
+      {
+         ArrayList<String> previewRecordAssociatedTableNames  = new ArrayList<>();
+         ArrayList<String> previewRecordAssociatedWidgetNames = new ArrayList<>();
+         ArrayList<String> previewRecordAssociationNames      = new ArrayList<>();
+
+         for(String mappedAssociation : bulkInsertMapping.getMappedAssociations())
+         {
+            Optional<Association> association = table.getAssociations().stream().filter(a -> a.getName().equals(mappedAssociation)).findFirst();
+            if(association.isPresent())
+            {
+               for(QFieldSection section : table.getSections())
+               {
+                  QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(section.getWidgetName());
+                  if(widget != null && WidgetType.CHILD_RECORD_LIST.getType().equals(widget.getType()))
+                  {
+                     Serializable widgetJoinName = widget.getDefaultValues().get("joinName");
+                     if(Objects.equals(widgetJoinName, association.get().getJoinName()))
+                     {
+                        previewRecordAssociatedTableNames.add(association.get().getAssociatedTableName());
+                        previewRecordAssociatedWidgetNames.add(widget.getName());
+                        previewRecordAssociationNames.add(association.get().getName());
+                     }
+                  }
+               }
+            }
+         }
+         runBackendStepOutput.addValue("previewRecordAssociatedTableNames", previewRecordAssociatedTableNames);
+         runBackendStepOutput.addValue("previewRecordAssociatedWidgetNames", previewRecordAssociatedWidgetNames);
+         runBackendStepOutput.addValue("previewRecordAssociationNames", previewRecordAssociationNames);
+      }
    }
 
 
@@ -131,7 +184,9 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       int            recordsInThisPage = runBackendStepInput.getRecords().size();
       QTableMetaData table             = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
 
-      // split the records w/o UK errors into those w/ e
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // split the records into 2 lists:  those w/ errors (e.g., from the bulk-load mapping), and those that are okay //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       List<QRecord> recordsWithoutAnyErrors = new ArrayList<>();
       List<QRecord> recordsWithSomeErrors   = new ArrayList<>();
       for(QRecord record : runBackendStepInput.getRecords())
@@ -153,16 +208,26 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       {
          for(QRecord record : recordsWithSomeErrors)
          {
-            String message = record.getErrors().get(0).getMessage();
-            processSummaryWarningsAndErrorsRollup.addError(message, null);
+            for(QErrorMessage error : record.getErrors())
+            {
+               if(error instanceof BulkLoadValueTypeError blvte)
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(blvte.getMessageToUseAsProcessSummaryRollupKey(), null);
+                  addToErrorToExampleRowValueMap(blvte, record);
+               }
+               else
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
+               }
+            }
          }
       }
 
       if(recordsWithoutAnyErrors.isEmpty())
       {
-         ////////////////////////////////////////////////////////////////////////////////
-         // skip th rest of this method if there aren't any records w/o errors in them //
-         ////////////////////////////////////////////////////////////////////////////////
+         /////////////////////////////////////////////////////////////////////////////////
+         // skip the rest of this method if there aren't any records w/o errors in them //
+         /////////////////////////////////////////////////////////////////////////////////
          this.rowsProcessed += recordsInThisPage;
       }
 
@@ -248,8 +313,11 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       {
          if(CollectionUtils.nullSafeHasContents(record.getErrors()))
          {
-            String message = record.getErrors().get(0).getMessage();
-            processSummaryWarningsAndErrorsRollup.addError(message, null);
+            for(QErrorMessage error : record.getErrors())
+            {
+               processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
+               addToErrorToExampleRowMap(error.getMessage(), record);
+            }
          }
          else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
          {
@@ -273,6 +341,37 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
       runBackendStepOutput.setRecords(outputRecords);
       this.rowsProcessed += recordsInThisPage;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void addToErrorToExampleRowValueMap(BulkLoadValueTypeError bulkLoadValueTypeError, QRecord record)
+   {
+      String         message   = bulkLoadValueTypeError.getMessageToUseAsProcessSummaryRollupKey();
+      List<RowValue> rowValues = errorToExampleRowValueMap.computeIfAbsent(message, k -> new ArrayList<>());
+
+      if(rowValues.size() < EXAMPLE_ROW_LIMIT)
+      {
+         rowValues.add(new RowValue(bulkLoadValueTypeError, record));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void addToErrorToExampleRowMap(String message, QRecord record)
+   {
+      List<String> rowNos = errorToExampleRowsMap.computeIfAbsent(message, k -> new ArrayList<>());
+
+      if(rowNos.size() < EXAMPLE_ROW_LIMIT)
+      {
+         rowNos.add(BulkLoadRecordUtils.getRowNosString(record));
+      }
    }
 
 
@@ -411,9 +510,61 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          ukErrorSummary.addSelfToListIfAnyCount(rs);
       }
 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // for process summary lines that exist in the error-to-example-row-value map, add those example values to the lines. //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(Map.Entry<String, ProcessSummaryLine> entry : processSummaryWarningsAndErrorsRollup.getErrorSummaries().entrySet())
+      {
+         String message = entry.getKey();
+         if(errorToExampleRowValueMap.containsKey(message))
+         {
+            ProcessSummaryLine line = entry.getValue();
+            List<RowValue> rowValues = errorToExampleRowValueMap.get(message);
+            String exampleOrFull = rowValues.size() < line.getCount() ? "Example " : "";
+            line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Values:");
+            line.setBulletsOfText(new ArrayList<>(rowValues.stream().map(String::valueOf).toList()));
+         }
+         else if(errorToExampleRowsMap.containsKey(message))
+         {
+            ProcessSummaryLine line = entry.getValue();
+            List<String> rowDescriptions = errorToExampleRowsMap.get(message);
+            String exampleOrFull = rowDescriptions.size() < line.getCount() ? "Example " : "";
+            line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Records:");
+            line.setBulletsOfText(new ArrayList<>(rowDescriptions.stream().map(String::valueOf).toList()));
+         }
+      }
+
       processSummaryWarningsAndErrorsRollup.addToList(rs);
 
       return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private record RowValue(String row, String value)
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public RowValue(BulkLoadValueTypeError bulkLoadValueTypeError, QRecord record)
+      {
+         this(BulkLoadRecordUtils.getRowNosString(record), ValueUtils.getValueAsString(bulkLoadValueTypeError.getValue()));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public String toString()
+      {
+         return row + " [" + value + "]";
+      }
    }
 
 }

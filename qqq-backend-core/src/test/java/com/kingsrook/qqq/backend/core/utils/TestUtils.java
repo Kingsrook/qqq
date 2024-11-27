@@ -70,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -662,7 +663,7 @@ public class TestUtils
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
-         .withField(new QFieldMetaData("shipToName", QFieldType.STRING))
+         .withField(new QFieldMetaData("shipToName", QFieldType.STRING).withMaxLength(200).withBehavior(ValueTooLongBehavior.ERROR))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()

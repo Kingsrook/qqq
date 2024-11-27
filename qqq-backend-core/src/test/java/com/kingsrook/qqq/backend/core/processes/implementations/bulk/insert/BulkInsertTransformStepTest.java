@@ -22,10 +22,14 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryAssert;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -38,8 +42,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadRecordUtils;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadValueTypeError;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,9 +95,9 @@ class BulkInsertTransformStepTest extends BaseTest
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
       TestUtils.insertRecords(table, List.of(
-         newQRecord("uuid-A", "SKU-1", 1),
-         newQRecord("uuid-B", "SKU-2", 1),
-         newQRecord("uuid-C", "SKU-2", 2)
+         newUkTestQRecord("uuid-A", "SKU-1", 1),
+         newUkTestQRecord("uuid-B", "SKU-2", 1),
+         newUkTestQRecord("uuid-C", "SKU-2", 2)
       ));
 
       ///////////////////////////////////////////
@@ -102,13 +110,13 @@ class BulkInsertTransformStepTest extends BaseTest
       input.setTableName(TABLE_NAME);
       input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
       input.setRecords(List.of(
-         newQRecord("uuid-1", "SKU-A", 1), // OK.
-         newQRecord("uuid-1", "SKU-B", 1), // violate uuid UK in this set
-         newQRecord("uuid-2", "SKU-C", 1), // OK.
-         newQRecord("uuid-3", "SKU-C", 2), // OK.
-         newQRecord("uuid-4", "SKU-C", 1), // violate sku/storeId UK in this set
-         newQRecord("uuid-A", "SKU-X", 1), // violate uuid UK from pre-existing records
-         newQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
+         newUkTestQRecord("uuid-1", "SKU-A", 1), // OK.
+         newUkTestQRecord("uuid-1", "SKU-B", 1), // violate uuid UK in this set
+         newUkTestQRecord("uuid-2", "SKU-C", 1), // OK.
+         newUkTestQRecord("uuid-3", "SKU-C", 2), // OK.
+         newUkTestQRecord("uuid-4", "SKU-C", 1), // violate sku/storeId UK in this set
+         newUkTestQRecord("uuid-A", "SKU-X", 1), // violate uuid UK from pre-existing records
+         newUkTestQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
       ));
       bulkInsertTransformStep.preRun(input, output);
       bulkInsertTransformStep.runOnePage(input, output);
@@ -171,9 +179,9 @@ class BulkInsertTransformStepTest extends BaseTest
       // insert some records that will cause some UK violations //
       ////////////////////////////////////////////////////////////
       TestUtils.insertRecords(table, List.of(
-         newQRecord("uuid-A", "SKU-1", 1),
-         newQRecord("uuid-B", "SKU-2", 1),
-         newQRecord("uuid-C", "SKU-2", 2)
+         newUkTestQRecord("uuid-A", "SKU-1", 1),
+         newUkTestQRecord("uuid-B", "SKU-2", 1),
+         newUkTestQRecord("uuid-C", "SKU-2", 2)
       ));
 
       ///////////////////////////////////////////
@@ -186,20 +194,20 @@ class BulkInsertTransformStepTest extends BaseTest
       input.setTableName(TABLE_NAME);
       input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
       input.setRecords(List.of(
-         newQRecord("uuid-1", "SKU-A", 1), // OK.
-         newQRecord("uuid-1", "SKU-B", 1), // violate uuid UK in this set
-         newQRecord("uuid-2", "SKU-C", 1), // OK.
-         newQRecord("uuid-3", "SKU-C", 2), // OK.
-         newQRecord("uuid-4", "SKU-C", 1), // violate sku/storeId UK in this set
-         newQRecord("uuid-A", "SKU-X", 1), // violate uuid UK from pre-existing records
-         newQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
+         newUkTestQRecord("uuid-1", "SKU-A", 1), // OK.
+         newUkTestQRecord("uuid-1", "SKU-B", 1), // violate uuid UK in this set
+         newUkTestQRecord("uuid-2", "SKU-C", 1), // OK.
+         newUkTestQRecord("uuid-3", "SKU-C", 2), // OK.
+         newUkTestQRecord("uuid-4", "SKU-C", 1), // violate sku/storeId UK in this set
+         newUkTestQRecord("uuid-A", "SKU-X", 1), // violate uuid UK from pre-existing records
+         newUkTestQRecord("uuid-D", "SKU-2", 1)  // violate sku/storeId UK from pre-existing records
       ));
       bulkInsertTransformStep.preRun(input, output);
       bulkInsertTransformStep.runOnePage(input, output);
 
-      ///////////////////////////////////////////////////////
-      // assert that all records pass.
-      ///////////////////////////////////////////////////////
+      ///////////////////////////////////
+      // assert that all records pass. //
+      ///////////////////////////////////
       assertEquals(7, output.getRecords().size());
    }
 
@@ -211,8 +219,8 @@ class BulkInsertTransformStepTest extends BaseTest
    private boolean recordEquals(QRecord record, String uuid, String sku, Integer storeId)
    {
       return (record.getValue("uuid").equals(uuid)
-         && record.getValue("sku").equals(sku)
-         && record.getValue("storeId").equals(storeId));
+              && record.getValue("sku").equals(sku)
+              && record.getValue("storeId").equals(storeId));
    }
 
 
@@ -220,13 +228,143 @@ class BulkInsertTransformStepTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QRecord newQRecord(String uuid, String sku, int storeId)
+   private QRecord newUkTestQRecord(String uuid, String sku, int storeId)
    {
       return new QRecord()
          .withValue("uuid", uuid)
          .withValue("sku", sku)
          .withValue("storeId", storeId)
          .withValue("name", "Some Item");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValueMappingTypeErrors() throws QException
+   {
+      ///////////////////////////////////////////
+      // setup & run the bulk insert transform //
+      ///////////////////////////////////////////
+      BulkInsertTransformStep bulkInsertTransformStep = new BulkInsertTransformStep();
+      RunBackendStepInput     input                   = new RunBackendStepInput();
+      RunBackendStepOutput    output                  = new RunBackendStepOutput();
+      Serializable[]          emptyValues             = new Serializable[0];
+
+      input.setTableName(TestUtils.TABLE_NAME_ORDER);
+      input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
+      input.setRecords(ListBuilder.of(
+         BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord(), new BulkLoadFileRow(emptyValues, 1))
+            .withError(new BulkLoadValueTypeError("storeId", "A", QFieldType.INTEGER, "Store"))
+            .withError(new BulkLoadValueTypeError("orderDate", "47", QFieldType.DATE, "Order Date")),
+         BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord(), new BulkLoadFileRow(emptyValues, 2))
+            .withError(new BulkLoadValueTypeError("storeId", "BCD", QFieldType.INTEGER, "Store"))
+      ));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // add 102 records with an error in the total field - which is more than the number of examples that should be given //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      for(int i = 0; i < 102; i++)
+      {
+         input.getRecords().add(BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord(), new BulkLoadFileRow(emptyValues, 3 + i))
+            .withError(new BulkLoadValueTypeError("total", "three-fifty-" + i, QFieldType.DECIMAL, "Total")));
+      }
+
+      bulkInsertTransformStep.preRun(input, output);
+      bulkInsertTransformStep.runOnePage(input, output);
+      ArrayList<ProcessSummaryLineInterface> processSummary = bulkInsertTransformStep.getProcessSummary(output, false);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Cannot convert value for field [Store] to type [Integer]")
+         .hasMessageContaining("Values:")
+         .doesNotHaveMessageContaining("Example Values:")
+         .hasAnyBulletsOfTextContaining("Row 1 [A]")
+         .hasAnyBulletsOfTextContaining("Row 2 [BCD]")
+         .hasStatus(Status.ERROR)
+         .hasCount(2);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Cannot convert value for field [Order Date] to type [Date]")
+         .hasMessageContaining("Values:")
+         .doesNotHaveMessageContaining("Example Values:")
+         .hasAnyBulletsOfTextContaining("Row 1 [47]")
+         .hasStatus(Status.ERROR)
+         .hasCount(1);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Cannot convert value for field [Total] to type [Decimal]")
+         .hasMessageContaining("Example Values:")
+         .hasAnyBulletsOfTextContaining("Row 3 [three-fifty-0]")
+         .hasAnyBulletsOfTextContaining("Row 4 [three-fifty-1]")
+         .hasAnyBulletsOfTextContaining("Row 5 [three-fifty-2]")
+         .doesNotHaveAnyBulletsOfTextContaining("three-fifty-101")
+         .hasStatus(Status.ERROR)
+         .hasCount(102);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testRollupOfValidationErrors() throws QException
+   {
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
+
+      ///////////////////////////////////////////
+      // setup & run the bulk insert transform //
+      ///////////////////////////////////////////
+      BulkInsertTransformStep bulkInsertTransformStep = new BulkInsertTransformStep();
+      RunBackendStepInput     input                   = new RunBackendStepInput();
+      RunBackendStepOutput    output                  = new RunBackendStepOutput();
+      Serializable[]          emptyValues             = new Serializable[0];
+
+      String tooLong = ".".repeat(201);
+
+      input.setTableName(TestUtils.TABLE_NAME_ORDER);
+      input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
+      input.setRecords(ListBuilder.of(
+         BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord().withValue("shipToName", tooLong), new BulkLoadFileRow(emptyValues, 1)),
+         BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord().withValue("shipToName", "OK").withValue("storeId", 1), new BulkLoadFileRow(emptyValues, 2))
+      ));
+
+      /////////////////////////////////////////////////////////////////////
+      // add 102 records with no security key - which should be an error //
+      /////////////////////////////////////////////////////////////////////
+      for(int i = 0; i < 102; i++)
+      {
+         input.getRecords().add(BulkLoadRecordUtils.addBackendDetailsAboutFileRows(new QRecord(), new BulkLoadFileRow(emptyValues, 3 + i)));
+      }
+
+      bulkInsertTransformStep.preRun(input, output);
+      bulkInsertTransformStep.runOnePage(input, output);
+      ArrayList<ProcessSummaryLineInterface> processSummary = bulkInsertTransformStep.getProcessSummary(output, false);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("value for Ship To Name is too long")
+         .hasMessageContaining("Records:")
+         .doesNotHaveMessageContaining("Example Records:")
+         .hasAnyBulletsOfTextContaining("Row 1")
+         .hasStatus(Status.ERROR)
+         .hasCount(1);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("without a value in the field: Store Id")
+         .hasMessageContaining("Example Records:")
+         .hasAnyBulletsOfTextContaining("Row 1")
+         .hasAnyBulletsOfTextContaining("Row 3")
+         .hasAnyBulletsOfTextContaining("Row 4")
+         .doesNotHaveAnyBulletsOfTextContaining("Row 101")
+         .hasStatus(Status.ERROR)
+         .hasCount(103); // the 102, plus row 1.
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Order record will be inserted")
+         .hasStatus(Status.OK)
+         .hasCount(1);
    }
 
 }
