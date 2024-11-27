@@ -122,6 +122,12 @@ public class RunProcessAction
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
       ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);
 
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // these should always be clear when we're starting a run - so make sure they haven't leaked from previous //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      processState.clearNextStepName();
+      processState.clearBackStepName();
+
       /////////////////////////////////////////////////////////
       // if process is 'basepull' style, keep track of 'now' //
       /////////////////////////////////////////////////////////
@@ -188,14 +194,35 @@ public class RunProcessAction
    private void runLinearStepLoop(QProcessMetaData process, ProcessState processState, UUIDAndTypeStateKey stateKey, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws Exception
    {
       String lastStepName = runProcessInput.getStartAfterStep();
+      String startAtStep  = runProcessInput.getStartAtStep();
 
       while(true)
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
          // always refresh the step list - as any step that runs can modify it (in the process state).        //
          // this is why we don't do a loop over the step list - as we'd get ConcurrentModificationExceptions. //
+         // deal with if we were told, from the input, to start After a step, or start At a step.             //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         List<QStepMetaData> stepList = getAvailableStepList(processState, process, lastStepName);
+         List<QStepMetaData> stepList;
+         if(startAtStep == null)
+         {
+            stepList = getAvailableStepList(processState, process, lastStepName, false);
+         }
+         else
+         {
+            stepList = getAvailableStepList(processState, process, startAtStep, true);
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // clear this field - so after we run a step, we'll then loop in last-step mode. //
+            ///////////////////////////////////////////////////////////////////////////////////
+            startAtStep = null;
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // if we're going to run a backend step now, let it see that this is a step-back //
+            ///////////////////////////////////////////////////////////////////////////////////
+            processState.setIsStepBack(true);
+         }
+
          if(stepList.isEmpty())
          {
             break;
@@ -232,7 +259,18 @@ public class RunProcessAction
             //////////////////////////////////////////////////
             throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
          }
+
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // only let this value be set for the original back step - don't let it stick around. //
+         // if a process wants to keep track of this itself, it can, but in a different slot.  //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         processState.setIsStepBack(false);
       }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // in case we broke from the loop above (e.g., by going directly into a frontend step), once again make sure to lower this flag. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      processState.setIsStepBack(false);
    }
 
 
@@ -264,6 +302,12 @@ public class RunProcessAction
             processFrontendStepFieldDefaultValues(processState, step);
             processFrontendComponents(processState, step);
             processState.setNextStepName(step.getName());
+
+            if(StringUtils.hasContent(step.getBackStepName()) && processState.getBackStepName().isEmpty())
+            {
+               processState.setBackStepName(step.getBackStepName());
+            }
+
             return LoopTodo.BREAK;
          }
          case SKIP ->
@@ -317,6 +361,7 @@ public class RunProcessAction
          // else run the given lastStepName //
          /////////////////////////////////////
          processState.clearNextStepName();
+         processState.clearBackStepName();
          step = process.getStep(lastStepName);
          if(step == null)
          {
@@ -398,6 +443,7 @@ public class RunProcessAction
                // its sub-steps, or, to fall out of the loop and end the process.                                  //
                //////////////////////////////////////////////////////////////////////////////////////////////////////
                processState.clearNextStepName();
+               processState.clearBackStepName();
                runStateMachineStep(nextStepName.get(), process, processState, stateKey, runProcessInput, runProcessOutput, stackDepth + 1);
                return;
             }
@@ -621,8 +667,10 @@ public class RunProcessAction
 
    /*******************************************************************************
     ** Get the list of steps which are eligible to run.
+    **
+    ** lastStep will be included in the list, or not, based on includeLastStep.
     *******************************************************************************/
-   private List<QStepMetaData> getAvailableStepList(ProcessState processState, QProcessMetaData process, String lastStep) throws QException
+   static List<QStepMetaData> getAvailableStepList(ProcessState processState, QProcessMetaData process, String lastStep, boolean includeLastStep) throws QException
    {
       if(lastStep == null)
       {
@@ -649,6 +697,10 @@ public class RunProcessAction
             if(stepName.equals(lastStep))
             {
                foundLastStep = true;
+               if(includeLastStep)
+               {
+                  validStepNames.add(stepName);
+               }
             }
          }
          return (stepNamesToSteps(process, validStepNames));
@@ -660,7 +712,7 @@ public class RunProcessAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QStepMetaData> stepNamesToSteps(QProcessMetaData process, List<String> stepNames) throws QException
+   private static List<QStepMetaData> stepNamesToSteps(QProcessMetaData process, List<String> stepNames) throws QException
    {
       List<QStepMetaData> result = new ArrayList<>();
 

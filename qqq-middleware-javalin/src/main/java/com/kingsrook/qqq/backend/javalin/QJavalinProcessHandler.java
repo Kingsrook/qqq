@@ -89,6 +89,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static io.javalin.apibuilder.ApiBuilder.get;
@@ -321,7 +322,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processInit(Context context)
    {
-      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
+      doProcessInitOrStep(context, null, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
@@ -335,7 +336,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processRun(Context context)
    {
-      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
+      doProcessInitOrStep(context, null, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
    }
 
 
@@ -343,7 +344,7 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
+   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, String startAtStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
    {
       Map<String, Object> resultForCaller    = new HashMap<>();
       Exception           returningException = null;
@@ -357,8 +358,23 @@ public class QJavalinProcessHandler
          resultForCaller.put("processUUID", processUUID);
 
          String processName = context.pathParam("processName");
-         LOG.info(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
-            : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
+
+         if(startAfterStep == null && startAtStep == null)
+         {
+            LOG.info("Initiating process [" + processName + "] [" + processUUID + "]");
+         }
+         else if(startAfterStep != null)
+         {
+            LOG.info("Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
+         }
+         else if(startAtStep != null)
+         {
+            LOG.info("Resuming process [" + processName + "] [" + processUUID + "] at step [" + startAtStep + "]");
+         }
+         else
+         {
+            LOG.warn("A logical impossibility was reached, regarding the nullity of startAfterStep and startAtStep, at least given how this code was originally written.");
+         }
 
          RunProcessInput runProcessInput = new RunProcessInput();
          QJavalinImplementation.setupSession(context, runProcessInput);
@@ -367,11 +383,13 @@ public class QJavalinProcessHandler
          runProcessInput.setFrontendStepBehavior(frontendStepBehavior);
          runProcessInput.setProcessUUID(processUUID);
          runProcessInput.setStartAfterStep(startAfterStep);
+         runProcessInput.setStartAtStep(startAtStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
 
          String reportName = ValueUtils.getValueAsString(runProcessInput.getValue("reportName"));
          QJavalinAccessLogger.logStart(startAfterStep == null ? "processInit" : "processStep", logPair("processName", processName), logPair("processUUID", processUUID),
             StringUtils.hasContent(startAfterStep) ? logPair("startAfterStep", startAfterStep) : null,
+            StringUtils.hasContent(startAtStep) ? logPair("startAtStep", startAfterStep) : null,
             StringUtils.hasContent(reportName) ? logPair("reportName", reportName) : null);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,6 +478,7 @@ public class QJavalinProcessHandler
       }
       resultForCaller.put("values", runProcessOutput.getValues());
       runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
+      runProcessOutput.getProcessState().getBackStepName().ifPresent(backStep -> resultForCaller.put("backStep", backStep));
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // todo - delete after all frontends look for processMetaDataAdjustment instead of updatedFrontendStepList //
@@ -660,8 +679,19 @@ public class QJavalinProcessHandler
    public static void processStep(Context context)
    {
       String processUUID = context.pathParam("processUUID");
-      String lastStep    = context.pathParam("step");
-      doProcessInitOrStep(context, processUUID, lastStep, RunProcessInput.FrontendStepBehavior.BREAK);
+
+      String startAfterStep = null;
+      String startAtStep = null;
+      if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(context.queryParam("isStepBack"))))
+      {
+         startAtStep = context.pathParam("step");
+      }
+      else
+      {
+         startAfterStep = context.pathParam("step");
+      }
+
+      doProcessInitOrStep(context, processUUID, startAfterStep, startAtStep, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
