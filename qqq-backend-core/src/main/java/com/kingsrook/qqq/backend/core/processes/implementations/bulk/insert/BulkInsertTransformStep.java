@@ -91,7 +91,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
    private int rowsProcessed = 0;
 
-   private final int EXAMPLE_ROW_LIMIT = 10;
+   private static final int EXAMPLE_ROW_LIMIT = 10;
 
 
    /*******************************************************************************

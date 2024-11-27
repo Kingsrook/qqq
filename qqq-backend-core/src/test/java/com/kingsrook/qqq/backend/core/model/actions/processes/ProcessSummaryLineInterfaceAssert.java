@@ -1,4 +1,3 @@
-
 /*
  * QQQ - Low-code Application Framework for Engineers.
  * Copyright (C) 2021-2024.  Kingsrook, LLC
