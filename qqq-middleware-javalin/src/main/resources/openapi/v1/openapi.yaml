@@ -130,26 +130,31 @@ components:
           description: "Description of the error"
           type: "string"
       type: "object"
+    FieldAdornment:
+      properties:
+        type:
+          description: "Type of this adornment"
+          enum:
+          - "LINK"
+          - "CHIP"
+          - "SIZE"
+          - "CODE_EDITOR"
+          - "RENDER_HTML"
+          - "REVEAL"
+          - "FILE_DOWNLOAD"
+          - "ERROR"
+          type: "string"
+        values:
+          description: "Values associated with this adornment.  Keys and the meanings\
+            \ of their values will differ by type."
+          type: "object"
+      type: "object"
     FieldMetaData:
       properties:
         adornments:
           description: "Special UI dressings to add to the field."
           items:
-            properties:
-              type:
-                enum:
-                - "LINK"
-                - "CHIP"
-                - "SIZE"
-                - "CODE_EDITOR"
-                - "RENDER_HTML"
-                - "REVEAL"
-                - "FILE_DOWNLOAD"
-                - "ERROR"
-                type: "string"
-              values:
-                type: "object"
-            type: "object"
+            $ref: "#/components/schemas/FieldAdornment"
           type: "array"
         defaultValue:
           description: "Default value to use in this field."
@@ -973,21 +978,7 @@ components:
                   adornments:
                     description: "Special UI dressings to add to the field."
                     items:
-                      properties:
-                        type:
-                          enum:
-                          - "LINK"
-                          - "CHIP"
-                          - "SIZE"
-                          - "CODE_EDITOR"
-                          - "RENDER_HTML"
-                          - "REVEAL"
-                          - "FILE_DOWNLOAD"
-                          - "ERROR"
-                          type: "string"
-                        values:
-                          type: "object"
-                      type: "object"
+                      $ref: "#/components/schemas/FieldAdornment"
                     type: "array"
                   defaultValue:
                     description: "Default value to use in this field."
