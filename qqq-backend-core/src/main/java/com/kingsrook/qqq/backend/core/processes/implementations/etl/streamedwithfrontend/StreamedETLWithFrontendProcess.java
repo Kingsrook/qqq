@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -190,6 +191,17 @@ public class StreamedETLWithFrontendProcess
          .addStep(validateStep)
          .addStep(executeStep)
          .addStep(resultStep);
+   }
+
+
+   /***************************************************************************
+    ** useful for a process step to call upon 'back'
+    ***************************************************************************/
+   public static void resetValidationFields(RunBackendStepInput runBackendStepInput)
+   {
+      runBackendStepInput.addValue(FIELD_DO_FULL_VALIDATION, null);
+      runBackendStepInput.addValue(FIELD_VALIDATION_SUMMARY, null);
+      runBackendStepInput.addValue(FIELD_PROCESS_SUMMARY, null);
    }
 
 
