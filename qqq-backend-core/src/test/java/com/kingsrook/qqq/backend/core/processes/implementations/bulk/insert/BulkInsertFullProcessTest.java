@@ -132,6 +132,7 @@ class BulkInsertFullProcessTest extends BaseTest
       /////////////////////////////////////////////////////////
       RunProcessInput runProcessInput = new RunProcessInput();
       runProcessInput.setProcessName(processName);
+      runProcessInput.addValue("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY);
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
       String           processUUID      = runProcessOutput.getProcessUUID();
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("upload");
@@ -155,7 +156,6 @@ class BulkInsertFullProcessTest extends BaseTest
       //////////////////////////
       runProcessInput.setProcessUUID(processUUID);
       runProcessInput.setStartAfterStep("upload");
-      runProcessInput.addValue("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY);
       runProcessInput.addValue("theFile", new ArrayList<>(List.of(storageInput)));
       runProcessOutput = new RunProcessAction().execute(runProcessInput);
       assertEquals(List.of("Id", "Create Date", "Modify Date", "First Name", "Last Name", "Birth Date", "Email", "Home State", "noOfShoes"), runProcessOutput.getValue("headerValues"));
