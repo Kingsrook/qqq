@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType.FileUploadAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -77,6 +78,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEd
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileUploadStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveValueMappingStep;
@@ -881,14 +883,20 @@ public class QInstanceEnricher
          .map(QFieldMetaData::getLabel)
          .collect(Collectors.joining(", "));
 
+      QBackendStepMetaData prepareFileUploadStep = new QBackendStepMetaData()
+         .withName("prepareFileUpload")
+         .withCode(new QCodeReference(BulkInsertPrepareFileUploadStep.class));
+
       QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
          .withName("upload")
          .withLabel("Upload File")
-         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("previewText", "file upload instructions")
-            .withValue("text", "Upload a CSV or Excel (.xlsx) file with the following columns:\n" + fieldsForHelpText))
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB)
+            .withFieldAdornment(FileUploadAdornment.newFieldAdornment()
+               .withValue(FileUploadAdornment.formatDragAndDrop())
+               .withValue(FileUploadAdornment.widthFull()))
+            .withLabel(table.getLabel() + " File")
+            .withIsRequired(true))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.HTML))
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
 
       QBackendStepMetaData prepareFileMappingStep = new QBackendStepMetaData()
@@ -920,6 +928,7 @@ public class QInstanceEnricher
          .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
 
       int i = 0;
+      process.addStep(i++, prepareFileUploadStep);
       process.addStep(i++, uploadScreen);
 
       process.addStep(i++, prepareFileMappingStep);
