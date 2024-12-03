@@ -177,7 +177,7 @@ public class FieldAdornment
     ** Fluent setter for values
     **
     *******************************************************************************/
-   public FieldAdornment withValue(Pair<String, Serializable> value)
+   public FieldAdornment withValue(Pair<String, ? extends Serializable> value)
    {
       return (withValue(value.getA(), value.getB()));
    }
