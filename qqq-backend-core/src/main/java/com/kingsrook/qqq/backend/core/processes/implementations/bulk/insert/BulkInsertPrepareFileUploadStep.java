@@ -161,10 +161,10 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
          if(listFieldsInHelpText)
          {
             html.append("""
-            Templates: <a href="data:text/csv;base64,${flatCSV}" download="${tableLabel} - Flat.csv">${tableLabel} - Flat.csv</a>
-            | <a href="data:text/csv;base64,${tallCSV}" download="${tableLabel} - Tall.csv">${tableLabel} - Tall.csv</a>
-            | <a href="data:text/csv;base64,${wideCSV}" download="${tableLabel} - Wide.csv">${tableLabel} - Wide.csv</a>
-            """);
+               Templates: <a href="data:text/csv;base64,${flatCSV}" download="${tableLabel} - Flat.csv">${tableLabel} - Flat.csv</a>
+               | <a href="data:text/csv;base64,${tallCSV}" download="${tableLabel} - Tall.csv">${tableLabel} - Tall.csv</a>
+               | <a href="data:text/csv;base64,${wideCSV}" download="${tableLabel} - Wide.csv">${tableLabel} - Wide.csv</a>
+               """);
          }
          else
          {
