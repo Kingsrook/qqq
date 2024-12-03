@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapp
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadTableStructure;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -59,9 +60,20 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName);
       runBackendStepOutput.addValue("tableStructure", tableStructure);
 
-      @SuppressWarnings("unchecked")
-      List<String> headerValues = (List<String>) runBackendStepOutput.getValue("headerValues");
-      buildSuggestedMapping(headerValues, tableStructure, runBackendStepOutput);
+      boolean needSuggestedMapping = true;
+      if(runBackendStepOutput.getProcessState().getIsStepBack())
+      {
+         needSuggestedMapping = false;
+
+         StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput);
+      }
+
+      if(needSuggestedMapping)
+      {
+         @SuppressWarnings("unchecked")
+         List<String> headerValues = (List<String>) runBackendStepOutput.getValue("headerValues");
+         buildSuggestedMapping(headerValues, tableStructure, runBackendStepOutput);
+      }
    }
 
 
@@ -74,6 +86,7 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       BulkLoadMappingSuggester bulkLoadMappingSuggester = new BulkLoadMappingSuggester();
       BulkLoadProfile          bulkLoadProfile          = bulkLoadMappingSuggester.suggestBulkLoadMappingProfile(tableStructure, headerValues);
       runBackendStepOutput.addValue("bulkLoadProfile", bulkLoadProfile);
+      runBackendStepOutput.addValue("suggestedBulkLoadProfile", bulkLoadProfile);
    }
 
 

@@ -53,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -75,6 +76,11 @@ public class BulkInsertPrepareValueMappingStep implements BackendStep
    {
       try
       {
+         if(runBackendStepOutput.getProcessState().getIsStepBack())
+         {
+            StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput);
+         }
+
          /////////////////////////////////////////////////////////////
          // prep the frontend for what field we're going to map now //
          /////////////////////////////////////////////////////////////
