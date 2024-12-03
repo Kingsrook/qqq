@@ -92,7 +92,7 @@ public interface RowsToRecordInterface
          value = mapping.getFieldNameToDefaultValueMap().get(fullFieldName);
       }
 
-      if(value != null)
+      if(value != null && !"".equals(value))
       {
          record.setValue(fieldName, value);
       }
