@@ -70,7 +70,7 @@ public class FlatRowsToRecord implements RowsToRecordInterface
          rs.add(record);
       }
 
-      ValueMapper.valueMapping(rs, mapping, table);
+      BulkLoadValueMapper.valueMapping(rs, mapping, table);
 
       return (rs);
    }

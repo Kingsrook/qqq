@@ -23,18 +23,16 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 
 
 import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
  ** Specialized error for records, for bulk-load use-cases, where we want to
  ** report back info to the user about the field & value.
  *******************************************************************************/
-public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
+public class BulkLoadPossibleValueError extends AbstractBulkLoadRollableValueError
 {
    private final String       fieldLabel;
    private final Serializable value;
-   private final QFieldType   type;
 
 
 
@@ -42,11 +40,10 @@ public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
     ** Constructor
     **
     *******************************************************************************/
-   public BulkLoadValueTypeError(String fieldName, Serializable value, QFieldType type, String fieldLabel)
+   public BulkLoadPossibleValueError(String fieldName, Serializable value, String fieldLabel)
    {
-      super("Value [" + value + "] for field [" + fieldLabel + "] could not be converted to type [" + type + "]");
+      super("Value [" + value + "] for field [" + fieldLabel + "] is not a valid option");
       this.value = value;
-      this.type = type;
       this.fieldLabel = fieldLabel;
    }
 
@@ -58,7 +55,7 @@ public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
    @Override
    public String getMessageToUseAsProcessSummaryRollupKey()
    {
-      return ("Cannot convert value for field [" + fieldLabel + "] to type [" + type.getMixedCaseLabel() + "]");
+      return ("Unrecognized value for field [" + fieldLabel + "]");
    }
 
 

@@ -23,31 +23,22 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 
 
 import java.io.Serializable;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 
 
 /*******************************************************************************
- ** Specialized error for records, for bulk-load use-cases, where we want to
- ** report back info to the user about the field & value.
+ **
  *******************************************************************************/
-public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
+public abstract class AbstractBulkLoadRollableValueError extends BadInputStatusMessage
 {
-   private final String       fieldLabel;
-   private final Serializable value;
-   private final QFieldType   type;
-
-
 
    /*******************************************************************************
     ** Constructor
     **
     *******************************************************************************/
-   public BulkLoadValueTypeError(String fieldName, Serializable value, QFieldType type, String fieldLabel)
+   public AbstractBulkLoadRollableValueError(String message)
    {
-      super("Value [" + value + "] for field [" + fieldLabel + "] could not be converted to type [" + type + "]");
-      this.value = value;
-      this.type = type;
-      this.fieldLabel = fieldLabel;
+      super(message);
    }
 
 
@@ -55,21 +46,10 @@ public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public String getMessageToUseAsProcessSummaryRollupKey()
-   {
-      return ("Cannot convert value for field [" + fieldLabel + "] to type [" + type.getMixedCaseLabel() + "]");
-   }
+   public abstract String getMessageToUseAsProcessSummaryRollupKey();
 
-
-
-   /*******************************************************************************
-    ** Getter for value
+   /***************************************************************************
     **
-    *******************************************************************************/
-   @Override
-   public Serializable getValue()
-   {
-      return value;
-   }
+    ***************************************************************************/
+   public abstract Serializable getValue();
 }

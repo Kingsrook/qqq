@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /*******************************************************************************
  ** Unit test for ValueMapper 
  *******************************************************************************/
-class ValueMapperTest extends BaseTest
+class BulkLoadValueMapperTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -98,7 +98,7 @@ class ValueMapperTest extends BaseTest
          );
       JSONObject expectedJson = recordToJson(expectedRecord);
 
-      ValueMapper.valueMapping(List.of(inputRecord), mapping, QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER));
+      BulkLoadValueMapper.valueMapping(List.of(inputRecord), mapping, QContext.getQInstance().getTable(TestUtils.TABLE_NAME_ORDER));
       JSONObject actualJson = recordToJson(inputRecord);
 
       System.out.println("Before");

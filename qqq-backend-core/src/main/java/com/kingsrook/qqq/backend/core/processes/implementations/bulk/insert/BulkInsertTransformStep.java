@@ -56,8 +56,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.AbstractBulkLoadRollableValueError;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadRecordUtils;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadValueTypeError;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
@@ -210,10 +210,10 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          {
             for(QErrorMessage error : record.getErrors())
             {
-               if(error instanceof BulkLoadValueTypeError blvte)
+               if(error instanceof AbstractBulkLoadRollableValueError rollableValueError)
                {
-                  processSummaryWarningsAndErrorsRollup.addError(blvte.getMessageToUseAsProcessSummaryRollupKey(), null);
-                  addToErrorToExampleRowValueMap(blvte, record);
+                  processSummaryWarningsAndErrorsRollup.addError(rollableValueError.getMessageToUseAsProcessSummaryRollupKey(), null);
+                  addToErrorToExampleRowValueMap(rollableValueError, record);
                }
                else
                {
@@ -348,14 +348,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    /***************************************************************************
     **
     ***************************************************************************/
-   private void addToErrorToExampleRowValueMap(BulkLoadValueTypeError bulkLoadValueTypeError, QRecord record)
+   private void addToErrorToExampleRowValueMap(AbstractBulkLoadRollableValueError bulkLoadRollableValueError, QRecord record)
    {
-      String         message   = bulkLoadValueTypeError.getMessageToUseAsProcessSummaryRollupKey();
+      String         message   = bulkLoadRollableValueError.getMessageToUseAsProcessSummaryRollupKey();
       List<RowValue> rowValues = errorToExampleRowValueMap.computeIfAbsent(message, k -> new ArrayList<>());
 
       if(rowValues.size() < EXAMPLE_ROW_LIMIT)
       {
-         rowValues.add(new RowValue(bulkLoadValueTypeError, record));
+         rowValues.add(new RowValue(bulkLoadRollableValueError, record));
       }
    }
 
@@ -550,9 +550,9 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       /***************************************************************************
        **
        ***************************************************************************/
-      public RowValue(BulkLoadValueTypeError bulkLoadValueTypeError, QRecord record)
+      public RowValue(AbstractBulkLoadRollableValueError bulkLoadRollableValueError, QRecord record)
       {
-         this(BulkLoadRecordUtils.getRowNosString(record), ValueUtils.getValueAsString(bulkLoadValueTypeError.getValue()));
+         this(BulkLoadRecordUtils.getRowNosString(record), ValueUtils.getValueAsString(bulkLoadRollableValueError.getValue()));
       }
 
 

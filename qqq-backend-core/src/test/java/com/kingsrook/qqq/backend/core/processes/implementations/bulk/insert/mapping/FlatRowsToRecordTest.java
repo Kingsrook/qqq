@@ -35,6 +35,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mode
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -101,6 +102,8 @@ class FlatRowsToRecordTest extends BaseTest
       assertEquals(ListBuilder.of(new BigDecimal("1.00")), getValues(records, "cost"));
       assertEquals("Row 5", records.get(0).getBackendDetail("rowNos"));
    }
+
+
 
    /*******************************************************************************
     **
@@ -201,6 +204,48 @@ class FlatRowsToRecordTest extends BaseTest
       records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
       assertEquals(List.of("Ned"), getValues(records, "firstName"));
       assertEquals(List.of(2), getValues(records, "noOfShoes"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValueMappings() throws QException
+   {
+      TestFileToRows fileToRows = new TestFileToRows(List.of(
+         new Serializable[] { "id", "firstName", "Last Name", "Home State" },
+         new Serializable[] { 1, "Homer", "Simpson", 1 },
+         new Serializable[] { 2, "Marge", "Simpson", "MO" },
+         new Serializable[] { 3, "Bart", "Simpson", null },
+         new Serializable[] { 4, "Ned", "Flanders", "Not a state" },
+         new Serializable[] { 5, "Mr.", "Burns", 5 }
+      ));
+
+      BulkLoadFileRow header = fileToRows.next();
+
+      FlatRowsToRecord rowsToRecord = new FlatRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToHeaderNameMap(Map.of(
+            "firstName", "firstName",
+            "lastName", "Last Name",
+            "homeStateId", "Home State"
+         ))
+         .withTableName(TestUtils.TABLE_NAME_PERSON)
+         .withHasHeaderRow(true);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(5, records.size());
+      assertEquals(List.of("Homer", "Marge", "Bart", "Ned", "Mr."), getValues(records, "firstName"));
+      assertEquals(ListBuilder.of(1, 2, null, "Not a state", 5), getValues(records, "homeStateId"));
+
+      assertThat(records.get(0).getErrors()).isNullOrEmpty();
+      assertThat(records.get(1).getErrors()).isNullOrEmpty();
+      assertThat(records.get(2).getErrors()).isNullOrEmpty();
+      assertThat(records.get(3).getErrors()).hasSize(1).element(0).matches(e -> e.getMessage().contains("not a valid option"));
+      assertThat(records.get(4).getErrors()).hasSize(1).element(0).matches(e -> e.getMessage().contains("not a valid option"));
    }
 
 
