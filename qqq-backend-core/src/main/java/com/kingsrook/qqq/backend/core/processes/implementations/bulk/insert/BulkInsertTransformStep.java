@@ -58,7 +58,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.AbstractBulkLoadRollableValueError;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadRecordUtils;
-import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadTableStructureBuilder;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadTableStructure;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
@@ -92,6 +93,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    private int rowsProcessed = 0;
 
    private static final int EXAMPLE_ROW_LIMIT = 10;
+
 
 
    /*******************************************************************************
@@ -139,16 +141,20 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       runBackendStepOutput.addValue("formatPreviewRecordUsingTableLayout", table.getName());
 
-      BulkInsertMapping bulkInsertMapping = (BulkInsertMapping) runBackendStepOutput.getValue("bulkInsertMapping");
-      if(bulkInsertMapping != null)
+      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(table.getName());
+      if(CollectionUtils.nullSafeHasContents(tableStructure.getAssociations()))
       {
          ArrayList<String> previewRecordAssociatedTableNames  = new ArrayList<>();
          ArrayList<String> previewRecordAssociatedWidgetNames = new ArrayList<>();
          ArrayList<String> previewRecordAssociationNames      = new ArrayList<>();
 
-         for(String mappedAssociation : bulkInsertMapping.getMappedAssociations())
+         ////////////////////////////////////////////////////////////
+         // note - not recursively processing associations here... //
+         ////////////////////////////////////////////////////////////
+         for(BulkLoadTableStructure associatedStructure : tableStructure.getAssociations())
          {
-            Optional<Association> association = table.getAssociations().stream().filter(a -> a.getName().equals(mappedAssociation)).findFirst();
+            String                associationName = associatedStructure.getAssociationPath();
+            Optional<Association> association     = table.getAssociations().stream().filter(a -> a.getName().equals(associationName)).findFirst();
             if(association.isPresent())
             {
                for(QFieldSection section : table.getSections())
@@ -518,17 +524,17 @@ public class BulkInsertTransformStep extends AbstractTransformStep
          String message = entry.getKey();
          if(errorToExampleRowValueMap.containsKey(message))
          {
-            ProcessSummaryLine line = entry.getValue();
-            List<RowValue> rowValues = errorToExampleRowValueMap.get(message);
-            String exampleOrFull = rowValues.size() < line.getCount() ? "Example " : "";
+            ProcessSummaryLine line          = entry.getValue();
+            List<RowValue>     rowValues     = errorToExampleRowValueMap.get(message);
+            String             exampleOrFull = rowValues.size() < line.getCount() ? "Example " : "";
             line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Values:");
             line.setBulletsOfText(new ArrayList<>(rowValues.stream().map(String::valueOf).toList()));
          }
          else if(errorToExampleRowsMap.containsKey(message))
          {
-            ProcessSummaryLine line = entry.getValue();
-            List<String> rowDescriptions = errorToExampleRowsMap.get(message);
-            String exampleOrFull = rowDescriptions.size() < line.getCount() ? "Example " : "";
+            ProcessSummaryLine line            = entry.getValue();
+            List<String>       rowDescriptions = errorToExampleRowsMap.get(message);
+            String             exampleOrFull   = rowDescriptions.size() < line.getCount() ? "Example " : "";
             line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Records:");
             line.setBulletsOfText(new ArrayList<>(rowDescriptions.stream().map(String::valueOf).toList()));
          }
