@@ -78,7 +78,7 @@ public class BulkInsertPrepareValueMappingStep implements BackendStep
       {
          if(runBackendStepOutput.getProcessState().getIsStepBack())
          {
-            StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput);
+            StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput, runBackendStepOutput);
          }
 
          /////////////////////////////////////////////////////////////

@@ -23,11 +23,14 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -70,6 +73,8 @@ import com.kingsrook.qqq.backend.core.processes.implementations.basepull.Basepul
  *******************************************************************************/
 public class StreamedETLWithFrontendProcess
 {
+   private static final QLogger LOG = QLogger.getLogger(StreamedETLWithFrontendProcess.class);
+
    public static final String STEP_NAME_PREVIEW  = "preview";
    public static final String STEP_NAME_REVIEW   = "review";
    public static final String STEP_NAME_VALIDATE = "validate";
@@ -197,11 +202,22 @@ public class StreamedETLWithFrontendProcess
    /***************************************************************************
     ** useful for a process step to call upon 'back'
     ***************************************************************************/
-   public static void resetValidationFields(RunBackendStepInput runBackendStepInput)
+   public static void resetValidationFields(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
    {
       runBackendStepInput.addValue(FIELD_DO_FULL_VALIDATION, null);
       runBackendStepInput.addValue(FIELD_VALIDATION_SUMMARY, null);
       runBackendStepInput.addValue(FIELD_PROCESS_SUMMARY, null);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // in case, on the first time forward, the review step got moved after the validation step      //
+      // (see BaseStreamedETLStep.moveReviewStepAfterValidateStep) - then un-do that upon going back. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      ArrayList<String> stepList = new ArrayList<>(runBackendStepOutput.getProcessState().getStepList());
+      LOG.debug("Resetting step list.  It was:" + stepList);
+      stepList.removeIf(s -> s.equals(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW));
+      stepList.add(stepList.indexOf(StreamedETLWithFrontendProcess.STEP_NAME_PREVIEW) + 1, StreamedETLWithFrontendProcess.STEP_NAME_REVIEW);
+      runBackendStepOutput.getProcessState().setStepList(stepList);
+      LOG.debug("... and now step list is:  " + stepList);
    }
 
 

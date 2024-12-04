@@ -65,7 +65,7 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       {
          needSuggestedMapping = false;
 
-         StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput);
+         StreamedETLWithFrontendProcess.resetValidationFields(runBackendStepInput, runBackendStepOutput);
       }
 
       if(needSuggestedMapping)
