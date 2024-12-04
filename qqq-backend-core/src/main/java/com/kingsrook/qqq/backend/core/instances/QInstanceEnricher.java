@@ -906,8 +906,10 @@ public class QInstanceEnricher
       QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
          .withName("fileMapping")
          .withLabel("File Mapping")
-         .withBackStepName("upload")
-         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM));
+         .withBackStepName("prepareFileUpload")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM))
+         .withFormField(new QFieldMetaData("hasHeaderRow", QFieldType.BOOLEAN))
+         .withFormField(new QFieldMetaData("layout", QFieldType.STRING)); // is actually PVS, but, this field is only added to help support helpContent, so :shrug:
 
       QBackendStepMetaData receiveFileMappingStep = new QBackendStepMetaData()
          .withName("receiveFileMapping")
