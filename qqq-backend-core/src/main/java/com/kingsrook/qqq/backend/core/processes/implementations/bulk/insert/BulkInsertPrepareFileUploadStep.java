@@ -52,6 +52,14 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if user has come back here, clear out file (else the storageInput object that it is comes to the frontend, which isn't what we want!) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(runBackendStepOutput.getProcessState().getIsStepBack())
+      {
+         runBackendStepOutput.addValue("theFile", null);
+      }
+
       String                 tableName      = runBackendStepInput.getValueString("tableName");
       QTableMetaData         table          = QContext.getQInstance().getTable(tableName);
       BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName);
