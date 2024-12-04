@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
@@ -39,6 +40,7 @@ public class BulkLoadSeleniumTest extends BaseSampleSeleniumTest
     **
     *******************************************************************************/
    @Test
+   @Disabled("selenium not working in circleci at this time...")
    void testSimple() throws IOException
    {
       String email = "jtkirk@starfleet.com";
