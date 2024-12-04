@@ -113,12 +113,11 @@ public class SavedBulkLoadProfileMetaDataProvider
          .withFieldsFromEntity(SavedBulkLoadProfile.class)
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "tableName")))
-         .withSection(new QFieldSection("data", new QIcon().withName("text_snippet"), Tier.T2, List.of("mappingJson")).withIsHidden(true))
-         .withSection(new QFieldSection("hidden", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId")).withIsHidden(true))
+         .withSection(new QFieldSection("details", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId", "mappingJson")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
-      // todo - want one of these?
-      // table.getField("queryFilterJson").withBehavior(SavedReportJsonFieldDisplayValueFormatter.getInstance());
+      table.getField("mappingJson").withBehavior(SavedBulkLoadProfileJsonFieldDisplayValueFormatter.getInstance());
+      table.getField("mappingJson").setLabel("Mapping");
 
       table.withShareableTableMetaData(new ShareableTableMetaData()
          .withSharedRecordTableName(SharedSavedBulkLoadProfile.TABLE_NAME)
