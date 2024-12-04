@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.QuickSightChartR
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -94,7 +95,7 @@ import org.apache.commons.io.IOUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SampleMetaDataProvider
+public class SampleMetaDataProvider extends AbstractQQQApplication
 {
    public static boolean USE_MYSQL = false;
 
@@ -125,6 +126,17 @@ public class SampleMetaDataProvider
 
    public static final String BACKEND_NAME_UPLOAD_ARCHIVE    = "uploadArchive";
    public static final String UPLOAD_FILE_ARCHIVE_TABLE_NAME = "uploadFileArchive";
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QInstance defineQInstance() throws QException
+   {
+      return defineInstance();
+   }
 
 
 

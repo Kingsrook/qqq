@@ -23,11 +23,9 @@ package com.kingsrook.sampleapp;
 
 
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.middleware.javalin.QApplicationJavalinServer;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
-import io.javalin.Javalin;
 
 
 /*******************************************************************************
@@ -39,9 +37,7 @@ public class SampleJavalinServer
 
    private static final int PORT = 8000;
 
-   private QInstance qInstance;
-
-   private Javalin javalinService;
+   private QApplicationJavalinServer qApplicationJavalinServer;
 
 
 
@@ -60,41 +56,27 @@ public class SampleJavalinServer
     *******************************************************************************/
    public void startJavalinServer()
    {
+      startJavalinServer(PORT);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void startJavalinServer(int port)
+   {
       try
       {
-         qInstance = SampleMetaDataProvider.defineInstance();
-
          SampleMetaDataProvider.primeTestDatabase("prime-test-database.sql");
 
-         QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
-         qJavalinImplementation.setJavalinMetaData(new QJavalinMetaData()
+         qApplicationJavalinServer = new QApplicationJavalinServer(new SampleMetaDataProvider());
+         qApplicationJavalinServer.setServeFrontendMaterialDashboard(true);
+         qApplicationJavalinServer.setServeLegacyUnversionedMiddlewareAPI(true);
+         qApplicationJavalinServer.setPort(port);
+         qApplicationJavalinServer.setJavalinMetaData(new QJavalinMetaData()
             .withUploadedFileArchiveTableName(SampleMetaDataProvider.UPLOAD_FILE_ARCHIVE_TABLE_NAME));
-
-         javalinService = Javalin.create(config ->
-         {
-            config.router.apiBuilder(qJavalinImplementation.getRoutes());
-            // todo - not all?
-            config.bundledPlugins.enableCors(cors -> cors.addRule(corsRule -> corsRule.anyHost()));
-         }).start(PORT);
-
-         /////////////////////////////////////////////////////////////////
-         // set the server to hot-swap the q instance before all routes //
-         /////////////////////////////////////////////////////////////////
-         QJavalinImplementation.setQInstanceHotSwapSupplier(() ->
-         {
-            try
-            {
-               return (SampleMetaDataProvider.defineInstance());
-            }
-            catch(Exception e)
-            {
-               LOG.warn("Error hot-swapping meta data", e);
-               return (null);
-            }
-         });
-         javalinService.before(QJavalinImplementation::hotSwapQInstance);
-
-         javalinService.after(ctx -> ctx.res().setHeader("Access-Control-Allow-Origin", "http://localhost:3000"));
+         qApplicationJavalinServer.start();
       }
       catch(Exception e)
       {
@@ -109,9 +91,9 @@ public class SampleJavalinServer
     *******************************************************************************/
    public void stopJavalinServer()
    {
-      if(javalinService != null)
+      if(qApplicationJavalinServer != null)
       {
-         javalinService.stop();
+         qApplicationJavalinServer.stop();
       }
    }
 }
