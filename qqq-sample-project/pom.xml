@@ -68,7 +68,14 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-frontend-material-dashboard</artifactId>
-         <version>0.20.0</version>
+         <version>feature-bulk-upload-v2-20241203.163149-2</version>
+      </dependency>
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-frontend-material-dashboard</artifactId>
+         <classifier>tests</classifier>
+         <version>feature-bulk-upload-v2-20241203.163149-2</version>
+         <scope>test</scope>
       </dependency>
       <dependency>
          <groupId>com.h2database</groupId>
@@ -77,7 +84,27 @@
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->
-      <!-- none at this time -->
+
+      <!-- slf4j, to allow logging for javalin -->
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-simple</artifactId>
+         <version>2.0.6</version>
+      </dependency>
+
+      <!-- deps for frontend (selenium) tests -->
+      <dependency>
+         <groupId>org.seleniumhq.selenium</groupId>
+         <artifactId>selenium-java</artifactId>
+         <version>4.19.1</version>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>io.github.bonigarcia</groupId>
+         <artifactId>webdrivermanager</artifactId>
+         <version>5.6.2</version>
+         <scope>test</scope>
+      </dependency>
 
       <!-- Common deps for all qqq modules -->
       <dependency>
