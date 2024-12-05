@@ -38,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIEnumSubSet;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIHasAdditionalProperties;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIIncludeProperties;
@@ -123,7 +124,25 @@ public class SchemaBuilder
       if(c.isEnum())
       {
          schema.withType(Type.STRING);
-         schema.withEnumValues(Arrays.stream(c.getEnumConstants()).map(e -> String.valueOf(e)).collect(Collectors.toList()));
+
+         if(element.isAnnotationPresent(OpenAPIEnumSubSet.class))
+         {
+            try
+            {
+               OpenAPIEnumSubSet enumSubSetAnnotation = element.getAnnotation(OpenAPIEnumSubSet.class);
+               Class<? extends OpenAPIEnumSubSet.EnumSubSet<?>> enumSubSetClass = enumSubSetAnnotation.value();
+               OpenAPIEnumSubSet.EnumSubSet<?> enumSubSetContainer = enumSubSetClass.getConstructor().newInstance();
+               schema.withEnumValues(enumSubSetContainer.getSubSet().stream().map(e -> String.valueOf(e)).collect(Collectors.toList()));
+            }
+            catch(Exception e)
+            {
+               throw new QRuntimeException("Error processing OpenAPIEnumSubSet on element: " + element, e);
+            }
+         }
+         else
+         {
+            schema.withEnumValues(Arrays.stream(c.getEnumConstants()).map(e -> String.valueOf(e)).collect(Collectors.toList()));
+         }
       }
       else if(c.equals(String.class))
       {

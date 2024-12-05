@@ -42,6 +42,27 @@ INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, a
 INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (4, 'Tyler', 'Samples', NULL, 'tsamples@mmltholdings.com', 1, 950000, 75);
 INSERT INTO person (id, first_name, last_name, birth_date, email, is_employed, annual_salary, days_worked) VALUES (5, 'Garret', 'Richardson', '1981-01-01', 'grichardson@mmltholdings.com', 0, 1500000, 1);
 
+DROP TABLE IF EXISTS pet;
+CREATE TABLE pet
+(
+   id INT AUTO_INCREMENT primary key ,
+   create_date TIMESTAMP DEFAULT now(),
+   modify_date TIMESTAMP DEFAULT now(),
+
+   name VARCHAR(80) NOT NULL,
+   species_id INTEGER NOT NULL,
+   person_id INTEGER NOT NULL,
+   birth_date DATE
+);
+
+INSERT INTO pet (id, name, species_id, person_id) VALUES (1, 'Charlie', 1, 1);
+INSERT INTO pet (id, name, species_id, person_id) VALUES (2, 'Coco', 1, 1);
+INSERT INTO pet (id, name, species_id, person_id) VALUES (3, 'Louie', 1, 1);
+INSERT INTO pet (id, name, species_id, person_id) VALUES (4, 'Barkley', 1, 1);
+INSERT INTO pet (id, name, species_id, person_id) VALUES (5, 'Toby', 1, 2);
+INSERT INTO pet (id, name, species_id, person_id) VALUES (6, 'Mae', 2, 3);
+
+
 DROP TABLE IF EXISTS carrier;
 CREATE TABLE carrier
 (

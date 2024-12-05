@@ -193,7 +193,7 @@ public class MemoryRecordStore
          if(recordMatches)
          {
             qRecord.setErrors(new ArrayList<>());
-            ValidateRecordSecurityLockHelper.validateSecurityFields(input.getTable(), List.of(qRecord), ValidateRecordSecurityLockHelper.Action.SELECT);
+            ValidateRecordSecurityLockHelper.validateSecurityFields(input.getTable(), List.of(qRecord), ValidateRecordSecurityLockHelper.Action.SELECT, null);
             if(CollectionUtils.nullSafeHasContents(qRecord.getErrors()))
             {
                //////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -22,13 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.actions.tables.storage;
 
 
+import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 
 
 /*******************************************************************************
  ** Input for Storage actions.
  *******************************************************************************/
-public class StorageInput extends AbstractTableActionInput
+public class StorageInput extends AbstractTableActionInput implements Serializable
 {
    private String reference;
    private String contentType;

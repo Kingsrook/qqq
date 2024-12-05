@@ -53,6 +53,7 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
    //////////////////////////////////////////////////////////////////////////
    private ArrayList<Serializable> primaryKeys;
 
+   private ArrayList<String> bulletsOfText;
 
 
    /*******************************************************************************
@@ -496,5 +497,36 @@ public class ProcessSummaryLine implements ProcessSummaryLineInterface
       pluralPastMessage = pluralMessage;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for bulletsOfText
+    *******************************************************************************/
+   public ArrayList<String> getBulletsOfText()
+   {
+      return (this.bulletsOfText);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for bulletsOfText
+    *******************************************************************************/
+   public void setBulletsOfText(ArrayList<String> bulletsOfText)
+   {
+      this.bulletsOfText = bulletsOfText;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for bulletsOfText
+    *******************************************************************************/
+   public ProcessSummaryLine withBulletsOfText(ArrayList<String> bulletsOfText)
+   {
+      this.bulletsOfText = bulletsOfText;
+      return (this);
+   }
+
 
 }

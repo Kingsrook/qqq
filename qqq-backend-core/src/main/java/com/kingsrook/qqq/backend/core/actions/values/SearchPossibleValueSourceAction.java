@@ -26,8 +26,12 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -50,7 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
-import org.apache.commons.lang.NotImplementedException;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -60,6 +64,9 @@ import org.apache.commons.lang.NotImplementedException;
 public class SearchPossibleValueSourceAction
 {
    private static final QLogger LOG = QLogger.getLogger(SearchPossibleValueSourceAction.class);
+
+   private static final Set<String> warnedAboutUnexpectedValueField                = Collections.synchronizedSet(new HashSet<>());
+   private static final Set<String> warnedAboutUnexpectedNoOfFieldsToSearchByLabel = Collections.synchronizedSet(new HashSet<>());
 
    private QPossibleValueTranslator possibleValueTranslator;
 
@@ -110,6 +117,7 @@ public class SearchPossibleValueSourceAction
       List<Serializable>              matchingIds = new ArrayList<>();
 
       List<?> inputIdsAsCorrectType = convertInputIdsToEnumIdType(possibleValueSource, input.getIdList());
+      Set<String> labels = null;
 
       for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
       {
@@ -122,12 +130,24 @@ public class SearchPossibleValueSourceAction
                match = true;
             }
          }
+         else if(input.getLabelList() != null)
+         {
+            if(labels == null)
+            {
+               labels = input.getLabelList().stream().filter(Objects::nonNull).map(l -> l.toLowerCase()).collect(Collectors.toSet());
+            }
+
+            if(labels.contains(possibleValue.getLabel().toLowerCase()))
+            {
+               match = true;
+            }
+         }
          else
          {
             if(StringUtils.hasContent(input.getSearchTerm()))
             {
                match = (Objects.equals(ValueUtils.getValueAsString(possibleValue.getId()).toLowerCase(), input.getSearchTerm().toLowerCase())
-                  || possibleValue.getLabel().toLowerCase().startsWith(input.getSearchTerm().toLowerCase()));
+                        || possibleValue.getLabel().toLowerCase().startsWith(input.getSearchTerm().toLowerCase()));
             }
             else
             {
@@ -168,21 +188,37 @@ public class SearchPossibleValueSourceAction
 
       Object anIdFromTheEnum = possibleValueSource.getEnumValues().get(0).getId();
 
-      if(anIdFromTheEnum instanceof Integer)
+      for(Serializable inputId : inputIdList)
       {
-         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsInteger(id)));
-      }
-      else if(anIdFromTheEnum instanceof String)
-      {
-         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsString(id)));
-      }
-      else if(anIdFromTheEnum instanceof Boolean)
-      {
-         inputIdList.forEach(id -> rs.add(ValueUtils.getValueAsBoolean(id)));
-      }
-      else
-      {
-         LOG.warn("Unexpected type [" + anIdFromTheEnum.getClass().getSimpleName() + "] for ids in enum: " + possibleValueSource.getName());
+         Object properlyTypedId = null;
+         try
+         {
+            if(anIdFromTheEnum instanceof Integer)
+            {
+               properlyTypedId = ValueUtils.getValueAsInteger(inputId);
+            }
+            else if(anIdFromTheEnum instanceof String)
+            {
+               properlyTypedId = ValueUtils.getValueAsString(inputId);
+            }
+            else if(anIdFromTheEnum instanceof Boolean)
+            {
+               properlyTypedId = ValueUtils.getValueAsBoolean(inputId);
+            }
+            else
+            {
+               LOG.warn("Unexpected type [" + anIdFromTheEnum.getClass().getSimpleName() + "] for ids in enum: " + possibleValueSource.getName());
+            }
+         }
+         catch(Exception e)
+         {
+            LOG.debug("Error converting possible value id to expected id type", e, logPair("value", inputId));
+         }
+
+         if (properlyTypedId != null)
+         {
+            rs.add(properlyTypedId);
+         }
       }
 
       return (rs);
@@ -208,6 +244,53 @@ public class SearchPossibleValueSourceAction
       if(input.getIdList() != null)
       {
          queryFilter.addCriteria(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, input.getIdList()));
+      }
+      else if(input.getLabelList() != null)
+      {
+         List<String> fieldNames = new ArrayList<>();
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // the 'value fields' will either be 'id' or 'label' (which means, use the fields from the tableMetaData's label fields) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         for(String valueField : possibleValueSource.getValueFields())
+         {
+            if("id".equals(valueField))
+            {
+               fieldNames.add(table.getPrimaryKeyField());
+            }
+            else if("label".equals(valueField))
+            {
+               if(table.getRecordLabelFields() != null)
+               {
+                  fieldNames.addAll(table.getRecordLabelFields());
+               }
+            }
+            else
+            {
+               String message = "Unexpected valueField defined in possibleValueSource when searching possibleValueSource by label (required: 'id' or 'label')";
+               if(!warnedAboutUnexpectedValueField.contains(possibleValueSource.getName()))
+               {
+                  LOG.warn(message, logPair("valueField", valueField), logPair("possibleValueSource", possibleValueSource.getName()));
+                  warnedAboutUnexpectedValueField.add(possibleValueSource.getName());
+               }
+               output.setWarning(message);
+            }
+         }
+
+         if(fieldNames.size() == 1)
+         {
+            queryFilter.addCriteria(new QFilterCriteria(fieldNames.get(0), QCriteriaOperator.IN, input.getLabelList()));
+         }
+         else
+         {
+            String message = "Unexpected number of fields found for searching possibleValueSource by label (required: 1, found: " + fieldNames.size() + ")";
+            if(!warnedAboutUnexpectedNoOfFieldsToSearchByLabel.contains(possibleValueSource.getName()))
+            {
+               LOG.warn(message);
+               warnedAboutUnexpectedNoOfFieldsToSearchByLabel.add(possibleValueSource.getName());
+            }
+            output.setWarning(message);
+         }
       }
       else
       {
@@ -269,8 +352,8 @@ public class SearchPossibleValueSourceAction
          queryFilter = input.getDefaultQueryFilter();
       }
 
-      // todo - skip & limit as params
-      queryFilter.setLimit(250);
+      queryFilter.setLimit(input.getLimit());
+      queryFilter.setSkip(input.getSkip());
 
       queryFilter.setOrderBys(possibleValueSource.getOrderByFields());
 
@@ -288,7 +371,7 @@ public class SearchPossibleValueSourceAction
          fieldName = table.getPrimaryKeyField();
       }
 
-      List<Serializable> ids = queryOutput.getRecords().stream().map(r -> r.getValue(fieldName)).toList();
+      List<Serializable>      ids             = queryOutput.getRecords().stream().map(r -> r.getValue(fieldName)).toList();
       List<QPossibleValue<?>> qPossibleValues = possibleValueTranslator.buildTranslatedPossibleValueList(possibleValueSource, ids);
       output.setResults(qPossibleValues);
 
@@ -301,7 +384,7 @@ public class SearchPossibleValueSourceAction
     **
     *******************************************************************************/
    @SuppressWarnings({ "rawtypes", "unchecked" })
-   private SearchPossibleValueSourceOutput searchPossibleValueCustom(SearchPossibleValueSourceInput input, QPossibleValueSource possibleValueSource)
+   private SearchPossibleValueSourceOutput searchPossibleValueCustom(SearchPossibleValueSourceInput input, QPossibleValueSource possibleValueSource) throws QException
    {
       try
       {
@@ -314,11 +397,10 @@ public class SearchPossibleValueSourceAction
       }
       catch(Exception e)
       {
-         // LOG.warn("Error sending [" + value + "] for field [" + field + "] through custom code for PVS [" + field.getPossibleValueSourceName() + "]", e);
+         String message = "Error sending searching custom possible value source [" + input.getPossibleValueSourceName() + "]";
+         LOG.warn(message, e);
+         throw (new QException(message));
       }
-
-      throw new NotImplementedException("Not impleemnted");
-      // return (null);
    }
 
 }

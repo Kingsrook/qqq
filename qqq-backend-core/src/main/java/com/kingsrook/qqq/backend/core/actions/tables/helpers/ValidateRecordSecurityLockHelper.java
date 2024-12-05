@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -83,7 +84,7 @@ public class ValidateRecordSecurityLockHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static void validateSecurityFields(QTableMetaData table, List<QRecord> records, Action action) throws QException
+   public static void validateSecurityFields(QTableMetaData table, List<QRecord> records, Action action, QBackendTransaction transaction) throws QException
    {
       MultiRecordSecurityLock locksToCheck = getRecordSecurityLocks(table, action);
       if(locksToCheck == null || CollectionUtils.nullSafeIsEmpty(locksToCheck.getLocks()))
@@ -101,7 +102,7 @@ public class ValidateRecordSecurityLockHelper
       // actually check lock values //
       ////////////////////////////////
       Map<Serializable, RecordWithErrors> errorRecords = new HashMap<>();
-      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>(), madeUpPrimaryKeys);
+      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>(), madeUpPrimaryKeys, transaction);
 
       /////////////////////////////////
       // propagate errors to records //
@@ -141,7 +142,7 @@ public class ValidateRecordSecurityLockHelper
     ** BUT - WRITE locks - in their case, we read the record no matter what, and in
     ** here we need to verify we have a key that allows us to WRITE the record.
     *******************************************************************************/
-   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition, Map<Serializable, QRecord> madeUpPrimaryKeys) throws QException
+   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition, Map<Serializable, QRecord> madeUpPrimaryKeys, QBackendTransaction transaction) throws QException
    {
       if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
       {
@@ -152,7 +153,7 @@ public class ValidateRecordSecurityLockHelper
          for(RecordSecurityLock childLock : CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks()))
          {
             treePosition.add(i);
-            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition, madeUpPrimaryKeys);
+            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition, madeUpPrimaryKeys, transaction);
             treePosition.remove(treePosition.size() - 1);
             i++;
          }
@@ -225,6 +226,7 @@ public class ValidateRecordSecurityLockHelper
             // query will be like (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) OR (fkey1=? and fkey2=?) //
             ////////////////////////////////////////////////////////////////////////////////////////////////
             QueryInput queryInput = new QueryInput();
+            queryInput.setTransaction(transaction);
             queryInput.setTableName(leftMostJoin.getLeftTable());
             QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
             queryInput.setFilter(filter);

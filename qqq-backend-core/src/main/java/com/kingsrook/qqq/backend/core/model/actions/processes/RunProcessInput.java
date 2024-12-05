@@ -49,6 +49,7 @@ public class RunProcessInput extends AbstractActionInput
    private ProcessState         processState;
    private FrontendStepBehavior frontendStepBehavior = FrontendStepBehavior.BREAK;
    private String               startAfterStep;
+   private String               startAtStep;
    private String               processUUID;
    private AsyncJobCallback     asyncJobCallback;
 
@@ -451,4 +452,35 @@ public class RunProcessInput extends AbstractActionInput
    {
       return asyncJobCallback;
    }
+
+   /*******************************************************************************
+    ** Getter for startAtStep
+    *******************************************************************************/
+   public String getStartAtStep()
+   {
+      return (this.startAtStep);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for startAtStep
+    *******************************************************************************/
+   public void setStartAtStep(String startAtStep)
+   {
+      this.startAtStep = startAtStep;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for startAtStep
+    *******************************************************************************/
+   public RunProcessInput withStartAtStep(String startAtStep)
+   {
+      this.startAtStep = startAtStep;
+      return (this);
+   }
+
+
 }

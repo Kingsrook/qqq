@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -111,7 +110,7 @@ public class QInstanceHelpContentManager
             }
             else
             {
-               LOG.info("Discarding help content with key that does not contain name:value format", logPair("key", key), logPair("id", record.getValue("id")));
+               LOG.info("Discarding help content with key-part that does not contain name:value format", logPair("key", key), logPair("part", part), logPair("id", record.getValue("id")));
             }
          }
 
@@ -150,19 +149,19 @@ public class QInstanceHelpContentManager
          ///////////////////////////////////////////////////////////////////////////////////
          if(StringUtils.hasContent(tableName))
          {
-            processHelpContentForTable(key, tableName, sectionName, fieldName, slotName, roles, helpContent);
+            processHelpContentForTable(qInstance, key, tableName, sectionName, fieldName, slotName, roles, helpContent);
          }
          else if(StringUtils.hasContent(processName))
          {
-            processHelpContentForProcess(key, processName, fieldName, stepName, roles, helpContent);
+            processHelpContentForProcess(qInstance, key, processName, fieldName, stepName, roles, helpContent);
          }
          else if(StringUtils.hasContent(widgetName))
          {
-            processHelpContentForWidget(key, widgetName, slotName, roles, helpContent);
+            processHelpContentForWidget(qInstance, key, widgetName, slotName, roles, helpContent);
          }
          else if(nameValuePairs.containsKey("instanceLevel"))
          {
-            processHelpContentForInstance(key, slotName, roles, helpContent);
+            processHelpContentForInstance(qInstance, key, slotName, roles, helpContent);
          }
       }
       catch(Exception e)
@@ -176,9 +175,9 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForTable(String key, String tableName, String sectionName, String fieldName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForTable(QInstance qInstance, String key, String tableName, String sectionName, String fieldName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
    {
-      QTableMetaData table = QContext.getQInstance().getTable(tableName);
+      QTableMetaData table = qInstance.getTable(tableName);
       if(table == null)
       {
          LOG.info("Unrecognized table in help content", logPair("key", key));
@@ -246,9 +245,30 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForProcess(String key, String processName, String fieldName, String stepName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForProcess(QInstance qInstance, String key, String processName, String fieldName, String stepName, Set<HelpRole> roles, QHelpContent helpContent)
    {
-      QProcessMetaData process = QContext.getQInstance().getProcess(processName);
+      if(processName.startsWith("*") && processName.length() > 1)
+      {
+         boolean anyMatched = false;
+         String subName = processName.substring(1);
+         for(QProcessMetaData process : qInstance.getProcesses().values())
+         {
+            if(process.getName().endsWith(subName))
+            {
+               anyMatched = true;
+               processHelpContentForProcess(qInstance, key, process.getName(), fieldName, stepName, roles, helpContent);
+            }
+         }
+
+         if(!anyMatched)
+         {
+            LOG.info("Wildcard process name did not match any processes in help content", logPair("key", key));
+         }
+
+         return;
+      }
+
+      QProcessMetaData process = qInstance.getProcess(processName);
       if(process == null)
       {
          LOG.info("Unrecognized process in help content", logPair("key", key));
@@ -306,9 +326,9 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForWidget(String key, String widgetName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForWidget(QInstance qInstance, String key, String widgetName, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
    {
-      QWidgetMetaDataInterface widget = QContext.getQInstance().getWidget(widgetName);
+      QWidgetMetaDataInterface widget = qInstance.getWidget(widgetName);
       if(!StringUtils.hasContent(slotName))
       {
          LOG.info("Missing slot name in help content", logPair("key", key));
@@ -335,7 +355,7 @@ public class QInstanceHelpContentManager
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void processHelpContentForInstance(String key, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
+   private static void processHelpContentForInstance(QInstance qInstance, String key, String slotName, Set<HelpRole> roles, QHelpContent helpContent)
    {
       if(!StringUtils.hasContent(slotName))
       {
@@ -345,11 +365,11 @@ public class QInstanceHelpContentManager
       {
          if(helpContent != null)
          {
-            QContext.getQInstance().withHelpContent(slotName, helpContent);
+            qInstance.withHelpContent(slotName, helpContent);
          }
          else
          {
-            QContext.getQInstance().removeHelpContent(slotName, roles);
+            qInstance.removeHelpContent(slotName, roles);
          }
       }
    }

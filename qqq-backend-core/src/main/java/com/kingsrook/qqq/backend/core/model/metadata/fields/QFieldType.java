@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -96,6 +97,16 @@ public enum QFieldType
       }
 
       throw (new QException("Unrecognized class [" + c + "]"));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public String getMixedCaseLabel()
+   {
+      return StringUtils.allCapsToMixedCase(name());
    }
 
 

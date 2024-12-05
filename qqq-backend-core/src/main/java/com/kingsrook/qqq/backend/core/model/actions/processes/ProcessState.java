@@ -40,6 +40,8 @@ public class ProcessState implements Serializable
    private Map<String, Serializable> values       = new HashMap<>();
    private List<String>              stepList     = new ArrayList<>();
    private Optional<String>          nextStepName = Optional.empty();
+   private Optional<String>          backStepName = Optional.empty();
+   private boolean                   isStepBack   = false;
 
    private ProcessMetaDataAdjustment processMetaDataAdjustment = null;
 
@@ -123,6 +125,39 @@ public class ProcessState implements Serializable
 
 
    /*******************************************************************************
+    ** Getter for backStepName
+    **
+    *******************************************************************************/
+   public Optional<String> getBackStepName()
+   {
+      return backStepName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backStepName
+    **
+    *******************************************************************************/
+   public void setBackStepName(String backStepName)
+   {
+      this.backStepName = Optional.of(backStepName);
+   }
+
+
+
+   /*******************************************************************************
+    ** clear out the value of backStepName (set the Optional to empty)
+    **
+    *******************************************************************************/
+   public void clearBackStepName()
+   {
+      this.backStepName = Optional.empty();
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for stepList
     **
     *******************************************************************************/
@@ -172,6 +207,37 @@ public class ProcessState implements Serializable
    public ProcessState withProcessMetaDataAdjustment(ProcessMetaDataAdjustment processMetaDataAdjustment)
    {
       this.processMetaDataAdjustment = processMetaDataAdjustment;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isStepBack
+    *******************************************************************************/
+   public boolean getIsStepBack()
+   {
+      return (this.isStepBack);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isStepBack
+    *******************************************************************************/
+   public void setIsStepBack(boolean isStepBack)
+   {
+      this.isStepBack = isStepBack;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isStepBack
+    *******************************************************************************/
+   public ProcessState withIsStepBack(boolean isStepBack)
+   {
+      this.isStepBack = isStepBack;
       return (this);
    }
 
