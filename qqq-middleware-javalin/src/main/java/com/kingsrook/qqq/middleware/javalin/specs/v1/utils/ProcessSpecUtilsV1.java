@@ -183,6 +183,14 @@ public class ProcessSpecUtilsV1
                String       name  = valueEntry.getKey();
                Serializable value = valueEntry.getValue();
 
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               // follow the strategy that we use for JsonUtils.nullKeyToEmptyStringSerializer in this rare case... //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(name == null)
+               {
+                  name = "";
+               }
+
                Serializable valueToMakeIntoJson = value;
                if(value instanceof String s)
                {
@@ -213,11 +221,31 @@ public class ProcessSpecUtilsV1
                   valueToMakeIntoJson = new WidgetBlock(abstractBlockWidgetData);
                }
 
-               String valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+               ///////////////////////////////////////////////
+               // ok now, make the value into a JSON string //
+               ///////////////////////////////////////////////
+               String valueAsJsonString;
+               try
                {
-                  mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-               });
+                  valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+                  {
+                     mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
 
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // use this custom serializer to convert null map-keys to empty-strings (rather than having an exception!) //
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer);
+                  });
+               }
+               catch(Exception e)
+               {
+                  LOG.warn("Error deserializing process results with serializationInclusion:ALWAYS - will retry with default settings", e);
+                  valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson);
+               }
+
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // THEN - make it back into a JSONObject or JSONArray, and add it to the valuesAsJsonObject JSONObject //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////
                if(valueAsJsonString.startsWith("["))
                {
                   valuesAsJsonObject.put(name, new JSONArray(valueAsJsonString));

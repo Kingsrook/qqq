@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -111,6 +113,8 @@ public class TestUtils
    public static final String PROCESS_NAME_SIMPLE_SLEEP             = "simpleSleep";
    public static final String PROCESS_NAME_SIMPLE_THROW             = "simpleThrow";
    public static final String PROCESS_NAME_SLEEP_INTERACTIVE        = "sleepInteractive";
+
+   public static final String PROCESS_NAME_PUTS_NULL_KEY_IN_MAP = "putsNullKeyInMap";
 
    public static final String STEP_NAME_SLEEPER = "sleeper";
    public static final String STEP_NAME_THROWER = "thrower";
@@ -177,6 +181,7 @@ public class TestUtils
       qInstance.addProcess(defineProcessGreetPeopleInteractive());
       qInstance.addProcess(defineProcessSimpleSleep());
       qInstance.addProcess(defineProcessScreenThenSleep());
+      qInstance.addProcess(defineProcessPutsNullKeyInMap());
       qInstance.addProcess(defineProcessSimpleThrow());
       qInstance.addReport(definePersonsReport());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
@@ -552,6 +557,26 @@ public class TestUtils
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING)));
    }
 
+
+
+
+   /*******************************************************************************
+    ** Define an interactive version of the 'greet people' process
+    *******************************************************************************/
+   private static QProcessMetaData defineProcessPutsNullKeyInMap()
+   {
+      return new QProcessMetaData()
+         .withName(PROCESS_NAME_PUTS_NULL_KEY_IN_MAP)
+         .withTableName(TABLE_NAME_PERSON)
+         .withStep(new QBackendStepMetaData().withName("step")
+            .withCode(new QCodeReferenceLambda<BackendStep>((runBackendStepInput, runBackendStepOutput) ->
+            {
+               HashMap<String, String> mapWithNullKey = new HashMap<>();
+               mapWithNullKey.put(null, "hadNullKey");
+               mapWithNullKey.put("one", "1");
+               runBackendStepOutput.addValue("mapWithNullKey", mapWithNullKey);
+            })));
+   }
 
 
    /*******************************************************************************
