@@ -340,10 +340,7 @@ class JsonUtilsTest extends BaseTest
       // assert that the nullKeyToEmptyStringSerializer does what we expect //
       ////////////////////////////////////////////////////////////////////////
       assertEquals("""
-         {"":"foo"}""", JsonUtils.toJson(mapWithNullKey, mapper ->
-      {
-         mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer);
-      }));
+         {"":"foo"}""", JsonUtils.toJson(mapWithNullKey, mapper -> mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer)));
    }
 
 }
