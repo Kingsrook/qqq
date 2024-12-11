@@ -35,11 +35,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,7 +83,7 @@ class JsonUtilsTest extends BaseTest
       {
          objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
       });
-      
+
       assertThat(json).contains("""
          "values":{"foo":"Foo","bar":3.14159,"baz":null}""");
    }
@@ -318,4 +320,30 @@ class JsonUtilsTest extends BaseTest
       assertEquals("age", qQueryFilter.getOrderBys().get(0).getFieldName());
       assertTrue(qQueryFilter.getOrderBys().get(0).getIsAscending());
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullKeyInMap()
+   {
+      Map<Object, String> mapWithNullKey = MapBuilder.of(null, "foo");
+
+      //////////////////////////////////////////////////////
+      // assert default behavior throws with null map key //
+      //////////////////////////////////////////////////////
+      assertThatThrownBy(() -> JsonUtils.toJson(mapWithNullKey)).rootCause().hasMessageContaining("Null key for a Map not allowed in JSON");
+
+      ////////////////////////////////////////////////////////////////////////
+      // assert that the nullKeyToEmptyStringSerializer does what we expect //
+      ////////////////////////////////////////////////////////////////////////
+      assertEquals("""
+         {"":"foo"}""", JsonUtils.toJson(mapWithNullKey, mapper ->
+      {
+         mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer);
+      }));
+   }
+
 }
