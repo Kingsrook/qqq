@@ -972,10 +972,15 @@ public abstract class AbstractRDBMSAction
             {
                sql = Objects.requireNonNullElse(sql, "").toString()
                   .replaceAll("FROM ", "\nFROM\n   ")
+                  .replaceAll("UNION ", "\nUNION\n   ")
+                  .replaceAll("INTERSECT ", "\nINTERSECT\n   ")
+                  .replaceAll("EXCEPT ", "\nEXCEPT\n   ")
                   .replaceAll("INNER", "\n   INNER")
                   .replaceAll("LEFT", "\n   LEFT")
                   .replaceAll("RIGHT", "\n   RIGHT")
-                  .replaceAll("WHERE", "\nWHERE\n   ");
+                  .replaceAll("WHERE", "\nWHERE\n   ")
+                  .replaceAll("ORDER BY", "\nORDER BY\n   ")
+                  .replaceAll("GROUP BY", "\nGROUP BY\n   ");
             }
 
             if(System.getProperty("qqq.rdbms.logSQL.output", "logger").equalsIgnoreCase("system.out"))
