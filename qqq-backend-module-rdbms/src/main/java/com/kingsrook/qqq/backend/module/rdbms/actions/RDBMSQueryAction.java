@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QueryInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ActionTimeoutHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -46,6 +45,7 @@ import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -95,35 +95,10 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          QTableMetaData table     = queryInput.getTable();
          String         tableName = queryInput.getTableName();
 
-         Selection     selection = makeSelection(queryInput);
-         StringBuilder sql = new StringBuilder(selection.selectClause());
+         List<Serializable> params    = new ArrayList<>();
+         Selection          selection = makeSelection(queryInput);
 
-         QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
-         JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), tableName, queryInput.getQueryJoins(), filter);
-
-         List<Serializable> params = new ArrayList<>();
-         sql.append(" FROM ").append(makeFromClause(QContext.getQInstance(), tableName, joinsContext, params));
-         sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
-
-         if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
-         {
-            sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext));
-         }
-
-         if(filter != null && filter.getLimit() != null)
-         {
-            sql.append(" LIMIT ").append(filter.getLimit());
-
-            if(filter.getSkip() != null)
-            {
-               // todo - other sql grammars?
-               sql.append(" OFFSET ").append(filter.getSkip());
-            }
-         }
-
-         // todo sql customization - can edit sql and/or param list
-
-         setSqlAndJoinsInQueryStat(sql, joinsContext);
+         StringBuilder sql = makeSQL(queryInput, selection, tableName, params, table);
 
          Connection connection;
          boolean    needToCloseConnection = false;
@@ -258,6 +233,99 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private StringBuilder makeSQL(QueryInput queryInput, Selection selection, String tableName, List<Serializable> params, QTableMetaData table) throws QException
+   {
+      QQueryFilter filter       = clonedOrNewFilter(queryInput.getFilter());
+      JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), tableName, queryInput.getQueryJoins(), filter);
+
+      StringBuilder sql = new StringBuilder();
+
+      if(filter != null && filter.getSubFilterSetOperator() != null && CollectionUtils.nullSafeHasContents(filter.getSubFilters()))
+      {
+         for(QQueryFilter subFilter : filter.getSubFilters())
+         {
+            if(!sql.isEmpty())
+            {
+               sql.append(" ").append(filter.getSubFilterSetOperator().name().replace('_', ' ')).append(" ");
+            }
+
+            sql.append(" (");
+            sql.append(selection.selectClause());
+            sql.append(" FROM ").append(makeFromClause(QContext.getQInstance(), tableName, joinsContext, params));
+            sql.append(" WHERE ").append(makeWhereClause(joinsContext, subFilter, params));
+            sql.append(") ");
+         }
+
+         if(CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // the base version of makeOrderByClause uses `table`.`column` style references - which don't work for //
+            // these kinds of queries... so, use this version, which does index-based ones (maybe we could/should  //
+            // switch to always use those?                                                                         //
+            // the best here might be, to alias all columns, and then use those aliases in both versions...        //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+            sql.append(" ORDER BY ").append(makeOrderByClauseForSubFilterSetOperationQuery(table, filter.getOrderBys(), joinsContext, selection));
+         }
+      }
+      else
+      {
+         sql.append(selection.selectClause());
+         sql.append(" FROM ").append(makeFromClause(QContext.getQInstance(), tableName, joinsContext, params));
+         sql.append(" WHERE ").append(makeWhereClause(joinsContext, filter, params));
+
+         if(filter != null && CollectionUtils.nullSafeHasContents(filter.getOrderBys()))
+         {
+            sql.append(" ORDER BY ").append(makeOrderByClause(table, filter.getOrderBys(), joinsContext));
+         }
+      }
+
+      if(filter != null && filter.getLimit() != null)
+      {
+         sql.append(" LIMIT ").append(filter.getLimit());
+
+         if(filter.getSkip() != null)
+         {
+            // todo - other sql grammars?
+            sql.append(" OFFSET ").append(filter.getSkip());
+         }
+      }
+
+      // todo sql customization - can edit sql and/or param list
+
+      setSqlAndJoinsInQueryStat(sql, joinsContext);
+      return sql;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private String makeOrderByClauseForSubFilterSetOperationQuery(QTableMetaData table, List<QFilterOrderBy> orderBys, JoinsContext joinsContext, Selection selection)
+   {
+      List<String> clauses = new ArrayList<>();
+
+      for(QFilterOrderBy orderBy : orderBys)
+      {
+         String                                ascOrDesc                     = orderBy.getIsAscending() ? "ASC" : "DESC";
+         JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(orderBy.getFieldName());
+
+         QFieldMetaData field  = otherFieldAndTableNameOrAlias.field();
+         String         column = getColumnName(field);
+
+         String qualifiedColumn = escapeIdentifier(otherFieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(column);
+         String columnNo        = String.valueOf(selection.qualifiedColumns.indexOf(qualifiedColumn) + 1);
+         clauses.add(columnNo + " " + ascOrDesc);
+
+      }
+      return (String.join(", ", clauses));
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -282,10 +350,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
    /***************************************************************************
     ** output wrapper for makeSelection method.
     ** - selectClause is everything from SELECT up to (but not including) FROM
+    ** - qualifiedColumns is a list of the `table`.`column` strings
     ** - fields are those being selected, in the same order, and with mutated
     ** names for join fields.
     ***************************************************************************/
-   private record Selection(String selectClause, List<QFieldMetaData> fields)
+   private record Selection(String selectClause, List<String> qualifiedColumns, List<QFieldMetaData> fields)
    {
 
    }
@@ -318,10 +387,11 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       // map those field names to columns, joined with ", ".                                                              //
       // if a field is heavy, and heavy fields aren't being selected, then replace that field name with a LENGTH function //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      String columns = fieldList.stream()
+      List<String> qualifiedColumns = new ArrayList<>(fieldList.stream()
          .map(field -> Pair.of(field, escapeIdentifier(tableName) + "." + escapeIdentifier(getColumnName(field))))
          .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
-         .collect(Collectors.joining(", "));
+         .toList());
+      String columns = String.join(", ", qualifiedColumns);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
       // figure out if distinct is being used.  then start building the select clause with the table's columns //
@@ -360,10 +430,13 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             /////////////////////////////////////////////////////
             // map to columns, wrapping heavy fields as needed //
             /////////////////////////////////////////////////////
-            String joinColumns = joinFieldList.stream()
+            List<String> qualifiedJoinColumns = joinFieldList.stream()
                .map(field -> Pair.of(field, escapeIdentifier(tableNameOrAlias) + "." + escapeIdentifier(getColumnName(field))))
                .map(pair -> wrapHeavyFieldsWithLengthFunctionIfNeeded(pair, queryInput.getShouldFetchHeavyFields()))
-               .collect(Collectors.joining(", "));
+               .toList();
+
+            qualifiedColumns.addAll(qualifiedJoinColumns);
+            String joinColumns = String.join(", ", qualifiedJoinColumns);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
             // append to output objects.                                                                  //
@@ -380,7 +453,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
          }
       }
 
-      return (new Selection(selectClause.toString(), selectionFieldList));
+      return (new Selection(selectClause.toString(), qualifiedColumns, selectionFieldList));
    }
 
 
