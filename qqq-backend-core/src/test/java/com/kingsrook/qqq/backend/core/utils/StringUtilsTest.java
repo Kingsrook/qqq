@@ -318,4 +318,19 @@ class StringUtilsTest extends BaseTest
       assertEquals("Apples were eaten", StringUtils.pluralFormat(2, "Apple{,s} {was,were} eaten"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testEmptyToNull()
+   {
+      assertNull(StringUtils.emptyToNull(null));
+      assertNull(StringUtils.emptyToNull(""));
+      assertNull(StringUtils.emptyToNull(" "));
+      assertNull(StringUtils.emptyToNull("  "));
+      assertEquals("a", StringUtils.emptyToNull("a"));
+   }
+
 }

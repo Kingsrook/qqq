@@ -1330,6 +1330,21 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
    /*******************************************************************************
+    ** Getter for an association by name
+    *******************************************************************************/
+   public Optional<Association> getAssociationByName(String name)
+   {
+      if(associations == null)
+      {
+         return (Optional.empty());
+      }
+
+      return (getAssociations().stream().filter(a -> a.getName().equals(name)).findFirst());
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for associations
     *******************************************************************************/
    public void setAssociations(List<Association> associations)

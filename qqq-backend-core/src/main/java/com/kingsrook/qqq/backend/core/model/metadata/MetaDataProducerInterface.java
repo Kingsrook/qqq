@@ -27,12 +27,12 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 
 /*******************************************************************************
  ** Interface for classes that know how to produce meta data objects.  Useful with
- ** MetaDataProducerHelper, to put point at a package full of these, and populate
+ ** MetaDataProducerHelper, to point at a package full of these, and populate
  ** your whole QInstance.
  **
  ** See also MetaDataProducer - an implementer of this interface, which actually
  ** came first, and is fine to extend if producing a meta-data class is all your
- ** clas means to do (nice and "Single-responsibility principle").
+ ** class means to do (nice and "Single-responsibility principle").
  **
  ** But, in some applications you may want to, for example, have one class that
  ** defines a process step, and also produces the meta-data for that process, so

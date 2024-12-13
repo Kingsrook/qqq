@@ -23,7 +23,10 @@ package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
@@ -97,7 +100,7 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     ** Create a new possible value source, for an enum, with default settings.
     ** e.g., type=ENUM; name from param values from the param; LABEL_ONLY format
     *******************************************************************************/
-   public static <T extends PossibleValueEnum<?>> QPossibleValueSource newForEnum(String name, T[] values)
+   public static <I, T extends PossibleValueEnum<I>> QPossibleValueSource newForEnum(String name, T[] values)
    {
       return new QPossibleValueSource()
          .withName(name)
@@ -553,11 +556,25 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     **   myPossibleValueSource.withValuesFromEnum(MyEnum.values()));
     **
     *******************************************************************************/
-   public <T extends PossibleValueEnum<?>> QPossibleValueSource withValuesFromEnum(T[] values)
+   public <I, T extends PossibleValueEnum<I>> QPossibleValueSource withValuesFromEnum(T[] values)
    {
+      Set<I> usedIds = new HashSet<>();
+      List<I> duplicatedIds = new ArrayList<>();
+
       for(T t : values)
       {
+         if(usedIds.contains(t.getPossibleValueId()))
+         {
+            duplicatedIds.add(t.getPossibleValueId());
+         }
+
          addEnumValue(new QPossibleValue<>(t.getPossibleValueId(), t.getPossibleValueLabel()));
+         usedIds.add(t.getPossibleValueId());
+      }
+
+      if(!duplicatedIds.isEmpty())
+      {
+         throw (new QRuntimeException("Error:  Duplicated id(s) found in enum values: " + duplicatedIds));
       }
 
       return (this);

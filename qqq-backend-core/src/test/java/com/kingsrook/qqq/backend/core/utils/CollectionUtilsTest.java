@@ -26,10 +26,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import com.google.gson.reflect.TypeToken;
@@ -616,6 +618,25 @@ class CollectionUtilsTest extends BaseTest
          2, Map.of("A", "A2"),
          3, Map.of("A", "A3"),
          4, Map.of("B", "B4")), output);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddIfNotNull()
+   {
+      HashSet<String> s = new HashSet<>();
+      CollectionUtils.addIfNotNull(s, null);
+      assertEquals(Set.of(), s);
+
+      CollectionUtils.addIfNotNull(s, "");
+      assertEquals(Set.of(""), s);
+
+      CollectionUtils.addIfNotNull(s, "1");
+      assertEquals(Set.of("", "1"), s);
    }
 
 }
