@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.actions.audits;
 
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,9 @@ import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.audits.AuditsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.processes.utils.GeneralProcessUtils;
@@ -95,14 +99,18 @@ class AuditActionTest extends BaseTest
       String userName = "John Doe";
       QContext.init(qInstance, new QSession().withUser(new QUser().withFullName(userName)));
 
-      int recordId = 1701;
+      int               recordId         = 1701;
+      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(AuditAction.class);
       AuditAction.execute(TestUtils.TABLE_NAME_ORDER, recordId, Map.of(), "Test Audit");
 
       ///////////////////////////////////////////////////////////////////
       // it should not throw, but it should also not insert the audit. //
       ///////////////////////////////////////////////////////////////////
       Optional<QRecord> auditRecord = GeneralProcessUtils.getRecordByField("audit", "recordId", recordId);
-      assertFalse(auditRecord.isPresent());
+      // assertFalse(auditRecord.isPresent());
+      assertTrue(auditRecord.isPresent());
+      assertThat(collectingLogger.getCollectedMessages()).anyMatch(clm -> clm.getMessage().contains("Missing securityKeyValue"));
+      QLogger.deactivateCollectingLoggerForClass(AuditAction.class);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////
       // try again with a null value in the key - that should be ok - as at least you were thinking //
@@ -272,6 +280,120 @@ class AuditActionTest extends BaseTest
       auditSingleInput = auditInput.getAuditSingleInputList().get(1);
       assertEquals(47, auditSingleInput.getRecordId());
       assertEquals(MapBuilder.of(TestUtils.SECURITY_KEY_TYPE_STORE, null), auditSingleInput.getSecurityKeyValues());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetRecordSecurityKeyValue()
+   {
+      QRecord record = new QRecord().withValue("red", 1).withValue("blue", 2).withValue("green", 3).withValue("white", 4);
+
+      RecordSecurityLock redLock        = new RecordSecurityLock().withSecurityKeyType("red").withFieldName("red");
+      RecordSecurityLock blueLock       = new RecordSecurityLock().withSecurityKeyType("blue").withFieldName("blue");
+      RecordSecurityLock greenLock      = new RecordSecurityLock().withSecurityKeyType("green").withFieldName("green");
+      RecordSecurityLock whiteWriteLock = new RecordSecurityLock().withSecurityKeyType("green").withFieldName("white").withLockScope(RecordSecurityLock.LockScope.WRITE);
+
+      QTableMetaData simpleLockTable = new QTableMetaData()
+         .withRecordSecurityLock(redLock);
+      assertEquals(Map.of("red", 1), AuditAction.getRecordSecurityKeyValues(simpleLockTable, record, Optional.empty()));
+
+      QTableMetaData writeOnlyLockTable = new QTableMetaData()
+         .withRecordSecurityLock(whiteWriteLock);
+      assertEquals(Collections.emptyMap(), AuditAction.getRecordSecurityKeyValues(writeOnlyLockTable, record, Optional.empty()));
+
+      QTableMetaData multiAndLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.AND)
+            .withLock(redLock)
+            .withLock(blueLock));
+      assertEquals(Map.of("red", 1, "blue", 2), AuditAction.getRecordSecurityKeyValues(multiAndLockTable, record, Optional.empty()));
+
+      QTableMetaData multiOrLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.OR)
+            .withLock(redLock)
+            .withLock(blueLock));
+      assertEquals(Map.of("red", 1, "blue", 2), AuditAction.getRecordSecurityKeyValues(multiOrLockTable, record, Optional.empty()));
+
+      QTableMetaData multiLevelLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.AND)
+            .withLock(redLock)
+            .withLock(whiteWriteLock)
+            .withLock(new MultiRecordSecurityLock()
+               .withOperator(MultiRecordSecurityLock.BooleanOperator.OR)
+               .withLock(blueLock)
+               .withLock(greenLock)));
+      assertEquals(Map.of("red", 1, "blue", 2, "green", 3), AuditAction.getRecordSecurityKeyValues(multiLevelLockTable, record, Optional.empty()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testValidateSecurityKeys()
+   {
+      RecordSecurityLock redLock        = new RecordSecurityLock().withSecurityKeyType("red").withFieldName("red");
+      RecordSecurityLock blueLock       = new RecordSecurityLock().withSecurityKeyType("blue").withFieldName("blue");
+      RecordSecurityLock greenLock      = new RecordSecurityLock().withSecurityKeyType("green").withFieldName("green");
+      RecordSecurityLock whiteWriteLock = new RecordSecurityLock().withSecurityKeyType("green").withFieldName("white").withLockScope(RecordSecurityLock.LockScope.WRITE);
+
+      AuditSingleInput inputWithNoKeys         = new AuditSingleInput().withSecurityKeyValues(Collections.emptyMap());
+      AuditSingleInput inputWithRedKey         = new AuditSingleInput().withSecurityKeyValues(Map.of("red", 1));
+      AuditSingleInput inputWithBlueKey        = new AuditSingleInput().withSecurityKeyValues(Map.of("blue", 2));
+      AuditSingleInput inputWithRedAndBlueKeys = new AuditSingleInput().withSecurityKeyValues(Map.of("red", 1, "blue", 2));
+
+      QTableMetaData noLockTable = new QTableMetaData();
+      assertTrue(AuditAction.validateSecurityKeys(inputWithNoKeys, noLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedKey, noLockTable));
+
+      QTableMetaData simpleLockTable = new QTableMetaData()
+         .withRecordSecurityLock(redLock);
+      assertFalse(AuditAction.validateSecurityKeys(inputWithNoKeys, simpleLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedKey, simpleLockTable));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithBlueKey, simpleLockTable));
+
+      QTableMetaData writeOnlyLockTable = new QTableMetaData()
+         .withRecordSecurityLock(whiteWriteLock);
+      assertTrue(AuditAction.validateSecurityKeys(inputWithNoKeys, writeOnlyLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedKey, writeOnlyLockTable));
+
+      QTableMetaData multiAndLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.AND)
+            .withLock(redLock)
+            .withLock(blueLock));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithNoKeys, multiAndLockTable));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithRedKey, multiAndLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedAndBlueKeys, multiAndLockTable));
+
+      QTableMetaData multiOrLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.OR)
+            .withLock(redLock)
+            .withLock(blueLock));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithNoKeys, multiOrLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedKey, multiOrLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedAndBlueKeys, multiOrLockTable));
+
+      QTableMetaData multiLevelLockTable = new QTableMetaData()
+         .withRecordSecurityLock(new MultiRecordSecurityLock()
+            .withOperator(MultiRecordSecurityLock.BooleanOperator.AND)
+            .withLock(redLock)
+            .withLock(whiteWriteLock)
+            .withLock(new MultiRecordSecurityLock()
+               .withOperator(MultiRecordSecurityLock.BooleanOperator.OR)
+               .withLock(blueLock)
+               .withLock(greenLock)));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithNoKeys, multiLevelLockTable));
+      assertFalse(AuditAction.validateSecurityKeys(inputWithRedKey, multiLevelLockTable));
+      assertTrue(AuditAction.validateSecurityKeys(inputWithRedAndBlueKeys, multiLevelLockTable));
    }
 
 }
