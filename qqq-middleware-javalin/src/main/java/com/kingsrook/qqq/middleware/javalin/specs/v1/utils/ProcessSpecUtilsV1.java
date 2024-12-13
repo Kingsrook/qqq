@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -141,12 +142,14 @@ public class ProcessSpecUtilsV1
       errorResponse.setError("Illegal Argument Exception: NaN");
       errorResponse.setUserFacingError("The process could not be completed due to invalid input.");
 
+      Function<ProcessInitOrStepOrStatusResponseV1, Example> responseToExample = response -> new Example().withValue(convertResponseToJSONObject(response).toMap());
+
       return MapBuilder.of(() -> new LinkedHashMap<String, Example>())
-         .with("COMPLETE", new Example().withValue(completeResponse))
-         .with("COMPLETE with metaDataAdjustment", new Example().withValue(completeResponseWithMetaDataAdjustment))
-         .with("JOB_STARTED", new Example().withValue(jobStartedResponse))
-         .with("RUNNING", new Example().withValue(runningResponse))
-         .with("ERROR", new Example().withValue(errorResponse))
+         .with("COMPLETE", responseToExample.apply(completeResponse))
+         .with("COMPLETE with metaDataAdjustment", responseToExample.apply(completeResponseWithMetaDataAdjustment))
+         .with("JOB_STARTED", responseToExample.apply(jobStartedResponse))
+         .with("RUNNING", responseToExample.apply(runningResponse))
+         .with("ERROR", responseToExample.apply(errorResponse))
          .build();
    }
 
@@ -155,7 +158,21 @@ public class ProcessSpecUtilsV1
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void handleOutput(Context context, ProcessInitOrStepOrStatusResponseV1 output)
+   public static void handleOutput(Context context, ProcessInitOrStepOrStatusResponseV1 response)
+   {
+      JSONObject outputJsonObject = convertResponseToJSONObject(response);
+
+      String json = outputJsonObject.toString(3);
+      System.out.println(json);
+      context.result(json);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static JSONObject convertResponseToJSONObject(ProcessInitOrStepOrStatusResponseV1 response)
    {
       ////////////////////////////////////////////////////////////////////////////////
       // normally, we like the JsonUtils behavior of excluding null/empty elements. //
@@ -163,7 +180,7 @@ public class ProcessSpecUtilsV1
       // so, go through a loop of object → JSON String → JSONObject → String...     //
       // also - work with the TypedResponse sub-object within this response class   //
       ////////////////////////////////////////////////////////////////////////////////
-      ProcessInitOrStepOrStatusResponseV1.TypedResponse typedOutput = output.getTypedResponse();
+      ProcessInitOrStepOrStatusResponseV1.TypedResponse typedOutput = response.getTypedResponse();
 
       String     outputJson       = JsonUtils.toJson(typedOutput);
       JSONObject outputJsonObject = new JSONObject(outputJson);
@@ -182,6 +199,14 @@ public class ProcessSpecUtilsV1
             {
                String       name  = valueEntry.getKey();
                Serializable value = valueEntry.getValue();
+
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               // follow the strategy that we use for JsonUtils.nullKeyToEmptyStringSerializer in this rare case... //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////
+               if(name == null)
+               {
+                  name = "";
+               }
 
                Serializable valueToMakeIntoJson = value;
                if(value instanceof String s)
@@ -213,11 +238,31 @@ public class ProcessSpecUtilsV1
                   valueToMakeIntoJson = new WidgetBlock(abstractBlockWidgetData);
                }
 
-               String valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+               ///////////////////////////////////////////////
+               // ok now, make the value into a JSON string //
+               ///////////////////////////////////////////////
+               String valueAsJsonString;
+               try
                {
-                  mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-               });
+                  valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson, mapper ->
+                  {
+                     mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
 
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // use this custom serializer to convert null map-keys to empty-strings (rather than having an exception!) //
+                     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer);
+                  });
+               }
+               catch(Exception e)
+               {
+                  LOG.warn("Error deserializing process results with serializationInclusion:ALWAYS - will retry with default settings", e);
+                  valueAsJsonString = JsonUtils.toJson(valueToMakeIntoJson);
+               }
+
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // THEN - make it back into a JSONObject or JSONArray, and add it to the valuesAsJsonObject JSONObject //
+               /////////////////////////////////////////////////////////////////////////////////////////////////////////
                if(valueAsJsonString.startsWith("["))
                {
                   valuesAsJsonObject.put(name, new JSONArray(valueAsJsonString));
@@ -252,10 +297,7 @@ public class ProcessSpecUtilsV1
             outputJsonObject.put("values", valuesAsJsonObject);
          }
       }
-
-      String json = outputJsonObject.toString(3);
-      System.out.println(json);
-      context.result(json);
+      return outputJsonObject;
    }
 
 

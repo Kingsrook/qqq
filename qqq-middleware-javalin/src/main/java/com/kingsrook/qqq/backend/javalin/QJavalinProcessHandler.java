@@ -349,6 +349,8 @@ public class QJavalinProcessHandler
       Map<String, Object> resultForCaller    = new HashMap<>();
       Exception           returningException = null;
 
+      String processName = context.pathParam("processName");
+
       try
       {
          if(processUUID == null)
@@ -356,8 +358,6 @@ public class QJavalinProcessHandler
             processUUID = UUID.randomUUID().toString();
          }
          resultForCaller.put("processUUID", processUUID);
-
-         String processName = context.pathParam("processName");
 
          if(startAfterStep == null && startAtStep == null)
          {
@@ -455,10 +455,30 @@ public class QJavalinProcessHandler
       // negative side-effects - but be aware.                                         //
       // One could imagine that we'd need this to be configurable in the future?       //
       ///////////////////////////////////////////////////////////////////////////////////
-      context.result(JsonUtils.toJson(resultForCaller, mapper ->
+      try
       {
-         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-      }));
+         String json = JsonUtils.toJson(resultForCaller, mapper ->
+         {
+            mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // use this custom serializer to convert null map-keys to empty-strings (rather than having an exception!) //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            mapper.getSerializerProvider().setNullKeySerializer(JsonUtils.nullKeyToEmptyStringSerializer);
+         });
+         context.result(json);
+      }
+      catch(Exception e)
+      {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // related to the change above - we've seen at least one new error that can come from the          //
+         // Include.ALWAYS change (a null key in a map -> jackson exception).  So, try-catch around         //
+         // the above serialization, and if it does throw, log, but continue trying a default serialization //
+         // as that is probably preferable to an exception for the caller...                                //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         LOG.warn("Error deserializing process results with serializationInclusion:ALWAYS - will retry with default settings", e, logPair("processName", processName), logPair("processUUID", processUUID));
+         context.result(JsonUtils.toJson(resultForCaller));
+      }
    }
 
 
