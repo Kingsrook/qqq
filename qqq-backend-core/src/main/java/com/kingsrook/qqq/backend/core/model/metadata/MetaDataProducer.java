@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 /*******************************************************************************
  ** Abstract class that knows how to produce meta data objects.  Useful with
- ** MetaDataProducerHelper, to put point at a package full of these, and populate
+ ** MetaDataProducerHelper, to point at a package full of these, and populate
  ** your whole QInstance.
  *******************************************************************************/
 public abstract class MetaDataProducer<T extends MetaDataProducerOutput> implements MetaDataProducerInterface<T>
