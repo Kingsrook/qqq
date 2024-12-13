@@ -2054,16 +2054,41 @@ public class QInstanceValidatorTest extends BaseTest
 
       assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation"))),
          "missing joinName for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER,
-         "missing associatedTableName for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
-      );
+         "missing associatedTableName for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER);
 
       assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation").withJoinName("notAJoin").withAssociatedTableName(TestUtils.TABLE_NAME_LINE_ITEM))),
-         "unrecognized joinName notAJoin for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
-      );
+         "unrecognized joinName notAJoin for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER);
 
       assertValidationFailureReasons((qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_ORDER).withAssociation(new Association().withName("myAssociation").withJoinName("orderLineItem").withAssociatedTableName("notATable"))),
-         "unrecognized associatedTableName notATable for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER
-      );
+         "unrecognized associatedTableName notATable for Association myAssociation on table " + TestUtils.TABLE_NAME_ORDER);
+
+      //////////////////////////////////
+      // wrong join on an association //
+      //////////////////////////////////
+      assertValidationFailureReasons((qInstance ->
+      {
+         Association association = qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getAssociationByName("orderLine").orElseThrow();
+         association.setJoinName("orderOrderExtrinsic");
+      }),
+         "join [orderOrderExtrinsic] does not connect tables [order] and [orderLine]");
+
+      //////////////////////////////////////////
+      // wrong table (doesn't match the join) //
+      //////////////////////////////////////////
+      assertValidationFailureReasons((qInstance ->
+      {
+         Association association = qInstance.getTable(TestUtils.TABLE_NAME_ORDER).getAssociationByName("orderLine").orElseThrow();
+         association.setAssociatedTableName(TestUtils.TABLE_NAME_ORDER_EXTRINSIC);
+      }),
+         "join [orderLineItem] does not connect tables [order] and [orderExtrinsic]");
+
+      //////////////////////////////
+      // invalid type on the join //
+      //////////////////////////////
+      assertValidationFailureReasons((qInstance -> qInstance.getJoin("orderLineItem").setType(JoinType.MANY_TO_MANY)),
+         "Join type does not have 'one' on this table's side side (left)");
+      assertValidationFailureReasons((qInstance -> qInstance.getJoin("orderLineItem").setType(JoinType.MANY_TO_ONE)),
+         "Join type does not have 'one' on this table's side side (left)");
    }
 
 
@@ -2323,7 +2348,7 @@ public class QInstanceValidatorTest extends BaseTest
       {
          int noOfReasons = actualReasons == null ? 0 : actualReasons.size();
          assertEquals(expectedReasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", expectedReasons)
-            + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
+                                                           + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
       }
 
       for(String reason : expectedReasons)
@@ -2451,6 +2476,7 @@ public class QInstanceValidatorTest extends BaseTest
    public static class ValidAuthCustomizer implements QAuthenticationModuleCustomizerInterface {}
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -2466,6 +2492,7 @@ public class QInstanceValidatorTest extends BaseTest
          return List.of();
       }
    }
+
 
 
    /***************************************************************************
