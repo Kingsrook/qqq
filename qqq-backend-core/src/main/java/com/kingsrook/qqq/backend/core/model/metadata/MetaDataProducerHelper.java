@@ -196,7 +196,8 @@ public class MetaDataProducerHelper
    /***************************************************************************
     **
     ***************************************************************************/
-   private static MetaDataProducerInterface<?> processMetaDataProducingPossibleValueEnum(Class<?> aClass)
+   @SuppressWarnings("unchecked")
+   private static <T extends PossibleValueEnum<T>> MetaDataProducerInterface<?> processMetaDataProducingPossibleValueEnum(Class<?> aClass)
    {
       String warningPrefix = "Found a class annotated as @" + QMetaDataProducingPossibleValueEnum.class.getSimpleName();
       if(!PossibleValueEnum.class.isAssignableFrom(aClass))
@@ -206,7 +207,7 @@ public class MetaDataProducerHelper
       }
 
       PossibleValueEnum<?>[] values = (PossibleValueEnum<?>[]) aClass.getEnumConstants();
-      return (new PossibleValueSourceOfEnumGenericMetaDataProducer<>(aClass.getSimpleName(), values));
+      return (new PossibleValueSourceOfEnumGenericMetaDataProducer<T>(aClass.getSimpleName(), (PossibleValueEnum<T>[]) values));
    }
 
 

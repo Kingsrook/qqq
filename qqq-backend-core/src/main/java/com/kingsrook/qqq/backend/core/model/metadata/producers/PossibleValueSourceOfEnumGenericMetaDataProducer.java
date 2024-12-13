@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 public class PossibleValueSourceOfEnumGenericMetaDataProducer<T extends PossibleValueEnum<T>> implements MetaDataProducerInterface<QPossibleValueSource>
 {
    private final String                 name;
-   private final PossibleValueEnum<?>[] values;
+   private final PossibleValueEnum<T>[] values;
 
 
 
@@ -45,7 +45,7 @@ public class PossibleValueSourceOfEnumGenericMetaDataProducer<T extends Possible
     ** Constructor
     **
     *******************************************************************************/
-   public PossibleValueSourceOfEnumGenericMetaDataProducer(String name, PossibleValueEnum<?>[] values)
+   public PossibleValueSourceOfEnumGenericMetaDataProducer(String name, PossibleValueEnum<T>[] values)
    {
       this.name = name;
       this.values = values;
