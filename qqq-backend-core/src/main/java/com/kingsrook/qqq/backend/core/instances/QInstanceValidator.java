@@ -70,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -780,14 +781,37 @@ public class QInstanceValidator
          if(assertCondition(StringUtils.hasContent(association.getName()), "missing a name for an Association on table " + table.getName()))
          {
             String messageSuffix = " for Association " + association.getName() + " on table " + table.getName();
+            boolean recognizedTable = false;
             if(assertCondition(StringUtils.hasContent(association.getAssociatedTableName()), "missing associatedTableName" + messageSuffix))
             {
-               assertCondition(qInstance.getTable(association.getAssociatedTableName()) != null, "unrecognized associatedTableName " + association.getAssociatedTableName() + messageSuffix);
+               if(assertCondition(qInstance.getTable(association.getAssociatedTableName()) != null, "unrecognized associatedTableName " + association.getAssociatedTableName() + messageSuffix))
+               {
+                  recognizedTable = true;
+               }
             }
 
             if(assertCondition(StringUtils.hasContent(association.getJoinName()), "missing joinName" + messageSuffix))
             {
-               assertCondition(qInstance.getJoin(association.getJoinName()) != null, "unrecognized joinName " + association.getJoinName() + messageSuffix);
+               QJoinMetaData join = qInstance.getJoin(association.getJoinName());
+               if(assertCondition(join != null, "unrecognized joinName " + association.getJoinName() + messageSuffix))
+               {
+                  assert join != null; // covered by the assertCondition
+
+                  if(recognizedTable)
+                  {
+                     boolean isLeftToRight = join.getLeftTable().equals(table.getName()) && join.getRightTable().equals(association.getAssociatedTableName());
+                     boolean isRightToLeft = join.getRightTable().equals(table.getName()) && join.getLeftTable().equals(association.getAssociatedTableName());
+                     assertCondition(isLeftToRight || isRightToLeft, "join [" + association.getJoinName() + "] does not connect tables [" + table.getName() + "] and [" + association.getAssociatedTableName() + "]" + messageSuffix);
+                     if(isLeftToRight)
+                     {
+                        assertCondition(join.getType().equals(JoinType.ONE_TO_MANY) || join.getType().equals(JoinType.ONE_TO_ONE), "Join type does not have 'one' on this table's side side (left)" + messageSuffix);
+                     }
+                     else if(isRightToLeft)
+                     {
+                        assertCondition(join.getType().equals(JoinType.MANY_TO_ONE) || join.getType().equals(JoinType.ONE_TO_ONE), "Join type does not have 'one' on this table's side (right)" + messageSuffix);
+                     }
+                  }
+               }
             }
          }
       }

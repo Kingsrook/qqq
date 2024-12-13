@@ -1,0 +1,100 @@
+/*
+ * QQQ - Low-code Application Framework for Engineers.
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
+ * contact@kingsrook.com
+ * https://github.com/Kingsrook/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.kingsrook.qqq.backend.core.model.metadata.producers;
+
+
+import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ChildRecordListRenderer;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildRecordListWidget;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+
+
+/*******************************************************************************
+ ** Generic meta-data-producer, which should be instantiated (e.g., by
+ ** MetaDataProducer Helper), to produce a ChildRecordList QWidgetMetaData, to
+ ** produce a QJoinMetaData, based on a QRecordEntity and a ChildTable sub-annotation.
+ **
+ ** e.g., Orders & LineItems - on the Order entity
+ ** <code>
+ @QMetaDataProducingEntity( childTables = { @ChildTable(
+    childTableEntityClass = LineItem.class,
+    childJoin = @ChildJoin(enabled = true),
+    childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Order Lines"))
+ })
+ public class Order extends QRecordEntity
+ ** </code>
+ **
+ *******************************************************************************/
+public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implements MetaDataProducerInterface<QWidgetMetaData>
+{
+   private String childTableName; // e.g., lineItem
+   private String parentTableName; // e.g., order
+
+   private ChildRecordListWidget childRecordListWidget;
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, ChildRecordListWidget childRecordListWidget)
+   {
+      this.childTableName = childTableName;
+      this.parentTableName = parentTableName;
+      this.childRecordListWidget = childRecordListWidget;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QWidgetMetaData produce(QInstance qInstance) throws QException
+   {
+      String        name = QJoinMetaData.makeInferredJoinName(parentTableName, childTableName);
+      QJoinMetaData join = qInstance.getJoin(name);
+
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(join)
+         .withName(name)
+         .withLabel(childRecordListWidget.label())
+         .withCanAddChildRecord(childRecordListWidget.canAddChildRecords())
+         .getWidgetMetaData();
+
+      if(StringUtils.hasContent(childRecordListWidget.manageAssociationName()))
+      {
+         widget.withDefaultValue("manageAssociationName", childRecordListWidget.manageAssociationName());
+      }
+
+      if(childRecordListWidget.maxRows() > 0)
+      {
+         widget.withDefaultValue("maxRows", childRecordListWidget.maxRows());
+      }
+
+      return (widget);
+   }
+
+}
