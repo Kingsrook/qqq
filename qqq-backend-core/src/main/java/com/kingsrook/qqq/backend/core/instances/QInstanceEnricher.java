@@ -23,6 +23,9 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,8 +36,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -89,6 +94,7 @@ import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -1347,6 +1353,60 @@ public class QInstanceEnricher
             }
          }
 
+         if(possibleValueSource.getIdType() == null)
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               String         primaryKeyField         = table.getPrimaryKeyField();
+               QFieldMetaData primaryKeyFieldMetaData = table.getFields().get(primaryKeyField);
+               if(primaryKeyFieldMetaData != null)
+               {
+                  possibleValueSource.setIdType(primaryKeyFieldMetaData.getType());
+               }
+            }
+         }
+      }
+      else if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
+      {
+         if(possibleValueSource.getIdType() == null)
+         {
+            if(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()))
+            {
+               Object id = possibleValueSource.getEnumValues().get(0).getId();
+               try
+               {
+                  possibleValueSource.setIdType(QFieldType.fromClass(id.getClass()));
+               }
+               catch(Exception e)
+               {
+                  LOG.warn("Error enriching possible value source with idType based on first enum value", e, logPair("possibleValueSource", possibleValueSource.getName()), logPair("id", id));
+               }
+            }
+         }
+      }
+      else if(QPossibleValueSourceType.CUSTOM.equals(possibleValueSource.getType()))
+      {
+         if(possibleValueSource.getIdType() == null)
+         {
+            try
+            {
+               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+
+               Method getPossibleValueMethod = customPossibleValueProvider.getClass().getDeclaredMethod("getPossibleValue", Serializable.class);
+               Type   returnType             = getPossibleValueMethod.getGenericReturnType();
+               Type   idType                 = ((ParameterizedType) returnType).getActualTypeArguments()[0];
+
+               if(idType instanceof Class<?> c)
+               {
+                  possibleValueSource.setIdType(QFieldType.fromClass(c));
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error enriching possible value source with idType based on first custom value", e, logPair("possibleValueSource", possibleValueSource.getName()));
+            }
+         }
       }
    }
 
