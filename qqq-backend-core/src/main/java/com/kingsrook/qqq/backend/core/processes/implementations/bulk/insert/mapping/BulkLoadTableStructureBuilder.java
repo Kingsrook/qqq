@@ -123,8 +123,18 @@ public class BulkLoadTableStructureBuilder
 
       for(Association childAssociation : CollectionUtils.nonNullList(table.getAssociations()))
       {
-         BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, parentAssociationPath);
-         tableStructure.addAssociation(associatedStructure);
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // at this time, we are not prepared to handle 3-level deep associations, so, only process them from the top level... //
+         // main challenge being, wide-mode.  so, maybe we should just only support 3-level+ associations for tall?            //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(association == null)
+         {
+            String nextLevelPath =
+               (StringUtils.hasContent(parentAssociationPath) ? parentAssociationPath + "." : "")
+               + (association != null ? association.getName() : "");
+            BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, nextLevelPath);
+            tableStructure.addAssociation(associatedStructure);
+         }
       }
 
       return (tableStructure);
