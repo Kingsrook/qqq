@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
@@ -170,20 +171,44 @@ public class BulkLoadValueMapper
     ***************************************************************************/
    private static void handlePossibleValues(QFieldMetaData field, ListingHash<String, QRecord> fieldPossibleValueToRecordMap, String associationNamePrefixForFields, String tableLabelPrefix) throws QException
    {
-      Set<String>                    values         = fieldPossibleValueToRecordMap.keySet();
-      Map<String, QPossibleValue<?>> valuesFound    = new HashMap<>();
-      Set<String>                    valuesNotFound = new HashSet<>(values);
+      QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
+
+      Set<String>                    values                      = fieldPossibleValueToRecordMap.keySet();
+      Map<String, Serializable>      valuesToValueInPvsIdTypeMap = new HashMap<>();
+      Map<String, QPossibleValue<?>> valuesFound                 = new HashMap<>();
+      Set<Serializable>              valuesNotFound              = new HashSet<>();
 
       ////////////////////////////////////////////////////////
       // do a search, trying to use all given values as ids //
       ////////////////////////////////////////////////////////
       SearchPossibleValueSourceInput searchPossibleValueSourceInput = new SearchPossibleValueSourceInput();
       searchPossibleValueSourceInput.setPossibleValueSourceName(field.getPossibleValueSourceName());
-      ArrayList<Serializable> idList = new ArrayList<>(values);
+
+      ArrayList<Serializable> idList = new ArrayList<>();
+      for(String value : values)
+      {
+         Serializable valueInPvsIdType = value;
+
+         try
+         {
+            valueInPvsIdType = ValueUtils.getValueAsFieldType(possibleValueSource.getIdType(), value);
+         }
+         catch(Exception e)
+         {
+            ////////////////////////////
+            // leave as original type //
+            ////////////////////////////
+         }
+
+         valuesToValueInPvsIdTypeMap.put(value, valueInPvsIdType);
+         idList.add(valueInPvsIdType);
+         valuesNotFound.add(valueInPvsIdType);
+      }
+
       searchPossibleValueSourceInput.setIdList(idList);
       searchPossibleValueSourceInput.setLimit(values.size());
       LOG.debug("Searching possible value source by ids during bulk load mapping", logPair("pvsName", field.getPossibleValueSourceName()), logPair("noOfIds", idList.size()), logPair("firstId", () -> idList.get(0)));
-      SearchPossibleValueSourceOutput searchPossibleValueSourceOutput = new SearchPossibleValueSourceAction().execute(searchPossibleValueSourceInput);
+      SearchPossibleValueSourceOutput searchPossibleValueSourceOutput = idList.isEmpty() ? new SearchPossibleValueSourceOutput() : new SearchPossibleValueSourceAction().execute(searchPossibleValueSourceInput);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////
       // for each possible value found, remove it from the set of ones not-found, and store it as a hit //
@@ -202,7 +227,7 @@ public class BulkLoadValueMapper
       {
          searchPossibleValueSourceInput = new SearchPossibleValueSourceInput();
          searchPossibleValueSourceInput.setPossibleValueSourceName(field.getPossibleValueSourceName());
-         ArrayList<String> labelList = new ArrayList<>(valuesNotFound);
+         List<String> labelList = valuesNotFound.stream().map(ValueUtils::getValueAsString).toList();
          searchPossibleValueSourceInput.setLabelList(labelList);
          searchPossibleValueSourceInput.setLimit(valuesNotFound.size());
 
@@ -220,12 +245,15 @@ public class BulkLoadValueMapper
       ////////////////////////////////////////////////////////////////////////////////
       for(Map.Entry<String, List<QRecord>> entry : fieldPossibleValueToRecordMap.entrySet())
       {
-         String value = entry.getKey();
+         String       value            = entry.getKey();
+         Serializable valueInPvsIdType = valuesToValueInPvsIdTypeMap.get(entry.getKey());
+         String       pvsIdAsString    = ValueUtils.getValueAsString(valueInPvsIdType);
+
          for(QRecord record : entry.getValue())
          {
-            if(valuesFound.containsKey(value))
+            if(valuesFound.containsKey(pvsIdAsString))
             {
-               record.setValue(field.getName(), valuesFound.get(value).getId());
+               record.setValue(field.getName(), valuesFound.get(pvsIdAsString).getId());
             }
             else
             {

@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -36,6 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -109,6 +111,47 @@ class BulkLoadValueMapperTest extends BaseTest
       System.out.println(expectedJson.toString(3));
 
       assertThat(actualJson).usingRecursiveComparison().isEqualTo(expectedJson);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   void testPossibleValue(Serializable inputValue, Serializable expectedValue, boolean expectErrors) throws QException
+   {
+      QRecord inputRecord = new QRecord().withValue("homeStateId", inputValue);
+      BulkLoadValueMapper.valueMapping(List.of(inputRecord), new BulkInsertMapping(), QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY));
+      assertEquals(expectedValue, inputRecord.getValue("homeStateId"));
+
+      if(expectErrors)
+      {
+         assertThat(inputRecord.getErrors().get(0)).isInstanceOf(BulkLoadPossibleValueError.class);
+      }
+      else
+      {
+         assertThat(inputRecord.getErrors()).isNullOrEmpty();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPossibleValues() throws QException
+   {
+      testPossibleValue(1, 1, false);
+      testPossibleValue("1", 1, false);
+      testPossibleValue("1.0", 1, false);
+      testPossibleValue(new BigDecimal("1.0"), 1, false);
+      testPossibleValue("IL", 1, false);
+
+      testPossibleValue(512, 512, true); // an id, but not in the PVS
+      testPossibleValue("USA", "USA", true);
+      testPossibleValue(true, true, true);
+      testPossibleValue(new BigDecimal("4.7"), new BigDecimal("4.7"), true);
    }
 
 
