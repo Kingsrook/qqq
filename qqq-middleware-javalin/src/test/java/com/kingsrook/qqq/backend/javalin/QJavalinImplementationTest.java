@@ -303,6 +303,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       {
          TestDownloadFileSupplementalAction.callCount = 0;
 
+         Unirest.config().reset();
          Unirest.config().followRedirects(false);
 
          ////////////////////////////////////////////////////////////////////////////////////////////////////////
