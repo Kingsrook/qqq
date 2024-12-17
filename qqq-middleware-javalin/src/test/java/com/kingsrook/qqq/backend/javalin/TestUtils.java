@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.javalin;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -316,6 +317,8 @@ public class TestUtils
          .withField(new QFieldMetaData("testScriptId", QFieldType.INTEGER).withBackendName("test_script_id"))
          .withField(new QFieldMetaData("photo", QFieldType.BLOB).withBackendName("photo"))
          .withField(new QFieldMetaData("photoFileName", QFieldType.STRING).withBackendName("photo_file_name"))
+         .withField(new QFieldMetaData("licenseScanPdfUrl", QFieldType.STRING).withBackendName("license_scan_pdf_url"))
+
          .withAssociation(new Association().withName("pets").withJoinName("personJoinPet").withAssociatedTableName(TABLE_NAME_PET))
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
@@ -330,6 +333,11 @@ public class TestUtils
          .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
             .withValue(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE, "image")
             .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "photoFileName"));
+
+      qTableMetaData.getField("licenseScanPdfUrl")
+         .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "License-%s.pdf")
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS, new ArrayList<>(List.of("id"))));
 
       return (qTableMetaData);
    }
