@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class UniqueKeyHelper
 {
+   private static Integer pageSize = 1000;
 
    /*******************************************************************************
     **
@@ -60,62 +61,71 @@ public class UniqueKeyHelper
       Map<List<Serializable>, Serializable> existingRecords = new HashMap<>();
       if(ukFieldNames != null)
       {
-         QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(table.getName());
-         queryInput.setTransaction(transaction);
+         for(List<QRecord> page : CollectionUtils.getPages(recordList, pageSize))
+         {
+            QueryInput queryInput = new QueryInput();
+            queryInput.setTableName(table.getName());
+            queryInput.setTransaction(transaction);
 
-         QQueryFilter filter = new QQueryFilter();
-         if(ukFieldNames.size() == 1)
-         {
-            List<Serializable> values = recordList.stream()
-               .filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors()))
-               .map(r -> r.getValue(ukFieldNames.get(0)))
-               .collect(Collectors.toList());
-            filter.addCriteria(new QFilterCriteria(ukFieldNames.get(0), QCriteriaOperator.IN, values));
-         }
-         else
-         {
-            filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
-            for(QRecord record : recordList)
+            QQueryFilter filter = new QQueryFilter();
+            if(ukFieldNames.size() == 1)
             {
-               if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+               List<Serializable> values = page.stream()
+                  .filter(r -> CollectionUtils.nullSafeIsEmpty(r.getErrors()))
+                  .map(r -> r.getValue(ukFieldNames.get(0)))
+                  .collect(Collectors.toList());
+
+               if(values.isEmpty())
                {
                   continue;
                }
 
-               QQueryFilter subFilter = new QQueryFilter();
-               filter.addSubFilter(subFilter);
-               for(String fieldName : ukFieldNames)
+               filter.addCriteria(new QFilterCriteria(ukFieldNames.get(0), QCriteriaOperator.IN, values));
+            }
+            else
+            {
+               filter.setBooleanOperator(QQueryFilter.BooleanOperator.OR);
+               for(QRecord record : page)
                {
-                  Serializable value = record.getValue(fieldName);
-                  if(value == null)
+                  if(CollectionUtils.nullSafeHasContents(record.getErrors()))
                   {
-                     subFilter.addCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+                     continue;
                   }
-                  else
+
+                  QQueryFilter subFilter = new QQueryFilter();
+                  filter.addSubFilter(subFilter);
+                  for(String fieldName : ukFieldNames)
                   {
-                     subFilter.addCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, value));
+                     Serializable value = record.getValue(fieldName);
+                     if(value == null)
+                     {
+                        subFilter.addCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.IS_BLANK));
+                     }
+                     else
+                     {
+                        subFilter.addCriteria(new QFilterCriteria(fieldName, QCriteriaOperator.EQUALS, value));
+                     }
                   }
+               }
+
+               if(CollectionUtils.nullSafeIsEmpty(filter.getSubFilters()))
+               {
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if we didn't build any sub-filters (because all records have errors in them), don't run a query w/ no clauses - continue to next page //
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  continue;
                }
             }
 
-            if(CollectionUtils.nullSafeIsEmpty(filter.getSubFilters()))
+            queryInput.setFilter(filter);
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+            for(QRecord record : queryOutput.getRecords())
             {
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               // if we didn't build any sub-filters (because all records have errors in them), don't run a query w/ no clauses - rather - return early. //
-               ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-               return (existingRecords);
-            }
-         }
-
-         queryInput.setFilter(filter);
-         QueryOutput queryOutput = new QueryAction().execute(queryInput);
-         for(QRecord record : queryOutput.getRecords())
-         {
-            Optional<List<Serializable>> keyValues = getKeyValues(table, uniqueKey, record, allowNullKeyValuesToEqual);
-            if(keyValues.isPresent())
-            {
-               existingRecords.put(keyValues.get(), record.getValue(table.getPrimaryKeyField()));
+               Optional<List<Serializable>> keyValues = getKeyValues(table, uniqueKey, record, allowNullKeyValuesToEqual);
+               if(keyValues.isPresent())
+               {
+                  existingRecords.put(keyValues.get(), record.getValue(table.getPrimaryKeyField()));
+               }
             }
          }
       }
@@ -198,6 +208,28 @@ public class UniqueKeyHelper
       {
          return (false);
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pageSize
+    **
+    *******************************************************************************/
+   public static Integer getPageSize()
+   {
+      return pageSize;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pageSize
+    **
+    *******************************************************************************/
+   public static void setPageSize(Integer pageSize)
+   {
+      UniqueKeyHelper.pageSize = pageSize;
    }
 
 }
