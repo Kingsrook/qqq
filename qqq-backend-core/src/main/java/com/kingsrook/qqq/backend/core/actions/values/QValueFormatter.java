@@ -529,10 +529,16 @@ public class QValueFormatter
                   }
                }
 
-               /////////////////////////////////////////////
-               // if field type is blob, update its value //
-               /////////////////////////////////////////////
-               if(QFieldType.BLOB.equals(field.getType()))
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               // if field type is blob OR if there's a supplemental process or code-ref that needs to run - //
+               // then update its value to be a callback-url that'll give access to the bytes to download    //
+               // implied here is that a String value (w/o supplemental code/proc) has its value stay as a   //
+               // URL, which is where the file is directly downloaded from.  And in the case of a String     //
+               // with code-to-run, then the code should run, followed by a redirect to the value URL.       //
+               ////////////////////////////////////////////////////////////////////////////////////////////////
+               if(QFieldType.BLOB.equals(field.getType())
+                  || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE)
+                  || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME))
                {
                   record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
                }
