@@ -460,4 +460,19 @@ public class StringUtils
       return (Pattern.matches("[a-f0-9]{8}(?:-[a-f0-9]{4}){4}[a-f0-9]{8}", s));
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String emptyToNull(String s)
+   {
+      if(!hasContent(s))
+      {
+         return (null);
+      }
+
+      return (s);
+   }
+
 }

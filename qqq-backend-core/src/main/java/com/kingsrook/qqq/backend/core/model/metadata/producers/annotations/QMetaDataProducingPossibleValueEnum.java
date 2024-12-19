@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2024.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,15 +19,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata;
+package com.kingsrook.qqq.backend.core.model.metadata.producers.annotations;
+
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 
 /*******************************************************************************
- ** Abstract class that knows how to produce meta data objects.  Useful with
- ** MetaDataProducerHelper, to point at a package full of these, and populate
- ** your whole QInstance.
+ ** annotation to go on a PossibleValueEnum class, which you would like to be
+ ** processed by MetaDataProducerHelper, to automatically produce possible-value-
+ ** source meta-data based on the enum.
  *******************************************************************************/
-public abstract class MetaDataProducer<T extends MetaDataProducerOutput> implements MetaDataProducerInterface<T>
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
+public @interface QMetaDataProducingPossibleValueEnum
 {
-
+   boolean producePossibleValueSource() default true;
 }

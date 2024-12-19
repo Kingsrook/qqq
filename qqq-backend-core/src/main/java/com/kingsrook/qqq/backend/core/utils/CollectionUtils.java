@@ -700,4 +700,16 @@ public class CollectionUtils
       return (map.containsKey(key) && map.get(key) != null);
    }
 
+
+
+   /***************************************************************************
+    ** add an element to a collection, but, only if the element isn't null
+    ***************************************************************************/
+   public static <T, E extends T> void addIfNotNull(Collection<T> c, E element)
+   {
+      if(element != null)
+      {
+         c.add(element);
+      }
+   }
 }
