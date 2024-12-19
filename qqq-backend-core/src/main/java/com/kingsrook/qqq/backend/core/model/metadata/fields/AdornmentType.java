@@ -68,6 +68,9 @@ public enum AdornmentType
       String DEFAULT_EXTENSION = "defaultExtension";
       String DEFAULT_MIME_TYPE = "defaultMimeType";
 
+      String SUPPLEMENTAL_PROCESS_NAME   = "supplementalProcessName";
+      String SUPPLEMENTAL_CODE_REFERENCE = "supplementalCodeReference";
+
       ////////////////////////////////////////////////////
       // use these two together, as in:                 //
       // FILE_NAME_FORMAT = "Order %s Packing Slip.pdf" //
