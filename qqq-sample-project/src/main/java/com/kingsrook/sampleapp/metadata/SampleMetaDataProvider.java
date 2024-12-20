@@ -778,7 +778,7 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
    public enum PetSpecies implements PossibleValueEnum<Integer>
    {
       DOG(1, "Dog"),
-      CAT(1, "Cat");
+      CAT(2, "Cat");
 
       private final Integer id;
       private final String  label;
