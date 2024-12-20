@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,10 +32,23 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.data.QField;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.ChildJoinFromRecordEntityGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.PossibleValueSourceOfEnumGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.PossibleValueSourceOfTableGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildRecordListWidget;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildTable;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.QMetaDataProducingEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.QMetaDataProducingPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -90,6 +104,9 @@ public class MetaDataProducerHelper
       }
       List<MetaDataProducerInterface<?>> producers = new ArrayList<>();
 
+      ////////////////////////////////////////////////////////////////////////////////////////
+      // loop over classes, processing them based on either their type or their annotations //
+      ////////////////////////////////////////////////////////////////////////////////////////
       for(Class<?> aClass : classesInPackage)
       {
          try
@@ -101,23 +118,27 @@ public class MetaDataProducerHelper
 
             if(MetaDataProducerInterface.class.isAssignableFrom(aClass))
             {
-               boolean foundValidConstructor = false;
-               for(Constructor<?> constructor : aClass.getConstructors())
-               {
-                  if(constructor.getParameterCount() == 0)
-                  {
-                     Object o = constructor.newInstance();
-                     producers.add((MetaDataProducerInterface<?>) o);
-                     foundValidConstructor = true;
-                     break;
-                  }
-               }
+               CollectionUtils.addIfNotNull(producers, processMetaDataProducer(aClass));
+            }
 
-               if(!foundValidConstructor)
+            if(aClass.isAnnotationPresent(QMetaDataProducingEntity.class))
+            {
+               QMetaDataProducingEntity qMetaDataProducingEntity = aClass.getAnnotation(QMetaDataProducingEntity.class);
+               if(qMetaDataProducingEntity.producePossibleValueSource())
                {
-                  LOG.warn("Found a class which implements MetaDataProducerInterface, but it does not have a no-arg constructor, so it cannot be used.", logPair("class", aClass.getSimpleName()));
+                  producers.addAll(processMetaDataProducingEntity(aClass));
                }
             }
+
+            if(aClass.isAnnotationPresent(QMetaDataProducingPossibleValueEnum.class))
+            {
+               QMetaDataProducingPossibleValueEnum qMetaDataProducingPossibleValueEnum = aClass.getAnnotation(QMetaDataProducingPossibleValueEnum.class);
+               if(qMetaDataProducingPossibleValueEnum.producePossibleValueSource())
+               {
+                  CollectionUtils.addIfNotNull(producers, processMetaDataProducingPossibleValueEnum(aClass));
+               }
+            }
+
          }
          catch(Exception e)
          {
@@ -168,7 +189,176 @@ public class MetaDataProducerHelper
             LOG.debug("Not using producer which is not enabled", logPair("producer", producer.getClass().getSimpleName()));
          }
       }
-
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @SuppressWarnings("unchecked")
+   private static <T extends PossibleValueEnum<T>> MetaDataProducerInterface<?> processMetaDataProducingPossibleValueEnum(Class<?> aClass)
+   {
+      String warningPrefix = "Found a class annotated as @" + QMetaDataProducingPossibleValueEnum.class.getSimpleName();
+      if(!PossibleValueEnum.class.isAssignableFrom(aClass))
+      {
+         LOG.warn(warningPrefix + ", but which is not a " + PossibleValueEnum.class.getSimpleName() + ", so it will not be used.", logPair("class", aClass.getSimpleName()));
+         return null;
+      }
+
+      PossibleValueEnum<?>[] values = (PossibleValueEnum<?>[]) aClass.getEnumConstants();
+      return (new PossibleValueSourceOfEnumGenericMetaDataProducer<T>(aClass.getSimpleName(), (PossibleValueEnum<T>[]) values));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static List<MetaDataProducerInterface<?>> processMetaDataProducingEntity(Class<?> aClass) throws Exception
+   {
+      List<MetaDataProducerInterface<?>> rs = new ArrayList<>();
+
+      String warningPrefix = "Found a class annotated as @" + QMetaDataProducingEntity.class.getSimpleName();
+      if(!QRecordEntity.class.isAssignableFrom(aClass))
+      {
+         LOG.warn(warningPrefix + ", but which is not a " + QRecordEntity.class.getSimpleName() + ", so it will not be used.", logPair("class", aClass.getSimpleName()));
+         return (rs);
+      }
+
+      Field tableNameField = aClass.getDeclaredField("TABLE_NAME");
+      if(!tableNameField.getType().equals(String.class))
+      {
+         LOG.warn(warningPrefix + ", but whose TABLE_NAME field is not a String, so it will not be used.", logPair("class", aClass.getSimpleName()));
+         return (rs);
+      }
+
+      String tableNameValue = (String) tableNameField.get(null);
+      rs.add(new PossibleValueSourceOfTableGenericMetaDataProducer(tableNameValue));
+
+      //////////////////////////
+      // process child tables //
+      //////////////////////////
+      QMetaDataProducingEntity qMetaDataProducingEntity = aClass.getAnnotation(QMetaDataProducingEntity.class);
+      for(ChildTable childTable : qMetaDataProducingEntity.childTables())
+      {
+         Class<? extends QRecordEntity> childEntityClass = childTable.childTableEntityClass();
+         if(childTable.childJoin().enabled())
+         {
+            CollectionUtils.addIfNotNull(rs, processChildJoin(aClass, childTable));
+
+            if(childTable.childRecordListWidget().enabled())
+            {
+               CollectionUtils.addIfNotNull(rs, processChildRecordListWidget(aClass, childTable));
+            }
+         }
+         else
+         {
+            if(childTable.childRecordListWidget().enabled())
+            {
+               //////////////////////////////////////////////////////////////////////////
+               // if not doing the join, can't do the child-widget, so warn about that //
+               //////////////////////////////////////////////////////////////////////////
+               LOG.warn(warningPrefix + " requested to produce a ChildRecordListWidget, but not produce a Join - which is not allowed (must do join to do widget). ", logPair("class", aClass.getSimpleName()), logPair("childEntityClass", childEntityClass.getSimpleName()));
+            }
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static MetaDataProducerInterface<?> processChildRecordListWidget(Class<?> aClass, ChildTable childTable) throws Exception
+   {
+      Class<? extends QRecordEntity> childEntityClass = childTable.childTableEntityClass();
+      String                         parentTableName  = getTableNameStaticFieldValue(aClass);
+      String                         childTableName   = getTableNameStaticFieldValue(childEntityClass);
+
+      ChildRecordListWidget childRecordListWidget = childTable.childRecordListWidget();
+      return (new ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, childRecordListWidget));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static String findPossibleValueField(Class<? extends QRecordEntity> entityClass, String possibleValueSourceName)
+   {
+      for(Field field : entityClass.getDeclaredFields())
+      {
+         if(field.isAnnotationPresent(QField.class))
+         {
+            QField qField = field.getAnnotation(QField.class);
+            if(qField.possibleValueSourceName().equals(possibleValueSourceName))
+            {
+               return field.getName();
+            }
+         }
+      }
+
+      return (null);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static MetaDataProducerInterface<?> processChildJoin(Class<?> aClass, ChildTable childTable) throws Exception
+   {
+      Class<? extends QRecordEntity> childEntityClass = childTable.childTableEntityClass();
+
+      String parentTableName        = getTableNameStaticFieldValue(aClass);
+      String childTableName         = getTableNameStaticFieldValue(childEntityClass);
+      String possibleValueFieldName = findPossibleValueField(childEntityClass, parentTableName);
+      if(!StringUtils.hasContent(possibleValueFieldName))
+      {
+         LOG.warn("Could not find field in [" + childEntityClass.getSimpleName() + "] with possibleValueSource referencing table [" + aClass.getSimpleName() + "]");
+         return (null);
+      }
+
+      return (new ChildJoinFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, possibleValueFieldName));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static MetaDataProducerInterface<?> processMetaDataProducer(Class<?> aClass) throws Exception
+   {
+      for(Constructor<?> constructor : aClass.getConstructors())
+      {
+         if(constructor.getParameterCount() == 0)
+         {
+            Object o = constructor.newInstance();
+            return (MetaDataProducerInterface<?>) o;
+         }
+      }
+
+      LOG.warn("Found a class which implements MetaDataProducerInterface, but it does not have a no-arg constructor, so it cannot be used.", logPair("class", aClass.getSimpleName()));
+      return null;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static String getTableNameStaticFieldValue(Class<?> aClass) throws NoSuchFieldException, IllegalAccessException
+   {
+      Field tableNameField = aClass.getDeclaredField("TABLE_NAME");
+      if(!tableNameField.getType().equals(String.class))
+      {
+         return (null);
+      }
+
+      String tableNameValue = (String) tableNameField.get(null);
+      return (tableNameValue);
+   }
 }

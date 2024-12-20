@@ -1,0 +1,362 @@
+[#MetaDataProduction]
+include::../variables.adoc[]
+
+The first thing that an application built using QQQ needs to do is to define its meta data.
+This basically means the construction of a `QInstance` object, which is populated with the
+meta data objects defining the backend(s), tables, processes, possible-value sources, joins,
+authentication provider, etc, that make your application.
+
+There are various styles that can be used for how you define your meta data, and for the
+most part they can be mixed and matched.  They will be presented here based on the historical
+evolution of how they were added to QQQ, where we generally believe that better techniques have
+been added over time.  So, you may wish to skip the earlier techniques, and jump straight to
+the end of this section.  However, it can always be instructive to learn about the past, so,
+read at your own pace.
+
+== Omni-Provider
+At the most basic level, the way to populate a `QInstance` is the simple and direct approach of creating
+one big class, possibly with just one big method, and just doing all the work directly inline there.
+
+This may (clearly) violate several good engineering principles.  However, it does have the benefit of
+being simple - if all of your meta-data is defined in one place, it can be pretty simple to find where
+that place is.  So - especially in a small project, this technique may be worth continuing to consider.
+
+Re: "doing all the work" as mentioned above - what work are we talking about?  At a minimum, we need
+to construct the following meta-data objects, and pass them into our `QInstance`:
+
+* `QAuthenticationMetaData` - how (or if!) users will be authenticated to the application.
+* `QBackendMeataData` - a backend data store.
+* `QTableMetaData` - a table (within the backend).
+* `QAppMetaData` - an organizational unit to present the other elements in a UI.
+
+Here's what a single-method omni-provider could look like:
+
+[source,java]
+.About the simplest possible single-file meta-data provider
+----
+public QInstance defineQInstance()
+{
+    QInstance qInstance = new QInstance();
+
+    qInstance.setAuthentication(new QAuthenticationMetaData()
+       .withName("anonymous")
+       .withType(QAuthenticationType.FULLY_ANONYMOUS));
+
+    qInstance.addBackend(new QBackendMetaData()
+       .withBackendType(MemoryBackendModule.class)
+       .withName("memoryBackend"));
+
+    qInstance.addTable(new QTableMetaData()
+        .withName("myTable")
+        .withPrimaryKeyField("id")
+        .withBackendName("memoryBackend")
+        .withField(new QFieldMetaData("id", QFieldType.INTEGER)));
+
+    qInstance.addApp(new QAppMetaData()
+       .withName("myApp")
+       .withSectionOfChildren(new QAppSection().withName("mySection"),
+          qInstance.getTable("myTable")))
+
+   return (qInstance);
+}
+----
+
+== Multi-method Omni-Provider
+
+The next evolution of meta-data production comes by just applying some basic better-engineering
+principles, and splitting up from a single method that constructs all the things, to at least
+using unique methods to construct each thing, then calling those methods to add their results
+to the QInstance.
+
+[source,java]
+.Multi-method omni- meta-data provider
+----
+public QInstance defineQInstance()
+{
+    QInstance qInstance = new QInstance();
+    qInstance.setAuthentication(defineAuthenticationMetaData());
+    qInstance.addBackend(defineBackendMetaData());
+    qInstance.addTable(defineMyTableMetaData());
+    qInstance.addApp(defineMyAppMetaData(qInstance));
+    return qInstance;
+}
+
+public QAuthenticationMetaData defineAuthenticationMetaData()
+{
+    return new QAuthenticationMetaData()
+       .withName("anonymous")
+       .withType(QAuthenticationType.FULLY_ANONYMOUS);
+}
+
+public QBackendMetaData defineBackendMetaData()
+{
+    return new QBackendMetaData()
+       .withBackendType(MemoryBackendModule.class)
+       .withName("memoryBackend");
+}
+
+// implementations of defineMyTableMetaData() and defineMyAppMetaData(qInstance)
+// left as an exercise for the reader
+----
+
+== Multi-class Providers
+
+Then the next logical evolution would be to put each of these single meta-data producing
+objects into its own class, along with calls to those classes.  This gets us away from the
+"5000 line" single-class, and lets us stop using the word "omni":
+
+[source,java]
+.Multi-class meta-data providers
+----
+public QInstance defineQInstance()
+{
+    QInstance qInstance = new QInstance();
+    qInstance.setAuthentication(new AuthMetaDataProvider().defineAuthenticationMetaData());
+    qInstance.addBackend(new BackendMetaDataProvider().defineBackendMetaData());
+    qInstance.addTable(new MyTableMetaDataProvider().defineTableMetaData());
+    qInstance.addApp(new MyAppMetaDataProvider().defineAppMetaData(qInstance));
+    return qInstance;
+}
+
+public class AuthMetaDataProvider
+{
+    public QAuthenticationMetaData defineAuthenticationMetaData()
+    {
+        return new QAuthenticationMetaData()
+           .withName("anonymous")
+           .withType(QAuthenticationType.FULLY_ANONYMOUS);
+    }
+}
+
+public class BackendMetaDataProvider
+{
+    public QBackendMetaData defineBackendMetaData()
+    {
+        return new QBackendMetaData()
+           .withBackendType(MemoryBackendModule.class)
+           .withName("memoryBackend");
+    }
+}
+
+// implementations of MyTableMetaDataProvider and MyAppMetaDataProvider
+// left as an exercise for the reader
+----
+
+== MetaDataProducerInterface
+
+As the size of your application grows, if you're doing per-object meta-data providers, you may find it
+burdensome, when adding a new object to your instance, to have to write code for it in two places -
+that is - a new class to produce that meta-data object, AND a single line of code to add that object
+to your `QInstance`.  As such, a mechanism to avoid that line-of-code to add the object to the
+`QInstance` exists.
+
+This mechanism involves adding the `MetaDataProducerInterface` to all of your classes that produce a
+meta-data object.  This interface is generic, with a type parameter that will typically be the type of
+meta-data object you are producing, such as `QTableMetaData`, `QProcessMetaData`, or `QWidgetMetaData`,
+(technically, any class which implements `TopLevelMetaData`).  Implementers of the interface are then
+required to override just one method: `T produce(QInstance qInstance) throws QException;`
+
+Once you have your `MetaDataProducerInterface` classes defined, then there's a one-time call needed
+to add all of the objects produced by these classes to your `QInstance` - as shown here:
+
+[source,java]
+.Using MetaDataProducerInterface
+----
+public QInstance defineQInstance()
+{
+    QInstance qInstance = new QInstance();
+    MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance,
+      "com.mydomain.myapplication");
+    return qInstance;
+}
+
+public class AuthMetaDataProducer implements MetaDataProducerInterface<QAuthenticationMetaData>
+{
+    @Override
+    public QAuthenticationMetaData produce(QInstance qInstance)
+    {
+        return new QAuthenticationMetaData()
+           .withName("anonymous")
+           .withType(QAuthenticationType.FULLY_ANONYMOUS);
+    }
+}
+
+public class BackendMetaDataProducer implements MetaDataProducerInterface<QBackendMetaData>
+{
+    @Override
+    public QBackendMetaData defineBackendMetaData()
+    {
+        return new QBackendMetaData()
+           .withBackendType(MemoryBackendModule.class)
+           .withName("memoryBackend");
+    }
+}
+
+// implementations of MyTableMetaDataProvider and MyAppMetaDataProvider
+// left as an exercise for the reader
+----
+
+=== MetaDataProducerMultiOutput
+It is worth mentioning, that sometimes it might feel like a bridge that's a bit too far, to make
+every single one of your meta-data objects require its own class.  Some may argue that it's best
+to do it that way - single responsibility principle, etc.  But, if you're producing, say, 5 widgets
+that are all related, and it's only a handful of lines of code for each one, maybe you'd rather
+produce them all in the same class.  Or maybe when you define a table, you'd like to define its
+joins and widgets at the same time.
+
+This approach can be accomplished by making your `MetaDataProducerInterface`'s type argument by
+`MetaDataProducerMultiOutput` - a simple class that just wraps a list of other `MetaDataProducerOutput`
+objects.
+
+[source,java]
+.Returning a MetaDataProducerMultiOutput
+----
+public class MyMultiProducer implements MetaDataProducerInterface<MetaDataProducerMultiOutput>
+{
+    @Override
+    public MetaDataProducerMultiOutput produce(QInstance qInstance)
+    {
+       MetaDataProducerMultiOutput output = new MetaDataProducerMultiOutput();
+
+       output.add(new QPossibleValueSource()...);
+       output.add(new QJoinMetaData()...);
+       output.add(new QJoinMetaData()...);
+       output.add(new QWidgetMetaData()...);
+       output.add(new QTableMetaData()...);
+
+       return (output);
+    }
+}
+----
+
+
+== Aside: TableMetaData with RecordEntities
+At this point, let's take a brief aside to dig deeper into the creation of a `QTableMeta` object.
+Tables, being probably the most important meta-data type in QQQ, have a lot of information that can
+be specified in their meta-data object.
+
+At the same time, if you're writing any custom code in your QQQ application
+(e.g., any processes or table customizers), where you're working with records from tables, you may
+prefer being able to work with entity beans (e.g., java classes with typed getter & setter methods),
+rather than the default object type that QQQ's ORM actions return, the `QRecord`, which carriers all
+of its values in a `Map`.  QQQ has a mechanism for dealing with this - in the form of the `QRecordEntity`
+class.
+
+So - if you want to build your application using entity beans (which is recommended, for the compile-time
+safety that they provide in custom code), you will be writing a `QRecordEntity` class, which will look like:
+
+[source,java]
+.QRecordEntity example
+----
+public class MyTable extends QRecordEntity
+{
+   public static final String TABLE_NAME = "myTable";
+
+   @QField(isEditable = false, isPrimaryKey = true)
+   private Integer id;
+
+   @QField()
+   private String name;
+
+   // no-arg constructor and constructor that takes a QRecord
+   // getters & setters (and optional fluent setters)
+}
+----
+
+The point of introducing this topic here and now is, that a `QRecordEntity` can be used to shortcut to
+defining some of the attributes in a `QTableMetaData` object.  Specifically, in a `MetaDataProducer<QTableMetaData>`
+you may say:
+
+[source,java]
+.QTableMetaDataProducer using a QRecordEntity
+----
+public QTableMetaData produce(QInstance qInstance) throws QExcpetion
+{
+  return new QTableMetaData()
+     .withName(MyTable.TABLE_NAME)
+     .withFieldsFromEntity(MyTable.class)
+     .withBackendName("memoryBackend");
+}
+----
+
+That `withFieldsFromEntity` call is one of the biggest benefits of this technique.  It allows you to avoid defining
+all of the field in you table in two place (the entity and the table meta-data).
+
+== MetaData Producing Annotations for Entities
+
+If you are using `QRecordEntity` classes that correspond to your tables, then you can take advantage of some
+additional annotations on those classes, to produce more related meta-data objects associated with those tables.
+The point of this is to eliminate boilerplate, and simplify / speed up the process of getting a new table
+built and deployed in your application, with some bells and whistles added.
+
+=== @QMetaDataProducingEntity
+This is an annotation to go on a QRecordEntity class, which you would like to be
+processed by `MetaDataProducerHelper`, to automatically produce some meta-data
+objects.  Specifically supports:
+
+* Making a possible-value-source out of the table.
+* Processing child tables to create joins and childRecordList widgets
+
+=== @ChildTable
+This is an annotation used as a value that goes inside a `@QMetadataProducingEntity` annotation, to define
+child-tables, e.g., for producing joins and childRecordList widgets related to the table defined in the entity class.
+
+=== @ChildJoin
+This is an annotation used as a value inside a `@ChildTable` inside a `@QMetadataProducingEntity` annotation,
+to control the generation of a `QJoinMetaData`, as a `ONE_TO_MANY` type join from the table represented by
+the annotated entity, to the table referenced in the `@ChildTable` annotation.
+
+=== @ChildRecordListWidget
+This is an annotation used as a value that goes inside a `@QMetadataProducingEntity` annotation, to control
+the generation of a QWidgetMetaData - for a ChildRecordList widget.
+
+[source,java]
+.QRecordEntity with meta-data producing annotations
+----
+@QMetaDataProducingEntity(
+   producePossibleValueSource = true,
+   childTables = {
+      @ChildTable(
+         childTableEntityClass = MyChildTable.class,
+         childJoin = @ChildJoin(enabled = true),
+         childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Children"))
+   }
+)
+public class MyTable extends QRecordEntity
+{
+   public static final String TABLE_NAME = "myTable";
+   // class body left as exercise for reader
+}
+----
+
+The class given in the example above, if processed by the `MetaDataProducerHelper`, would add the following
+meta-data objects to your `QInstance`:
+
+* A `QPossibleValueSource` named `myTable`, of type `TABLE`, with `myTable` as its backing table.
+* A `QJoinMetaData` named `myTableJoinMyChildTable`, as a `ONE_TO_MANY` type, between those two tables.
+* A `QWidgetMetaData` named `myTableJoinMyChildTable`, as a `CHILD_RECORD_LIST` type, that will show a list of
+records from `myChildTable` as a widget, when viewing a record from `myTable`.
+
+== Other MetaData Producing Annotations
+
+Similar to these annotations for a `RecordEntity`, a similar one exists for a `PossibleValueEnum` class,
+to automatically write the meta-data to use that enum as a possible value source in your application:
+
+=== @QMetaDataProducingPossibleValueEnum
+This is an annotation to go on a `PossibleValueEnum` class, which you would like to be
+processed by MetaDataProducerHelper, to automatically produce a PossibleValueSource meta-data
+based on the enum.
+
+[source,java]
+.PossibleValueEnum with meta-data producing annotation
+----
+@QMetaDataProducingPossibleValueEnum(producePossibleValueSource = true)
+public enum MyOptionsEnum implements PossibleValueEnum<Integer>
+{
+   // values and methods left as exercise for reader
+}
+----
+The enum given in the example above, if processed by the `MetaDataProducerHelper`, would add the following
+meta-data object to your `QInstance`:
+
+* A `QPossibleValueSource` named `MyOptionsEnum`, of type `ENUM`, with `MyOptionsEnum` as its backing enum.

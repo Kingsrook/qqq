@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
+import java.util.Objects;
+
+
 /*******************************************************************************
  ** An actual possible value - an id and label.
  **
@@ -75,5 +78,38 @@ public class QPossibleValue<T>
    public String getLabel()
    {
       return label;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(this == o)
+      {
+         return true;
+      }
+
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+
+      QPossibleValue<?> that = (QPossibleValue<?>) o;
+      return Objects.equals(id, that.id) && Objects.equals(label, that.label);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(id, label);
    }
 }
