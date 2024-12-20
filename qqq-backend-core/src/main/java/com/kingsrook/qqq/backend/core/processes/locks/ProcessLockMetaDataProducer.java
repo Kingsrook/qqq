@@ -95,7 +95,7 @@ public class ProcessLockMetaDataProducer implements MetaDataProducerInterface<Me
          .withRightTable(ProcessLock.TABLE_NAME)
          .withInferredName()
          .withType(JoinType.ONE_TO_MANY)
-         .withJoinOn(new JoinOn("name", "processLockTypeId"))
+         .withJoinOn(new JoinOn("id", "processLockTypeId"))
       );
 
       return output;

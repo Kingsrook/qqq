@@ -29,11 +29,21 @@ service.routes(qJavalinImplementation.getRoutes());
 service.start();
 ----
 
-*QBackendMetaData Setup Methods:*
+*QInstance Setup:*
 
 These are the methods that one is most likely to use when setting up (defining) a `QInstance` object:
 
-* asdf
+* `add(TopLevelMetaDataInterface metaData)` - Generic method that takes most of the meta-data subtypes that can be added
+to an instance, such as `QBackendMetaData`, `QTableMetaData`, `QProcessMetaData`, etc.
+There are also type-specific methods (e.g., `addTable`, `addProcess`, etc), which one can call instead - this would just
+be a matter of personal preference.
 
-*QBackendMetaData Usage Methods:*
+*QInstance Usage:*
 
+Generally you will set up a `QInstance` in your application's startup flow, and then place it in the server (e.g., javalin).
+But, if, during application-code runtime, you need access to any of the meta-data in the instance, you access it
+via the `QContext` object's static `getInstance()` method.  This can be useful, for example, to get a list of the defined
+tables in the application, or fields in a table, or details about a field, etc.
+
+It is generally considered risky and/or not a good idea at all to modify the `QInstance` after it has been validated and
+a server is running.  Future versions of QQQ may in fact restrict modifications to the instance after validation.

@@ -6,7 +6,10 @@
 
 include::Introduction.adoc[leveloffset=+1]
 
-== Meta Data
+== Meta Data Production
+include::metaData/MetaDataProduction.adoc[leveloffset=+1]
+
+== Meta Data Types
 // Organizational units
 include::metaData/QInstance.adoc[leveloffset=+1]
 include::metaData/Backends.adoc[leveloffset=+1]
