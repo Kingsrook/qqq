@@ -61,7 +61,7 @@ public QInstance defineQInstance()
 }
 ----
 
-=== Multi-method Omni-Provider
+== Multi-method Omni-Provider
 
 The next evolution of meta-data production comes by just applying some basic better-engineering
 principles, and splitting up from a single method that constructs all the things, to at least
@@ -99,7 +99,7 @@ public QBackendMetaData defineBackendMetaData()
 // left as an exercise for the reader
 ----
 
-=== Multi-class Providers
+== Multi-class Providers
 
 Then the next logical evolution would be to put each of these single meta-data producing
 objects into its own class, along with calls to those classes.  This gets us away from the
@@ -142,7 +142,7 @@ public class BackendMetaDataProvider
 // left as an exercise for the reader
 ----
 
-=== MetaDataProducerInterface
+== MetaDataProducerInterface
 
 As the size of your application grows, if you're doing per-object meta-data providers, you may find it
 burdensome, when adding a new object to your instance, to have to write code for it in two places -
@@ -196,7 +196,7 @@ public class BackendMetaDataProducer implements MetaDataProducerInterface<QBacke
 // left as an exercise for the reader
 ----
 
-==== MetaDataProducerMultiOutput
+=== MetaDataProducerMultiOutput
 It is worth mentioning, that sometimes it might feel like a bridge that's a bit too far, to make
 every single one of your meta-data objects require its own class.  Some may argue that it's best
 to do it that way - single responsibility principle, etc.  But, if you're producing, say, 5 widgets
@@ -230,7 +230,7 @@ public class MyMultiProducer implements MetaDataProducerInterface<MetaDataProduc
 ----
 
 
-=== Aside: TableMetaData with RecordEntities
+== Aside: TableMetaData with RecordEntities
 At this point, let's take a brief aside to dig deeper into the creation of a `QTableMeta` object.
 Tables, being probably the most important meta-data type in QQQ, have a lot of information that can
 be specified in their meta-data object.
@@ -282,14 +282,14 @@ public QTableMetaData produce(QInstance qInstance) throws QExcpetion
 That `withFieldsFromEntity` call is one of the biggest benefits of this technique.  It allows you to avoid defining
 all of the field in you table in two place (the entity and the table meta-data).
 
-=== MetaData Producing Annotations for Entities
+== MetaData Producing Annotations for Entities
 
 If you are using `QRecordEntity` classes that correspond to your tables, then you can take advantage of some
 additional annotations on those classes, to produce more related meta-data objects associated with those tables.
 The point of this is to eliminate boilerplate, and simplify / speed up the process of getting a new table
 built and deployed in your application, with some bells and whistles added.
 
-==== @QMetaDataProducingEntity
+=== @QMetaDataProducingEntity
 This is an annotation to go on a QRecordEntity class, which you would like to be
 processed by `MetaDataProducerHelper`, to automatically produce some meta-data
 objects.  Specifically supports:
@@ -297,16 +297,16 @@ objects.  Specifically supports:
 * Making a possible-value-source out of the table.
 * Processing child tables to create joins and childRecordList widgets
 
-==== @ChildTable
+=== @ChildTable
 This is an annotation used as a value that goes inside a `@QMetadataProducingEntity` annotation, to define
 child-tables, e.g., for producing joins and childRecordList widgets related to the table defined in the entity class.
 
-==== @ChildJoin
+=== @ChildJoin
 This is an annotation used as a value inside a `@ChildTable` inside a `@QMetadataProducingEntity` annotation,
 to control the generation of a `QJoinMetaData`, as a `ONE_TO_MANY` type join from the table represented by
 the annotated entity, to the table referenced in the `@ChildTable` annotation.
 
-==== @ChildRecordListWidget
+=== @ChildRecordListWidget
 This is an annotation used as a value that goes inside a `@QMetadataProducingEntity` annotation, to control
 the generation of a QWidgetMetaData - for a ChildRecordList widget.
 
@@ -337,12 +337,12 @@ meta-data objects to your `QInstance`:
 * A `QWidgetMetaData` named `myTableJoinMyChildTable`, as a `CHILD_RECORD_LIST` type, that will show a list of
 records from `myChildTable` as a widget, when viewing a record from `myTable`.
 
-=== Other MetaData Producing Annotations
+== Other MetaData Producing Annotations
 
 Similar to these annotations for a `RecordEntity`, a similar one exists for a `PossibleValueEnum` class,
 to automatically write the meta-data to use that enum as a possible value source in your application:
 
-==== @QMetaDataProducingPossibleValueEnum
+=== @QMetaDataProducingPossibleValueEnum
 This is an annotation to go on a `PossibleValueEnum` class, which you would like to be
 processed by MetaDataProducerHelper, to automatically produce a PossibleValueSource meta-data
 based on the enum.
