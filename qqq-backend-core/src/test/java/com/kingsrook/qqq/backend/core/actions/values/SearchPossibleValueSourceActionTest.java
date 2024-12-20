@@ -217,6 +217,63 @@ class SearchPossibleValueSourceActionTest extends BaseTest
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_tableByLabels() throws QException
+   {
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of("Square", "Circle"), TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+         assertEquals(2, output.getResults().size());
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("Square"));
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(3) && pv.getLabel().equals("Circle"));
+      }
+
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of(), TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+         assertEquals(0, output.getResults().size());
+      }
+
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of("notFound"), TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE);
+         assertEquals(0, output.getResults().size());
+      }
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSearchPvsAction_enumByLabel() throws QException
+   {
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of("IL", "MO", "XX"), TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+         assertEquals(2, output.getResults().size());
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(1) && pv.getLabel().equals("IL"));
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("MO"));
+      }
+
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of("Il", "mo", "XX"), TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+         assertEquals(2, output.getResults().size());
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(1) && pv.getLabel().equals("IL"));
+         assertThat(output.getResults()).anyMatch(pv -> pv.getId().equals(2) && pv.getLabel().equals("MO"));
+      }
+
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of(), TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+         assertEquals(0, output.getResults().size());
+      }
+
+      {
+         SearchPossibleValueSourceOutput output = getSearchPossibleValueSourceOutputByLabels(List.of("not-found"), TestUtils.POSSIBLE_VALUE_SOURCE_STATE);
+         assertEquals(0, output.getResults().size());
+      }
+   }
+
+
 
    /*******************************************************************************
     **
@@ -409,6 +466,20 @@ class SearchPossibleValueSourceActionTest extends BaseTest
    {
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       input.setIdList(ids);
+      input.setPossibleValueSourceName(possibleValueSourceName);
+      SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
+      return output;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private SearchPossibleValueSourceOutput getSearchPossibleValueSourceOutputByLabels(List<String> labels, String possibleValueSourceName) throws QException
+   {
+      SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
+      input.setLabelList(labels);
       input.setPossibleValueSourceName(possibleValueSourceName);
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
       return output;

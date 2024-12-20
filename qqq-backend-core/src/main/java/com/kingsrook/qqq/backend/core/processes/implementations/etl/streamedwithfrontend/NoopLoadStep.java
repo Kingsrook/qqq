@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwit
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
  *******************************************************************************/
 public class NoopLoadStep extends AbstractLoadStep
 {
+   private static final QLogger LOG = QLogger.getLogger(NoopLoadStep.class);
 
 
    /*******************************************************************************
@@ -45,6 +47,7 @@ public class NoopLoadStep extends AbstractLoadStep
       ///////////
       // noop. //
       ///////////
+      LOG.trace("noop");
    }
 
 }

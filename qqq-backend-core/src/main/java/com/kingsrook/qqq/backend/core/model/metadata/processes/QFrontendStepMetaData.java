@@ -48,6 +48,7 @@ public class QFrontendStepMetaData extends QStepMetaData
    private Map<String, QFieldMetaData>      formFieldMap;
 
    private String format;
+   private String backStepName;
 
    private List<QHelpContent> helpContents;
 
@@ -432,6 +433,37 @@ public class QFrontendStepMetaData extends QStepMetaData
    public QFrontendStepMetaData withFormat(String format)
    {
       this.format = format;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for backStepName
+    *******************************************************************************/
+   public String getBackStepName()
+   {
+      return (this.backStepName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backStepName
+    *******************************************************************************/
+   public void setBackStepName(String backStepName)
+   {
+      this.backStepName = backStepName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backStepName
+    *******************************************************************************/
+   public QFrontendStepMetaData withBackStepName(String backStepName)
+   {
+      this.backStepName = backStepName;
       return (this);
    }
 

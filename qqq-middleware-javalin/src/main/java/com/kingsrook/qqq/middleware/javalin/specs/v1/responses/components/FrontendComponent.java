@@ -23,11 +23,13 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
 import java.io.Serializable;
+import java.util.EnumSet;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
+import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIEnumSubSet;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 
@@ -66,7 +68,36 @@ public class FrontendComponent implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
+   public static class QComponentTypeSubSet implements OpenAPIEnumSubSet.EnumSubSet<QComponentType>
+   {
+      private static EnumSet<QComponentType> subSet = null;
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public EnumSet<QComponentType> getSubSet()
+      {
+         if(subSet == null)
+         {
+            EnumSet<QComponentType> subSet = EnumSet.allOf(QComponentType.class);
+            subSet.remove(QComponentType.BULK_LOAD_FILE_MAPPING_FORM);
+            subSet.remove(QComponentType.BULK_LOAD_VALUE_MAPPING_FORM);
+            subSet.remove(QComponentType.BULK_LOAD_PROFILE_FORM);
+            QComponentTypeSubSet.subSet = subSet;
+         }
+
+         return(subSet);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @OpenAPIDescription("The type of this component.  e.g., what kind of UI element(s) should be presented to the user.")
+   @OpenAPIEnumSubSet(QComponentTypeSubSet.class)
    public QComponentType getType()
    {
       return (this.wrapped.getType());

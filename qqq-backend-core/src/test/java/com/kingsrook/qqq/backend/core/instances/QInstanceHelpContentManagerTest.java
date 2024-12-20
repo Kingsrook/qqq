@@ -47,6 +47,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataIn
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpRole;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -296,6 +298,49 @@ class QInstanceHelpContentManagerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testWildcardProcessField() throws QException
+   {
+      /////////////////////////////////////
+      // get the instance from base test //
+      /////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+      new HelpContentMetaDataProvider().defineAll(qInstance, TestUtils.MEMORY_BACKEND_NAME, null);
+
+      HelpContent recordEntity = new HelpContent()
+         .withId(1)
+         .withKey("process:*.bulkInsert;step:upload")
+         .withContent("v1")
+         .withRole(HelpContentRole.PROCESS_SCREEN.getId());
+      new InsertAction().execute(new InsertInput(HelpContent.TABLE_NAME).withRecordEntity(recordEntity));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now - post-insert customizer should have automatically added help content to the instance - to all bulkInsert processes //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      int hitCount = 0;
+      for(QTableMetaData table : qInstance.getTables().values())
+      {
+         QProcessMetaData process = qInstance.getProcess(table.getName() + ".bulkInsert");
+         if(process == null)
+         {
+            return;
+         }
+
+         List<QHelpContent> helpContents = process.getFrontendStep("upload").getHelpContents();
+         assertEquals(1, helpContents.size());
+         assertEquals("v1", helpContents.get(0).getContent());
+         assertEquals(Set.of(QHelpRole.PROCESS_SCREEN), helpContents.get(0).getRoles());
+         hitCount++;
+      }
+
+      assertThat(hitCount).isGreaterThanOrEqualTo(3);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testProcessStep() throws QException
    {
       /////////////////////////////////////
@@ -411,7 +456,7 @@ class QInstanceHelpContentManagerTest extends BaseTest
 
       QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply("foo;bar:baz"));
       assertThat(collectingLogger.getCollectedMessages()).hasSize(1);
-      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Discarding help content with key that does not contain name:value format");
+      assertThat(collectingLogger.getCollectedMessages().get(0).getMessage()).contains("Discarding help content with key-part that does not contain name:value format");
       collectingLogger.clear();
 
       QInstanceHelpContentManager.processHelpContentRecord(qInstance, helpContentCreator.apply(null));

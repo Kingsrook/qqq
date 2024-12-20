@@ -23,7 +23,6 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
 import java.util.List;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
@@ -61,6 +60,7 @@ public class FieldMetaData implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -82,6 +82,7 @@ public class FieldMetaData implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -90,6 +91,7 @@ public class FieldMetaData implements ToSchema
    {
       return (this.wrapped.getType() == null ? null : this.wrapped.getType().name());
    }
+
 
 
    /***************************************************************************
@@ -102,6 +104,7 @@ public class FieldMetaData implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -112,6 +115,7 @@ public class FieldMetaData implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -120,6 +124,7 @@ public class FieldMetaData implements ToSchema
    {
       return (this.wrapped.getIsHidden());
    }
+
 
 
    /***************************************************************************
@@ -143,6 +148,7 @@ public class FieldMetaData implements ToSchema
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -151,6 +157,7 @@ public class FieldMetaData implements ToSchema
    {
       return (this.wrapped.getDefaultValue() == null ? null : String.valueOf(this.wrapped.getDefaultValue()));
    }
+
 
 
    /***************************************************************************
@@ -166,6 +173,8 @@ public class FieldMetaData implements ToSchema
 
    // todo - inline PVS
 
+
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -177,14 +186,17 @@ public class FieldMetaData implements ToSchema
 
    // todo behaviors?
 
+
+
+
    /***************************************************************************
     **
     ***************************************************************************/
    @OpenAPIDescription("Special UI dressings to add to the field.")
-   @OpenAPIListItems(value = FieldAdornment.class) // todo!
+   @OpenAPIListItems(value = FieldAdornment.class, useRef = true)
    public List<FieldAdornment> getAdornments()
    {
-      return (this.wrapped.getAdornments());
+      return (this.wrapped.getAdornments() == null ? null : this.wrapped.getAdornments().stream().map(a -> new FieldAdornment(a)).toList());
    }
 
    // todo help content

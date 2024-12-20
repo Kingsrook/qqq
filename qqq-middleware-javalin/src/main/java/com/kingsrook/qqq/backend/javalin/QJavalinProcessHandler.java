@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -50,24 +51,22 @@ import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessAction;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
-import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
-import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -79,9 +78,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMeta
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.state.StateType;
-import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
-import com.kingsrook.qqq.backend.core.state.UUIDAndTypeStateKey;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
@@ -93,6 +89,7 @@ import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 import static io.javalin.apibuilder.ApiBuilder.get;
@@ -325,7 +322,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processInit(Context context)
    {
-      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
+      doProcessInitOrStep(context, null, null, null, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
@@ -339,7 +336,7 @@ public class QJavalinProcessHandler
     *******************************************************************************/
    public static void processRun(Context context)
    {
-      doProcessInitOrStep(context, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
+      doProcessInitOrStep(context, null, null, null, RunProcessInput.FrontendStepBehavior.SKIP);
    }
 
 
@@ -347,7 +344,7 @@ public class QJavalinProcessHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
+   private static void doProcessInitOrStep(Context context, String processUUID, String startAfterStep, String startAtStep, RunProcessInput.FrontendStepBehavior frontendStepBehavior)
    {
       Map<String, Object> resultForCaller    = new HashMap<>();
       Exception           returningException = null;
@@ -362,8 +359,22 @@ public class QJavalinProcessHandler
          }
          resultForCaller.put("processUUID", processUUID);
 
-         LOG.info(startAfterStep == null ? "Initiating process [" + processName + "] [" + processUUID + "]"
-            : "Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
+         if(startAfterStep == null && startAtStep == null)
+         {
+            LOG.info("Initiating process [" + processName + "] [" + processUUID + "]");
+         }
+         else if(startAfterStep != null)
+         {
+            LOG.info("Resuming process [" + processName + "] [" + processUUID + "] after step [" + startAfterStep + "]");
+         }
+         else if(startAtStep != null)
+         {
+            LOG.info("Resuming process [" + processName + "] [" + processUUID + "] at step [" + startAtStep + "]");
+         }
+         else
+         {
+            LOG.warn("A logical impossibility was reached, regarding the nullity of startAfterStep and startAtStep, at least given how this code was originally written.");
+         }
 
          RunProcessInput runProcessInput = new RunProcessInput();
          QJavalinImplementation.setupSession(context, runProcessInput);
@@ -372,11 +383,13 @@ public class QJavalinProcessHandler
          runProcessInput.setFrontendStepBehavior(frontendStepBehavior);
          runProcessInput.setProcessUUID(processUUID);
          runProcessInput.setStartAfterStep(startAfterStep);
+         runProcessInput.setStartAtStep(startAtStep);
          populateRunProcessRequestWithValuesFromContext(context, runProcessInput);
 
          String reportName = ValueUtils.getValueAsString(runProcessInput.getValue("reportName"));
          QJavalinAccessLogger.logStart(startAfterStep == null ? "processInit" : "processStep", logPair("processName", processName), logPair("processUUID", processUUID),
             StringUtils.hasContent(startAfterStep) ? logPair("startAfterStep", startAfterStep) : null,
+            StringUtils.hasContent(startAtStep) ? logPair("startAtStep", startAfterStep) : null,
             StringUtils.hasContent(reportName) ? logPair("reportName", reportName) : null);
 
          //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -485,6 +498,7 @@ public class QJavalinProcessHandler
       }
       resultForCaller.put("values", runProcessOutput.getValues());
       runProcessOutput.getProcessState().getNextStepName().ifPresent(nextStep -> resultForCaller.put("nextStep", nextStep));
+      runProcessOutput.getProcessState().getBackStepName().ifPresent(backStep -> resultForCaller.put("backStep", backStep));
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // todo - delete after all frontends look for processMetaDataAdjustment instead of updatedFrontendStepList //
@@ -531,7 +545,7 @@ public class QJavalinProcessHandler
     ** todo - make query params have a "field-" type of prefix??
     **
     *******************************************************************************/
-   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException
+   private static void populateRunProcessRequestWithValuesFromContext(Context context, RunProcessInput runProcessInput) throws IOException, QException
    {
       //////////////////////////
       // process query string //
@@ -562,20 +576,42 @@ public class QJavalinProcessHandler
       ////////////////////////////
       // process uploaded files //
       ////////////////////////////
-      for(UploadedFile uploadedFile : context.uploadedFiles())
+      for(Map.Entry<String, List<UploadedFile>> entry : context.uploadedFileMap().entrySet())
       {
-         try(InputStream content = uploadedFile.content())
+         String                  name          = entry.getKey();
+         List<UploadedFile>      uploadedFiles = entry.getValue();
+         ArrayList<StorageInput> storageInputs = new ArrayList<>();
+         runProcessInput.addValue(name, storageInputs);
+
+         String storageTableName = QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName();
+         if(!StringUtils.hasContent(storageTableName))
          {
-            QUploadedFile qUploadedFile = new QUploadedFile();
-            qUploadedFile.setBytes(content.readAllBytes());
-            qUploadedFile.setFilename(uploadedFile.filename());
+            throw (new QException("UploadFileArchiveTableName was not specified in javalinMetaData.  Cannot accept file uploads."));
+         }
 
-            UUIDAndTypeStateKey key = new UUIDAndTypeStateKey(StateType.UPLOADED_FILE);
-            TempFileStateProvider.getInstance().put(key, qUploadedFile);
-            LOG.info("Stored uploaded file in TempFileStateProvider under key: " + key);
-            runProcessInput.addValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME, key);
+         for(UploadedFile uploadedFile : uploadedFiles)
+         {
+            String reference = QValueFormatter.formatDate(LocalDate.now())
+                               + File.separator + runProcessInput.getProcessName()
+                               + File.separator + UUID.randomUUID()
+                               + File.separator + uploadedFile.filename();
 
-            archiveUploadedFile(runProcessInput, qUploadedFile);
+            StorageInput storageInput = new StorageInput(storageTableName).withReference(reference);
+            storageInputs.add(storageInput);
+
+            try
+               (
+                  InputStream content = uploadedFile.content();
+                  OutputStream outputStream = new StorageAction().createOutputStream(storageInput);
+               )
+            {
+               content.transferTo(outputStream);
+               LOG.info("Streamed uploaded file", logPair("storageTable", storageTableName), logPair("reference", reference), logPair("processName", runProcessInput.getProcessName()), logPair("uploadFileName", uploadedFile.filename()));
+            }
+            catch(QException e)
+            {
+               throw (new QException("Error creating output stream in table [" + storageTableName + "] for storage action", e));
+            }
          }
       }
 
@@ -602,27 +638,6 @@ public class QJavalinProcessHandler
             }
          });
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static void archiveUploadedFile(RunProcessInput runProcessInput, QUploadedFile qUploadedFile)
-   {
-      String fileName = QValueFormatter.formatDate(LocalDate.now())
-         + File.separator + runProcessInput.getProcessName()
-         + File.separator + qUploadedFile.getFilename();
-
-      InsertInput insertInput = new InsertInput();
-      insertInput.setTableName(QJavalinImplementation.javalinMetaData.getUploadedFileArchiveTableName());
-      insertInput.setRecords(List.of(new QRecord()
-         .withValue("fileName", fileName)
-         .withValue("contents", qUploadedFile.getBytes())
-      ));
-
-      new InsertAction().executeAsync(insertInput);
    }
 
 
@@ -684,8 +699,19 @@ public class QJavalinProcessHandler
    public static void processStep(Context context)
    {
       String processUUID = context.pathParam("processUUID");
-      String lastStep    = context.pathParam("step");
-      doProcessInitOrStep(context, processUUID, lastStep, RunProcessInput.FrontendStepBehavior.BREAK);
+
+      String startAfterStep = null;
+      String startAtStep = null;
+      if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(context.queryParam("isStepBack"))))
+      {
+         startAtStep = context.pathParam("step");
+      }
+      else
+      {
+         startAfterStep = context.pathParam("step");
+      }
+
+      doProcessInitOrStep(context, processUUID, startAfterStep, startAtStep, RunProcessInput.FrontendStepBehavior.BREAK);
    }
 
 
