@@ -56,12 +56,12 @@ public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDa
    {
       if(map.containsKey("class"))
       {
-         String _class = ValueUtils.getValueAsString(map.get("class"));
-         AbstractMetaDataLoader<?> loader = switch(_class)
+         String classProperty = ValueUtils.getValueAsString(map.get("class"));
+         AbstractMetaDataLoader<?> loader = switch(classProperty)
          {
             case "QTableMetaData" -> new QTableMetaDataLoader();
             // todo!! case "QTableMetaData" -> new QTableMetaDataLoader();
-            default -> throw new QMetaDataLoaderException("Unexpected class [" + _class + "] specified in " + getFileName());
+            default -> throw new QMetaDataLoaderException("Unexpected class [" + classProperty + "] specified in " + getFileName());
          };
 
          return (loader);
