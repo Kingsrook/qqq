@@ -57,12 +57,15 @@ class MetaDataLoaderHelperTest extends BaseTest
          label: This is My Table
          primaryKeyField:  id
          fields:
-         -  name: id
-            type: INTEGER
-         -  name: name
-            type: STRING
-         -  name: createDate
-            type: DATE_TIME
+            id:
+               name: id
+               type: INTEGER
+            name:
+               name: name
+               type: STRING
+            createDate:
+               name: createDate
+               type: DATE_TIME
          """);
 
       writeFile("yourTable", ".yaml", tempDirectory, """
@@ -72,10 +75,12 @@ class MetaDataLoaderHelperTest extends BaseTest
          label: Someone else's table
          primaryKeyField:  id
          fields:
-         -  name: id
-            type: INTEGER
-         -  name: name
-            type: STRING
+            id:
+               name: id
+               type: INTEGER
+            name:
+               name: name
+               type: STRING
          """);
 
       QInstance qInstance = new QInstance();
