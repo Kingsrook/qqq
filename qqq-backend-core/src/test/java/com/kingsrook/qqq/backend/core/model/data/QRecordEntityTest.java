@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
@@ -35,7 +37,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,6 +53,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QRecordEntityTest extends BaseTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @BeforeEach
+   void beforeEach() throws QException
+   {
+      QContext.getQInstance().addTable(new QTableMetaData()
+         .withName(Item.TABLE_NAME)
+         .withFieldsFromEntity(Item.class)
+      );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      QContext.getQInstance().getTables().remove(Item.TABLE_NAME);
+   }
+
+
 
    /*******************************************************************************
     **
@@ -68,6 +98,19 @@ class QRecordEntityTest extends BaseTest
       assertEquals(47, qRecord.getValueInteger("quantity"));
       assertEquals(new BigDecimal("3.50"), qRecord.getValueBigDecimal("price"));
       assertTrue(qRecord.getValueBoolean("featured"));
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // assert that, if we had no lists of associations in the entity, that we also have none in the record //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertThat(qRecord.getAssociatedRecords()).isNullOrEmpty();
+
+      ///////////////////////////////////////////////////////////////////////
+      // now assert that an empty list translates through to an empty list //
+      ///////////////////////////////////////////////////////////////////////
+      item.setItemAlternates(Collections.emptyList());
+      qRecord = item.toQRecord();
+      assertTrue(qRecord.getAssociatedRecords().containsKey(Item.ASSOCIATION_ITEM_ALTERNATES_NAME));
+      assertTrue(qRecord.getAssociatedRecords().get(Item.ASSOCIATION_ITEM_ALTERNATES_NAME).isEmpty());
    }
 
 
@@ -76,9 +119,40 @@ class QRecordEntityTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testItemToQRecordOnlyChangedFields() throws QException
+   void testItemToQRecordWithAssociations() throws QException
+   {
+      Item item = new Item();
+      item.setSku("ABC-123");
+      item.setQuantity(47);
+      item.setItemAlternates(List.of(
+         new Item().withSku("DEF"),
+         new Item().withSku("GHI").withQuantity(3)
+      ));
+
+      QRecord qRecord = item.toQRecord();
+      assertEquals("ABC-123", qRecord.getValueString("sku"));
+      assertEquals(47, qRecord.getValueInteger("quantity"));
+
+      List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(Item.ASSOCIATION_ITEM_ALTERNATES_NAME);
+      assertEquals(2, associatedRecords.size());
+      assertEquals("DEF", associatedRecords.get(0).getValue("sku"));
+      assertTrue(associatedRecords.get(0).getValues().containsKey("quantity"));
+      assertNull(associatedRecords.get(0).getValue("quantity"));
+      assertEquals("GHI", associatedRecords.get(1).getValue("sku"));
+      assertEquals(3, associatedRecords.get(1).getValue("quantity"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   @Test
+   void testItemToQRecordOnlyChangedFieldsEntityThatCameFromQRecord() throws QException
    {
       Item item = new Item(new QRecord()
+         .withValue("id", 1701)
          .withValue("sku", "ABC-123")
          .withValue("description", null)
          .withValue("quantity", 47)
@@ -88,15 +162,99 @@ class QRecordEntityTest extends BaseTest
       QRecord qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
       assertTrue(qRecordOnlyChangedFields.getValues().isEmpty());
 
+      QRecord qRecordOnlyChangedFieldsIncludePKey = item.toQRecordOnlyChangedFields(true);
+      assertEquals(1, qRecordOnlyChangedFieldsIncludePKey.getValues().size());
+      assertEquals(1701, qRecordOnlyChangedFieldsIncludePKey.getValue("id"));
+
       item.setDescription("My Changed Item");
-      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(false);
       assertEquals(1, qRecordOnlyChangedFields.getValues().size());
       assertEquals("My Changed Item", qRecordOnlyChangedFields.getValueString("description"));
+
+      qRecordOnlyChangedFieldsIncludePKey = item.toQRecordOnlyChangedFields(true);
+      assertEquals(2, qRecordOnlyChangedFieldsIncludePKey.getValues().size());
+      assertEquals("My Changed Item", qRecordOnlyChangedFieldsIncludePKey.getValueString("description"));
+      assertEquals(1701, qRecordOnlyChangedFieldsIncludePKey.getValue("id"));
 
       item.setPrice(null);
       qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
       assertEquals(2, qRecordOnlyChangedFields.getValues().size());
       assertNull(qRecordOnlyChangedFields.getValueString("price"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   @Test
+   void testItemToQRecordOnlyChangedFieldsFromNewEntity() throws QException
+   {
+      Item item = new Item()
+         .withId(1701)
+         .withSku("ABC-123");
+
+      QRecord qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields();
+      assertEquals(2, qRecordOnlyChangedFields.getValues().size());
+      assertEquals(1701, qRecordOnlyChangedFields.getValue("id"));
+      assertEquals("ABC-123", qRecordOnlyChangedFields.getValue("sku"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @SuppressWarnings("deprecation")
+   @Test
+   void testItemToQRecordOnlyChangedFieldsWithAssociations() throws QException
+   {
+      Item item = new Item(new QRecord()
+         .withValue("id", 1701)
+         .withValue("sku", "ABC-123")
+         .withAssociatedRecord(Item.ASSOCIATION_ITEM_ALTERNATES_NAME, new Item(new QRecord()
+            .withValue("id", 1702)
+            .withValue("sku", "DEF")
+            .withValue("quantity", 3)
+            .withValue("price", new BigDecimal("3.50"))
+         ).toQRecord())
+      );
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if no values were changed in the entities, from when they were constructed (from records), then value maps should be empty //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QRecord qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(false);
+      assertTrue(qRecordOnlyChangedFields.getValues().isEmpty());
+      List<QRecord> associatedRecords = qRecordOnlyChangedFields.getAssociatedRecords().get(Item.ASSOCIATION_ITEM_ALTERNATES_NAME);
+      assertTrue(associatedRecords.get(0).getValues().isEmpty());
+
+      ///////////////////////////////////////////////////////
+      // but - if pkeys are requested, confirm we get them //
+      ///////////////////////////////////////////////////////
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(true);
+      assertEquals(1, qRecordOnlyChangedFields.getValues().size());
+      assertEquals(1701, qRecordOnlyChangedFields.getValue("id"));
+      associatedRecords = qRecordOnlyChangedFields.getAssociatedRecords().get(Item.ASSOCIATION_ITEM_ALTERNATES_NAME);
+      assertEquals(1, associatedRecords.get(0).getValues().size());
+      assertEquals(1702, associatedRecords.get(0).getValue("id"));
+
+      ////////////////////////////////////////////
+      // change some properties in the entities //
+      ////////////////////////////////////////////
+      item.setDescription("My Changed Item");
+      item.getItemAlternates().get(0).setQuantity(4);
+      item.getItemAlternates().get(0).setPrice(null);
+
+      qRecordOnlyChangedFields = item.toQRecordOnlyChangedFields(true);
+      assertEquals(2, qRecordOnlyChangedFields.getValues().size());
+      assertEquals(1701, qRecordOnlyChangedFields.getValue("id"));
+      assertEquals("My Changed Item", qRecordOnlyChangedFields.getValue("description"));
+      associatedRecords = qRecordOnlyChangedFields.getAssociatedRecords().get(Item.ASSOCIATION_ITEM_ALTERNATES_NAME);
+      assertEquals(3, associatedRecords.get(0).getValues().size());
+      assertEquals(1702, associatedRecords.get(0).getValue("id"));
+      assertEquals(4, associatedRecords.get(0).getValue("quantity"));
+      assertNull(associatedRecords.get(0).getValue("price"));
    }
 
 

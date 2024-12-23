@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.model.data.testentities;
 
 
 import java.math.BigDecimal;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.model.data.QAssociation;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
@@ -34,6 +36,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
  *******************************************************************************/
 public class Item extends QRecordEntity
 {
+   public static final String TABLE_NAME = "item";
+
+   public static final String ASSOCIATION_ITEM_ALTERNATES_NAME = "itemAlternates";
+
+   @QField(isPrimaryKey = true)
+   private Integer id;
+
    @QField(isRequired = true, label = "SKU")
    private String sku;
 
@@ -48,6 +57,9 @@ public class Item extends QRecordEntity
 
    @QField(backendName = "is_featured")
    private Boolean featured;
+
+   @QAssociation(name = ASSOCIATION_ITEM_ALTERNATES_NAME)
+   private List<Item> itemAlternates;
 
 
 
@@ -179,4 +191,122 @@ public class Item extends QRecordEntity
    {
       this.featured = featured;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sku
+    *******************************************************************************/
+   public Item withSku(String sku)
+   {
+      this.sku = sku;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for description
+    *******************************************************************************/
+   public Item withDescription(String description)
+   {
+      this.description = description;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for quantity
+    *******************************************************************************/
+   public Item withQuantity(Integer quantity)
+   {
+      this.quantity = quantity;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for price
+    *******************************************************************************/
+   public Item withPrice(BigDecimal price)
+   {
+      this.price = price;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for featured
+    *******************************************************************************/
+   public Item withFeatured(Boolean featured)
+   {
+      this.featured = featured;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for itemAlternates
+    *******************************************************************************/
+   public List<Item> getItemAlternates()
+   {
+      return (this.itemAlternates);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for itemAlternates
+    *******************************************************************************/
+   public void setItemAlternates(List<Item> itemAlternates)
+   {
+      this.itemAlternates = itemAlternates;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for itemAlternates
+    *******************************************************************************/
+   public Item withItemAlternates(List<Item> itemAlternates)
+   {
+      this.itemAlternates = itemAlternates;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for id
+    *******************************************************************************/
+   public Integer getId()
+   {
+      return (this.id);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for id
+    *******************************************************************************/
+   public void setId(Integer id)
+   {
+      this.id = id;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for id
+    *******************************************************************************/
+   public Item withId(Integer id)
+   {
+      this.id = id;
+      return (this);
+   }
+
+
 }
