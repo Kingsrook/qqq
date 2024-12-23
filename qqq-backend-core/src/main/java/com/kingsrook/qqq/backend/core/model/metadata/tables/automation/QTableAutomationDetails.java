@@ -24,13 +24,14 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 
 
 /*******************************************************************************
  ** Details about how this table's record automations are set up.
  *******************************************************************************/
-public class QTableAutomationDetails
+public class QTableAutomationDetails implements QMetaDataObject
 {
    private AutomationStatusTracking    statusTracking;
    private String                      providerName;

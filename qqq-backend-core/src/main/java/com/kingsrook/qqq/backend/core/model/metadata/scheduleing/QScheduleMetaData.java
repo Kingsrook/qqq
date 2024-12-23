@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.scheduleing;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -35,7 +36,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** same moment.
  **
  *******************************************************************************/
-public class QScheduleMetaData
+public class QScheduleMetaData implements QMetaDataObject
 {
    private String schedulerName;
    private String description;

@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+
+
 /*******************************************************************************
  ** Table-automation meta-data to define how this table's per-record automation
  ** status is tracked.
  *******************************************************************************/
-public class AutomationStatusTracking
+public class AutomationStatusTracking implements QMetaDataObject
 {
    private AutomationStatusTrackingType type;
 

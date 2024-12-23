@@ -31,6 +31,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
@@ -40,7 +41,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *
  *******************************************************************************/
 @JsonDeserialize(using = QFilterCriteriaDeserializer.class)
-public class QFilterCriteria implements Serializable, Cloneable
+public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
 {
    private static final QLogger LOG = QLogger.getLogger(QFilterCriteria.class);
 

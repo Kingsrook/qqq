@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
@@ -54,7 +55,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** Meta-data to represent a single field in a table.
  **
  *******************************************************************************/
-public class QFieldMetaData implements Cloneable
+public class QFieldMetaData implements Cloneable, QMetaDataObject
 {
    private static final QLogger LOG = QLogger.getLogger(QFieldMetaData.class);
 
