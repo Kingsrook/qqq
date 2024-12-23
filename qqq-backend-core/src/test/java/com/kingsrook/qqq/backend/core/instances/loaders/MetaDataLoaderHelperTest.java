@@ -96,6 +96,9 @@ class MetaDataLoaderHelperTest extends BaseTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    void writeFile(String prefix, String suffix, Path directory, String content) throws IOException
    {
       FileUtils.writeStringToFile(File.createTempFile(prefix, suffix, directory.toFile()), content, StandardCharsets.UTF_8);
