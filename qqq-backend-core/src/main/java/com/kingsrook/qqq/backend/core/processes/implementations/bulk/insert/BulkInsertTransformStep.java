@@ -197,6 +197,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<QRecord> recordsWithSomeErrors   = new ArrayList<>();
       for(QRecord record : runBackendStepInput.getRecords())
       {
+         List<QErrorMessage> errorsFromAssociations = getErrorsFromAssociations(record);
+         if(CollectionUtils.nullSafeHasContents(errorsFromAssociations))
+         {
+            List<QErrorMessage> recordErrors = Objects.requireNonNullElseGet(record.getErrors(), () -> new ArrayList<>());
+            recordErrors.addAll(errorsFromAssociations);
+            record.setErrors(recordErrors);
+         }
+
          if(CollectionUtils.nullSafeHasContents(record.getErrors()))
          {
             recordsWithSomeErrors.add(record);
@@ -347,6 +355,34 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
       runBackendStepOutput.setRecords(outputRecords);
       this.rowsProcessed += recordsInThisPage;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private List<QErrorMessage> getErrorsFromAssociations(QRecord record)
+   {
+      List<QErrorMessage> rs = null;
+      for(Map.Entry<String, List<QRecord>> entry : CollectionUtils.nonNullMap(record.getAssociatedRecords()).entrySet())
+      {
+         for(QRecord associatedRecord : CollectionUtils.nonNullList(entry.getValue()))
+         {
+            if(CollectionUtils.nullSafeHasContents(associatedRecord.getErrors()))
+            {
+               rs = Objects.requireNonNullElseGet(rs, () -> new ArrayList<>());
+               rs.addAll(associatedRecord.getErrors());
+
+               List<QErrorMessage> childErrors = getErrorsFromAssociations(associatedRecord);
+               if(CollectionUtils.nullSafeHasContents(childErrors))
+               {
+                  rs.addAll(childErrors);
+               }
+            }
+         }
+      }
+      return (rs);
    }
 
 
