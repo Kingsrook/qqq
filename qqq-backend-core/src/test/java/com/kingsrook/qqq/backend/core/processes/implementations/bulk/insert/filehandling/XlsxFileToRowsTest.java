@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportActionTest.REPORT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -61,13 +61,14 @@ class XlsxFileToRowsTest extends BaseTest
    {
       byte[] byteArray = writeExcelBytes();
 
-      FileToRowsInterface fileToRowsInterface = FileToRowsInterface.forFile("someFile.xlsx", new ByteArrayInputStream(byteArray));
+      FileToRowsInterface fileToRowsInterface = new XlsxFileToRows();
+      fileToRowsInterface.init(new ByteArrayInputStream(byteArray));
 
       BulkLoadFileRow headerRow = fileToRowsInterface.next();
       BulkLoadFileRow bodyRow   = fileToRowsInterface.next();
 
-      assertEquals(new BulkLoadFileRow(new String[] {"Id", "First Name", "Last Name", "Birth Date"}, 1), headerRow);
-      assertEquals(new BulkLoadFileRow(new Serializable[] {1, "Darin", "Jonson", LocalDateTime.of(1980, Month.JANUARY, 31, 0, 0)}, 2), bodyRow);
+      assertEquals(new BulkLoadFileRow(new String[] { "Id", "First Name", "Last Name", "Birth Date" }, 1), headerRow);
+      assertEquals(new BulkLoadFileRow(new Serializable[] { 1, "Darin", "Jonson", LocalDate.of(1980, Month.JANUARY, 31) }, 2), bodyRow);
 
       ///////////////////////////////////////////////////////////////////////////////////////
       // make sure there's at least a limit (less than 20) to how many more rows there are //
@@ -105,6 +106,56 @@ class XlsxFileToRowsTest extends BaseTest
       byte[] byteArray = baos.toByteArray();
       // FileUtils.writeByteArrayToFile(new File("/tmp/xlsx.xlsx"), byteArray);
       return byteArray;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDateTimeFormats()
+   {
+      assertFormatDateAndOrDateTime(true, false, "dddd, m/d/yy at h:mm");
+      assertFormatDateAndOrDateTime(true, false, "h PM, ddd mmm dd");
+      assertFormatDateAndOrDateTime(true, false, "dd/mm/yyyy hh:mm");
+      assertFormatDateAndOrDateTime(true, false, "yyyy-mm-dd hh:mm:ss.000");
+      assertFormatDateAndOrDateTime(true, false, "hh:mm dd/mm/yyyy");
+
+      assertFormatDateAndOrDateTime(false, true, "yyyy-mm-dd");
+      assertFormatDateAndOrDateTime(false, true, "mmmm d \\[dddd\\]");
+      assertFormatDateAndOrDateTime(false, true, "mmm dd, yyyy");
+      assertFormatDateAndOrDateTime(false, true, "d-mmm");
+      assertFormatDateAndOrDateTime(false, true, "dd.mm.yyyy");
+
+      assertFormatDateAndOrDateTime(false, false, "yyyy");
+      assertFormatDateAndOrDateTime(false, false, "mmm-yyyy");
+      assertFormatDateAndOrDateTime(false, false, "hh");
+      assertFormatDateAndOrDateTime(false, false, "hh:mm");
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void assertFormatDateAndOrDateTime(boolean expectDateTime, boolean expectDate, String format)
+   {
+      if(XlsxFileToRows.isDateTimeFormat(format))
+      {
+         assertTrue(expectDateTime, format + " was considered a dateTime, but wasn't expected to.");
+         assertFalse(expectDate, format + " was considered a dateTime, but was expected to be a date.");
+      }
+      else if(XlsxFileToRows.isDateFormat(format))
+      {
+         assertFalse(expectDateTime, format + " was considered a date, but was expected to be a dateTime.");
+         assertTrue(expectDate, format + " was considered a date, but was expected to.");
+      }
+      else
+      {
+         assertFalse(expectDateTime, format + " was not considered a dateTime, but was expected to.");
+         assertFalse(expectDate, format + " was considered a date, but was expected to.");
+      }
    }
 
 }

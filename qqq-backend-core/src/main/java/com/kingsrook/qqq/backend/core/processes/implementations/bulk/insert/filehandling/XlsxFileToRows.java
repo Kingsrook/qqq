@@ -26,14 +26,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import org.dhatim.fastexcel.reader.Cell;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
+import org.dhatim.fastexcel.reader.ReadingOptions;
+import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
 
@@ -42,6 +44,10 @@ import org.dhatim.fastexcel.reader.Sheet;
  *******************************************************************************/
 public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.fastexcel.reader.Row> implements FileToRowsInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(XlsxFileToRows.class);
+
+   private static final Pattern DAY_PATTERN = Pattern.compile(".*\\b(d|dd)\\b.*");
+
    private ReadableWorkbook                        workbook;
    private Stream<org.dhatim.fastexcel.reader.Row> rows;
 
@@ -55,7 +61,7 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
    {
       try
       {
-         workbook = new ReadableWorkbook(inputStream);
+         workbook = new ReadableWorkbook(inputStream, new ReadingOptions(true, true));
          Sheet sheet = workbook.getFirstSheet();
 
          rows = sheet.openStream();
@@ -79,44 +85,154 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
 
       for(int i = 0; i < readerRow.getCellCount(); i++)
       {
-         Cell cell = readerRow.getCell(i);
-         if(cell.getType() != null)
-         {
-            values[i] = switch(cell.getType())
-            {
-               case NUMBER ->
-               {
-                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  // ... with fastexcel reader, we don't get styles... so, we just know type = number, for dates and ints & decimals... //
-                  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                  Optional<LocalDateTime> dateTime = readerRow.getCellAsDate(i);
-                  if(dateTime.isPresent() && dateTime.get().getYear() > 1915 && dateTime.get().getYear() < 2100)
-                  {
-                     yield dateTime.get();
-                  }
-
-                  Optional<BigDecimal> optionalBigDecimal = readerRow.getCellAsNumber(i);
-                  if(optionalBigDecimal.isPresent())
-                  {
-                     BigDecimal bigDecimal = optionalBigDecimal.get();
-                     if(bigDecimal.subtract(bigDecimal.round(new MathContext(0))).compareTo(BigDecimal.ZERO) == 0)
-                     {
-                        yield bigDecimal.intValue();
-                     }
-
-                     yield bigDecimal;
-                  }
-
-                  yield (null);
-               }
-               case BOOLEAN -> readerRow.getCellAsBoolean(i).orElse(null);
-               case STRING, FORMULA -> cell.getText();
-               case EMPTY, ERROR -> null;
-            };
-         }
+         values[i] = processCell(readerRow, i);
       }
 
       return new BulkLoadFileRow(values, getRowNo());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Serializable processCell(Row readerRow, int columnIndex)
+   {
+      Cell cell = readerRow.getCell(columnIndex);
+      if(cell == null)
+      {
+         return (null);
+      }
+
+      String dataFormatString = cell.getDataFormatString();
+      switch(cell.getType())
+      {
+         case NUMBER ->
+         {
+            /////////////////////////////////////////////////////////////////////////////////////
+            // dates, date-times, integers, and decimals are all identified as type = "number" //
+            // so go through this process to try to identify what user means it as             //
+            /////////////////////////////////////////////////////////////////////////////////////
+            if(isDateTimeFormat(dataFormatString))
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////
+               // first - if it has a date-time looking format string, then treat it as a date-time. //
+               ////////////////////////////////////////////////////////////////////////////////////////
+               return (cell.asDate());
+            }
+            else if(isDateFormat(dataFormatString))
+            {
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+               // second, if it has a date looking format string (which is a sub-set of date-time), then treat as date. //
+               ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+               return (cell.asDate().toLocalDate());
+            }
+            else
+            {
+               ////////////////////////////////////////////////////////////////////////////////////////
+               // now assume it's a number - but in case this optional is empty (why?) return a null //
+               ////////////////////////////////////////////////////////////////////////////////////////
+               Optional<BigDecimal> bigDecimal = readerRow.getCellAsNumber(columnIndex);
+               if(bigDecimal.isEmpty())
+               {
+                  return (null);
+               }
+
+               try
+               {
+                  ////////////////////////////////////////////////////////////
+                  // now if the bigDecimal is an exact integer, return that //
+                  ////////////////////////////////////////////////////////////
+                  Integer i = bigDecimal.get().intValueExact();
+                  return (i);
+               }
+               catch(ArithmeticException e)
+               {
+                  /////////////////////////////////
+                  // else, end up with a decimal //
+                  /////////////////////////////////
+                  return (bigDecimal.get());
+               }
+            }
+         }
+         case STRING ->
+         {
+            return cell.asString();
+         }
+         case BOOLEAN ->
+         {
+            return cell.asBoolean();
+         }
+         case EMPTY, ERROR, FORMULA ->
+         {
+            LOG.debug("cell type: " + cell.getType() + " had value string: " + cell.asString());
+            return (null);
+         }
+         default ->
+         {
+            return (null);
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static boolean isDateTimeFormat(String dataFormatString)
+   {
+      if(dataFormatString == null)
+      {
+         return (false);
+      }
+
+      if(hasDay(dataFormatString) && hasHour(dataFormatString))
+      {
+         return (true);
+      }
+
+      return false;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static boolean hasHour(String dataFormatString)
+   {
+      return dataFormatString.contains("h");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static boolean hasDay(String dataFormatString)
+   {
+      return DAY_PATTERN.matcher(dataFormatString).matches();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static boolean isDateFormat(String dataFormatString)
+   {
+      if(dataFormatString == null)
+      {
+         return (false);
+      }
+
+      if(hasDay(dataFormatString))
+      {
+         return (true);
+      }
+
+      return false;
    }
 
 
