@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
@@ -147,6 +148,9 @@ class BulkLoadValueMapperTest extends BaseTest
       testPossibleValue("1.0", 1, false);
       testPossibleValue(new BigDecimal("1.0"), 1, false);
       testPossibleValue("IL", 1, false);
+
+      BackendQueryFilterUtils.setCaseSensitive(true);
+      testPossibleValue("il", 1, false);
 
       testPossibleValue(512, 512, true); // an id, but not in the PVS
       testPossibleValue("USA", "USA", true);

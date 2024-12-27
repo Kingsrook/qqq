@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.CaseInsensitiveKeyMap;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -167,24 +168,57 @@ public class BulkLoadValueMapper
 
 
    /***************************************************************************
+    ** Given a listingHash of Strings from the bulk-load file, to QRecords,
+    ** we will either:
+    ** - make sure the value set for the field is valid in the PV type
+    ** - or put an error in the record (leaving the original value from the file in the field)
     **
+    ** We'll do potentially 2 possible-value searches - the first "by id" -
+    ** type-converting the input strings to the PV's id type.  Then, if any
+    ** values weren't found by id, a second search by "labels"... which might
+    ** be a bit suspicious, e.g., if the PV has a multi-field label...
     ***************************************************************************/
    private static void handlePossibleValues(QFieldMetaData field, ListingHash<String, QRecord> fieldPossibleValueToRecordMap, String associationNamePrefixForFields, String tableLabelPrefix) throws QException
    {
       QPossibleValueSource possibleValueSource = QContext.getQInstance().getPossibleValueSource(field.getPossibleValueSourceName());
 
-      Set<String>                    values                      = fieldPossibleValueToRecordMap.keySet();
-      Map<String, Serializable>      valuesToValueInPvsIdTypeMap = new HashMap<>();
-      Map<String, QPossibleValue<?>> valuesFound                 = new HashMap<>();
-      Set<Serializable>              valuesNotFound              = new HashSet<>();
+      ////////////////////////////////////////////////////////////
+      // String from file -> List<QRecord> that have that value //
+      ////////////////////////////////////////////////////////////
+      Set<String> values = fieldPossibleValueToRecordMap.keySet();
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // String from file -> Integer (for example) - that is the type-converted      //
+      // version of the PVS's idType (but before any lookups were done with that id) //
+      // e.g., "42" -> 42                                                            //
+      // e.g., "SOME_CONST" -> "SOME_CONST" (for PVS w/ string ids)                  //
+      /////////////////////////////////////////////////////////////////////////////////
+      Map<String, Serializable> valuesToValueInPvsIdTypeMap = new HashMap<>();
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // String versions of EITHER ids or values found in searchPossibleValueSource call (depending on what was searched by)                       //
+      // e.g., "42" -> QPossibleValue(42, "Forty-two") (when searched by id)                                                                       //
+      // e.g., "Forty-Two" -> QPossibleValue(42, "Forty-two") (when searched by label)                                                             //
+      // e.g., "SOME_CONST" -> QPossibleValue("SOME_CONST", "Some Const") (when searched by id)                                                    //
+      // e.g., "Some Const" -> QPossibleValue("SOME_CONST", "Some Const") (when searched by label)                                                 //
+      // goal being - file could have "42" or "Forty-Two" (or "forty two") and those would all map to QPossibleValue(42, "Forty-two")              //
+      // or - file could have "SOME_CONST" or "Some Const" (or "some const") and those would all map to QPossibleValue("SOME_CONST", "Some Const") //
+      // this is also why using CaseInsensitiveKeyMap!                                                                                             //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      CaseInsensitiveKeyMap<QPossibleValue<?>> valuesFoundAsStrings = new CaseInsensitiveKeyMap<>();
+
+      /////////////////////////////////////////////////////////
+      // String values (from file) that still need looked up //
+      /////////////////////////////////////////////////////////
+      Set<String> valuesNotFound = new HashSet<>();
 
       ////////////////////////////////////////////////////////
       // do a search, trying to use all given values as ids //
       ////////////////////////////////////////////////////////
+      ArrayList<Serializable> idList = new ArrayList<>();
       SearchPossibleValueSourceInput searchPossibleValueSourceInput = new SearchPossibleValueSourceInput();
       searchPossibleValueSourceInput.setPossibleValueSourceName(field.getPossibleValueSourceName());
 
-      ArrayList<Serializable> idList = new ArrayList<>();
       for(String value : values)
       {
          Serializable valueInPvsIdType = value;
@@ -202,7 +236,7 @@ public class BulkLoadValueMapper
 
          valuesToValueInPvsIdTypeMap.put(value, valueInPvsIdType);
          idList.add(valueInPvsIdType);
-         valuesNotFound.add(valueInPvsIdType);
+         valuesNotFound.add(value);
       }
 
       searchPossibleValueSourceInput.setIdList(idList);
@@ -211,12 +245,12 @@ public class BulkLoadValueMapper
       SearchPossibleValueSourceOutput searchPossibleValueSourceOutput = idList.isEmpty() ? new SearchPossibleValueSourceOutput() : new SearchPossibleValueSourceAction().execute(searchPossibleValueSourceInput);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////
-      // for each possible value found, remove it from the set of ones not-found, and store it as a hit //
+      // for each possible value found, store it as a hit, and remove it from the set of ones not-found //
       ////////////////////////////////////////////////////////////////////////////////////////////////////
       for(QPossibleValue<?> possibleValue : searchPossibleValueSourceOutput.getResults())
       {
          String valueAsString = ValueUtils.getValueAsString(possibleValue.getId());
-         valuesFound.put(valueAsString, possibleValue);
+         valuesFoundAsStrings.put(valueAsString, possibleValue);
          valuesNotFound.remove(valueAsString);
       }
 
@@ -227,15 +261,14 @@ public class BulkLoadValueMapper
       {
          searchPossibleValueSourceInput = new SearchPossibleValueSourceInput();
          searchPossibleValueSourceInput.setPossibleValueSourceName(field.getPossibleValueSourceName());
-         List<String> labelList = valuesNotFound.stream().map(ValueUtils::getValueAsString).toList();
-         searchPossibleValueSourceInput.setLabelList(labelList);
-         searchPossibleValueSourceInput.setLimit(valuesNotFound.size());
+         searchPossibleValueSourceInput.setLabelList(new ArrayList<>(valuesNotFound));
+         searchPossibleValueSourceInput.setLimit(valuesNotFound.size()); // todo - a little sus... leaves no room for any dupes, which, can they happen?
 
-         LOG.debug("Searching possible value source by labels during bulk load mapping", logPair("pvsName", field.getPossibleValueSourceName()), logPair("noOfLabels", labelList.size()), logPair("firstLabel", () -> labelList.get(0)));
+         LOG.debug("Searching possible value source by labels during bulk load mapping", logPair("pvsName", field.getPossibleValueSourceName()), logPair("noOfLabels", valuesNotFound.size()), logPair("firstLabel", () -> valuesNotFound.iterator().next()));
          searchPossibleValueSourceOutput = new SearchPossibleValueSourceAction().execute(searchPossibleValueSourceInput);
          for(QPossibleValue<?> possibleValue : searchPossibleValueSourceOutput.getResults())
          {
-            valuesFound.put(possibleValue.getLabel(), possibleValue);
+            valuesFoundAsStrings.put(possibleValue.getLabel(), possibleValue);
             valuesNotFound.remove(possibleValue.getLabel());
          }
       }
@@ -251,9 +284,9 @@ public class BulkLoadValueMapper
 
          for(QRecord record : entry.getValue())
          {
-            if(valuesFound.containsKey(pvsIdAsString))
+            if(valuesFoundAsStrings.containsKey(pvsIdAsString))
             {
-               record.setValue(field.getName(), valuesFound.get(pvsIdAsString).getId());
+               record.setValue(field.getName(), valuesFoundAsStrings.get(pvsIdAsString).getId());
             }
             else
             {
