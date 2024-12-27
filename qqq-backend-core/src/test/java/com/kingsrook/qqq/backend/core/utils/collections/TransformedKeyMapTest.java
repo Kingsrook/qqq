@@ -36,6 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @SuppressWarnings({ "RedundantCollectionOperation", "RedundantOperationOnEmptyContainer" })
 class TransformedKeyMapTest extends BaseTest
 {
+   private static final BigDecimal BIG_DECIMAL_TWO   = BigDecimal.valueOf(2);
+   private static final BigDecimal BIG_DECIMAL_THREE = BigDecimal.valueOf(3);
+
+
 
    /*******************************************************************************
     **
@@ -111,23 +115,21 @@ class TransformedKeyMapTest extends BaseTest
       assertEquals(3, caseInsensitiveKeys.keySet().size());
    }
 
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
    void testStringToNumberMap()
    {
-      BigDecimal BIG_DECIMAL_TWO = BigDecimal.valueOf(2);
-      BigDecimal BIG_DECIMAL_THREE = BigDecimal.valueOf(3);
-
-      TransformedKeyMap<String, Integer, BigDecimal> multiLingualWordToNumber = new TransformedKeyMap<>(key ->
-         switch (key.toLowerCase())
-         {
-            case "one", "uno", "eins" -> 1;
-            case "two", "dos", "zwei" -> 2;
-            case "three", "tres", "drei" -> 3;
-            default -> null;
-         });
+      TransformedKeyMap<String, Integer, BigDecimal> multiLingualWordToNumber = new TransformedKeyMap<>(key -> switch(key.toLowerCase())
+      {
+         case "one", "uno", "eins" -> 1;
+         case "two", "dos", "zwei" -> 2;
+         case "three", "tres", "drei" -> 3;
+         default -> null;
+      });
       multiLingualWordToNumber.put("One", BigDecimal.ONE);
       multiLingualWordToNumber.put("uno", BigDecimal.ONE);
       assertEquals(BigDecimal.ONE, multiLingualWordToNumber.get("one"));
@@ -187,7 +189,7 @@ class TransformedKeyMapTest extends BaseTest
       /////////////////////////////////////////
       // make sure put-all works as expected //
       /////////////////////////////////////////
-      multiLingualWordToNumber.putAll(Map.of("One", BigDecimal.ONE, "Uno", BigDecimal.ONE, "EINS", BigDecimal.ONE, "dos", BIG_DECIMAL_TWO, "zwei",BIG_DECIMAL_TWO, "tres", BIG_DECIMAL_THREE));
+      multiLingualWordToNumber.putAll(Map.of("One", BigDecimal.ONE, "Uno", BigDecimal.ONE, "EINS", BigDecimal.ONE, "dos", BIG_DECIMAL_TWO, "zwei", BIG_DECIMAL_TWO, "tres", BIG_DECIMAL_THREE));
       assertEquals(BigDecimal.ONE, multiLingualWordToNumber.get("oNe"));
       assertEquals(BIG_DECIMAL_TWO, multiLingualWordToNumber.get("dos"));
       assertEquals(BIG_DECIMAL_THREE, multiLingualWordToNumber.get("drei"));
