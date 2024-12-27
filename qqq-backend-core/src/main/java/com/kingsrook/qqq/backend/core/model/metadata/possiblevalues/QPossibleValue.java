@@ -22,12 +22,15 @@
 package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** An actual possible value - an id and label.
  **
  ** Type parameter `T` is the type of the id (often Integer, maybe String)
  *******************************************************************************/
-public class QPossibleValue<T>
+public class QPossibleValue<T extends Serializable>
 {
    private final T      id;
    private final String label;

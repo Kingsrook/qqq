@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** Interface to be implemented by enums which can be used as a PossibleValueSource.
  **
  *******************************************************************************/
-public interface PossibleValueEnum<T>
+public interface PossibleValueEnum<T extends Serializable>
 {
    /*******************************************************************************
     **
