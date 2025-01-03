@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -48,6 +49,8 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    private ConnectionPoolSettings connectionPoolSettings;
 
    private RDBMSBackendMetaData readOnlyBackendMetaData;
+
+   private List<String> queriesForNewConnections = null;
 
    ///////////////////////////////////////////////////////////
    // define well-known (and fully supported) vendor values //
@@ -452,5 +455,35 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       this.connectionPoolSettings = connectionPoolSettings;
       return (this);
    }
+
+   /*******************************************************************************
+    ** Getter for queriesForNewConnections
+    *******************************************************************************/
+   public List<String> getQueriesForNewConnections()
+   {
+      return (this.queriesForNewConnections);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queriesForNewConnections
+    *******************************************************************************/
+   public void setQueriesForNewConnections(List<String> queriesForNewConnections)
+   {
+      this.queriesForNewConnections = queriesForNewConnections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queriesForNewConnections
+    *******************************************************************************/
+   public RDBMSBackendMetaData withQueriesForNewConnections(List<String> queriesForNewConnections)
+   {
+      this.queriesForNewConnections = queriesForNewConnections;
+      return (this);
+   }
+
 
 }
