@@ -262,12 +262,13 @@ public class BulkLoadValueMapper
          searchPossibleValueSourceInput = new SearchPossibleValueSourceInput();
          searchPossibleValueSourceInput.setPossibleValueSourceName(field.getPossibleValueSourceName());
          searchPossibleValueSourceInput.setLabelList(new ArrayList<>(valuesNotFound));
-         searchPossibleValueSourceInput.setLimit(valuesNotFound.size()); // todo - a little sus... leaves no room for any dupes, which, can they happen?
+         searchPossibleValueSourceInput.setLimit(valuesNotFound.size() * 10); // todo - a little sus... leaves some room for dupes, which, can they happen?
 
          LOG.debug("Searching possible value source by labels during bulk load mapping", logPair("pvsName", field.getPossibleValueSourceName()), logPair("noOfLabels", valuesNotFound.size()), logPair("firstLabel", () -> valuesNotFound.iterator().next()));
          searchPossibleValueSourceOutput = new SearchPossibleValueSourceAction().execute(searchPossibleValueSourceInput);
          for(QPossibleValue<?> possibleValue : searchPossibleValueSourceOutput.getResults())
          {
+            // todo - deal with multiple values found - and maybe... if some end up not-found, but some dupes happened, should we try another search, in case we hit the limit?
             valuesFoundAsStrings.put(possibleValue.getLabel(), possibleValue);
             valuesNotFound.remove(possibleValue.getLabel());
          }
