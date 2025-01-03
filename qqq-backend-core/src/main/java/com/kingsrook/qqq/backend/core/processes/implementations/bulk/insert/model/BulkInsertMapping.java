@@ -166,6 +166,40 @@ public class BulkInsertMapping implements Serializable
 
 
    /***************************************************************************
+    ** get a map of default-values for fields in a given table (at the specified
+    ** association chain and wide-indexes).  Will only include fields using a
+    ** default value.
+    ***************************************************************************/
+   @JsonIgnore
+   public Map<String, Serializable> getFieldDefaultValues(QTableMetaData table, String associationNameChain, List<Integer> wideAssociationIndexes) throws QException
+   {
+      Map<String, Serializable> rs = new HashMap<>();
+
+      String wideAssociationSuffix = "";
+      if(CollectionUtils.nullSafeHasContents(wideAssociationIndexes))
+      {
+         wideAssociationSuffix = "," + StringUtils.join(".", wideAssociationIndexes);
+      }
+
+      ///////////////////////////////////////////////////////////////////////////
+      // loop over fields - adding them to the rs if they have a default value //
+      ///////////////////////////////////////////////////////////////////////////
+      String fieldNamePrefix = !StringUtils.hasContent(associationNameChain) ? "" : associationNameChain + ".";
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         Serializable defaultValue = fieldNameToDefaultValueMap.get(fieldNamePrefix + field.getName() + wideAssociationSuffix);
+         if(defaultValue != null)
+         {
+            rs.put(field.getName(), defaultValue);
+         }
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
     **
     ***************************************************************************/
    @JsonIgnore

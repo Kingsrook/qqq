@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,7 +72,7 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
       while(fileToRowsInterface.hasNext() && rs.size() < limit)
       {
          BulkLoadFileRow row    = fileToRowsInterface.next();
-         QRecord         record = makeRecordFromRow(mapping, table, "", row, fieldIndexes, headerRow, new ArrayList<>());
+         QRecord         record = makeRecordFromRow(mapping, table, "", row, fieldIndexes, headerRow, new ArrayList<>(), false);
          rs.add(record);
       }
 
@@ -84,8 +85,42 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
 
    /***************************************************************************
     ** may return null, if there were no values in the row for this (sub-wide) record.
+    ** more specifically:
+    **
+    ** the param `rowOfOnlyDefaultValues` - should be false for the header table,
+    ** and true for an association iff all mapped fields are using 'default values'
+    ** (e.g., not values from the file).
+    **
+    ** So this method will return null, indicating "no child row to build" if:
+    ** - when doing a rowOfOnlyDefaultValues - only if there actually weren't any
+    ** default values, which, probably never happens!
+    ** - else (doing a row with at least 1 value from the file) - then, null is
+    ** returned if there were NO values from the file.
+    **
+    ** The goal here is to support these cases:
+    **
+    ** Case A (a row of not only-default-values):
+    ** - lineItem.sku,0 = column: sku1
+    ** - lineItem.qty,0 = column: qty1
+    ** - lineItem.lineNo,0 = Default: 1
+    ** - lineItem.sku,1 = column: sku2
+    ** - lineItem.qty,1 = column: qty2
+    ** - lineItem.lineNo,1 = Default: 2
+    ** then a file row with no values for sku2 & qty2 - we don't want a row
+    ** in that case (which would only have the default value of lineNo=2)
+    **
+    ** Case B (a row of only-default-values):
+    ** - lineItem.sku,0 = column: sku1
+    ** - lineItem.qty,0 = column: qty1
+    ** - lineItem.lineNo,0 = Default: 1
+    ** - lineItem.sku,1 = Default: SUPPLEMENT
+    ** - lineItem.qty,1 = Default: 1
+    ** - lineItem.lineNo,1 = Default: 2
+    ** we want every parent (order) to include a 2nd line item - with 3
+    ** default values (sku=SUPPLEMENT, qty=q, lineNo=2).
+    **
     ***************************************************************************/
-   private QRecord makeRecordFromRow(BulkInsertMapping mapping, QTableMetaData table, String associationNameChain, BulkLoadFileRow row, Map<String, Integer> fieldIndexes, BulkLoadFileRow headerRow, List<Integer> wideAssociationIndexes) throws QException
+   private QRecord makeRecordFromRow(BulkInsertMapping mapping, QTableMetaData table, String associationNameChain, BulkLoadFileRow row, Map<String, Integer> fieldIndexes, BulkLoadFileRow headerRow, List<Integer> wideAssociationIndexes, boolean rowOfOnlyDefaultValues) throws QException
    {
       //////////////////////////////////////////////////////
       // start by building the record with its own fields //
@@ -93,15 +128,35 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
       QRecord record = new QRecord();
       BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, row);
 
+      boolean hadAnyValuesInRowFromFile = false;
       boolean hadAnyValuesInRow = false;
       for(QFieldMetaData field : table.getFields().values())
       {
-         hadAnyValuesInRow = setValueOrDefault(record, field, associationNameChain, mapping, row, fieldIndexes.get(field.getName()), wideAssociationIndexes) || hadAnyValuesInRow;
+         hadAnyValuesInRowFromFile = setValueOrDefault(record, field, associationNameChain, mapping, row, fieldIndexes.get(field.getName()), wideAssociationIndexes) || hadAnyValuesInRowFromFile;
+
+         /////////////////////////////////////////////////////////////////////////////////////
+         // for wide mode (different from tall) - allow a row that only has default values. //
+         // e.g., Line Item (2) might be a default to add to every order                    //
+         /////////////////////////////////////////////////////////////////////////////////////
+         if(record.getValue(field.getName()) != null)
+         {
+            hadAnyValuesInRow = true;
+         }
       }
 
-      if(!hadAnyValuesInRow)
+      if(rowOfOnlyDefaultValues)
       {
-         return (null);
+         if(!hadAnyValuesInRow)
+         {
+            return (null);
+         }
+      }
+      else
+      {
+         if(!hadAnyValuesInRowFromFile)
+         {
+            return (null);
+         }
       }
 
       /////////////////////////////
@@ -149,12 +204,23 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
          // todo - doesn't support grand-children
          List<Integer>        wideAssociationIndexes = List.of(i);
          Map<String, Integer> fieldIndexes           = mapping.getFieldIndexes(associatedTable, associationNameChainForRecursiveCalls, headerRow, wideAssociationIndexes);
+
+         boolean rowOfOnlyDefaultValues = false;
          if(fieldIndexes.isEmpty())
          {
-            break;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if there aren't any field-indexes for this (i) value (e.g., no columns mapped for Line Item: X (2)), we can still build a //
+            // child record here if there are any default values - so check for them - and only if they are empty, then break the loop.  //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            Map<String, Serializable> fieldDefaultValues = mapping.getFieldDefaultValues(associatedTable, associationNameChainForRecursiveCalls, wideAssociationIndexes);
+            if(!CollectionUtils.nullSafeHasContents(fieldDefaultValues))
+            {
+               break;
+            }
+            rowOfOnlyDefaultValues = true;
          }
 
-         QRecord record = makeRecordFromRow(mapping, associatedTable, associationNameChainForRecursiveCalls, row, fieldIndexes, headerRow, wideAssociationIndexes);
+         QRecord record = makeRecordFromRow(mapping, associatedTable, associationNameChainForRecursiveCalls, row, fieldIndexes, headerRow, wideAssociationIndexes, rowOfOnlyDefaultValues);
          if(record != null)
          {
             rs.add(record);

@@ -105,6 +105,61 @@ class TallRowsToRecordTest extends BaseTest
       assertEquals(2, ((List<?>) order.getBackendDetail("fileRows")).size());
    }
 
+
+
+   /*******************************************************************************
+    ** test to show that we can do 1 default line item (child record) for each
+    ** header record.
+    *******************************************************************************/
+   @Test
+   void testOrderAndLinesWithLineValuesFromDefaults() throws QException
+   {
+      CsvFileToRows fileToRows = CsvFileToRows.forString("""
+         orderNo, Ship To, lastName
+         1,       Homer,   Simpson
+         2,       Ned,     Flanders
+         """);
+
+      BulkLoadFileRow header = fileToRows.next();
+
+      TallRowsToRecord rowsToRecord = new TallRowsToRecord();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToHeaderNameMap(Map.of(
+            "orderNo", "orderNo",
+            "shipToName", "Ship To"
+         ))
+         .withFieldNameToDefaultValueMap(Map.of(
+            "orderLine.sku", "NUCLEAR-ROD",
+            "orderLine.quantity", 1
+         ))
+         .withMappedAssociations(List.of("orderLine"))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.TALL)
+         .withHasHeaderRow(true);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(2, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(1, order.getAssociatedRecords().get("orderLine").size());
+      assertEquals(List.of("NUCLEAR-ROD"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Row 2", order.getBackendDetail("rowNos"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+
+      order = records.get(1);
+      assertEquals(2, order.getValueInteger("orderNo"));
+      assertEquals("Ned", order.getValueString("shipToName"));
+      assertEquals(1, order.getAssociatedRecords().get("orderLine").size());
+      assertEquals(List.of("NUCLEAR-ROD"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals("Row 3", order.getBackendDetail("rowNos"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+   }
+
    /*******************************************************************************
     **
     *******************************************************************************/

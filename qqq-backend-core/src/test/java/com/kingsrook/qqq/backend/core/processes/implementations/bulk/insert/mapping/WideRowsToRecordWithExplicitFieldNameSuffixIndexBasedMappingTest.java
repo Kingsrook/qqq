@@ -102,6 +102,59 @@ class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMappingTest extends B
     **
     *******************************************************************************/
    @Test
+   void testOrderAndLinesWithLineValuesFromDefaults() throws QException
+   {
+      String csv = """
+         orderNo, Ship To, lastName, SKU 1,     Quantity 1
+         1,       Homer,   Simpson,  DONUT,     12,
+         2,       Ned,     Flanders, 
+         """;
+
+      CsvFileToRows   fileToRows = CsvFileToRows.forString(csv);
+      BulkLoadFileRow header     = fileToRows.next();
+
+      WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping rowsToRecord = new WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping();
+
+      BulkInsertMapping mapping = new BulkInsertMapping()
+         .withFieldNameToHeaderNameMap(Map.of(
+            "orderNo", "orderNo",
+            "shipToName", "Ship To",
+            "orderLine.sku,0", "SKU 1",
+            "orderLine.quantity,0", "Quantity 1"
+         ))
+         .withFieldNameToDefaultValueMap(Map.of(
+            "orderLine.sku,1", "NUCLEAR-ROD",
+            "orderLine.quantity,1", 1
+         ))
+         .withMappedAssociations(List.of("orderLine"))
+         .withTableName(TestUtils.TABLE_NAME_ORDER)
+         .withLayout(BulkInsertMapping.Layout.WIDE)
+         .withHasHeaderRow(true);
+
+      List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
+      assertEquals(2, records.size());
+
+      QRecord order = records.get(0);
+      assertEquals(1, order.getValueInteger("orderNo"));
+      assertEquals("Homer", order.getValueString("shipToName"));
+      assertEquals(List.of("DONUT", "NUCLEAR-ROD"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(12, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+
+      order = records.get(1);
+      assertEquals(2, order.getValueInteger("orderNo"));
+      assertEquals("Ned", order.getValueString("shipToName"));
+      assertEquals(List.of("NUCLEAR-ROD"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
+      assertEquals(List.of(1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
+      assertEquals("Row 3", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
+   }
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testOrderAndLinesWithoutHeader() throws QException
    {
       // 0, 1,     2,        3,     4,  5,         6,   7,     8

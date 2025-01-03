@@ -32,6 +32,7 @@ import java.util.Optional;
 import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
@@ -43,6 +44,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -50,6 +52,8 @@ import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
  *******************************************************************************/
 public class TallRowsToRecord implements RowsToRecordInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(TallRowsToRecord.class);
+
    private Memoization<Pair<String, String>, Boolean> shouldProcesssAssociationMemoization = new Memoization<>();
 
 
@@ -166,9 +170,9 @@ public class TallRowsToRecord implements RowsToRecordInterface
 
       Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, associationNameChain, headerRow);
 
-      //////////////////////////////////////////////////////
-      // get all rows for the main table from the 0th row //
-      //////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////
+      // get all values for the main table from the 0th row //
+      ////////////////////////////////////////////////////////
       BulkLoadFileRow row = rows.get(0);
       for(QFieldMetaData field : table.getFields().values())
       {
@@ -256,6 +260,17 @@ public class TallRowsToRecord implements RowsToRecordInterface
          {
             groupByIndexes = groupByAllIndexesFromTable(mapping, table, headerRow, associationNameChainForRecursiveCalls);
             // throw (new QException("Missing group-by-index(es) for association: " + associationNameChainForRecursiveCalls));
+         }
+
+         if(CollectionUtils.nullSafeIsEmpty(groupByIndexes))
+         {
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // special case here - if there are no group-by-indexes for the row, it means there are no fields coming from columns in the file. //
+            // but, if any fields for this association have a default value - then - make a row using just default values.                     //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            LOG.info("Handling case of an association with no fields from the file, but rather only defaults", logPair("associationName", associationName));
+            rs.add(makeRecordFromRows(table, associationNameChainForRecursiveCalls, mapping, headerRow, List.of(row)));
+            break;
          }
 
          List<Serializable> rowGroupByValues = getGroupByValues(row, groupByIndexes);
