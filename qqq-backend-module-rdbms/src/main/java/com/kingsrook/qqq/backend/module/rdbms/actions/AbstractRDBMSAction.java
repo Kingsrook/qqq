@@ -39,8 +39,6 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -63,6 +61,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -80,9 +79,10 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSFieldMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -100,6 +100,9 @@ public abstract class AbstractRDBMSAction
 
    private static Memoization<String, Boolean> doesSelectClauseRequireDistinctMemoization = new Memoization<String, Boolean>()
       .withTimeout(Duration.ofDays(365));
+
+   private RDBMSBackendMetaData         backendMetaData;
+   private RDBMSActionStrategyInterface actionStrategy;
 
 
 
@@ -313,9 +316,9 @@ public abstract class AbstractRDBMSAction
             }
 
             joinClauseList.add(escapeIdentifier(baseTableOrAlias)
-               + "." + escapeIdentifier(getColumnName(leftTable.getField(joinOn.getLeftField())))
-               + " = " + escapeIdentifier(joinTableOrAlias)
-               + "." + escapeIdentifier(getColumnName((rightTable.getField(joinOn.getRightField())))));
+                               + "." + escapeIdentifier(getColumnName(leftTable.getField(joinOn.getLeftField())))
+                               + " = " + escapeIdentifier(joinTableOrAlias)
+                               + "." + escapeIdentifier(getColumnName((rightTable.getField(joinOn.getRightField())))));
          }
 
          if(CollectionUtils.nullSafeHasContents(queryJoin.getSecurityCriteria()))
@@ -479,171 +482,24 @@ public abstract class AbstractRDBMSAction
 
          JoinsContext.FieldAndTableNameOrAlias fieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getFieldName());
 
-         List<Serializable> values             = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
-         QFieldMetaData     field              = fieldAndTableNameOrAlias.field();
-         String             column             = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
-         String             clause             = column;
-         Integer            expectedNoOfParams = null;
-         switch(criterion.getOperator())
-         {
-            case EQUALS ->
-            {
-               clause += " = ?";
-               expectedNoOfParams = 1;
-            }
-            case NOT_EQUALS ->
-            {
-               clause += " != ?";
-               expectedNoOfParams = 1;
-            }
-            case NOT_EQUALS_OR_IS_NULL ->
-            {
-               clause += " != ? OR " + column + " IS NULL ";
-               expectedNoOfParams = 1;
-            }
-            case IN ->
-            {
-               if(values.isEmpty())
-               {
-                  ///////////////////////////////////////////////////////
-                  // if there are no values, then we want a false here //
-                  ///////////////////////////////////////////////////////
-                  clause = " 0 = 1 ";
-               }
-               else
-               {
-                  clause += " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
-               }
-            }
-            case IS_NULL_OR_IN ->
-            {
-               clause += " IS NULL ";
+         List<Serializable> values = criterion.getValues() == null ? new ArrayList<>() : new ArrayList<>(criterion.getValues());
+         QFieldMetaData     field  = fieldAndTableNameOrAlias.field();
+         String             column = escapeIdentifier(fieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(field));
+         StringBuilder      clause = new StringBuilder();
 
-               if(!values.isEmpty())
-               {
-                  clause += " OR " + column + " IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
-               }
-            }
-            case NOT_IN ->
+         RDBMSActionStrategyInterface actionStrategy = getActionStrategy();
+
+         RDBMSFieldMetaData rdbmsFieldMetaData = RDBMSFieldMetaData.of(field);
+         if(rdbmsFieldMetaData != null)
+         {
+            RDBMSActionStrategyInterface fieldActionStrategy = rdbmsFieldMetaData.getActionStrategy();
+            if(fieldActionStrategy != null)
             {
-               if(values.isEmpty())
-               {
-                  //////////////////////////////////////////////////////
-                  // if there are no values, then we want a true here //
-                  //////////////////////////////////////////////////////
-                  clause = " 1 = 1 ";
-               }
-               else
-               {
-                  clause += " NOT IN (" + values.stream().map(x -> "?").collect(Collectors.joining(",")) + ")";
-               }
+               actionStrategy = fieldActionStrategy;
             }
-            case LIKE ->
-            {
-               clause += " LIKE ?";
-               expectedNoOfParams = 1;
-            }
-            case NOT_LIKE ->
-            {
-               clause += " NOT LIKE ?";
-               expectedNoOfParams = 1;
-            }
-            case STARTS_WITH ->
-            {
-               clause += " LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> s + "%"));
-               expectedNoOfParams = 1;
-            }
-            case ENDS_WITH ->
-            {
-               clause += " LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> "%" + s));
-               expectedNoOfParams = 1;
-            }
-            case CONTAINS ->
-            {
-               clause += " LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
-               expectedNoOfParams = 1;
-            }
-            case NOT_STARTS_WITH ->
-            {
-               clause += " NOT LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> s + "%"));
-               expectedNoOfParams = 1;
-            }
-            case NOT_ENDS_WITH ->
-            {
-               clause += " NOT LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> "%" + s));
-               expectedNoOfParams = 1;
-            }
-            case NOT_CONTAINS ->
-            {
-               clause += " NOT LIKE ?";
-               ActionHelper.editFirstValue(values, (s -> "%" + s + "%"));
-               expectedNoOfParams = 1;
-            }
-            case LESS_THAN ->
-            {
-               clause += " < ?";
-               expectedNoOfParams = 1;
-            }
-            case LESS_THAN_OR_EQUALS ->
-            {
-               clause += " <= ?";
-               expectedNoOfParams = 1;
-            }
-            case GREATER_THAN ->
-            {
-               clause += " > ?";
-               expectedNoOfParams = 1;
-            }
-            case GREATER_THAN_OR_EQUALS ->
-            {
-               clause += " >= ?";
-               expectedNoOfParams = 1;
-            }
-            case IS_BLANK ->
-            {
-               clause += " IS NULL";
-               if(field.getType().isStringLike())
-               {
-                  clause += " OR " + column + " = ''";
-               }
-               expectedNoOfParams = 0;
-            }
-            case IS_NOT_BLANK ->
-            {
-               clause += " IS NOT NULL";
-               if(field.getType().isStringLike())
-               {
-                  clause += " AND " + column + " != ''";
-               }
-               expectedNoOfParams = 0;
-            }
-            case BETWEEN ->
-            {
-               clause += " BETWEEN ? AND ?";
-               expectedNoOfParams = 2;
-            }
-            case NOT_BETWEEN ->
-            {
-               clause += " NOT BETWEEN ? AND ?";
-               expectedNoOfParams = 2;
-            }
-            case TRUE ->
-            {
-               clause = " 1 = 1 ";
-               expectedNoOfParams = 0;
-            }
-            case FALSE ->
-            {
-               clause = " 0 = 1 ";
-               expectedNoOfParams = 0;
-            }
-            default -> throw new IllegalStateException("Unexpected operator: " + criterion.getOperator());
          }
+
+         Integer expectedNoOfParams = actionStrategy.appendCriterionToWhereClause(criterion, clause, column, values, field);
 
          if(expectedNoOfParams != null)
          {
@@ -652,7 +508,7 @@ public abstract class AbstractRDBMSAction
                JoinsContext.FieldAndTableNameOrAlias otherFieldAndTableNameOrAlias = joinsContext.getFieldAndTableNameOrAlias(criterion.getOtherFieldName());
 
                String otherColumn = escapeIdentifier(otherFieldAndTableNameOrAlias.tableNameOrAlias()) + "." + escapeIdentifier(getColumnName(otherFieldAndTableNameOrAlias.field()));
-               clause = clause.replace("?", otherColumn);
+               clause = new StringBuilder(clause.toString().replace("?", otherColumn));
 
                /////////////////////////////////////////////////////////////////////
                // make sure we don't add any values in this case, just in case... //
@@ -797,53 +653,7 @@ public abstract class AbstractRDBMSAction
     *******************************************************************************/
    protected Serializable getFieldValueFromResultSet(QFieldType type, ResultSet resultSet, int i) throws SQLException
    {
-      switch(type)
-      {
-         case STRING:
-         case TEXT:
-         case HTML:
-         case PASSWORD:
-         {
-            return (QueryManager.getString(resultSet, i));
-         }
-         case INTEGER:
-         {
-            return (QueryManager.getInteger(resultSet, i));
-         }
-         case LONG:
-         {
-            return (QueryManager.getLong(resultSet, i));
-         }
-         case DECIMAL:
-         {
-            return (QueryManager.getBigDecimal(resultSet, i));
-         }
-         case DATE:
-         {
-            // todo - queryManager.getLocalDate?
-            return (QueryManager.getDate(resultSet, i));
-         }
-         case TIME:
-         {
-            return (QueryManager.getLocalTime(resultSet, i));
-         }
-         case DATE_TIME:
-         {
-            return (QueryManager.getInstant(resultSet, i));
-         }
-         case BOOLEAN:
-         {
-            return (QueryManager.getBoolean(resultSet, i));
-         }
-         case BLOB:
-         {
-            return (QueryManager.getByteArray(resultSet, i));
-         }
-         default:
-         {
-            throw new IllegalStateException("Unexpected field type: " + type);
-         }
-      }
+      return (actionStrategy.getFieldValueFromResultSet(type, resultSet, i));
    }
 
 
@@ -1150,5 +960,27 @@ public abstract class AbstractRDBMSAction
       {
          return (filter.clone());
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendMetaData
+    **
+    *******************************************************************************/
+   protected void setBackendMetaData(QBackendMetaData backendMetaData)
+   {
+      this.backendMetaData = (RDBMSBackendMetaData) backendMetaData;
+      this.actionStrategy = this.backendMetaData.getActionStrategy();
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   protected RDBMSActionStrategyInterface getActionStrategy()
+   {
+      return (this.actionStrategy);
    }
 }

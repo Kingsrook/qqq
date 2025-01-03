@@ -48,7 +48,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
 /*******************************************************************************
@@ -70,6 +69,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
       try
       {
          QTableMetaData table = aggregateInput.getTable();
+         setBackendMetaData(aggregateInput.getBackend());
 
          QQueryFilter filter       = clonedOrNewFilter(aggregateInput.getFilter());
          JoinsContext joinsContext = new JoinsContext(QContext.getQInstance(), table.getName(), aggregateInput.getQueryJoins(), filter);
@@ -126,7 +126,7 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                queryStat.setStartTimestamp(Instant.now());
             }
 
-            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
+            getActionStrategy().executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //

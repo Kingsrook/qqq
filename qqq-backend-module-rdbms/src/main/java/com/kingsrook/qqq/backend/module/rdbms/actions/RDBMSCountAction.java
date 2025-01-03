@@ -40,7 +40,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import org.apache.commons.lang.BooleanUtils;
 
 
@@ -63,6 +62,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
       try
       {
          QTableMetaData table = countInput.getTable();
+         setBackendMetaData(countInput.getBackend());
 
          QQueryFilter                          filter                   = clonedOrNewFilter(countInput.getFilter());
          JoinsContext                          joinsContext             = new JoinsContext(QContext.getQInstance(), countInput.getTableName(), countInput.getQueryJoins(), filter);
@@ -106,7 +106,7 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
                queryStat.setStartTimestamp(Instant.now());
             }
 
-            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
+            getActionStrategy().executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //

@@ -34,8 +34,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -128,6 +128,11 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       deleteInput.setPrimaryKeys(List.of(1, -1));
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
       assertEquals(1, deleteResult.getDeletedRecordCount(), "Should delete one row");
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // note - that if we went to the top-level DeleteAction, then it would have pre-   //
+      // checked that the ids existed, and it WOULD give us an error for the -1 row here //
+      /////////////////////////////////////////////////////////////////////////////////////
       assertEquals(0, deleteResult.getRecordsWithErrors().size(), "should have no errors (the one not found is just noop)");
    }
 
@@ -162,17 +167,15 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       deleteInput.setPrimaryKeys(List.of(1, 2, 3, 4, 5));
 
-      QueryManager.setCollectStatistics(true);
-      QueryManager.resetStatistics();
-
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
 
       ////////////////////////////////////////////////////////////////////////////////////////
       // assert that 6 queries ran - the initial delete (which failed), then 5 more deletes //
       ////////////////////////////////////////////////////////////////////////////////////////
-      QueryManager.setCollectStatistics(false);
-      Map<String, Integer> queryStats = QueryManager.getStatistics();
-      assertEquals(6, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
+      actionStrategy.setCollectStatistics(false);
+      Map<String, Integer> queryStats = actionStrategy.getStatistics();
+      assertEquals(6, queryStats.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN), "Number of queries ran");
 
       assertEquals(2, deleteResult.getRecordsWithErrors().size(), "Should get back the 2 records with errors");
       assertTrue(deleteResult.getRecordsWithErrors().stream().noneMatch(r -> r.getErrors().isEmpty()), "All we got back should have errors");
@@ -212,17 +215,15 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       ////////////////////////////////////////////////////////////////////////
       deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(2, 4, 5))));
 
-      QueryManager.setCollectStatistics(true);
-      QueryManager.resetStatistics();
-
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
 
       //////////////////////////////////
       // assert that just 1 query ran //
       //////////////////////////////////
-      QueryManager.setCollectStatistics(false);
-      Map<String, Integer> queryStats = QueryManager.getStatistics();
-      assertEquals(1, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
+      actionStrategy.setCollectStatistics(false);
+      Map<String, Integer> queryStats = actionStrategy.getStatistics();
+      assertEquals(1, queryStats.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN), "Number of queries ran");
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should get back that 3 were deleted");
 
       runTestSql("SELECT id FROM child_table", (rs ->
@@ -259,9 +260,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2, 3, 4, 5))));
 
-      QueryManager.setCollectStatistics(true);
-      QueryManager.resetStatistics();
-
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
       DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,9 +269,9 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       // todo - maybe we shouldn't do that 2nd "try to delete 'em all by id"...  why would it ever work,   //
       // but the original filter query didn't (other than malformed SQL)?                                  //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
-      QueryManager.setCollectStatistics(false);
-      Map<String, Integer> queryStats = QueryManager.getStatistics();
-      assertEquals(8, queryStats.get(QueryManager.STAT_QUERIES_RAN), "Number of queries ran");
+      actionStrategy.setCollectStatistics(false);
+      Map<String, Integer> queryStats = actionStrategy.getStatistics();
+      assertEquals(8, queryStats.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN), "Number of queries ran");
 
       assertEquals(2, deleteResult.getRecordsWithErrors().size(), "Should get back the 2 records with errors");
       assertTrue(deleteResult.getRecordsWithErrors().stream().noneMatch(r -> r.getErrors().isEmpty()), "All we got back should have errors");
