@@ -23,10 +23,13 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.sql.Connection;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.AfterEach;
 
 
@@ -42,9 +45,10 @@ public class RDBMSActionTest extends BaseTest
    @AfterEach
    void afterEachRDBMSActionTest()
    {
-      QueryManager.resetPageSize();
-      QueryManager.resetStatistics();
-      QueryManager.setCollectStatistics(false);
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategy();
+      actionStrategy.setPageSize(BaseRDBMSActionStrategy.DEFAULT_PAGE_SIZE);
+      actionStrategy.resetStatistics();
+      actionStrategy.setCollectStatistics(false);
    }
 
 
@@ -55,6 +59,31 @@ public class RDBMSActionTest extends BaseTest
    protected void primeTestDatabase() throws Exception
    {
       TestUtils.primeTestDatabase("prime-test-database.sql");
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   protected static BaseRDBMSActionStrategy getBaseRDBMSActionStrategy()
+   {
+      RDBMSBackendMetaData    backend        = (RDBMSBackendMetaData) QContext.getQInstance().getBackend(TestUtils.DEFAULT_BACKEND_NAME);
+      BaseRDBMSActionStrategy actionStrategy = (BaseRDBMSActionStrategy) backend.getActionStrategy();
+      return actionStrategy;
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   protected static BaseRDBMSActionStrategy getBaseRDBMSActionStrategyAndActivateCollectingStatistics()
+   {
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategy();
+      actionStrategy.setCollectStatistics(true);
+      actionStrategy.resetStatistics();
+      return actionStrategy;
    }
 
 
