@@ -128,7 +128,7 @@ commands:
             cd docs
             asciidoctor -a docinfo=shared index.adoc
       - store_artifacts:
-          path: index.adoc
+          path: docs/index.html
           when: always
 
 jobs:
