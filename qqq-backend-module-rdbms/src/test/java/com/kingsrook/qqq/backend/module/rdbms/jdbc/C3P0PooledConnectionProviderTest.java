@@ -24,12 +24,17 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -215,6 +220,32 @@ class C3P0PooledConnectionProviderTest extends BaseTest
       assertThat(debugValues.getInt("numConnections")).isEqualTo(4);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueriesForNewConnections() throws Exception
+   {
+      String uuid = UUID.randomUUID().toString();
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // change the default database backend to use the class under test here - the C3PL connection pool provider //
+      // and add a new-connection query to it to insert a record with a UUID, that we can then query for.         //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QInstance            qInstance = TestUtils.defineInstance();
+      RDBMSBackendMetaData backend   = (RDBMSBackendMetaData) qInstance.getBackend(TestUtils.DEFAULT_BACKEND_NAME);
+      backend.setQueriesForNewConnections(List.of("insert into person (first_name, last_name, email) values ('D', 'K', '" + uuid + "')"));
+      backend.setConnectionProvider(new QCodeReference(C3P0PooledConnectionProvider.class));
+      QContext.init(qInstance, new QSession());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // we actually get multiple, because c3p0 default config opens multiple connections at once //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_PERSON, new QQueryFilter(new QFilterCriteria("email", QCriteriaOperator.EQUALS, uuid)));
+      assertThat(records.size()).isGreaterThanOrEqualTo(1);
+   }
 
 
    /*******************************************************************************

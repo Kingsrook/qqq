@@ -61,7 +61,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
- **
+ ** Note that much of this class came from the old (old) QueryManager class.
  *******************************************************************************/
 public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
 {

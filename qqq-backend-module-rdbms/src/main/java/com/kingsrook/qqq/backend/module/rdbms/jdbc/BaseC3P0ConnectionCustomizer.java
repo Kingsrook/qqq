@@ -27,6 +27,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.mchange.v2.c3p0.ConnectionCustomizer;
 
@@ -38,6 +39,8 @@ import com.mchange.v2.c3p0.ConnectionCustomizer;
  *******************************************************************************/
 public class BaseC3P0ConnectionCustomizer implements ConnectionCustomizer
 {
+   private static final QLogger LOG = QLogger.getLogger(BaseC3P0ConnectionCustomizer.class);
+
    private static Map<String, List<String>> queriesForNewConnections = new HashMap<>();
 
 
@@ -48,14 +51,22 @@ public class BaseC3P0ConnectionCustomizer implements ConnectionCustomizer
    @Override
    public void onAcquire(Connection connection, String dataSourceIdentityToken) throws Exception
    {
-      List<String> queries = queriesForNewConnections.get(dataSourceIdentityToken);
-      if(CollectionUtils.nullSafeHasContents(queries))
+      try
       {
-         for(String sql : queries)
+         List<String> queries = queriesForNewConnections.get(dataSourceIdentityToken);
+         if(CollectionUtils.nullSafeHasContents(queries))
          {
-            Statement statement = connection.createStatement();
-            statement.execute(sql);
+            for(String sql : queries)
+            {
+               Statement statement = connection.createStatement();
+               statement.execute(sql);
+            }
          }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Exception on a query-for-new-connection", e);
+         throw (e);
       }
    }
 
@@ -97,6 +108,7 @@ public class BaseC3P0ConnectionCustomizer implements ConnectionCustomizer
       // noop //
       //////////
    }
+
 
 
    /***************************************************************************
