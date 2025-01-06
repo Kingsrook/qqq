@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 import com.kingsrook.qqq.backend.module.sqlite.model.metadata.SQLiteBackendMetaData;
+import com.kingsrook.qqq.backend.module.sqlite.model.metadata.SQLiteTableBackendDetails;
 import org.apache.commons.io.IOUtils;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -91,17 +92,6 @@ public class TestUtils
       SQLiteBackendMetaData backend = TestUtils.defineBackend();
 
       File file = new File(backend.getPath());
-
-      /*
-      if(file.exists())
-      {
-         if(!file.delete())
-         {
-            throw (new Exception("SQLite database at [" + file.getAbsolutePath() + "] exists, and could not be deleted before (re)priming the database."));
-         }
-      }
-      */
-
       file.getParentFile().mkdirs();
 
       try(Connection connection = ConnectionManager.getConnection(backend))
@@ -211,7 +201,7 @@ public class TestUtils
          .withField(new QFieldMetaData("daysWorked", QFieldType.INTEGER).withBackendName("days_worked"))
          .withField(new QFieldMetaData("homeTown", QFieldType.STRING).withBackendName("home_town"))
          .withField(new QFieldMetaData("startTime", QFieldType.TIME).withBackendName("start_time"))
-         .withBackendDetails(new RDBMSTableBackendDetails()
+         .withBackendDetails(new SQLiteTableBackendDetails()
             .withTableName("person"));
    }
 

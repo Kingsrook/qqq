@@ -22,13 +22,13 @@
 package com.kingsrook.qqq.backend.module.sqlite.model.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SQLiteTableBackendDetails extends QTableBackendDetails
+public class SQLiteTableBackendDetails extends RDBMSTableBackendDetails
 {
    private String tableName;
 
