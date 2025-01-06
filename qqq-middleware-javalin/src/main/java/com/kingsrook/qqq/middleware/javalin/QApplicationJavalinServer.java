@@ -38,6 +38,7 @@ import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import org.apache.commons.lang.BooleanUtils;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /*******************************************************************************
@@ -102,17 +103,23 @@ public class QApplicationJavalinServer
          {
             ////////////////////////////////////////////////////////////////////////////////////////
             // If you have any assets to add to the web server (e.g., logos, icons) place them at //
-            // src/main/resources/material-dashboard-overlay (or a directory of your choice       //
-            // under src/main/resources) and use this line of code to tell javalin about it.      //
-            // Make sure to add your app-specific directory to the javalin config before the core //
-            // material-dashboard directory, so in case the same file exists in both (e.g.,       //
-            // favicon.png), the app-specific one will be used.                                   //
+            // src/main/resources/material-dashboard-overlay                                      //
+            // we'll use the same check that javalin (jetty?) internally uses to see if this      //
+            // directory exists - because if it doesn't, then it'll fail to start the server...   //
+            // note that that Resource object is auto-closable, hence the try-with-resources      //
             ////////////////////////////////////////////////////////////////////////////////////////
-            config.staticFiles.add("/material-dashboard-overlay");
+            try(Resource resource = Resource.newClassPathResource("/material-dashboard-overlay"))
+            {
+               if(resource !=null)
+               {
+                  config.staticFiles.add("/material-dashboard-overlay");
+               }
+            }
 
-            /////////////////////////////////////////////////////////////////////
-            // tell javalin where to find material-dashboard static web assets //
-            /////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////
+            // tell javalin where to find material-dashboard static web assets                //
+            // in this case, this path is coming from the qqq-frontend-material-dashboard jar //
+            ////////////////////////////////////////////////////////////////////////////////////
             config.staticFiles.add("/material-dashboard");
 
             ////////////////////////////////////////////////////////////
