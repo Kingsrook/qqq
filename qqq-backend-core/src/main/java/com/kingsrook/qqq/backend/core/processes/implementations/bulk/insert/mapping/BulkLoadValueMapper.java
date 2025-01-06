@@ -94,12 +94,19 @@ public class BulkLoadValueMapper
             QFieldMetaData field = table.getField(valueEntry.getKey());
             Serializable   value = valueEntry.getValue();
 
+            String fieldNamePlusWideIndex = field.getName();
+            if(record.getBackendDetail("wideAssociationIndexes") != null)
+            {
+               ArrayList<Integer> indexes = (ArrayList<Integer>) record.getBackendDetail("wideAssociationIndexes");
+               fieldNamePlusWideIndex += "," + StringUtils.join(",", indexes);
+            }
+
             ///////////////////
             // value mappin' //
             ///////////////////
-            if(mappingForTable.containsKey(field.getName()) && value != null)
+            if(mappingForTable.containsKey(fieldNamePlusWideIndex) && value != null)
             {
-               Serializable mappedValue = mappingForTable.get(field.getName()).get(ValueUtils.getValueAsString(value));
+               Serializable mappedValue = mappingForTable.get(fieldNamePlusWideIndex).get(ValueUtils.getValueAsString(value));
                if(mappedValue != null)
                {
                   value = mappedValue;

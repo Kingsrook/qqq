@@ -106,8 +106,13 @@ public class BulkInsertPrepareValueMappingStep implements BackendStep
 
          runBackendStepInput.addValue("valueMappingFieldIndex", valueMappingFieldIndex);
 
-         String        fullFieldName = fieldNamesToDoValueMapping.get(valueMappingFieldIndex);
-         TableAndField tableAndField = getTableAndField(runBackendStepInput.getValueString("tableName"), fullFieldName);
+         String fullFieldName              = fieldNamesToDoValueMapping.get(valueMappingFieldIndex);
+         String fieldNameWithoutWideSuffix = fullFieldName;
+         if(fieldNameWithoutWideSuffix.contains(","))
+         {
+            fieldNameWithoutWideSuffix = fieldNameWithoutWideSuffix.replaceFirst(",.*", "");
+         }
+         TableAndField tableAndField = getTableAndField(runBackendStepInput.getValueString("tableName"), fieldNameWithoutWideSuffix);
 
          runBackendStepInput.addValue("valueMappingField", new QFrontendFieldMetaData(tableAndField.field()));
          runBackendStepInput.addValue("valueMappingFullFieldName", fullFieldName);
@@ -213,6 +218,17 @@ public class BulkInsertPrepareValueMappingStep implements BackendStep
       StorageInput      storageInput      = BulkInsertStepUtils.getStorageInputForTheFile(runBackendStepInput);
       BulkInsertMapping bulkInsertMapping = (BulkInsertMapping) runBackendStepInput.getValue("bulkInsertMapping");
 
+      List<Integer> wideAssociationIndexes = null;
+      if(fullFieldName.contains(","))
+      {
+         wideAssociationIndexes = new ArrayList<>();
+         String indexes = fullFieldName.substring(fullFieldName.lastIndexOf(",") + 1);
+         for(String index : indexes.split("\\."))
+         {
+            wideAssociationIndexes.add(Integer.parseInt(index));
+         }
+      }
+
       String associationNameChain = null;
       if(fullFieldName.contains("."))
       {
@@ -227,7 +243,7 @@ public class BulkInsertPrepareValueMappingStep implements BackendStep
       {
          Set<String>          values       = new LinkedHashSet<>();
          BulkLoadFileRow      headerRow    = bulkInsertMapping.getHasHeaderRow() ? fileToRowsInterface.next() : null;
-         Map<String, Integer> fieldIndexes = bulkInsertMapping.getFieldIndexes(table, associationNameChain, headerRow);
+         Map<String, Integer> fieldIndexes = bulkInsertMapping.getFieldIndexes(table, associationNameChain, headerRow, wideAssociationIndexes);
          int                  index        = fieldIndexes.get(field.getName());
 
          while(fileToRowsInterface.hasNext())

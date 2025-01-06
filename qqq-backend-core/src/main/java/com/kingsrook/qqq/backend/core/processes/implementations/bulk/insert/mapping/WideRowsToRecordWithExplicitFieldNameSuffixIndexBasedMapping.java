@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -183,6 +184,15 @@ public class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMapping implem
             List<QRecord> associatedRecords = processAssociation(associationNameMinusChain, associationNameChain, associatedTable, mapping, row, headerRow);
             record.withAssociatedRecords(associationNameMinusChain, associatedRecords);
          }
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // stash the wide-association indexes in records, so that in the value mapper, we know if if this is, e.g., ,1, or ,2.3, for value-mapping //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(CollectionUtils.nullSafeHasContents(wideAssociationIndexes))
+      {
+         ArrayList<Integer> indexesArrayList = CollectionUtils.useOrWrap(wideAssociationIndexes, new TypeToken<>() {});
+         record.addBackendDetail("wideAssociationIndexes", indexesArrayList);
       }
 
       return record;

@@ -53,7 +53,7 @@ class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMappingTest extends B
    {
       String csv = """
          orderNo, Ship To, lastName, SKU 1,     Quantity 1, SKU 2,     Quantity 2, SKU 3, Quantity 3
-         1,       Homer,   Simpson,  DONUT,     12,         BEER,      500,        COUCH,  1
+         1,       Homer,   Simpson,  DONUT,     12,         BEER,      500,        COUCH,  two
          2,       Ned,     Flanders, BIBLE,     7,          LAWNMOWER, 1
          """;
 
@@ -74,6 +74,9 @@ class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMappingTest extends B
             "orderLine.quantity,2", "Quantity 3"
          ))
          .withMappedAssociations(List.of("orderLine"))
+         .withFieldNameToValueMapping(Map.of(
+            "orderLine.quantity,2", Map.of("two", 2)
+         ))
          .withTableName(TestUtils.TABLE_NAME_ORDER)
          .withLayout(BulkInsertMapping.Layout.WIDE)
          .withHasHeaderRow(true);
@@ -85,7 +88,7 @@ class WideRowsToRecordWithExplicitFieldNameSuffixIndexBasedMappingTest extends B
       assertEquals(1, order.getValueInteger("orderNo"));
       assertEquals("Homer", order.getValueString("shipToName"));
       assertEquals(List.of("DONUT", "BEER", "COUCH"), getValues(order.getAssociatedRecords().get("orderLine"), "sku"));
-      assertEquals(List.of(12, 500, 1), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
+      assertEquals(List.of(12, 500, 2), getValues(order.getAssociatedRecords().get("orderLine"), "quantity"));
       assertEquals(1, ((List<?>) order.getBackendDetail("fileRows")).size());
       assertEquals("Row 2", order.getAssociatedRecords().get("orderLine").get(0).getBackendDetail("rowNos"));
 
