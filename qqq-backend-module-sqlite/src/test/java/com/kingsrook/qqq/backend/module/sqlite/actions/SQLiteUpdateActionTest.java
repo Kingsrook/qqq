@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -62,6 +62,7 @@ public class SQLiteUpdateActionTest extends BaseTest
    {
       getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
    }
+
 
 
    /*******************************************************************************
@@ -238,8 +239,8 @@ public class SQLiteUpdateActionTest extends BaseTest
       updateInput.setRecords(List.of(record1, record2));
 
       UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
-       Map<String, Integer> statistics   = getBaseRDBMSActionStrategy().getStatistics();
-       assertEquals(1, statistics.get(BaseRDBMSActionStrategy.STAT_BATCHES_RAN));
+      Map<String, Integer> statistics   = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(1, statistics.get(BaseRDBMSActionStrategy.STAT_BATCHES_RAN));
 
       assertEquals(2, updateResult.getRecords().size(), "Should return 2 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
