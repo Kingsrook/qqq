@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.QuickSightChartR
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
+import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
@@ -78,7 +79,7 @@ import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class SampleMetaDataProvider
+public class SampleMetaDataProvider extends AbstractQQQApplication
 {
    public static boolean USE_MYSQL = true;
 
@@ -106,6 +107,17 @@ public class SampleMetaDataProvider
    public static final String SCREEN_0 = "screen0";
    public static final String SCREEN_1 = "screen1";
 
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QInstance defineQInstance() throws QException
+   {
+      return (defineInstance());
+   }
 
 
    /*******************************************************************************
@@ -145,7 +157,7 @@ public class SampleMetaDataProvider
    private static void defineBranding(QInstance qInstance)
    {
       qInstance.setBranding(new QBrandingMetaData()
-         .withLogo("/kr-logo.png")
+         .withLogo("/samples-logo.png")
          .withIcon("/kr-icon.png"));
    }
 
