@@ -38,8 +38,7 @@ class SampleJavalinServerTest
    void testStartStop()
    {
       SampleJavalinServer sampleJavalinServer = new SampleJavalinServer();
-      sampleJavalinServer.startJavalinServer();
-      sampleJavalinServer.stopJavalinServer();
+      sampleJavalinServer.start();
    }
 
 }
