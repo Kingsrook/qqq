@@ -99,8 +99,9 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
             
             <p>Your file can contain any number of columns.  You will be prompted to map fields from
             the ${tableLabel} table to columns from your file or default values for all records that
-            you are loading on the next screen.  It is optional (though encouraged) whether you include
-            a header row in your file.  For Excel files, only the first sheet in the workbook will be used.</p><br />
+            you are loading on the next screen.  It is optional whether you include a header row in your
+            file (though it is encouraged, and is the only way to received suggested field mappings).
+            For Excel files, only the first sheet in the workbook will be used.</p><br />
             """);
 
          if(listFieldsInHelpText)
@@ -136,8 +137,9 @@ public class BulkInsertPrepareFileUploadStep implements BackendStep
             
             <p>Your file can contain any number of columns.  You will be prompted to map fields from
             the ${tableLabel} table to columns from your file or default values for all records that
-            you are loading on the next screen.  It is optional (though encouraged) whether you include
-            a header row in your file.  For Excel files, only the first sheet in the workbook will be used.</p><br />
+            you are loading on the next screen.  It is optional whether you include a header row in your
+            file (though it is encouraged, and is the only way to received suggested field mappings).
+            For Excel files, only the first sheet in the workbook will be used.</p><br />
             """);
 
          if(listFieldsInHelpText)
