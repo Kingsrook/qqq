@@ -202,7 +202,7 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
     ***************************************************************************/
    static boolean hasHour(String dataFormatString)
    {
-      return dataFormatString.contains("h");
+      return dataFormatString.contains("h") || dataFormatString.contains("H");
    }
 
 
