@@ -56,7 +56,8 @@ class FlatRowsToRecordTest extends BaseTest
          new Serializable[] { 1, "Homer", "Simpson", true, "three fifty" },
          new Serializable[] { 2, "Marge", "Simpson", false, "" },
          new Serializable[] { 3, "Bart", "Simpson", "A", "99.95" },
-         new Serializable[] { 4, "Ned", "Flanders", 3.1, "one$" }
+         new Serializable[] { 4, "Ned", "Flanders", 3.1, "one$" },
+         new Serializable[] { "", "", "", "", "" } // all blank row (we can get these at the bottoms of files) - make sure it doesn't become a record.
       ));
 
       BulkLoadFileRow header = fileToRows.next();

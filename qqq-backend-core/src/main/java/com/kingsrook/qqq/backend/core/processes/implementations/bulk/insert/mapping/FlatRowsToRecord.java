@@ -62,12 +62,22 @@ public class FlatRowsToRecord implements RowsToRecordInterface
          QRecord         record = new QRecord();
          BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, row);
 
+         boolean anyValuesFromFileUsed = false;
          for(QFieldMetaData field : table.getFields().values())
          {
-            setValueOrDefault(record, field, null, mapping, row, fieldIndexes.get(field.getName()));
+            if(setValueOrDefault(record, field, null, mapping, row, fieldIndexes.get(field.getName())))
+            {
+               anyValuesFromFileUsed = true;
+            }
          }
 
-         rs.add(record);
+         //////////////////////////////////////////////////////////////////////////
+         // avoid building empty records (e.g., "past the end" of an Excel file) //
+         //////////////////////////////////////////////////////////////////////////
+         if(anyValuesFromFileUsed)
+         {
+            rs.add(record);
+         }
       }
 
       BulkLoadValueMapper.valueMapping(rs, mapping, table);
