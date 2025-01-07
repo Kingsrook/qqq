@@ -82,7 +82,7 @@ public class StringUtils
 
 
    /*******************************************************************************
-    ** allCapsToMixedCase - ie, UNIT CODE -> Unit Code
+    ** allCapsToMixedCase - ie, UNIT_CODE -> Unit Code
     **
     ** @param input
     ** @return
@@ -127,7 +127,7 @@ public class StringUtils
          return (input);
       }
 
-      return (rs.toString());
+      return (rs.toString().replace('_', ' '));
    }
 
 
