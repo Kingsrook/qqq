@@ -241,8 +241,10 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       {
          /////////////////////////////////////////////////////////////////////////////////
          // skip the rest of this method if there aren't any records w/o errors in them //
+         // but, advance our counter before we return.                                  //
          /////////////////////////////////////////////////////////////////////////////////
          this.rowsProcessed += recordsInThisPage;
+         return;
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -507,6 +509,15 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    {
       ArrayList<ProcessSummaryLineInterface> rs         = new ArrayList<>();
       String                                 tableLabel = table == null ? "" : table.getLabel();
+
+      ProcessSummaryLine recordsProcessedLine = new ProcessSummaryLine(Status.INFO);
+      recordsProcessedLine.setCount(rowsProcessed);
+      rs.add(recordsProcessedLine);
+      recordsProcessedLine.withMessageSuffix(" processed from the file.");
+      recordsProcessedLine.withSingularFutureMessage("record was");
+      recordsProcessedLine.withSingularPastMessage("record was");
+      recordsProcessedLine.withPluralFutureMessage("records were");
+      recordsProcessedLine.withPluralPastMessage("records were");
 
       String noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
       okSummary.setSingularFutureMessage(tableLabel + " record will be inserted" + noWarningsSuffix + ".");
