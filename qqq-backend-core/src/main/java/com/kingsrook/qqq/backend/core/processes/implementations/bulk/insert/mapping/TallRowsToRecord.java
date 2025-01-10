@@ -55,6 +55,7 @@ public class TallRowsToRecord implements RowsToRecordInterface
    private static final QLogger LOG = QLogger.getLogger(TallRowsToRecord.class);
 
    private Memoization<Pair<String, String>, Boolean> shouldProcesssAssociationMemoization = new Memoization<>();
+   private Memoization<String, List<Integer>> groupByAllIndexesFromTableMemoization = new Memoization<>();
 
 
 
@@ -95,6 +96,10 @@ public class TallRowsToRecord implements RowsToRecordInterface
          {
             continue;
          }
+
+         ///////////////////////////////////////////////////////////////////////////////
+         // maybe todo - some version of - only do this if there are mapped children? //
+         ///////////////////////////////////////////////////////////////////////////////
 
          if(rowsForCurrentRecord.isEmpty())
          {
@@ -154,8 +159,11 @@ public class TallRowsToRecord implements RowsToRecordInterface
     ***************************************************************************/
    private List<Integer> groupByAllIndexesFromTable(BulkInsertMapping mapping, QTableMetaData table, BulkLoadFileRow headerRow, String name) throws QException
    {
-      Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, name, headerRow);
-      return new ArrayList<>(fieldIndexes.values());
+      return ((groupByAllIndexesFromTableMemoization.getResult(table.getName(), (n) ->
+      {
+         Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, name, headerRow);
+         return new ArrayList<>(fieldIndexes.values());
+      })).orElse(null));
    }
 
 
@@ -166,6 +174,7 @@ public class TallRowsToRecord implements RowsToRecordInterface
    private QRecord makeRecordFromRows(QTableMetaData table, String associationNameChain, BulkInsertMapping mapping, BulkLoadFileRow headerRow, List<BulkLoadFileRow> rows) throws QException
    {
       QRecord record = new QRecord();
+      record.setTableName(table.getName());
       BulkLoadRecordUtils.addBackendDetailsAboutFileRows(record, CollectionUtils.useOrWrap(rows, new TypeToken<ArrayList<BulkLoadFileRow>>() {}));
 
       Map<String, Integer> fieldIndexes = mapping.getFieldIndexes(table, associationNameChain, headerRow);
@@ -272,6 +281,10 @@ public class TallRowsToRecord implements RowsToRecordInterface
             rs.add(makeRecordFromRows(table, associationNameChainForRecursiveCalls, mapping, headerRow, List.of(row)));
             break;
          }
+
+         ///////////////////////////////////////////////////////////////////////////////
+         // maybe todo - some version of - only do this if there are mapped children? //
+         ///////////////////////////////////////////////////////////////////////////////
 
          List<Serializable> rowGroupByValues = getGroupByValues(row, groupByIndexes);
          if(rowGroupByValues == null)
