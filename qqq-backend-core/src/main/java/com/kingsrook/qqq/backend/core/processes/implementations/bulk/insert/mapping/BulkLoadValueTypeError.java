@@ -44,7 +44,7 @@ public class BulkLoadValueTypeError extends AbstractBulkLoadRollableValueError
     *******************************************************************************/
    public BulkLoadValueTypeError(String fieldName, Serializable value, QFieldType type, String fieldLabel)
    {
-      super("Value [" + value + "] for field [" + fieldLabel + "] could not be converted to type [" + type + "]");
+      super("Cannot convert value [" + value + "] for field [" + fieldLabel + "] to type [" + type.getMixedCaseLabel() + "]");
       this.value = value;
       this.type = type;
       this.fieldLabel = fieldLabel;

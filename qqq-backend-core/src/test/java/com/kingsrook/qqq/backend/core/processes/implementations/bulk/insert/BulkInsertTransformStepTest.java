@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadRecordUtils;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadValueTypeError;
@@ -363,6 +364,63 @@ class BulkInsertTransformStepTest extends BaseTest
 
       ProcessSummaryAssert.assertThat(processSummary)
          .hasLineWithMessageContaining("Order record will be inserted")
+         .hasStatus(Status.OK)
+         .hasCount(1);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testPropagationOfErrorsFromAssociations() throws QException
+   {
+      ////////////////////////////////////////////////
+      // set line item lineNumber field as required //
+      ////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      instance.getTable(TestUtils.TABLE_NAME_LINE_ITEM).getField("lineNumber").setIsRequired(true);
+      reInitInstanceInContext(instance);
+
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
+
+      ///////////////////////////////////////////
+      // setup & run the bulk insert transform //
+      ///////////////////////////////////////////
+      BulkInsertTransformStep bulkInsertTransformStep = new BulkInsertTransformStep();
+      RunBackendStepInput     input                   = new RunBackendStepInput();
+      RunBackendStepOutput    output                  = new RunBackendStepOutput();
+
+      input.setTableName(TestUtils.TABLE_NAME_ORDER);
+      input.setStepName(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE);
+      input.setRecords(ListBuilder.of(
+         new QRecord().withValue("storeId", 1).withAssociatedRecord("orderLine", new QRecord()),
+         new QRecord().withValue("storeId", 1).withAssociatedRecord("orderLine", new QRecord().withError(new BadInputStatusMessage("some mapping error")))
+      ));
+
+      bulkInsertTransformStep.preRun(input, output);
+      bulkInsertTransformStep.runOnePage(input, output);
+      ArrayList<ProcessSummaryLineInterface> processSummary = bulkInsertTransformStep.getProcessSummary(output, false);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("some mapping error")
+         .hasMessageContaining("Records:")
+         .hasStatus(Status.ERROR)
+         .hasCount(1);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("records were processed from the file")
+         .hasStatus(Status.INFO)
+         .hasCount(2);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Order record will be inserted")
+         .hasStatus(Status.OK)
+         .hasCount(1);
+
+      ProcessSummaryAssert.assertThat(processSummary)
+         .hasLineWithMessageContaining("Order Line record will be inserted")
          .hasStatus(Status.OK)
          .hasCount(1);
    }

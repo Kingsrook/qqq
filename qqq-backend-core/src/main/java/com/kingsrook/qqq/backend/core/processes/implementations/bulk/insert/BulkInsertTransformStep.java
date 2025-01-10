@@ -187,65 +187,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
    @Override
    public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      int            recordsInThisPage = runBackendStepInput.getRecords().size();
-      QTableMetaData table             = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
-
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // split the records into 2 lists:  those w/ errors (e.g., from the bulk-load mapping), and those that are okay //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      List<QRecord> recordsWithoutAnyErrors = new ArrayList<>();
-      List<QRecord> recordsWithSomeErrors   = new ArrayList<>();
-      for(QRecord record : runBackendStepInput.getRecords())
-      {
-         List<QErrorMessage> errorsFromAssociations = getErrorsFromAssociations(record);
-         if(CollectionUtils.nullSafeHasContents(errorsFromAssociations))
-         {
-            List<QErrorMessage> recordErrors = Objects.requireNonNullElseGet(record.getErrors(), () -> new ArrayList<>());
-            recordErrors.addAll(errorsFromAssociations);
-            record.setErrors(recordErrors);
-         }
-
-         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
-         {
-            recordsWithSomeErrors.add(record);
-         }
-         else
-         {
-            recordsWithoutAnyErrors.add(record);
-         }
-      }
-
-      //////////////////////////////////////////////////////////////////
-      // propagate errors that came into this step out to the summary //
-      //////////////////////////////////////////////////////////////////
-      if(!recordsWithSomeErrors.isEmpty())
-      {
-         for(QRecord record : recordsWithSomeErrors)
-         {
-            for(QErrorMessage error : record.getErrors())
-            {
-               if(error instanceof AbstractBulkLoadRollableValueError rollableValueError)
-               {
-                  processSummaryWarningsAndErrorsRollup.addError(rollableValueError.getMessageToUseAsProcessSummaryRollupKey(), null);
-                  addToErrorToExampleRowValueMap(rollableValueError, record);
-               }
-               else
-               {
-                  processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
-               }
-            }
-         }
-      }
-
-      if(recordsWithoutAnyErrors.isEmpty())
-      {
-         /////////////////////////////////////////////////////////////////////////////////
-         // skip the rest of this method if there aren't any records w/o errors in them //
-         // but, advance our counter before we return.                                  //
-         /////////////////////////////////////////////////////////////////////////////////
-         this.rowsProcessed += recordsInThisPage;
-         return;
-      }
+      QTableMetaData table   = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
+      List<QRecord>  records = runBackendStepInput.getRecords();
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //
@@ -253,7 +196,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       InsertInput insertInput = new InsertInput();
       insertInput.setInputSource(QInputSource.USER);
       insertInput.setTableName(runBackendStepInput.getTableName());
-      insertInput.setRecords(recordsWithoutAnyErrors);
+      insertInput.setRecords(records);
       insertInput.setSkipUniqueKeyCheck(true);
 
       //////////////////////////////////////////////////////////////////////
@@ -262,34 +205,41 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // we do this, in case it needs to, for example, adjust values that //
       // are part of a unique key                                         //
       //////////////////////////////////////////////////////////////////////
-      Optional<TableCustomizerInterface> preInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      boolean                            didAlreadyRunCustomizer = false;
+      Optional<TableCustomizerInterface> preInsertCustomizer     = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
          AbstractPreInsertCustomizer.WhenToRun whenToRun = preInsertCustomizer.get().whenToRunPreInsert(insertInput, true);
          if(WhenToRun.BEFORE_ALL_VALIDATIONS.equals(whenToRun) || WhenToRun.BEFORE_UNIQUE_KEY_CHECKS.equals(whenToRun))
          {
-            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, recordsWithoutAnyErrors, true);
+            List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, records, true);
             runBackendStepInput.setRecords(recordsAfterCustomizer);
 
-            ///////////////////////////////////////////////////////////////////////////////////////
-            // todo - do we care if the customizer runs both now, and in the validation below?   //
-            // right now we'll let it run both times, but maybe that should be protected against //
-            ///////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // so we used to have a comment here asking "do we care if the customizer runs both now, and in the validation below?" //
+            // when implementing Bulk Load V2, we were seeing that some customizers were adding errors to records, both now, and   //
+            // when they ran below.  so, at that time, we added this boolean, to track and avoid the double-run...                 //
+            // we could also imagine this being a setting on the pre-insert customizer, similar to its whenToRun attribute...      //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            didAlreadyRunCustomizer = true;
          }
       }
 
+      ///////////////////////////////////////////////////////////////////////////////
+      // If the table has unique keys - then capture all values on these records   //
+      // for each key and set up a processSummaryLine for each of the table's UK's //
+      ///////////////////////////////////////////////////////////////////////////////
       Map<UniqueKey, Set<List<Serializable>>> existingKeys = new HashMap<>();
       List<UniqueKey>                         uniqueKeys   = CollectionUtils.nonNullList(table.getUniqueKeys());
       for(UniqueKey uniqueKey : uniqueKeys)
       {
-         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(null, table, recordsWithoutAnyErrors, uniqueKey).keySet());
+         existingKeys.put(uniqueKey, UniqueKeyHelper.getExistingKeys(null, table, records, uniqueKey).keySet());
          ukErrorSummaries.computeIfAbsent(uniqueKey, x -> new ProcessSummaryLineWithUKSampleValues(Status.ERROR));
       }
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // on the validate step, we haven't read the full file, so we don't know how many rows there are - thus        //
       // record count is null, and the ValidateStep won't be setting status counters - so - do it here in that case. //
-      // todo - move this up (before the early return?)                                                              //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       if(runBackendStepInput.getStepName().equals(StreamedETLWithFrontendProcess.STEP_NAME_VALIDATE))
       {
@@ -311,14 +261,14 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       // Note, we want to do our own UK checking here, even though InsertAction also tries to do it, because InsertAction //
       // will only be getting the records in pages, but in here, we'll track UK's across pages!!                          //
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      List<QRecord> recordsWithoutUkErrors = getRecordsWithoutUniqueKeyErrors(recordsWithoutAnyErrors, existingKeys, uniqueKeys, table);
+      List<QRecord> recordsWithoutUkErrors = getRecordsWithoutUniqueKeyErrors(records, existingKeys, uniqueKeys, table);
 
       /////////////////////////////////////////////////////////////////////////////////
       // run all validation from the insert action - in Preview mode (boolean param) //
       /////////////////////////////////////////////////////////////////////////////////
       insertInput.setRecords(recordsWithoutUkErrors);
       InsertAction insertAction = new InsertAction();
-      insertAction.performValidations(insertInput, true);
+      insertAction.performValidations(insertInput, true, didAlreadyRunCustomizer);
       List<QRecord> validationResultRecords = insertInput.getRecords();
 
       /////////////////////////////////////////////////////////////////
@@ -327,12 +277,28 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       List<QRecord> outputRecords = new ArrayList<>();
       for(QRecord record : validationResultRecords)
       {
+         List<QErrorMessage> errorsFromAssociations = getErrorsFromAssociations(record);
+         if(CollectionUtils.nullSafeHasContents(errorsFromAssociations))
+         {
+            List<QErrorMessage> recordErrors = Objects.requireNonNullElseGet(record.getErrors(), () -> new ArrayList<>());
+            recordErrors.addAll(errorsFromAssociations);
+            record.setErrors(recordErrors);
+         }
+
          if(CollectionUtils.nullSafeHasContents(record.getErrors()))
          {
             for(QErrorMessage error : record.getErrors())
             {
-               processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
-               addToErrorToExampleRowMap(error.getMessage(), record);
+               if(error instanceof AbstractBulkLoadRollableValueError rollableValueError)
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(rollableValueError.getMessageToUseAsProcessSummaryRollupKey(), null);
+                  addToErrorToExampleRowValueMap(rollableValueError, record);
+               }
+               else
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
+                  addToErrorToExampleRowMap(error.getMessage(), record);
+               }
             }
          }
          else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
@@ -356,7 +322,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       }
 
       runBackendStepOutput.setRecords(outputRecords);
-      this.rowsProcessed += recordsInThisPage;
+      this.rowsProcessed += records.size();
    }
 
 
@@ -574,7 +540,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             ProcessSummaryLine line          = entry.getValue();
             List<RowValue>     rowValues     = errorToExampleRowValueMap.get(message);
             String             exampleOrFull = rowValues.size() < line.getCount() ? "Example " : "";
-            line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Values:");
+            line.setMessageSuffix(line.getMessageSuffix() + periodIfNeeded(line.getMessageSuffix()) + "  " + exampleOrFull + "Values:");
             line.setBulletsOfText(new ArrayList<>(rowValues.stream().map(String::valueOf).toList()));
          }
          else if(errorToExampleRowsMap.containsKey(message))
@@ -582,7 +548,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             ProcessSummaryLine line            = entry.getValue();
             List<String>       rowDescriptions = errorToExampleRowsMap.get(message);
             String             exampleOrFull   = rowDescriptions.size() < line.getCount() ? "Example " : "";
-            line.setMessageSuffix(line.getMessageSuffix() + ".  " + exampleOrFull + "Records:");
+            line.setMessageSuffix(line.getMessageSuffix() + periodIfNeeded(line.getMessageSuffix()) + "  " + exampleOrFull + "Records:");
             line.setBulletsOfText(new ArrayList<>(rowDescriptions.stream().map(String::valueOf).toList()));
          }
       }
@@ -590,6 +556,21 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       processSummaryWarningsAndErrorsRollup.addToList(rs);
 
       return (rs);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private String periodIfNeeded(String input)
+   {
+      if(input != null && input.matches(".*\\. *$"))
+      {
+         return ("");
+      }
+
+      return (".");
    }
 
 
