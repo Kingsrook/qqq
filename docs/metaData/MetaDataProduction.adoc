@@ -147,8 +147,8 @@ public class BackendMetaDataProvider
 As the size of your application grows, if you're doing per-object meta-data providers, you may find it
 burdensome, when adding a new object to your instance, to have to write code for it in two places -
 that is - a new class to produce that meta-data object, AND a single line of code to add that object
-to your `QInstance`.  As such, a mechanism to avoid that line-of-code to add the object to the
-`QInstance` exists.
+to your `QInstance`.  As such, a mechanism exists to let you avoid that line-of-code for adding the object
+to the `QInstance`.
 
 This mechanism involves adding the `MetaDataProducerInterface` to all of your classes that produce a
 meta-data object.  This interface is generic, with a type parameter that will typically be the type of
@@ -204,7 +204,7 @@ that are all related, and it's only a handful of lines of code for each one, may
 produce them all in the same class.  Or maybe when you define a table, you'd like to define its
 joins and widgets at the same time.
 
-This approach can be accomplished by making your `MetaDataProducerInterface`'s type argument by
+This approach can be accomplished by making the type argument for your `MetaDataProducerInterface` be
 `MetaDataProducerMultiOutput` - a simple class that just wraps a list of other `MetaDataProducerOutput`
 objects.
 
@@ -238,12 +238,13 @@ be specified in their meta-data object.
 At the same time, if you're writing any custom code in your QQQ application
 (e.g., any processes or table customizers), where you're working with records from tables, you may
 prefer being able to work with entity beans (e.g., java classes with typed getter & setter methods),
-rather than the default object type that QQQ's ORM actions return, the `QRecord`, which carriers all
-of its values in a `Map`.  QQQ has a mechanism for dealing with this - in the form of the `QRecordEntity`
-class.
+rather than the default object type that QQQ's ORM actions return, the `QRecord`, which carries all
+of its values in a `Map` (where you don't get compile-time checks of field names or data types).
+QQQ has a mechanism for dealing with this - in the form of the `QRecordEntity` class.
 
 So - if you want to build your application using entity beans (which is recommended, for the compile-time
-safety that they provide in custom code), you will be writing a `QRecordEntity` class, which will look like:
+safety that they provide in custom code), you will be writing a `QRecordEntity` class for each of your tables,
+which will look like:
 
 [source,java]
 .QRecordEntity example
@@ -280,7 +281,7 @@ public QTableMetaData produce(QInstance qInstance) throws QExcpetion
 ----
 
 That `withFieldsFromEntity` call is one of the biggest benefits of this technique.  It allows you to avoid defining
-all of the field in you table in two place (the entity and the table meta-data).
+all of the fields in you table in two places (the entity and the table meta-data).
 
 == MetaData Producing Annotations for Entities
 
