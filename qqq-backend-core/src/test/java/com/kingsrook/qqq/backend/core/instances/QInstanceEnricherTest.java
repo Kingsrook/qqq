@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -47,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_GREETINGS;
 import static com.kingsrook.qqq.backend.core.utils.TestUtils.APP_NAME_MISCELLANEOUS;
@@ -65,6 +67,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QInstanceEnricherTest extends BaseTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @AfterEach
+   void afterEach()
+   {
+      QInstanceEnricher.removeAllEnricherPlugins();
+   }
+
+
 
    /*******************************************************************************
     ** Test that a table missing a label gets the default label applied (name w/ UC-first).
@@ -570,6 +583,39 @@ class QInstanceEnricherTest extends BaseTest
       new QInstanceEnricher(qInstance).enrich();
 
       assertEquals("My Field", qInstance.getProcess("test").getFrontendStep("screen").getViewFields().get(0).getLabel());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldPlugIn()
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+
+      QInstanceEnricher.addEnricherPlugin(new QInstanceEnricherPluginInterface<QFieldMetaData>()
+      {
+         /***************************************************************************
+          *
+          ***************************************************************************/
+         @Override
+         public void enrich(QFieldMetaData field, QInstance qInstance)
+         {
+            if(field != null)
+            {
+               field.setLabel(field.getLabel() + " Plugged");
+            }
+         }
+      });
+
+      new QInstanceEnricher(qInstance).enrich();
+
+      qInstance.getTables().values().forEach(table -> table.getFields().values().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
+      qInstance.getProcesses().values().forEach(process -> process.getInputFields().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
+      qInstance.getProcesses().values().forEach(process -> process.getOutputFields().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
+
    }
 
 }

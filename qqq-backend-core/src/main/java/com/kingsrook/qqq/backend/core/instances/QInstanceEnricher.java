@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
@@ -41,6 +43,7 @@ import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -52,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueB
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
@@ -120,6 +124,8 @@ public class QInstanceEnricher
    //////////////////////////////////////////////////////////////////////////////////////////////////
    private static final Map<String, String> labelMappings = new LinkedHashMap<>();
 
+   private static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> enricherPlugins = new ListingHash<>();
+
 
 
    /*******************************************************************************
@@ -181,6 +187,7 @@ public class QInstanceEnricher
       }
 
       enrichJoins();
+      enrichInstance();
 
       //////////////////////////////////////////////////////////////////////////////
       // if the instance DOES have 1 or more scheduler, but no schedulable types, //
@@ -193,6 +200,16 @@ public class QInstanceEnricher
             QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
          }
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void enrichInstance()
+   {
+      runPlugins(QInstance.class, qInstance, qInstance);
    }
 
 
@@ -261,6 +278,14 @@ public class QInstanceEnricher
                }
             }
          }
+
+         ///////////////////////////////////////////
+         // run plugins on joins if there are any //
+         ///////////////////////////////////////////
+         for(QJoinMetaData join : qInstance.getJoins().values())
+         {
+            runPlugins(QJoinMetaData.class, join, qInstance);
+         }
       }
       catch(Exception e)
       {
@@ -276,6 +301,7 @@ public class QInstanceEnricher
    private void enrichWidget(QWidgetMetaDataInterface widgetMetaData)
    {
       enrichPermissionRules(widgetMetaData);
+      runPlugins(QWidgetMetaDataInterface.class, widgetMetaData, qInstance);
    }
 
 
@@ -286,6 +312,7 @@ public class QInstanceEnricher
    private void enrichBackend(QBackendMetaData qBackendMetaData)
    {
       qBackendMetaData.enrich();
+      runPlugins(QBackendMetaData.class, qBackendMetaData, qInstance);
    }
 
 
@@ -326,6 +353,7 @@ public class QInstanceEnricher
 
       enrichPermissionRules(table);
       enrichAuditRules(table);
+      runPlugins(QTableMetaData.class, table, qInstance);
    }
 
 
@@ -416,6 +444,7 @@ public class QInstanceEnricher
       }
 
       enrichPermissionRules(process);
+      runPlugins(QProcessMetaData.class, process, qInstance);
    }
 
 
@@ -537,6 +566,8 @@ public class QInstanceEnricher
             field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
          }
       }
+
+      runPlugins(QFieldMetaData.class, field, qInstance);
    }
 
 
@@ -608,6 +639,7 @@ public class QInstanceEnricher
       ensureAppSectionMembersAreAppChildren(app);
 
       enrichPermissionRules(app);
+      runPlugins(QAppMetaData.class, app, qInstance);
    }
 
 
@@ -755,6 +787,7 @@ public class QInstanceEnricher
       }
 
       enrichPermissionRules(report);
+      runPlugins(QReportMetaData.class, report, qInstance);
    }
 
 
@@ -1407,6 +1440,58 @@ public class QInstanceEnricher
                LOG.warn("Error enriching possible value source with idType based on first custom value", e, logPair("possibleValueSource", possibleValueSource.getName()));
             }
          }
+      }
+
+      runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void addEnricherPlugin(QInstanceEnricherPluginInterface<?> plugin)
+   {
+      Optional<Method> enrichMethod = Arrays.stream(plugin.getClass().getDeclaredMethods())
+         .filter(m -> m.getName().equals("enrich")
+            && m.getParameterCount() == 2
+            && !m.getParameterTypes()[0].equals(Object.class)
+            && m.getParameterTypes()[1].equals(QInstance.class)
+         ).findFirst();
+
+      if(enrichMethod.isPresent())
+      {
+         Class<?> parameterType = enrichMethod.get().getParameterTypes()[0];
+         enricherPlugins.add(parameterType, plugin);
+      }
+      else
+      {
+         LOG.warn("Could not find enrich method on enricher plugin [" + plugin.getClass().getName() + "] (to infer type being enriched) - this plugin will not be used.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void removeAllEnricherPlugins()
+   {
+      enricherPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <T> void runPlugins(Class<T> c, T t, QInstance qInstance)
+   {
+      for(QInstanceEnricherPluginInterface<?> plugin : CollectionUtils.nonNullList(enricherPlugins.get(c)))
+      {
+         @SuppressWarnings("unchecked")
+         QInstanceEnricherPluginInterface<T> castedPlugin = (QInstanceEnricherPluginInterface<T>) plugin;
+         castedPlugin.enrich(t, qInstance);
       }
    }
 
