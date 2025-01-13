@@ -22,84 +22,106 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
+import java.io.InputStream;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
-import com.kingsrook.qqq.backend.core.context.QContext;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
-import com.kingsrook.qqq.backend.core.model.actions.processes.QUploadedFile;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
-import com.kingsrook.qqq.backend.core.model.actions.shared.mapping.QKeyBasedFieldMapping;
-import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.RowsToRecordInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractExtractStep;
-import com.kingsrook.qqq.backend.core.state.AbstractStateKey;
-import com.kingsrook.qqq.backend.core.state.TempFileStateProvider;
 
 
 /*******************************************************************************
  ** Extract step for generic table bulk-insert ETL process
+ **
+ ** This step does a little bit of transforming, actually - taking rows from
+ ** an uploaded file, and potentially merging them (for child-table use-cases)
+ ** and applying the "Mapping" - to put fully built records into the pipe for the
+ ** Transform step.
  *******************************************************************************/
 public class BulkInsertExtractStep extends AbstractExtractStep
 {
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
-      AbstractStateKey        stateKey             = (AbstractStateKey) runBackendStepInput.getValue(QUploadedFile.DEFAULT_UPLOADED_FILE_FIELD_NAME);
-      Optional<QUploadedFile> optionalUploadedFile = TempFileStateProvider.getInstance().get(QUploadedFile.class, stateKey);
-      if(optionalUploadedFile.isEmpty())
+      int rowsAdded     = 0;
+      int originalLimit = Objects.requireNonNullElse(getLimit(), Integer.MAX_VALUE);
+
+      StorageInput          storageInput      = BulkInsertStepUtils.getStorageInputForTheFile(runBackendStepInput);
+      BulkInsertMapping     bulkInsertMapping = (BulkInsertMapping) runBackendStepOutput.getValue("bulkInsertMapping");
+      RowsToRecordInterface rowsToRecord      = bulkInsertMapping.getLayout().newRowsToRecordInterface();
+
+      try
+         (
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // open a stream to read from our file, and a FileToRows object, that knows how to read from that stream //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+            InputStream inputStream = new StorageAction().getInputStream(storageInput);
+            FileToRowsInterface fileToRowsInterface = FileToRowsInterface.forFile(storageInput.getReference(), inputStream);
+         )
       {
-         throw (new QException("Could not find uploaded file"));
-      }
+         ///////////////////////////////////////////////////////////
+         // read the header row (if this file & mapping uses one) //
+         ///////////////////////////////////////////////////////////
+         BulkLoadFileRow headerRow = bulkInsertMapping.getHasHeaderRow() ? fileToRowsInterface.next() : null;
 
-      byte[] bytes    = optionalUploadedFile.get().getBytes();
-      String fileName = optionalUploadedFile.get().getFilename();
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // while there are more rows in the file - and we're under the limit - get more records form the file //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         while(fileToRowsInterface.hasNext() && rowsAdded < originalLimit)
+         {
+            int remainingLimit = originalLimit - rowsAdded;
 
-      /////////////////////////////////////////////////////
-      // let the user specify field labels instead names //
-      /////////////////////////////////////////////////////
-      QTableMetaData        table     = runBackendStepInput.getTable();
-      String                tableName = runBackendStepInput.getTableName();
-      QKeyBasedFieldMapping mapping   = new QKeyBasedFieldMapping();
-      for(Map.Entry<String, QFieldMetaData> entry : table.getFields().entrySet())
-      {
-         mapping.addMapping(entry.getKey(), entry.getValue().getLabel());
-      }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // put a page-size limit on the rows-to-record class, so it won't be tempted to do whole file all at once //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            int           pageLimit = Math.min(remainingLimit, getMaxPageSize());
+            List<QRecord> page      = rowsToRecord.nextPage(fileToRowsInterface, headerRow, bulkInsertMapping, pageLimit);
 
-      //////////////////////////////////////////////////////////////////////////
-      // get the non-editable fields - they'll be blanked out in a customizer //
-      //////////////////////////////////////////////////////////////////////////
-      List<QFieldMetaData> nonEditableFields = table.getFields().values().stream()
-         .filter(f -> !f.getIsEditable())
-         .toList();
-
-      if(fileName.toLowerCase(Locale.ROOT).endsWith(".csv"))
-      {
-         new CsvToQRecordAdapter().buildRecordsFromCsv(new CsvToQRecordAdapter.InputWrapper()
-            .withRecordPipe(getRecordPipe())
-            .withLimit(getLimit())
-            .withCsv(new String(bytes))
-            .withDoCorrectValueTypes(true)
-            .withTable(QContext.getQInstance().getTable(tableName))
-            .withMapping(mapping)
-            .withRecordCustomizer((record) ->
+            if(page.size() > remainingLimit)
             {
-               ////////////////////////////////////////////
-               // remove values from non-editable fields //
-               ////////////////////////////////////////////
-               for(QFieldMetaData nonEditableField : nonEditableFields)
-               {
-                  record.setValue(nonEditableField.getName(), null);
-               }
-            }));
+               /////////////////////////////////////////////////////////////
+               // in case we got back more than we asked for, sub-list it //
+               /////////////////////////////////////////////////////////////
+               page = page.subList(0, remainingLimit);
+            }
+
+            /////////////////////////////////////////////
+            // send this page of records into the pipe //
+            /////////////////////////////////////////////
+            getRecordPipe().addRecords(page);
+            rowsAdded += page.size();
+         }
       }
-      else
+      catch(QException qe)
       {
-         throw (new QUserFacingException("Unsupported file type."));
+         throw qe;
       }
+      catch(Exception e)
+      {
+         throw new QException("Unhandled error in bulk insert extract step", e);
+      }
+
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private int getMaxPageSize()
+   {
+      return (1000);
    }
 }

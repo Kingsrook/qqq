@@ -2099,6 +2099,8 @@ public class QInstanceValidator
             default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
          }
 
+         assertCondition(possibleValueSource.getIdType() != null, "possibleValueSource " + name + " is missing its idType.");
+
          runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
       }
    }

@@ -420,6 +420,17 @@ public class RunBackendStepInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    ** Accessor for processState's isStepBack attribute
+    **
+    *******************************************************************************/
+   public boolean getIsStepBack()
+   {
+      return processState.getIsStepBack();
+   }
+
+
+
+   /*******************************************************************************
     ** Accessor for processState - protected, because we generally want to access
     ** its members through wrapper methods, we think
     **

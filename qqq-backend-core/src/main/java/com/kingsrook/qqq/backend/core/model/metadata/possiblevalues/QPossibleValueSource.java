@@ -31,6 +31,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 
 
 /*******************************************************************************
@@ -44,6 +45,8 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
    private String                   name;
    private String                   label;
    private QPossibleValueSourceType type;
+
+   private QFieldType idType;
 
    private String       valueFormat           = PVSValueFormatAndFields.LABEL_ONLY.getFormat();
    private List<String> valueFields           = PVSValueFormatAndFields.LABEL_ONLY.getFields();
@@ -678,5 +681,36 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
       this.overrideIdField = overrideIdField;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for idType
+    *******************************************************************************/
+   public QFieldType getIdType()
+   {
+      return (this.idType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for idType
+    *******************************************************************************/
+   public void setIdType(QFieldType idType)
+   {
+      this.idType = idType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for idType
+    *******************************************************************************/
+   public QPossibleValueSource withIdType(QFieldType idType)
+   {
+      this.idType = idType;
+      return (this);
+   }
+
 
 }
