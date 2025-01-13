@@ -34,6 +34,7 @@ public class SampleJavalinServer
 {
    private static final QLogger LOG = QLogger.getLogger(SampleJavalinServer.class);
 
+   private static final int DEFAULT_PORT = 8080;
 
 
    /*******************************************************************************
@@ -51,9 +52,21 @@ public class SampleJavalinServer
     *******************************************************************************/
    public void start()
    {
+      start(DEFAULT_PORT);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void start(Integer port)
+   {
       try
       {
-         new QApplicationJavalinServer(new SampleMetaDataProvider()).start();
+         new QApplicationJavalinServer(new SampleMetaDataProvider())
+            .withPort(port)
+            .start();
       }
       catch(Exception e)
       {

@@ -68,7 +68,15 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-frontend-material-dashboard</artifactId>
-         <version>0.24.0-SNAPSHOT</version>
+         <version>0.23.0-20241122.175726-8</version>
+      </dependency>
+      <dependency>
+         <groupId>com.kingsrook.qqq</groupId>
+         <artifactId>qqq-frontend-material-dashboard</artifactId>
+         <classifier>tests</classifier>
+         <!-- note - intentional 2nd import of qfmd - for tests! -->
+         <version>0.23.0-20241122.175726-8</version>
+         <scope>test</scope>
       </dependency>
       <dependency>
          <groupId>com.h2database</groupId>

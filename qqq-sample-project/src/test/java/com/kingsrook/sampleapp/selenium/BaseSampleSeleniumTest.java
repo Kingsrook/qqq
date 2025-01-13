@@ -51,7 +51,7 @@ public class BaseSampleSeleniumTest extends QBaseSeleniumTest
       qSeleniumLib.withBaseUrl("http://localhost:" + port);
       qSeleniumLib.withWaitSeconds(DEFAULT_WAIT_SECONDS);
 
-      new SampleJavalinServer().startJavalinServer(port);
+      new SampleJavalinServer().start(port);
    }
 
 

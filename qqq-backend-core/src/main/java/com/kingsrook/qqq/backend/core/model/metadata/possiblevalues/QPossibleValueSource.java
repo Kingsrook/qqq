@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -103,7 +104,7 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     ** Create a new possible value source, for an enum, with default settings.
     ** e.g., type=ENUM; name from param values from the param; LABEL_ONLY format
     *******************************************************************************/
-   public static <I, T extends PossibleValueEnum<I>> QPossibleValueSource newForEnum(String name, T[] values)
+   public static <I extends Serializable, T extends PossibleValueEnum<I>> QPossibleValueSource newForEnum(String name, T[] values)
    {
       return new QPossibleValueSource()
          .withName(name)
@@ -559,7 +560,7 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     **   myPossibleValueSource.withValuesFromEnum(MyEnum.values()));
     **
     *******************************************************************************/
-   public <I, T extends PossibleValueEnum<I>> QPossibleValueSource withValuesFromEnum(T[] values)
+   public <I extends Serializable, T extends PossibleValueEnum<I>> QPossibleValueSource withValuesFromEnum(T[] values)
    {
       Set<I> usedIds = new HashSet<>();
       List<I> duplicatedIds = new ArrayList<>();
