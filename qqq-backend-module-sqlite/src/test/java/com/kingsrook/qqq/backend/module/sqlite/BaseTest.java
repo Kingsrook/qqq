@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,36 +19,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms.actions;
+package com.kingsrook.qqq.backend.module.sqlite;
 
 
 import java.sql.Connection;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
-import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBMSActionTest extends BaseTest
+public class BaseTest
 {
+   private static final QLogger LOG = QLogger.getLogger(BaseTest.class);
+
+
 
    /*******************************************************************************
     **
     *******************************************************************************/
-   @AfterEach
-   void afterEachRDBMSActionTest()
+   @BeforeEach
+   void baseBeforeEach() throws Exception
    {
-      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategy();
-      actionStrategy.setPageSize(BaseRDBMSActionStrategy.DEFAULT_PAGE_SIZE);
-      actionStrategy.resetStatistics();
-      actionStrategy.setCollectStatistics(false);
+      QContext.init(TestUtils.defineInstance(), new QSession());
+      TestUtils.primeTestDatabase("prime-test-database.sql");
    }
 
 
@@ -56,9 +59,15 @@ public class RDBMSActionTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected void primeTestDatabase() throws Exception
+   @AfterEach
+   void baseAfterEach()
    {
-      TestUtils.primeTestDatabase("prime-test-database.sql");
+      BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategy();
+      actionStrategy.setPageSize(BaseRDBMSActionStrategy.DEFAULT_PAGE_SIZE);
+      actionStrategy.resetStatistics();
+      actionStrategy.setCollectStatistics(false);
+
+      QContext.clear();
    }
 
 
@@ -84,6 +93,20 @@ public class RDBMSActionTest extends BaseTest
       actionStrategy.setCollectStatistics(true);
       actionStrategy.resetStatistics();
       return actionStrategy;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected static void reInitInstanceInContext(QInstance qInstance)
+   {
+      if(qInstance.equals(QContext.getQInstance()))
+      {
+         LOG.warn("Unexpected condition - the same qInstance that is already in the QContext was passed into reInit.  You probably want a new QInstance object instance.");
+      }
+      QContext.init(qInstance, new QSession());
    }
 
 

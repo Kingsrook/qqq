@@ -178,7 +178,18 @@ public class ConnectionManager
          case RDBMSBackendMetaData.VENDOR_AURORA_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
          case RDBMSBackendMetaData.VENDOR_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
          case RDBMSBackendMetaData.VENDOR_H2 -> "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
-         default -> throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor());
+         default ->
+         {
+            String connectionString = backend.buildConnectionString();
+            if(connectionString == null)
+            {
+               throw new IllegalArgumentException("Unsupported rdbms backend vendor: " + backend.getVendor() + " (and null returned by backendMetaData.buildConnectionString())");
+            }
+            else
+            {
+               yield (connectionString);
+            }
+         }
       };
    }
 

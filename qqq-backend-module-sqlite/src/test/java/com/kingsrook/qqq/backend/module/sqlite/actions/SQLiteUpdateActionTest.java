@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms.actions;
+package com.kingsrook.qqq.backend.module.sqlite.actions;
 
 
 import java.util.ArrayList;
@@ -35,8 +35,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
+import com.kingsrook.qqq.backend.module.sqlite.BaseTest;
+import com.kingsrook.qqq.backend.module.sqlite.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBMSUpdateActionTest extends RDBMSActionTest
+public class SQLiteUpdateActionTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -59,8 +60,6 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    @BeforeEach
    public void beforeEach() throws Exception
    {
-      super.primeTestDatabase();
-
       getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
    }
 
@@ -410,7 +409,6 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
          GetOutput getOutput = new GetAction().execute(getInput);
          assertEquals("Johnny Updated", getOutput.getRecord().getValueString("firstName"));
       }
-
    }
 
 

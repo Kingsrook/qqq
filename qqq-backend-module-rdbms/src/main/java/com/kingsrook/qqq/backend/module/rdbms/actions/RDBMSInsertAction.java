@@ -37,7 +37,6 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
 /*******************************************************************************
@@ -56,6 +55,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
    {
       InsertOutput   rs    = new InsertOutput();
       QTableMetaData table = insertInput.getTable();
+      setBackendMetaData(insertInput.getBackend());
 
       Connection connection            = null;
       boolean    needToCloseConnection = false;
@@ -90,7 +90,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             needToCloseConnection = true;
          }
 
-         for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), QueryManager.PAGE_SIZE))
+         for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), getActionStrategy().getPageSize(insertInput)))
          {
             String tableName = escapeIdentifier(getTableName(table));
             sql = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
@@ -146,7 +146,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             // todo sql customization - can edit sql and/or param list
             // todo - non-serial-id style tables
             // todo - other generated values, e.g., createDate...  maybe need to re-select?
-            List<Serializable> idList = QueryManager.executeInsertForGeneratedIds(connection, sql.toString(), params, table.getField(table.getPrimaryKeyField()).getType());
+            List<Serializable> idList = getActionStrategy().executeInsertForGeneratedIds(connection, sql.toString(), params, table.getField(table.getPrimaryKeyField()));
             int                index  = 0;
             for(QRecord record : page)
             {
@@ -155,8 +155,11 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
                if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
                {
-                  Serializable id = idList.get(index++);
-                  outputRecord.setValue(table.getPrimaryKeyField(), id);
+                  if(idList.size() > index)
+                  {
+                     Serializable id = idList.get(index++);
+                     outputRecord.setValue(table.getPrimaryKeyField(), id);
+                  }
                }
             }
 

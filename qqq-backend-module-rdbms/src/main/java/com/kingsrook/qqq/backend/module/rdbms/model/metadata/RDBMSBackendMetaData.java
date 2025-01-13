@@ -22,10 +22,15 @@
 package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
 
 
 /*******************************************************************************
@@ -48,6 +53,11 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    private ConnectionPoolSettings connectionPoolSettings;
 
    private RDBMSBackendMetaData readOnlyBackendMetaData;
+
+   private QCodeReference               actionStrategyCodeReference;
+   private RDBMSActionStrategyInterface actionStrategy;
+
+   private List<String> queriesForNewConnections = null;
 
    ///////////////////////////////////////////////////////////
    // define well-known (and fully supported) vendor values //
@@ -452,5 +462,122 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       this.connectionPoolSettings = connectionPoolSettings;
       return (this);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public String buildConnectionString()
+   {
+      return null;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for actionStrategyCodeReference
+    *******************************************************************************/
+   public QCodeReference getActionStrategyCodeReference()
+   {
+      return (this.actionStrategyCodeReference);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for actionStrategyCodeReference
+    *******************************************************************************/
+   public void setActionStrategyCodeReference(QCodeReference actionStrategyCodeReference)
+   {
+      this.actionStrategyCodeReference = actionStrategyCodeReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for actionStrategyCodeReference
+    *******************************************************************************/
+   public RDBMSBackendMetaData withActionStrategyCodeReference(QCodeReference actionStrategyCodeReference)
+   {
+      this.actionStrategyCodeReference = actionStrategyCodeReference;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @JsonIgnore
+   public RDBMSActionStrategyInterface getActionStrategy()
+   {
+      if(actionStrategy == null)
+      {
+         if(actionStrategyCodeReference != null)
+         {
+            actionStrategy = QCodeLoader.getAdHoc(RDBMSActionStrategyInterface.class, actionStrategyCodeReference);
+         }
+         else
+         {
+            actionStrategy = new BaseRDBMSActionStrategy();
+         }
+      }
+
+      return (actionStrategy);
+   }
+
+
+
+   /***************************************************************************
+    * note - protected - meant for sub-classes to use in their implementation of
+    * getActionStrategy, but not for public use.
+    ***************************************************************************/
+   protected RDBMSActionStrategyInterface getActionStrategyField()
+   {
+      return (actionStrategy);
+   }
+
+
+
+   /***************************************************************************
+    * note - protected - meant for sub-classes to use in their implementation of
+    * getActionStrategy, but not for public use.
+    ***************************************************************************/
+   protected void setActionStrategyField(RDBMSActionStrategyInterface actionStrategy)
+   {
+      this.actionStrategy = actionStrategy;
+   }
+
+
+   /*******************************************************************************
+    ** Getter for queriesForNewConnections
+    *******************************************************************************/
+   public List<String> getQueriesForNewConnections()
+   {
+      return (this.queriesForNewConnections);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queriesForNewConnections
+    *******************************************************************************/
+   public void setQueriesForNewConnections(List<String> queriesForNewConnections)
+   {
+      this.queriesForNewConnections = queriesForNewConnections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queriesForNewConnections
+    *******************************************************************************/
+   public RDBMSBackendMetaData withQueriesForNewConnections(List<String> queriesForNewConnections)
+   {
+      this.queriesForNewConnections = queriesForNewConnections;
+      return (this);
+   }
+
 
 }

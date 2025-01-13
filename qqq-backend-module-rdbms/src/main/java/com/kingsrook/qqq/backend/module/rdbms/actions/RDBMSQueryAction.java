@@ -57,7 +57,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -94,6 +93,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
       {
          QTableMetaData table     = queryInput.getTable();
          String         tableName = queryInput.getTableName();
+         setBackendMetaData(queryInput.getBackend());
 
          List<Serializable> params    = new ArrayList<>();
          Selection          selection = makeSelection(queryInput);
@@ -140,7 +140,7 @@ public class RDBMSQueryAction extends AbstractRDBMSAction implements QueryInterf
             //////////////////////////////////////////////
             QueryOutput queryOutput = new QueryOutput(queryInput);
 
-            QueryManager.executeStatement(statement, sql, ((ResultSet resultSet) ->
+            getActionStrategy().executeStatement(statement, sql, ((ResultSet resultSet) ->
             {
                /////////////////////////////////////////////////////////////////////////
                // once we've started getting results, go ahead and cancel the timeout //

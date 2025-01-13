@@ -41,7 +41,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
 /*******************************************************************************
@@ -66,6 +65,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       QTableMetaData table = updateInput.getTable();
+      setBackendMetaData(updateInput.getBackend());
 
       UpdateActionRecordSplitHelper updateActionRecordSplitHelper = new UpdateActionRecordSplitHelper();
       updateActionRecordSplitHelper.init(updateInput);
@@ -181,7 +181,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
       ////////////////////////////////////////////////////////////////////////////////
       try
       {
-         QueryManager.executeBatchUpdate(connection, sql, values);
+         getActionStrategy().executeBatchUpdate(connection, sql, values);
          incrementStatus(updateInput, recordList.size());
       }
       finally
@@ -214,7 +214,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
     *******************************************************************************/
    private void updateRecordsWithMatchingValuesAndFields(UpdateInput updateInput, Connection connection, QTableMetaData table, List<QRecord> recordList, List<String> fieldsBeingUpdated) throws SQLException
    {
-      for(List<QRecord> page : CollectionUtils.getPages(recordList, QueryManager.PAGE_SIZE))
+      for(List<QRecord> page : CollectionUtils.getPages(recordList, getActionStrategy().getPageSize(updateInput)))
       {
          //////////////////////////////
          // skip records with errors //
@@ -256,7 +256,7 @@ public class RDBMSUpdateAction extends AbstractRDBMSAction implements UpdateInte
          /////////////////////////////////////
          try
          {
-            QueryManager.executeUpdate(connection, sql, params);
+            getActionStrategy().executeUpdate(connection, sql, params);
             incrementStatus(updateInput, page.size());
          }
          finally
