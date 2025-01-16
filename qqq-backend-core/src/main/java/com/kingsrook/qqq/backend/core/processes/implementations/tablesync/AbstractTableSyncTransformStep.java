@@ -223,7 +223,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
-         LOG.info("No input records were found.");
+         LOG.debug("No input records were found.");
          return;
       }
 

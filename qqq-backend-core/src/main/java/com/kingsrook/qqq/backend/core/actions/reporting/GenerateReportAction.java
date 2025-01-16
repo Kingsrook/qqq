@@ -71,6 +71,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
@@ -567,7 +568,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             // all pivotFields that are possible value sources are implicitly translated //
             ///////////////////////////////////////////////////////////////////////////////
             QTableMetaData    mainTable         = QContext.getQInstance().getTable(dataSource.getSourceTable());
-            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(mainTable, summaryFieldName);
+            FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, summaryFieldName);
             if(fieldAndJoinTable.field().getPossibleValueSourceName() != null)
             {
                fieldsToTranslatePossibleValues.add(summaryFieldName);
@@ -576,32 +577,6 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       }
 
       return (fieldsToTranslatePossibleValues);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static FieldAndJoinTable getFieldAndJoinTable(QTableMetaData mainTable, String fieldName) throws QException
-   {
-      if(fieldName.indexOf('.') > -1)
-      {
-         String joinTableName = fieldName.replaceAll("\\..*", "");
-         String joinFieldName = fieldName.replaceAll(".*\\.", "");
-
-         QTableMetaData joinTable = QContext.getQInstance().getTable(joinTableName);
-         if(joinTable == null)
-         {
-            throw (new QException("Unrecognized join table name: " + joinTableName));
-         }
-
-         return new FieldAndJoinTable(joinTable.getField(joinFieldName), joinTable);
-      }
-      else
-      {
-         return new FieldAndJoinTable(mainTable.getField(fieldName), mainTable);
-      }
    }
 
 
@@ -756,7 +731,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          SummaryKey key = new SummaryKey();
          for(String summaryFieldName : view.getSummaryFields())
          {
-            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, summaryFieldName);
+            FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, summaryFieldName);
             Serializable      summaryValue      = record.getValue(summaryFieldName);
             if(fieldAndJoinTable.field().getPossibleValueSourceName() != null)
             {
@@ -811,7 +786,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
             //////////////////////////////////////////////////////
             // todo - memoize this, if we ever need to optimize //
             //////////////////////////////////////////////////////
-            FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, fieldName);
+            FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, fieldName);
             field = fieldAndJoinTable.field();
          }
          catch(Exception e)
@@ -956,7 +931,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
       List<QFieldMetaData> fields = new ArrayList<>();
       for(String summaryFieldName : view.getSummaryFields())
       {
-         FieldAndJoinTable fieldAndJoinTable = getFieldAndJoinTable(table, summaryFieldName);
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, summaryFieldName);
          fields.add(new QFieldMetaData(summaryFieldName, fieldAndJoinTable.field().getType()).withLabel(fieldAndJoinTable.field().getLabel())); // todo do we need the type?  if so need table as input here
       }
       for(QReportField column : view.getColumns())
@@ -1208,27 +1183,4 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
    {
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable)
-   {
-
-      /*******************************************************************************
-       **
-       *******************************************************************************/
-      public String getLabel(QTableMetaData mainTable)
-      {
-         if(mainTable.getName().equals(joinTable.getName()))
-         {
-            return (field.getLabel());
-         }
-         else
-         {
-            return (joinTable.getLabel() + ": " + field.getLabel());
-         }
-      }
-   }
 }

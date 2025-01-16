@@ -186,7 +186,7 @@ public class AsyncRecordPipeLoop
 
       if(recordCount > 0)
       {
-         LOG.info("End of job summary", logPair("recordCount", recordCount), logPair("jobName", jobName), logPair("millis", endTime - jobStartTime), logPair("recordsPerSecond", 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
+         LOG.debug("End of job summary", logPair("recordCount", recordCount), logPair("jobName", jobName), logPair("millis", endTime - jobStartTime), logPair("recordsPerSecond", 1000d * (recordCount / (.001d + (endTime - jobStartTime)))));
       }
 
       return (recordCount);
