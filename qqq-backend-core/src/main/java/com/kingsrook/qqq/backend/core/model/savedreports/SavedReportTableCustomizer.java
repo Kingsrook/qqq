@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
-import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.pivottable.PivotTableDefinition;
@@ -39,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
@@ -311,7 +311,7 @@ public class SavedReportTableCustomizer implements TableCustomizerInterface
    {
       try
       {
-         GenerateReportAction.FieldAndJoinTable fieldAndJoinTable = GenerateReportAction.getFieldAndJoinTable(table, fieldName);
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, fieldName);
          return (fieldAndJoinTable.getLabel(table));
       }
       catch(Exception e)

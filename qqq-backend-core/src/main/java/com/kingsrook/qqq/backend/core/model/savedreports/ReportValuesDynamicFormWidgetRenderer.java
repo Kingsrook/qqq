@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
-import com.kingsrook.qqq.backend.core.actions.reporting.GenerateReportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.values.QPossibleValueTranslator;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -43,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.DynamicFormWidgetData;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.savedreports.SavedReportToReportMetaDataAdapter;
@@ -127,8 +127,8 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
                {
                   if(criteriaValue instanceof FilterVariableExpression filterVariableExpression)
                   {
-                     GenerateReportAction.FieldAndJoinTable fieldAndJoinTable = GenerateReportAction.getFieldAndJoinTable(table, criteria.getFieldName());
-                     QFieldMetaData                         fieldMetaData     = fieldAndJoinTable.field().clone();
+                     FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(table, criteria.getFieldName());
+                     QFieldMetaData    fieldMetaData     = fieldAndJoinTable.field().clone();
 
                      /////////////////////////////////
                      // make name & label for field //
