@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -50,11 +51,33 @@ class ClassDetectingMetaDataLoaderTest extends BaseTest
          class: QTableMetaData
          version: 1
          name: myTable
+         backendName: someBackend
          """, StandardCharsets.UTF_8), "myTable.yaml");
 
       assertThat(qMetaDataObject).isInstanceOf(QTableMetaData.class);
       QTableMetaData qTableMetaData = (QTableMetaData) qMetaDataObject;
       assertEquals("myTable", qTableMetaData.getName());
+      assertEquals("someBackend", qTableMetaData.getBackendName());
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testProcess() throws QMetaDataLoaderException
+   {
+      QMetaDataObject qMetaDataObject = new ClassDetectingMetaDataLoader().fileToMetaDataObject(new QInstance(), IOUtils.toInputStream("""
+         class: QProcessMetaData
+         version: 1
+         name: myProcess
+         tableName: someTable
+         """, StandardCharsets.UTF_8), "myProcess.yaml");
+
+      assertThat(qMetaDataObject).isInstanceOf(QProcessMetaData.class);
+      QProcessMetaData qProcessMetaData = (QProcessMetaData) qMetaDataObject;
+      assertEquals("myProcess", qProcessMetaData.getName());
+      assertEquals("someTable", qProcessMetaData.getTableName());
    }
 
 

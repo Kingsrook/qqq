@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.instances.loaders;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -33,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
@@ -113,6 +115,9 @@ class QTableMetaDataLoaderTest extends BaseTest
             preDeleteRecord:
                name: com.kingsrook.SomePreDelete
                codeType: JAVA
+         disabledCapabilities:
+         -   TABLE_COUNT
+         -   QUERY_STATS
          """, StandardCharsets.UTF_8), "myTable.yaml");
 
       assertEquals("myTable", table.getName());
@@ -145,6 +150,8 @@ class QTableMetaDataLoaderTest extends BaseTest
       assertEquals(2, table.getCustomizers().size());
       assertEquals("com.kingsrook.SomePostQuery", table.getCustomizers().get(TableCustomizers.POST_QUERY_RECORD.getRole()).getName());
       assertEquals("com.kingsrook.SomePreDelete", table.getCustomizers().get(TableCustomizers.PRE_DELETE_RECORD.getRole()).getName());
+
+      assertEquals(Set.of(Capability.TABLE_COUNT, Capability.QUERY_STATS), table.getDisabledCapabilities());
    }
 
 

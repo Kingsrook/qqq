@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.instances.loaders;
 
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.instances.loaders.implementations.QTableMetaDataLoader;
+import com.kingsrook.qqq.backend.core.instances.loaders.implementations.GenericMetaDataLoader;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
@@ -57,17 +59,42 @@ public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDa
       if(map.containsKey("class"))
       {
          String classProperty = ValueUtils.getValueAsString(map.get("class"));
-         AbstractMetaDataLoader<?> loader = switch(classProperty)
+         try
          {
-            case "QTableMetaData" -> new QTableMetaDataLoader();
-            // todo!! case "QTableMetaData" -> new QTableMetaDataLoader();
-            default -> throw new QMetaDataLoaderException("Unexpected class [" + classProperty + "] specified in " + getFileName());
-         };
 
-         return (loader);
+            if(MetaDataLoaderRegistry.hasLoaderForSimpleName(classProperty))
+            {
+               Class<? extends AbstractMetaDataLoader<?>> loaderClass = MetaDataLoaderRegistry.getLoaderForSimpleName(classProperty);
+               return (loaderClass.getConstructor().newInstance());
+            }
+            else
+            {
+               List<Class<?>> classesInPackage = ClassPathUtils.getClassesInPackage("com.kingsrook.qqq.backend.core.model");
+               for(Class<?> c : classesInPackage)
+               {
+                  if(c.getSimpleName().equals(classProperty) && QMetaDataObject.class.isAssignableFrom(c))
+                  {
+                     @SuppressWarnings("unchecked")
+                     Class<? extends QMetaDataObject> metaDataClass = (Class<? extends QMetaDataObject>) c;
+                     return new GenericMetaDataLoader<>(metaDataClass);
+                  }
+               }
+            }
+            throw new QMetaDataLoaderException("Unexpected class [" + classProperty + "] (not a QMetaDataObject; doesn't have a registered MetaDataLoader) specified in " + getFileName());
+         }
+         catch(QMetaDataLoaderException qmdle)
+         {
+            throw (qmdle);
+         }
+         catch(Exception e)
+         {
+            throw new QMetaDataLoaderException("Error handling class [" + classProperty + "] specified in " + getFileName(), e);
+         }
       }
-
-      throw new QMetaDataLoaderException("Cannot detect meta-data type, because [class] attribute was not specified in file: " + getFileName());
+      else
+      {
+         throw new QMetaDataLoaderException("Cannot detect meta-data type, because [class] attribute was not specified in file: " + getFileName());
+      }
    }
 
 
