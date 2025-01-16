@@ -32,11 +32,13 @@ import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.dhatim.fastexcel.reader.Cell;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
 import org.dhatim.fastexcel.reader.ReadingOptions;
 import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -163,9 +165,13 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
          {
             return cell.asBoolean();
          }
-         case EMPTY, ERROR, FORMULA ->
+         case FORMULA ->
          {
-            LOG.debug("cell type: " + cell.getType() + " had value string: " + cell.asString());
+            return (ValueUtils.getValueAsString(cell.getRawValue()));
+         }
+         case EMPTY, ERROR ->
+         {
+            LOG.debug("Empty or Error cell", logPair("type", cell.getType()), logPair("rawValue", () -> cell.getRawValue()));
             return (null);
          }
          default ->
