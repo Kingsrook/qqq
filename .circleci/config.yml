@@ -127,14 +127,9 @@ commands:
           command: |
             cd docs
             asciidoctor -a docinfo=shared index.adoc
-
-  upload_docs_site:
-    steps:
-      - run:
-          name: scp html to justinsgotskinnylegs.com
-          command: |
-            cd docs
-            scp index.html dkelkhoff@45.79.44.221:/mnt/first-volume/dkelkhoff/nginx/html/justinsgotskinnylegs.com/qqq-docs.html
+      - store_artifacts:
+          path: docs/index.html
+          when: always
 
 jobs:
   mvn_test:
@@ -159,7 +154,6 @@ jobs:
     steps:
       - install_asciidoctor
       - run_asciidoctor
-      - upload_docs_site
 
 workflows:
   test_only:

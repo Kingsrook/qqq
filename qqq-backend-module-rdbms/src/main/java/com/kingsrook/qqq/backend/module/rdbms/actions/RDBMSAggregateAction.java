@@ -159,6 +159,10 @@ public class RDBMSAggregateAction extends AbstractRDBMSAction implements Aggrega
                         {
                            fieldType = QFieldType.DECIMAL;
                         }
+                        else if(field.getType().isTemporal() && (aggregate.getOperator().equals(AggregateOperator.COUNT)) || aggregate.getOperator().equals(AggregateOperator.COUNT_DISTINCT))
+                        {
+                           fieldType = QFieldType.INTEGER;
+                        }
                      }
 
                      if(fieldType != null)
