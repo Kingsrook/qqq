@@ -41,11 +41,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -60,6 +63,11 @@ public abstract class QRecordEntity
    private static final ListingHash<Class<? extends QRecordEntity>, QRecordEntityAssociation> associationMapping = new ListingHash<>();
 
    private Map<String, Serializable> originalRecordValues;
+
+   ////////////////////////////////////////////////////////////////////////////////
+   // map of entity class names to QTableMetaData objects that they helped build //
+   ////////////////////////////////////////////////////////////////////////////////
+   private static Map<String, QTableMetaData> tableReferences = new HashMap<>();
 
 
 
@@ -90,6 +98,19 @@ public abstract class QRecordEntity
       catch(Exception e)
       {
          throw (new QException("Error building entity from qRecord.", e));
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** register a mapping between an entity class and a table that it is associated with.
+    ***************************************************************************/
+   public static void registerTable(Class<? extends QRecordEntity> entityClass, QTableMetaData table)
+   {
+      if(entityClass != null && table != null)
+      {
+         tableReferences.put(entityClass.getName(), table);
       }
    }
 
@@ -176,7 +197,10 @@ public abstract class QRecordEntity
 
 
    /*******************************************************************************
-    ** Convert this entity to a QRecord.
+    ** Convert this entity to a QRecord.  ALL fields in the entity will be set
+    ** in the QRecord.  Note that, if you're using this for an input to the UpdateAction,
+    ** that this could cause values to be set to null, e.g., if you constructed
+    ** a entity from scratch, and didn't set all values in it!!
     **
     *******************************************************************************/
    public QRecord toQRecord() throws QRuntimeException
@@ -190,25 +214,7 @@ public abstract class QRecordEntity
             qRecord.setValue(qRecordEntityField.getFieldName(), (Serializable) qRecordEntityField.getGetter().invoke(this));
          }
 
-         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
-         {
-            @SuppressWarnings("unchecked")
-            List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
-            String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
-
-            if(associatedEntities != null)
-            {
-               /////////////////////////////////////////////////////////////////////////////////
-               // do this so an empty list in the entity becomes an empty list in the QRecord //
-               /////////////////////////////////////////////////////////////////////////////////
-               qRecord.withAssociatedRecords(associationName, new ArrayList<>());
-            }
-
-            for(QRecordEntity associatedEntity : CollectionUtils.nonNullList(associatedEntities))
-            {
-               qRecord.withAssociatedRecord(associationName, associatedEntity.toQRecord());
-            }
-         }
+         toQRecordProcessAssociations(qRecord, (entity) -> entity.toQRecord());
 
          return (qRecord);
       }
@@ -220,14 +226,64 @@ public abstract class QRecordEntity
 
 
 
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void toQRecordProcessAssociations(QRecord outputRecord, Function<QRecordEntity, QRecord> toRecordFunction) throws Exception
+   {
+      for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
+      {
+         @SuppressWarnings("unchecked")
+         List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
+         String associationName = qRecordEntityAssociation.getAssociationAnnotation().name();
+
+         if(associatedEntities != null)
+         {
+            outputRecord.withAssociatedRecords(associationName, new ArrayList<>());
+            for(QRecordEntity associatedEntity : associatedEntities)
+            {
+               outputRecord.withAssociatedRecord(associationName, toRecordFunction.apply(associatedEntity));
+            }
+         }
+      }
+   }
+
+
+
    /*******************************************************************************
-    **
+    ** Overload of toQRecordOnlyChangedFields that preserves original behavior of
+    ** that method, which is, to NOT includePrimaryKey
     *******************************************************************************/
+   @Deprecated(since = "includePrimaryKey param was added")
    public QRecord toQRecordOnlyChangedFields()
+   {
+      return toQRecordOnlyChangedFields(false);
+   }
+
+
+
+   /*******************************************************************************
+    ** Useful for the use-case of:
+    ** - fetch a QRecord (e.g., QueryAction or GetAction)
+    ** - build a QRecordEntity out of it
+    ** - change a field (or two) in it
+    ** - want to pass it into an UpdateAction, and want to see only the fields that
+    **   you know you changed get passed in to UpdateAction (e.g., PATCH semantics).
+    **
+    ** But also - per the includePrimaryKey param, include the primaryKey in the
+    ** records (e.g., to tell the Update which records to update).
+    **
+    ** Also, useful for:
+    ** - construct new entity, calling setters to populate some fields
+    ** - pass that entity into
+    *******************************************************************************/
+   public QRecord toQRecordOnlyChangedFields(boolean includePrimaryKey)
    {
       try
       {
          QRecord qRecord = new QRecord();
+
+         String primaryKeyFieldName = ObjectUtils.tryElse(() -> tableReferences.get(getClass().getName()).getPrimaryKeyField(), null);
 
          for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
          {
@@ -238,31 +294,16 @@ public abstract class QRecordEntity
                originalValue = originalRecordValues.get(qRecordEntityField.getFieldName());
             }
 
-            if(!Objects.equals(thisValue, originalValue))
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // if this value and the original value don't match - OR - this is the table's primary key field - then put the value in the record. //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(!Objects.equals(thisValue, originalValue) || (includePrimaryKey && Objects.equals(primaryKeyFieldName, qRecordEntityField.getFieldName())))
             {
                qRecord.setValue(qRecordEntityField.getFieldName(), thisValue);
             }
          }
 
-         for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
-         {
-            @SuppressWarnings("unchecked")
-            List<? extends QRecordEntity> associatedEntities = (List<? extends QRecordEntity>) qRecordEntityAssociation.getGetter().invoke(this);
-            String                        associationName    = qRecordEntityAssociation.getAssociationAnnotation().name();
-
-            if(associatedEntities != null)
-            {
-               /////////////////////////////////////////////////////////////////////////////////
-               // do this so an empty list in the entity becomes an empty list in the QRecord //
-               /////////////////////////////////////////////////////////////////////////////////
-               qRecord.withAssociatedRecords(associationName, new ArrayList<>());
-            }
-
-            for(QRecordEntity associatedEntity : CollectionUtils.nonNullList(associatedEntities))
-            {
-               qRecord.withAssociatedRecord(associationName, associatedEntity.toQRecord());
-            }
-         }
+         toQRecordProcessAssociations(qRecord, (entity) -> entity.toQRecordOnlyChangedFields(includePrimaryKey));
 
          return (qRecord);
       }
@@ -488,15 +529,15 @@ public abstract class QRecordEntity
    {
       // todo - more types!!
       return (returnType.equals(String.class)
-         || returnType.equals(Integer.class)
-         || returnType.equals(int.class)
-         || returnType.equals(Boolean.class)
-         || returnType.equals(boolean.class)
-         || returnType.equals(BigDecimal.class)
-         || returnType.equals(Instant.class)
-         || returnType.equals(LocalDate.class)
-         || returnType.equals(LocalTime.class)
-         || returnType.equals(byte[].class));
+              || returnType.equals(Integer.class)
+              || returnType.equals(int.class)
+              || returnType.equals(Boolean.class)
+              || returnType.equals(boolean.class)
+              || returnType.equals(BigDecimal.class)
+              || returnType.equals(Instant.class)
+              || returnType.equals(LocalDate.class)
+              || returnType.equals(LocalTime.class)
+              || returnType.equals(byte[].class));
       /////////////////////////////////////////////
       // note - this list has implications upon: //
       // - QFieldType.fromClass                  //
