@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,11 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.rdbms.actions;
+package com.kingsrook.qqq.backend.module.sqlite.actions;
 
 
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -33,10 +34,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
+import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSDeleteAction;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
-import org.junit.jupiter.api.BeforeEach;
+import com.kingsrook.qqq.backend.module.sqlite.BaseTest;
+import com.kingsrook.qqq.backend.module.sqlite.TestUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,19 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RDBMSDeleteActionTest extends RDBMSActionTest
+public class SQLiteDeleteActionTest extends BaseTest
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @BeforeEach
-   public void beforeEach() throws Exception
-   {
-      super.primeTestDatabase();
-   }
-
-
 
    /*******************************************************************************
     **
@@ -68,7 +59,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    {
       DeleteInput deleteInput = initStandardPersonDeleteRequest();
       deleteInput.setPrimaryKeys(List.of(1, 2, 3, 4, 5));
-      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
+      DeleteOutput deleteResult = new DeleteAction().execute(deleteInput);
       assertEquals(5, deleteResult.getDeletedRecordCount(), "Unfiltered delete should return all rows");
       assertEquals(0, deleteResult.getRecordsWithErrors().size(), "should have no errors");
       runTestSql("SELECT id FROM person", (rs -> assertFalse(rs.next())));
@@ -84,7 +75,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    {
       DeleteInput deleteInput = initStandardPersonDeleteRequest();
       deleteInput.setPrimaryKeys(List.of(1));
-      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
+      DeleteOutput deleteResult = new DeleteAction().execute(deleteInput);
       assertEquals(1, deleteResult.getDeletedRecordCount(), "Should delete one row");
       assertEquals(0, deleteResult.getRecordsWithErrors().size(), "should have no errors");
       runTestSql("SELECT id FROM person WHERE id = 1", (rs -> assertFalse(rs.next())));
@@ -100,7 +91,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
    {
       DeleteInput deleteInput = initStandardPersonDeleteRequest();
       deleteInput.setPrimaryKeys(List.of(1, 3, 5));
-      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
+      DeleteOutput deleteResult = new DeleteAction().execute(deleteInput);
       assertEquals(3, deleteResult.getDeletedRecordCount(), "Should delete one row");
       assertEquals(0, deleteResult.getRecordsWithErrors().size(), "should have no errors");
       runTestSql("SELECT id FROM person", (rs ->
@@ -261,7 +252,7 @@ public class RDBMSDeleteActionTest extends RDBMSActionTest
       deleteInput.setQueryFilter(new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IN, List.of(1, 2, 3, 4, 5))));
 
       BaseRDBMSActionStrategy actionStrategy = getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
-      DeleteOutput deleteResult = new RDBMSDeleteAction().execute(deleteInput);
+      DeleteOutput            deleteResult   = new RDBMSDeleteAction().execute(deleteInput);
 
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       // assert that 8 queries ran - the initial delete (which failed), then 1 to look up the ids          //

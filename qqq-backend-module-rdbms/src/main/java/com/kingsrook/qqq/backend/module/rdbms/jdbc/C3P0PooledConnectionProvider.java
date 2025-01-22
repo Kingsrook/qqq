@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.ConnectionPoolSettings;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -108,6 +109,17 @@ public class C3P0PooledConnectionProvider implements ConnectionProviderInterface
             {
                pool.setTestConnectionOnCheckout(poolSettings.getTestConnectionOnCheckout());
             }
+         }
+
+         pool.setIdentityToken(backend.getName());
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if the backend specifies queries to run for new connections, then set up a connection customizer to run them //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(CollectionUtils.nullSafeHasContents(backend.getQueriesForNewConnections()))
+         {
+            BaseC3P0ConnectionCustomizer.setQueriesForNewConnections(backend.getName(), backend.getQueriesForNewConnections());
+            pool.setConnectionCustomizerClassName(BaseC3P0ConnectionCustomizer.class.getName());
          }
 
          customizePool(pool);
