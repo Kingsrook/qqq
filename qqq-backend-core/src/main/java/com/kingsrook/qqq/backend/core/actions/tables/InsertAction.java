@@ -122,7 +122,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       /////////////////////////////
       // run standard validators //
       /////////////////////////////
-      performValidations(insertInput, false);
+      performValidations(insertInput, false, false);
 
       //////////////////////////////////////////////////////
       // use the backend module to actually do the insert //
@@ -225,7 +225,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void performValidations(InsertInput insertInput, boolean isPreview) throws QException
+   public void performValidations(InsertInput insertInput, boolean isPreview, boolean didAlreadyRunCustomizer) throws QException
    {
       if(CollectionUtils.nullSafeIsEmpty(insertInput.getRecords()))
       {
@@ -237,12 +237,10 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       ///////////////////////////////////////////////////////////////////
       // load the pre-insert customizer and set it up, if there is one //
       // then we'll run it based on its WhenToRun value                //
+      // note - if we already ran it, then don't re-run it!            //
       ///////////////////////////////////////////////////////////////////
-      Optional<TableCustomizerInterface> preInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
-      if(preInsertCustomizer.isPresent())
-      {
-         runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
-      }
+      Optional<TableCustomizerInterface> preInsertCustomizer = didAlreadyRunCustomizer ? Optional.empty() : QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
+      runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS);
 
       setDefaultValuesInRecords(table, insertInput.getRecords());
 
@@ -258,7 +256,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       }
 
       runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.BEFORE_SECURITY_CHECKS);
-      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(insertInput.getTable(), insertInput.getRecords(), ValidateRecordSecurityLockHelper.Action.INSERT, insertInput.getTransaction());
 
       runPreInsertCustomizerIfItIsTime(insertInput, isPreview, preInsertCustomizer, AbstractPreInsertCustomizer.WhenToRun.AFTER_ALL_VALIDATIONS);
    }

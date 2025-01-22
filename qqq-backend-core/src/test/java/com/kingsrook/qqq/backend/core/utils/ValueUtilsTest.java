@@ -251,6 +251,9 @@ class ValueUtilsTest extends BaseTest
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("a,b"));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant("1980/05/31"));
       assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsInstant(new Object())).getMessage()).contains("Unsupported class");
+
+      expected = Instant.parse("1980-05-31T01:30:00Z");
+      assertEquals(expected, ValueUtils.getValueAsInstant("1980-05-31 1:30:00"));
    }
 
 

@@ -41,6 +41,7 @@ public enum AdornmentType
    RENDER_HTML,
    REVEAL,
    FILE_DOWNLOAD,
+   FILE_UPLOAD,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
@@ -164,6 +165,67 @@ public enum AdornmentType
       static Pair<String, Serializable> languageMode(String languageMode)
       {
          return (new Pair<>("languageMode", languageMode));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class FileUploadAdornment
+   {
+      public static String FORMAT = "format";
+      public static String WIDTH  = "width";
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static FieldAdornment newFieldAdornment()
+      {
+         return (new FieldAdornment(AdornmentType.FILE_UPLOAD));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> formatDragAndDrop()
+      {
+         return (Pair.of(FORMAT, "dragAndDrop"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> formatButton()
+      {
+         return (Pair.of(FORMAT, "button"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> widthFull()
+      {
+         return (Pair.of(WIDTH, "full"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> widthHalf()
+      {
+         return (Pair.of(WIDTH, "half"));
       }
    }
 

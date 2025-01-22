@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   localstack: localstack/platform@2.1
+  browser-tools: circleci/browser-tools@1.4.7
 
 commands:
   store_jacoco_site:
@@ -38,6 +39,8 @@ commands:
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
+      - browser-tools/install-chrome
+      - browser-tools/install-chromedriver
       - run:
           name: Write .env
           command: |

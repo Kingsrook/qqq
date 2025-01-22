@@ -1185,10 +1185,12 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have searchFields",
          "should not have orderByFields",
          "should not have a customCodeReference",
-         "is missing enum values");
+         "is missing enum values",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setEnumValues(new ArrayList<>()),
-         "is missing enum values");
+         "is missing enum values",
+         "is missing its idType.");
    }
 
 
@@ -1213,10 +1215,12 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have a customCodeReference",
          "is missing a tableName",
          "is missing searchFields",
-         "is missing orderByFields");
+         "is missing orderByFields",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setTableName("Not a table"),
-         "Unrecognized table");
+         "Unrecognized table",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setSearchFields(List.of("id", "notAField", "name")),
          "unrecognized searchField: notAField");
@@ -1244,11 +1248,13 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have a tableName",
          "should not have searchFields",
          "should not have orderByFields",
-         "is missing a customCodeReference");
+         "is missing a customCodeReference",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),
          "missing a code reference name",
-         "missing a code type");
+         "missing a code type",
+         "is missing its idType.");
    }
 
 

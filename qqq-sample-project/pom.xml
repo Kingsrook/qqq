@@ -74,11 +74,30 @@
          <groupId>com.h2database</groupId>
          <artifactId>h2</artifactId>
          <version>2.2.220</version>
-         <scope>test</scope>
       </dependency>
 
       <!-- 3rd party deps specifically for this module -->
-      <!-- none at this time -->
+
+      <!-- slf4j, to allow logging for javalin -->
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-simple</artifactId>
+         <version>2.0.6</version>
+      </dependency>
+
+      <!-- deps for frontend (selenium) tests -->
+      <dependency>
+         <groupId>org.seleniumhq.selenium</groupId>
+         <artifactId>selenium-java</artifactId>
+         <version>4.19.1</version>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>io.github.bonigarcia</groupId>
+         <artifactId>webdrivermanager</artifactId>
+         <version>5.6.2</version>
+         <scope>test</scope>
+      </dependency>
 
       <!-- Common deps for all qqq modules -->
       <dependency>
