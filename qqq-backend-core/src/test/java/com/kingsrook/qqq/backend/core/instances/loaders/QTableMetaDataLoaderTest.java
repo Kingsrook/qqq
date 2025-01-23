@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import org.apache.commons.io.IOUtils;
@@ -108,6 +109,16 @@ class QTableMetaDataLoaderTest extends BaseTest
          ## todo auditRules
          ## todo backendDetails
          ## todo automationDetails
+         sections:
+         -  name: identity
+            label: Identity
+            icon:
+               name: badge
+            tier: T1
+            fieldNames:
+            -  id
+            -  firstName
+            -  lastName
          customizers:
             postQueryRecord:
                name: com.kingsrook.SomePostQuery
@@ -146,6 +157,11 @@ class QTableMetaDataLoaderTest extends BaseTest
       assertNotNull(table.getPermissionRules().getCustomPermissionChecker());
       assertEquals("com.kingsrook.SomeChecker", table.getPermissionRules().getCustomPermissionChecker().getName());
       assertEquals(QCodeType.JAVA, table.getPermissionRules().getCustomPermissionChecker().getCodeType());
+
+      assertEquals(1, table.getSections().size());
+      assertEquals("identity", table.getSections().get(0).getName());
+      assertEquals(Tier.T1, table.getSections().get(0).getTier());
+      assertEquals(List.of("id", "firstName", "lastName"), table.getSections().get(0).getFieldNames());
 
       assertEquals(2, table.getCustomizers().size());
       assertEquals("com.kingsrook.SomePostQuery", table.getCustomizers().get(TableCustomizers.POST_QUERY_RECORD.getRole()).getName());

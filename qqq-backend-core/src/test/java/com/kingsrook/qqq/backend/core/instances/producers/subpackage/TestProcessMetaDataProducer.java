@@ -19,50 +19,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.instances;
+package com.kingsrook.qqq.backend.core.instances.producers.subpackage;
 
 
-import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** Unit test for AbstractMetaDataProducerBasedQQQApplication 
+ **
  *******************************************************************************/
-class AbstractMetaDataProducerBasedQQQApplicationTest extends BaseTest
+public class TestProcessMetaDataProducer implements MetaDataProducerInterface<QProcessMetaData>
 {
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void test() throws QException
-   {
-      QInstance qInstance = new TestApplication().defineQInstance();
-      assertEquals(1, qInstance.getTables().size());
-      assertEquals("fromProducer", qInstance.getTables().get("fromProducer").getName());
-      assertEquals(1, qInstance.getProcesses().size());
-      assertEquals("fromProducer", qInstance.getProcesses().get("fromProducer").getName());
-   }
-
-
 
    /***************************************************************************
     **
     ***************************************************************************/
-   public static class TestApplication extends AbstractMetaDataProducerBasedQQQApplication
+   @Override
+   public QProcessMetaData produce(QInstance qInstance) throws QException
    {
-
-      /***************************************************************************
-       **
-       ***************************************************************************/
-      @Override
-      public String getMetaDataPackageName()
-      {
-         return getClass().getPackage().getName() + ".producers";
-      }
+      return new QProcessMetaData().withName("fromProducer");
    }
+
 }

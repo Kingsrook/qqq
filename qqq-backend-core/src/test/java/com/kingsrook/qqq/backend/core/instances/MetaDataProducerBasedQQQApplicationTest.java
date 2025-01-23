@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -24,15 +24,16 @@ package com.kingsrook.qqq.backend.core.instances;
 
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.producers.TestMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
- ** Unit test for AbstractMetaDataProducerBasedQQQApplication 
+ ** Unit test for MetaDataProducerBasedQQQApplication 
  *******************************************************************************/
-class AbstractMetaDataProducerBasedQQQApplicationTest extends BaseTest
+class MetaDataProducerBasedQQQApplicationTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -41,7 +42,7 @@ class AbstractMetaDataProducerBasedQQQApplicationTest extends BaseTest
    @Test
    void test() throws QException
    {
-      QInstance qInstance = new TestApplication().defineQInstance();
+      QInstance qInstance = new MetaDataProducerBasedQQQApplication(getClass().getPackage().getName() + ".producers").defineQInstance();
       assertEquals(1, qInstance.getTables().size());
       assertEquals("fromProducer", qInstance.getTables().get("fromProducer").getName());
       assertEquals(1, qInstance.getProcesses().size());
@@ -49,20 +50,17 @@ class AbstractMetaDataProducerBasedQQQApplicationTest extends BaseTest
    }
 
 
-
-   /***************************************************************************
+   /*******************************************************************************
     **
-    ***************************************************************************/
-   public static class TestApplication extends AbstractMetaDataProducerBasedQQQApplication
+    *******************************************************************************/
+   @Test
+   void testConstructorThatTakeClass() throws QException
    {
-
-      /***************************************************************************
-       **
-       ***************************************************************************/
-      @Override
-      public String getMetaDataPackageName()
-      {
-         return getClass().getPackage().getName() + ".producers";
-      }
+      QInstance qInstance = new MetaDataProducerBasedQQQApplication(TestMetaDataProducer.class).defineQInstance();
+      assertEquals(1, qInstance.getTables().size());
+      assertEquals("fromProducer", qInstance.getTables().get("fromProducer").getName());
+      assertEquals(1, qInstance.getProcesses().size());
+      assertEquals("fromProducer", qInstance.getProcesses().get("fromProducer").getName());
    }
+
 }

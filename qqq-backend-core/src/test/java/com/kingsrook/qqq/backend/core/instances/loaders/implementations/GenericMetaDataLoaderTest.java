@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.instances.loaders.implementations;
 
 import java.nio.charset.StandardCharsets;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.instances.loaders.LoadingContext;
 import com.kingsrook.qqq.backend.core.instances.loaders.QMetaDataLoaderException;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -74,7 +75,7 @@ class GenericMetaDataLoaderTest extends BaseTest
    @Test
    void testNoValueException()
    {
-      assertThatThrownBy(() -> new GenericMetaDataLoader(QBackendMetaData.class).reflectivelyMapValue(new QInstance(), null, GenericMetaDataLoaderTest.class, "rawValue"));
+      assertThatThrownBy(() -> new GenericMetaDataLoader(QBackendMetaData.class).reflectivelyMapValue(new QInstance(), null, GenericMetaDataLoaderTest.class, "rawValue", new LoadingContext("test.yaml", "/")));
    }
 
 }
