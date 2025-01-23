@@ -23,23 +23,60 @@ package com.kingsrook.qqq.backend.javalin;
 
 
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import org.apache.logging.log4j.Level;
 
 
 /*******************************************************************************
  ** MetaData specific to a QQQ Javalin server.
  *******************************************************************************/
-public class QJavalinMetaData
+public class QJavalinMetaData implements QSupplementalInstanceMetaData
 {
+   public static final String NAME = "javalin";
+
    private String uploadedFileArchiveTableName;
 
    private boolean loggerDisabled = false;
 
+   // todo - should be a code reference!!
    private Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter;
 
    private boolean queryWithoutLimitAllowed  = false;
    private Integer queryWithoutLimitDefault  = 1000;
    private Level   queryWithoutLimitLogLevel = Level.INFO;
+
+   // todo - list of objects with hosted path, file-system paths
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public String getName()
+   {
+      return (NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJavalinMetaData of(QInstance qInstance)
+   {
+      return QSupplementalInstanceMetaData.of(qInstance, NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJavalinMetaData ofOrWithNew(QInstance qInstance)
+   {
+      return QSupplementalInstanceMetaData.ofOrWithNew(qInstance, NAME, QJavalinMetaData::new);
+   }
 
 
 

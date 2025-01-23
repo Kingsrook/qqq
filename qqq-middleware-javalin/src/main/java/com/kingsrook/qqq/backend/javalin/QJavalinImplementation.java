@@ -208,7 +208,7 @@ public class QJavalinImplementation
     *******************************************************************************/
    public QJavalinImplementation(QInstance qInstance) throws QInstanceValidationException
    {
-      this(qInstance, new QJavalinMetaData());
+      this(qInstance, QJavalinMetaData.ofOrWithNew(qInstance));
    }
 
 
