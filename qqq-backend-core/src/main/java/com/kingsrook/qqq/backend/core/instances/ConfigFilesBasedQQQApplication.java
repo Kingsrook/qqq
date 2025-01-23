@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -23,21 +23,28 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerHelper;
+import com.kingsrook.qqq.backend.core.instances.loaders.MetaDataLoaderHelper;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 
 /*******************************************************************************
- ** Version of AbstractQQQApplication that assumes all meta-data is produced
- ** by MetaDataProducers in (or under) a single package.
+ ** Version of AbstractQQQApplication that assumes all meta-data is defined in
+ ** config files (yaml, json, etc) under a given directory path.
  *******************************************************************************/
-public abstract class AbstractMetaDataProducerBasedQQQApplication extends AbstractQQQApplication
+public class ConfigFilesBasedQQQApplication extends AbstractQQQApplication
 {
+   private final String path;
 
-   /***************************************************************************
+
+
+   /*******************************************************************************
+    ** Constructor
     **
-    ***************************************************************************/
-   public abstract String getMetaDataPackageName();
+    *******************************************************************************/
+   public ConfigFilesBasedQQQApplication(String path)
+   {
+      this.path = path;
+   }
 
 
 
@@ -48,8 +55,7 @@ public abstract class AbstractMetaDataProducerBasedQQQApplication extends Abstra
    public QInstance defineQInstance() throws QException
    {
       QInstance qInstance = new QInstance();
-      MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, getMetaDataPackageName());
+      MetaDataLoaderHelper.processAllMetaDataFilesInDirectory(qInstance, path);
       return (qInstance);
    }
-
 }
