@@ -22,8 +22,10 @@
 package com.kingsrook.sampleapp;
 
 
+import java.util.List;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.middleware.javalin.QApplicationJavalinServer;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 
 
@@ -53,7 +55,9 @@ public class SampleJavalinServer
    {
       try
       {
-         new QApplicationJavalinServer(new SampleMetaDataProvider()).start();
+         QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(new SampleMetaDataProvider());
+         javalinServer.withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter("/static-site", "/Users/dkelkhoff/tmp/static-site"));
+         javalinServer.start();
       }
       catch(Exception e)
       {

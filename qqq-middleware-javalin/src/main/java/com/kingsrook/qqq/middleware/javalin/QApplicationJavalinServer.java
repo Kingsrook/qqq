@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.middleware.javalin;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -111,7 +112,7 @@ public class QApplicationJavalinServer
             ////////////////////////////////////////////////////////////////////////////////////////
             try(Resource resource = Resource.newClassPathResource("/material-dashboard-overlay"))
             {
-               if(resource !=null)
+               if(resource != null)
                {
                   config.staticFiles.add("/material-dashboard-overlay");
                }
@@ -455,6 +456,21 @@ public class QApplicationJavalinServer
    public QApplicationJavalinServer withAdditionalRouteProviders(List<QJavalinRouteProviderInterface> additionalRouteProviders)
    {
       this.additionalRouteProviders = additionalRouteProviders;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter to add a single additionalRouteProvider
+    *******************************************************************************/
+   public QApplicationJavalinServer withAdditionalRouteProvider(QJavalinRouteProviderInterface additionalRouteProvider)
+   {
+      if(this.additionalRouteProviders == null)
+      {
+         this.additionalRouteProviders = new ArrayList<>();
+      }
+      this.additionalRouteProviders.add(additionalRouteProvider);
       return (this);
    }
 
