@@ -25,11 +25,14 @@ package com.kingsrook.qqq.backend.core.instances.loaders;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.instances.loaders.implementations.GenericMetaDataLoader;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.memoization.AnyKey;
+import com.kingsrook.qqq.backend.core.utils.memoization.Memoization;
 
 
 /*******************************************************************************
@@ -39,6 +42,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDataObject>
 {
+   private static final Memoization<AnyKey, List<Class<?>>> memoizedMetaDataObjectClasses = new Memoization<>();
+
 
    /***************************************************************************
     *
@@ -61,7 +66,6 @@ public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDa
          String classProperty = ValueUtils.getValueAsString(map.get("class"));
          try
          {
-
             if(MetaDataLoaderRegistry.hasLoaderForSimpleName(classProperty))
             {
                Class<? extends AbstractMetaDataLoader<?>> loaderClass = MetaDataLoaderRegistry.getLoaderForSimpleName(classProperty);
@@ -69,8 +73,13 @@ public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDa
             }
             else
             {
-               List<Class<?>> classesInPackage = ClassPathUtils.getClassesInPackage("com.kingsrook.qqq.backend.core.model");
-               for(Class<?> c : classesInPackage)
+               Optional<List<Class<?>>> metaDataClasses = memoizedMetaDataObjectClasses.getResult(AnyKey.getInstance(), k -> ClassPathUtils.getClassesContainingNameAndOfType("MetaData", QMetaDataObject.class));
+               if(metaDataClasses.isEmpty())
+               {
+                  throw (new QMetaDataLoaderException("Could not get list of metaDataObjects from class loader"));
+               }
+
+               for(Class<?> c : metaDataClasses.get())
                {
                   if(c.getSimpleName().equals(classProperty) && QMetaDataObject.class.isAssignableFrom(c))
                   {
@@ -103,9 +112,9 @@ public class ClassDetectingMetaDataLoader extends AbstractMetaDataLoader<QMetaDa
     **
     ***************************************************************************/
    @Override
-   public QMetaDataObject mapToMetaDataObject(QInstance qInstance, Map<String, Object> map) throws QMetaDataLoaderException
+   public QMetaDataObject mapToMetaDataObject(QInstance qInstance, Map<String, Object> map, LoadingContext context) throws QMetaDataLoaderException
    {
       AbstractMetaDataLoader<?> loaderForMap = getLoaderForMap(map);
-      return loaderForMap.mapToMetaDataObject(qInstance, map);
+      return loaderForMap.mapToMetaDataObject(qInstance, map, context);
    }
 }

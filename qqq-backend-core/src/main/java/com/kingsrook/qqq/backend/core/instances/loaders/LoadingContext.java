@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,40 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.instances.loaders.implementations;
-
-
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.instances.loaders.LoadingContext;
-import com.kingsrook.qqq.backend.core.instances.loaders.AbstractMetaDataLoader;
-import com.kingsrook.qqq.backend.core.instances.loaders.QMetaDataLoaderException;
-import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+package com.kingsrook.qqq.backend.core.instances.loaders;
 
 
 /*******************************************************************************
- **
+ ** Record to track where loader objects are - e.g., what file they're on,
+ ** and at what property path within the file (e.g., helps report problems).
  *******************************************************************************/
-public class QTableMetaDataLoader extends AbstractMetaDataLoader<QTableMetaData>
+public record LoadingContext(String fileName, String propertyPath)
 {
-   private static final QLogger LOG = QLogger.getLogger(QTableMetaDataLoader.class);
-
-
-
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public QTableMetaData mapToMetaDataObject(QInstance qInstance, Map<String, Object> map, LoadingContext context) throws QMetaDataLoaderException
+   public LoadingContext descendToProperty(String propertyName)
    {
-      QTableMetaData table = new QTableMetaData();
-
-      reflectivelyMap(qInstance, table, map, context);
-
-      // todo - handle QTableBackendDetails, based on backend's type
-
-      return (table);
+      return new LoadingContext(fileName, propertyPath + propertyName + "/");
    }
-
 }

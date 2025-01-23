@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.Pair;
 
 
@@ -64,6 +65,12 @@ public class MetaDataLoaderHelper
          try(FileInputStream fileInputStream = new FileInputStream(file))
          {
             QMetaDataObject qMetaDataObject = loader.fileToMetaDataObject(qInstance, fileInputStream, file.getName());
+
+            if(CollectionUtils.nullSafeHasContents(loader.getProblems()))
+            {
+               loader.getProblems().forEach(System.out::println);
+            }
+
             if(qMetaDataObject instanceof TopLevelMetaDataInterface topLevelMetaData)
             {
                topLevelMetaData.addSelfToInstance(qInstance);

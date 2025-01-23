@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,33 +19,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.instances.loaders.implementations;
-
-
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.instances.loaders.LoadingContext;
-import com.kingsrook.qqq.backend.core.instances.loaders.AbstractMetaDataLoader;
-import com.kingsrook.qqq.backend.core.instances.loaders.QMetaDataLoaderException;
-import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+package com.kingsrook.qqq.backend.core.instances.loaders;
 
 
 /*******************************************************************************
- **
+ ** record that tracks a problem that was encountered when loading files.
  *******************************************************************************/
-public class GenericMetaDataLoader<T extends QMetaDataObject> extends AbstractMetaDataLoader<T>
+public record LoadingProblem(LoadingContext context, String message, Exception exception) // todo Level if useful
 {
-   private final Class<T> metaDataClass;
-
-
-
    /*******************************************************************************
     ** Constructor
     **
     *******************************************************************************/
-   public GenericMetaDataLoader(Class<T> metaDataClass)
+   public LoadingProblem(LoadingContext context, String message)
    {
-      this.metaDataClass = metaDataClass;
+      this(context, message, null);
    }
 
 
@@ -54,18 +42,8 @@ public class GenericMetaDataLoader<T extends QMetaDataObject> extends AbstractMe
     **
     ***************************************************************************/
    @Override
-   public T mapToMetaDataObject(QInstance qInstance, Map<String, Object> map, LoadingContext context) throws QMetaDataLoaderException
+   public String toString()
    {
-      try
-      {
-         T object = metaDataClass.getConstructor().newInstance();
-         reflectivelyMap(qInstance, object, map, context);
-         return (object);
-      }
-      catch(Exception e)
-      {
-         throw (new QMetaDataLoaderException("Error loading metaData object of type " + metaDataClass.getSimpleName(), e));
-      }
+      return "at[" + context.fileName() + "][" + context.propertyPath() + "]: " + message;
    }
-
 }

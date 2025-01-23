@@ -31,20 +31,23 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import org.apache.commons.io.IOUtils;
-import static com.kingsrook.qqq.backend.core.utils.ValueUtils.getValueAsBoolean;
 import static com.kingsrook.qqq.backend.core.utils.ValueUtils.getValueAsInteger;
 import static com.kingsrook.qqq.backend.core.utils.ValueUtils.getValueAsString;
 
@@ -59,6 +62,8 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
 
    private String fileName;
 
+   private List<LoadingProblem> problems = new ArrayList<>();
+
 
 
    /***************************************************************************
@@ -68,7 +73,8 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
    {
       this.fileName = fileName;
       Map<String, Object> map = fileToMap(inputStream, fileName);
-      return (mapToMetaDataObject(qInstance, map));
+      LoadingContext loadingContext = new LoadingContext(fileName, "/");
+      return (mapToMetaDataObject(qInstance, map, loadingContext));
    }
 
 
@@ -76,7 +82,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
    /***************************************************************************
     **
     ***************************************************************************/
-   public abstract T mapToMetaDataObject(QInstance qInstance, Map<String, Object> map) throws QMetaDataLoaderException;
+   public abstract T mapToMetaDataObject(QInstance qInstance, Map<String, Object> map, LoadingContext context) throws QMetaDataLoaderException;
 
 
 
@@ -111,9 +117,10 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
    /***************************************************************************
     *
     ***************************************************************************/
-   protected void reflectivelyMap(QInstance qInstance, QMetaDataObject targetObject, Map<String, Object> map)
+   protected void reflectivelyMap(QInstance qInstance, QMetaDataObject targetObject, Map<String, Object> map, LoadingContext context)
    {
-      Class<? extends QMetaDataObject> targetClass = targetObject.getClass();
+      Class<? extends QMetaDataObject> targetClass    = targetObject.getClass();
+      Set<String>                      usedFieldNames = new HashSet<>();
 
       for(Method method : targetClass.getMethods())
       {
@@ -125,12 +132,13 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
 
                if(map.containsKey(propertyName))
                {
+                  usedFieldNames.add(propertyName);
                   Class<?> parameterType = method.getParameterTypes()[0];
                   Object   rawValue      = map.get(propertyName);
 
                   try
                   {
-                     Object mappedValue = reflectivelyMapValue(qInstance, method, parameterType, rawValue);
+                     Object mappedValue = reflectivelyMapValue(qInstance, method, parameterType, rawValue, context.descendToProperty(propertyName));
                      method.invoke(targetObject, mappedValue);
                   }
                   catch(NoValueException nve)
@@ -138,14 +146,29 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
                      ///////////////////////
                      // don't call setter //
                      ///////////////////////
+                     LOG.debug("at " + context + ": No value was mapped for property [" + propertyName + "] on " + targetClass.getSimpleName() + "." + method.getName() + ", raw value: [" + rawValue + "]");
                   }
                }
             }
          }
          catch(Exception e)
          {
-            LOG.warn("Error reflectively mapping on " + targetClass.getName() + "." + method.getName(), e);
+            addProblem(new LoadingProblem(context, "Error reflectively mapping on " + targetClass.getName() + "." + method.getName(), e));
          }
+      }
+
+      //////////////////////////
+      // mmm, slightly sus... //
+      //////////////////////////
+      map.remove("class");
+      map.remove("version");
+
+      Set<String> unrecognizedKeys = new HashSet<>(map.keySet());
+      unrecognizedKeys.removeAll(usedFieldNames);
+
+      if(!unrecognizedKeys.isEmpty())
+      {
+         addProblem(new LoadingProblem(context, unrecognizedKeys.size() + " Unrecognized " + StringUtils.plural(unrecognizedKeys, "property", "properties") + ": " + unrecognizedKeys));
       }
    }
 
@@ -154,26 +177,63 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
    /***************************************************************************
     *
     ***************************************************************************/
-   public Object reflectivelyMapValue(QInstance qInstance, Method method, Class<?> parameterType, Object rawValue) throws Exception
+   public Object reflectivelyMapValue(QInstance qInstance, Method method, Class<?> parameterType, Object rawValue, LoadingContext context) throws Exception
    {
+      if(rawValue instanceof String s && s.matches("^\\$\\{.+\\..+}"))
+      {
+         rawValue = new QMetaDataVariableInterpreter().interpret(s);
+         LOG.debug("Interpreted raw value [" + s + "] as [" + StringUtils.maskAndTruncate(ValueUtils.getValueAsString(rawValue) + "]"));
+      }
+
       if(parameterType.equals(String.class))
       {
          return (getValueAsString(rawValue));
       }
       else if(parameterType.equals(Integer.class))
       {
-         return (getValueAsInteger(rawValue));
+         try
+         {
+            return (getValueAsInteger(rawValue));
+         }
+         catch(Exception e)
+         {
+            addProblem(new LoadingProblem(context, "[" + rawValue + "] is not an Integer value."));
+         }
       }
       else if(parameterType.equals(Boolean.class))
       {
-         return (getValueAsBoolean(rawValue));
+         if("true".equals(rawValue) || Boolean.TRUE.equals(rawValue))
+         {
+            return (true);
+         }
+         else if("false".equals(rawValue) || Boolean.FALSE.equals(rawValue))
+         {
+            return (false);
+         }
+         else if(rawValue == null)
+         {
+            return (null);
+         }
+         else
+         {
+            addProblem(new LoadingProblem(context, "[" + rawValue + "] is not a boolean value (must be 'true' or 'false')."));
+            return (null);
+         }
       }
       else if(parameterType.equals(boolean.class))
       {
-         Boolean valueAsBoolean = getValueAsBoolean(rawValue);
-         if(valueAsBoolean != null)
+         if("true".equals(rawValue) || Boolean.TRUE.equals(rawValue))
          {
-            return (valueAsBoolean);
+            return (true);
+         }
+         else if("false".equals(rawValue) || Boolean.FALSE.equals(rawValue))
+         {
+            return (false);
+         }
+         else
+         {
+            addProblem(new LoadingProblem(context, rawValue + " is not a boolean value (must be 'true' or 'false')."));
+            throw (new NoValueException());
          }
       }
       else if(parameterType.equals(List.class))
@@ -188,7 +248,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
             {
                try
                {
-                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, o);
+                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, o, context);
                   mappedValueList.add(mappedValue);
                }
                catch(NoValueException nve)
@@ -211,7 +271,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
             {
                try
                {
-                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, o);
+                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, o, context);
                   mappedValueSet.add(mappedValue);
                }
                catch(NoValueException nve)
@@ -227,7 +287,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
          Type keyType = ((ParameterizedType) method.getGenericParameterTypes()[0]).getActualTypeArguments()[0];
          if(!keyType.equals(String.class))
          {
-            LOG.warn("Unsupported key type for " + method + " (" + keyType + ")");
+            addProblem(new LoadingProblem(context, "Unsupported key type for " + method + " got [" + keyType + "], expected [String]"));
             throw new NoValueException();
          }
          // todo make sure string
@@ -244,7 +304,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
                {
                   @SuppressWarnings("unchecked")
                   Map.Entry<String, Object> entry = (Map.Entry<String, Object>) o;
-                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, entry.getValue());
+                  Object mappedValue = reflectivelyMapValue(qInstance, null, actualTypeClass, entry.getValue(), context);
                   mappedValueMap.put(entry.getKey(), mappedValue);
                }
                catch(NoValueException nve)
@@ -265,6 +325,8 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
                return (enumConstant);
             }
          }
+
+         addProblem(new LoadingProblem(context, "Unrecognized value [" + rawValue + "].  Expected one of: " + Arrays.toString(parameterType.getEnumConstants())));
       }
       else if(MetaDataLoaderRegistry.hasLoaderForClass(parameterType))
       {
@@ -273,7 +335,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
             Class<? extends AbstractMetaDataLoader<?>> loaderClass = MetaDataLoaderRegistry.getLoaderForClass(parameterType);
             AbstractMetaDataLoader<?>                  loader      = loaderClass.getConstructor().newInstance();
             //noinspection unchecked
-            return (loader.mapToMetaDataObject(qInstance, valueMap));
+            return (loader.mapToMetaDataObject(qInstance, valueMap, context));
          }
       }
       else if(QMetaDataObject.class.isAssignableFrom(parameterType))
@@ -282,7 +344,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
          {
             QMetaDataObject childObject = (QMetaDataObject) parameterType.getConstructor().newInstance();
             //noinspection unchecked
-            reflectivelyMap(qInstance, childObject, valueMap);
+            reflectivelyMap(qInstance, childObject, valueMap, context);
             return (childObject);
          }
       }
@@ -300,7 +362,7 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
       else
       {
          // todo clean up this message/level
-         LOG.warn("No case for " + parameterType + " (arg to: " + method + ")");
+         addProblem(new LoadingProblem(context, "No case for " + parameterType + " (arg to: " + method + ")"));
       }
 
       throw new NoValueException();
@@ -423,5 +485,26 @@ public abstract class AbstractMetaDataLoader<T extends QMetaDataObject>
       {
          super("No value");
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void addProblem(LoadingProblem problem)
+   {
+      problems.add(problem);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for problems
+    **
+    *******************************************************************************/
+   public List<LoadingProblem> getProblems()
+   {
+      return (problems);
    }
 }
