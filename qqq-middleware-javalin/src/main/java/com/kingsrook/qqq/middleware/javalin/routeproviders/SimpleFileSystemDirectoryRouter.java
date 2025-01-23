@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,46 +19,61 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin;
+package com.kingsrook.qqq.middleware.javalin.routeproviders;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import io.javalin.apibuilder.EndpointGroup;
+import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.staticfiles.Location;
+import io.javalin.http.staticfiles.StaticFileConfig;
 
 
 /*******************************************************************************
- ** Interface for classes that can provide a list of endpoints to a javalin
- ** server.
+ **
  *******************************************************************************/
-public interface QJavalinRouteProviderInterface
+public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInterface
 {
+   private final String    hostedPath;
+   private final String    fileSystemPath;
+   private       QInstance qInstance;
 
-   /***************************************************************************
-    ** For initial setup when server boots, set the qInstance - but also,
-    ** e.g., for development, to do a hot-swap.
-    ***************************************************************************/
-   void setQInstance(QInstance qInstance);
 
-   /***************************************************************************
+
+   /*******************************************************************************
+    ** Constructor
     **
-    ***************************************************************************/
-   default EndpointGroup getJavalinEndpointGroup()
+    *******************************************************************************/
+   public SimpleFileSystemDirectoryRouter(String hostedPath, String fileSystemPath)
    {
-      /////////////////////////////
-      // no endpoints at default //
-      /////////////////////////////
-      return (null);
+      this.hostedPath = hostedPath;
+      this.fileSystemPath = fileSystemPath;
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
-   default void acceptJavalinConfig(JavalinConfig config)
+   @Override
+   public void setQInstance(QInstance qInstance)
    {
-      /////////////////////
-      // noop at default //
-      /////////////////////
+      this.qInstance = qInstance;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void acceptJavalinConfig(JavalinConfig config)
+   {
+      config.staticFiles.add((StaticFileConfig userConfig) ->
+      {
+         userConfig.hostedPath = hostedPath;
+         userConfig.directory = fileSystemPath;
+         userConfig.location = Location.EXTERNAL;
+      });
    }
 }

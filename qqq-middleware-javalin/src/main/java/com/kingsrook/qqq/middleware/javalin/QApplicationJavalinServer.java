@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
+import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.lang.BooleanUtils;
 import org.eclipse.jetty.util.resource.Resource;
@@ -166,7 +167,14 @@ public class QApplicationJavalinServer
          for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
          {
             routeProvider.setQInstance(qInstance);
-            config.router.apiBuilder(routeProvider.getJavalinEndpointGroup());
+
+            EndpointGroup javalinEndpointGroup = routeProvider.getJavalinEndpointGroup();
+            if(javalinEndpointGroup != null)
+            {
+               config.router.apiBuilder(javalinEndpointGroup);
+            }
+
+            routeProvider.acceptJavalinConfig(config);
          }
       });
 
