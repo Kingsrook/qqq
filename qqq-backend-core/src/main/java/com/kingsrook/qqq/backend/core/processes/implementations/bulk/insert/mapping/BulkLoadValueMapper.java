@@ -89,6 +89,11 @@ public class BulkLoadValueMapper
       Map<String, Map<String, Serializable>> mappingForTable = mapping.getFieldNameToValueMappingForTable(associationNameChain);
       for(QRecord record : records)
       {
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if we remove in the loop, we get ConcurrentModificationException, so track which ones to remove //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////
+         Set<String> toRemove = new HashSet<>();
+
          for(Map.Entry<String, Serializable> valueEntry : record.getValues().entrySet())
          {
             QFieldMetaData field = table.getField(valueEntry.getKey());
@@ -129,16 +134,23 @@ public class BulkLoadValueMapper
                   try
                   {
                      value = ValueUtils.getValueAsFieldType(type, value);
+                     record.setValue(field.getName(), value);
                   }
                   catch(Exception e)
                   {
                      record.addError(new BulkLoadValueTypeError(associationNamePrefixForFields + field.getName(), value, type, tableLabelPrefix + field.getLabel()));
+                     toRemove.add(field.getName());
                   }
                }
             }
-
-            record.setValue(field.getName(), value);
          }
+
+         //////////////////////////////////////////////////////////////////////////////////////////
+         // remove any field values that had an error.                                           //
+         // otherwise there can be downstream issues (e.g., if say some customizer code tries to //
+         // build an entity out of a record, and there's a temporal value that can't be parsed.  //
+         //////////////////////////////////////////////////////////////////////////////////////////
+         toRemove.forEach(record::removeValue);
 
          //////////////////////////////////////
          // recursively process associations //
@@ -299,6 +311,7 @@ public class BulkLoadValueMapper
             else
             {
                record.addError(new BulkLoadPossibleValueError(associationNamePrefixForFields + field.getName(), value, tableLabelPrefix + field.getLabel()));
+               record.removeValue(field.getName());
             }
          }
       }
