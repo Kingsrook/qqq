@@ -240,7 +240,7 @@ class FlatRowsToRecordTest extends BaseTest
       List<QRecord> records = rowsToRecord.nextPage(fileToRows, header, mapping, Integer.MAX_VALUE);
       assertEquals(5, records.size());
       assertEquals(List.of("Homer", "Marge", "Bart", "Ned", "Mr."), getValues(records, "firstName"));
-      assertEquals(ListBuilder.of(1, 2, null, "Not a state", 5), getValues(records, "homeStateId"));
+      assertEquals(ListBuilder.of(1, 2, null, null, null), getValues(records, "homeStateId"));
 
       assertThat(records.get(0).getErrors()).isNullOrEmpty();
       assertThat(records.get(1).getErrors()).isNullOrEmpty();

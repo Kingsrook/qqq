@@ -149,10 +149,13 @@ class BulkLoadValueMapperTest extends BaseTest
       testPossibleValue("IL", 1, false);
       testPossibleValue("il", 1, false);
 
-      testPossibleValue(512, 512, true); // an id, but not in the PVS
-      testPossibleValue("USA", "USA", true);
-      testPossibleValue(true, true, true);
-      testPossibleValue(new BigDecimal("4.7"), new BigDecimal("4.7"), true);
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // unmappables - should have a null value (this used to not be the case - the bad-value would come through...) //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      testPossibleValue(512, null, true); // an int, but not in the PVS
+      testPossibleValue("USA", null, true);
+      testPossibleValue(true, null, true);
+      testPossibleValue(new BigDecimal("4.7"), null, true);
    }
 
 
