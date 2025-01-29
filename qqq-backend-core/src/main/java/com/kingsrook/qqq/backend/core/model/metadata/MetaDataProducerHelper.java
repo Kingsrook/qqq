@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata;
 
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -197,7 +198,7 @@ public class MetaDataProducerHelper
     **
     ***************************************************************************/
    @SuppressWarnings("unchecked")
-   private static <T extends PossibleValueEnum<T>> MetaDataProducerInterface<?> processMetaDataProducingPossibleValueEnum(Class<?> aClass)
+   private static <T extends Serializable & PossibleValueEnum<T>> MetaDataProducerInterface<?> processMetaDataProducingPossibleValueEnum(Class<?> aClass)
    {
       String warningPrefix = "Found a class annotated as @" + QMetaDataProducingPossibleValueEnum.class.getSimpleName();
       if(!PossibleValueEnum.class.isAssignableFrom(aClass))

@@ -35,6 +35,7 @@ public class SearchPossibleValueSourceOutput extends AbstractActionOutput
 {
    private List<QPossibleValue<?>> results = new ArrayList<>();
 
+   private String warning;
 
 
    /*******************************************************************************
@@ -87,5 +88,36 @@ public class SearchPossibleValueSourceOutput extends AbstractActionOutput
       this.results = results;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for warning
+    *******************************************************************************/
+   public String getWarning()
+   {
+      return (this.warning);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for warning
+    *******************************************************************************/
+   public void setWarning(String warning)
+   {
+      this.warning = warning;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for warning
+    *******************************************************************************/
+   public SearchPossibleValueSourceOutput withWarning(String warning)
+   {
+      this.warning = warning;
+      return (this);
+   }
+
 
 }

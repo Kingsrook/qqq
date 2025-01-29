@@ -22,11 +22,45 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.values.ValueBehaviorApplier;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+
+
 /*******************************************************************************
  ** Interface to mark a field behavior as one to be used during generating
  ** display values.
  *******************************************************************************/
 public interface FieldDisplayBehavior<T extends FieldDisplayBehavior<T>> extends FieldBehavior<T>
 {
+   NoopFieldDisplayBehavior NOOP = new NoopFieldDisplayBehavior();
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   @SuppressWarnings("unchecked")
+   default T getDefault()
+   {
+      return (T) NOOP;
+   }
+
+
+   /***************************************************************************
+    ** a default implementation for this behavior type, which does nothing.
+    ***************************************************************************/
+   class NoopFieldDisplayBehavior implements FieldDisplayBehavior<NoopFieldDisplayBehavior>
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public void apply(ValueBehaviorApplier.Action action, List<QRecord> recordList, QInstance instance, QTableMetaData table, QFieldMetaData field)
+      {
+
+      }
+   }
 }

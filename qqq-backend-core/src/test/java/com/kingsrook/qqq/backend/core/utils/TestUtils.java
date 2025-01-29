@@ -70,6 +70,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
@@ -142,6 +143,7 @@ public class TestUtils
    public static final String APP_NAME_MISCELLANEOUS = "miscellaneous";
 
    public static final String TABLE_NAME_TWO_KEYS            = "twoKeys";
+   public static final String TABLE_NAME_MEMORY_STORAGE      = "memoryStorage";
    public static final String TABLE_NAME_PERSON              = "person";
    public static final String TABLE_NAME_SHAPE               = "shape";
    public static final String TABLE_NAME_SHAPE_CACHE         = "shapeCache";
@@ -204,6 +206,7 @@ public class TestUtils
 
       qInstance.addTable(defineTablePerson());
       qInstance.addTable(defineTableTwoKeys());
+      qInstance.addTable(defineTableMemoryStorage());
       qInstance.addTable(definePersonFileTable());
       qInstance.addTable(definePersonMemoryTable());
       qInstance.addTable(definePersonMemoryCacheTable());
@@ -595,6 +598,22 @@ public class TestUtils
 
 
    /*******************************************************************************
+    ** Define a table in the memory store that can be used for the StorageAction
+    *******************************************************************************/
+   public static QTableMetaData defineTableMemoryStorage()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_STORAGE)
+         .withLabel("Memory Storage")
+         .withBackendName(MEMORY_BACKEND_NAME)
+         .withPrimaryKeyField("reference")
+         .withField(new QFieldMetaData("reference", QFieldType.STRING).withIsEditable(false))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB));
+   }
+
+
+
+   /*******************************************************************************
     ** Define the 'person' table used in standard tests.
     *******************************************************************************/
    public static QTableMetaData defineTablePerson()
@@ -644,6 +663,7 @@ public class TestUtils
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("orderNo", QFieldType.STRING))
+         .withField(new QFieldMetaData("shipToName", QFieldType.STRING).withMaxLength(200).withBehavior(ValueTooLongBehavior.ERROR))
          .withField(new QFieldMetaData("orderDate", QFieldType.DATE))
          .withField(new QFieldMetaData("storeId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("total", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY).withFieldSecurityLock(new FieldSecurityLock()
@@ -700,7 +720,8 @@ public class TestUtils
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME).withIsEditable(false))
          .withField(new QFieldMetaData("lineItemId", QFieldType.INTEGER))
          .withField(new QFieldMetaData("key", QFieldType.STRING))
-         .withField(new QFieldMetaData("value", QFieldType.STRING));
+         .withField(new QFieldMetaData("value", QFieldType.STRING))
+         .withField(new QFieldMetaData("source", QFieldType.STRING)); // doesn't really make sense, but useful to have an extra field here in some bulk-load tests
    }
 
 

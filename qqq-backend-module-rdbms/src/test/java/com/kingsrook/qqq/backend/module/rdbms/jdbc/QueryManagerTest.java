@@ -426,29 +426,6 @@ class QueryManagerTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testQueryForSimpleEntity() throws SQLException
-   {
-      try(Connection connection = getConnection())
-      {
-         QueryManager.executeUpdate(connection, """
-            INSERT INTO test_table
-            ( int_col, datetime_col, char_col, date_col, time_col )
-            VALUES
-            ( 47, '2022-08-10 19:22:08', 'Q', '2022-08-10', '19:22:08')
-            """);
-         SimpleEntity simpleEntity = QueryManager.executeStatementForSimpleEntity(connection, "SELECT * FROM test_table");
-         assertNotNull(simpleEntity);
-         assertEquals(47, simpleEntity.get("INT_COL"));
-         assertEquals("Q", simpleEntity.get("CHAR_COL"));
-      }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
    void testQueryForRows() throws SQLException
    {
       try(Connection connection = getConnection())

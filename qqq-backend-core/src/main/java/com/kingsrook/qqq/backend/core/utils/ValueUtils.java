@@ -590,11 +590,35 @@ public class ValueUtils
 
             try
             {
+               /////////////////////////////////////////////////////////////////////////////////////
+               // first assume the instant is perfectly formatted, as in: 2007-12-03T10:15:30.00Z //
+               /////////////////////////////////////////////////////////////////////////////////////
                return Instant.parse(s);
             }
             catch(DateTimeParseException e)
             {
-               return tryAlternativeInstantParsing(s, e);
+               try
+               {
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // if the string isn't quite the right format, try some alternates that are common and fairly un-vague //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  return tryAlternativeInstantParsing(s, e);
+               }
+               catch(DateTimeParseException dtpe)
+               {
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // we commonly receive date-times with only a single-digit hour after the space, which fails tryAlternativeInstantParsing. //
+                  // so if we see what looks like that pattern, zero-pad the hour, and try the alternative parse patterns again.             //
+                  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  if(s.matches(".* \\d:.*"))
+                  {
+                     return tryAlternativeInstantParsing(s.replaceFirst(" (\\d):", " 0$1:"), e);
+                  }
+                  else
+                  {
+                     throw (dtpe);
+                  }
+               }
             }
          }
          else
@@ -617,11 +641,12 @@ public class ValueUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e)
+   private static Instant tryAlternativeInstantParsing(String s, DateTimeParseException e) throws DateTimeParseException
    {
-      //////////////////////
-      // 1999-12-31T12:59 //
-      //////////////////////
+      ////////////////////////////////////////////////////////////////////
+      // 1999-12-31T12:59                                               //
+      // missing seconds & zone - but we're happy to assume :00 and UTC //
+      ////////////////////////////////////////////////////////////////////
       if(s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$"))
       {
          //////////////////////////
@@ -630,27 +655,30 @@ public class ValueUtils
          return Instant.parse(s + ":00Z");
       }
 
-      ///////////////////////////
-      // 1999-12-31 12:59:59.0 //
-      ///////////////////////////
+      ///////////////////////////////////////////////////////////////
+      // 1999-12-31 12:59:59.0                                     //
+      // fractional seconds and no zone - truncate, and assume UTC //
+      ///////////////////////////////////////////////////////////////
       else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.0$"))
       {
          s = s.replaceAll(" ", "T").replaceAll("\\..*$", "Z");
          return Instant.parse(s);
       }
 
-      /////////////////////////
-      // 1999-12-31 12:59:59 //
-      /////////////////////////
+      ////////////////////////////////////////////
+      // 1999-12-31 12:59:59                    //
+      // Missing 'T' and 'Z', so just add those //
+      ////////////////////////////////////////////
       else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"))
       {
          s = s.replaceAll(" ", "T") + "Z";
          return Instant.parse(s);
       }
 
-      //////////////////////
-      // 1999-12-31 12:59 //
-      //////////////////////
+      /////////////////////////////////////////////
+      // 1999-12-31 12:59                        //
+      // missing T, seconds, and Z - add 'em all //
+      /////////////////////////////////////////////
       else if(s.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$"))
       {
          s = s.replaceAll(" ", "T") + ":00Z";
@@ -661,12 +689,18 @@ public class ValueUtils
       {
          try
          {
+            ////////////////////////////////////////////////////////
+            // such as '2011-12-03T10:15:30+01:00[Europe/Paris]'. //
+            ////////////////////////////////////////////////////////
             return LocalDateTime.parse(s, DateTimeFormatter.ISO_ZONED_DATE_TIME).toInstant(ZoneOffset.UTC);
          }
          catch(DateTimeParseException e2)
          {
             try
             {
+               ///////////////////////////////////////////////////////
+               // also includes such as '2011-12-03T10:15:30+01:00' //
+               ///////////////////////////////////////////////////////
                return LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME).toInstant(ZoneOffset.UTC);
             }
             catch(Exception e3)

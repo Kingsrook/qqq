@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -32,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,6 +54,8 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    public void beforeEach() throws Exception
    {
       super.primeTestDatabase();
+
+      getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
    }
 
 
@@ -113,7 +116,7 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
    @Test
    public void testInsertMany() throws Exception
    {
-      QueryManager.setPageSize(2);
+      getBaseRDBMSActionStrategy().setPageSize(2);
 
       InsertInput insertInput = initInsertRequest();
       QRecord record1 = new QRecord().withTableName("person")
@@ -137,6 +140,10 @@ public class RDBMSInsertActionTest extends RDBMSActionTest
       assertEquals(6, insertOutput.getRecords().get(0).getValue("id"), "Should have next id in the row");
       assertEquals(7, insertOutput.getRecords().get(1).getValue("id"), "Should have next id in the row");
       assertEquals(8, insertOutput.getRecords().get(2).getValue("id"), "Should have next id in the row");
+
+      Map<String, Integer> statistics = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(2, statistics.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN));
+
       assertAnInsertedPersonRecord("Jean-Luc", "Picard", 6);
       assertAnInsertedPersonRecord("William", "Riker", 7);
       assertAnInsertedPersonRecord("Beverly", "Crusher", 8);
