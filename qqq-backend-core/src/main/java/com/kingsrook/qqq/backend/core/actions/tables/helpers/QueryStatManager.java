@@ -533,11 +533,17 @@ public class QueryStatManager
          ////////////////////////
          if(getOutput.getRecord() == null)
          {
+            QTableMetaData tableMetaData = getInstance().qInstance.getTable(tableName);
+            if(tableMetaData == null)
+            {
+               LOG.info("No such table", logPair("tableName", tableName));
+               return (null);
+            }
+
             ///////////////////////////////////////////////////////
             // insert the record (into the table, not the cache) //
             ///////////////////////////////////////////////////////
-            QTableMetaData tableMetaData = getInstance().qInstance.getTable(tableName);
-            InsertInput    insertInput   = new InsertInput();
+            InsertInput insertInput = new InsertInput();
             insertInput.setTableName(QQQTable.TABLE_NAME);
             insertInput.setRecords(List.of(new QRecord().withValue("name", tableName).withValue("label", tableMetaData.getLabel())));
             InsertOutput insertOutput = new InsertAction().execute(insertInput);

@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -301,6 +303,73 @@ class BackendQueryFilterUtilsTest
       assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "A"));
       assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "B"));
       assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(new QFilterCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", null));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private QFilterCriteria newCaseInsensitiveCriteria(String fieldName, QCriteriaOperator operator, Serializable... values)
+   {
+      return new QFilterCriteria(fieldName, operator, values).withOption(CriteriaOption.CASE_INSENSITIVE);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private QFilterCriteria newCaseInsensitiveCriteria(String fieldName, QCriteriaOperator operator, List<Serializable> values)
+   {
+      return new QFilterCriteria(fieldName, operator, values).withOption(CriteriaOption.CASE_INSENSITIVE);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoesCriterionMatchCaseInsensitive()
+   {
+      ////////////////
+      // like & not //
+      ////////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "Test"), "f", "test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "test"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "T%"), "f", "test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "t%"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "T_st"), "f", "test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.LIKE, "t_st"), "f", "Test"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_LIKE, "Test"), "f", "Tst"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_LIKE, "Test"), "f", "tst"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_LIKE, "T%"), "f", "Rest"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_LIKE, "T_st"), "f", "Toast"));
+
+      //////////////
+      // IN & NOT //
+      //////////////
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, "A"), "f", "a"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, "a"), "f", "A"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, "A", "B"), "f", "a"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, "A", "b"), "f", "B"));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, List.of()), "f", "A"));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.IN, ListBuilder.of(null)), "f", "A"));
+
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_IN, "A"), "f", "A"));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_IN, "A", "B"), "f", "a"));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_IN, "A", "b"), "f", "B"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_IN, List.of()), "f", "A"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_IN, ListBuilder.of(null)), "f", "A"));
+
+      ///////////////////////////
+      // NOT_EQUALS_OR_IS_NULL //
+      ///////////////////////////
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "A"));
+      assertFalse(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "a"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", "B"));
+      assertTrue(BackendQueryFilterUtils.doesCriteriaMatch(newCaseInsensitiveCriteria("f", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, "A"), "f", null));
    }
 
 
