@@ -41,12 +41,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.ChildJoinFromRecordEntityGenericMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.MetaDataCustomizerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.PossibleValueSourceOfEnumGenericMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.PossibleValueSourceOfTableGenericMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.RecordEntityToTableGenericMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildRecordListWidget;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildTable;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.QMetaDataProducingEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.QMetaDataProducingPossibleValueEnum;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -83,6 +86,27 @@ public class MetaDataProducerHelper
       comparatorValuesByType.put(QAppMetaData.class, 23);
    }
 
+   private static MetaDataCustomizerInterface<QTableMetaData> tableMetaDataCustomizer = null;
+
+
+
+   /*******************************************************************************
+    ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
+    ** run them, and add their output to the given qInstance - using the provided
+    ** tableMetaDataCustomizer to help with all RecordEntity's that
+    ** are configured to make tables.
+    **
+    ** Note - they'll be sorted by the sortOrder they provide.
+    *******************************************************************************/
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName, MetaDataCustomizerInterface<QTableMetaData> tableMetaDataCustomizer) throws QException
+   {
+      MetaDataProducerHelper.tableMetaDataCustomizer = tableMetaDataCustomizer;
+      processAllMetaDataProducersInPackage(instance, packageName);
+      MetaDataProducerHelper.tableMetaDataCustomizer = null;
+   }
+
+
+
    /*******************************************************************************
     ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
     ** run them, and add their output to the given qInstance.
@@ -117,20 +141,27 @@ public class MetaDataProducerHelper
                continue;
             }
 
+            /////////////////////////////////////////////////////////////////////
+            // handle classes which are themselves MetaDataProducerInterface's //
+            /////////////////////////////////////////////////////////////////////
             if(MetaDataProducerInterface.class.isAssignableFrom(aClass))
             {
                CollectionUtils.addIfNotNull(producers, processMetaDataProducer(aClass));
             }
 
+            /////////////////////////////////////////////////////////////////////////
+            // handle classes that have the @QMetaDataProducingEntity annotation - //
+            // record entities that should produce meta-data                       //
+            /////////////////////////////////////////////////////////////////////////
             if(aClass.isAnnotationPresent(QMetaDataProducingEntity.class))
             {
-               QMetaDataProducingEntity qMetaDataProducingEntity = aClass.getAnnotation(QMetaDataProducingEntity.class);
-               if(qMetaDataProducingEntity.producePossibleValueSource())
-               {
-                  producers.addAll(processMetaDataProducingEntity(aClass));
-               }
+               producers.addAll(processMetaDataProducingEntity(aClass));
             }
 
+            //////////////////////////////////////////////////////////////////
+            // handle classes with the @QMetaDataProducingPossibleValueEnum //
+            // enums that are PVS's                                         //
+            //////////////////////////////////////////////////////////////////
             if(aClass.isAnnotationPresent(QMetaDataProducingPossibleValueEnum.class))
             {
                QMetaDataProducingPossibleValueEnum qMetaDataProducingPossibleValueEnum = aClass.getAnnotation(QMetaDataProducingPossibleValueEnum.class);
@@ -220,13 +251,24 @@ public class MetaDataProducerHelper
    {
       List<MetaDataProducerInterface<?>> rs = new ArrayList<>();
 
-      String warningPrefix = "Found a class annotated as @" + QMetaDataProducingEntity.class.getSimpleName();
+      QMetaDataProducingEntity qMetaDataProducingEntity = aClass.getAnnotation(QMetaDataProducingEntity.class);
+      String                   warningPrefix            = "Found a class annotated as @" + QMetaDataProducingEntity.class.getSimpleName();
+
+      ///////////////////////////////////////////////////////////
+      // make sures class is QRecordEntity and cast it as such //
+      ///////////////////////////////////////////////////////////
       if(!QRecordEntity.class.isAssignableFrom(aClass))
       {
          LOG.warn(warningPrefix + ", but which is not a " + QRecordEntity.class.getSimpleName() + ", so it will not be used.", logPair("class", aClass.getSimpleName()));
          return (rs);
       }
 
+      @SuppressWarnings("unchecked") // safe per the check above.
+      Class<? extends QRecordEntity> recordEntityClass = (Class<? extends QRecordEntity>) aClass;
+
+      ////////////////////////////////////////////////
+      // get TABLE_NAME static field from the class //
+      ////////////////////////////////////////////////
       Field tableNameField = aClass.getDeclaredField("TABLE_NAME");
       if(!tableNameField.getType().equals(String.class))
       {
@@ -235,12 +277,50 @@ public class MetaDataProducerHelper
       }
 
       String tableNameValue = (String) tableNameField.get(null);
-      rs.add(new PossibleValueSourceOfTableGenericMetaDataProducer(tableNameValue));
+
+      //////////////////////////////////////////
+      // add table producer, if so configured //
+      //////////////////////////////////////////
+      if(qMetaDataProducingEntity.produceTableMetaData())
+      {
+         try
+         {
+            ////////////////////////////////////////////////////////
+            // todo - better to check the runtime type parameter? //
+            ////////////////////////////////////////////////////////
+            Class<? extends MetaDataCustomizerInterface<?>>              genericMetaProductionCustomizer   = (Class<? extends MetaDataCustomizerInterface<?>>) qMetaDataProducingEntity.tableMetaDataCustomizer();
+            Class<? extends MetaDataCustomizerInterface<QTableMetaData>> tableMetaDataProductionCustomizer = null;
+            if(!genericMetaProductionCustomizer.equals(MetaDataCustomizerInterface.NoopMetaDataCustomizer.class))
+            {
+               tableMetaDataProductionCustomizer = (Class<? extends MetaDataCustomizerInterface<QTableMetaData>>) genericMetaProductionCustomizer;
+            }
+
+            RecordEntityToTableGenericMetaDataProducer producer = new RecordEntityToTableGenericMetaDataProducer(tableNameValue, recordEntityClass, tableMetaDataProductionCustomizer);
+
+            if(tableMetaDataCustomizer != null)
+            {
+               producer.addRecordEntityTableMetaDataProductionCustomizer(tableMetaDataCustomizer);
+            }
+
+            rs.add(producer);
+         }
+         catch(Exception e)
+         {
+            throw new QException("Error processing table meta data producer for entity class: " + recordEntityClass.getName(), e);
+         }
+      }
+
+      ////////////////////////////////////////
+      // add PVS producer, if so configured //
+      ////////////////////////////////////////
+      if(qMetaDataProducingEntity.producePossibleValueSource())
+      {
+         rs.add(new PossibleValueSourceOfTableGenericMetaDataProducer(tableNameValue));
+      }
 
       //////////////////////////
       // process child tables //
       //////////////////////////
-      QMetaDataProducingEntity qMetaDataProducingEntity = aClass.getAnnotation(QMetaDataProducingEntity.class);
       for(ChildTable childTable : qMetaDataProducingEntity.childTables())
       {
          Class<? extends QRecordEntity> childEntityClass = childTable.childTableEntityClass();
@@ -362,4 +442,35 @@ public class MetaDataProducerHelper
       String tableNameValue = (String) tableNameField.get(null);
       return (tableNameValue);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableMetaDataCustomizer
+    *******************************************************************************/
+   public MetaDataCustomizerInterface<QTableMetaData> getTableMetaDataCustomizer()
+   {
+      return (MetaDataProducerHelper.tableMetaDataCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableMetaDataCustomizer
+    *******************************************************************************/
+   public void setTableMetaDataCustomizer(MetaDataCustomizerInterface<QTableMetaData> tableMetaDataCustomizer)
+   {
+      MetaDataProducerHelper.tableMetaDataCustomizer = tableMetaDataCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableMetaDataCustomizer
+    *******************************************************************************/
+   public void withTableMetaDataCustomizer(MetaDataCustomizerInterface<QTableMetaData> tableMetaDataCustomizer)
+   {
+      MetaDataProducerHelper.tableMetaDataCustomizer = tableMetaDataCustomizer;
+   }
+
 }

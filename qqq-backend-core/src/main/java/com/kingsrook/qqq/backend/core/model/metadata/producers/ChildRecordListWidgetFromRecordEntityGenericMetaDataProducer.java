@@ -38,20 +38,22 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** produce a QJoinMetaData, based on a QRecordEntity and a ChildTable sub-annotation.
  **
  ** e.g., Orders & LineItems - on the Order entity
- ** <code>
+ <code>
  @QMetaDataProducingEntity( childTables = { @ChildTable(
-    childTableEntityClass = LineItem.class,
-    childJoin = @ChildJoin(enabled = true),
-    childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Order Lines"))
+ childTableEntityClass = LineItem.class,
+ childJoin = @ChildJoin(enabled = true),
+ childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Order Lines"))
  })
  public class Order extends QRecordEntity
- ** </code>
+ </code>
  **
  *******************************************************************************/
 public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implements MetaDataProducerInterface<QWidgetMetaData>
 {
    private String childTableName; // e.g., lineItem
    private String parentTableName; // e.g., order
+
+   private MetaDataCustomizerInterface<QWidgetMetaData> widgetMetaDataProductionCustomizer = null;
 
    private ChildRecordListWidget childRecordListWidget;
 
@@ -60,11 +62,18 @@ public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implem
    /***************************************************************************
     **
     ***************************************************************************/
-   public ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, ChildRecordListWidget childRecordListWidget)
+   public ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, ChildRecordListWidget childRecordListWidget) throws Exception
    {
       this.childTableName = childTableName;
       this.parentTableName = parentTableName;
       this.childRecordListWidget = childRecordListWidget;
+
+      Class<? extends MetaDataCustomizerInterface<?>> genericMetaProductionCustomizer = (Class<? extends MetaDataCustomizerInterface<?>>) childRecordListWidget.widgetMetaDataCustomizer();
+      if(!genericMetaProductionCustomizer.equals(MetaDataCustomizerInterface.NoopMetaDataCustomizer.class))
+      {
+         Class<? extends MetaDataCustomizerInterface<QWidgetMetaData>> widgetMetaProductionCustomizerClass = (Class<? extends MetaDataCustomizerInterface<QWidgetMetaData>>) genericMetaProductionCustomizer;
+         this.widgetMetaDataProductionCustomizer = widgetMetaProductionCustomizerClass.getConstructor().newInstance();
+      }
    }
 
 
@@ -92,6 +101,11 @@ public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implem
       if(childRecordListWidget.maxRows() > 0)
       {
          widget.withDefaultValue("maxRows", childRecordListWidget.maxRows());
+      }
+
+      if(this.widgetMetaDataProductionCustomizer != null)
+      {
+         widget = this.widgetMetaDataProductionCustomizer.customizeMetaData(qInstance, widget);
       }
 
       return (widget);

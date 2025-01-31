@@ -39,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProdu
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducingPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoInterfacesExtendsObject;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoValidConstructorMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -75,6 +76,17 @@ class MetaDataProducerHelperTest
       assertEquals(QPossibleValueSourceType.ENUM, enumPVS.getType());
       assertEquals(2, enumPVS.getEnumValues().size());
       assertEquals(new QPossibleValue<>(1, "One"), enumPVS.getEnumValues().get(0));
+
+      ////////////////////////////////////////////
+      // annotation on table -> table meta data //
+      ////////////////////////////////////////////
+      assertTrue(qInstance.getTables().containsKey(TestMetaDataProducingEntity.TABLE_NAME));
+      QTableMetaData table = qInstance.getTables().get(TestMetaDataProducingEntity.TABLE_NAME);
+      assertEquals(TestMetaDataProducingEntity.TABLE_NAME, table.getName());
+      assertEquals("id", table.getPrimaryKeyField());
+      assertEquals(2, table.getFields().size());
+      assertTrue(table.getField("name").getIsRequired());
+      assertEquals("Customized Label", table.getLabel());
 
       //////////////////////////////////////////////
       // annotation on PVS table -> PVS meta data //
