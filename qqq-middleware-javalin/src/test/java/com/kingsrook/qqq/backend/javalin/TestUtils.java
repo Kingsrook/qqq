@@ -22,8 +22,10 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,6 +97,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackend
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import org.apache.commons.io.IOUtils;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -122,6 +125,8 @@ public class TestUtils
 
    public static final String SCREEN_0 = "screen0";
    public static final String SCREEN_1 = "screen1";
+
+   public static final String STATIC_SITE_PATH = Paths.get("").toAbsolutePath() + "/static-site";
 
 
 
@@ -184,9 +189,24 @@ public class TestUtils
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessPutsNullKeyInMap());
       qInstance.addProcess(defineProcessSimpleThrow());
+      qInstance.addProcess(defineRouterProcess());
       qInstance.addReport(definePersonsReport());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
+
+      List<JavalinRouteProviderMetaData> routeProviders = new ArrayList<>();
+      if(new File(STATIC_SITE_PATH).exists())
+      {
+         routeProviders.add(new JavalinRouteProviderMetaData()
+            .withHostedPath("/statically-served")
+            .withFileSystemPath(STATIC_SITE_PATH));
+      }
+
+      routeProviders.add(new JavalinRouteProviderMetaData()
+         .withHostedPath("/served-by-process/<pagePath>")
+         .withProcessName("routerProcess"));
+
+      qInstance.withSupplementalMetaData(new QJavalinMetaData().withRouteProviders(routeProviders));
 
       qInstance.addBackend(defineMemoryBackend());
       try
@@ -202,6 +222,25 @@ public class TestUtils
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private static QProcessMetaData defineRouterProcess()
+   {
+      return (new QProcessMetaData()
+         .withName("routerProcess")
+         .withStep(new QBackendStepMetaData()
+            .withName("step")
+            .withCode(new QCodeReferenceLambda<BackendStep>((runBackendStepInput, runBackendStepOutput) ->
+            {
+               String path = runBackendStepInput.getValueString("path");
+               runBackendStepOutput.addValue("response", "So you've asked for: " + path);
+            }))
+         ));
    }
 
 
@@ -567,7 +606,6 @@ public class TestUtils
 
 
 
-
    /*******************************************************************************
     ** Define an interactive version of the 'greet people' process
     *******************************************************************************/
@@ -585,6 +623,7 @@ public class TestUtils
                runBackendStepOutput.addValue("mapWithNullKey", mapWithNullKey);
             })));
    }
+
 
 
    /*******************************************************************************

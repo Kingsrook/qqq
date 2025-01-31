@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.middleware.javalin;
 
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -203,6 +204,8 @@ public class QApplicationJavalinServer
       service.before((Context context) -> context.header("Content-Type", "application/json"));
       service.after(QJavalinImplementation::clearQContext);
 
+      addNullResponseCharsetFixer();
+
       ////////////////////////////////////////////////
       // allow a configuration-customizer to be run //
       ////////////////////////////////////////////////
@@ -212,6 +215,29 @@ public class QApplicationJavalinServer
       }
 
       service.start(port);
+   }
+
+
+
+   /***************************************************************************
+    ** initial tests with the SimpleFileSystemDirectoryRouter would sometimes
+    ** have a Content-Type:text/html;charset=null !
+    ** which doesn't seem every valid (and at least it broke our unit test).
+    ** so, if w see charset=null in contentType, replace it with the system
+    ** default, which may not be 100% right, but has to be better than "null"...
+    ***************************************************************************/
+   private void addNullResponseCharsetFixer()
+   {
+      service.after((Context context) ->
+      {
+         String contentType = context.res().getContentType();
+         if(contentType != null && contentType.contains("charset=null"))
+         {
+            contentType = contentType.replace("charset=null", "charset=" + Charset.defaultCharset().name());
+            context.res().setContentType(contentType);
+         }
+         System.out.println();
+      });
    }
 
 
