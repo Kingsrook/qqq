@@ -373,8 +373,8 @@ public class QInstanceValidator
          assertCondition(join.getType() != null, "Missing type for join: " + joinName);
          assertCondition(CollectionUtils.nullSafeHasContents(join.getJoinOns()), "Missing joinOns for join: " + joinName);
 
-         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " join " + joinName + " is not a defined table in this instance.");
-         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " join " + joinName + " is not a defined table in this instance.");
+         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " in join " + joinName + " is not a defined table in this instance.");
+         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " in join " + joinName + " is not a defined table in this instance.");
 
          for(JoinOn joinOn : CollectionUtils.nonNullList(join.getJoinOns()))
          {
@@ -577,7 +577,7 @@ public class QInstanceValidator
    private void validateAuthentication(QInstance qInstance)
    {
       QAuthenticationMetaData authentication = qInstance.getAuthentication();
-      if(authentication != null)
+      if(assertCondition(authentication != null, "Authentication MetaData must be defined."))
       {
          if(authentication.getCustomizer() != null)
          {
