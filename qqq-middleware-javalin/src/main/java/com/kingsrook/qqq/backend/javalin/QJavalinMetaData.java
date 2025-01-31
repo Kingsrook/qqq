@@ -22,9 +22,11 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.util.List;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import org.apache.logging.log4j.Level;
 
 
@@ -46,7 +48,8 @@ public class QJavalinMetaData implements QSupplementalInstanceMetaData
    private Integer queryWithoutLimitDefault  = 1000;
    private Level   queryWithoutLimitLogLevel = Level.INFO;
 
-   // todo - list of objects with hosted path, file-system paths
+   private List<JavalinRouteProviderMetaData> routeProviders;
+
 
 
    /***************************************************************************
@@ -275,6 +278,37 @@ public class QJavalinMetaData implements QSupplementalInstanceMetaData
    public QJavalinMetaData withQueryWithoutLimitLogLevel(Level queryWithoutLimitLogLevel)
    {
       this.queryWithoutLimitLogLevel = queryWithoutLimitLogLevel;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for routeProviders
+    *******************************************************************************/
+   public List<JavalinRouteProviderMetaData> getRouteProviders()
+   {
+      return (this.routeProviders);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for routeProviders
+    *******************************************************************************/
+   public void setRouteProviders(List<JavalinRouteProviderMetaData> routeProviders)
+   {
+      this.routeProviders = routeProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for routeProviders
+    *******************************************************************************/
+   public QJavalinMetaData withRouteProviders(List<JavalinRouteProviderMetaData> routeProviders)
+   {
+      this.routeProviders = routeProviders;
       return (this);
    }
 

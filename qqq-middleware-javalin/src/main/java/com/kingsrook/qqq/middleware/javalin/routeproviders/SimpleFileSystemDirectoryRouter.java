@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin.routeproviders;
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.http.staticfiles.StaticFileConfig;
@@ -48,6 +49,16 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
    {
       this.hostedPath = hostedPath;
       this.fileSystemPath = fileSystemPath;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public SimpleFileSystemDirectoryRouter(JavalinRouteProviderMetaData routeProvider)
+   {
+      this(routeProvider.getHostedPath(), routeProvider.getFileSystemPath());
    }
 
 

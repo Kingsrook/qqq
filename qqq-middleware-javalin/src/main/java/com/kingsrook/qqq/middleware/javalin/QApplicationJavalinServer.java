@@ -32,8 +32,13 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.ProcessBasedRouter;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
@@ -98,6 +103,12 @@ public class QApplicationJavalinServer
    public void start() throws QException
    {
       QInstance qInstance = application.defineValidatedQInstance();
+
+      QJavalinMetaData qJavalinMetaData = QJavalinMetaData.of(qInstance);
+      if(qJavalinMetaData != null)
+      {
+         addRouteProvidersFromMetaData(qJavalinMetaData);
+      }
 
       service = Javalin.create(config ->
       {
@@ -201,6 +212,35 @@ public class QApplicationJavalinServer
       }
 
       service.start(port);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void addRouteProvidersFromMetaData(QJavalinMetaData qJavalinMetaData) throws QException
+   {
+      if(qJavalinMetaData == null)
+      {
+         return;
+      }
+
+      for(JavalinRouteProviderMetaData routeProviderMetaData : CollectionUtils.nonNullList(qJavalinMetaData.getRouteProviders()))
+      {
+         if(StringUtils.hasContent(routeProviderMetaData.getProcessName()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
+         {
+            withAdditionalRouteProvider(new ProcessBasedRouter(routeProviderMetaData));
+         }
+         else if(StringUtils.hasContent(routeProviderMetaData.getFileSystemPath()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
+         {
+            withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter(routeProviderMetaData));
+         }
+         else
+         {
+            throw (new QException("Error processing route provider - does not have sufficient fields set."));
+         }
+      }
    }
 
 
