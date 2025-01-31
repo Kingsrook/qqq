@@ -265,24 +265,24 @@ public interface TableCustomizerInterface
          return (Optional.empty());
       }
    }
-}
-
-
-
-/***************************************************************************
- **
- ***************************************************************************/
-class NotImplementedHereException extends QException
-{
-   static NotImplementedHereException instance = new NotImplementedHereException();
 
 
 
    /***************************************************************************
     **
     ***************************************************************************/
-   public NotImplementedHereException()
+   class NotImplementedHereException extends QException
    {
-      super("Not implemented here");
+      private static NotImplementedHereException instance = new NotImplementedHereException();
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      private NotImplementedHereException()
+      {
+         super("Not implemented here");
+      }
    }
 }
