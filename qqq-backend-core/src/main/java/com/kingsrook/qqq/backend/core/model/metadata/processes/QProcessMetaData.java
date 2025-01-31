@@ -325,7 +325,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
     *******************************************************************************/
    public void setStepList(List<QStepMetaData> stepList)
    {
-      this.stepList = stepList;
+      withStepList(stepList);
    }
 
 
