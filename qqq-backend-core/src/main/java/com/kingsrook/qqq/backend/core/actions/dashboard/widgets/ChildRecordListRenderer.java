@@ -165,6 +165,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
        *******************************************************************************/
       public Builder withManageAssociationName(String manageAssociationName)
       {
+         // todo - validate association name exists (on the table?)
          widgetMetaData.withDefaultValue("manageAssociationName", manageAssociationName);
          return (this);
       }
@@ -194,7 +195,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          }
          else if(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"))
          {
-            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"));
+            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().get("maxRows"));
          }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,6 +299,13 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
                      implicitlyDisabledFields.add(joinOn.getRightField());
                   }
                }
+            }
+
+            if(widgetValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
+            {
+               @SuppressWarnings("unchecked")
+               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetValues.get("defaultValuesForNewChildRecordsFromParentFields");
+               widgetData.setDefaultValuesForNewChildRecordsFromParentFields(defaultValuesForNewChildRecordsFromParentFields);
             }
          }
 
