@@ -64,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValue
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueRangeBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -1922,6 +1923,20 @@ public class QInstanceValidatorTest extends BaseTest
 
       Function<QInstance, QFieldMetaData> idFieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("id");
       assertValidationFailureReasons((qInstance -> idFieldExtractor.apply(qInstance).withBehavior(ValueTooLongBehavior.ERROR).withMaxLength(1)), "maxLength, but is not of a supported type");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFieldBehaviorsWithTheirOwnValidateMethods()
+   {
+      Function<QInstance, QFieldMetaData> fieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("id");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(new ValueRangeBehavior())),
+         "Field id in table person: ValueRangeBehavior: Either minValue or maxValue (or both) must be set.");
+
    }
 
 

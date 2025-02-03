@@ -780,7 +780,7 @@ public class QInstanceValidator
       {
          if(assertCondition(StringUtils.hasContent(association.getName()), "missing a name for an Association on table " + table.getName()))
          {
-            String messageSuffix = " for Association " + association.getName() + " on table " + table.getName();
+            String  messageSuffix   = " for Association " + association.getName() + " on table " + table.getName();
             boolean recognizedTable = false;
             if(assertCondition(StringUtils.hasContent(association.getAssociatedTableName()), "missing associatedTableName" + messageSuffix))
             {
@@ -988,7 +988,15 @@ public class QInstanceValidator
             @SuppressWarnings("unchecked")
             Class<FieldBehavior<?>> behaviorClass = (Class<FieldBehavior<?>>) fieldBehavior.getClass();
 
-            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+            List<String> behaviorErrors = fieldBehavior.validateBehaviorConfiguration(table, field);
+            if(behaviorErrors != null)
+            {
+               String prefixMinusTrailingSpace = prefix.replaceFirst(" *$", "");
+               for(String behaviorError : behaviorErrors)
+               {
+                  errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": " + behaviorError);
+               }
+            }
 
             if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
             {
