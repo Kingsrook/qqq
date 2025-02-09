@@ -37,7 +37,7 @@ public @interface ChildRecordListWidget
 {
    boolean enabled();
 
-   String label() default "";
+   String label();
 
    int maxRows() default 20;
 

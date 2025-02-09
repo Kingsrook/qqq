@@ -2008,6 +2008,11 @@ public class QInstanceValidator
                   }
                }
 
+               if(widget.getValidatorPlugin() != null)
+               {
+                  widget.getValidatorPlugin().validate(widget, qInstance, this);
+               }
+
                runPlugins(QWidgetMetaDataInterface.class, widget, qInstance);
             }
          );

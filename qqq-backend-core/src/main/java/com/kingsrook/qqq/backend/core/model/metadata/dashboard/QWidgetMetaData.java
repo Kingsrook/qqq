@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
@@ -69,6 +70,7 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
    protected Map<String, Serializable> defaultValues = new LinkedHashMap<>();
 
+   protected QInstanceValidatorPluginInterface<QWidgetMetaDataInterface> validatorPlugin;
 
 
    /*******************************************************************************
@@ -763,5 +765,36 @@ public class QWidgetMetaData implements QWidgetMetaDataInterface
 
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
+
+
+   /*******************************************************************************
+    ** Getter for validatorPlugin
+    *******************************************************************************/
+   public QInstanceValidatorPluginInterface<QWidgetMetaDataInterface> getValidatorPlugin()
+   {
+      return (this.validatorPlugin);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for validatorPlugin
+    *******************************************************************************/
+   public void setValidatorPlugin(QInstanceValidatorPluginInterface<QWidgetMetaDataInterface> validatorPlugin)
+   {
+      this.validatorPlugin = validatorPlugin;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for validatorPlugin
+    *******************************************************************************/
+   public QWidgetMetaData withValidatorPlugin(QInstanceValidatorPluginInterface<QWidgetMetaDataInterface> validatorPlugin)
+   {
+      this.validatorPlugin = validatorPlugin;
+      return (this);
+   }
+
 
 }
