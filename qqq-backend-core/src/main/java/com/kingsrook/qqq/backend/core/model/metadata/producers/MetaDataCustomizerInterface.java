@@ -28,7 +28,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 
 
 /*******************************************************************************
- **
+ ** Interface to be implemented by classes that are designed to help customize
+ ** meta-data objects as they're being produced, e.g., such as a table produced
+ ** via the QMetaDataProducingEntity, or maybe tables loaded by a qbit??
  *******************************************************************************/
 public interface MetaDataCustomizerInterface<T extends TopLevelMetaDataInterface>
 {
