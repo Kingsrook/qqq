@@ -40,8 +40,10 @@ import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -1382,6 +1384,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
          Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
          {
             QInstance newInstance = new QInstance();
+            newInstance.setAuthentication(new QAuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
             newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType(MockBackendModule.class));
 
             if(!"invalid".equals(backendName))

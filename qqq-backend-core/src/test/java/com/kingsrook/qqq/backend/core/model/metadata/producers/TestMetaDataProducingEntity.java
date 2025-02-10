@@ -26,7 +26,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildRecordListWidget;
@@ -38,7 +37,10 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 /*******************************************************************************
  ** QRecord Entity for TestMetaDataProducingEntity table
  *******************************************************************************/
-@QMetaDataProducingEntity(producePossibleValueSource = true,
+@QMetaDataProducingEntity(
+   produceTableMetaData = true,
+   tableMetaDataCustomizer = TestMetaDataProducingEntity.TableMetaDataCustomizer.class,
+   producePossibleValueSource = true,
    childTables =
       {
          @ChildTable(childTableEntityClass = TestMetaDataProducingChildEntity.class,
@@ -46,24 +48,31 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
             childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Test Children", maxRows = 15))
       }
 )
-public class TestMetaDataProducingEntity extends QRecordEntity implements MetaDataProducerInterface<QTableMetaData>
+public class TestMetaDataProducingEntity extends QRecordEntity
 {
    public static final String TABLE_NAME = "testMetaDataProducingEntity";
 
    @QField(isEditable = false, isPrimaryKey = true)
    private Integer id;
 
+   @QField(isRequired = true)
+   private String name;
 
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public QTableMetaData produce(QInstance qInstance) throws QException
+   public static class TableMetaDataCustomizer implements MetaDataCustomizerInterface<QTableMetaData>
    {
-      return new QTableMetaData()
-         .withName(TABLE_NAME)
-         .withFieldsFromEntity(TestMetaDataProducingEntity.class);
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public QTableMetaData customizeMetaData(QInstance qInstance, QTableMetaData table) throws QException
+      {
+         table.withLabel("Customized Label");
+         return table;
+      }
    }
 
 
@@ -115,5 +124,36 @@ public class TestMetaDataProducingEntity extends QRecordEntity implements MetaDa
       this.id = id;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for name
+    *******************************************************************************/
+   public String getName()
+   {
+      return (this.name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public TestMetaDataProducingEntity withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
 
 }

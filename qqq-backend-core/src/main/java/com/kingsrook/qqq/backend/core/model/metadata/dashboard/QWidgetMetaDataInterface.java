@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
@@ -277,5 +278,13 @@ public interface QWidgetMetaDataInterface extends MetaDataWithPermissionRules, T
       qInstance.addWidget(this);
    }
 
+
+   /***************************************************************************
+    ** let the widget include an instance validator plugin
+    ***************************************************************************/
+   default QInstanceValidatorPluginInterface<QWidgetMetaDataInterface> getValidatorPlugin()
+   {
+      return (null);
+   }
 }
 

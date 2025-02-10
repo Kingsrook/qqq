@@ -155,9 +155,9 @@ new QFilterOrderBy()
 ----
 
 ==== QueryJoin
-* `joinTable` - *String, required* - Name of the table that is being joined in to the existing query.
+* `joinTable` - *String, required (though inferrable)* - Name of the table that is being joined in to the existing query.
 ** Will be inferred from *joinMetaData*, if *joinTable* is not set when *joinMetaData* gets set.
-* `baseTableOrAlias` - *String, required* - Name of a table (or an alias) already defined in the query, to which the *joinTable* will be joined.
+* `baseTableOrAlias` - *String, required (though inferrable)* - Name of a table (or an alias) already defined in the query, to which the *joinTable* will be joined.
 ** Will be inferred from *joinMetaData*, if *baseTableOrAlias* is not set when *joinMetaData* gets set (which will only use the leftTableName from the joinMetaData - never an alias).
 * `joinMetaData` - *QJoinMetaData object* - Optional specification of a {link-join} in the current QInstance.
 If not set, will be looked up at runtime based on *baseTableOrAlias* and *joinTable*.
@@ -165,21 +165,78 @@ If not set, will be looked up at runtime based on *baseTableOrAlias* and *joinTa
 * `alias` - *String* - Optional (unless multiple instances of the same table are being joined together, when it becomes required).
 Behavior based on SQL `FROM` clause aliases.
 If given, must be used as the part before the dot in field name specifications throughout the rest of the query input.
-* `select` - *boolean, default: false* - Specify whether fields from the *rightTable* should be selected by the query.
+* `select` - *boolean, default: false* - Specify whether fields from the *joinTable* should be selected by the query.
 If *true*, then the `QRecord` objects returned by this query will have values with corresponding to the (table-or-alias `.` field-name) form.
 * `type` - *Enum of INNER, LEFT, RIGHT, FULL, default: INNER* - specifies the SQL-style type of join being performed.
 
 [source,java]
-.QueryJoin definition examples:
+.Basic QueryJoin usage example:
 ----
-// selecting from an "orderLine" table - then join to its corresponding "order" table
+// selecting from an "orderLine" table, joined to its corresponding (parent) "order" table
 queryInput.withTableName("orderLine");
 queryInput.withQueryJoin(new QueryJoin("order").withSelect(true));
 ...
 queryOutput.getRecords().get(0).getValueBigDecimal("order.grandTotal");
+----
 
+[source,java]
+."V" shaped query - selecting from one parent table, and two children joined to it:
+----
+// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// selecting from an "order" table, and two children of it, orderLine and customer
+queryInput.withTableName("order");
+queryInput.withQueryJoin(new QueryJoin("orderLine").withSelect(true));
+queryInput.withQueryJoin(new QueryJoin("customer").withSelect(true));
+...
+QRecord joinedRecord = queryOutput.getRecords().get(0);
+joinedRecord.getValueString("orderNo");
+joinedRecord.getValueString("orderLine.sku");
+joinedRecord.getValueString("customer.firstName");
+----
+
+[source,java]
+."Chain" shaped query - selecting from one parent table, a child table, and a grandchild:
+----
+// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// selecting from an "order" table, with a "customer" child table, and an "address" sub-table
+queryInput.withTableName("order");
+queryInput.withQueryJoin(new QueryJoin("customer").withSelect(true));
+queryInput.withQueryJoin(new QueryJoin("address").withSelect(true));
+...
+QRecord joinedRecord = queryOutput.getRecords().get(0);
+joinedRecord.getValueString("orderNo");
+joinedRecord.getValueString("customer.firstName");
+joinedRecord.getValueString("address.street1");
+----
+
+[source,java]
+.QueryJoin usage example where two tables have two different joins between them:
+----
+// TODO this needs verified for accuracy, though is a reasonable starting point as-is
+// here there's a "fulfillmentPlan" table, which points at the order table (many-to-one,
+// as an order's plan can change over time, and we keep old plans around).
+// This join is named:  fulfillmentPlanJoinOrder
+//
+// The other join is "order" pointing at its current "fulfillmentPlan"
+// This join is named:  orderJoinCurrentFulfillmentPlan
+
+// to select an order along with its current fulfillment plan:
+queryInput.withTableName("order");
+queryInput.withQueryJoin(new QueryJoin(instance.getJoin("orderJoinCurrentFulfillmentPlan"))
+   .withSelect(true));
+
+// to select an order, and all fulfillment plans for an order (1 or more records):
+queryInput.withTableName("order");
+queryInput.withQueryJoin(new QueryJoin(instance.getJoin("fulfillmentPlanJoinOrder"))
+   .withSelect(true));
+----
+
+[source,java]
+.QueryJoin usage example for table with two joins to the same child table, selecting from both:
+----
 // given an "order" table with 2 foreign keys to a customer table (billToCustomerId and shipToCustomerId)
 // Note, we must supply the JoinMetaData to the QueryJoin, to drive what fields to join on in each case.
+// we must also define an alias for each of the QueryJoins
 queryInput.withTableName("order");
 queryInput.withQueryJoins(List.of(
    new QueryJoin(instance.getJoin("orderJoinShipToCustomer")
@@ -190,9 +247,16 @@ queryInput.withQueryJoins(List.of(
        .withSelect(true))));
 ...
 record.getValueString("billToCustomer.firstName")
-   + " placed an order for "
+   + " paid for an order, to be sent to "
    + record.getValueString("shipToCustomer.firstName")
 
+----
+
+[source,java]
+.Implicit QueryJoin, where unambiguous and required by QQueryFilter
+----
+// TODO finish and verify
+queryInput.withTableName("order");
 ----
 
 === QueryOutput

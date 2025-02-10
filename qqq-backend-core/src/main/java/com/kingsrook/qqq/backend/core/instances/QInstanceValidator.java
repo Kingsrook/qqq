@@ -373,8 +373,8 @@ public class QInstanceValidator
          assertCondition(join.getType() != null, "Missing type for join: " + joinName);
          assertCondition(CollectionUtils.nullSafeHasContents(join.getJoinOns()), "Missing joinOns for join: " + joinName);
 
-         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " join " + joinName + " is not a defined table in this instance.");
-         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " join " + joinName + " is not a defined table in this instance.");
+         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " in join " + joinName + " is not a defined table in this instance.");
+         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " in join " + joinName + " is not a defined table in this instance.");
 
          for(JoinOn joinOn : CollectionUtils.nonNullList(join.getJoinOns()))
          {
@@ -577,7 +577,7 @@ public class QInstanceValidator
    private void validateAuthentication(QInstance qInstance)
    {
       QAuthenticationMetaData authentication = qInstance.getAuthentication();
-      if(authentication != null)
+      if(assertCondition(authentication != null, "Authentication MetaData must be defined."))
       {
          if(authentication.getCustomizer() != null)
          {
@@ -780,7 +780,7 @@ public class QInstanceValidator
       {
          if(assertCondition(StringUtils.hasContent(association.getName()), "missing a name for an Association on table " + table.getName()))
          {
-            String messageSuffix = " for Association " + association.getName() + " on table " + table.getName();
+            String  messageSuffix   = " for Association " + association.getName() + " on table " + table.getName();
             boolean recognizedTable = false;
             if(assertCondition(StringUtils.hasContent(association.getAssociatedTableName()), "missing associatedTableName" + messageSuffix))
             {
@@ -988,7 +988,15 @@ public class QInstanceValidator
             @SuppressWarnings("unchecked")
             Class<FieldBehavior<?>> behaviorClass = (Class<FieldBehavior<?>>) fieldBehavior.getClass();
 
-            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+            List<String> behaviorErrors = fieldBehavior.validateBehaviorConfiguration(table, field);
+            if(behaviorErrors != null)
+            {
+               String prefixMinusTrailingSpace = prefix.replaceFirst(" *$", "");
+               for(String behaviorError : behaviorErrors)
+               {
+                  errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": " + behaviorError);
+               }
+            }
 
             if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
             {
@@ -1998,6 +2006,11 @@ public class QInstanceValidator
                         assertCondition(qInstance.getWidget(childWidgetName) != null, "Unrecognized child widget name [" + childWidgetName + "] in parent widget: " + widget.getName());
                      }
                   }
+               }
+
+               if(widget.getValidatorPlugin() != null)
+               {
+                  widget.getValidatorPlugin().validate(widget, qInstance, this);
                }
 
                runPlugins(QWidgetMetaDataInterface.class, widget, qInstance);
