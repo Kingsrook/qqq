@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.tables;
+package com.kingsrook.qqq.backend.core.model.processes;
 
 
 import java.time.Instant;
@@ -30,13 +30,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior
 
 
 /*******************************************************************************
- ** QRecord Entity for QQQTable table - e.g., table that stores an id, name
- ** and the label for all tables in the QQQ application.  Useful as a foreign
+ ** QRecord Entity for QQQProcess table - e.g., table that stores an id, name
+ ** and the label for all processes in the QQQ application.  Useful as a foreign
  ** key from other logging type tables.
  *******************************************************************************/
-public class QQQTable extends QRecordEntity
+public class QQQProcess extends QRecordEntity
 {
-   public static final String TABLE_NAME = "qqqTable";
+   public static final String TABLE_NAME = "qqqProcess";
 
    @QField(isEditable = false)
    private Integer id;
@@ -58,7 +58,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Default constructor
     *******************************************************************************/
-   public QQQTable()
+   public QQQProcess()
    {
    }
 
@@ -67,7 +67,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Constructor that takes a QRecord
     *******************************************************************************/
-   public QQQTable(QRecord record)
+   public QQQProcess(QRecord record)
    {
       populateFromQRecord(record);
    }
@@ -97,7 +97,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for id
     *******************************************************************************/
-   public QQQTable withId(Integer id)
+   public QQQProcess withId(Integer id)
    {
       this.id = id;
       return (this);
@@ -128,7 +128,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for createDate
     *******************************************************************************/
-   public QQQTable withCreateDate(Instant createDate)
+   public QQQProcess withCreateDate(Instant createDate)
    {
       this.createDate = createDate;
       return (this);
@@ -159,7 +159,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for modifyDate
     *******************************************************************************/
-   public QQQTable withModifyDate(Instant modifyDate)
+   public QQQProcess withModifyDate(Instant modifyDate)
    {
       this.modifyDate = modifyDate;
       return (this);
@@ -190,7 +190,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for name
     *******************************************************************************/
-   public QQQTable withName(String name)
+   public QQQProcess withName(String name)
    {
       this.name = name;
       return (this);
@@ -221,7 +221,7 @@ public class QQQTable extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for label
     *******************************************************************************/
-   public QQQTable withLabel(String label)
+   public QQQProcess withLabel(String label)
    {
       this.label = label;
       return (this);
