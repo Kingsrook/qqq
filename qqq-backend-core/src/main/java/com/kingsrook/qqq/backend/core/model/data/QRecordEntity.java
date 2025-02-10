@@ -530,6 +530,7 @@ public abstract class QRecordEntity
       // todo - more types!!
       return (returnType.equals(String.class)
               || returnType.equals(Integer.class)
+              || returnType.equals(Long.class)
               || returnType.equals(int.class)
               || returnType.equals(Boolean.class)
               || returnType.equals(boolean.class)
