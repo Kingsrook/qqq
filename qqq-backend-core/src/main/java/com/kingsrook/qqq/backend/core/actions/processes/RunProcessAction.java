@@ -118,8 +118,6 @@ public class RunProcessAction
 
       RunProcessOutput runProcessOutput = new RunProcessOutput();
 
-      traceStartOrResume(runProcessInput, process);
-
       //////////////////////////////////////////////////////////
       // generate a UUID for the process, if one wasn't given //
       //////////////////////////////////////////////////////////
@@ -128,6 +126,8 @@ public class RunProcessAction
          runProcessInput.setProcessUUID(UUID.randomUUID().toString());
       }
       runProcessOutput.setProcessUUID(runProcessInput.getProcessUUID());
+
+      traceStartOrResume(runProcessInput, process);
 
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
       ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);
