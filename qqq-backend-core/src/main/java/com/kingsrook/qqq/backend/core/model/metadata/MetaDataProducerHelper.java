@@ -285,9 +285,6 @@ public class MetaDataProducerHelper
       {
          try
          {
-            ////////////////////////////////////////////////////////
-            // todo - better to check the runtime type parameter? //
-            ////////////////////////////////////////////////////////
             Class<? extends MetaDataCustomizerInterface<?>>              genericMetaProductionCustomizer   = (Class<? extends MetaDataCustomizerInterface<?>>) qMetaDataProducingEntity.tableMetaDataCustomizer();
             Class<? extends MetaDataCustomizerInterface<QTableMetaData>> tableMetaDataProductionCustomizer = null;
             if(!genericMetaProductionCustomizer.equals(MetaDataCustomizerInterface.NoopMetaDataCustomizer.class))
