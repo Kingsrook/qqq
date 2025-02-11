@@ -66,16 +66,14 @@ public class RenderTemplateActionTest extends BaseTest
    @Test
    void testConvenientWrapper() throws QException
    {
-      RenderTemplateInput parentActionInput = new RenderTemplateInput();
-
       String template = "Hello, $name";
-      assertEquals("Hello, Darin", RenderTemplateAction.renderVelocity(parentActionInput, Map.of("name", "Darin"), template));
-      assertEquals("Hello, Tim", RenderTemplateAction.renderVelocity(parentActionInput, Map.of("name", "Tim"), template));
-      assertEquals("Hello, $name", RenderTemplateAction.renderVelocity(parentActionInput, Map.of(), template));
+      assertEquals("Hello, Darin", RenderTemplateAction.renderVelocity(Map.of("name", "Darin"), template));
+      assertEquals("Hello, Tim", RenderTemplateAction.renderVelocity(Map.of("name", "Tim"), template));
+      assertEquals("Hello, $name", RenderTemplateAction.renderVelocity(Map.of(), template));
 
       template = "Hello, $!name";
-      assertEquals("Hello, ", RenderTemplateAction.renderVelocity(parentActionInput, Map.of(), template));
-      assertEquals("Hello, ", RenderTemplateAction.renderVelocity(parentActionInput, null, template));
+      assertEquals("Hello, ", RenderTemplateAction.renderVelocity(Map.of(), template));
+      assertEquals("Hello, ", RenderTemplateAction.renderVelocity(null, template));
    }
 
 
