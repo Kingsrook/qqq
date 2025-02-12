@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -132,6 +133,10 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                for(QRecord record : page)
                {
                   QRecord outputRecord = new QRecord(record);
+                  if(!StringUtils.hasContent(outputRecord.getTableName()))
+                  {
+                     outputRecord.setTableName(tableName);
+                  }
                   outputRecords.add(outputRecord);
                }
                continue;
@@ -151,6 +156,10 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             for(QRecord record : page)
             {
                QRecord outputRecord = new QRecord(record);
+               if(!StringUtils.hasContent(outputRecord.getTableName()))
+               {
+                  outputRecord.setTableName(tableName);
+               }
                outputRecords.add(outputRecord);
 
                if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
