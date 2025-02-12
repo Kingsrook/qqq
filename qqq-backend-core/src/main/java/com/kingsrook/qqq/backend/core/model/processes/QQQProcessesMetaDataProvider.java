@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.tables;
+package com.kingsrook.qqq.backend.core.model.processes;
 
 
 import java.util.function.Consumer;
@@ -37,11 +37,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 
 
 /*******************************************************************************
- ** Provides meta data for the QQQTable table, PVS, and a cache table.
+ ** Provides meta data for the QQQProcess table, PVS, and a cache table.
  *******************************************************************************/
-public class QQQTablesMetaDataProvider
+public class QQQProcessesMetaDataProvider
 {
-   public static final String QQQ_TABLE_CACHE_TABLE_NAME = QQQTable.TABLE_NAME + "Cache";
+   public static final String QQQ_PROCESS_CACHE_TABLE_NAME = QQQProcess.TABLE_NAME + "Cache";
 
 
 
@@ -50,9 +50,9 @@ public class QQQTablesMetaDataProvider
     *******************************************************************************/
    public void defineAll(QInstance instance, String persistentBackendName, String cacheBackendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
-      instance.addTable(defineQQQTable(persistentBackendName, backendDetailEnricher));
-      instance.addTable(defineQQQTableCache(cacheBackendName, backendDetailEnricher));
-      instance.addPossibleValueSource(defineQQQTablePossibleValueSource());
+      instance.addTable(defineQQQProcess(persistentBackendName, backendDetailEnricher));
+      instance.addTable(defineQQQProcessCache(cacheBackendName, backendDetailEnricher));
+      instance.addPossibleValueSource(defineQQQProcessPossibleValueSource());
    }
 
 
@@ -60,18 +60,18 @@ public class QQQTablesMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QTableMetaData defineQQQTable(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   public QTableMetaData defineQQQProcess(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       QTableMetaData table = new QTableMetaData()
-         .withName(QQQTable.TABLE_NAME)
-         .withLabel("Table")
+         .withName(QQQProcess.TABLE_NAME)
+         .withLabel("Process")
          .withBackendName(backendName)
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("name"))
-         .withFieldsFromEntity(QQQTable.class)
+         .withFieldsFromEntity(QQQProcess.class)
          .withoutCapabilities(Capability.TABLE_INSERT, Capability.TABLE_UPDATE, Capability.TABLE_DELETE);
 
       if(backendDetailEnricher != null)
@@ -87,19 +87,19 @@ public class QQQTablesMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QTableMetaData defineQQQTableCache(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
+   public QTableMetaData defineQQQProcessCache(String backendName, Consumer<QTableMetaData> backendDetailEnricher) throws QException
    {
       QTableMetaData table = new QTableMetaData()
-         .withName(QQQ_TABLE_CACHE_TABLE_NAME)
+         .withName(QQQ_PROCESS_CACHE_TABLE_NAME)
          .withBackendName(backendName)
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.NONE))
          .withRecordLabelFormat("%s")
          .withRecordLabelFields("label")
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("name"))
-         .withFieldsFromEntity(QQQTable.class)
+         .withFieldsFromEntity(QQQProcess.class)
          .withCacheOf(new CacheOf()
-            .withSourceTable(QQQTable.TABLE_NAME)
+            .withSourceTable(QQQProcess.TABLE_NAME)
             .withUseCase(new CacheUseCase()
                .withType(CacheUseCase.Type.UNIQUE_KEY_TO_UNIQUE_KEY)
                .withCacheSourceMisses(false)
@@ -122,12 +122,12 @@ public class QQQTablesMetaDataProvider
    /*******************************************************************************
     **
     *******************************************************************************/
-   public QPossibleValueSource defineQQQTablePossibleValueSource()
+   public QPossibleValueSource defineQQQProcessPossibleValueSource()
    {
       return (new QPossibleValueSource()
          .withType(QPossibleValueSourceType.TABLE)
-         .withName(QQQTable.TABLE_NAME)
-         .withTableName(QQQTable.TABLE_NAME))
+         .withName(QQQProcess.TABLE_NAME)
+         .withTableName(QQQProcess.TABLE_NAME))
          .withOrderByField("label");
    }
 

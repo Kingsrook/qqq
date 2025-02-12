@@ -31,6 +31,7 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
@@ -69,6 +70,8 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
    private VariantRunStrategy variantRunStrategy;
    private String             variantBackend;
+
+   private QCodeReference processTracerCodeReference;
 
    private Map<String, QSupplementalProcessMetaData> supplementalMetaData;
 
@@ -865,5 +868,36 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       this.stepFlow = stepFlow;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for processTracerCodeReference
+    *******************************************************************************/
+   public QCodeReference getProcessTracerCodeReference()
+   {
+      return (this.processTracerCodeReference);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for processTracerCodeReference
+    *******************************************************************************/
+   public void setProcessTracerCodeReference(QCodeReference processTracerCodeReference)
+   {
+      this.processTracerCodeReference = processTracerCodeReference;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processTracerCodeReference
+    *******************************************************************************/
+   public QProcessMetaData withProcessTracerCodeReference(QCodeReference processTracerCodeReference)
+   {
+      this.processTracerCodeReference = processTracerCodeReference;
+      return (this);
+   }
+
 
 }

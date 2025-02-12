@@ -27,17 +27,22 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.NonPersistedAsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerInterface;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerMessage;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -46,6 +51,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RunBackendStepInput extends AbstractActionInput
 {
+   private static final QLogger LOG = QLogger.getLogger(RunBackendStepInput.class);
+
    private ProcessState                         processState;
    private String                               processName;
    private String                               tableName;
@@ -55,10 +62,11 @@ public class RunBackendStepInput extends AbstractActionInput
    private RunProcessInput.FrontendStepBehavior frontendStepBehavior;
    private Instant                              basepullLastRunTime;
 
+   private ProcessTracerInterface processTracer;
+
    ////////////////////////////////////////////////////////////////////////////
    // note - new fields should generally be added in method: cloneFieldsInto //
    ////////////////////////////////////////////////////////////////////////////
-
 
 
    /*******************************************************************************
@@ -96,6 +104,7 @@ public class RunBackendStepInput extends AbstractActionInput
       target.setAsyncJobCallback(getAsyncJobCallback());
       target.setFrontendStepBehavior(getFrontendStepBehavior());
       target.setValues(getValues());
+      target.setProcessTracer(getProcessTracer().orElse(null));
    }
 
 
@@ -535,4 +544,54 @@ public class RunBackendStepInput extends AbstractActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for processTracer
+    *******************************************************************************/
+   public void setProcessTracer(ProcessTracerInterface processTracer)
+   {
+      this.processTracer = processTracer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processTracer
+    *******************************************************************************/
+   public RunBackendStepInput withProcessTracer(ProcessTracerInterface processTracer)
+   {
+      this.processTracer = processTracer;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public Optional<ProcessTracerInterface> getProcessTracer()
+   {
+      return Optional.ofNullable(processTracer);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void traceMessage(ProcessTracerMessage message)
+   {
+      if(processTracer != null)
+      {
+         try
+         {
+            processTracer.handleMessage(this, message);
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error tracing message", e, logPair("message", message));
+         }
+      }
+   }
 }
