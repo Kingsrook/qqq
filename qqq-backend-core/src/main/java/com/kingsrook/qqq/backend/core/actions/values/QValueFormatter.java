@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -508,7 +509,7 @@ public class QValueFormatter
                   {
                      @SuppressWarnings("unchecked") // instance validation should make this safe!
                      List<String> fileNameFormatFields = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
-                     List<String> values = fileNameFormatFields.stream().map(f -> ValueUtils.getValueAsString(record.getValue(f))).toList();
+                     List<String> values = CollectionUtils.nullSafeHasContents(fileNameFormatFields) ? fileNameFormatFields.stream().map(f -> ValueUtils.getValueAsString(record.getValue(f))).toList() : Collections.emptyList();
                      fileName = QValueFormatter.formatStringWithValues(fileNameFormat, values);
                   }
                }
