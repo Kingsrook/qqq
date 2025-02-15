@@ -452,8 +452,6 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    @Deprecated(since = "Replaced by fieldName in filter in backendVariantsConfig - but leaving as field to pair with ...TypeValue for building filter")
    public void setVariantOptionsTableTypeField(String variantOptionsTableTypeField)
    {
-      this.getOrWithNewBackendVariantsConfig().setVariantTypeKey(variantOptionsTableTypeField);
-
       this.variantOptionsTableTypeField = variantOptionsTableTypeField;
       if(this.variantOptionsTableTypeValue != null)
       {
@@ -481,6 +479,8 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    @Deprecated(since = "Replaced by variantTypeKey and value in filter in backendVariantsConfig - but leaving as field to pair with ...TypeField for building filter")
    public void setVariantOptionsTableTypeValue(String variantOptionsTableTypeValue)
    {
+      this.getOrWithNewBackendVariantsConfig().setVariantTypeKey(variantOptionsTableTypeValue);
+
       this.variantOptionsTableTypeValue = variantOptionsTableTypeValue;
       if(this.variantOptionsTableTypeField != null)
       {
