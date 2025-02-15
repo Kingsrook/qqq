@@ -54,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -708,6 +709,25 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    public List<QFieldSection> getSections()
    {
       return sections;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public QFieldSection getSection(String name)
+   {
+      for(QFieldSection qFieldSection : CollectionUtils.nonNullList(sections))
+      {
+         if(qFieldSection.getName().equals(name))
+         {
+            return (qFieldSection);
+         }
+      }
+
+      return (null);
    }
 
 
