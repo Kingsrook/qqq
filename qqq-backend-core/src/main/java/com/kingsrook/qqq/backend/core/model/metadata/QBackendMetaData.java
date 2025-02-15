@@ -26,8 +26,13 @@ import java.util.HashSet;
 import java.util.Set;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QBackendMetaDataDeserializer;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.LegacyBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 
 
@@ -45,20 +50,17 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    private Set<Capability> enabledCapabilities  = new HashSet<>();
    private Set<Capability> disabledCapabilities = new HashSet<>();
 
-   private Boolean usesVariants = false;
-   private String  variantOptionsTableIdField;
-   private String  variantOptionsTableNameField;
-   private String  variantOptionsTableTypeField;
-   private String  variantOptionsTableTypeValue;
-   private String  variantOptionsTableUsernameField;
-   private String  variantOptionsTablePasswordField;
-   private String  variantOptionsTableApiKeyField;
-   private String  variantOptionsTableClientIdField;
-   private String  variantOptionsTableClientSecretField;
-   private String  variantOptionsTableName;
+   private Boolean               usesVariants = false;
+   private BackendVariantsConfig backendVariantsConfig;
 
    // todo - at some point, we may want to apply this to secret properties on subclasses?
    // @JsonFilter("secretsFilter")
+
+   @Deprecated(since = "Replaced by filter in backendVariantsConfig - but leaving as field to pair with ...TypeValue for building filter")
+   private String variantOptionsTableTypeField; // a field on which to filter the variant-options table, to limit which records in it are available as variants
+
+   @Deprecated(since = "Replaced by variantTypeKey and value in filter in backendVariantsConfig - but leaving as field to pair with ...TypeField for building filter")
+   private String variantOptionsTableTypeValue; // value for the type-field, to limit which records in it are available as variants; but also, the key in the session.backendVariants map!
 
 
 
@@ -395,21 +397,14 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
 
 
    /*******************************************************************************
-    ** Getter for variantOptionsTableIdField
-    *******************************************************************************/
-   public String getVariantOptionsTableIdField()
-   {
-      return (this.variantOptionsTableIdField);
-   }
-
-
-
-   /*******************************************************************************
     ** Setter for variantOptionsTableIdField
     *******************************************************************************/
+   @Deprecated(since = "backendVariantsConfig will infer this from the variant options table's primary key")
    public void setVariantOptionsTableIdField(String variantOptionsTableIdField)
    {
-      this.variantOptionsTableIdField = variantOptionsTableIdField;
+      /////////////////////////////////////////////////
+      // noop as we migrate to backendVariantsConfig //
+      /////////////////////////////////////////////////
    }
 
 
@@ -417,20 +412,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableIdField
     *******************************************************************************/
+   @Deprecated(since = "backendVariantsConfig will infer this from the variant options table's primary key")
    public QBackendMetaData withVariantOptionsTableIdField(String variantOptionsTableIdField)
    {
-      this.variantOptionsTableIdField = variantOptionsTableIdField;
+      this.setVariantOptionsTableIdField(variantOptionsTableIdField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableNameField
-    *******************************************************************************/
-   public String getVariantOptionsTableNameField()
-   {
-      return (this.variantOptionsTableNameField);
    }
 
 
@@ -438,9 +424,12 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableNameField
     *******************************************************************************/
+   @Deprecated(since = "backendVariantsConfig will infer this from the variant options table's recordLabel")
    public void setVariantOptionsTableNameField(String variantOptionsTableNameField)
    {
-      this.variantOptionsTableNameField = variantOptionsTableNameField;
+      /////////////////////////////////////////////////
+      // noop as we migrate to backendVariantsConfig //
+      /////////////////////////////////////////////////
    }
 
 
@@ -448,20 +437,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableNameField
     *******************************************************************************/
+   @Deprecated(since = "backendVariantsConfig will infer this from the variant options table's recordLabel")
    public QBackendMetaData withVariantOptionsTableNameField(String variantOptionsTableNameField)
    {
-      this.variantOptionsTableNameField = variantOptionsTableNameField;
+      this.setVariantOptionsTableNameField(variantOptionsTableNameField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableTypeField
-    *******************************************************************************/
-   public String getVariantOptionsTableTypeField()
-   {
-      return (this.variantOptionsTableTypeField);
    }
 
 
@@ -469,9 +449,16 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableTypeField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by fieldName in filter in backendVariantsConfig - but leaving as field to pair with ...TypeValue for building filter")
    public void setVariantOptionsTableTypeField(String variantOptionsTableTypeField)
    {
+      this.getOrWithNewBackendVariantsConfig().setVariantTypeKey(variantOptionsTableTypeField);
+
       this.variantOptionsTableTypeField = variantOptionsTableTypeField;
+      if(this.variantOptionsTableTypeValue != null)
+      {
+         this.getOrWithNewBackendVariantsConfig().setOptionsFilter(new QQueryFilter(new QFilterCriteria(variantOptionsTableTypeField, QCriteriaOperator.EQUALS, variantOptionsTableTypeValue)));
+      }
    }
 
 
@@ -479,20 +466,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableTypeField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by fieldName in filter in backendVariantsConfig - but leaving as field to pair with ...TypeValue for building filter")
    public QBackendMetaData withVariantOptionsTableTypeField(String variantOptionsTableTypeField)
    {
-      this.variantOptionsTableTypeField = variantOptionsTableTypeField;
+      this.setVariantOptionsTableTypeField(variantOptionsTableTypeField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableTypeValue
-    *******************************************************************************/
-   public String getVariantOptionsTableTypeValue()
-   {
-      return (this.variantOptionsTableTypeValue);
    }
 
 
@@ -500,9 +478,14 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableTypeValue
     *******************************************************************************/
+   @Deprecated(since = "Replaced by variantTypeKey and value in filter in backendVariantsConfig - but leaving as field to pair with ...TypeField for building filter")
    public void setVariantOptionsTableTypeValue(String variantOptionsTableTypeValue)
    {
       this.variantOptionsTableTypeValue = variantOptionsTableTypeValue;
+      if(this.variantOptionsTableTypeField != null)
+      {
+         this.getOrWithNewBackendVariantsConfig().setOptionsFilter(new QQueryFilter(new QFilterCriteria(variantOptionsTableTypeField, QCriteriaOperator.EQUALS, variantOptionsTableTypeValue)));
+      }
    }
 
 
@@ -510,20 +493,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableTypeValue
     *******************************************************************************/
+   @Deprecated(since = "Replaced by variantTypeKey and value in filter in backendVariantsConfig - but leaving as field to pair with ...TypeField for building filter")
    public QBackendMetaData withVariantOptionsTableTypeValue(String variantOptionsTableTypeValue)
    {
-      this.variantOptionsTableTypeValue = variantOptionsTableTypeValue;
+      this.setVariantOptionsTableTypeValue(variantOptionsTableTypeValue);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableUsernameField
-    *******************************************************************************/
-   public String getVariantOptionsTableUsernameField()
-   {
-      return (this.variantOptionsTableUsernameField);
    }
 
 
@@ -531,9 +505,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableUsernameField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public void setVariantOptionsTableUsernameField(String variantOptionsTableUsernameField)
    {
-      this.variantOptionsTableUsernameField = variantOptionsTableUsernameField;
+      this.getOrWithNewBackendVariantsConfig().withBackendSettingSourceFieldName(LegacyBackendVariantSetting.USERNAME, variantOptionsTableUsernameField);
    }
 
 
@@ -541,20 +516,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableUsernameField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public QBackendMetaData withVariantOptionsTableUsernameField(String variantOptionsTableUsernameField)
    {
-      this.variantOptionsTableUsernameField = variantOptionsTableUsernameField;
+      this.setVariantOptionsTableUsernameField(variantOptionsTableUsernameField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTablePasswordField
-    *******************************************************************************/
-   public String getVariantOptionsTablePasswordField()
-   {
-      return (this.variantOptionsTablePasswordField);
    }
 
 
@@ -562,9 +528,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTablePasswordField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public void setVariantOptionsTablePasswordField(String variantOptionsTablePasswordField)
    {
-      this.variantOptionsTablePasswordField = variantOptionsTablePasswordField;
+      this.getOrWithNewBackendVariantsConfig().withBackendSettingSourceFieldName(LegacyBackendVariantSetting.PASSWORD, variantOptionsTablePasswordField);
    }
 
 
@@ -572,20 +539,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTablePasswordField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public QBackendMetaData withVariantOptionsTablePasswordField(String variantOptionsTablePasswordField)
    {
-      this.variantOptionsTablePasswordField = variantOptionsTablePasswordField;
+      this.setVariantOptionsTablePasswordField(variantOptionsTablePasswordField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableApiKeyField
-    *******************************************************************************/
-   public String getVariantOptionsTableApiKeyField()
-   {
-      return (this.variantOptionsTableApiKeyField);
    }
 
 
@@ -593,9 +551,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableApiKeyField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public void setVariantOptionsTableApiKeyField(String variantOptionsTableApiKeyField)
    {
-      this.variantOptionsTableApiKeyField = variantOptionsTableApiKeyField;
+      this.getOrWithNewBackendVariantsConfig().withBackendSettingSourceFieldName(LegacyBackendVariantSetting.API_KEY, variantOptionsTableApiKeyField);
    }
 
 
@@ -603,20 +562,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableApiKeyField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public QBackendMetaData withVariantOptionsTableApiKeyField(String variantOptionsTableApiKeyField)
    {
-      this.variantOptionsTableApiKeyField = variantOptionsTableApiKeyField;
+      this.setVariantOptionsTableApiKeyField(variantOptionsTableApiKeyField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableName
-    *******************************************************************************/
-   public String getVariantOptionsTableName()
-   {
-      return (this.variantOptionsTableName);
    }
 
 
@@ -624,9 +574,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableName
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.tableName")
    public void setVariantOptionsTableName(String variantOptionsTableName)
    {
-      this.variantOptionsTableName = variantOptionsTableName;
+      this.getOrWithNewBackendVariantsConfig().withOptionsTableName(variantOptionsTableName);
    }
 
 
@@ -634,9 +585,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableName
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.tableName")
    public QBackendMetaData withVariantOptionsTableName(String variantOptionsTableName)
    {
-      this.variantOptionsTableName = variantOptionsTableName;
+      this.setVariantOptionsTableName(variantOptionsTableName);
       return (this);
    }
 
@@ -651,22 +603,15 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
       qInstance.addBackend(this);
    }
 
-   /*******************************************************************************
-    ** Getter for variantOptionsTableClientIdField
-    *******************************************************************************/
-   public String getVariantOptionsTableClientIdField()
-   {
-      return (this.variantOptionsTableClientIdField);
-   }
-
 
 
    /*******************************************************************************
     ** Setter for variantOptionsTableClientIdField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public void setVariantOptionsTableClientIdField(String variantOptionsTableClientIdField)
    {
-      this.variantOptionsTableClientIdField = variantOptionsTableClientIdField;
+      this.getOrWithNewBackendVariantsConfig().withBackendSettingSourceFieldName(LegacyBackendVariantSetting.CLIENT_ID, variantOptionsTableClientIdField);
    }
 
 
@@ -674,20 +619,11 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableClientIdField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public QBackendMetaData withVariantOptionsTableClientIdField(String variantOptionsTableClientIdField)
    {
-      this.variantOptionsTableClientIdField = variantOptionsTableClientIdField;
+      this.setVariantOptionsTableClientIdField(variantOptionsTableClientIdField);
       return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for variantOptionsTableClientSecretField
-    *******************************************************************************/
-   public String getVariantOptionsTableClientSecretField()
-   {
-      return (this.variantOptionsTableClientSecretField);
    }
 
 
@@ -695,9 +631,10 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for variantOptionsTableClientSecretField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public void setVariantOptionsTableClientSecretField(String variantOptionsTableClientSecretField)
    {
-      this.variantOptionsTableClientSecretField = variantOptionsTableClientSecretField;
+      this.getOrWithNewBackendVariantsConfig().withBackendSettingSourceFieldName(LegacyBackendVariantSetting.CLIENT_SECRET, variantOptionsTableClientSecretField);
    }
 
 
@@ -705,11 +642,55 @@ public class QBackendMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for variantOptionsTableClientSecretField
     *******************************************************************************/
+   @Deprecated(since = "Replaced by backendVariantsConfig.backendSettingSourceFieldNameMap")
    public QBackendMetaData withVariantOptionsTableClientSecretField(String variantOptionsTableClientSecretField)
    {
-      this.variantOptionsTableClientSecretField = variantOptionsTableClientSecretField;
+      this.setVariantOptionsTableClientSecretField(variantOptionsTableClientSecretField);
       return (this);
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for backendVariantsConfig
+    *******************************************************************************/
+   public BackendVariantsConfig getBackendVariantsConfig()
+   {
+      return (this.backendVariantsConfig);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for backendVariantsConfig
+    *******************************************************************************/
+   public void setBackendVariantsConfig(BackendVariantsConfig backendVariantsConfig)
+   {
+      this.backendVariantsConfig = backendVariantsConfig;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for backendVariantsConfig
+    *******************************************************************************/
+   public QBackendMetaData withBackendVariantsConfig(BackendVariantsConfig backendVariantsConfig)
+   {
+      this.backendVariantsConfig = backendVariantsConfig;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private BackendVariantsConfig getOrWithNewBackendVariantsConfig()
+   {
+      if(backendVariantsConfig == null)
+      {
+         setBackendVariantsConfig(new BackendVariantsConfig());
+      }
+      return backendVariantsConfig;
+   }
 }

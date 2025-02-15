@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -55,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -93,6 +95,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
@@ -178,6 +182,70 @@ public class QInstanceValidatorTest extends BaseTest
    {
       assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
          "At least 1 backend must be defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBackendVariants()
+   {
+      BackendVariantSetting setting = new BackendVariantSetting() {};
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)),
+         "Missing backendVariantsConfig in backend [variant] which is marked as usesVariants");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(false)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Should not have a backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(null)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Should not have a backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Missing variantTypeKey in backendVariantsConfig",
+         "Missing optionsTableName in backendVariantsConfig",
+         "Missing or empty backendSettingSourceFieldNameMap");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName("notATable")
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "field")))),
+         "Unrecognized optionsTableName [notATable] in backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withOptionsFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.EQUALS, 1)))
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "firstName")))),
+         "optionsFilter in backendVariantsConfig in backend [variant]: Criteria fieldName notAField is not a field");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "noSuchField")))),
+         "Unrecognized fieldName [noSuchField] in backendSettingSourceFieldNameMap");
    }
 
 

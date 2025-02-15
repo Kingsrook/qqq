@@ -108,12 +108,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.apache.commons.lang.BooleanUtils;
 import org.quartz.CronExpression;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -543,6 +546,51 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
 
+            ///////////////////////
+            // validate variants //
+            ///////////////////////
+            BackendVariantsConfig backendVariantsConfig = backend.getBackendVariantsConfig();
+            if(BooleanUtils.isTrue(backend.getUsesVariants()))
+            {
+               if(assertCondition(backendVariantsConfig != null, "Missing backendVariantsConfig in backend [" + backendName + "] which is marked as usesVariants"))
+               {
+                  assertCondition(StringUtils.hasContent(backendVariantsConfig.getVariantTypeKey()), "Missing variantTypeKey in backendVariantsConfig in [" + backendName + "]");
+
+                  String optionsTableName = backendVariantsConfig.getOptionsTableName();
+                  QTableMetaData optionsTable = qInstance.getTable(optionsTableName);
+                  if(assertCondition(StringUtils.hasContent(optionsTableName), "Missing optionsTableName in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     if(assertCondition(optionsTable != null, "Unrecognized optionsTableName [" + optionsTableName + "] in backendVariantsConfig in [" + backendName + "]"))
+                     {
+                        QQueryFilter optionsFilter = backendVariantsConfig.getOptionsFilter();
+                        if(optionsFilter != null)
+                        {
+                           validateQueryFilter(qInstance, "optionsFilter in backendVariantsConfig in backend [" + backendName + "]: ", optionsTable, optionsFilter, null);
+                        }
+                     }
+                  }
+
+                  Map<BackendVariantSetting, String> backendSettingSourceFieldNameMap = backendVariantsConfig.getBackendSettingSourceFieldNameMap();
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(backendSettingSourceFieldNameMap), "Missing or empty backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     if(optionsTable != null)
+                     {
+                        for(Map.Entry<BackendVariantSetting, String> entry : backendSettingSourceFieldNameMap.entrySet())
+                        {
+                           assertCondition(optionsTable.getFields().containsKey(entry.getValue()), "Unrecognized fieldName [" + entry.getValue() + "] in backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]");
+                        }
+                     }
+                  }
+               }
+            }
+            else
+            {
+               assertCondition(backendVariantsConfig == null, "Should not have a backendVariantsConfig in backend [" + backendName + "] which is not marked as usesVariants");
+            }
+
+            ///////////////////////////////////////////
+            // let the backend do its own validation //
+            ///////////////////////////////////////////
             backend.performValidation(this);
 
             runPlugins(QBackendMetaData.class, backend, qInstance);
@@ -1616,12 +1664,12 @@ public class QInstanceValidator
 
             for(QFieldMetaData field : process.getInputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName() + " ");
             }
 
             for(QFieldMetaData field : process.getOutputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName() + " ");
             }
 
             if(process.getCancelStep() != null)
