@@ -61,6 +61,8 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.LegacyBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -77,6 +79,7 @@ import com.kingsrook.qqq.backend.module.api.exceptions.RetryableServerErrorExcep
 import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
+import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendVariantSetting;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APITableBackendDetails;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
@@ -114,7 +117,6 @@ public class BaseAPIActionUtil
 {
    private final QLogger LOG = QLogger.getLogger(BaseAPIActionUtil.class);
 
-   protected QSession                 session; // todo not commit - delete!!
    protected APIBackendMetaData       backendMetaData;
    protected AbstractTableActionInput actionInput;
 
@@ -778,10 +780,22 @@ public class BaseAPIActionUtil
       if(backendMetaData.getUsesVariants())
       {
          QRecord record = getVariantRecord();
-         return (record.getValueString(backendMetaData.getVariantOptionsTableApiKeyField()));
+         return (record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.API_KEY, APIBackendVariantSetting.API_KEY)));
       }
 
       return (backendMetaData.getApiKey());
+   }
+
+
+
+   /***************************************************************************
+    ** todo - once deprecated variant methods are removed from QBackendMetaData,
+    ** then we can remove the LegacyBackendVariantSetting enum, and this param.
+    ***************************************************************************/
+   private String getVariantSettingSourceFieldName(APIBackendMetaData backendMetaData, LegacyBackendVariantSetting legacyBackendVariantSetting, APIBackendVariantSetting apiBackendVariantSetting)
+   {
+      Map<BackendVariantSetting, String> map = CollectionUtils.nonNullMap(backendMetaData.getBackendVariantsConfig().getBackendSettingSourceFieldNameMap());
+      return map.getOrDefault(legacyBackendVariantSetting, map.get(apiBackendVariantSetting));
    }
 
 
@@ -794,7 +808,10 @@ public class BaseAPIActionUtil
       if(backendMetaData.getUsesVariants())
       {
          QRecord record = getVariantRecord();
-         return (Pair.of(record.getValueString(backendMetaData.getVariantOptionsTableUsernameField()), record.getValueString(backendMetaData.getVariantOptionsTablePasswordField())));
+         return (Pair.of(
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.USERNAME, APIBackendVariantSetting.USERNAME)),
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.PASSWORD, APIBackendVariantSetting.PASSWORD))
+         ));
       }
 
       return (Pair.of(backendMetaData.getUsername(), backendMetaData.getPassword()));
@@ -812,14 +829,14 @@ public class BaseAPIActionUtil
       Serializable variantId = getVariantId();
       GetInput     getInput  = new GetInput();
       getInput.setShouldMaskPasswords(false);
-      getInput.setTableName(backendMetaData.getVariantOptionsTableName());
+      getInput.setTableName(backendMetaData.getBackendVariantsConfig().getOptionsTableName());
       getInput.setPrimaryKey(variantId);
       GetOutput getOutput = new GetAction().execute(getInput);
 
       QRecord record = getOutput.getRecord();
       if(record == null)
       {
-         throw (new QException("Could not find Backend Variant in table " + backendMetaData.getVariantOptionsTableName() + " with id '" + variantId + "'"));
+         throw (new QException("Could not find Backend Variant in table " + backendMetaData.getBackendVariantsConfig().getOptionsTableName() + " with id '" + variantId + "'"));
       }
       return record;
    }
@@ -832,11 +849,11 @@ public class BaseAPIActionUtil
    protected Serializable getVariantId() throws QException
    {
       QSession session = QContext.getQSession();
-      if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+      if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getBackendVariantsConfig().getVariantTypeKey()))
       {
          throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
       }
-      Serializable variantId = session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+      Serializable variantId = session.getBackendVariants().get(backendMetaData.getBackendVariantsConfig().getVariantTypeKey());
       return variantId;
    }
 
@@ -945,7 +962,10 @@ public class BaseAPIActionUtil
       if(backendMetaData.getUsesVariants())
       {
          QRecord record = getVariantRecord();
-         return (Pair.of(record.getValueString(backendMetaData.getVariantOptionsTableClientIdField()), record.getValueString(backendMetaData.getVariantOptionsTableClientSecretField())));
+         return (Pair.of(
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.CLIENT_ID, APIBackendVariantSetting.CLIENT_ID)),
+            record.getValueString(getVariantSettingSourceFieldName(backendMetaData, LegacyBackendVariantSetting.CLIENT_SECRET, APIBackendVariantSetting.CLIENT_SECRET))
+         ));
       }
 
       return (Pair.of(backendMetaData.getClientId(), backendMetaData.getClientSecret()));
@@ -1480,9 +1500,9 @@ public class BaseAPIActionUtil
     ** Setter for session
     **
     *******************************************************************************/
+   @Deprecated(since = "wasn't used.")
    public void setSession(QSession session)
    {
-      this.session = session;
    }
 
 
