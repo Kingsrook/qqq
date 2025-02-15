@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
@@ -65,6 +66,18 @@ public class BulkInsertStepUtils
 
       StorageInput storageInput = storageInputs.get(0);
       return (storageInput);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setStorageInputForTheFile(RunProcessInput runProcessInput, StorageInput storageInput)
+   {
+      ArrayList<StorageInput> storageInputs = new ArrayList<>();
+      storageInputs.add(storageInput);
+      runProcessInput.addValue("theFile", storageInputs);
    }
 
 
@@ -144,13 +157,37 @@ public class BulkInsertStepUtils
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void handleSavedBulkLoadProfileIdValue(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public static QRecord handleSavedBulkLoadProfileIdValue(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Integer savedBulkLoadProfileId = runBackendStepInput.getValueInteger("savedBulkLoadProfileId");
       if(savedBulkLoadProfileId != null)
       {
          QRecord savedBulkLoadProfileRecord = GetAction.execute(SavedBulkLoadProfile.TABLE_NAME, savedBulkLoadProfileId);
          runBackendStepOutput.addValue("savedBulkLoadProfileRecord", savedBulkLoadProfileRecord);
+         return (savedBulkLoadProfileRecord);
       }
+
+      return (null);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean isHeadless(RunBackendStepInput runBackendStepInput)
+   {
+      return (runBackendStepInput.getValuePrimitiveBoolean("isHeadless"));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setHeadless(RunProcessInput runProcessInput)
+   {
+      runProcessInput.addValue("isHeadless", true);
+   }
+
 }

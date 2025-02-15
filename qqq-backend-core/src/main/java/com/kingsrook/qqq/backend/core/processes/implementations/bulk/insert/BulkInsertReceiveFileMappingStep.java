@@ -32,16 +32,20 @@ import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.filehandling.FileToRowsInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkInsertMapping;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang3.BooleanUtils;
 
@@ -63,12 +67,37 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
    {
       try
       {
-         BulkInsertStepUtils.handleSavedBulkLoadProfileIdValue(runBackendStepInput, runBackendStepOutput);
+         QRecord savedBulkLoadProfileRecord = BulkInsertStepUtils.handleSavedBulkLoadProfileIdValue(runBackendStepInput, runBackendStepOutput);
 
-         ///////////////////////////////////////////////////////////////////
-         // read process values - construct a bulkLoadProfile out of them //
-         ///////////////////////////////////////////////////////////////////
-         BulkLoadProfile bulkLoadProfile = BulkInsertStepUtils.getBulkLoadProfile(runBackendStepInput);
+         BulkLoadProfile bulkLoadProfile;
+         if(BulkInsertStepUtils.isHeadless(runBackendStepInput))
+         {
+            //////////////////////////////////////////////////////////////////////////////
+            // if running headless, build bulkLoadProfile from the saved profile record //
+            //////////////////////////////////////////////////////////////////////////////
+            if(savedBulkLoadProfileRecord == null)
+            {
+               throw (new QUserFacingException("Did not receive a saved bulk load profile record as input - unable to perform headless bulk load"));
+            }
+
+            SavedBulkLoadProfile savedBulkLoadProfile = new SavedBulkLoadProfile(savedBulkLoadProfileRecord);
+
+            try
+            {
+               bulkLoadProfile = JsonUtils.toObject(savedBulkLoadProfile.getMappingJson(), BulkLoadProfile.class);
+            }
+            catch(Exception e)
+            {
+               throw (new QUserFacingException("Error processing saved bulk load profile record - unable to perform headless bulk load", e));
+            }
+         }
+         else
+         {
+            ///////////////////////////////////////////////////////////////////
+            // read process values - construct a bulkLoadProfile out of them //
+            ///////////////////////////////////////////////////////////////////
+            bulkLoadProfile = BulkInsertStepUtils.getBulkLoadProfile(runBackendStepInput);
+         }
 
          /////////////////////////////////////////////////////////////////////////
          // put the list of bulk load profile into the process state - it's the //
@@ -183,21 +212,32 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
          /////////////////////////////////////////////////////////////////////////////////////////////////////
          runBackendStepOutput.addValue("bulkInsertMapping", bulkInsertMapping);
 
-         if(CollectionUtils.nullSafeHasContents(fieldNamesToDoValueMapping))
+         if(BulkInsertStepUtils.isHeadless(runBackendStepInput))
          {
-            //////////////////////////////////////////////////////////////////////////////////
-            // just go to the prepareValueMapping backend step - it'll figure out the rest. //
-            // it's also where the value-mapping loop of steps points.                      //
-            // and, this will actually be the default (e.g., the step after this one).      //
-            //////////////////////////////////////////////////////////////////////////////////
-            runBackendStepInput.addValue("valueMappingFieldIndex", -1);
+            ////////////////////////////////////////////////////////////////////////
+            // if running headless, always go straight to the preview screen next //
+            // todo actually, we could make this execute, right?                  //
+            ////////////////////////////////////////////////////////////////////////
+            BulkInsertStepUtils.setNextStepStreamedETLPreview(runBackendStepOutput);
          }
          else
          {
-            //////////////////////////////////////////////////////////////////////////////////
-            // else - if no values to map - continue with the standard streamed-ETL preview //
-            //////////////////////////////////////////////////////////////////////////////////
-            BulkInsertStepUtils.setNextStepStreamedETLPreview(runBackendStepOutput);
+            if(CollectionUtils.nullSafeHasContents(fieldNamesToDoValueMapping))
+            {
+               //////////////////////////////////////////////////////////////////////////////////
+               // just go to the prepareValueMapping backend step - it'll figure out the rest. //
+               // it's also where the value-mapping loop of steps points.                      //
+               // and, this will actually be the default (e.g., the step after this one).      //
+               //////////////////////////////////////////////////////////////////////////////////
+               runBackendStepInput.addValue("valueMappingFieldIndex", -1);
+            }
+            else
+            {
+               //////////////////////////////////////////////////////////////////////////////////
+               // else - if no values to map - continue with the standard streamed-ETL preview //
+               //////////////////////////////////////////////////////////////////////////////////
+               BulkInsertStepUtils.setNextStepStreamedETLPreview(runBackendStepOutput);
+            }
          }
       }
       catch(Exception e)
