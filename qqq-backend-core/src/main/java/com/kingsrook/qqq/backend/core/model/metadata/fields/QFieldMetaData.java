@@ -81,6 +81,7 @@ public class QFieldMetaData implements Cloneable
    private QQueryFilter         possibleValueSourceFilter;
    private QPossibleValueSource inlinePossibleValueSource;
 
+   private Integer               gridColumns;
    private Integer               maxLength;
    private Set<FieldBehavior<?>> behaviors;
 
@@ -198,6 +199,7 @@ public class QFieldMetaData implements Cloneable
             setIsRequired(fieldAnnotation.isRequired());
             setIsEditable(fieldAnnotation.isEditable());
             setIsHidden(fieldAnnotation.isHidden());
+            setGridColumns(fieldAnnotation.gridColumns());
 
             if(StringUtils.hasContent(fieldAnnotation.label()))
             {
@@ -1062,6 +1064,7 @@ public class QFieldMetaData implements Cloneable
    }
 
 
+
    /*******************************************************************************
     ** Getter for inlinePossibleValueSource
     *******************************************************************************/
@@ -1091,5 +1094,35 @@ public class QFieldMetaData implements Cloneable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for gridColumns
+    *******************************************************************************/
+   public Integer getGridColumns()
+   {
+      return (this.gridColumns);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for gridColumns
+    *******************************************************************************/
+   public void setGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for gridColumns
+    *******************************************************************************/
+   public QFieldMetaData withGridColumns(Integer gridColumns)
+   {
+      this.gridColumns = gridColumns;
+      return (this);
+   }
 
 }

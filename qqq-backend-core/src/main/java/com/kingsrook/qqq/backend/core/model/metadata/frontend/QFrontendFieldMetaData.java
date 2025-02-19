@@ -51,6 +51,7 @@ public class QFrontendFieldMetaData implements Serializable
    private boolean      isRequired;
    private boolean      isEditable;
    private boolean      isHeavy;
+   private Integer      gridColumns;
    private String       possibleValueSourceName;
    private String       displayFormat;
    private Serializable defaultValue;
@@ -66,7 +67,6 @@ public class QFrontendFieldMetaData implements Serializable
    //////////////////////////////////////////////////////////////////////////////////
 
 
-
    /*******************************************************************************
     ** Constructor
     *******************************************************************************/
@@ -78,6 +78,7 @@ public class QFrontendFieldMetaData implements Serializable
       this.isRequired = fieldMetaData.getIsRequired();
       this.isEditable = fieldMetaData.getIsEditable();
       this.isHeavy = fieldMetaData.getIsHeavy();
+      this.gridColumns = fieldMetaData.getGridColumns();
       this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
       this.displayFormat = fieldMetaData.getDisplayFormat();
       this.adornments = fieldMetaData.getAdornments();
@@ -162,6 +163,17 @@ public class QFrontendFieldMetaData implements Serializable
    public boolean getIsHeavy()
    {
       return isHeavy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for gridColumns
+    **
+    *******************************************************************************/
+   public Integer getGridColumns()
+   {
+      return gridColumns;
    }
 
 
