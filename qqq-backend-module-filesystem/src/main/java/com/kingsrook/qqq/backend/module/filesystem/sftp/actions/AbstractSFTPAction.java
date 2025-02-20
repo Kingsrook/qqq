@@ -34,15 +34,13 @@ import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.sftp.model.SFTPDirEntryWithPath;
@@ -267,23 +265,14 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
     **
     ***************************************************************************/
    @Override
-   public List<SFTPDirEntryWithPath> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
+   public List<SFTPDirEntryWithPath> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
       try
       {
          String fullPath = getFullBasePath(table, backendBase);
-
-         // todo - move somewhere shared
-         // todo - should all do this?
-         if(filter != null)
+         if(StringUtils.hasContent(requestedPath))
          {
-            for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
-            {
-               if(isPathEqualsCriteria(criteria))
-               {
-                  fullPath = stripDuplicatedSlashes(fullPath + File.separatorChar + criteria.getValues().get(0) + File.separatorChar);
-               }
-            }
+            fullPath = stripDuplicatedSlashes(fullPath + File.separatorChar + requestedPath + File.separatorChar);
          }
 
          List<SFTPDirEntryWithPath> rs = new ArrayList<>();

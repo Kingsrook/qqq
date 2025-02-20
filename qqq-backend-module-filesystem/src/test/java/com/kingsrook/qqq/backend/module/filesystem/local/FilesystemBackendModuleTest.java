@@ -26,9 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -41,7 +38,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -97,55 +93,59 @@ public class FilesystemBackendModuleTest
       /////////////////////////////////////////
       // filter for a file name that's found //
       /////////////////////////////////////////
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      files = abstractFilesystemAction.listFiles(table, backend, "BLOB-2.txt");
       assertEquals(1, files.size());
       assertEquals("BLOB-2.txt", files.get(0).getName());
 
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      files = abstractFilesystemAction.listFiles(table, backend, "BLOB-1.txt");
       assertEquals(1, files.size());
       assertEquals("BLOB-1.txt", files.get(0).getName());
 
-      ///////////////////////////////////
-      // filter for 2 names that exist //
-      ///////////////////////////////////
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
-      assertEquals(2, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // ///////////////////////////////////
+      // // filter for 2 names that exist //
+      // ///////////////////////////////////
+      // files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
+      // assertEquals(2, files.size());
 
       /////////////////////////////////////////////
       // filter for a file name that isn't found //
       /////////////////////////////////////////////
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "NOT-FOUND.txt")));
+      files = abstractFilesystemAction.listFiles(table, backend, "NOT-FOUND.txt");
       assertEquals(0, files.size());
 
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
-      assertEquals(1, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
+      // assertEquals(1, files.size());
 
-      ////////////////////////////////////////////////////
-      // 2 criteria, and'ed, and can't match, so find 0 //
-      ////////////////////////////////////////////////////
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
-      assertEquals(0, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // ////////////////////////////////////////////////////
+      // // 2 criteria, and'ed, and can't match, so find 0 //
+      // ////////////////////////////////////////////////////
+      // files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      // assertEquals(0, files.size());
 
-      //////////////////////////////////////////////////
-      // 2 criteria, or'ed, and both match, so find 2 //
-      //////////////////////////////////////////////////
-      files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
-         .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
-      assertEquals(2, files.size());
+      // //////////////////////////////////////////////////
+      // // 2 criteria, or'ed, and both match, so find 2 //
+      // //////////////////////////////////////////////////
+      // files = abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
+      //    .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      // assertEquals(2, files.size());
 
-      //////////////////////////////////////
-      // ensure unsupported filters throw //
-      //////////////////////////////////////
-      assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("foo", QCriteriaOperator.GREATER_THAN, 42))))
-         .rootCause()
-         .hasMessageContaining("Unable to query filesystem table by field");
-      assertThatThrownBy(() -> abstractFilesystemAction.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IS_BLANK))))
-         .rootCause()
-         .hasMessageContaining("Unable to query filename field using operator");
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // note that we used to try unsupported filters here, expecting them to throw - but those are           //
+      // more-or-less now implemented in the base class's query method, so, no longer expected to throw here. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
    }
 
 

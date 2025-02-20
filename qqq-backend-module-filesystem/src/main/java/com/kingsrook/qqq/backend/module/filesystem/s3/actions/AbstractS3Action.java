@@ -33,7 +33,6 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -163,7 +162,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** List the files for a table.
     *******************************************************************************/
    @Override
-   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
+   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
       S3BackendMetaData                     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendBase);
       AbstractFilesystemTableBackendDetails tableDetails      = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
@@ -175,7 +174,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
       ////////////////////////////////////////////////////////////////////
       // todo - look at metadata to configure the s3 client here?       //
       ////////////////////////////////////////////////////////////////////
-      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob, filter, tableDetails);
+      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob, requestedPath, tableDetails);
    }
 
 

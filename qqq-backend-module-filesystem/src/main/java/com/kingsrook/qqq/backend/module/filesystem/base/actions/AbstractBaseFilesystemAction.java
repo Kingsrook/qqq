@@ -57,8 +57,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSett
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
@@ -111,9 +111,10 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    public abstract Instant getFileModifyDate(FILE file);
 
    /*******************************************************************************
-    ** List the files for a table - WITH an input filter - to be implemented in module-specific subclasses.
+    ** List the files for a table - or optionally, just a single file name -
+    ** to be implemented in module-specific subclasses.
     *******************************************************************************/
-   public abstract List<FILE> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException;
+   public abstract List<FILE> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedSingleFileName) throws QException;
 
    /*******************************************************************************
     ** Read the contents of a file - to be implemented in module-specific subclasses.
@@ -278,11 +279,26 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
       try
       {
-         QueryOutput queryOutput = new QueryOutput(queryInput);
-
          QTableMetaData                        table        = queryInput.getTable();
          AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
-         List<FILE>                            files        = listFiles(table, queryInput.getBackend(), queryInput.getFilter());
+
+         QueryOutput queryOutput = new QueryOutput(queryInput);
+
+         String       requestedPath = null;
+         QQueryFilter filter                  = queryInput.getFilter();
+         if(filter != null && tableDetails.getCardinality().equals(Cardinality.ONE))
+         {
+            if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
+            {
+               QFilterCriteria criteria = filter.getCriteria().get(0);
+               if(tableDetails.getFileNameFieldName().equals(criteria.getFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
+               {
+                  requestedPath = ValueUtils.getValueAsString(criteria.getValues().get(0));
+               }
+            }
+         }
+
+         List<FILE> files = listFiles(table, queryInput.getBackend(), requestedPath);
 
          switch(tableDetails.getCardinality())
          {
@@ -305,6 +321,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -322,6 +339,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          }
       }
    }
+
 
 
    /***************************************************************************
@@ -382,13 +400,12 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          // if so, remove that criteria here, so that its presence doesn't cause all records to be filtered away //
          //////////////////////////////////////////////////////////////////////////////////////////////////////////
          QQueryFilter filterForRecords = queryInput.getFilter();
-         if(filterForRecords != null)
-         {
-            filterForRecords = filterForRecords.clone();
-
-            CollectionUtils.nonNullList(filterForRecords.getCriteria())
-               .removeIf(AbstractBaseFilesystemAction::isPathEqualsCriteria);
-         }
+         // if(filterForRecords != null)
+         // {
+         //    filterForRecords = filterForRecords.clone();
+         //    CollectionUtils.nonNullList(filterForRecords.getCriteria())
+         //       .removeIf(AbstractBaseFilesystemAction::isPathEqualsCriteria);
+         // }
 
          if(BackendQueryFilterUtils.doesRecordMatch(filterForRecords, null, record))
          {
@@ -560,6 +577,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    }
 
 
+
    /***************************************************************************
     ** Method that subclasses can override to add post-action things (e.g., closing resources)
     ***************************************************************************/
@@ -569,6 +587,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       // noop in base //
       //////////////////
    }
+
 
 
    /*******************************************************************************

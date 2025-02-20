@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -111,7 +113,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** List the files for this table.
     *******************************************************************************/
    @Override
-   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
+   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
       try
       {
@@ -130,7 +132,14 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 
          for(String matchedFile : matchedFiles)
          {
-            if(SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails))
+            boolean isMatch = true;
+            if(StringUtils.hasContent(requestedPath))
+            {
+               QQueryFilter filter = new QQueryFilter(new QFilterCriteria(tableBackendDetails.getFileNameFieldName(), QCriteriaOperator.EQUALS, requestedPath));
+               isMatch = SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails);
+            }
+
+            if(isMatch)
             {
                rs.add(new File(fullPath + File.separatorChar + matchedFile));
             }
