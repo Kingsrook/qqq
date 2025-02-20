@@ -23,6 +23,8 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -532,7 +535,7 @@ public class QValueFormatter
 
                ////////////////////////////////////////////////////////////////////////////////////////////////
                // if field type is blob OR if there's a supplemental process or code-ref that needs to run - //
-               // then update its value to be a callback-url that'll give access to the bytes to download    //
+               // then update its value to be a callback-url that'll give access to the bytes to download.   //
                // implied here is that a String value (w/o supplemental code/proc) has its value stay as a   //
                // URL, which is where the file is directly downloaded from.  And in the case of a String     //
                // with code-to-run, then the code should run, followed by a redirect to the value URL.       //
@@ -541,7 +544,10 @@ public class QValueFormatter
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE)
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME))
                {
-                  record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
+                  record.setValue(field.getName(), "/data/" + table.getName() + "/"
+                     + URLEncoder.encode(ValueUtils.getValueAsString(primaryKey), StandardCharsets.UTF_8) + "/"
+                     + field.getName() + "/"
+                     + URLEncoder.encode(Objects.requireNonNullElse(fileName, ""), StandardCharsets.UTF_8));
                }
                record.setDisplayValue(field.getName(), fileName);
             }
