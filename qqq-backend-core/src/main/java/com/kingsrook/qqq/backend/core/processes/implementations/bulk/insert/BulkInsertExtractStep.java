@@ -55,6 +55,8 @@ public class BulkInsertExtractStep extends AbstractExtractStep
    @Override
    public void run(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
+      runBackendStepInput.traceMessage(BulkInsertStepUtils.getProcessTracerKeyRecordMessage(runBackendStepInput));
+
       int rowsAdded     = 0;
       int originalLimit = Objects.requireNonNullElse(getLimit(), Integer.MAX_VALUE);
 

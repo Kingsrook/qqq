@@ -257,7 +257,11 @@ public class RunBackendStepInput extends AbstractActionInput
    public <E extends QRecordEntity> List<E> getRecordsAsEntities(Class<E> entityClass) throws QException
    {
       List<E> rs = new ArrayList<>();
-      for(QRecord record : processState.getRecords())
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // note - important to call getRecords here, which is overwritten in subclasses! //
+      ///////////////////////////////////////////////////////////////////////////////////
+      for(QRecord record : getRecords())
       {
          rs.add(QRecordEntity.fromQRecord(entityClass, record));
       }
@@ -601,7 +605,7 @@ public class RunBackendStepInput extends AbstractActionInput
     ***************************************************************************/
    public void traceMessage(ProcessTracerMessage message)
    {
-      if(processTracer != null)
+      if(processTracer != null && message != null)
       {
          try
          {
