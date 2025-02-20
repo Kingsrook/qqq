@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.variants;
 import java.util.HashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -37,13 +38,17 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
  ** field names in that table that they come from.  e.g., a backend may have a
  ** username attribute, whose value comes from a field named "theUser" in the
  ** variant options table.
+ ** - an optional code reference to a variantRecordLookupFunction - to customize
+ ** how the variant record is looked up (such as, adding joined or other custom
+ ** fields).
  *******************************************************************************/
 public class BackendVariantsConfig
 {
    private String variantTypeKey;
 
-   private String       optionsTableName;
-   private QQueryFilter optionsFilter;
+   private String         optionsTableName;
+   private QQueryFilter   optionsFilter;
+   private QCodeReference variantRecordLookupFunction;
 
    private Map<BackendVariantSetting, String> backendSettingSourceFieldNameMap;
 
@@ -185,5 +190,36 @@ public class BackendVariantsConfig
       this.optionsFilter = optionsFilter;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for variantRecordLookupFunction
+    *******************************************************************************/
+   public QCodeReference getVariantRecordLookupFunction()
+   {
+      return (this.variantRecordLookupFunction);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for variantRecordLookupFunction
+    *******************************************************************************/
+   public void setVariantRecordLookupFunction(QCodeReference variantRecordLookupFunction)
+   {
+      this.variantRecordLookupFunction = variantRecordLookupFunction;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for variantRecordLookupFunction
+    *******************************************************************************/
+   public BackendVariantsConfig withVariantRecordLookupFunction(QCodeReference variantRecordLookupFunction)
+   {
+      this.variantRecordLookupFunction = variantRecordLookupFunction;
+      return (this);
+   }
+
 
 }

@@ -103,6 +103,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwith
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -246,6 +247,79 @@ public class QInstanceValidatorTest extends BaseTest
                .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
                .withBackendSettingSourceFieldNameMap(Map.of(setting, "noSuchField")))),
          "Unrecognized fieldName [noSuchField] in backendSettingSourceFieldNameMap");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withVariantRecordLookupFunction(new QCodeReference(CustomizerThatIsNotOfTheRightBaseClass.class))
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+            )),
+         "VariantRecordSupplier in backendVariantsConfig in backend [variant]: CodeReference is not any of the expected types: com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction, java.util.function.Function");
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "firstName"))
+         )));
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withVariantRecordLookupFunction(new QCodeReference(VariantRecordFunction.class))
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+         )));
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withVariantRecordLookupFunction(new QCodeReference(VariantRecordUnsafeFunction.class))
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+         )));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class VariantRecordFunction implements Function<Serializable, QRecord>
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public QRecord apply(Serializable serializable)
+      {
+         return null;
+      }
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class VariantRecordUnsafeFunction implements UnsafeFunction<Serializable, QRecord, QException>
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public QRecord apply(Serializable serializable) throws QException
+      {
+         return null;
+      }
    }
 
 
@@ -2437,7 +2511,7 @@ public class QInstanceValidatorTest extends BaseTest
       {
          int noOfReasons = actualReasons == null ? 0 : actualReasons.size();
          assertEquals(expectedReasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", expectedReasons)
-                                                           + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
+            + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
       }
 
       for(String reason : expectedReasons)
