@@ -1056,7 +1056,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    {
       for(Capability disabledCapability : disabledCapabilities)
       {
-         withCapability(disabledCapability);
+         withoutCapability(disabledCapability);
       }
       return (this);
    }
