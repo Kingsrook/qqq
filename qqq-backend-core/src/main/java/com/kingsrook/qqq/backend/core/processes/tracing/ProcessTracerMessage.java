@@ -22,13 +22,16 @@
 package com.kingsrook.qqq.backend.core.processes.tracing;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  ** Basic class that can be passed in to ProcessTracerInterface.handleMessage.
  ** This class just provides for a string message.  We anticipate subclasses
  ** that may have more specific data, that specific tracer implementations may
  ** be aware of.  
  *******************************************************************************/
-public class ProcessTracerMessage
+public class ProcessTracerMessage implements Serializable
 {
    private String message;
 
