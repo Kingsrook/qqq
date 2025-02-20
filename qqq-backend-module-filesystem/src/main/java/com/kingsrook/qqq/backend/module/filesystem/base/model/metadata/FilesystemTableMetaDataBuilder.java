@@ -81,21 +81,25 @@ public class FilesystemTableMetaDataBuilder
          .withPrimaryKeyField("fileName")
 
          .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("baseName", QFieldType.STRING))
          .withField(new QFieldMetaData("size", QFieldType.LONG).withDisplayFormat(DisplayFormat.COMMAS))
          .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
          .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
          .withField(new QFieldMetaData("contents", QFieldType.BLOB)
             .withIsHeavy(true)
             .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
-               .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "File Contents")))
+               .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "%s")
+               .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "fileName")
+            ))
 
          .withSection(SectionFactory.defaultT1("fileName"))
-         .withSection(SectionFactory.defaultT2("contents", "size"))
+         .withSection(SectionFactory.defaultT2("baseName", "contents", "size"))
          .withSection(SectionFactory.defaultT3("createDate", "modifyDate"))
 
          .withBackendDetails(tableBackendDetails
             .withCardinality(Cardinality.ONE)
             .withFileNameFieldName("fileName")
+            .withBaseNameFieldName("baseName")
             .withContentsFieldName("contents")
             .withSizeFieldName("size")
             .withCreateDateFieldName("createDate")
