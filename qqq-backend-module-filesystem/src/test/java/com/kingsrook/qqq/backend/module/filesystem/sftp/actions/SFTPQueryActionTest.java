@@ -23,11 +23,15 @@ package com.kingsrook.qqq.backend.module.filesystem.sftp.actions;
 
 
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -49,12 +53,76 @@ class SFTPQueryActionTest extends BaseSFTPTest
     **
     *******************************************************************************/
    @Test
-   public void testQuery1() throws QException
+   public void testSimpleQuery() throws QException
    {
       QueryInput  queryInput  = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows from unfiltered query");
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryWithPath() throws Exception
+   {
+      String subfolderPath = "/home/" + USERNAME + "/" + BACKEND_FOLDER + "/" + TABLE_FOLDER + "/subfolder/";
+      try
+      {
+         copyFileToContainer("files/testfile.txt", subfolderPath + "/sub1.txt");
+         copyFileToContainer("files/testfile.txt", subfolderPath + "/sub2.txt");
+
+         QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE)
+            .withFilter(new QQueryFilter(new QFilterCriteria("path", QCriteriaOperator.EQUALS, "subfolder")));
+         QueryOutput queryOutput = new QueryAction().execute(queryInput);
+         Assertions.assertEquals(2, queryOutput.getRecords().size(), "Expected # of rows from subfolder path query");
+      }
+      finally
+      {
+         rmrfInContainer(subfolderPath);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testQueryWithPathAndNameLike() throws Exception
+   {
+      String subfolderPath = "/home/" + USERNAME + "/" + BACKEND_FOLDER + "/" + TABLE_FOLDER + "/subfolder/";
+      try
+      {
+         copyFileToContainer("files/testfile.txt", subfolderPath + "/sub1.txt");
+         copyFileToContainer("files/testfile.txt", subfolderPath + "/sub2.txt");
+         copyFileToContainer("files/testfile.txt", subfolderPath + "/who.txt");
+
+         Map<String, Integer> patternExpectedCountMap = Map.of(
+            "%.txt", 3,
+            "sub%", 2,
+            "%1%", 1,
+            "%", 3,
+            "*", 0
+         );
+
+         for(Map.Entry<String, Integer> entry : patternExpectedCountMap.entrySet())
+         {
+            QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE).withFilter(new QQueryFilter()
+               .withCriteria(new QFilterCriteria("path", QCriteriaOperator.EQUALS, "subfolder"))
+               .withCriteria(new QFilterCriteria("baseName", QCriteriaOperator.LIKE, entry.getKey())));
+            QueryOutput queryOutput = new QueryAction().execute(queryInput);
+            Assertions.assertEquals(entry.getValue(), queryOutput.getRecords().size(), "Expected # of rows from subfolder path, baseName like: " + entry.getKey());
+         }
+      }
+      finally
+      {
+         rmrfInContainer(subfolderPath);
+      }
+   }
+
 
 
    /*******************************************************************************
@@ -71,7 +139,7 @@ class SFTPQueryActionTest extends BaseSFTPTest
 
       mkdirInSftpContainerUnderHomeTestuser("empty-folder/files");
 
-      QueryInput  queryInput  = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE_VARIANTS);
+      QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE_VARIANTS);
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
          .hasMessageContaining("Could not find Backend Variant information for Backend");
 
@@ -89,17 +157,6 @@ class SFTPQueryActionTest extends BaseSFTPTest
          .hasMessageContaining("No such file");
 
       // Assertions.assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows from unfiltered query");
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private QueryInput initQueryRequest() throws QException
-   {
-      QueryInput queryInput = new QueryInput();
-      return queryInput;
    }
 
 }

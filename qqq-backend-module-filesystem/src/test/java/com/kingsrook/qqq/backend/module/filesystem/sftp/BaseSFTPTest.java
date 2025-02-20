@@ -25,7 +25,6 @@ package com.kingsrook.qqq.backend.module.filesystem.sftp;
 import com.kingsrook.qqq.backend.module.filesystem.BaseTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.MountableFile;
 
@@ -63,7 +62,7 @@ public class BaseSFTPTest extends BaseTest
 
       for(int i = 0; i < 5; i++)
       {
-         sftpContainer.copyFileToContainer(MountableFile.forClasspathResource("files/testfile.txt"), REMOTE_DIR + "/testfile-" + i + ".txt");
+         copyFileToContainer("files/testfile.txt", REMOTE_DIR + "/testfile-" + i + ".txt");
       }
 
       grantUploadFilesDirWritePermission();
@@ -71,6 +70,23 @@ public class BaseSFTPTest extends BaseTest
       currentPort = sftpContainer.getMappedPort(22);
    }
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected static void copyFileToContainer(String sourceFileClasspathResourceName, String fullRemotePath)
+   {
+      sftpContainer.copyFileToContainer(MountableFile.forClasspathResource(sourceFileClasspathResourceName), fullRemotePath);
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected static void rmrfInContainer(String fullRemotePath) throws Exception
+   {
+      sftpContainer.execInContainer("rm", "-rf", fullRemotePath);
+   }
 
 
    /***************************************************************************
@@ -133,7 +149,6 @@ public class BaseSFTPTest extends BaseTest
     ***************************************************************************/
    protected void mkdirInSftpContainerUnderHomeTestuser(String path) throws Exception
    {
-      Container.ExecResult mkdir = sftpContainer.execInContainer("mkdir", "-p", "/home/testuser/" + path);
-      System.out.println(mkdir.getExitCode());
+      sftpContainer.execInContainer("mkdir", "-p", "/home/testuser/" + path);
    }
 }

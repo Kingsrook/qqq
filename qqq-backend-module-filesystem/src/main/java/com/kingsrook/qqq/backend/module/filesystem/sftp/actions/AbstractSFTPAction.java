@@ -23,21 +23,26 @@ package com.kingsrook.qqq.backend.module.filesystem.sftp.actions;
 
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.sftp.model.SFTPDirEntryWithPath;
@@ -81,9 +86,6 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
       {
          SFTPBackendMetaData sftpBackendMetaData = getBackendMetaData(SFTPBackendMetaData.class, backendMetaData);
 
-         this.sshClient = SshClient.setUpDefaultClient();
-         sshClient.start();
-
          String  username = sftpBackendMetaData.getUsername();
          String  password = sftpBackendMetaData.getPassword();
          String  hostName = sftpBackendMetaData.getHostName();
@@ -91,7 +93,7 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
 
          if(backendMetaData.getUsesVariants())
          {
-            QRecord variantRecord = getVariantRecord(backendMetaData);
+            QRecord variantRecord = BackendVariantsUtil.getVariantRecord(backendMetaData);
             LOG.debug("Getting SFTP connection credentials from variant record",
                logPair("tableName", backendMetaData.getBackendVariantsConfig().getOptionsTableName()),
                logPair("id", variantRecord.getValue("id")),
@@ -119,16 +121,58 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
             }
          }
 
-         this.clientSession = sshClient.connect(username, hostName, port).verify().getSession();
-         clientSession.addPasswordIdentity(password);
-         clientSession.auth().verify();
-
-         this.sftpClient = SftpClientFactory.instance().createSftpClient(clientSession);
+         makeConnection(username, hostName, port, password);
       }
       catch(IOException e)
       {
          throw (new QException("Error setting up SFTP connection", e));
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void postAction()
+   {
+      Consumer<AutoCloseable> closer = closable ->
+      {
+        if(closable != null)
+        {
+           try
+           {
+              closable.close();
+           }
+           catch(Exception e)
+           {
+              LOG.info("Error closing SFTP resource", e, logPair("type", closable.getClass().getSimpleName()));
+           }
+        }
+      };
+
+      closer.accept(sshClient);
+      closer.accept(clientSession);
+      closer.accept(sftpClient);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected SftpClient makeConnection(String username, String hostName, Integer port, String password) throws IOException
+   {
+      this.sshClient = SshClient.setUpDefaultClient();
+      sshClient.start();
+
+      this.clientSession = sshClient.connect(username, hostName, port).verify().getSession();
+      clientSession.addPasswordIdentity(password);
+      clientSession.auth().verify();
+
+      this.sftpClient = SftpClientFactory.instance().createSftpClient(clientSession);
+      return (this.sftpClient);
    }
 
 
@@ -195,8 +239,22 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
    {
       try
       {
-         String                     fullPath = getFullBasePath(table, backendBase);
-         List<SFTPDirEntryWithPath> rs       = new ArrayList<>();
+         String fullPath = getFullBasePath(table, backendBase);
+
+         // todo - move somewhere shared
+         // todo - should all do this?
+         if(filter != null)
+         {
+            for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
+            {
+               if(isPathEqualsCriteria(criteria))
+               {
+                  fullPath = stripDuplicatedSlashes(fullPath + File.separatorChar + criteria.getValues().get(0) + File.separatorChar);
+               }
+            }
+         }
+
+         List<SFTPDirEntryWithPath> rs = new ArrayList<>();
 
          for(SftpClient.DirEntry dirEntry : sftpClient.readDir(fullPath))
          {
@@ -211,10 +269,6 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
                continue;
             }
 
-            // todo filter/glob
-            // todo skip
-            // todo limit
-            // todo order by
             rs.add(new SFTPDirEntryWithPath(fullPath, dirEntry));
          }
 
