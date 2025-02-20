@@ -34,18 +34,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
-import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.adapters.CsvToQRecordAdapter;
 import com.kingsrook.qqq.backend.core.adapters.JsonToQRecordAdapter;
-import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -56,10 +54,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableBackendDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
-import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
@@ -156,9 +156,10 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public String stripBackendAndTableBasePathsFromFileName(String filePath, QBackendMetaData backend, QTableMetaData table)
    {
-      String tablePath    = getFullBasePath(table, backend);
-      String strippedPath = filePath.replaceFirst(".*" + tablePath, "");
-      return (strippedPath);
+      String tablePath           = getFullBasePath(table, backend);
+      String strippedPath        = filePath.replaceFirst(".*" + tablePath, "");
+      String withoutLeadingSlash = stripLeadingSlash(strippedPath); // todo - dangerous, do all backends really want this??
+      return (withoutLeadingSlash);
    }
 
 
@@ -207,6 +208,34 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       }
 
       return (path.replaceAll("//+", "/"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String stripLeadingSlash(String path)
+   {
+      if(path == null)
+      {
+         return (null);
+      }
+      return (path.replaceFirst("^/+", ""));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String stripTrailingSlash(String path)
+   {
+      if(path == null)
+      {
+         return (null);
+      }
+      return (path.replaceFirst("/+$", ""));
    }
 
 
@@ -269,8 +298,30 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          LOG.warn("Error executing query", e);
          throw new QException("Error executing query", e);
       }
+      finally
+      {
+         postAction();
+      }
    }
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void setRecordValueIfFieldNameHasContent(QRecord record, String fieldName, UnsafeSupplier<Serializable, ?> valueSupplier)
+   {
+      if(StringUtils.hasContent(fieldName))
+      {
+         try
+         {
+            record.setValue(fieldName, valueSupplier.get());
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error setting record value for field", e, logPair("fieldName", fieldName));
+         }
+      }
+   }
 
 
    /***************************************************************************
@@ -287,24 +338,15 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          // for one-record tables, put the entire file's contents into a single record //
          ////////////////////////////////////////////////////////////////////////////////
          String  filePathWithoutBase = stripBackendAndTableBasePathsFromFileName(getFullPathForFile(file), queryInput.getBackend(), table);
-         QRecord record              = new QRecord().withValue(tableDetails.getFileNameFieldName(), filePathWithoutBase);
+         QRecord record              = new QRecord();
 
-         if(StringUtils.hasContent(tableDetails.getSizeFieldName()))
-         {
-            record.setValue(tableDetails.getSizeFieldName(), getFileSize(file));
-         }
+         setRecordValueIfFieldNameHasContent(record, tableDetails.getFileNameFieldName(), () -> filePathWithoutBase);
+         setRecordValueIfFieldNameHasContent(record, tableDetails.getBaseNameFieldName(), () -> stripAllPaths(filePathWithoutBase));
+         setRecordValueIfFieldNameHasContent(record, tableDetails.getSizeFieldName(), () -> getFileSize(file));
+         setRecordValueIfFieldNameHasContent(record, tableDetails.getCreateDateFieldName(), () -> getFileCreateDate(file));
+         setRecordValueIfFieldNameHasContent(record, tableDetails.getModifyDateFieldName(), () -> getFileModifyDate(file));
 
-         if(StringUtils.hasContent(tableDetails.getCreateDateFieldName()))
-         {
-            record.setValue(tableDetails.getCreateDateFieldName(), getFileCreateDate(file));
-         }
-
-         if(StringUtils.hasContent(tableDetails.getModifyDateFieldName()))
-         {
-            record.setValue(tableDetails.getModifyDateFieldName(), getFileModifyDate(file));
-         }
-
-         if(shouldFileContentsBeRead(queryInput, table, tableDetails))
+         if(shouldHeavyFileContentsBeRead(queryInput, table, tableDetails))
          {
             try(InputStream inputStream = readFile(file))
             {
@@ -318,27 +360,37 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          }
          else
          {
-            if(StringUtils.hasContent(tableDetails.getSizeFieldName()))
+            Long size = record.getValueLong(tableDetails.getSizeFieldName());
+            if(size != null)
             {
-               Long size = record.getValueLong(tableDetails.getSizeFieldName());
-               if(size != null)
+               if(record.getBackendDetails() == null)
                {
-                  if(record.getBackendDetails() == null)
-                  {
-                     record.setBackendDetails(new HashMap<>());
-                  }
-
-                  if(record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS) == null)
-                  {
-                     record.addBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS, new HashMap<>());
-                  }
-
-                  ((Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS)).put(tableDetails.getContentsFieldName(), size);
+                  record.setBackendDetails(new HashMap<>());
                }
+
+               if(record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS) == null)
+               {
+                  record.addBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS, new HashMap<>());
+               }
+
+               ((Map<String, Serializable>) record.getBackendDetail(QRecord.BACKEND_DETAILS_TYPE_HEAVY_FIELD_LENGTHS)).put(tableDetails.getContentsFieldName(), size);
             }
          }
 
-         if(BackendQueryFilterUtils.doesRecordMatch(queryInput.getFilter(), null, record))
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // the listFiles method may have used a "path" criteria.                                                //
+         // if so, remove that criteria here, so that its presence doesn't cause all records to be filtered away //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         QQueryFilter filterForRecords = queryInput.getFilter();
+         if(filterForRecords != null)
+         {
+            filterForRecords = filterForRecords.clone();
+
+            CollectionUtils.nonNullList(filterForRecords.getCriteria())
+               .removeIf(AbstractBaseFilesystemAction::isPathEqualsCriteria);
+         }
+
+         if(BackendQueryFilterUtils.doesRecordMatch(filterForRecords, null, record))
          {
             records.add(record);
          }
@@ -347,6 +399,31 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       BackendQueryFilterUtils.sortRecordList(queryInput.getFilter(), records);
       records = BackendQueryFilterUtils.applySkipAndLimit(queryInput.getFilter(), records);
       queryOutput.addRecords(records);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Serializable stripAllPaths(String filePath)
+   {
+      if(filePath == null)
+      {
+         return null;
+      }
+
+      return (filePath.replaceFirst(".*/", ""));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected static boolean isPathEqualsCriteria(QFilterCriteria criteria)
+   {
+      return "path".equals(criteria.getFieldName()) && QCriteriaOperator.EQUALS.equals(criteria.getOperator());
    }
 
 
@@ -409,7 +486,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    /***************************************************************************
     **
     ***************************************************************************/
-   private static boolean shouldFileContentsBeRead(QueryInput queryInput, QTableMetaData table, AbstractFilesystemTableBackendDetails tableDetails)
+   private static boolean shouldHeavyFileContentsBeRead(QueryInput queryInput, QTableMetaData table, AbstractFilesystemTableBackendDetails tableDetails)
    {
       boolean doReadContents = true;
       if(table.getField(tableDetails.getContentsFieldName()).getIsHeavy())
@@ -478,10 +555,20 @@ public abstract class AbstractBaseFilesystemAction<FILE>
    {
       if(backendMetaData.getUsesVariants())
       {
-         this.backendVariantRecord = getVariantRecord(backendMetaData);
+         this.backendVariantRecord = BackendVariantsUtil.getVariantRecord(backendMetaData);
       }
    }
 
+
+   /***************************************************************************
+    ** Method that subclasses can override to add post-action things (e.g., closing resources)
+    ***************************************************************************/
+   public void postAction()
+   {
+      //////////////////
+      // noop in base //
+      //////////////////
+   }
 
 
    /*******************************************************************************
@@ -558,47 +645,10 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
       }
-   }
-
-
-
-   /*******************************************************************************
-    ** Get the variant id from the session for the backend.
-    *******************************************************************************/
-   protected Serializable getVariantId(QBackendMetaData backendMetaData) throws QException
-   {
-      QSession session        = QContext.getQSession();
-      String   variantTypeKey = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
-      if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(variantTypeKey))
+      finally
       {
-         throw (new QException("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'"));
+         postAction();
       }
-      Serializable variantId = session.getBackendVariants().get(variantTypeKey);
-      return variantId;
-   }
-
-
-
-   /*******************************************************************************
-    ** For backends that use variants, look up the variant record (in theory, based
-    ** on an id in the session's backend variants map, then fetched from the backend's
-    ** variant options table.
-    *******************************************************************************/
-   protected QRecord getVariantRecord(QBackendMetaData backendMetaData) throws QException
-   {
-      Serializable variantId = getVariantId(backendMetaData);
-      GetInput     getInput  = new GetInput();
-      getInput.setShouldMaskPasswords(false);
-      getInput.setTableName(backendMetaData.getBackendVariantsConfig().getOptionsTableName());
-      getInput.setPrimaryKey(variantId);
-      GetOutput getOutput = new GetAction().execute(getInput);
-
-      QRecord record = getOutput.getRecord();
-      if(record == null)
-      {
-         throw (new QException("Could not find Backend Variant in table " + backendMetaData.getBackendVariantsConfig().getOptionsTableName() + " with id '" + variantId + "'"));
-      }
-      return record;
    }
 
 }
