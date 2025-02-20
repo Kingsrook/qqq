@@ -214,20 +214,6 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String stripLeadingSlash(String path)
-   {
-      if(path == null)
-      {
-         return (null);
-      }
-      return (path.replaceFirst("^/+", ""));
-   }
-
-
-
-   /*******************************************************************************
     ** Get a string that represents the full path to a file.
     *******************************************************************************/
    @Override
