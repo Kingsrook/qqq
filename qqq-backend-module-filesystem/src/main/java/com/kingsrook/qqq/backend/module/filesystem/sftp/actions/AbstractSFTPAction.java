@@ -62,7 +62,43 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractSFTPAction.class);
 
-   private SshClient     sshClient;
+   /***************************************************************************
+    ** singleton implementing Initialization-on-Demand Holder idiom
+    ** to help ensure only a single SshClient object exists in a server.
+    ***************************************************************************/
+   private static class SshClientManager
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      private static class Holder
+      {
+         private static final SshClient INSTANCE = SshClient.setUpDefaultClient();
+
+         static
+         {
+            INSTANCE.start();
+         }
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static SshClient getInstance()
+      {
+         return Holder.INSTANCE;
+      }
+   }
+
+
+
+   ////////////////////////////////////////////////////////////////
+   // open clientSessionFirst, then sftpClient                   //
+   // and close them in reverse (sftpClient, then clientSession) //
+   ////////////////////////////////////////////////////////////////
    private ClientSession clientSession;
    private SftpClient    sftpClient;
 
@@ -139,22 +175,21 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
    {
       Consumer<AutoCloseable> closer = closable ->
       {
-        if(closable != null)
-        {
-           try
-           {
-              closable.close();
-           }
-           catch(Exception e)
-           {
-              LOG.info("Error closing SFTP resource", e, logPair("type", closable.getClass().getSimpleName()));
-           }
-        }
+         if(closable != null)
+         {
+            try
+            {
+               closable.close();
+            }
+            catch(Exception e)
+            {
+               LOG.info("Error closing SFTP resource", e, logPair("type", closable.getClass().getSimpleName()));
+            }
+         }
       };
 
-      closer.accept(sshClient);
-      closer.accept(clientSession);
       closer.accept(sftpClient);
+      closer.accept(clientSession);
    }
 
 
@@ -164,10 +199,7 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
     ***************************************************************************/
    protected SftpClient makeConnection(String username, String hostName, Integer port, String password) throws IOException
    {
-      this.sshClient = SshClient.setUpDefaultClient();
-      sshClient.start();
-
-      this.clientSession = sshClient.connect(username, hostName, port).verify().getSession();
+      this.clientSession = SshClientManager.getInstance().connect(username, hostName, port).verify().getSession();
       clientSession.addPasswordIdentity(password);
       clientSession.auth().verify();
 
