@@ -41,6 +41,7 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
 
    private String contentsFieldName;
    private String fileNameFieldName;
+   private String baseNameFieldName;
    private String sizeFieldName;
    private String createDateFieldName;
    private String modifyDateFieldName;
@@ -373,6 +374,37 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
    public AbstractFilesystemTableBackendDetails withModifyDateFieldName(String modifyDateFieldName)
    {
       this.modifyDateFieldName = modifyDateFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for baseNameFieldName
+    *******************************************************************************/
+   public String getBaseNameFieldName()
+   {
+      return (this.baseNameFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for baseNameFieldName
+    *******************************************************************************/
+   public void setBaseNameFieldName(String baseNameFieldName)
+   {
+      this.baseNameFieldName = baseNameFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for baseNameFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withBaseNameFieldName(String baseNameFieldName)
+   {
+      this.baseNameFieldName = baseNameFieldName;
       return (this);
    }
 
