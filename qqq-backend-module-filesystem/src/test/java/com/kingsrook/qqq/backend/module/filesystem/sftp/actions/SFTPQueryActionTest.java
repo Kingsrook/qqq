@@ -141,7 +141,7 @@ class SFTPQueryActionTest extends BaseSFTPTest
 
       QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE_VARIANTS);
       assertThatThrownBy(() -> new QueryAction().execute(queryInput))
-         .hasMessageContaining("Could not find Backend Variant information for Backend");
+         .hasMessageContaining("Could not find Backend Variant information in session under key 'variant-options-table' for Backend");
 
       QContext.getQSession().setBackendVariants(MapBuilder.of(TestUtils.TABLE_NAME_VARIANT_OPTIONS, 1));
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
