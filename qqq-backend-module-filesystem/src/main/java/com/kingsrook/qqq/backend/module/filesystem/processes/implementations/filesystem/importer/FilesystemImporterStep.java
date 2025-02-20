@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
-import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -314,7 +313,7 @@ public class FilesystemImporterStep implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static <F> void removeSourceFileIfSoConfigured(Boolean removeFileAfterImport, AbstractBaseFilesystemAction<F> sourceActionBase, QTableMetaData sourceTable, QBackendMetaData sourceBackend, String sourceFileName) throws FilesystemException
+   private static <F> void removeSourceFileIfSoConfigured(Boolean removeFileAfterImport, AbstractBaseFilesystemAction<F> sourceActionBase, QTableMetaData sourceTable, QBackendMetaData sourceBackend, String sourceFileName) throws QException
    {
       if(removeFileAfterImport)
       {

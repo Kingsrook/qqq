@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -56,11 +57,44 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Long getFileSize(S3ObjectSummary s3ObjectSummary)
+   {
+      return (s3ObjectSummary.getSize());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileCreateDate(S3ObjectSummary s3ObjectSummary)
+   {
+      return null;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileModifyDate(S3ObjectSummary s3ObjectSummary)
+   {
+      return s3ObjectSummary.getLastModified().toInstant();
+   }
+
+
+
    /*******************************************************************************
     ** Setup the s3 utils object to be used for this action.
     *******************************************************************************/
    @Override
-   public void preAction(QBackendMetaData backendMetaData)
+   public void preAction(QBackendMetaData backendMetaData) throws QException
    {
       super.preAction(backendMetaData);
 
@@ -175,20 +209,6 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
          LOG.warn("Error writing file", e, logPair("path", path), logPair("bucketName", bucketName));
          throw (new IOException("Error writing file", e));
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String stripLeadingSlash(String path)
-   {
-      if(path == null)
-      {
-         return (null);
-      }
-      return (path.replaceFirst("^/+", ""));
    }
 
 

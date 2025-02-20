@@ -23,13 +23,19 @@ package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
 
 
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.SectionFactory;
 import com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.SFTPBackendModule;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPTableBackendDetails;
 
 
 /*******************************************************************************
@@ -64,6 +70,7 @@ public class FilesystemTableMetaDataBuilder
       {
          case S3BackendModule.BACKEND_TYPE -> new S3TableBackendDetails();
          case FilesystemBackendModule.BACKEND_TYPE -> new FilesystemTableBackendDetails();
+         case SFTPBackendModule.BACKEND_TYPE -> new SFTPTableBackendDetails();
          default -> throw new IllegalStateException("Unexpected value: " + backend.getBackendType());
       };
 
@@ -72,12 +79,31 @@ public class FilesystemTableMetaDataBuilder
          .withIsHidden(true)
          .withBackendName(backend.getName())
          .withPrimaryKeyField("fileName")
-         .withField(new QFieldMetaData("fileName", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("contents", QFieldType.STRING))
+
+         .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+         .withField(new QFieldMetaData("baseName", QFieldType.STRING))
+         .withField(new QFieldMetaData("size", QFieldType.LONG).withDisplayFormat(DisplayFormat.COMMAS))
+         .withField(new QFieldMetaData("createDate", QFieldType.DATE_TIME))
+         .withField(new QFieldMetaData("modifyDate", QFieldType.DATE_TIME))
+         .withField(new QFieldMetaData("contents", QFieldType.BLOB)
+            .withIsHeavy(true)
+            .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
+               .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "%s")
+               .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "fileName")
+            ))
+
+         .withSection(SectionFactory.defaultT1("fileName"))
+         .withSection(SectionFactory.defaultT2("baseName", "contents", "size"))
+         .withSection(SectionFactory.defaultT3("createDate", "modifyDate"))
+
          .withBackendDetails(tableBackendDetails
             .withCardinality(Cardinality.ONE)
             .withFileNameFieldName("fileName")
+            .withBaseNameFieldName("baseName")
             .withContentsFieldName("contents")
+            .withSizeFieldName("size")
+            .withCreateDateFieldName("createDate")
+            .withModifyDateFieldName("modifyDate")
             .withBasePath(basePath)
             .withGlob(glob));
    }

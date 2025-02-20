@@ -815,13 +815,14 @@ public class RunProcessAction
       {
          QSession         session         = QContext.getQSession();
          QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getVariantBackend());
-         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+         String           variantTypeKey  = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(variantTypeKey))
          {
             LOG.warn("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
          }
          else
          {
-            basepullKeyValue += "-" + session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+            basepullKeyValue += "-" + session.getBackendVariants().get(variantTypeKey);
          }
       }
 

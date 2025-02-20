@@ -37,7 +37,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -108,12 +110,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.apache.commons.lang.BooleanUtils;
 import org.quartz.CronExpression;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -543,6 +549,60 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
 
+            ///////////////////////
+            // validate variants //
+            ///////////////////////
+            BackendVariantsConfig backendVariantsConfig = backend.getBackendVariantsConfig();
+            if(BooleanUtils.isTrue(backend.getUsesVariants()))
+            {
+               if(assertCondition(backendVariantsConfig != null, "Missing backendVariantsConfig in backend [" + backendName + "] which is marked as usesVariants"))
+               {
+                  assertCondition(StringUtils.hasContent(backendVariantsConfig.getVariantTypeKey()), "Missing variantTypeKey in backendVariantsConfig in [" + backendName + "]");
+
+                  String         optionsTableName = backendVariantsConfig.getOptionsTableName();
+                  QTableMetaData optionsTable     = qInstance.getTable(optionsTableName);
+                  if(assertCondition(StringUtils.hasContent(optionsTableName), "Missing optionsTableName in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     if(assertCondition(optionsTable != null, "Unrecognized optionsTableName [" + optionsTableName + "] in backendVariantsConfig in [" + backendName + "]"))
+                     {
+                        QQueryFilter optionsFilter = backendVariantsConfig.getOptionsFilter();
+                        if(optionsFilter != null)
+                        {
+                           validateQueryFilter(qInstance, "optionsFilter in backendVariantsConfig in backend [" + backendName + "]: ", optionsTable, optionsFilter, null);
+                        }
+                     }
+                  }
+
+                  Map<BackendVariantSetting, String> backendSettingSourceFieldNameMap = backendVariantsConfig.getBackendSettingSourceFieldNameMap();
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(backendSettingSourceFieldNameMap), "Missing or empty backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // only validate field names in the backendSettingSourceFieldNameMap if there is NOT a variantRecordSupplier //
+                     // (the idea being, that the supplier might be building a record with fieldNames that aren't in the table... //
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     if(optionsTable != null && backendVariantsConfig.getVariantRecordLookupFunction() == null)
+                     {
+                        for(Map.Entry<BackendVariantSetting, String> entry : backendSettingSourceFieldNameMap.entrySet())
+                        {
+                           assertCondition(optionsTable.getFields().containsKey(entry.getValue()), "Unrecognized fieldName [" + entry.getValue() + "] in backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]");
+                        }
+                     }
+                  }
+
+                  if(backendVariantsConfig.getVariantRecordLookupFunction() != null)
+                  {
+                     validateSimpleCodeReference("VariantRecordSupplier in backendVariantsConfig in backend [" + backendName + "]: ", backendVariantsConfig.getVariantRecordLookupFunction(), UnsafeFunction.class, Function.class);
+                  }
+               }
+            }
+            else
+            {
+               assertCondition(backendVariantsConfig == null, "Should not have a backendVariantsConfig in backend [" + backendName + "] which is not marked as usesVariants");
+            }
+
+            ///////////////////////////////////////////
+            // let the backend do its own validation //
+            ///////////////////////////////////////////
             backend.performValidation(this);
 
             runPlugins(QBackendMetaData.class, backend, qInstance);
@@ -1356,7 +1416,7 @@ public class QInstanceValidator
                ////////////////////////////////////////////////////////////////////////
                if(customizerInstance != null && tableCustomizer.getExpectedType() != null)
                {
-                  assertObjectCanBeCasted(prefix, tableCustomizer.getExpectedType(), customizerInstance);
+                  assertObjectCanBeCasted(prefix, customizerInstance, tableCustomizer.getExpectedType());
                }
             }
          }
@@ -1368,18 +1428,31 @@ public class QInstanceValidator
    /*******************************************************************************
     ** Make sure that a given object can be casted to an expected type.
     *******************************************************************************/
-   private <T> T assertObjectCanBeCasted(String errorPrefix, Class<T> expectedType, Object object)
+   private void assertObjectCanBeCasted(String errorPrefix, Object object, Class<?>... anyOfExpectedClasses)
    {
-      T castedObject = null;
-      try
+      for(Class<?> expectedClass : anyOfExpectedClasses)
       {
-         castedObject = expectedType.cast(object);
+         try
+         {
+            expectedClass.cast(object);
+            return;
+         }
+         catch(ClassCastException e)
+         {
+            /////////////////////////////////////
+            // try next type (if there is one) //
+            /////////////////////////////////////
+         }
       }
-      catch(ClassCastException e)
+
+      if(anyOfExpectedClasses.length == 1)
       {
-         errors.add(errorPrefix + "CodeReference is not of the expected type: " + expectedType);
+         errors.add(errorPrefix + "CodeReference is not of the expected type: " + anyOfExpectedClasses[0]);
       }
-      return castedObject;
+      else
+      {
+         errors.add(errorPrefix + "CodeReference is not any of the expected types: " + Arrays.stream(anyOfExpectedClasses).map(c -> c.getName()).collect(Collectors.joining(", ")));
+      }
    }
 
 
@@ -1616,12 +1689,12 @@ public class QInstanceValidator
 
             for(QFieldMetaData field : process.getInputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName() + " ");
             }
 
             for(QFieldMetaData field : process.getOutputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName() + " ");
             }
 
             if(process.getCancelStep() != null)
@@ -2123,7 +2196,8 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?> expectedClass)
+   @SafeVarargs
+   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
    {
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {
@@ -2151,7 +2225,7 @@ public class QInstanceValidator
             ////////////////////////////////////////////////////////////////////////
             if(classInstance != null)
             {
-               assertObjectCanBeCasted(prefix, expectedClass, classInstance);
+               assertObjectCanBeCasted(prefix, classInstance, anyOfExpectedClasses);
             }
          }
       }

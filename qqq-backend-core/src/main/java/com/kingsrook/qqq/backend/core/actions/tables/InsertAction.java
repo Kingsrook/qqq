@@ -67,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -110,6 +111,12 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    public InsertOutput execute(InsertInput insertInput) throws QException
    {
       ActionHelper.validateSession(insertInput);
+
+      if(!StringUtils.hasContent(insertInput.getTableName()))
+      {
+         throw (new QException("Table name was not specified in update input"));
+      }
+
       QTableMetaData table = insertInput.getTable();
 
       if(table == null)

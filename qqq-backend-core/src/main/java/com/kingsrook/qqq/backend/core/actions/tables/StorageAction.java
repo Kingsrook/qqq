@@ -47,7 +47,8 @@ public class StorageAction
 {
 
    /*******************************************************************************
-    **
+    ** create an output stream in the storage backend - that can be written to,
+    ** for the purpose of inserting or writing a file into storage.
     *******************************************************************************/
    public OutputStream createOutputStream(StorageInput storageInput) throws QException
    {
@@ -59,7 +60,8 @@ public class StorageAction
 
 
    /*******************************************************************************
-    **
+    ** create an input stream in the storage backend - that can be read from,
+    ** for the purpose of getting or reading a file from storage.
     *******************************************************************************/
    public InputStream getInputStream(StorageInput storageInput) throws QException
    {

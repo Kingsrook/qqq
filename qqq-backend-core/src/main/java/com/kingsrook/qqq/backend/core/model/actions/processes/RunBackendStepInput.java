@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,9 +35,11 @@ import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.NonPersistedAsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerInterface;
@@ -243,6 +246,26 @@ public class RunBackendStepInput extends AbstractActionInput
    public List<QRecord> getRecords()
    {
       return processState.getRecords();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for records converted to entities of a given type.
+    **
+    *******************************************************************************/
+   public <E extends QRecordEntity> List<E> getRecordsAsEntities(Class<E> entityClass) throws QException
+   {
+      List<E> rs = new ArrayList<>();
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // note - important to call getRecords here, which is overwritten in subclasses! //
+      ///////////////////////////////////////////////////////////////////////////////////
+      for(QRecord record : getRecords())
+      {
+         rs.add(QRecordEntity.fromQRecord(entityClass, record));
+      }
+      return (rs);
    }
 
 
@@ -582,7 +605,7 @@ public class RunBackendStepInput extends AbstractActionInput
     ***************************************************************************/
    public void traceMessage(ProcessTracerMessage message)
    {
-      if(processTracer != null)
+      if(processTracer != null && message != null)
       {
          try
          {

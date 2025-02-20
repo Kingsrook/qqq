@@ -35,6 +35,8 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -58,6 +60,50 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractFilesystemAction.class);
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public Long getFileSize(File file)
+   {
+      return (file.length());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileCreateDate(File file)
+   {
+      try
+      {
+         Path                path         = file.toPath();
+         BasicFileAttributes attrs        = Files.readAttributes(path, BasicFileAttributes.class);
+         FileTime            creationTime = attrs.creationTime();
+         return creationTime.toInstant();
+      }
+      catch(IOException e)
+      {
+         LOG.warn("Error getting file createDate", e, logPair("file", file));
+         return (null);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileModifyDate(File file)
+   {
+      return Instant.ofEpochMilli(file.lastModified());
+   }
 
 
 

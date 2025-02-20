@@ -30,4 +30,5 @@ public enum AuditLevel
    NONE,
    RECORD,
    FIELD
+   // idea:  only audit changes to fields, e.g., on edit.  though, is that a different dimension than this?
 }

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.module.filesystem;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -37,12 +38,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamed.StreamedETLProcess;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
+import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.FilesystemTableMetaDataBuilder;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.RecordFormat;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemBackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
@@ -52,6 +55,10 @@ import com.kingsrook.qqq.backend.module.filesystem.processes.implementations.fil
 import com.kingsrook.qqq.backend.module.filesystem.s3.BaseS3Test;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.BaseSFTPTest;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPBackendMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPBackendVariantSetting;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPTableBackendDetails;
 import org.apache.commons.io.FileUtils;
 
 
@@ -60,20 +67,26 @@ import org.apache.commons.io.FileUtils;
  *******************************************************************************/
 public class TestUtils
 {
-   public static final String BACKEND_NAME_LOCAL_FS       = "local-filesystem";
-   public static final String BACKEND_NAME_S3             = "s3";
-   public static final String BACKEND_NAME_S3_SANS_PREFIX = "s3sansPrefix";
-   public static final String BACKEND_NAME_MOCK           = "mock";
-   public static final String BACKEND_NAME_MEMORY         = "memory";
+   public static final String BACKEND_NAME_LOCAL_FS           = "local-filesystem";
+   public static final String BACKEND_NAME_S3                 = "s3";
+   public static final String BACKEND_NAME_S3_SANS_PREFIX     = "s3sansPrefix";
+   public static final String BACKEND_NAME_SFTP               = "sftp";
+   public static final String BACKEND_NAME_SFTP_WITH_VARIANTS = "sftpWithVariants";
+   public static final String BACKEND_NAME_MOCK               = "mock";
+   public static final String BACKEND_NAME_MEMORY             = "memory";
 
    public static final String TABLE_NAME_PERSON_LOCAL_FS_JSON = "person-local-json";
    public static final String TABLE_NAME_PERSON_LOCAL_FS_CSV  = "person-local-csv";
    public static final String TABLE_NAME_BLOB_LOCAL_FS        = "local-blob";
    public static final String TABLE_NAME_ARCHIVE_LOCAL_FS     = "local-archive";
    public static final String TABLE_NAME_PERSON_S3            = "person-s3";
+   public static final String TABLE_NAME_PERSON_SFTP          = "person-sftp";
    public static final String TABLE_NAME_BLOB_S3              = "s3-blob";
    public static final String TABLE_NAME_PERSON_MOCK          = "person-mock";
    public static final String TABLE_NAME_BLOB_S3_SANS_PREFIX  = "s3-blob-sans-prefix";
+   public static final String TABLE_NAME_SFTP_FILE            = "sftp-file";
+   public static final String TABLE_NAME_SFTP_FILE_VARIANTS   = "sftp-file-with-variants";
+   public static final String TABLE_NAME_VARIANT_OPTIONS      = "variant-options-table";
 
    public static final String PROCESS_NAME_STREAMED_ETL                   = "etl.streamed";
    public static final String LOCAL_PERSON_CSV_FILE_IMPORTER_PROCESS_NAME = "localPersonCsvFileImporter";
@@ -148,6 +161,7 @@ public class TestUtils
       qInstance.addBackend(defineS3Backend());
       qInstance.addBackend(defineS3BackendSansPrefix());
       qInstance.addTable(defineS3CSVPersonTable());
+      qInstance.addTable(defineSFTPCSVPersonTable());
       qInstance.addTable(defineS3BlobTable());
       qInstance.addTable(defineS3BlobSansPrefixTable());
       qInstance.addBackend(defineMockBackend());
@@ -155,9 +169,33 @@ public class TestUtils
       qInstance.addTable(defineMockPersonTable());
       qInstance.addProcess(defineStreamedLocalCsvToMockETLProcess());
 
+      QBackendMetaData sftpBackend = defineSFTPBackend();
+      qInstance.addBackend(sftpBackend);
+      qInstance.addTable(defineSFTPFileTable(sftpBackend));
+
+      QBackendMetaData sftpBackendWithVariants = defineSFTPBackendWithVariants();
+      qInstance.addBackend(sftpBackendWithVariants);
+      qInstance.addTable(defineSFTPFileTableWithVariants(sftpBackendWithVariants));
+      qInstance.addTable(defineVariantOptionsTable());
+
       definePersonCsvImporter(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static QTableMetaData defineVariantOptionsTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_VARIANT_OPTIONS)
+         .withBackendName(defineMemoryBackend().getName())
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("basePath", QFieldType.STRING));
    }
 
 
@@ -382,6 +420,25 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   public static QTableMetaData defineSFTPCSVPersonTable()
+   {
+      return new QTableMetaData()
+         .withName(TABLE_NAME_PERSON_SFTP)
+         .withLabel("Person SFTP Table")
+         .withBackendName(BACKEND_NAME_SFTP)
+         .withPrimaryKeyField("id")
+         .withFields(defineCommonPersonTableFields())
+         .withBackendDetails(new SFTPTableBackendDetails()
+            .withRecordFormat(RecordFormat.CSV)
+            .withCardinality(Cardinality.MANY)
+         );
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public static QTableMetaData defineS3CSVPersonTable()
    {
       return new QTableMetaData()
@@ -462,5 +519,78 @@ public class TestUtils
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
       return (mockAuthenticationModule.createSession(defineInstance(), null));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static QTableMetaData defineSFTPFileTable(QBackendMetaData sftpBackend)
+   {
+      return new FilesystemTableMetaDataBuilder()
+         .withBasePath(BaseSFTPTest.TABLE_FOLDER)
+         .withBackend(sftpBackend)
+         .withName(TABLE_NAME_SFTP_FILE)
+         .buildStandardCardinalityOneTable()
+         .withLabel("SFTP Files");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static QBackendMetaData defineSFTPBackend()
+   {
+      return (new SFTPBackendMetaData()
+         .withUsername(BaseSFTPTest.USERNAME)
+         .withPassword(BaseSFTPTest.PASSWORD)
+         .withHostName(BaseSFTPTest.HOST_NAME)
+         .withPort(BaseSFTPTest.getCurrentPort())
+         .withBasePath(BaseSFTPTest.BACKEND_FOLDER)
+         .withName(BACKEND_NAME_SFTP));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static QTableMetaData defineSFTPFileTableWithVariants(QBackendMetaData sftpBackend)
+   {
+      return new FilesystemTableMetaDataBuilder()
+         .withBasePath(BaseSFTPTest.TABLE_FOLDER)
+         .withBackend(sftpBackend)
+         .withName(TABLE_NAME_SFTP_FILE_VARIANTS)
+         .buildStandardCardinalityOneTable()
+         .withLabel("SFTP Files");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static QBackendMetaData defineSFTPBackendWithVariants()
+   {
+      return (new SFTPBackendMetaData()
+         .withUsername(BaseSFTPTest.USERNAME)
+         .withPassword(BaseSFTPTest.PASSWORD)
+         .withHostName(BaseSFTPTest.HOST_NAME)
+         .withPort(BaseSFTPTest.getCurrentPort())
+
+         ////////////////////////////////////
+         // only get basePath from variant //
+         ////////////////////////////////////
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withOptionsTableName(TABLE_NAME_VARIANT_OPTIONS)
+            .withVariantTypeKey(TABLE_NAME_VARIANT_OPTIONS)
+            .withBackendSettingSourceFieldNameMap(Map.of(
+               SFTPBackendVariantSetting.BASE_PATH, "basePath"
+            ))
+         )
+         .withName(BACKEND_NAME_SFTP_WITH_VARIANTS));
    }
 }

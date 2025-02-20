@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.filesystem.s3;
 
 
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.actions.interfaces.CountInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.InsertInterface;
 import com.kingsrook.qqq.backend.core.actions.interfaces.QStorageInterface;
@@ -35,6 +36,7 @@ import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
+import com.kingsrook.qqq.backend.module.filesystem.s3.actions.S3CountAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.S3DeleteAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.S3InsertAction;
 import com.kingsrook.qqq.backend.module.filesystem.s3.actions.S3QueryAction;
@@ -108,6 +110,17 @@ public class S3BackendModule implements QBackendModuleInterface, FilesystemBacke
    public QueryInterface getQueryInterface()
    {
       return new S3QueryAction();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public CountInterface getCountInterface()
+   {
+      return new S3CountAction();
    }
 
 
