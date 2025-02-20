@@ -43,8 +43,8 @@ public class BaseSFTPTest extends BaseTest
    public static final String TABLE_FOLDER   = "files";
    public static final String REMOTE_DIR     = "/home/" + USERNAME + "/" + BACKEND_FOLDER + "/" + TABLE_FOLDER;
 
-   private static GenericContainer<?> sftpContainer;
-   private static Integer             currentPort;
+   protected static GenericContainer<?> sftpContainer;
+   private static   Integer             currentPort;
 
 
 
@@ -71,6 +71,7 @@ public class BaseSFTPTest extends BaseTest
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -80,6 +81,7 @@ public class BaseSFTPTest extends BaseTest
    }
 
 
+
    /***************************************************************************
     **
     ***************************************************************************/
@@ -87,6 +89,7 @@ public class BaseSFTPTest extends BaseTest
    {
       sftpContainer.execInContainer("rm", "-rf", fullRemotePath);
    }
+
 
 
    /***************************************************************************

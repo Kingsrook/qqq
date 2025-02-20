@@ -31,6 +31,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -247,9 +248,9 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
     *******************************************************************************/
    @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   public void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException
    {
-      QBackendMetaData backend     = instance.getBackend(table.getBackendName());
+      QBackendMetaData backend     = QContext.getQInstance().getBackend(table.getBackendName());
       String           bucketName  = ((S3BackendMetaData) backend).getBucketName();
       String           cleanedPath = stripLeadingSlash(stripDuplicatedSlashes(fileReference));
 

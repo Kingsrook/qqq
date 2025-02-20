@@ -230,7 +230,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
     *******************************************************************************/
    @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   public void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException
    {
       File file = new File(fileReference);
       if(!file.exists())

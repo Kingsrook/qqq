@@ -319,7 +319,7 @@ public class FilesystemImporterStep implements BackendStep
       {
          String fullBasePath = sourceActionBase.getFullBasePath(sourceTable, sourceBackend);
          LOG.info("Removing source file", logPair("path", fullBasePath + "/" + sourceFileName), logPair("sourceTable", sourceTable.getName()));
-         sourceActionBase.deleteFile(QContext.getQInstance(), sourceTable, fullBasePath + "/" + sourceFileName);
+         sourceActionBase.deleteFile(sourceTable, fullBasePath + "/" + sourceFileName);
       }
       else
       {

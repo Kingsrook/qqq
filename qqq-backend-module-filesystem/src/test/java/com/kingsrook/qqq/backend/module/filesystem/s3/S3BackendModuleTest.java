@@ -147,7 +147,7 @@ public class S3BackendModuleTest extends BaseS3Test
       S3BackendModule  s3BackendModule = new S3BackendModule();
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
-      actionBase.deleteFile(qInstance, table, s3ObjectSummariesBeforeDelete.get(0).getKey());
+      actionBase.deleteFile(table, s3ObjectSummariesBeforeDelete.get(0).getKey());
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size() - 1, s3ObjectSummariesAfterDelete.size(),
@@ -176,7 +176,7 @@ public class S3BackendModuleTest extends BaseS3Test
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
       String path = "//" + s3ObjectSummariesBeforeDelete.get(0).getKey().replaceAll("/", "//");
-      actionBase.deleteFile(qInstance, table, "//" + path);
+      actionBase.deleteFile(table, "//" + path);
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size() - 1, s3ObjectSummariesAfterDelete.size(),
@@ -203,7 +203,7 @@ public class S3BackendModuleTest extends BaseS3Test
       S3BackendModule  s3BackendModule = new S3BackendModule();
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
-      actionBase.deleteFile(qInstance, table, PATH_THAT_WONT_EXIST);
+      actionBase.deleteFile(table, PATH_THAT_WONT_EXIST);
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size(), s3ObjectSummariesAfterDelete.size(),

@@ -40,6 +40,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
@@ -57,6 +59,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSett
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
+import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
@@ -138,7 +142,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     **
     ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
     *******************************************************************************/
-   public abstract void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException;
+   public abstract void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException;
 
    /*******************************************************************************
     ** Move a file from a source path, to a destination path.
@@ -285,7 +289,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
          QueryOutput queryOutput = new QueryOutput(queryInput);
 
          String       requestedPath = null;
-         QQueryFilter filter                  = queryInput.getFilter();
+         QQueryFilter filter        = queryInput.getFilter();
          if(filter != null && tableDetails.getCardinality().equals(Cardinality.ONE))
          {
             if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
@@ -663,6 +667,59 @@ public abstract class AbstractBaseFilesystemAction<FILE>
       catch(Exception e)
       {
          throw new QException("Error executing insert: " + e.getMessage(), e);
+      }
+      finally
+      {
+         postAction();
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   protected DeleteOutput executeDelete(DeleteInput deleteInput) throws QException
+   {
+      try
+      {
+         preAction(deleteInput.getBackend());
+
+         DeleteOutput output = new DeleteOutput();
+         output.setRecordsWithErrors(new ArrayList<>());
+
+         QTableMetaData   table   = deleteInput.getTable();
+         QBackendMetaData backend = deleteInput.getBackend();
+
+         AbstractFilesystemTableBackendDetails tableDetails = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
+         if(tableDetails.getCardinality().equals(Cardinality.ONE))
+         {
+            int deletedCount = 0;
+            for(Serializable primaryKey : deleteInput.getPrimaryKeys())
+            {
+               try
+               {
+                  deleteFile(table, stripDuplicatedSlashes(getFullBasePath(table, backend) + "/" + primaryKey));
+                  deletedCount++;
+               }
+               catch(Exception e)
+               {
+                  String message = ObjectUtils.tryElse(() -> ExceptionUtils.getRootException(e).getMessage(), "Message not available");
+                  output.addRecordWithError(new QRecord().withValue(table.getPrimaryKeyField(), primaryKey).withError(new SystemErrorStatusMessage("Error deleting file: " + message)));
+               }
+            }
+            output.setDeletedRecordCount(deletedCount);
+         }
+         else
+         {
+            throw (new NotImplementedException("Delete is not implemented for filesystem tables with cardinality: " + tableDetails.getCardinality()));
+         }
+
+         return (output);
+      }
+      catch(Exception e)
+      {
+         throw new QException("Error executing delete: " + e.getMessage(), e);
       }
       finally
       {

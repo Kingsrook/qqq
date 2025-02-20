@@ -340,9 +340,16 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
     **
     ***************************************************************************/
    @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   public void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException
    {
-      throw (new QRuntimeException("Not yet implemented"));
+      try
+      {
+         sftpClient.remove(fileReference);
+      }
+      catch(Exception e)
+      {
+         throw (new FilesystemException("Error deleting file from SFTP", e));
+      }
    }
 
 

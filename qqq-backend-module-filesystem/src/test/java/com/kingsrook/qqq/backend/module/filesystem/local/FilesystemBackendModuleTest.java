@@ -165,7 +165,7 @@ public class FilesystemBackendModuleTest
       List<File> filesBeforeDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
 
       FilesystemBackendModule filesystemBackendModule = new FilesystemBackendModule();
-      filesystemBackendModule.getActionBase().deleteFile(qInstance, table, filesBeforeDelete.get(0).getAbsolutePath());
+      filesystemBackendModule.getActionBase().deleteFile(table, filesBeforeDelete.get(0).getAbsolutePath());
 
       List<File> filesAfterDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeDelete.size() - 1, filesAfterDelete.size(),
@@ -191,7 +191,7 @@ public class FilesystemBackendModuleTest
       List<File> filesBeforeDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
 
       FilesystemBackendModule filesystemBackendModule = new FilesystemBackendModule();
-      filesystemBackendModule.getActionBase().deleteFile(qInstance, table, PATH_THAT_WONT_EXIST);
+      filesystemBackendModule.getActionBase().deleteFile(table, PATH_THAT_WONT_EXIST);
 
       List<File> filesAfterDelete = new AbstractFilesystemAction().listFiles(table, qInstance.getBackendForTable(table.getName()));
       Assertions.assertEquals(filesBeforeDelete.size(), filesAfterDelete.size(),
