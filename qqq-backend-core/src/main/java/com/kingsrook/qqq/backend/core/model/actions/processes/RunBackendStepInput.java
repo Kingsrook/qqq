@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerInterface;
@@ -616,5 +617,15 @@ public class RunBackendStepInput extends AbstractActionInput
             LOG.warn("Error tracing message", e, logPair("message", message));
          }
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QProcessMetaData getProcess()
+   {
+      return (QContext.getQInstance().getProcess(getProcessName()));
    }
 }
