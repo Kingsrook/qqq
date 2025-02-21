@@ -93,8 +93,8 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
 
          for(List<QRecord> page : CollectionUtils.getPages(insertInput.getRecords(), getActionStrategy().getPageSize(insertInput)))
          {
-            String tableName = escapeIdentifier(getTableName(table));
-            sql = new StringBuilder("INSERT INTO ").append(tableName).append("(").append(columns).append(") VALUES");
+            String backendTableName = escapeIdentifier(getTableName(table));
+            sql = new StringBuilder("INSERT INTO ").append(backendTableName).append("(").append(columns).append(") VALUES");
             params = new ArrayList<>();
             int recordIndex = 0;
 
@@ -135,7 +135,7 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
                   QRecord outputRecord = new QRecord(record);
                   if(!StringUtils.hasContent(outputRecord.getTableName()))
                   {
-                     outputRecord.setTableName(getTableName(table));
+                     outputRecord.setTableName(table.getName());
                   }
                   outputRecords.add(outputRecord);
                }
@@ -156,6 +156,10 @@ public class RDBMSInsertAction extends AbstractRDBMSAction implements InsertInte
             for(QRecord record : page)
             {
                QRecord outputRecord = new QRecord(record);
+               if(!StringUtils.hasContent(outputRecord.getTableName()))
+               {
+                  outputRecord.setTableName(table.getName());
+               }
                outputRecords.add(outputRecord);
 
                if(CollectionUtils.nullSafeIsEmpty(record.getErrors()))
