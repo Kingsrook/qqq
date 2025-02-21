@@ -28,6 +28,9 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -54,6 +57,20 @@ class SFTPQueryActionTest extends BaseSFTPTest
       QueryInput  queryInput  = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE);
       QueryOutput queryOutput = new QueryAction().execute(queryInput);
       Assertions.assertEquals(5, queryOutput.getRecords().size(), "Expected # of rows from unfiltered query");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   public void testSimpleQueryForOneFile() throws QException
+   {
+      QueryInput  queryInput  = new QueryInput(TestUtils.TABLE_NAME_SFTP_FILE);
+      queryInput.setFilter(new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "testfile-1.txt")));
+      QueryOutput queryOutput = new QueryAction().execute(queryInput);
+      Assertions.assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows from unfiltered query");
    }
 
 
