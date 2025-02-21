@@ -1236,9 +1236,8 @@ public class BaseAPIActionUtil
             if(!caughtAnOAuthExpiredToken)
             {
                LOG.info("OAuth Expired token for [" + table.getName() + "] - retrying");
-               // String accessTokenKey = getOAuth2AccessTokenKey();
-               // backendMetaData.withCustomValue(accessTokenKey, null);
-               backendMetaData.withCustomValue("accessToken", null);
+               String accessTokenKey = getOAuth2AccessTokenKey();
+               backendMetaData.withCustomValue(accessTokenKey, null);
                caughtAnOAuthExpiredToken = true;
             }
             else
