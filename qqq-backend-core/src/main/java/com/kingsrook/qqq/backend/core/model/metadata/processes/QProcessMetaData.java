@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.qbits.SourceQBitAware;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QScheduleMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -46,11 +47,14 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Meta-Data to define a process in a QQQ instance.
  **
  *******************************************************************************/
-public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissionRules, TopLevelMetaDataInterface
+public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissionRules, TopLevelMetaDataInterface, SourceQBitAware
 {
-   private String                name;
-   private String                label;
-   private String                tableName;
+   private String name;
+   private String label;
+   private String tableName;
+
+   private String sourceQBitName;
+
    private boolean               isHidden = false;
    private BasepullConfiguration basepullConfiguration;
    private QPermissionRules      permissionRules;
@@ -870,6 +874,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    }
 
 
+
    /*******************************************************************************
     ** Getter for processTracerCodeReference
     *******************************************************************************/
@@ -896,6 +901,39 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    public QProcessMetaData withProcessTracerCodeReference(QCodeReference processTracerCodeReference)
    {
       this.processTracerCodeReference = processTracerCodeReference;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public String getSourceQBitName()
+   {
+      return (this.sourceQBitName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public void setSourceQBitName(String sourceQBitName)
+   {
+      this.sourceQBitName = sourceQBitName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public QProcessMetaData withSourceQBitName(String sourceQBitName)
+   {
+      this.sourceQBitName = sourceQBitName;
       return (this);
    }
 
