@@ -62,7 +62,6 @@ import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.Back
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
@@ -288,21 +287,8 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
          QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         String       requestedPath = null;
-         QQueryFilter filter        = queryInput.getFilter();
-         if(filter != null && tableDetails.getCardinality().equals(Cardinality.ONE))
-         {
-            if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
-            {
-               QFilterCriteria criteria = filter.getCriteria().get(0);
-               if(tableDetails.getFileNameFieldName().equals(criteria.getFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
-               {
-                  requestedPath = ValueUtils.getValueAsString(criteria.getValues().get(0));
-               }
-            }
-         }
-
-         List<FILE> files = listFiles(table, queryInput.getBackend(), requestedPath);
+         String     requestedPath = null;
+         List<FILE> files         = listFiles(table, queryInput.getBackend(), requestedPath);
 
          switch(tableDetails.getCardinality())
          {
