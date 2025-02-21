@@ -106,14 +106,10 @@ public class MetaDataProducerHelper
    }
 
 
-
-   /*******************************************************************************
-    ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
-    ** run them, and add their output to the given qInstance.
+   /***************************************************************************
     **
-    ** Note - they'll be sorted by the sortOrder they provide.
-    *******************************************************************************/
-   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws QException
+    ***************************************************************************/
+   public static List<MetaDataProducerInterface<?>> findProducers(String packageName) throws QException
    {
       List<Class<?>> classesInPackage;
       try
@@ -195,6 +191,20 @@ public class MetaDataProducerHelper
                return (0);
             }
          }));
+
+      return (producers);
+   }
+
+
+   /*******************************************************************************
+    ** Recursively find all classes in the given package, that implement MetaDataProducerInterface
+    ** run them, and add their output to the given qInstance.
+    **
+    ** Note - they'll be sorted by the sortOrder they provide.
+    *******************************************************************************/
+   public static void processAllMetaDataProducersInPackage(QInstance instance, String packageName) throws QException
+   {
+      List<MetaDataProducerInterface<?>> producers = findProducers(packageName);
 
       ///////////////////////////////////////////////////////////////////////////
       // execute each one (if enabled), adding their meta data to the instance //
