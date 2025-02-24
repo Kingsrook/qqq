@@ -142,6 +142,8 @@ public class QInstanceValidator
 
    private static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> validatorPlugins = new ListingHash<>();
 
+   private JoinGraph joinGraph = null;
+
    private List<String> errors = new ArrayList<>();
 
 
@@ -169,8 +171,7 @@ public class QInstanceValidator
       // the enricher will build a join graph (if there are any joins).  we'd like to only do that       //
       // once, during the enrichment/validation work, so, capture it, and store it back in the instance. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////
-      JoinGraph joinGraph = null;
-      long      start     = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
       try
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +180,7 @@ public class QInstanceValidator
          // TODO - possible point of customization (use a different enricher, or none, or pass it options).
          QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(qInstance);
          qInstanceEnricher.enrich();
-         joinGraph = qInstanceEnricher.getJoinGraph();
+         this.joinGraph = qInstanceEnricher.getJoinGraph();
       }
       catch(Exception e)
       {
@@ -1949,7 +1950,8 @@ public class QInstanceValidator
       {
          if(fieldName.contains("."))
          {
-            String fieldNameAfterDot = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+            String fieldNameAfterDot  = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+            String tableNameBeforeDot = fieldName.substring(0, fieldName.lastIndexOf("."));
 
             if(CollectionUtils.nullSafeHasContents(queryJoins))
             {
@@ -1973,11 +1975,32 @@ public class QInstanceValidator
             }
             else
             {
-               errors.add("QInstanceValidator does not yet support finding a field that looks like a join field, but isn't associated with a query.");
-               return (true);
-               // todo! for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
-               // {
-               // }
+               if(this.joinGraph != null)
+               {
+                  Set<JoinGraph.JoinConnectionList> joinConnections = joinGraph.getJoinConnections(table.getName());
+                  for(JoinGraph.JoinConnectionList joinConnectionList : joinConnections)
+                  {
+                     JoinGraph.JoinConnection joinConnection = joinConnectionList.list().get(joinConnectionList.list().size() - 1);
+                     if(tableNameBeforeDot.equals(joinConnection.joinTable()))
+                     {
+                        QTableMetaData joinTable = qInstance.getTable(tableNameBeforeDot);
+                        if(joinTable.getFields().containsKey(fieldNameAfterDot))
+                        {
+                           /////////////////////////
+                           // mmm, looks valid... //
+                           /////////////////////////
+                           return (true);
+                        }
+                     }
+                  }
+               }
+
+               //////////////////////////////////////////////////////////////////////////////////////
+               // todo - not sure how vulnerable we are to ongoing issues here...                  //
+               // idea:  let a filter (or any object?) be opted out of validation, some version of //
+               // a static map of objects we can check at the top of various validate methods...   //
+               //////////////////////////////////////////////////////////////////////////////////////
+               errors.add("Failed to find field named: " + fieldName);
             }
          }
       }
