@@ -23,8 +23,6 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -48,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -488,9 +486,16 @@ public class QValueFormatter
             String fileNameFormat   = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT));
             String defaultExtension = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.DEFAULT_EXTENSION));
 
+            Boolean downloadUrlDynamic = ValueUtils.getValueAsBoolean(adornmentValues.get(AdornmentType.FileDownloadValues.DOWNLOAD_URL_DYNAMIC));
+
             for(QRecord record : records)
             {
                if(!doesFieldHaveValue(field, record))
+               {
+                  continue;
+               }
+
+               if(BooleanUtils.isTrue(downloadUrlDynamic))
                {
                   continue;
                }
@@ -544,10 +549,7 @@ public class QValueFormatter
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE)
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME))
                {
-                  record.setValue(field.getName(), "/data/" + table.getName() + "/"
-                     + URLEncoder.encode(ValueUtils.getValueAsString(primaryKey), StandardCharsets.UTF_8) + "/"
-                     + field.getName() + "/"
-                     + URLEncoder.encode(Objects.requireNonNullElse(fileName, ""), StandardCharsets.UTF_8));
+                  record.setValue(field.getName(), AdornmentType.FileDownloadValues.makeFieldDownloadUrl(table.getName(), primaryKey, field.getName(), fileName));
                }
                record.setDisplayValue(field.getName(), fileName);
             }

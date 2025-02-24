@@ -30,19 +30,23 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -235,6 +239,104 @@ class QValueFormatterTest extends BaseTest
       QRecord record = new QRecord().withValue("createDate", Instant.parse("2024-04-04T19:12:00Z")).withValue("timeZone", "America/Chicago");
       QValueFormatter.setDisplayValuesInRecords(table, List.of(record));
       assertEquals("2024-04-04 02:12:00 PM CDT", record.getDisplayValue("createDate"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBlobValuesToDownloadUrls()
+   {
+      byte[] blobBytes = "hello".getBytes();
+      {
+         QTableMetaData table = new QTableMetaData()
+            .withName("testTable")
+            .withPrimaryKeyField("id")
+            .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+            .withField(new QFieldMetaData("blobField", QFieldType.BLOB)
+               .withFieldAdornment(new FieldAdornment().withType(AdornmentType.FILE_DOWNLOAD)
+                  .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "blob-%s.txt")
+                  .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS, new ArrayList<>(List.of("id")))));
+
+         //////////////////////////////////////////////////////////////////
+         // verify display value gets set to formated file-name + fields //
+         // and raw value becomes URL for downloading the byte           //
+         //////////////////////////////////////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes);
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
+         assertEquals("/data/testTable/47/blobField/blob-47.txt", record.getValueString("blobField"));
+         assertEquals("blob-47.txt", record.getDisplayValue("blobField"));
+
+         ////////////////////////////////////////////////////////
+         // verify that w/ no blob value, we don't do anything //
+         ////////////////////////////////////////////////////////
+         QRecord recordWithoutBlobValue = new QRecord().withValue("id", 47);
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(recordWithoutBlobValue));
+         assertNull(recordWithoutBlobValue.getValue("blobField"));
+         assertNull(recordWithoutBlobValue.getDisplayValue("blobField"));
+      }
+
+      {
+         FieldAdornment adornment = new FieldAdornment().withType(AdornmentType.FILE_DOWNLOAD)
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, "fileName");
+
+         QTableMetaData table = new QTableMetaData()
+            .withName("testTable")
+            .withPrimaryKeyField("id")
+            .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+            .withField(new QFieldMetaData("fileName", QFieldType.STRING))
+            .withField(new QFieldMetaData("blobField", QFieldType.BLOB)
+               .withFieldAdornment(adornment));
+
+         ////////////////////////////////////////////////////
+         // here get the file name directly from one field //
+         ////////////////////////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes).withValue("fileName", "myBlob.txt");
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
+         assertEquals("/data/testTable/47/blobField/myBlob.txt", record.getValueString("blobField"));
+         assertEquals("myBlob.txt", record.getDisplayValue("blobField"));
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // switch to use dynamic url, rerun, and assert we get the values as they were on the record before the call //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         adornment.withValue(AdornmentType.FileDownloadValues.DOWNLOAD_URL_DYNAMIC, true);
+         record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes).withValue("fileName", "myBlob.txt")
+            .withDisplayValue("blobField:" + AdornmentType.FileDownloadValues.DOWNLOAD_URL_DYNAMIC, "/something-custom/")
+            .withDisplayValue("blobField", "myDisplayValue");
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
+         assertArrayEquals(blobBytes, record.getValueByteArray("blobField"));
+         assertEquals("myDisplayValue", record.getDisplayValue("blobField"));
+      }
+
+      {
+         FieldAdornment adornment = new FieldAdornment().withType(AdornmentType.FILE_DOWNLOAD);
+
+         QTableMetaData table = new QTableMetaData()
+            .withName("testTable")
+            .withLabel("Test Table")
+            .withPrimaryKeyField("id")
+            .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+            .withField(new QFieldMetaData("blobField", QFieldType.BLOB).withLabel("Blob").withFieldAdornment(adornment));
+
+         ///////////////////////////////////////////////////////////////////////////////////////////
+         // w/o file name format or whatever, generate a file name from table & id & field labels //
+         ///////////////////////////////////////////////////////////////////////////////////////////
+         QRecord record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes);
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
+         assertEquals("/data/testTable/47/blobField/Test+Table+47+Blob", record.getValueString("blobField"));
+         assertEquals("Test Table 47 Blob", record.getDisplayValue("blobField"));
+
+         ////////////////////////////////////////
+         // add a default extension and re-run //
+         ////////////////////////////////////////
+         adornment.withValue(AdornmentType.FileDownloadValues.DEFAULT_EXTENSION, "html");
+         record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes);
+         QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
+         assertEquals("/data/testTable/47/blobField/Test+Table+47+Blob.html", record.getValueString("blobField"));
+         assertEquals("Test Table 47 Blob.html", record.getDisplayValue("blobField"));
+      }
    }
 
 }
