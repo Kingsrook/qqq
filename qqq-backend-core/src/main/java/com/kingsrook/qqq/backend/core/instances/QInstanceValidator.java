@@ -1905,7 +1905,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
+   public void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
    {
       for(QFilterCriteria criterion : CollectionUtils.nonNullList(queryFilter.getCriteria()))
       {
