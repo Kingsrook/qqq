@@ -310,6 +310,16 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
 
          List<SFTPDirEntryWithPath> rs = new ArrayList<>();
 
+         /////////////////////////////////////////////////////////////////////////////////////
+         // at least in some cases, listing / seems to be interpreted by the server as      //
+         // a listing from the root of the system, not just the user's dir.  so, converting //
+         // paths starting with / to instead be ./ is giving us better results.             //
+         /////////////////////////////////////////////////////////////////////////////////////
+         if(fullPath.startsWith("/"))
+         {
+            fullPath = "." + fullPath;
+         }
+
          for(SftpClient.DirEntry dirEntry : sftpClient.readDir(fullPath))
          {
             if(".".equals(dirEntry.getFilename()) || "..".equals(dirEntry.getFilename()))
