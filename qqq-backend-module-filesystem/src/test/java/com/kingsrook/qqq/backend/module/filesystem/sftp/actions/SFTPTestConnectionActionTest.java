@@ -22,7 +22,12 @@
 package com.kingsrook.qqq.backend.module.filesystem.sftp.actions;
 
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.module.filesystem.sftp.BaseSFTPTest;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -157,6 +162,7 @@ class SFTPTestConnectionActionTest extends BaseSFTPTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -173,6 +179,33 @@ class SFTPTestConnectionActionTest extends BaseSFTPTest
       assertNotNull(output.getConnectionErrorMessage());
       assertNull(output.getIsListBasePathSuccess());
       assertNull(output.getListBasePathErrorMessage());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testConnectViaPublicKey() throws Exception
+   {
+      try(InputStream resourceAsStream = getClass().getResourceAsStream("/test-only-key"))
+      {
+         String pem = IOUtils.readLines(resourceAsStream, StandardCharsets.UTF_8).stream()
+            .filter(s -> !s.startsWith("----"))
+            .collect(Collectors.joining(""));
+
+         byte[] privateKeyBytes = Base64.getDecoder().decode(pem);
+
+         SFTPTestConnectionAction.SFTPTestConnectionTestInput input = new SFTPTestConnectionAction.SFTPTestConnectionTestInput()
+            .withUsername(BaseSFTPTest.USERNAME)
+            .withPrivateKey(privateKeyBytes)
+            .withPort(BaseSFTPTest.getCurrentPort())
+            .withHostName(BaseSFTPTest.HOST_NAME);
+         SFTPTestConnectionAction.SFTPTestConnectionTestOutput output = new SFTPTestConnectionAction().testConnection(input);
+         assertTrue(output.getIsConnectionSuccess());
+         assertNull(output.getConnectionErrorMessage());
+      }
    }
 
 }

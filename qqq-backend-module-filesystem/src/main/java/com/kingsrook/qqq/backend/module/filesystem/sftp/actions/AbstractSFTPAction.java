@@ -26,6 +26,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +53,7 @@ import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPBacke
 import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPBackendVariantSetting;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -59,6 +65,8 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntryWithPath>
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractSFTPAction.class);
+
+
 
    /***************************************************************************
     ** singleton implementing Initialization-on-Demand Holder idiom
@@ -91,8 +99,6 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
       }
    }
 
-
-
    ////////////////////////////////////////////////////////////////
    // open clientSessionFirst, then sftpClient                   //
    // and close them in reverse (sftpClient, then clientSession) //
@@ -120,10 +126,11 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
       {
          SFTPBackendMetaData sftpBackendMetaData = getBackendMetaData(SFTPBackendMetaData.class, backendMetaData);
 
-         String  username = sftpBackendMetaData.getUsername();
-         String  password = sftpBackendMetaData.getPassword();
-         String  hostName = sftpBackendMetaData.getHostName();
-         Integer port     = sftpBackendMetaData.getPort();
+         String  username   = sftpBackendMetaData.getUsername();
+         String  password   = sftpBackendMetaData.getPassword();
+         String  hostName   = sftpBackendMetaData.getHostName();
+         Integer port       = sftpBackendMetaData.getPort();
+         byte[]  privateKey = sftpBackendMetaData.getPrivateKey();
 
          if(backendMetaData.getUsesVariants())
          {
@@ -144,6 +151,11 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
                password = variantRecord.getValueString(fieldNameMap.get(SFTPBackendVariantSetting.PASSWORD));
             }
 
+            if(fieldNameMap.containsKey(SFTPBackendVariantSetting.PRIVATE_KEY))
+            {
+               privateKey = variantRecord.getValueByteArray(fieldNameMap.get(SFTPBackendVariantSetting.PRIVATE_KEY));
+            }
+
             if(fieldNameMap.containsKey(SFTPBackendVariantSetting.HOSTNAME))
             {
                hostName = variantRecord.getValueString(fieldNameMap.get(SFTPBackendVariantSetting.HOSTNAME));
@@ -155,9 +167,9 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
             }
          }
 
-         makeConnection(username, hostName, port, password);
+         makeConnection(username, hostName, port, password, privateKey);
       }
-      catch(IOException e)
+      catch(Exception e)
       {
          throw (new QException("Error setting up SFTP connection", e));
       }
@@ -195,10 +207,30 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
    /***************************************************************************
     **
     ***************************************************************************/
-   protected SftpClient makeConnection(String username, String hostName, Integer port, String password) throws IOException
+   protected SftpClient makeConnection(String username, String hostName, Integer port, String password, byte[] privateKeyBytes) throws Exception
    {
       this.clientSession = SshClientManager.getInstance().connect(username, hostName, port).verify().getSession();
-      clientSession.addPasswordIdentity(password);
+
+      //////////////////////////////////////////////////////////////////////
+      // if we have private key bytes, use them to add publicKey identity //
+      //////////////////////////////////////////////////////////////////////
+      if(privateKeyBytes != null && privateKeyBytes.length > 0)
+      {
+         PKCS8EncodedKeySpec keySpec    = new PKCS8EncodedKeySpec(privateKeyBytes);
+         KeyFactory          keyFactory = KeyFactory.getInstance("RSA");
+         PrivateKey          privateKey = keyFactory.generatePrivate(keySpec);
+         PublicKey           publicKey  = KeyUtils.recoverPublicKey(privateKey);
+         clientSession.addPublicKeyIdentity(new KeyPair(publicKey, privateKey));
+      }
+
+      //////////////////////////////////////////////////
+      // if we have a password, add password identity //
+      //////////////////////////////////////////////////
+      if(StringUtils.hasContent(password))
+      {
+         clientSession.addPasswordIdentity(password);
+      }
+
       clientSession.auth().verify();
 
       this.sftpClient = SftpClientFactory.instance().createSftpClient(clientSession);

@@ -37,7 +37,7 @@ public class SFTPTestConnectionAction extends AbstractSFTPAction
     ***************************************************************************/
    public SFTPTestConnectionTestOutput testConnection(SFTPTestConnectionTestInput input)
    {
-      try(SftpClient sftpClient = super.makeConnection(input.getUsername(), input.getHostName(), input.getPort(), input.getPassword()))
+      try(SftpClient sftpClient = super.makeConnection(input.getUsername(), input.getHostName(), input.getPort(), input.getPassword(), input.getPrivateKey()))
       {
          SFTPTestConnectionTestOutput output = new SFTPTestConnectionTestOutput().withIsConnectionSuccess(true);
 
@@ -80,6 +80,7 @@ public class SFTPTestConnectionAction extends AbstractSFTPAction
       private Integer port;
       private String  password;
       private String  basePath;
+      private byte[]  privateKey;
 
 
 
@@ -251,6 +252,39 @@ public class SFTPTestConnectionAction extends AbstractSFTPAction
          return (this);
       }
 
+
+
+      /*******************************************************************************
+       ** Getter for privateKey
+       **
+       *******************************************************************************/
+      public byte[] getPrivateKey()
+      {
+         return privateKey;
+      }
+
+
+
+      /*******************************************************************************
+       ** Setter for privateKey
+       **
+       *******************************************************************************/
+      public void setPrivateKey(byte[] privateKey)
+      {
+         this.privateKey = privateKey;
+      }
+
+
+
+      /*******************************************************************************
+       ** Fluent setter for privateKey
+       **
+       *******************************************************************************/
+      public SFTPTestConnectionTestInput withPrivateKey(byte[] privateKey)
+      {
+         this.privateKey = privateKey;
+         return (this);
+      }
    }
 
 

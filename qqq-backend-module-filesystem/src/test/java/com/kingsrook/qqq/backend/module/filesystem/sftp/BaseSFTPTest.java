@@ -67,6 +67,17 @@ public class BaseSFTPTest extends BaseTest
 
       grantUploadFilesDirWritePermission();
 
+      ///////////////////////////////////////////////////
+      // add our test-only public key to the container //
+      ///////////////////////////////////////////////////
+      String sshDir = "/home/" + USERNAME + "/.ssh";
+      sftpContainer.execInContainer("mkdir", sshDir);
+      sftpContainer.execInContainer("chmod", "700", sshDir);
+      sftpContainer.execInContainer("chown", USERNAME, sshDir);
+      copyFileToContainer("test-only-key.pub", sshDir + "/authorized_keys");
+      sftpContainer.execInContainer("chmod", "600", sshDir + "/authorized_keys");
+      sftpContainer.execInContainer("chown", USERNAME, sshDir + "/authorized_keys");
+
       currentPort = sftpContainer.getMappedPort(22);
    }
 

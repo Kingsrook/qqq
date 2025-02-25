@@ -34,5 +34,6 @@ public enum SFTPBackendVariantSetting implements BackendVariantSetting
    PASSWORD,
    HOSTNAME,
    PORT,
-   BASE_PATH
+   BASE_PATH,
+   PRIVATE_KEY
 }

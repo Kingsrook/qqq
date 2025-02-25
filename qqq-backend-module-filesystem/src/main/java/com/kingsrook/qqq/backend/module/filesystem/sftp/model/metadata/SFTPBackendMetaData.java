@@ -34,6 +34,7 @@ public class SFTPBackendMetaData extends AbstractFilesystemBackendMetaData
    private String  username;
    private String  password;
    private String  hostName;
+   private byte[]  privateKey;
    private Integer port;
 
 
@@ -192,6 +193,37 @@ public class SFTPBackendMetaData extends AbstractFilesystemBackendMetaData
    public SFTPBackendMetaData withPort(Integer port)
    {
       this.port = port;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for privateKey
+    *******************************************************************************/
+   public byte[] getPrivateKey()
+   {
+      return (this.privateKey);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for privateKey
+    *******************************************************************************/
+   public void setPrivateKey(byte[] privateKey)
+   {
+      this.privateKey = privateKey;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for privateKey
+    *******************************************************************************/
+   public SFTPBackendMetaData withPrivateKey(byte[] privateKey)
+   {
+      this.privateKey = privateKey;
       return (this);
    }
 
