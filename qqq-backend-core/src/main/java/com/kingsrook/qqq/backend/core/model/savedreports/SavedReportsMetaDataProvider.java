@@ -50,7 +50,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareScopePossibleValueMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableAudienceType;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
@@ -351,8 +350,7 @@ public class SavedReportsMetaDataProvider
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "savedReportId", "renderedReportStatusId")))
          .withSection(new QFieldSection("input", new QIcon().withName("input"), Tier.T2, List.of("userId", "reportFormat")))
          .withSection(new QFieldSection("output", new QIcon().withName("output"), Tier.T2, List.of("jobUuid", "resultPath", "rowCount", "errorMessage", "startTime", "endTime")))
-         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")))
-         .withoutCapabilities(Capability.allWriteCapabilities());
+         .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       table.getField("renderedReportStatusId").setAdornments(List.of(new FieldAdornment(AdornmentType.CHIP)
          .withValues(AdornmentType.ChipValues.iconAndColorValues(RenderedReportStatus.RUNNING.getId(), "pending", AdornmentType.ChipValues.COLOR_SECONDARY))
