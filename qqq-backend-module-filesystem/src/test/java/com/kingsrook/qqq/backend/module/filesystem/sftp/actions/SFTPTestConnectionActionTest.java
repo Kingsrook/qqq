@@ -24,8 +24,7 @@ package com.kingsrook.qqq.backend.module.filesystem.sftp.actions;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.sftp.BaseSFTPTest;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -191,11 +190,7 @@ class SFTPTestConnectionActionTest extends BaseSFTPTest
    {
       try(InputStream resourceAsStream = getClass().getResourceAsStream("/test-only-key"))
       {
-         String pem = IOUtils.readLines(resourceAsStream, StandardCharsets.UTF_8).stream()
-            .filter(s -> !s.startsWith("----"))
-            .collect(Collectors.joining(""));
-
-         byte[] privateKeyBytes = Base64.getDecoder().decode(pem);
+         byte[] privateKeyBytes = AbstractSFTPAction.pemStringToDecodedBytes(StringUtils.join("", IOUtils.readLines(resourceAsStream, StandardCharsets.UTF_8)));
 
          SFTPTestConnectionAction.SFTPTestConnectionTestInput input = new SFTPTestConnectionAction.SFTPTestConnectionTestInput()
             .withUsername(BaseSFTPTest.USERNAME)

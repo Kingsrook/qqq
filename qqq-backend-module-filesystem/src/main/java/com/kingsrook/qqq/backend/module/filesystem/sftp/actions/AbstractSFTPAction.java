@@ -33,6 +33,7 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -408,5 +409,20 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
       }
 
       return (sftpClient);
+   }
+
+
+
+   /***************************************************************************
+    ** take a string, which is the contents of a PEM file (like a private key)
+    ** - and if it has the -----BEGIN...----- and -----END...---- lines, strip
+    ** them away, and strip away any whitespace, and then base-64 decode it.
+    ***************************************************************************/
+   public static byte[] pemStringToDecodedBytes(String pemString)
+   {
+      String base64 = pemString.replaceAll("-----BEGIN (.*?)-----", "")
+         .replaceAll("-----END (.*?)-----", "")
+         .replaceAll("\\s", "");
+      return Base64.getDecoder().decode(base64);
    }
 }
