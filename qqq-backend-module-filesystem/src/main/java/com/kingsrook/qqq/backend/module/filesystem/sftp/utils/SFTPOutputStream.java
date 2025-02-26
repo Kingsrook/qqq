@@ -34,7 +34,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.common.SftpException;
 import org.jetbrains.annotations.NotNull;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -45,6 +47,7 @@ public class SFTPOutputStream extends PipedOutputStream
    private static final QLogger LOG = QLogger.getLogger(SFTPOutputStream.class);
 
    private final SftpClient sftpClient;
+   private final String     path;
 
    private final PipedInputStream pipedInputStream;
    private final Future<?>        putFuture;
@@ -62,12 +65,14 @@ public class SFTPOutputStream extends PipedOutputStream
       pipedInputStream = new PipedInputStream(this, 32 * 1024);
 
       this.sftpClient = sftpClient;
+      this.path = path;
 
       putFuture = Executors.newSingleThreadExecutor().submit(() ->
       {
          try
          {
             started.set(true);
+            LOG.debug("Starting sftp put", logPair("path", path));
             sftpClient.put(pipedInputStream, path);
          }
          catch(Exception e)
@@ -105,6 +110,10 @@ public class SFTPOutputStream extends PipedOutputStream
       {
          if(putException.get() != null)
          {
+            if(putException.get() instanceof SftpException sftpException)
+            {
+               throw new IOException("Error performing SFTP put for path [" + path + "]: " + sftpException.getMessage());
+            }
             throw new IOException("Error performing SFTP put", putException.get());
          }
 

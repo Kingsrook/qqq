@@ -36,9 +36,11 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -46,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
@@ -57,6 +60,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.common.SftpException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -300,9 +304,10 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
    @Override
    public List<SFTPDirEntryWithPath> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
+      String fullPath = null;
       try
       {
-         String fullPath = getFullBasePath(table, backendBase);
+         fullPath = getFullBasePath(table, backendBase);
          if(StringUtils.hasContent(requestedPath))
          {
             fullPath = stripDuplicatedSlashes(fullPath + File.separatorChar + requestedPath + File.separatorChar);
@@ -340,6 +345,12 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
       }
       catch(Exception e)
       {
+         SftpException sftpException = ExceptionUtils.findClassInRootChain(e, SftpException.class);
+         if(sftpException != null)
+         {
+            throw new QUserFacingException("SFTP Exception listing [" + Objects.requireNonNullElse(fullPath, "") + "]: " + sftpException.getMessage());
+         }
+
          throw (new QException("Error listing files", e));
       }
    }
