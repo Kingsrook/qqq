@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -51,7 +52,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -108,60 +108,54 @@ public class SearchPossibleValueSourceAction
 
 
 
+   /***************************************************************************
+    ** record to store "computed" values as part of a possible-value search -
+    ** e.g., ids type-convered, and lower-cased labels.
+    ***************************************************************************/
+   public record PreparedSearchPossibleValueSourceInput(Collection<?> inputIdsAsCorrectType, Collection<String> lowerCaseLabels, String searchTerm) {}
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static PreparedSearchPossibleValueSourceInput prepareSearchPossibleValueSourceInput(SearchPossibleValueSourceInput input)
+   {
+      QPossibleValueSource possibleValueSource   = QContext.getQInstance().getPossibleValueSource(input.getPossibleValueSourceName());
+      List<?>              inputIdsAsCorrectType = convertInputIdsToPossibleValueSourceIdType(possibleValueSource, input.getIdList());
+
+      Set<String> lowerCaseLabels = null;
+      if(input.getLabelList() != null)
+      {
+         lowerCaseLabels = input.getLabelList().stream()
+            .filter(Objects::nonNull)
+            .map(l -> l.toLowerCase())
+            .collect(Collectors.toSet());
+      }
+
+      return (new PreparedSearchPossibleValueSourceInput(inputIdsAsCorrectType, lowerCaseLabels, input.getSearchTerm()));
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    private SearchPossibleValueSourceOutput searchPossibleValueEnum(SearchPossibleValueSourceInput input, QPossibleValueSource possibleValueSource)
    {
+      PreparedSearchPossibleValueSourceInput preparedSearchPossibleValueSourceInput = prepareSearchPossibleValueSourceInput(input);
+
       SearchPossibleValueSourceOutput output      = new SearchPossibleValueSourceOutput();
       List<Serializable>              matchingIds = new ArrayList<>();
 
-      List<?> inputIdsAsCorrectType = convertInputIdsToEnumIdType(possibleValueSource, input.getIdList());
-      Set<String> labels = null;
-
       for(QPossibleValue<?> possibleValue : possibleValueSource.getEnumValues())
       {
-         boolean match = false;
-
-         if(input.getIdList() != null)
-         {
-            if(inputIdsAsCorrectType.contains(possibleValue.getId()))
-            {
-               match = true;
-            }
-         }
-         else if(input.getLabelList() != null)
-         {
-            if(labels == null)
-            {
-               labels = input.getLabelList().stream().filter(Objects::nonNull).map(l -> l.toLowerCase()).collect(Collectors.toSet());
-            }
-
-            if(labels.contains(possibleValue.getLabel().toLowerCase()))
-            {
-               match = true;
-            }
-         }
-         else
-         {
-            if(StringUtils.hasContent(input.getSearchTerm()))
-            {
-               match = (Objects.equals(ValueUtils.getValueAsString(possibleValue.getId()).toLowerCase(), input.getSearchTerm().toLowerCase())
-                        || possibleValue.getLabel().toLowerCase().startsWith(input.getSearchTerm().toLowerCase()));
-            }
-            else
-            {
-               match = true;
-            }
-         }
+         boolean match = doesPossibleValueMatchSearchInput(possibleValue, preparedSearchPossibleValueSourceInput);
 
          if(match)
          {
-            matchingIds.add((Serializable) possibleValue.getId());
+            matchingIds.add(possibleValue.getId());
          }
-
-         // todo - skip & limit?
-         // todo - default filter
       }
 
       List<QPossibleValue<?>> qPossibleValues = possibleValueTranslator.buildTranslatedPossibleValueList(possibleValueSource, matchingIds);
@@ -172,42 +166,84 @@ public class SearchPossibleValueSourceAction
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean doesPossibleValueMatchSearchInput(QPossibleValue<?> possibleValue, PreparedSearchPossibleValueSourceInput input)
+   {
+      boolean match = false;
+
+      if(input.inputIdsAsCorrectType() != null)
+      {
+         if(input.inputIdsAsCorrectType().contains(possibleValue.getId()))
+         {
+            match = true;
+         }
+      }
+      else if(input.lowerCaseLabels() != null)
+      {
+         if(input.lowerCaseLabels().contains(possibleValue.getLabel().toLowerCase()))
+         {
+            match = true;
+         }
+      }
+      else
+      {
+         if(StringUtils.hasContent(input.searchTerm()))
+         {
+            match = (Objects.equals(ValueUtils.getValueAsString(possibleValue.getId()).toLowerCase(), input.searchTerm().toLowerCase())
+               || possibleValue.getLabel().toLowerCase().startsWith(input.searchTerm().toLowerCase()));
+         }
+         else
+         {
+            match = true;
+         }
+      }
+      return match;
+   }
+
+
+
    /*******************************************************************************
     ** The input list of ids might come through as a type that isn't the same as
     ** the type of the ids in the enum (e.g., strings from a frontend, integers
-    ** in an enum).  So, this method looks at the first id in the enum, and then
-    ** maps all the inputIds to be of the same type.
+    ** in an enum).  So, this method type-converts them.
     *******************************************************************************/
-   private List<Object> convertInputIdsToEnumIdType(QPossibleValueSource possibleValueSource, List<Serializable> inputIdList)
+   private static List<Object> convertInputIdsToPossibleValueSourceIdType(QPossibleValueSource possibleValueSource, List<Serializable> inputIdList)
    {
       List<Object> rs = new ArrayList<>();
-      if(CollectionUtils.nullSafeIsEmpty(inputIdList))
+
+      if(inputIdList == null)
+      {
+         return (null);
+      }
+      else if(inputIdList.isEmpty())
       {
          return (rs);
       }
 
-      Object anIdFromTheEnum = possibleValueSource.getEnumValues().get(0).getId();
+      QFieldType type = possibleValueSource.getIdType();
 
       for(Serializable inputId : inputIdList)
       {
          Object properlyTypedId = null;
          try
          {
-            if(anIdFromTheEnum instanceof Integer)
+            if(type.equals(QFieldType.INTEGER))
             {
                properlyTypedId = ValueUtils.getValueAsInteger(inputId);
             }
-            else if(anIdFromTheEnum instanceof String)
+            else if(type.isStringLike())
             {
                properlyTypedId = ValueUtils.getValueAsString(inputId);
             }
-            else if(anIdFromTheEnum instanceof Boolean)
+            else if(type.equals(QFieldType.BOOLEAN))
             {
                properlyTypedId = ValueUtils.getValueAsBoolean(inputId);
             }
             else
             {
-               LOG.warn("Unexpected type [" + anIdFromTheEnum.getClass().getSimpleName() + "] for ids in enum: " + possibleValueSource.getName());
+               LOG.warn("Unexpected type [" + type + "] for ids in enum: " + possibleValueSource.getName());
             }
          }
          catch(Exception e)
@@ -215,7 +251,7 @@ public class SearchPossibleValueSourceAction
             LOG.debug("Error converting possible value id to expected id type", e, logPair("value", inputId));
          }
 
-         if (properlyTypedId != null)
+         if(properlyTypedId != null)
          {
             rs.add(properlyTypedId);
          }
@@ -397,7 +433,7 @@ public class SearchPossibleValueSourceAction
       }
       catch(Exception e)
       {
-         String message = "Error sending searching custom possible value source [" + input.getPossibleValueSourceName() + "]";
+         String message = "Error searching custom possible value source [" + input.getPossibleValueSourceName() + "]";
          LOG.warn(message, e);
          throw (new QException(message));
       }

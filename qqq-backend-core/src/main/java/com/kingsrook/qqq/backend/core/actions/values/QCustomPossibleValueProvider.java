@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.values;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
@@ -69,6 +70,29 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
       {
          rs.add(ValueUtils.getValueAsType(type, serializable));
       }
+
+      return (rs);
+   }
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   default List<QPossibleValue<T>> _defaultSearch(SearchPossibleValueSourceInput input, List<QPossibleValue<T>> possibleValues)
+   {
+      SearchPossibleValueSourceAction.PreparedSearchPossibleValueSourceInput preparedInput = SearchPossibleValueSourceAction.prepareSearchPossibleValueSourceInput(input);
+
+      List<QPossibleValue<T>> rs = new ArrayList<>();
+
+      for(QPossibleValue<T> possibleValue : possibleValues)
+      {
+         if(possibleValue != null && SearchPossibleValueSourceAction.doesPossibleValueMatchSearchInput(possibleValue, preparedInput))
+         {
+            rs.add(possibleValue);
+         }
+      }
+
+      rs.sort(Comparator.nullsLast(Comparator.comparing((QPossibleValue<T> pv) -> pv.getLabel())));
 
       return (rs);
    }
