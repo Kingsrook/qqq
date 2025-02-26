@@ -46,6 +46,7 @@ public enum AdornmentType
    REVEAL,
    FILE_DOWNLOAD,
    FILE_UPLOAD,
+   TOOLTIP,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
@@ -92,9 +93,9 @@ public enum AdornmentType
       static String makeFieldDownloadUrl(String tableName, Serializable primaryKey, String fieldName, String fileName)
       {
          return ("/data/" + tableName + "/"
-            + URLEncoder.encode(Objects.requireNonNullElse(ValueUtils.getValueAsString(primaryKey), ""), StandardCharsets.UTF_8) + "/"
+            + URLEncoder.encode(Objects.requireNonNullElse(ValueUtils.getValueAsString(primaryKey), ""), StandardCharsets.UTF_8).replace("+", "%20") + "/"
             + fieldName + "/"
-            + URLEncoder.encode(Objects.requireNonNullElse(fileName, ""), StandardCharsets.UTF_8));
+            + URLEncoder.encode(Objects.requireNonNullElse(fileName, ""), StandardCharsets.UTF_8).replace("+", "%20"));
       }
    }
 
@@ -244,6 +245,17 @@ public enum AdornmentType
       {
          return (Pair.of(WIDTH, "half"));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public interface TooltipValues
+   {
+      String STATIC_TEXT = "staticText";
+      String TOOLTIP_DYNAMIC = "tooltipDynamic";
    }
 
 }
