@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -110,6 +111,10 @@ public class BulkInsertLoadStep extends LoadViaInsertStep implements ProcessSumm
             if(field.getType().isNumeric())
             {
                ProcessSummaryLine idsLine = new ProcessSummaryLine(Status.INFO, "Inserted " + field.getLabel() + " values between " + firstInsertedPrimaryKey + " and " + lastInsertedPrimaryKey);
+               if(Objects.equals(firstInsertedPrimaryKey, lastInsertedPrimaryKey))
+               {
+                  idsLine.setMessage("Inserted " + field.getLabel() + " " + firstInsertedPrimaryKey);
+               }
                idsLine.setCount(null);
                processSummary.add(idsLine);
             }
