@@ -95,6 +95,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.Bulk
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -1478,6 +1479,30 @@ public class QInstanceEnricher
    public static void removeAllEnricherPlugins()
    {
       enricherPlugins.clear();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void discoverAndAddPluginsInPackage(String packageName) throws QException
+   {
+      try
+      {
+         for(Class<?> aClass : ClassPathUtils.getClassesInPackage(packageName))
+         {
+            if(QInstanceEnricherPluginInterface.class.isAssignableFrom(aClass))
+            {
+               QInstanceEnricherPluginInterface<?> plugin = (QInstanceEnricherPluginInterface<?>) aClass.getConstructor().newInstance();
+               addEnricherPlugin(plugin);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error discovering and adding enricher plugins in package [" + packageName + "]", e));
+      }
    }
 
 

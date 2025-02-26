@@ -27,7 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.BaseTest;
-import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.enrichment.testplugins.TestEnricherPlugin;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -595,27 +596,31 @@ class QInstanceEnricherTest extends BaseTest
    {
       QInstance qInstance = TestUtils.defineInstance();
 
-      QInstanceEnricher.addEnricherPlugin(new QInstanceEnricherPluginInterface<QFieldMetaData>()
-      {
-         /***************************************************************************
-          *
-          ***************************************************************************/
-         @Override
-         public void enrich(QFieldMetaData field, QInstance qInstance)
-         {
-            if(field != null)
-            {
-               field.setLabel(field.getLabel() + " Plugged");
-            }
-         }
-      });
+      QInstanceEnricher.addEnricherPlugin(new TestEnricherPlugin());
 
       new QInstanceEnricher(qInstance).enrich();
 
       qInstance.getTables().values().forEach(table -> table.getFields().values().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
       qInstance.getProcesses().values().forEach(process -> process.getInputFields().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
       qInstance.getProcesses().values().forEach(process -> process.getOutputFields().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
+   }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDiscoverAndAddPlugins() throws QException
+   {
+      QInstance qInstance = TestUtils.defineInstance();
+      new QInstanceEnricher(qInstance).enrich();
+      qInstance.getTables().values().forEach(table -> table.getFields().values().forEach(field -> assertThat(field.getLabel()).doesNotEndWith("Plugged")));
+
+      qInstance = TestUtils.defineInstance();
+      QInstanceEnricher.discoverAndAddPluginsInPackage(getClass().getPackageName() + ".enrichment.testplugins");
+      new QInstanceEnricher(qInstance).enrich();
+      qInstance.getTables().values().forEach(table -> table.getFields().values().forEach(field -> assertThat(field.getLabel()).endsWith("Plugged")));
    }
 
 }
