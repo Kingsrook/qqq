@@ -82,6 +82,7 @@ public class FieldAdornment implements ToSchema
          {
             EnumSet<AdornmentType> subSet = EnumSet.allOf(AdornmentType.class);
             subSet.remove(AdornmentType.FILE_UPLOAD); // todo - remove for next version!
+            subSet.remove(AdornmentType.TOOLTIP); // todo - remove for next version!
             FieldAdornmentSubSet.subSet = subSet;
          }
 
