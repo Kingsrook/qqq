@@ -257,6 +257,9 @@ class BulkInsertFullProcessTest extends BaseTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private static RunProcessOutput continueProcessPostFileMapping(RunProcessInput runProcessInput) throws QException
    {
       RunProcessOutput runProcessOutput;
