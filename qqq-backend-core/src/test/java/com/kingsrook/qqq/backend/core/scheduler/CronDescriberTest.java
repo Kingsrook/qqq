@@ -62,7 +62,7 @@ class CronDescriberTest extends BaseTest
       assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, from Monday to Friday.", CronDescriber.getDescription("0 0 0 * * MON-FRI"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, Sunday, Saturday.", CronDescriber.getDescription("0 0 0 * * 1,7"));
       assertEquals("At 0 seconds, 0 minutes, 2 AM, 6 AM, noon, 4 PM, 8 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 2,6,12,16,20 * * ?"));
-      assertEquals("??", CronDescriber.getDescription("0/5 14,18,3-39,52 * ? JAN,MAR,SEP MON-FRI 2002-2010"));
+      assertEquals("At every 5 seconds starting at 0, 14, 18, 3-39, 52 minutes, every hour, on every day of January, March, September, from Monday to Friday, in 2002-2010.", CronDescriber.getDescription("0/5 14,18,3-39,52 * ? JAN,MAR,SEP MON-FRI 2002-2010"));
    }
 
 }

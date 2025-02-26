@@ -325,7 +325,7 @@ class QValueFormatterTest extends BaseTest
          ///////////////////////////////////////////////////////////////////////////////////////////
          QRecord record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes);
          QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
-         assertEquals("/data/testTable/47/blobField/Test+Table+47+Blob", record.getValueString("blobField"));
+         assertEquals("/data/testTable/47/blobField/Test%20Table%2047%20Blob", record.getValueString("blobField"));
          assertEquals("Test Table 47 Blob", record.getDisplayValue("blobField"));
 
          ////////////////////////////////////////
@@ -334,7 +334,7 @@ class QValueFormatterTest extends BaseTest
          adornment.withValue(AdornmentType.FileDownloadValues.DEFAULT_EXTENSION, "html");
          record = new QRecord().withValue("id", 47).withValue("blobField", blobBytes);
          QValueFormatter.setBlobValuesToDownloadUrls(table, List.of(record));
-         assertEquals("/data/testTable/47/blobField/Test+Table+47+Blob.html", record.getValueString("blobField"));
+         assertEquals("/data/testTable/47/blobField/Test%20Table%2047%20Blob.html", record.getValueString("blobField"));
          assertEquals("Test Table 47 Blob.html", record.getDisplayValue("blobField"));
       }
    }
