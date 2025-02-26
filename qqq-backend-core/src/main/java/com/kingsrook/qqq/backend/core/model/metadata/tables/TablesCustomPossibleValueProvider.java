@@ -82,7 +82,7 @@ public class TablesCustomPossibleValueProvider implements QCustomPossibleValuePr
          }
       }
 
-      return _defaultSearch(input, allPossibleValues);
+      return completeCustomPVSSearch(input, allPossibleValues);
    }
 
 }

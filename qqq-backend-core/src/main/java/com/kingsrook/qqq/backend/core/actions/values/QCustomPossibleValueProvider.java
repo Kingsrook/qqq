@@ -76,9 +76,11 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
 
 
    /***************************************************************************
-    *
+    ** meant to be protected (but interface...) - for a custom PVS implementation
+    ** to complete its search (e.g., after it generates the list of PVS objects,
+    ** let this method do the filtering).
     ***************************************************************************/
-   default List<QPossibleValue<T>> _defaultSearch(SearchPossibleValueSourceInput input, List<QPossibleValue<T>> possibleValues)
+   default List<QPossibleValue<T>> completeCustomPVSSearch(SearchPossibleValueSourceInput input, List<QPossibleValue<T>> possibleValues)
    {
       SearchPossibleValueSourceAction.PreparedSearchPossibleValueSourceInput preparedInput = SearchPossibleValueSourceAction.prepareSearchPossibleValueSourceInput(input);
 
