@@ -48,6 +48,7 @@ public class RecordEntityToTableGenericMetaDataProducer implements MetaDataProdu
 
    private static MetaDataCustomizerInterface<QTableMetaData> defaultMetaDataCustomizer = null;
 
+   private Class<?> sourceClass;
 
 
    /*******************************************************************************
@@ -152,6 +153,39 @@ public class RecordEntityToTableGenericMetaDataProducer implements MetaDataProdu
    public static void setDefaultMetaDataCustomizer(MetaDataCustomizerInterface<QTableMetaData> defaultMetaDataCustomizer)
    {
       RecordEntityToTableGenericMetaDataProducer.defaultMetaDataCustomizer = defaultMetaDataCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public RecordEntityToTableGenericMetaDataProducer withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
    }
 
 }

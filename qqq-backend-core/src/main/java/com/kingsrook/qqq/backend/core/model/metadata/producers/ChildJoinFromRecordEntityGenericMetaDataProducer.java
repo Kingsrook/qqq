@@ -62,6 +62,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    private String parentTableName; // e.g., order
    private String foreignKeyFieldName; // e.g., orderId
 
+   private Class<?> sourceClass;
 
 
    /***************************************************************************
@@ -100,6 +101,39 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
          .withJoinOn(new JoinOn(possibleValueTable.getPrimaryKeyField(), foreignKeyFieldName));
 
       return (join);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public ChildJoinFromRecordEntityGenericMetaDataProducer withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
    }
 
 }
