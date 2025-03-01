@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -94,7 +95,7 @@ public class CronDescriber
     ***************************************************************************/
    public static String getDescription(String cronExpression) throws ParseException
    {
-      String[] parts = cronExpression.split("\\s+");
+      String[] parts = cronExpression.trim().toUpperCase().split("\\s+");
       if(parts.length < 6 || parts.length > 7)
       {
          throw new ParseException("Invalid cron expression: " + cronExpression, 0);
@@ -173,15 +174,16 @@ public class CronDescriber
       {
          return "every month";
       }
+      else if(month.contains("-"))
+      {
+         String[] parts = month.split("-");
+         return String.format("%s to %s", MONTH_MAP.getOrDefault(parts[0], parts[0]), MONTH_MAP.getOrDefault(parts[1], parts[1]));
+      }
       else
       {
-         String[]      months = month.split(",");
-         StringBuilder result = new StringBuilder();
-         for(String m : months)
-         {
-            result.append(MONTH_MAP.getOrDefault(m, m)).append(", ");
-         }
-         return result.substring(0, result.length() - 2);
+         String[]     months     = month.split(",");
+         List<String> monthNames = Arrays.stream(months).map(m -> MONTH_MAP.getOrDefault(m, m)).toList();
+         return StringUtils.joinWithCommasAndAnd(monthNames);
       }
    }
 
@@ -192,7 +194,7 @@ public class CronDescriber
     ***************************************************************************/
    private static String describeDayOfWeek(String dayOfWeek)
    {
-      if(dayOfWeek.equals("?"))
+      if(dayOfWeek.equals("?") || dayOfWeek.equals("*"))
       {
          return "every day of the week";
       }
@@ -212,13 +214,9 @@ public class CronDescriber
       }
       else
       {
-         String[]      days   = dayOfWeek.split(",");
-         StringBuilder result = new StringBuilder();
-         for(String d : days)
-         {
-            result.append(DAY_OF_WEEK_MAP.getOrDefault(d, d)).append(", ");
-         }
-         return result.substring(0, result.length() - 2);
+         String[]     days     = dayOfWeek.split(",");
+         List<String> dayNames = Arrays.stream(days).map(d -> DAY_OF_WEEK_MAP.getOrDefault(d, d)).toList();
+         return StringUtils.joinWithCommasAndAnd(dayNames);
       }
    }
 
@@ -244,21 +242,22 @@ public class CronDescriber
       }
       else if(part.contains(","))
       {
+         List<String> partsList = Arrays.stream(part.split(",")).toList();
+
          if(label.equals("hour"))
          {
-            String[]     parts = part.split(",");
-            List<String> partList = Arrays.stream(parts).map(p -> hourToAmPm(p)).toList();
-            return String.join(", ", partList);
+            List<String> hourNames = partsList.stream().map(p -> hourToAmPm(p)).toList();
+            return StringUtils.joinWithCommasAndAnd(hourNames);
          }
          else
          {
             if(label.equals("day"))
             {
-               return "days " + part.replace(",", ", ");
+               return "days " + StringUtils.joinWithCommasAndAnd(partsList);
             }
             else
             {
-               return part.replace(",", ", ") + " " + label + "s";
+               return StringUtils.joinWithCommasAndAnd(partsList) + " " + label + "s";
             }
          }
       }

@@ -43,7 +43,7 @@ class CronDescriberTest extends BaseTest
       assertEquals("At every second, every minute, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("* * * * * ?"));
       assertEquals("At 0 seconds, every minute, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("0 * * * * ?"));
       assertEquals("At 0 seconds, 0 minutes, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 * * * ?"));
-      assertEquals("At 0 seconds, 0, 30 minutes, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0,30 * * * ?"));
+      assertEquals("At 0 seconds, 0 and 30 minutes, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0,30 * * * ?"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 0 * * ?"));
       assertEquals("At 0 seconds, 0 minutes, 1 AM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 1 * * ?"));
       assertEquals("At 0 seconds, 0 minutes, 11 AM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 11 * * ?"));
@@ -51,18 +51,25 @@ class CronDescriberTest extends BaseTest
       assertEquals("At 0 seconds, 0 minutes, 1 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 13 * * ?"));
       assertEquals("At 0 seconds, 0 minutes, 11 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 23 * * ?"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on day 10 of every month, every day of the week.", CronDescriber.getDescription("0 0 0 10 * ?"));
-      assertEquals("At 0 seconds, 0 minutes, midnight, on days 10, 20 of every month, every day of the week.", CronDescriber.getDescription("0 0 0 10,20 * ?"));
+      assertEquals("At 0 seconds, 0 minutes, midnight, on days 10 and 20 of every month, every day of the week.", CronDescriber.getDescription("0 0 0 10,20 * ?"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on days from 10 to 15 of every month, every day of the week.", CronDescriber.getDescription("0 0 0 10-15 * ?"));
       assertEquals("At from 10 to 15 seconds, 0 minutes, midnight, on every day of every month, every day of the week.", CronDescriber.getDescription("10-15 0 0 * * ?"));
       assertEquals("At 30 seconds, 30 minutes, from 8 AM to 4 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("30 30 8-16 * * ?"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on every 3 days starting at 0 of every month, every day of the week.", CronDescriber.getDescription("0 0 0 */3 * ?"));
       assertEquals("At every 5 seconds starting at 0, 0 minutes, midnight, on every day of every month, every day of the week.", CronDescriber.getDescription("0/5 0 0 * * ?"));
       assertEquals("At 0 seconds, every 30 minutes starting at 3, midnight, on every day of every month, every day of the week.", CronDescriber.getDescription("0 3/30 0 * * ?"));
-      assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, Monday, Wednesday, Friday.", CronDescriber.getDescription("0 0 0 * * MON,WED,FRI"));
+      assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, Monday, Wednesday, and Friday.", CronDescriber.getDescription("0 0 0 * * MON,WED,FRI"));
       assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, from Monday to Friday.", CronDescriber.getDescription("0 0 0 * * MON-FRI"));
-      assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, Sunday, Saturday.", CronDescriber.getDescription("0 0 0 * * 1,7"));
-      assertEquals("At 0 seconds, 0 minutes, 2 AM, 6 AM, noon, 4 PM, 8 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 2,6,12,16,20 * * ?"));
-      assertEquals("At every 5 seconds starting at 0, 14, 18, 3-39, 52 minutes, every hour, on every day of January, March, September, from Monday to Friday, in 2002-2010.", CronDescriber.getDescription("0/5 14,18,3-39,52 * ? JAN,MAR,SEP MON-FRI 2002-2010"));
+      assertEquals("At 0 seconds, 0 minutes, midnight, on every day of every month, Sunday and Saturday.", CronDescriber.getDescription("0 0 0 * * 1,7"));
+      assertEquals("At 0 seconds, 0 minutes, 2 AM, 6 AM, noon, 4 PM, and 8 PM, on every day of every month, every day of the week.", CronDescriber.getDescription("0 0 2,6,12,16,20 * * ?"));
+      assertEquals("At every 5 seconds starting at 0, 14, 18, 3-39, and 52 minutes, every hour, on every day of January, March, and September, from Monday to Friday, in 2002-2010.", CronDescriber.getDescription("0/5 14,18,3-39,52 * ? JAN,MAR,SEP MON-FRI 2002-2010"));
+
+      assertEquals("At every second, every minute, every hour, on every day of every month, every day of the week.", CronDescriber.getDescription("* * * ? * *"));
+      assertEquals("At every second, every minute, every hour, on every day of January to June, every day of the week.", CronDescriber.getDescription("* * * ? 1-6 *"));
+      assertEquals("At every second, every minute, every hour, on days 1, 3, and 5 of every month, every day of the week.", CronDescriber.getDescription("* * * 1,3,5 * *"));
+      // todo fix has 2-4 hours and 3 PM, s/b 2 AM to 4 AM and 3 PM assertEquals("At every second, every minute, every hour, on days 1, 3, and 5 of every month, every day of the week.", CronDescriber.getDescription("* * 2-4,15 1,3,5 * *"));
+      // hour failing on 3,2-7 (at least in TS side?)
+      // 3,2-7 makes 3,2 to July
    }
 
 }
