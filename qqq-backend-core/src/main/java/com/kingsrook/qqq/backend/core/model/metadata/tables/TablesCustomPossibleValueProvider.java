@@ -37,7 +37,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- **
+ ** possible-value source provider for the `Tables` PVS - a list of all tables
+ ** in an application/qInstance.
  *******************************************************************************/
 public class TablesCustomPossibleValueProvider implements QCustomPossibleValueProvider<String>
 {

@@ -435,7 +435,7 @@ public class SearchPossibleValueSourceAction
       {
          String message = "Error searching custom possible value source [" + input.getPossibleValueSourceName() + "]";
          LOG.warn(message, e);
-         throw (new QException(message));
+         throw (new QException(message, e));
       }
    }
 

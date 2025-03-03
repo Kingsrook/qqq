@@ -1484,7 +1484,8 @@ public class QInstanceEnricher
 
 
    /***************************************************************************
-    **
+    ** scan the classpath for classes in the specified package name which
+    ** implement the QInstanceEnricherPluginInterface - any found get added
     ***************************************************************************/
    public static void discoverAndAddPluginsInPackage(String packageName) throws QException
    {

@@ -114,7 +114,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
 
       if(!StringUtils.hasContent(insertInput.getTableName()))
       {
-         throw (new QException("Table name was not specified in update input"));
+         throw (new QException("Table name was not specified in insert input"));
       }
 
       QTableMetaData table = insertInput.getTable();

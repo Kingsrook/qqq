@@ -75,6 +75,7 @@
          <scope>test</scope>
       </dependency>
       <dependency>
+         <!-- this was added to help make testcontainers work -->
          <groupId>net.java.dev.jna</groupId>
          <artifactId>jna</artifactId>
          <version>5.7.0</version>
