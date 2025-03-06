@@ -57,6 +57,8 @@ public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implem
 
    private ChildRecordListWidget childRecordListWidget;
 
+   private Class<?> sourceClass;
+
 
 
    /***************************************************************************
@@ -111,4 +113,36 @@ public class ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer implem
       return (widget);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public ChildRecordListWidgetFromRecordEntityGenericMetaDataProducer withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
+   }
 }

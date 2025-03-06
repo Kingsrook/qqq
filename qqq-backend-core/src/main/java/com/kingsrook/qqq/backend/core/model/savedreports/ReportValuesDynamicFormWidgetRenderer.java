@@ -56,7 +56,16 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 /*******************************************************************************
  ** Note - exists under 2 names, for the RenderSavedReport process, and for the
- ** ScheduledReport table
+ ** ScheduledReport table (and can be used in your custom code too:
+ *
+ ** by default, in qqq backend core, we'll assume this widget is being used on the
+ ** view screen for a ScheduledReport, with field names that we know from that table.
+ ** But, allow it to be used on a different table (optionally with different field names),
+ ** coming from the input map.
+ **
+ ** e.g., that one may set in widget metaData as:
+ **    .withDefaultValue("tableName", "myTable")
+ **    .withDefaultValue("fieldNameId", "identifier"), etc.
  *******************************************************************************/
 public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRenderer
 {
@@ -88,11 +97,16 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
          }
          else if(input.getQueryParams().containsKey("id"))
          {
-            QRecord scheduledReportRecord = new GetAction().executeForRecord(new GetInput(ScheduledReport.TABLE_NAME).withPrimaryKey(ValueUtils.getValueAsInteger(input.getQueryParams().get("id"))));
-            QRecord record                = new GetAction().executeForRecord(new GetInput(SavedReport.TABLE_NAME).withPrimaryKey(ValueUtils.getValueAsInteger(scheduledReportRecord.getValueInteger("savedReportId"))));
+            String tableName              = input.getQueryParams().getOrDefault("tableName", ScheduledReport.TABLE_NAME);
+            String fieldNameId            = input.getQueryParams().getOrDefault("fieldNameId", "id");
+            String fieldNameSavedReportId = input.getQueryParams().getOrDefault("fieldNameSavedReportId", "savedReportId");
+            String fieldNameInputValues   = input.getQueryParams().getOrDefault("fieldNameInputValues", "inputValues");
+
+            QRecord hostRecord = new GetAction().executeForRecord(new GetInput(tableName).withPrimaryKey(ValueUtils.getValueAsInteger(input.getQueryParams().get(fieldNameId))));
+            QRecord record     = new GetAction().executeForRecord(new GetInput(SavedReport.TABLE_NAME).withPrimaryKey(ValueUtils.getValueAsInteger(hostRecord.getValueInteger(fieldNameSavedReportId))));
             savedReport = new SavedReport(record);
 
-            String inputValues = scheduledReportRecord.getValueString("inputValues");
+            String inputValues = hostRecord.getValueString(fieldNameInputValues);
             if(StringUtils.hasContent(inputValues))
             {
                JSONObject jsonObject = JsonUtils.toJSONObject(inputValues);
@@ -197,8 +211,8 @@ public class ReportValuesDynamicFormWidgetRenderer extends AbstractWidgetRendere
       }
       catch(Exception e)
       {
-         LOG.warn("Error rendering scheduled report values dynamic form widget", e, logPair("queryParams", String.valueOf(input.getQueryParams())));
-         throw (new QException("Error rendering scheduled report values dynamic form widget", e));
+         LOG.warn("Error rendering report values dynamic form widget", e, logPair("queryParams", String.valueOf(input.getQueryParams())));
+         throw (new QException("Error rendering report values dynamic form widget", e));
       }
    }
 

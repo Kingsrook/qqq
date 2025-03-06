@@ -92,16 +92,21 @@ public class RenderSavedReportExecuteStep implements BackendStep
          ////////////////////////////////
          // read inputs, set up params //
          ////////////////////////////////
-         String       sesProviderName      = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.SES_PROVIDER_NAME);
-         String       fromEmailAddress     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FROM_EMAIL_ADDRESS);
-         String       replyToEmailAddress  = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.REPLY_TO_EMAIL_ADDRESS);
-         String       storageTableName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
-         ReportFormat reportFormat         = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
-         String       sendToEmailAddress   = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
-         String       emailSubject         = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
-         SavedReport  savedReport          = new SavedReport(runBackendStepInput.getRecords().get(0));
-         String       downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
-         String       storageReference     = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
+         String       sesProviderName     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.SES_PROVIDER_NAME);
+         String       fromEmailAddress    = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FROM_EMAIL_ADDRESS);
+         String       replyToEmailAddress = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.REPLY_TO_EMAIL_ADDRESS);
+         String       storageTableName    = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_TABLE_NAME);
+         ReportFormat reportFormat        = ReportFormat.fromString(runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_REPORT_FORMAT));
+         String       sendToEmailAddress  = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_ADDRESS);
+         String       emailSubject        = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_EMAIL_SUBJECT);
+         SavedReport  savedReport         = new SavedReport(runBackendStepInput.getRecords().get(0));
+
+         String downloadFileBaseName = getDownloadFileBaseName(runBackendStepInput, savedReport);
+         String storageReference     = runBackendStepInput.getValueString(RenderSavedReportMetaDataProducer.FIELD_NAME_STORAGE_REFERENCE);
+         if(!StringUtils.hasContent(storageReference))
+         {
+            storageReference = LocalDate.now() + "/" + LocalTime.now().toString().replaceAll(":", "").replaceFirst("\\..*", "") + "/" + UUID.randomUUID() + "/" + downloadFileBaseName + "." + reportFormat.getExtension();
+         }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // if sending an email (or emails), validate the addresses before doing anything so user gets error and can fix //
@@ -241,7 +246,7 @@ public class RenderSavedReportExecuteStep implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private String getDownloadFileBaseName(RunBackendStepInput runBackendStepInput, SavedReport report)
+   public static String getDownloadFileBaseName(RunBackendStepInput runBackendStepInput, SavedReport report)
    {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm").withZone(ZoneId.systemDefault());
       String            datePart  = formatter.format(Instant.now());

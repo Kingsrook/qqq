@@ -108,7 +108,7 @@ public class CsvExportStreamer implements ExportStreamerInterface
       }
       catch(Exception e)
       {
-         throw (new QReportingException("Error starting CSV report"));
+         throw (new QReportingException("Error starting CSV report", e));
       }
    }
 

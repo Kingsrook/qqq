@@ -22,11 +22,19 @@
 package com.kingsrook.qqq.backend.module.filesystem.local.actions;
 
 
+import java.util.List;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
+import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
+import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
-import org.apache.commons.lang.NotImplementedException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.module.filesystem.TestUtils;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -34,14 +42,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *******************************************************************************/
 public class FilesystemDeleteActionTest extends FilesystemActionTest
 {
-
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
-   public void test() throws QException
+   public void testSuccessfulDeleteMultiple() throws QException
    {
-      assertThrows(NotImplementedException.class, () -> new FilesystemDeleteAction().execute(new DeleteInput()));
+      int initialCount = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS)).getCount();
+
+      String filename1 = "A.txt";
+      String filename2 = "B.txt";
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).withRecords(List.of(
+         new QRecord().withValue("fileName", filename1).withValue("contents", "bytes"),
+         new QRecord().withValue("fileName", filename2).withValue("contents", "bytes"))));
+      assertEquals(initialCount + 2, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS)).getCount());
+
+      DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS).withPrimaryKeys(List.of(filename1, filename2)));
+      assertEquals(2, deleteOutput.getDeletedRecordCount());
+      assertEquals(0, deleteOutput.getRecordsWithErrors().size());
+      assertEquals(initialCount, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_BLOB_LOCAL_FS)).getCount());
    }
 
 }

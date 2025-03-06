@@ -37,6 +37,7 @@ public class PossibleValueSourceOfTableGenericMetaDataProducer implements MetaDa
 {
    private final String tableName;
 
+   private Class<?> sourceClass;
 
 
    /*******************************************************************************
@@ -58,4 +59,38 @@ public class PossibleValueSourceOfTableGenericMetaDataProducer implements MetaDa
    {
       return (QPossibleValueSource.newForTable(tableName));
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public PossibleValueSourceOfTableGenericMetaDataProducer withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
+   }
+
 }

@@ -29,11 +29,13 @@ import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerKeyRecordMessage;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.json.JSONArray;
@@ -65,6 +67,18 @@ public class BulkInsertStepUtils
 
       StorageInput storageInput = storageInputs.get(0);
       return (storageInput);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setStorageInputForTheFile(RunProcessInput runProcessInput, StorageInput storageInput)
+   {
+      ArrayList<StorageInput> storageInputs = new ArrayList<>();
+      storageInputs.add(storageInput);
+      runProcessInput.addValue("theFile", storageInputs);
    }
 
 
@@ -144,13 +158,62 @@ public class BulkInsertStepUtils
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void handleSavedBulkLoadProfileIdValue(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   public static QRecord handleSavedBulkLoadProfileIdValue(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
    {
       Integer savedBulkLoadProfileId = runBackendStepInput.getValueInteger("savedBulkLoadProfileId");
       if(savedBulkLoadProfileId != null)
       {
          QRecord savedBulkLoadProfileRecord = GetAction.execute(SavedBulkLoadProfile.TABLE_NAME, savedBulkLoadProfileId);
          runBackendStepOutput.addValue("savedBulkLoadProfileRecord", savedBulkLoadProfileRecord);
+         return (savedBulkLoadProfileRecord);
       }
+
+      return (null);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean isHeadless(RunBackendStepInput runBackendStepInput)
+   {
+      return (runBackendStepInput.getValuePrimitiveBoolean("isHeadless"));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setHeadless(RunProcessInput runProcessInput)
+   {
+      runProcessInput.addValue("isHeadless", true);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setProcessTracerKeyRecordMessage(RunProcessInput runProcessInput, ProcessTracerKeyRecordMessage processTracerKeyRecordMessage)
+   {
+      runProcessInput.addValue("processTracerKeyRecordMessage", processTracerKeyRecordMessage);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static ProcessTracerKeyRecordMessage getProcessTracerKeyRecordMessage(RunBackendStepInput runBackendStepInput)
+   {
+      Serializable value = runBackendStepInput.getValue("processTracerKeyRecordMessage");
+      if(value instanceof ProcessTracerKeyRecordMessage processTracerKeyRecordMessage)
+      {
+         return (processTracerKeyRecordMessage);
+      }
+      
+      return (null);
    }
 }

@@ -327,6 +327,20 @@ public class AuditSingleInput implements Serializable
 
 
    /*******************************************************************************
+    ** Fluent setter for details
+    *******************************************************************************/
+   public AuditSingleInput withDetailMessages(List<String> details)
+   {
+      for(String detail : details)
+      {
+         addDetail(message);
+      }
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    public void addDetail(String message)

@@ -82,6 +82,11 @@ public class DeleteAction
    {
       ActionHelper.validateSession(deleteInput);
 
+      if(deleteInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in delete input"));
+      }
+
       QTableMetaData table               = deleteInput.getTable();
       String         primaryKeyFieldName = table.getPrimaryKeyField();
       QFieldMetaData primaryKeyField     = table.getField(primaryKeyFieldName);

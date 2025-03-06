@@ -258,6 +258,11 @@ public class BulkLoadValueMapper
          valuesNotFound.add(value);
       }
 
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // todo - we should probably be doing a lot of what QJavalinImplementation.finishPossibleValuesRequest does here //
+      //  to apply possible-value filters.  difficult to pass values in, but needed...                                 //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
       searchPossibleValueSourceInput.setIdList(idList);
       searchPossibleValueSourceInput.setLimit(values.size());
       LOG.debug("Searching possible value source by ids during bulk load mapping", logPair("pvsName", field.getPossibleValueSourceName()), logPair("noOfIds", idList.size()), logPair("firstId", () -> idList.get(0)));

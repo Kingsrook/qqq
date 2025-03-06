@@ -41,6 +41,10 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
 
    private String contentsFieldName;
    private String fileNameFieldName;
+   private String baseNameFieldName;
+   private String sizeFieldName;
+   private String createDateFieldName;
+   private String modifyDateFieldName;
 
 
 
@@ -281,4 +285,128 @@ public class AbstractFilesystemTableBackendDetails extends QTableBackendDetails
       }
 
    }
+
+   /*******************************************************************************
+    ** Getter for sizeFieldName
+    *******************************************************************************/
+   public String getSizeFieldName()
+   {
+      return (this.sizeFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sizeFieldName
+    *******************************************************************************/
+   public void setSizeFieldName(String sizeFieldName)
+   {
+      this.sizeFieldName = sizeFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sizeFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withSizeFieldName(String sizeFieldName)
+   {
+      this.sizeFieldName = sizeFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for createDateFieldName
+    *******************************************************************************/
+   public String getCreateDateFieldName()
+   {
+      return (this.createDateFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for createDateFieldName
+    *******************************************************************************/
+   public void setCreateDateFieldName(String createDateFieldName)
+   {
+      this.createDateFieldName = createDateFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for createDateFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withCreateDateFieldName(String createDateFieldName)
+   {
+      this.createDateFieldName = createDateFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for modifyDateFieldName
+    *******************************************************************************/
+   public String getModifyDateFieldName()
+   {
+      return (this.modifyDateFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for modifyDateFieldName
+    *******************************************************************************/
+   public void setModifyDateFieldName(String modifyDateFieldName)
+   {
+      this.modifyDateFieldName = modifyDateFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for modifyDateFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withModifyDateFieldName(String modifyDateFieldName)
+   {
+      this.modifyDateFieldName = modifyDateFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for baseNameFieldName
+    *******************************************************************************/
+   public String getBaseNameFieldName()
+   {
+      return (this.baseNameFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for baseNameFieldName
+    *******************************************************************************/
+   public void setBaseNameFieldName(String baseNameFieldName)
+   {
+      this.baseNameFieldName = baseNameFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for baseNameFieldName
+    *******************************************************************************/
+   public AbstractFilesystemTableBackendDetails withBaseNameFieldName(String baseNameFieldName)
+   {
+      this.baseNameFieldName = baseNameFieldName;
+      return (this);
+   }
+
+
 }

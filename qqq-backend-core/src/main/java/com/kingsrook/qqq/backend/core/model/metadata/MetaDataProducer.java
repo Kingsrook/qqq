@@ -29,5 +29,40 @@ package com.kingsrook.qqq.backend.core.model.metadata;
  *******************************************************************************/
 public abstract class MetaDataProducer<T extends MetaDataProducerOutput> implements MetaDataProducerInterface<T>
 {
+   private Class<?> sourceClass;
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   @Override
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   @Override
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public MetaDataProducer<T> withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
+   }
 
 }

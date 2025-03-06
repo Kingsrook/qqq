@@ -24,15 +24,16 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -56,11 +57,44 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Long getFileSize(S3ObjectSummary s3ObjectSummary)
+   {
+      return (s3ObjectSummary.getSize());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileCreateDate(S3ObjectSummary s3ObjectSummary)
+   {
+      return null;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileModifyDate(S3ObjectSummary s3ObjectSummary)
+   {
+      return s3ObjectSummary.getLastModified().toInstant();
+   }
+
+
+
    /*******************************************************************************
     ** Setup the s3 utils object to be used for this action.
     *******************************************************************************/
    @Override
-   public void preAction(QBackendMetaData backendMetaData)
+   public void preAction(QBackendMetaData backendMetaData) throws QException
    {
       super.preAction(backendMetaData);
 
@@ -129,7 +163,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** List the files for a table.
     *******************************************************************************/
    @Override
-   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
+   public List<S3ObjectSummary> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
       S3BackendMetaData                     s3BackendMetaData = getBackendMetaData(S3BackendMetaData.class, backendBase);
       AbstractFilesystemTableBackendDetails tableDetails      = getTableBackendDetails(AbstractFilesystemTableBackendDetails.class, table);
@@ -141,7 +175,7 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
       ////////////////////////////////////////////////////////////////////
       // todo - look at metadata to configure the s3 client here?       //
       ////////////////////////////////////////////////////////////////////
-      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob, filter, tableDetails);
+      return getS3Utils().listObjectsInBucketMatchingGlob(bucketName, fullPath, glob, requestedPath, tableDetails);
    }
 
 
@@ -175,20 +209,6 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
          LOG.warn("Error writing file", e, logPair("path", path), logPair("bucketName", bucketName));
          throw (new IOException("Error writing file", e));
       }
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private String stripLeadingSlash(String path)
-   {
-      if(path == null)
-      {
-         return (null);
-      }
-      return (path.replaceFirst("^/+", ""));
    }
 
 
@@ -228,9 +248,9 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
     *******************************************************************************/
    @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   public void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException
    {
-      QBackendMetaData backend     = instance.getBackend(table.getBackendName());
+      QBackendMetaData backend     = QContext.getQInstance().getBackend(table.getBackendName());
       String           bucketName  = ((S3BackendMetaData) backend).getBucketName();
       String           cleanedPath = stripLeadingSlash(stripDuplicatedSlashes(fileReference));
 

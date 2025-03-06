@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -484,9 +486,16 @@ public class QValueFormatter
             String fileNameFormat   = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT));
             String defaultExtension = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.DEFAULT_EXTENSION));
 
+            Boolean downloadUrlDynamic = ValueUtils.getValueAsBoolean(adornmentValues.get(AdornmentType.FileDownloadValues.DOWNLOAD_URL_DYNAMIC));
+
             for(QRecord record : records)
             {
                if(!doesFieldHaveValue(field, record))
+               {
+                  continue;
+               }
+
+               if(BooleanUtils.isTrue(downloadUrlDynamic))
                {
                   continue;
                }
@@ -508,7 +517,7 @@ public class QValueFormatter
                   {
                      @SuppressWarnings("unchecked") // instance validation should make this safe!
                      List<String> fileNameFormatFields = (List<String>) adornmentValues.get(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT_FIELDS);
-                     List<String> values = fileNameFormatFields.stream().map(f -> ValueUtils.getValueAsString(record.getValue(f))).toList();
+                     List<String> values = CollectionUtils.nullSafeHasContents(fileNameFormatFields) ? fileNameFormatFields.stream().map(f -> ValueUtils.getValueAsString(record.getValue(f))).toList() : Collections.emptyList();
                      fileName = QValueFormatter.formatStringWithValues(fileNameFormat, values);
                   }
                }
@@ -531,7 +540,7 @@ public class QValueFormatter
 
                ////////////////////////////////////////////////////////////////////////////////////////////////
                // if field type is blob OR if there's a supplemental process or code-ref that needs to run - //
-               // then update its value to be a callback-url that'll give access to the bytes to download    //
+               // then update its value to be a callback-url that'll give access to the bytes to download.   //
                // implied here is that a String value (w/o supplemental code/proc) has its value stay as a   //
                // URL, which is where the file is directly downloaded from.  And in the case of a String     //
                // with code-to-run, then the code should run, followed by a redirect to the value URL.       //
@@ -540,7 +549,7 @@ public class QValueFormatter
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE)
                   || adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME))
                {
-                  record.setValue(field.getName(), "/data/" + table.getName() + "/" + primaryKey + "/" + field.getName() + "/" + fileName);
+                  record.setValue(field.getName(), AdornmentType.FileDownloadValues.makeFieldDownloadUrl(table.getName(), primaryKey, field.getName(), fileName));
                }
                record.setDisplayValue(field.getName(), fileName);
             }
