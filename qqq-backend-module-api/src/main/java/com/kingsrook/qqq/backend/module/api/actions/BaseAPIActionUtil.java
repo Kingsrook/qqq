@@ -822,7 +822,7 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
-   public String getOAuth2Token() throws OAuthCredentialsException, QException
+   String getOAuth2AccessTokenKey() throws QException
    {
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // define the key that will be used in the backend's customValues map, to stash the access token.                   //
@@ -834,6 +834,17 @@ public class BaseAPIActionUtil
          Serializable variantId = BackendVariantsUtil.getVariantId(backendMetaData);
          accessTokenKey = accessTokenKey + ":" + variantId;
       }
+      return (accessTokenKey);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public String getOAuth2Token() throws QException
+   {
+      String accessTokenKey = getOAuth2AccessTokenKey();
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // check for the access token in the backend meta data.  if it's not there, then issue a request for a token. //
@@ -1225,7 +1236,8 @@ public class BaseAPIActionUtil
             if(!caughtAnOAuthExpiredToken)
             {
                LOG.info("OAuth Expired token for [" + table.getName() + "] - retrying");
-               backendMetaData.withCustomValue("accessToken", null);
+               String accessTokenKey = getOAuth2AccessTokenKey();
+               backendMetaData.withCustomValue(accessTokenKey, null);
                caughtAnOAuthExpiredToken = true;
             }
             else
