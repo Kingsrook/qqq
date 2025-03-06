@@ -26,13 +26,12 @@ import com.kingsrook.qqq.backend.core.actions.interfaces.DeleteInterface;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
-import org.apache.commons.lang.NotImplementedException;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class FilesystemDeleteAction implements DeleteInterface
+public class FilesystemDeleteAction extends AbstractFilesystemAction implements DeleteInterface
 {
 
    /*******************************************************************************
@@ -40,21 +39,19 @@ public class FilesystemDeleteAction implements DeleteInterface
     *******************************************************************************/
    public DeleteOutput execute(DeleteInput deleteInput) throws QException
    {
-      throw new NotImplementedException("Filesystem delete not implemented");
-      /*
-      try
-      {
-         DeleteResult rs = new DeleteResult();
-         QTableMetaData table = deleteRequest.getTable();
+      return (executeDelete(deleteInput));
+   }
 
 
-         // return rs;
-      }
-      catch(Exception e)
-      {
-         throw new QException("Error executing delete: " + e.getMessage(), e);
-      }
-      */
+
+   /*******************************************************************************
+    ** Specify whether this particular module's update action can & should fetch
+    ** records before updating them, e.g., for audits or "not-found-checks"
+    *******************************************************************************/
+   @Override
+   public boolean supportsPreFetchQuery()
+   {
+      return (false);
    }
 
 }

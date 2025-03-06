@@ -655,4 +655,28 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
       assertEquals(200, response.getStatus());
    }
 
+
+
+   /*******************************************************************************
+    ** test running a process who has a value with a null key.
+    *
+    ** This was a regression - that threw an exception from jackson at one point in time.
+    **
+    ** Note:  ported to v1
+    *******************************************************************************/
+   @Test
+   public void test_processPutsNullKeyInMap()
+   {
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/" + TestUtils.PROCESS_NAME_PUTS_NULL_KEY_IN_MAP + "/init").asString();
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      assertNotNull(jsonObject);
+      JSONObject values = jsonObject.getJSONObject("values");
+      JSONObject mapWithNullKey = values.getJSONObject("mapWithNullKey");
+      assertTrue(mapWithNullKey.has("")); // null key currently set to become empty-string key...
+      assertEquals("hadNullKey", mapWithNullKey.getString(""));
+      assertTrue(mapWithNullKey.has("one"));
+      assertEquals("1", mapWithNullKey.getString("one"));
+   }
+
 }

@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobManager;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.dashboard.RenderWidgetAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.metadata.ProcessMetaDataAction;
@@ -51,6 +52,8 @@ import com.kingsrook.qqq.backend.core.actions.metadata.TableMetaDataAction;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
+import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportAction;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
@@ -77,6 +80,7 @@ import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataInpu
 import com.kingsrook.qqq.backend.core.model.actions.metadata.ProcessMetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportInput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ExportOutput;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportDestination;
@@ -91,8 +95,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -106,6 +108,7 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -130,6 +133,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
+import com.kingsrook.qqq.middleware.javalin.misc.DownloadFileSupplementalAction;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
@@ -1089,12 +1093,13 @@ public class QJavalinImplementation
             throw (new QNotFoundException("Could not find " + table.getLabel() + " with " + table.getFields().get(table.getPrimaryKeyField()).getLabel() + " of " + primaryKey));
          }
 
-         String                   mimeType              = null;
-         Optional<FieldAdornment> fileDownloadAdornment = fieldMetaData.getAdornments().stream().filter(a -> a.getType().equals(AdornmentType.FILE_DOWNLOAD)).findFirst();
+         String                    mimeType              = null;
+         Optional<FieldAdornment>  fileDownloadAdornment = fieldMetaData.getAdornments().stream().filter(a -> a.getType().equals(AdornmentType.FILE_DOWNLOAD)).findFirst();
+         Map<String, Serializable> adornmentValues       = null;
          if(fileDownloadAdornment.isPresent())
          {
-            Map<String, Serializable> values = fileDownloadAdornment.get().getValues();
-            mimeType = ValueUtils.getValueAsString(values.get(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE));
+            adornmentValues = fileDownloadAdornment.get().getValues();
+            mimeType = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.DEFAULT_MIME_TYPE));
          }
 
          if(mimeType != null)
@@ -1107,7 +1112,56 @@ public class QJavalinImplementation
             context.header("Content-Disposition", "attachment; filename=" + filename);
          }
 
-         context.result(getOutput.getRecord().getValueByteArray(fieldName));
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // if the adornment has a supplemental process name in it, or a supplemental code reference //
+         // then execute that custom code - e.g., to log that the file was downloaded.               //
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         if(fileDownloadAdornment.isPresent())
+         {
+            String processName = ValueUtils.getValueAsString(adornmentValues.get(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME));
+            if(StringUtils.hasContent(processName))
+            {
+               RunProcessInput input = new RunProcessInput();
+               input.setProcessName(processName);
+               input.setCallback(QProcessCallbackFactory.forRecord(getOutput.getRecord()));
+               input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
+               input.addValue("tableName", tableName);
+               input.addValue("primaryKey", primaryKey);
+               input.addValue("fieldName", fieldName);
+               input.addValue("filename", filename);
+               new RunProcessAction().execute(input);
+            }
+            else if(adornmentValues.containsKey(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE))
+            {
+               QCodeReference codeReference = (QCodeReference) adornmentValues.get(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE);
+
+               DownloadFileSupplementalAction action = QCodeLoader.getAdHoc(DownloadFileSupplementalAction.class, codeReference);
+
+               DownloadFileSupplementalAction.DownloadFileSupplementalActionInput input = new DownloadFileSupplementalAction.DownloadFileSupplementalActionInput()
+                  .withTableName(tableName)
+                  .withFieldName(fieldName)
+                  .withPrimaryKey(primaryKey)
+                  .withFileName(filename);
+
+               DownloadFileSupplementalAction.DownloadFileSupplementalActionOutput output = new DownloadFileSupplementalAction.DownloadFileSupplementalActionOutput();
+               action.run(input, output);
+            }
+         }
+
+         /////////////////////////////////////////////////////////
+         // if the field is a BLOB - send the bytes to the user //
+         /////////////////////////////////////////////////////////
+         if(QFieldType.BLOB.equals(fieldMetaData.getType()))
+         {
+            context.result(getOutput.getRecord().getValueByteArray(fieldName));
+         }
+         else
+         {
+            //////////////////////////////////////////////////////////////////
+            // else - assume a string is a URL - and issue a redirect to it //
+            //////////////////////////////////////////////////////////////////
+            context.redirect(getOutput.getRecord().getValueString(fieldName));
+         }
 
          QJavalinAccessLogger.logEndSuccess();
       }
@@ -1144,15 +1198,18 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////////
          if(backend != null && backend.getUsesVariants())
          {
-            queryInput.setTableName(backend.getVariantOptionsTableName());
-            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(backend.getVariantOptionsTableTypeField(), QCriteriaOperator.EQUALS, backend.getVariantOptionsTableTypeValue())));
+            QTableMetaData variantsTable = QContext.getQInstance().getTable(backend.getBackendVariantsConfig().getOptionsTableName());
+
+            queryInput.setTableName(variantsTable.getName());
+            queryInput.setFilter(backend.getBackendVariantsConfig().getOptionsFilter());
+            queryInput.setShouldGenerateDisplayValues(true);
             QueryOutput output = new QueryAction().execute(queryInput);
             for(QRecord qRecord : output.getRecords())
             {
                variants.add(new QFrontendVariant()
-                  .withId(qRecord.getValue(backend.getVariantOptionsTableIdField()))
-                  .withType(backend.getVariantOptionsTableTypeValue())
-                  .withName(qRecord.getValueString(backend.getVariantOptionsTableNameField())));
+                  .withId(qRecord.getValue(variantsTable.getPrimaryKeyField()))
+                  .withType(backend.getBackendVariantsConfig().getVariantTypeKey())
+                  .withName(qRecord.getRecordLabel()));
             }
 
             QJavalinAccessLogger.logStartSilent("variants");

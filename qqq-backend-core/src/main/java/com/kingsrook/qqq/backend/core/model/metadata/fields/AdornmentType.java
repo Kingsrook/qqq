@@ -23,8 +23,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
 import com.kingsrook.qqq.backend.core.utils.Pair;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 
 
@@ -41,11 +45,12 @@ public enum AdornmentType
    RENDER_HTML,
    REVEAL,
    FILE_DOWNLOAD,
+   FILE_UPLOAD,
+   TOOLTIP,
    ERROR;
    //////////////////////////////////////////////////////////////////////////
    // keep these values in sync with AdornmentType.ts in qqq-frontend-core //
    //////////////////////////////////////////////////////////////////////////
-
 
 
    /*******************************************************************************
@@ -53,8 +58,9 @@ public enum AdornmentType
     *******************************************************************************/
    public interface LinkValues
    {
-      String TARGET               = "target";
-      String TO_RECORD_FROM_TABLE = "toRecordFromTable";
+      String TARGET                       = "target";
+      String TO_RECORD_FROM_TABLE         = "toRecordFromTable";
+      String TO_RECORD_FROM_TABLE_DYNAMIC = "toRecordFromTableDynamic";
    }
 
 
@@ -68,6 +74,11 @@ public enum AdornmentType
       String DEFAULT_EXTENSION = "defaultExtension";
       String DEFAULT_MIME_TYPE = "defaultMimeType";
 
+      String SUPPLEMENTAL_PROCESS_NAME   = "supplementalProcessName";
+      String SUPPLEMENTAL_CODE_REFERENCE = "supplementalCodeReference";
+
+      String DOWNLOAD_URL_DYNAMIC = "downloadUrlDynamic";
+
       ////////////////////////////////////////////////////
       // use these two together, as in:                 //
       // FILE_NAME_FORMAT = "Order %s Packing Slip.pdf" //
@@ -75,6 +86,17 @@ public enum AdornmentType
       ////////////////////////////////////////////////////
       String FILE_NAME_FORMAT        = "fileNameFormat";
       String FILE_NAME_FORMAT_FIELDS = "fileNameFormatFields";
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      static String makeFieldDownloadUrl(String tableName, Serializable primaryKey, String fieldName, String fileName)
+      {
+         return ("/data/" + tableName + "/"
+            + URLEncoder.encode(Objects.requireNonNullElse(ValueUtils.getValueAsString(primaryKey), ""), StandardCharsets.UTF_8).replace("+", "%20") + "/"
+            + fieldName + "/"
+            + URLEncoder.encode(Objects.requireNonNullElse(fileName, ""), StandardCharsets.UTF_8).replace("+", "%20"));
+      }
    }
 
 
@@ -162,6 +184,78 @@ public enum AdornmentType
       {
          return (new Pair<>("languageMode", languageMode));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class FileUploadAdornment
+   {
+      public static String FORMAT = "format";
+      public static String WIDTH  = "width";
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static FieldAdornment newFieldAdornment()
+      {
+         return (new FieldAdornment(AdornmentType.FILE_UPLOAD));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> formatDragAndDrop()
+      {
+         return (Pair.of(FORMAT, "dragAndDrop"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> formatButton()
+      {
+         return (Pair.of(FORMAT, "button"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> widthFull()
+      {
+         return (Pair.of(WIDTH, "full"));
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public static Pair<String, String> widthHalf()
+      {
+         return (Pair.of(WIDTH, "half"));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public interface TooltipValues
+   {
+      String STATIC_TEXT = "staticText";
+      String TOOLTIP_DYNAMIC = "tooltipDynamic";
    }
 
 }

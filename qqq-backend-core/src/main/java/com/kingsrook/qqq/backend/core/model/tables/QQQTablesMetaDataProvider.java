@@ -37,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
 
 
 /*******************************************************************************
- **
+ ** Provides meta data for the QQQTable table, PVS, and a cache table.
  *******************************************************************************/
 public class QQQTablesMetaDataProvider
 {

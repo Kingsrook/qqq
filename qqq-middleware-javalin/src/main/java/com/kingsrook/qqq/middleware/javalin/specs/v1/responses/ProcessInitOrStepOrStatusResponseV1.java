@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ProcessInitOrStepOrStatusOutputInterface;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.SchemaBuilder;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
@@ -117,6 +118,7 @@ public class ProcessInitOrStepOrStatusResponseV1 implements ProcessInitOrStepOrS
        ** Getter for values
        **
        *******************************************************************************/
+      @JsonIgnore // we are doing custom serialization of the values map, so mark as ignore.
       public Map<String, Serializable> getValues()
       {
          return values;

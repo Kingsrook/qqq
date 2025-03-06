@@ -22,14 +22,24 @@
 package com.kingsrook.qqq.backend.core.processes.locks;
 
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -39,6 +49,10 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -70,10 +84,79 @@ public class ProcessLockUtils
 
 
    /*******************************************************************************
+    ** try to create a process lock, of a given key & type - but immediately fail
+    ** if the lock already exists.
     **
+    ** @param key along with typeName, part of Unique Key for the lock.
+    ** @param typeName along with key, part of Unique Key for the lock.  Must be a
+    *              defined lock type, from which we derive defaultExpirationSeconds.
+    ** @param details advice to show users re: who/what created the lock.
     *******************************************************************************/
    public static ProcessLock create(String key, String typeName, String details) throws UnableToObtainProcessLockException, QException
    {
+      Map<String, ProcessLockOrException> locks = createMany(List.of(key), typeName, details);
+      return getProcessLockOrThrow(key, locks);
+   }
+
+
+
+   /*******************************************************************************
+    ** try to create a process lock, of a given key & type - and re-try if it failed.
+    ** (e.g., wait until existing lock holder releases the lock).
+    **
+    ** @param key along with typeName, part of Unique Key for the lock.
+    ** @param typeName along with key, part of Unique Key for the lock.  Must be a
+    *              defined lock type, from which we derive defaultExpirationSeconds.
+    ** @param details advice to show users re: who/what created the lock.
+    ** @param sleepBetweenTries how long to sleep between retries.
+    ** @param maxWait max amount of that will be waited between call to this method
+    *                 and an eventual UnableToObtainProcessLockException (plus or minus
+    *                 one sleepBetweenTries (actually probably just plus that).
+    **
+    *******************************************************************************/
+   public static ProcessLock create(String key, String typeName, String details, Duration sleepBetweenTries, Duration maxWait) throws UnableToObtainProcessLockException, QException
+   {
+      Map<String, ProcessLockOrException> locks = createMany(List.of(key), typeName, details, sleepBetweenTries, maxWait);
+      return getProcessLockOrThrow(key, locks);
+   }
+
+
+
+   /***************************************************************************
+    ** For the single-lock versions of create, either return the lock identified by
+    ** key, or throw.
+    ***************************************************************************/
+   private static ProcessLock getProcessLockOrThrow(String key, Map<String, ProcessLockOrException> locks) throws UnableToObtainProcessLockException
+   {
+      if(locks.get(key) != null && locks.get(key).processLock() != null)
+      {
+         return (locks.get(key).processLock());
+      }
+      else if(locks.get(key) != null && locks.get(key).unableToObtainProcessLockException() != null)
+      {
+         throw (locks.get(key).unableToObtainProcessLockException());
+      }
+      else
+      {
+         throw (new UnableToObtainProcessLockException("Missing key [" + key + "] in response from request to create lock.  Lock not created."));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** try to create many process locks, of list of keys & a type - but immediately
+    ** fail (on a one-by-one basis) if the lock already exists.
+    **
+    ** @param keys along with typeName, part of Unique Key for the lock.
+    ** @param typeName along with key, part of Unique Key for the lock.  Must be a
+    *              defined lock type, from which we derive defaultExpirationSeconds.
+    ** @param details advice to show users re: who/what created the lock.
+    *******************************************************************************/
+   public static Map<String, ProcessLockOrException> createMany(List<String> keys, String typeName, String details) throws QException
+   {
+      Map<String, ProcessLockOrException> rs = new HashMap<>();
+
       ProcessLockType lockType = getProcessLockTypeByName(typeName);
       if(lockType == null)
       {
@@ -82,137 +165,305 @@ public class ProcessLockUtils
 
       QSession qSession = QContext.getQSession();
 
-      Instant now = Instant.now();
-      ProcessLock processLock = new ProcessLock()
-         .withKey(key)
-         .withProcessLockTypeId(lockType.getId())
-         .withSessionUUID(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUuid(), null))
-         .withUserId(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUser().getIdReference(), null))
-         .withDetails(details)
-         .withCheckInTimestamp(now);
+      Instant           now                      = Instant.now();
+      Integer           defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
+      List<ProcessLock> processLocksToInsert     = new ArrayList<>();
 
-      Integer defaultExpirationSeconds = lockType.getDefaultExpirationSeconds();
-      if(defaultExpirationSeconds != null)
+      Function<String, ProcessLock> constructProcessLockFromKey = (key) ->
       {
-         processLock.setExpiresAtTimestamp(now.plusSeconds(defaultExpirationSeconds));
+         ProcessLock processLock = new ProcessLock()
+            .withKey(key)
+            .withProcessLockTypeId(lockType.getId())
+            .withSessionUUID(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUuid(), null))
+            .withUserId(ObjectUtils.tryAndRequireNonNullElse(() -> qSession.getUser().getIdReference(), null))
+            .withDetails(details)
+            .withCheckInTimestamp(now);
+
+         if(defaultExpirationSeconds != null)
+         {
+            processLock.setExpiresAtTimestamp(now.plusSeconds(defaultExpirationSeconds));
+         }
+
+         return (processLock);
+      };
+
+      for(String key : keys)
+      {
+         processLocksToInsert.add(constructProcessLockFromKey.apply(key));
       }
 
-      QRecord insertOutputRecord = tryToInsert(processLock);
+      Map<String, ProcessLockOrException> insertResultMap = tryToInsertMany(processLocksToInsert);
 
-      ////////////////////////////////////////////////////////////
-      // if inserting failed... see if we can get existing lock //
-      ////////////////////////////////////////////////////////////
-      StringBuilder existingLockDetails = new StringBuilder();
-      ProcessLock   existingLock        = null;
-      if(CollectionUtils.nullSafeHasContents(insertOutputRecord.getErrors()))
+      ////////////////////////////////////////
+      // look at which (if any) keys failed //
+      ////////////////////////////////////////
+      Set<String> failedKeys = new HashSet<>();
+      for(Map.Entry<String, ProcessLockOrException> entry : insertResultMap.entrySet())
       {
-         QRecord existingLockRecord = new GetAction().executeForRecord(new GetInput(ProcessLock.TABLE_NAME).withUniqueKey(Map.of("key", key, "processLockTypeId", lockType.getId())));
-         if(existingLockRecord != null)
+         if(entry.getValue().unableToObtainProcessLockException() != null)
          {
-            existingLock = new ProcessLock(existingLockRecord);
-            if(StringUtils.hasContent(existingLock.getUserId()))
-            {
-               existingLockDetails.append("Held by: ").append(existingLock.getUserId());
-            }
+            failedKeys.add(entry.getKey());
+         }
+      }
 
-            if(StringUtils.hasContent(existingLock.getDetails()))
-            {
-               existingLockDetails.append("; with details: ").append(existingLock.getDetails());
-            }
+      //////////////////////////////////////////////////////////////////////
+      // if any keys failed, try to get the existing locks for those keys //
+      //////////////////////////////////////////////////////////////////////
+      Map<String, QRecord> existingLockRecords = new HashMap<>();
+      if(CollectionUtils.nullSafeHasContents(failedKeys))
+      {
+         QueryOutput queryOutput = new QueryAction().execute(new QueryInput(ProcessLock.TABLE_NAME).withFilter(new QQueryFilter()
+            .withCriteria("processLockTypeId", QCriteriaOperator.EQUALS, lockType.getId())
+            .withCriteria("key", QCriteriaOperator.IN, failedKeys)));
+         for(QRecord record : queryOutput.getRecords())
+         {
+            existingLockRecords.put(record.getValueString("key"), record);
+         }
+      }
 
-            Instant expiresAtTimestamp = existingLock.getExpiresAtTimestamp();
-            if(expiresAtTimestamp != null)
-            {
-               ZonedDateTime zonedExpiresAt = expiresAtTimestamp.atZone(ValueUtils.getSessionOrInstanceZoneId());
-               existingLockDetails.append("; expiring at: ").append(QValueFormatter.formatDateTimeWithZone(zonedExpiresAt));
-            }
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // loop over results from insert call - either adding successes to the output structure, or adding details about failures, //
+      // OR - deleting expired locks and trying a second insert!                                                                 //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      List<Serializable>       deleteIdList           = new ArrayList<>();
+      List<ProcessLock>        tryAgainList           = new ArrayList<>();
+      Map<String, String>      existingLockDetailsMap = new HashMap<>();
+      Map<String, ProcessLock> existingLockMap        = new HashMap<>();
+      for(Map.Entry<String, ProcessLockOrException> entry : insertResultMap.entrySet())
+      {
+         String      key         = entry.getKey();
+         ProcessLock processLock = entry.getValue().processLock();
 
-            if(expiresAtTimestamp != null && expiresAtTimestamp.isBefore(now))
-            {
-               /////////////////////////////////////////////////////////////////////////////////
-               // if existing lock has expired, then we can delete it and try to insert again //
-               /////////////////////////////////////////////////////////////////////////////////
-               LOG.info("Existing lock has expired - deleting it and trying again.", logPair("id", existingLock.getId()),
-                  logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", expiresAtTimestamp));
-               new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(existingLock.getId()));
-               insertOutputRecord = tryToInsert(processLock);
-            }
+         //////////////////////////////////////////////////////////////////////////
+         // if inserting failed... see if we found an existing lock for this key //
+         //////////////////////////////////////////////////////////////////////////
+         StringBuilder existingLockDetails = new StringBuilder();
+         ProcessLock   existingLock        = null;
+
+         if(processLock != null)
+         {
+            rs.put(key, new ProcessLockOrException(processLock));
          }
          else
          {
-            /////////////////////////////////////////////////////////
-            // if existing lock doesn't exist, try to insert again //
-            /////////////////////////////////////////////////////////
-            insertOutputRecord = tryToInsert(processLock);
+            QRecord existingLockRecord = existingLockRecords.get(key);
+            if(existingLockRecord != null)
+            {
+               existingLock = new ProcessLock(existingLockRecord);
+               if(StringUtils.hasContent(existingLock.getUserId()))
+               {
+                  existingLockDetails.append("Held by: ").append(existingLock.getUserId());
+               }
+
+               if(StringUtils.hasContent(existingLock.getDetails()))
+               {
+                  existingLockDetails.append("; with details: ").append(existingLock.getDetails());
+               }
+
+               Instant expiresAtTimestamp = existingLock.getExpiresAtTimestamp();
+               if(expiresAtTimestamp != null)
+               {
+                  ZonedDateTime zonedExpiresAt = expiresAtTimestamp.atZone(ValueUtils.getSessionOrInstanceZoneId());
+                  existingLockDetails.append("; expiring at: ").append(QValueFormatter.formatDateTimeWithZone(zonedExpiresAt));
+               }
+
+               existingLockDetailsMap.put(key, existingLockDetails.toString());
+               existingLockMap.put(key, existingLock);
+
+               if(expiresAtTimestamp != null && expiresAtTimestamp.isBefore(now))
+               {
+                  /////////////////////////////////////////////////////////////////////////////////
+                  // if existing lock has expired, then we can delete it and try to insert again //
+                  /////////////////////////////////////////////////////////////////////////////////
+                  LOG.info("Existing lock has expired - deleting it and trying again.", logPair("id", existingLock.getId()),
+                     logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", expiresAtTimestamp));
+                  deleteIdList.add(existingLock.getId());
+                  tryAgainList.add(constructProcessLockFromKey.apply(key));
+               }
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////////////
+               // if existing lock doesn't exist now (e.g., it was deleted before the UC    //
+               // check failed and when we looked for it), then just try to insert it again //
+               ///////////////////////////////////////////////////////////////////////////////
+               tryAgainList.add(constructProcessLockFromKey.apply(key));
+            }
          }
       }
 
-      if(CollectionUtils.nullSafeHasContents(insertOutputRecord.getErrors()))
+      /////////////////////////////////////////////////////
+      // if there are expired locks to delete, do so now //
+      /////////////////////////////////////////////////////
+      if(!deleteIdList.isEmpty())
       {
-         /////////////////////////////////////////////////////////////////////////////////
-         // if at this point, we have errors on the last attempted insert, then give up //
-         /////////////////////////////////////////////////////////////////////////////////
-         LOG.info("Errors in process lock record after attempted insert", logPair("errors", insertOutputRecord.getErrors()),
-            logPair("key", key), logPair("type", typeName), logPair("details", details));
-         throw (new UnableToObtainProcessLockException("A Process Lock already exists for key [" + key + "] of type [" + typeName + "], " + existingLockDetails)
-            .withExistingLock(existingLock));
+         new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKeys(deleteIdList));
       }
 
-      LOG.info("Created process lock", logPair("id", processLock.getId()),
-         logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", processLock.getExpiresAtTimestamp()));
-      return new ProcessLock(insertOutputRecord);
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // if there are any to try again (either because we just deleted their now-expired locks, or because we otherwise couldn't find their locks, do so now //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(!tryAgainList.isEmpty())
+      {
+         Map<String, ProcessLockOrException> tryAgainResult = tryToInsertMany(tryAgainList);
+         for(Map.Entry<String, ProcessLockOrException> entry : tryAgainResult.entrySet())
+         {
+            String                             key                                = entry.getKey();
+            ProcessLock                        processLock                        = entry.getValue().processLock();
+            UnableToObtainProcessLockException unableToObtainProcessLockException = entry.getValue().unableToObtainProcessLockException();
+
+            if(processLock != null)
+            {
+               rs.put(key, new ProcessLockOrException(processLock));
+            }
+            else
+            {
+               rs.put(key, new ProcessLockOrException(Objects.requireNonNullElseGet(unableToObtainProcessLockException, () -> new UnableToObtainProcessLockException("Process lock not created, but no details available."))));
+            }
+         }
+      }
+
+      ////////////////////////////////////////////////////////////////////
+      // put anything not successfully created into result map as error //
+      ////////////////////////////////////////////////////////////////////
+      for(ProcessLock processLock : processLocksToInsert)
+      {
+         String key = processLock.getKey();
+         if(rs.containsKey(key))
+         {
+            LOG.info("Created process lock", logPair("id", processLock.getId()),
+               logPair("key", key), logPair("type", typeName), logPair("details", details), logPair("expiresAtTimestamp", processLock.getExpiresAtTimestamp()));
+         }
+         else
+         {
+            if(existingLockDetailsMap.containsKey(key))
+            {
+               rs.put(key, new ProcessLockOrException(new UnableToObtainProcessLockException("A Process Lock already exists for key [" + key + "] of type [" + typeName + "], " + existingLockDetailsMap.get(key))
+                  .withExistingLock(existingLockMap.get(key))));
+            }
+            else
+            {
+               rs.put(key, new ProcessLockOrException(new UnableToObtainProcessLockException("Process lock for key [" + key + "] of type [" + typeName + "] was not created...")));
+            }
+         }
+      }
+
+      return (rs);
    }
 
 
 
    /*******************************************************************************
-    **
+    ** Try to do an insert - noting that an exception from the InsertAction will be
+    ** caught in here, and placed in the records as an Error!
     *******************************************************************************/
-   private static QRecord tryToInsert(ProcessLock processLock) throws QException
+   private static Map<String, ProcessLockOrException> tryToInsertMany(List<ProcessLock> processLocks)
    {
-      return new InsertAction().execute(new InsertInput(ProcessLock.TABLE_NAME).withRecordEntity(processLock)).getRecords().get(0);
+      Map<String, ProcessLockOrException> rs = new HashMap<>();
+
+      try
+      {
+         List<QRecord> insertedRecords = new InsertAction().execute(new InsertInput(ProcessLock.TABLE_NAME).withRecordEntities(processLocks)).getRecords();
+         for(QRecord insertedRecord : insertedRecords)
+         {
+            String key = insertedRecord.getValueString("key");
+            if(CollectionUtils.nullSafeHasContents(insertedRecord.getErrors()))
+            {
+               rs.put(key, new ProcessLockOrException(new UnableToObtainProcessLockException(insertedRecord.getErrors().get(0).getMessage())));
+            }
+            else
+            {
+               rs.put(key, new ProcessLockOrException(new ProcessLock(insertedRecord)));
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         for(ProcessLock processLock : processLocks)
+         {
+            rs.put(processLock.getKey(), new ProcessLockOrException(new UnableToObtainProcessLockException("Error attempting to insert process lock: " + e.getMessage())));
+         }
+      }
+
+      return (rs);
    }
 
 
 
    /*******************************************************************************
+    ** try to create many process locks, of a given list of key & a type - and re-try
+    ** upon failures (e.g., wait until existing lock holder releases the lock).
+    **
+    ** @param keys along with typeName, part of Unique Key for the lock.
+    ** @param typeName along with key, part of Unique Key for the lock.  Must be a
+    *              defined lock type, from which we derive defaultExpirationSeconds.
+    ** @param details advice to show users re: who/what created the lock.
+    ** @param sleepBetweenTries how long to sleep between retries.
+    ** @param maxWait max amount of that will be waited between call to this method
+    *                 and an eventual UnableToObtainProcessLockException (plus or minus
+    *                 one sleepBetweenTries (actually probably just plus that).
     **
     *******************************************************************************/
-   public static ProcessLock create(String key, String type, String holderId, Duration sleepBetweenTries, Duration maxWait) throws UnableToObtainProcessLockException, QException
+   public static Map<String, ProcessLockOrException> createMany(List<String> keys, String typeName, String details, Duration sleepBetweenTries, Duration maxWait) throws QException
    {
+      Map<String, ProcessLockOrException>             rs                   = new HashMap<>();
+      Map<String, UnableToObtainProcessLockException> lastExceptionsPerKey = new HashMap<>();
+      Set<String>                                     stillNeedCreated     = new HashSet<>(keys);
+
       Instant giveUpTime = Instant.now().plus(maxWait);
 
       UnableToObtainProcessLockException lastCaughtUnableToObtainProcessLockException = null;
       while(true)
       {
-         try
+         Map<String, ProcessLockOrException> createManyResult = createMany(stillNeedCreated.size() == keys.size() ? keys : new ArrayList<>(stillNeedCreated), typeName, details);
+         for(Map.Entry<String, ProcessLockOrException> entry : createManyResult.entrySet())
          {
-            ProcessLock processLock = create(key, type, holderId);
-            return (processLock);
+            String                 key                    = entry.getKey();
+            ProcessLockOrException processLockOrException = entry.getValue();
+            if(processLockOrException.processLock() != null)
+            {
+               rs.put(key, processLockOrException);
+               stillNeedCreated.remove(key);
+            }
+            else if(processLockOrException.unableToObtainProcessLockException() != null)
+            {
+               lastExceptionsPerKey.put(key, processLockOrException.unableToObtainProcessLockException());
+            }
          }
-         catch(UnableToObtainProcessLockException e)
+
+         if(stillNeedCreated.isEmpty())
          {
-            lastCaughtUnableToObtainProcessLockException = e;
-            if(Instant.now().plus(sleepBetweenTries).isBefore(giveUpTime))
-            {
-               SleepUtils.sleep(sleepBetweenTries);
-            }
-            else
-            {
-               break;
-            }
+            //////////////////////////////////////////////////////////
+            // if they've all been created now, great, return them! //
+            //////////////////////////////////////////////////////////
+            return (rs);
+         }
+
+         /////////////////////////////////////////////////////////////////////////////
+         // oops, let's sleep (if we're before the give up time) and then try again //
+         /////////////////////////////////////////////////////////////////////////////
+         if(Instant.now().plus(sleepBetweenTries).isBefore(giveUpTime))
+         {
+            SleepUtils.sleep(sleepBetweenTries);
+         }
+         else
+         {
+            /////////////////////////////////
+            // else, break if out of time! //
+            /////////////////////////////////
+            break;
          }
       }
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////
-      // this variable can never be null with current code-path, but prefer to be defensive regardless //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////
-      @SuppressWarnings("ConstantValue")
-      String suffix = lastCaughtUnableToObtainProcessLockException == null ? "" : ": " + lastCaughtUnableToObtainProcessLockException.getMessage();
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // any that didn't get created, they need their last error (or a new error) put in the rs //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      for(String key : stillNeedCreated)
+      {
+         rs.put(key, new ProcessLockOrException(lastExceptionsPerKey.getOrDefault(key, new UnableToObtainProcessLockException("Missing key [" + key + "] in response from request to create lock.  Lock not created."))));
+      }
 
-      //noinspection ConstantValue
-      throw (new UnableToObtainProcessLockException("Unable to obtain process lock for key [" + key + "] in type [" + type + "] after [" + maxWait + "]" + suffix)
-         .withExistingLock(lastCaughtUnableToObtainProcessLockException == null ? null : lastCaughtUnableToObtainProcessLockException.getExistingLock()));
+      return (rs);
    }
 
 
@@ -389,27 +640,41 @@ public class ProcessLockUtils
    {
       if(id == null)
       {
-         LOG.debug("No id passed in to releaseById - returning with noop");
+         LOG.debug("No ids passed in to releaseById - returning with noop");
          return;
       }
 
-      ProcessLock processLock = null;
+      releaseByIds(List.of(id));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void releaseByIds(List<? extends Serializable> ids)
+   {
+      List<Serializable> nonNullIds = ids == null ? Collections.emptyList() : ids.stream().filter(Objects::nonNull).map(o -> (Serializable) o).toList();
+
+      if(CollectionUtils.nullSafeIsEmpty(nonNullIds))
+      {
+         LOG.debug("No ids passed in to releaseById - returning with noop");
+         return;
+      }
+
       try
       {
-         processLock = ProcessLockUtils.getById(id);
-         if(processLock == null)
+         DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKeys(nonNullIds));
+         if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
          {
-            LOG.info("Process lock not found in releaseById call", logPair("id", id));
+            throw (new QException("Error deleting processLocks: " + deleteOutput.getRecordsWithErrors().get(0).getErrorsAsString()));
          }
+
+         LOG.info("Released process locks", logPair("ids", nonNullIds));
       }
       catch(QException e)
       {
-         LOG.warn("Exception releasing processLock byId", e, logPair("id", id));
-      }
-
-      if(processLock != null)
-      {
-         release(processLock);
+         LOG.warn("Exception releasing processLocks byId", e, logPair("ids", ids));
       }
    }
 
@@ -420,26 +685,33 @@ public class ProcessLockUtils
     *******************************************************************************/
    public static void release(ProcessLock processLock)
    {
-      try
+      if(processLock == null)
       {
-         if(processLock == null)
-         {
-            LOG.debug("No process lock passed in to release - returning with noop");
-            return;
-         }
-
-         DeleteOutput deleteOutput = new DeleteAction().execute(new DeleteInput(ProcessLock.TABLE_NAME).withPrimaryKey(processLock.getId()));
-         if(CollectionUtils.nullSafeHasContents(deleteOutput.getRecordsWithErrors()))
-         {
-            throw (new QException("Error deleting processLock record: " + deleteOutput.getRecordsWithErrors().get(0).getErrorsAsString()));
-         }
-
-         LOG.info("Released process lock", logPair("id", processLock.getId()), logPair("key", processLock.getKey()), logPair("typeId", processLock.getProcessLockTypeId()), logPair("details", processLock.getDetails()));
+         LOG.debug("No process lock passed in to release - returning with noop");
+         return;
       }
-      catch(QException e)
+
+      releaseMany(List.of(processLock));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void releaseMany(List<ProcessLock> processLocks)
+   {
+      if(CollectionUtils.nullSafeIsEmpty(processLocks))
       {
-         LOG.warn("Exception releasing processLock", e, logPair("processLockId", () -> processLock.getId()));
+         LOG.debug("No process locks passed in to release - returning with noop");
+         return;
       }
+
+      List<Serializable> ids = processLocks.stream()
+         .filter(Objects::nonNull)
+         .map(pl -> (Serializable) pl.getId())
+         .toList();
+      releaseByIds(ids);
    }
 
 

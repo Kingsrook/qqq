@@ -441,11 +441,16 @@ public class QScheduleManager
             try
             {
                HashMap<String, Serializable> parameters = new HashMap<>(paramMap);
-               HashMap<String, Serializable> variantMap = new HashMap<>(Map.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField())));
+
+               String variantTypeKey                 = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+               String variantOptionsTableName        = backendMetaData.getBackendVariantsConfig().getOptionsTableName();
+               String variantOptionsTableIdFieldName = QContext.getQInstance().getTable(variantOptionsTableName).getPrimaryKeyField();
+
+               HashMap<String, Serializable> variantMap = new HashMap<>(Map.of(variantTypeKey, qRecord.getValue(variantOptionsTableIdFieldName)));
                parameters.put("backendVariantData", variantMap);
 
-               String identity    = schedulableIdentity.getIdentity() + ";" + backendMetaData.getVariantOptionsTableTypeValue() + "=" + qRecord.getValue(backendMetaData.getVariantOptionsTableIdField());
-               String description = schedulableIdentity.getDescription() + " for variant: " + backendMetaData.getVariantOptionsTableTypeValue() + "=" + qRecord.getValue(backendMetaData.getVariantOptionsTableIdField());
+               String identity    = schedulableIdentity.getIdentity() + ";" + variantTypeKey + "=" + qRecord.getValue(variantOptionsTableIdFieldName);
+               String description = schedulableIdentity.getDescription() + " for variant: " + variantTypeKey + "=" + qRecord.getValue(variantOptionsTableIdFieldName);
 
                BasicSchedulableIdentity variantIdentity = new BasicSchedulableIdentity(identity, description);
 

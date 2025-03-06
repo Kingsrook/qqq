@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.querystats.QueryStat;
@@ -78,6 +79,22 @@ public class CountAction
       QueryStatManager.getInstance().add(queryStat);
 
       return countOutput;
+   }
+
+
+
+   /*******************************************************************************
+    ** shorthand way to call for the most common use-case, when you just want the
+    ** count to be returned, and you just want to pass in a table name and filter.
+    *******************************************************************************/
+   public static Integer execute(String tableName, QQueryFilter filter) throws QException
+   {
+      CountAction countAction = new CountAction();
+      CountInput  countInput  = new CountInput();
+      countInput.setTableName(tableName);
+      countInput.setFilter(filter);
+      CountOutput countOutput = countAction.execute(countInput);
+      return (countOutput.getCount());
    }
 
 

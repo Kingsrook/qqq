@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.module.rdbms.actions;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
@@ -42,13 +43,16 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
+import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -83,20 +87,56 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       Aggregate      averageOfDaysWorked = new Aggregate("daysWorked", AggregateOperator.AVG);
       Aggregate      maxAnnualSalary     = new Aggregate("annualSalary", AggregateOperator.MAX);
       Aggregate      minFirstName        = new Aggregate("firstName", AggregateOperator.MIN);
+      Aggregate      countOfBirthDate    = new Aggregate("birthDate", AggregateOperator.COUNT);
       aggregateInput.withAggregate(countOfId);
       aggregateInput.withAggregate(sumOfId);
       aggregateInput.withAggregate(averageOfDaysWorked);
       aggregateInput.withAggregate(maxAnnualSalary);
       aggregateInput.withAggregate(minFirstName);
+      aggregateInput.withAggregate(countOfBirthDate);
 
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
 
       AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
-      Assertions.assertEquals(5, aggregateResult.getAggregateValue(countOfId));
-      Assertions.assertEquals(15, aggregateResult.getAggregateValue(sumOfId));
-      Assertions.assertEquals(new BigDecimal("96.4"), aggregateResult.getAggregateValue(averageOfDaysWorked));
-      Assertions.assertEquals(new BigDecimal("1000000.00"), aggregateResult.getAggregateValue(maxAnnualSalary));
-      Assertions.assertEquals("Darin", aggregateResult.getAggregateValue(minFirstName));
+      assertEquals(5, aggregateResult.getAggregateValue(countOfId));
+      assertEquals(15, aggregateResult.getAggregateValue(sumOfId));
+      assertEquals(new BigDecimal("96.4"), aggregateResult.getAggregateValue(averageOfDaysWorked));
+      assertEquals(new BigDecimal("1000000.00"), aggregateResult.getAggregateValue(maxAnnualSalary));
+      assertEquals("Darin", aggregateResult.getAggregateValue(minFirstName));
+      assertEquals(4, aggregateResult.getAggregateValue(countOfBirthDate));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   @Disabled("Interesting to see effects of all operators on all types, but failures are expected (e.g., avg(string), so not for CI.")
+   void testOperatorsCrossTypes()
+   {
+      List<String> failures = new ArrayList<>();
+      for(QFieldMetaData field : QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON).getFields().values())
+      {
+         for(AggregateOperator aggregateOperator : AggregateOperator.values())
+         {
+            try
+            {
+               AggregateInput aggregateInput = initAggregateRequest();
+               Aggregate      aggregate      = new Aggregate(field.getName(), aggregateOperator);
+               aggregateInput.withAggregate(aggregate);
+               AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
+               AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
+               assertNotNull(aggregateResult.getAggregateValue(aggregate));
+            }
+            catch(Exception e)
+            {
+               failures.add(ExceptionUtils.getRootException(e).getMessage());
+            }
+         }
+      }
+
+      failures.forEach(System.out::println);
    }
 
 
@@ -123,11 +163,11 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
 
       AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
-      Assertions.assertEquals(2, aggregateResult.getAggregateValue(countOfId));
-      Assertions.assertEquals(5, aggregateResult.getAggregateValue(sumOfId));
-      Assertions.assertEquals(new BigDecimal("62.0"), aggregateResult.getAggregateValue(averageOfDaysWorked));
-      Assertions.assertEquals(new BigDecimal("26000.00"), aggregateResult.getAggregateValue(maxAnnualSalary));
-      Assertions.assertEquals("James", aggregateResult.getAggregateValue(minFirstName));
+      assertEquals(2, aggregateResult.getAggregateValue(countOfId));
+      assertEquals(5, aggregateResult.getAggregateValue(sumOfId));
+      assertEquals(new BigDecimal("62.0"), aggregateResult.getAggregateValue(averageOfDaysWorked));
+      assertEquals(new BigDecimal("26000.00"), aggregateResult.getAggregateValue(maxAnnualSalary));
+      assertEquals("James", aggregateResult.getAggregateValue(minFirstName));
    }
 
 
@@ -156,15 +196,15 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       {
          AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
-         Assertions.assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
-         Assertions.assertEquals(2, aggregateResult.getAggregateValue(countOfId));
-         Assertions.assertEquals(17, aggregateResult.getAggregateValue(sumOfDaysWorked));
+         assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
+         assertEquals(2, aggregateResult.getAggregateValue(countOfId));
+         assertEquals(17, aggregateResult.getAggregateValue(sumOfDaysWorked));
       }
       {
          AggregateResult aggregateResult = aggregateOutput.getResults().get(1);
-         Assertions.assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
-         Assertions.assertEquals(4, aggregateResult.getAggregateValue(countOfId));
-         Assertions.assertEquals(11364, aggregateResult.getAggregateValue(sumOfDaysWorked));
+         assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
+         assertEquals(4, aggregateResult.getAggregateValue(countOfId));
+         assertEquals(11364, aggregateResult.getAggregateValue(sumOfDaysWorked));
       }
    }
 
@@ -201,29 +241,29 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateResult           aggregateResult;
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals("Donny", aggregateResult.getGroupByValue(firstNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals("Donny", aggregateResult.getGroupByValue(firstNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals("Tim", aggregateResult.getGroupByValue(firstNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals("Tim", aggregateResult.getGroupByValue(firstNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals("Aaron", aggregateResult.getGroupByValue(firstNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals("Aaron", aggregateResult.getGroupByValue(firstNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals("Darin", aggregateResult.getGroupByValue(firstNameGroupBy));
-      Assertions.assertEquals(2, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals("Darin", aggregateResult.getGroupByValue(firstNameGroupBy));
+      assertEquals(2, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals("Trevor", aggregateResult.getGroupByValue(firstNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals("Trevor", aggregateResult.getGroupByValue(firstNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
    }
 
 
@@ -255,24 +295,24 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       AggregateResult           aggregateResult;
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals(4, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Kelkhoff", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals(4, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Richardson", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Richardson", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Maes", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Maes", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Samples", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals(1, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Samples", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals(1, aggregateResult.getAggregateValue(countOfId));
 
       aggregateResult = iterator.next();
-      Assertions.assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
-      Assertions.assertEquals(2, aggregateResult.getAggregateValue(countOfId));
+      assertEquals("Chamberlain", aggregateResult.getGroupByValue(lastNameGroupBy));
+      assertEquals(2, aggregateResult.getAggregateValue(countOfId));
    }
 
 
@@ -293,7 +333,7 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       ////////////////////////////////////////////////////////////
       AggregateOutput aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       AggregateResult aggregateResult = aggregateOutput.getResults().get(0);
-      Assertions.assertEquals(0, aggregateResult.getAggregateValue(countOfId));
+      assertEquals(0, aggregateResult.getAggregateValue(countOfId));
 
       /////////////////////////////////////////////////////////////////////////////////////////
       // but re-run w/ a group-by -- then, if no rows are found, there are 0 result objects. //
@@ -324,12 +364,12 @@ public class RDBMSAggregateActionTest extends RDBMSActionTest
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_STORE_ALL_ACCESS, true));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       aggregateResult = aggregateOutput.getResults().get(0);
-      Assertions.assertEquals(43, aggregateResult.getAggregateValue(sumOfQuantity));
+      assertEquals(43, aggregateResult.getAggregateValue(sumOfQuantity));
 
       QContext.setQSession(new QSession().withSecurityKeyValue(TestUtils.TABLE_NAME_STORE, 1));
       aggregateOutput = new RDBMSAggregateAction().execute(aggregateInput);
       aggregateResult = aggregateOutput.getResults().get(0);
-      Assertions.assertEquals(33, aggregateResult.getAggregateValue(sumOfQuantity));
+      assertEquals(33, aggregateResult.getAggregateValue(sumOfQuantity));
    }
 
 

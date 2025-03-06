@@ -66,7 +66,7 @@ class NowWithOffsetTest extends BaseTest
          assertThat(twoWeeksFromNowMillis).isCloseTo(now + (14 * DAY_IN_MILLIS), allowedDiff);
 
          long oneMonthAgoMillis = ((Instant) NowWithOffset.minus(1, ChronoUnit.MONTHS).evaluate(dateTimeField)).toEpochMilli();
-         assertThat(oneMonthAgoMillis).isCloseTo(now - (30 * DAY_IN_MILLIS), allowedDiffPlusOneDay);
+         assertThat(oneMonthAgoMillis).isCloseTo(now - (30 * DAY_IN_MILLIS), allowedDiffPlusTwoDays); // two days, to work on 3/1...
 
          long twoMonthsFromNowMillis = ((Instant) NowWithOffset.plus(2, ChronoUnit.MONTHS).evaluate(dateTimeField)).toEpochMilli();
          assertThat(twoMonthsFromNowMillis).isCloseTo(now + (60 * DAY_IN_MILLIS), allowedDiffPlusTwoDays);

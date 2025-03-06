@@ -30,11 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -53,6 +56,11 @@ import org.json.JSONObject;
 public class JsonUtils
 {
    private static final QLogger LOG = QLogger.getLogger(JsonUtils.class);
+
+   //////////////////////////////////////////////////////////////////////
+   // see https://www.baeldung.com/jackson-map-null-values-or-null-key //
+   //////////////////////////////////////////////////////////////////////
+   public static NullKeyToEmptyStringSerializer nullKeyToEmptyStringSerializer = new NullKeyToEmptyStringSerializer();
 
 
 
@@ -394,6 +402,43 @@ public class JsonUtils
       }
 
       return (record);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class NullKeyToEmptyStringSerializer extends StdSerializer<Object>
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public NullKeyToEmptyStringSerializer()
+      {
+         this(null);
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      public NullKeyToEmptyStringSerializer(Class<Object> t)
+      {
+         super(t);
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public void serialize(Object nullKey, JsonGenerator jsonGenerator, SerializerProvider unused) throws IOException
+      {
+         jsonGenerator.writeFieldName("");
+      }
    }
 
 }

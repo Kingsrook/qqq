@@ -39,12 +39,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
-import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.Cardinality;
-import com.kingsrook.qqq.backend.module.filesystem.base.utils.SharedFilesystemBackendModuleUtils;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.local.actions.AbstractFilesystemAction;
 
@@ -80,7 +76,7 @@ public class S3Utils
     ** https://docs.oracle.com/javase/7/docs/api/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)
     ** and also - (possibly) apply a file-name filter (based on the table's details).
     *******************************************************************************/
-   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob, QQueryFilter filter, AbstractFilesystemTableBackendDetails tableDetails) throws QException
+   public List<S3ObjectSummary> listObjectsInBucketMatchingGlob(String bucketName, String path, String glob, String requestedPath, AbstractFilesystemTableBackendDetails tableDetails) throws QException
    {
       //////////////////////////////////////////////////////////////////////////////////////////////////
       // s3 list requests find nothing if the path starts with a /, so strip away any leading slashes //
@@ -96,38 +92,20 @@ public class S3Utils
          prefix = prefix.substring(0, prefix.indexOf('*'));
       }
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////
-      // for a file-per-record (ONE) table, we may need to apply the filter to listing.                    //
-      // but for MANY tables, the filtering would be done on the records after they came out of the files. //
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////
-      boolean useQQueryFilter = false;
-      if(tableDetails != null && Cardinality.ONE.equals(tableDetails.getCardinality()))
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // optimization, to avoid listing whole bucket, for use-case where less than a whole bucket is requested //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if(StringUtils.hasContent(requestedPath))
       {
-         useQQueryFilter = true;
-      }
-
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // if there's a filter for single file, make that file name the "prefix" that we send to s3, so we just get back that 1 file. //
-      // as this will be a common case.                                                                                             //
-      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(filter != null && useQQueryFilter)
-      {
-         if(filter.getCriteria() != null && filter.getCriteria().size() == 1)
+         if(!prefix.isEmpty())
          {
-            QFilterCriteria criteria = filter.getCriteria().get(0);
-            if(tableDetails.getFileNameFieldName().equals(criteria.getFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
-            {
-               if(!prefix.isEmpty())
-               {
-                  ///////////////////////////////////////////////////////
-                  // remember, a prefix starting with / finds nothing! //
-                  ///////////////////////////////////////////////////////
-                  prefix += "/";
-               }
-
-               prefix += criteria.getValues().get(0);
-            }
+            ///////////////////////////////////////////////////////
+            // remember, a prefix starting with / finds nothing! //
+            ///////////////////////////////////////////////////////
+            prefix += "/";
          }
+
+         prefix += requestedPath;
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,27 +181,7 @@ public class S3Utils
                continue;
             }
 
-            ///////////////////////////////////////////////////////////////////////////////////
-            // if we're a file-per-record table, and we have a filter, compare the key to it //
-            ///////////////////////////////////////////////////////////////////////////////////
-            if(!SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(key, filter, tableDetails))
-            {
-               continue;
-            }
-
             rs.add(objectSummary);
-
-            /////////////////////////////////////////////////////////////////
-            // if we have a limit, and we've hit it, break out of the loop //
-            /////////////////////////////////////////////////////////////////
-            if(filter != null && useQQueryFilter && filter.getLimit() != null)
-            {
-               if(rs.size() >= filter.getLimit())
-               {
-                  break;
-               }
-            }
-
          }
       }
       while(listObjectsV2Result.isTruncated());

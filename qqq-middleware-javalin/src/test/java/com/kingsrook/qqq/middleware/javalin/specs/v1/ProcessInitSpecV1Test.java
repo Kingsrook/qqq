@@ -216,4 +216,26 @@ class ProcessInitSpecV1Test extends SpecTestBase
       // todo - in a higher-level test, resume test_processInitGoingAsync at the // request job status before sleep is done // line
    }
 
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testProcessPutsNullKeyInMap()
+   {
+      HttpResponse<String> response = Unirest.post(getBaseUrlAndPath() + "/processes/" + TestUtils.PROCESS_NAME_PUTS_NULL_KEY_IN_MAP + "/init")
+         .multiPartContent()
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+
+      JSONObject values = jsonObject.getJSONObject("values");
+      JSONObject mapWithNullKey = values.getJSONObject("mapWithNullKey");
+      assertTrue(mapWithNullKey.has("")); // null key currently set to become empty-string key...
+      assertEquals("hadNullKey", mapWithNullKey.getString(""));
+      assertTrue(mapWithNullKey.has("one"));
+      assertEquals("1", mapWithNullKey.getString("one"));
+   }
+
 }

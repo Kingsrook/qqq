@@ -37,6 +37,8 @@ import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -51,12 +53,15 @@ import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.ChildRecordListData;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.AbstractWidgetMetaDataBuilder;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -83,7 +88,9 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          .withIsCard(true)
          .withCodeReference(new QCodeReference(ChildRecordListRenderer.class))
          .withType(WidgetType.CHILD_RECORD_LIST.getType())
-         .withDefaultValue("joinName", join.getName())));
+         .withDefaultValue("joinName", join.getName())
+         .withValidatorPlugin(new ChildRecordListWidgetValidator())
+      ));
    }
 
 
@@ -168,6 +175,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          widgetMetaData.withDefaultValue("manageAssociationName", manageAssociationName);
          return (this);
       }
+
    }
 
 
@@ -194,7 +202,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          }
          else if(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"))
          {
-            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"));
+            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().get("maxRows"));
          }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,6 +307,13 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
                   }
                }
             }
+
+            if(widgetValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
+            {
+               @SuppressWarnings("unchecked")
+               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetValues.get("defaultValuesForNewChildRecordsFromParentFields");
+               widgetData.setDefaultValuesForNewChildRecordsFromParentFields(defaultValuesForNewChildRecordsFromParentFields);
+            }
          }
 
          widgetData.setAllowRecordEdit(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("allowRecordEdit"))));
@@ -313,4 +328,68 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
       }
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class ChildRecordListWidgetValidator implements QInstanceValidatorPluginInterface<QWidgetMetaDataInterface>
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public void validate(QWidgetMetaDataInterface widgetMetaData, QInstance qInstance, QInstanceValidator qInstanceValidator)
+      {
+         String prefix = "Widget " + widgetMetaData.getName() + ": ";
+
+         //////////////////////////////////
+         // make sure join name is given //
+         //////////////////////////////////
+         String joinName = ValueUtils.getValueAsString(CollectionUtils.nonNullMap(widgetMetaData.getDefaultValues()).get("joinName"));
+         if(qInstanceValidator.assertCondition(StringUtils.hasContent(joinName), prefix + "defaultValue for joinName must be given"))
+         {
+            ///////////////////////////
+            // make sure join exists //
+            ///////////////////////////
+            QJoinMetaData join = qInstance.getJoin(joinName);
+            if(qInstanceValidator.assertCondition(join != null, prefix + "No join named " + joinName + " exists in the instance"))
+            {
+               //////////////////////////////////////////////////////////////////////////////////
+               // if there's a manageAssociationName, make sure the table has that association //
+               //////////////////////////////////////////////////////////////////////////////////
+               String manageAssociationName = ValueUtils.getValueAsString(widgetMetaData.getDefaultValues().get("manageAssociationName"));
+               if(StringUtils.hasContent(manageAssociationName))
+               {
+                  validateAssociationName(prefix, manageAssociationName, join, qInstance, qInstanceValidator);
+               }
+            }
+         }
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      private void validateAssociationName(String prefix, String manageAssociationName, QJoinMetaData join, QInstance qInstance, QInstanceValidator qInstanceValidator)
+      {
+         ///////////////////////////////////
+         // make sure join's table exists //
+         ///////////////////////////////////
+         QTableMetaData table = qInstance.getTable(join.getLeftTable());
+         if(table == null)
+         {
+            qInstanceValidator.getErrors().add(prefix + "Unable to validate manageAssociationName, as table [" + join.getLeftTable() + "] on left-side table of join [" + join.getName() + "] does not exist.");
+         }
+         else
+         {
+            if(CollectionUtils.nonNullList(table.getAssociations()).stream().noneMatch(a -> manageAssociationName.equals(a.getName())))
+            {
+               qInstanceValidator.getErrors().add(prefix + "an association named [" + manageAssociationName + "] does not exist on table [" + join.getLeftTable() + "]");
+            }
+         }
+      }
+   }
 }

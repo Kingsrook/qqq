@@ -130,7 +130,11 @@ public class SharedFilesystemBackendModuleUtils
       }
       else
       {
-         throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // this happens in base class now, like, for query action, so, we think okay to just ignore. //
+         ///////////////////////////////////////////////////////////////////////////////////////////////
+         // throw (new QException("Unable to query filesystem table by field: " + criteria.getFieldName()));
+         return (true);
       }
    }
 

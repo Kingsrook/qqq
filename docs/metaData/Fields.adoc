@@ -56,6 +56,37 @@ if the value in the field is longer than the `maxLength`, then one of the follow
 
 ----
 
+===== ValueRangeBehavior
+Used on Numeric fields.  Specifies min and/or max allowed values for the field.
+For each of min and max, the following attributes can be set:
+
+* `minValue` / `maxValue` - the number that is the limit.
+* `minAllowEqualTo` / `maxAllowEqualTo` - boolean (default true).  Controls if < (>) or ≤ (≥).
+* `minBehavior` / `maxBehavior` - enum of `ERROR` (default) or `CLIP`.
+** If `ERROR`, then a value not within the range causes an error, and the value does not get stored.
+** else if `CLIP`, then a value not within the range gets "clipped" to either be the min/max (if allowEqualTo),
+or to the min/max plus/minus the clipAmount
+* `minClipAmount` / `maxClipAmount` - Default 1.  Used when behavior is `CLIP` (only applies when
+not allowEqualTo).
+
+[source,java]
+.Examples of using ValueRangeBehavior
+----
+    new QFieldMetaData("noOfShoes", QFieldType.INTEGER)
+      .withBehavior(new ValueRangeBehavior().withMinValue(0));
+
+    new QFieldMetaData("price", QFieldType.BIG_DECIMAL)
+      .withBehavior(new ValueRangeBehavior()
+         // set the min value to be >= 0, and an error if an input is < 0.
+         .withMinValue(BigDecimal.ZERO)
+         .withMinAllowEqualTo(true)
+         .withMinBehavior(ERROR)
+         // set the max value to be < 100 - but effectively, clip larger values to 99.99
+         // here we use the .withMax() method that takes 4 params vs. calling 4 .withMax*() methods.
+         .withMax(new BigDecimal("100.00"), false, CLIP, new BigDecimal("0.01"))
+    );
+----
+
 ===== DynamicDefaultValueBehavior
 Used to set a dynamic default value to a field when it is being inserted or updated.
 For example, instead of having a hard-coded `defaultValue` specified in the field meta-data,

@@ -23,14 +23,27 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestAbstractMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestDisabledMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestImplementsMetaDataProducer;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducingChildEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducingEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.TestMetaDataProducingPossibleValueEnum;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoInterfacesExtendsObject;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.TestNoValidConstructorMetaDataProducer;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -54,6 +67,59 @@ class MetaDataProducerHelperTest
       assertFalse(qInstance.getTables().containsKey(TestNoInterfacesExtendsObject.NAME));
       assertFalse(qInstance.getTables().containsKey(TestAbstractMetaDataProducer.NAME));
       assertFalse(qInstance.getTables().containsKey(TestDisabledMetaDataProducer.NAME));
+
+      /////////////////////////////////////////////
+      // annotation on PVS enum -> PVS meta data //
+      /////////////////////////////////////////////
+      assertTrue(qInstance.getPossibleValueSources().containsKey(TestMetaDataProducingPossibleValueEnum.class.getSimpleName()));
+      QPossibleValueSource enumPVS = qInstance.getPossibleValueSource(TestMetaDataProducingPossibleValueEnum.class.getSimpleName());
+      assertEquals(QPossibleValueSourceType.ENUM, enumPVS.getType());
+      assertEquals(2, enumPVS.getEnumValues().size());
+      assertEquals(new QPossibleValue<>(1, "One"), enumPVS.getEnumValues().get(0));
+
+      ////////////////////////////////////////////
+      // annotation on table -> table meta data //
+      ////////////////////////////////////////////
+      assertTrue(qInstance.getTables().containsKey(TestMetaDataProducingEntity.TABLE_NAME));
+      QTableMetaData table = qInstance.getTables().get(TestMetaDataProducingEntity.TABLE_NAME);
+      assertEquals(TestMetaDataProducingEntity.TABLE_NAME, table.getName());
+      assertEquals("id", table.getPrimaryKeyField());
+      assertEquals(2, table.getFields().size());
+      assertTrue(table.getField("name").getIsRequired());
+      assertEquals("Customized Label", table.getLabel());
+
+      //////////////////////////////////////////////
+      // annotation on PVS table -> PVS meta data //
+      //////////////////////////////////////////////
+      assertTrue(qInstance.getPossibleValueSources().containsKey(TestMetaDataProducingEntity.TABLE_NAME));
+      QPossibleValueSource tablePVS = qInstance.getPossibleValueSource(TestMetaDataProducingEntity.TABLE_NAME);
+      assertEquals(QPossibleValueSourceType.TABLE, tablePVS.getType());
+      assertEquals(TestMetaDataProducingEntity.TABLE_NAME, tablePVS.getTableName());
+
+      //////////////////////////////////////////////////////////////////
+      // annotation on parent table w/ joined child -> join meta data //
+      //////////////////////////////////////////////////////////////////
+      String joinName = QJoinMetaData.makeInferredJoinName(TestMetaDataProducingEntity.TABLE_NAME, TestMetaDataProducingChildEntity.TABLE_NAME);
+      assertTrue(qInstance.getJoins().containsKey(joinName));
+      QJoinMetaData join = qInstance.getJoin(joinName);
+      assertEquals(TestMetaDataProducingEntity.TABLE_NAME, join.getLeftTable());
+      assertEquals(TestMetaDataProducingChildEntity.TABLE_NAME, join.getRightTable());
+      assertEquals(JoinType.ONE_TO_MANY, join.getType());
+      assertEquals("id", join.getJoinOns().get(0).getLeftField());
+      assertEquals("parentId", join.getJoinOns().get(0).getRightField());
+
+      //////////////////////////////////////////////////////////////////////////////////////
+      // annotation on parent table w/ joined child -> child record list widget meta data //
+      //////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(qInstance.getWidgets().containsKey(joinName));
+      QWidgetMetaDataInterface widget = qInstance.getWidget(joinName);
+      assertEquals(WidgetType.CHILD_RECORD_LIST.getType(), widget.getType());
+      assertEquals("Test Children", widget.getLabel());
+      assertEquals(joinName, widget.getDefaultValues().get("joinName"));
+      assertEquals(false, widget.getDefaultValues().get("canAddChildRecord"));
+      assertNull(widget.getDefaultValues().get("manageAssociationName"));
+      assertEquals(15, widget.getDefaultValues().get("maxRows"));
+
    }
 
 }

@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
@@ -268,6 +269,11 @@ public class BackendQueryFilterUtils
 
       String regex = sqlLikeToRegex(criterionValue);
 
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         return (stringValue.toLowerCase().matches(regex.toLowerCase()));
+      }
+
       return (stringValue.matches(regex));
    }
 
@@ -427,6 +433,23 @@ public class BackendQueryFilterUtils
          }
       }
 
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         if(CollectionUtils.nullSafeHasContents(criterion.getValues()))
+         {
+            if(criterion.getValues().get(0) instanceof String)
+            {
+               for(Serializable criterionValue : criterion.getValues())
+               {
+                  if(criterionValue instanceof String criterionValueString && value instanceof String valueString && criterionValueString.equalsIgnoreCase(valueString))
+                  {
+                     return (true);
+                  }
+               }
+            }
+         }
+      }
+
       if(value == null || !criterion.getValues().contains(value))
       {
          return (false);
@@ -456,6 +479,14 @@ public class BackendQueryFilterUtils
          value = String.valueOf(value);
       }
 
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         if(value instanceof String valueString && criteriaValue instanceof String criteriaValueString && valueString.equalsIgnoreCase(criteriaValueString))
+         {
+            return (true);
+         }
+      }
+
       if(!value.equals(criteriaValue))
       {
          return (false);
@@ -472,6 +503,14 @@ public class BackendQueryFilterUtils
    {
       String stringValue    = getStringFieldValue(value, fieldName, criterion);
       String criterionValue = getFirstStringCriterionValue(criterion);
+
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         if(stringValue.toLowerCase().contains(criterionValue.toLowerCase()))
+         {
+            return (true);
+         }
+      }
 
       if(!stringValue.contains(criterionValue))
       {
@@ -491,6 +530,14 @@ public class BackendQueryFilterUtils
       String stringValue    = getStringFieldValue(value, fieldName, criterion);
       String criterionValue = getFirstStringCriterionValue(criterion);
 
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         if(stringValue.toLowerCase().startsWith(criterionValue.toLowerCase()))
+         {
+            return (true);
+         }
+      }
+
       if(!stringValue.startsWith(criterionValue))
       {
          return (false);
@@ -508,6 +555,14 @@ public class BackendQueryFilterUtils
    {
       String stringValue    = getStringFieldValue(value, fieldName, criterion);
       String criterionValue = getFirstStringCriterionValue(criterion);
+
+      if(criterion.hasOption(CriteriaOption.CASE_INSENSITIVE))
+      {
+         if(stringValue.toLowerCase().endsWith(criterionValue.toLowerCase()))
+         {
+            return (true);
+         }
+      }
 
       if(!stringValue.endsWith(criterionValue))
       {
@@ -665,4 +720,5 @@ public class BackendQueryFilterUtils
       regex.append("$");
       return regex.toString();
    }
+
 }

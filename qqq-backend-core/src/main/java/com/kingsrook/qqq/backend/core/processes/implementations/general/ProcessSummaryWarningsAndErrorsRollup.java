@@ -477,4 +477,13 @@ public class ProcessSummaryWarningsAndErrorsRollup
    }
 
 
+
+   /*******************************************************************************
+    ** Getter for errorSummaries
+    **
+    *******************************************************************************/
+   public Map<String, ProcessSummaryLine> getErrorSummaries()
+   {
+      return errorSummaries;
+   }
 }

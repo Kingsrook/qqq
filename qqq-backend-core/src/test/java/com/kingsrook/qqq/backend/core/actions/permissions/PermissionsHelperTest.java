@@ -36,8 +36,10 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetInput;
 import com.kingsrook.qqq.backend.core.model.actions.widgets.RenderWidgetOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -522,6 +524,10 @@ class PermissionsHelperTest extends BaseTest
    private QInstance newQInstance()
    {
       QInstance qInstance = new QInstance();
+
+      qInstance.setAuthentication(new QAuthenticationMetaData()
+         .withType(QAuthenticationType.FULLY_ANONYMOUS)
+         .withName("anonymous"));
 
       qInstance.addBackend(new QBackendMetaData()
          .withName("backend"));

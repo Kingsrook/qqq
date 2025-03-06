@@ -130,26 +130,31 @@ components:
           description: "Description of the error"
           type: "string"
       type: "object"
+    FieldAdornment:
+      properties:
+        type:
+          description: "Type of this adornment"
+          enum:
+          - "LINK"
+          - "CHIP"
+          - "SIZE"
+          - "CODE_EDITOR"
+          - "RENDER_HTML"
+          - "REVEAL"
+          - "FILE_DOWNLOAD"
+          - "ERROR"
+          type: "string"
+        values:
+          description: "Values associated with this adornment.  Keys and the meanings\
+            \ of their values will differ by type."
+          type: "object"
+      type: "object"
     FieldMetaData:
       properties:
         adornments:
           description: "Special UI dressings to add to the field."
           items:
-            properties:
-              type:
-                enum:
-                - "LINK"
-                - "CHIP"
-                - "SIZE"
-                - "CODE_EDITOR"
-                - "RENDER_HTML"
-                - "REVEAL"
-                - "FILE_DOWNLOAD"
-                - "ERROR"
-                type: "string"
-              values:
-                type: "object"
-            type: "object"
+            $ref: "#/components/schemas/FieldAdornment"
           type: "array"
         defaultValue:
           description: "Default value to use in this field."
@@ -973,21 +978,7 @@ components:
                   adornments:
                     description: "Special UI dressings to add to the field."
                     items:
-                      properties:
-                        type:
-                          enum:
-                          - "LINK"
-                          - "CHIP"
-                          - "SIZE"
-                          - "CODE_EDITOR"
-                          - "RENDER_HTML"
-                          - "REVEAL"
-                          - "FILE_DOWNLOAD"
-                          - "ERROR"
-                          type: "string"
-                        values:
-                          type: "object"
-                      type: "object"
+                      $ref: "#/components/schemas/FieldAdornment"
                     type: "array"
                   defaultValue:
                     description: "Default value to use in this field."
@@ -1483,6 +1474,8 @@ paths:
                     processes:
                       person.bulkInsert:
                         hasPermission: true
+                        icon:
+                          name: "library_add"
                         isHidden: true
                         label: "Person Bulk Insert"
                         name: "person.bulkInsert"
@@ -1652,66 +1645,61 @@ paths:
               examples:
                 COMPLETE:
                   value:
-                    typedResponse:
-                      nextStep: "reviewScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "reviewScreen"
+                    type: "COMPLETE"
                 COMPLETE with metaDataAdjustment:
                   value:
-                    typedResponse:
-                      nextStep: "inputScreen"
-                      processMetaDataAdjustment:
-                        updatedFields:
-                          someField:
-                            displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: true
-                            name: "someField"
-                            type: "STRING"
-                        updatedFrontendStepList:
-                        - components:
-                          - type: "EDIT_FORM"
-                          formFields:
-                          - displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: false
-                            name: "someField"
-                            type: "STRING"
-                          name: "inputScreen"
-                        - components:
-                          - type: "PROCESS_SUMMARY_RESULTS"
-                          name: "resultScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "inputScreen"
+                    processMetaDataAdjustment:
+                      updatedFields:
+                        someField:
+                          isRequired: true
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      updatedFrontendStepList:
+                      - components:
+                        - type: "EDIT_FORM"
+                        name: "inputScreen"
+                        formFields:
+                        - isRequired: false
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      - components:
+                        - type: "PROCESS_SUMMARY_RESULTS"
+                        name: "resultScreen"
+                    type: "COMPLETE"
                 JOB_STARTED:
                   value:
-                    typedResponse:
-                      jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "JOB_STARTED"
+                    jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "JOB_STARTED"
                 RUNNING:
                   value:
-                    typedResponse:
-                      current: 47
-                      message: "Processing person records"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      total: 1701
-                      type: "RUNNING"
+                    current: 47
+                    total: 1701
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
+                    message: "Processing person records"
                 ERROR:
                   value:
-                    typedResponse:
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "RUNNING"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
               schema:
                 $ref: "#/components/schemas/ProcessStepResponseV1"
           description: "State of the initialization of the job, with different fields\
@@ -1788,66 +1776,61 @@ paths:
               examples:
                 COMPLETE:
                   value:
-                    typedResponse:
-                      nextStep: "reviewScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "reviewScreen"
+                    type: "COMPLETE"
                 COMPLETE with metaDataAdjustment:
                   value:
-                    typedResponse:
-                      nextStep: "inputScreen"
-                      processMetaDataAdjustment:
-                        updatedFields:
-                          someField:
-                            displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: true
-                            name: "someField"
-                            type: "STRING"
-                        updatedFrontendStepList:
-                        - components:
-                          - type: "EDIT_FORM"
-                          formFields:
-                          - displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: false
-                            name: "someField"
-                            type: "STRING"
-                          name: "inputScreen"
-                        - components:
-                          - type: "PROCESS_SUMMARY_RESULTS"
-                          name: "resultScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "inputScreen"
+                    processMetaDataAdjustment:
+                      updatedFields:
+                        someField:
+                          isRequired: true
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      updatedFrontendStepList:
+                      - components:
+                        - type: "EDIT_FORM"
+                        name: "inputScreen"
+                        formFields:
+                        - isRequired: false
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      - components:
+                        - type: "PROCESS_SUMMARY_RESULTS"
+                        name: "resultScreen"
+                    type: "COMPLETE"
                 JOB_STARTED:
                   value:
-                    typedResponse:
-                      jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "JOB_STARTED"
+                    jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "JOB_STARTED"
                 RUNNING:
                   value:
-                    typedResponse:
-                      current: 47
-                      message: "Processing person records"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      total: 1701
-                      type: "RUNNING"
+                    current: 47
+                    total: 1701
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
+                    message: "Processing person records"
                 ERROR:
                   value:
-                    typedResponse:
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "RUNNING"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
               schema:
                 $ref: "#/components/schemas/ProcessStepResponseV1"
           description: "State of the backend's running of the next step(s) of the\
@@ -1895,66 +1878,61 @@ paths:
               examples:
                 COMPLETE:
                   value:
-                    typedResponse:
-                      nextStep: "reviewScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "reviewScreen"
+                    type: "COMPLETE"
                 COMPLETE with metaDataAdjustment:
                   value:
-                    typedResponse:
-                      nextStep: "inputScreen"
-                      processMetaDataAdjustment:
-                        updatedFields:
-                          someField:
-                            displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: true
-                            name: "someField"
-                            type: "STRING"
-                        updatedFrontendStepList:
-                        - components:
-                          - type: "EDIT_FORM"
-                          formFields:
-                          - displayFormat: "%s"
-                            isEditable: true
-                            isHeavy: false
-                            isHidden: false
-                            isRequired: false
-                            name: "someField"
-                            type: "STRING"
-                          name: "inputScreen"
-                        - components:
-                          - type: "PROCESS_SUMMARY_RESULTS"
-                          name: "resultScreen"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "COMPLETE"
-                      values:
-                        totalAge: 32768
-                        firstLastName: "Aabramson"
+                    values:
+                      firstLastName: "Aabramson"
+                      totalAge: 32768
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    nextStep: "inputScreen"
+                    processMetaDataAdjustment:
+                      updatedFields:
+                        someField:
+                          isRequired: true
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      updatedFrontendStepList:
+                      - components:
+                        - type: "EDIT_FORM"
+                        name: "inputScreen"
+                        formFields:
+                        - isRequired: false
+                          isEditable: true
+                          name: "someField"
+                          displayFormat: "%s"
+                          type: "STRING"
+                          isHeavy: false
+                          isHidden: false
+                      - components:
+                        - type: "PROCESS_SUMMARY_RESULTS"
+                        name: "resultScreen"
+                    type: "COMPLETE"
                 JOB_STARTED:
                   value:
-                    typedResponse:
-                      jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "JOB_STARTED"
+                    jobUUID: "98765432-10FE-DCBA-9876-543210FEDCBA"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "JOB_STARTED"
                 RUNNING:
                   value:
-                    typedResponse:
-                      current: 47
-                      message: "Processing person records"
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      total: 1701
-                      type: "RUNNING"
+                    current: 47
+                    total: 1701
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
+                    message: "Processing person records"
                 ERROR:
                   value:
-                    typedResponse:
-                      processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
-                      type: "RUNNING"
+                    processUUID: "01234567-89AB-CDEF-0123-456789ABCDEF"
+                    type: "RUNNING"
               schema:
                 $ref: "#/components/schemas/ProcessStepResponseV1"
           description: "State of the backend's running of the specified job, with\

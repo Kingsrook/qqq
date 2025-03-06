@@ -29,22 +29,34 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.reporting.ReportFormat;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
+import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
+import com.kingsrook.qqq.middleware.javalin.misc.DownloadFileSupplementalAction;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import org.apache.logging.log4j.Level;
@@ -278,6 +290,70 @@ class QJavalinImplementationTest extends QJavalinTestBase
       //////////////////////////
       response = Unirest.get(BASE_URL + "/data/notPerson/1/photo/darin-photo.png").asString();
       assertEquals(404, response.getStatus());
+   }
+
+
+
+   /*******************************************************************************
+    ** test downloading from a URL field
+    **
+    *******************************************************************************/
+   @Test
+   public void test_dataDownloadRecordFieldUrl()
+   {
+      try
+      {
+         TestDownloadFileSupplementalAction.callCount = 0;
+
+         Unirest.config().reset();
+         Unirest.config().followRedirects(false);
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // first request - has no custom code - should just give us back a redirect to the value in the field //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////
+         HttpResponse<String> response = Unirest.get(BASE_URL + "/data/person/1/licenseScanPdfUrl/License-1.pdf").asString();
+         assertEquals(302, response.getStatus());
+         assertThat(response.getHeaders().get("location").get(0)).contains("https://");
+
+         ////////////////////////////////////////////////////
+         // set a code-reference on the download adornment //
+         ////////////////////////////////////////////////////
+         Optional<FieldAdornment> fileDownloadAdornment = QJavalinImplementation.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON)
+            .getField("licenseScanPdfUrl")
+            .getAdornment(AdornmentType.FILE_DOWNLOAD);
+         fileDownloadAdornment.get().withValue(AdornmentType.FileDownloadValues.SUPPLEMENTAL_CODE_REFERENCE, new QCodeReference(TestDownloadFileSupplementalAction.class));
+
+         /////////////////////////////////////////
+         // request again - assert the code ran //
+         /////////////////////////////////////////
+         assertEquals(0, TestDownloadFileSupplementalAction.callCount);
+         response = Unirest.get(BASE_URL + "/data/person/1/licenseScanPdfUrl/License-1.pdf").asString();
+         assertEquals(302, response.getStatus());
+         assertThat(response.getHeaders().get("location").get(0)).contains("https://");
+         assertEquals(1, TestDownloadFileSupplementalAction.callCount);
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // set adornment to run process (note, leaving the code-ref - this demonstrates that process "trumps" if both exist) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         AtomicInteger processRunCount = new AtomicInteger(0);
+         QJavalinImplementation.getQInstance().addProcess(new QProcessMetaData().withName("testDownloadProcess").withStep(
+            new QBackendStepMetaData().withName("execute").withCode(new QCodeReferenceLambda<BackendStep>((input, output) -> processRunCount.incrementAndGet()))
+         ));
+         fileDownloadAdornment.get().withValue(AdornmentType.FileDownloadValues.SUPPLEMENTAL_PROCESS_NAME, "testDownloadProcess");
+
+         /////////////////////////////////////////
+         // request again - assert the code ran //
+         /////////////////////////////////////////
+         response = Unirest.get(BASE_URL + "/data/person/1/licenseScanPdfUrl/License-1.pdf").asString();
+         assertEquals(302, response.getStatus());
+         assertThat(response.getHeaders().get("location").get(0)).contains("https://");
+         assertEquals(1, TestDownloadFileSupplementalAction.callCount);
+         assertEquals(1, processRunCount.get());
+      }
+      finally
+      {
+         Unirest.config().reset();
+      }
    }
 
 
@@ -1308,6 +1384,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
          Function<String, QInstance> makeNewInstanceWithBackendName = (backendName) ->
          {
             QInstance newInstance = new QInstance();
+            newInstance.setAuthentication(new QAuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
             newInstance.addBackend(new QBackendMetaData().withName(backendName).withBackendType(MockBackendModule.class));
 
             if(!"invalid".equals(backendName))
@@ -1395,4 +1472,19 @@ class QJavalinImplementationTest extends QJavalinTestBase
       }
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class TestDownloadFileSupplementalAction implements DownloadFileSupplementalAction
+   {
+      static int callCount = 0;
+
+      @Override
+      public void run(DownloadFileSupplementalActionInput input, DownloadFileSupplementalActionOutput output) throws QException
+      {
+         callCount++;
+      }
+   }
 }

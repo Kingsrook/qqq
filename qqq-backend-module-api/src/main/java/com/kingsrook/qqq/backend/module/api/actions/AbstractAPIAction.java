@@ -61,7 +61,6 @@ public abstract class AbstractAPIAction
 
       apiActionUtil.setBackendMetaData(this.backendMetaData);
       apiActionUtil.setActionInput(actionInput);
-      apiActionUtil.setSession(session);
    }
 
 }

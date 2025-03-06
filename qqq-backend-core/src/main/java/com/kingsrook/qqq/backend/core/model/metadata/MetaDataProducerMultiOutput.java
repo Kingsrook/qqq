@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.qbits.SourceQBitAware;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -31,9 +32,11 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
  ** Output object for a MetaDataProducer, which contains multiple meta-data
  ** objects.
  *******************************************************************************/
-public class MetaDataProducerMultiOutput implements MetaDataProducerOutput
+public class MetaDataProducerMultiOutput implements MetaDataProducerOutput, SourceQBitAware
 {
    private List<MetaDataProducerOutput> contents;
+
+   private String sourceQBitName;
 
 
 
@@ -98,4 +101,48 @@ public class MetaDataProducerMultiOutput implements MetaDataProducerOutput
       return (rs);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public String getSourceQBitName()
+   {
+      return (this.sourceQBitName);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void setSourceQBitName(String sourceQBitName)
+   {
+      this.sourceQBitName = sourceQBitName;
+
+      /////////////////////////////////////////////
+      // propagate the name down to the children //
+      /////////////////////////////////////////////
+      for(MetaDataProducerOutput content : contents)
+      {
+         if(content instanceof SourceQBitAware aware)
+         {
+            aware.setSourceQBitName(sourceQBitName);
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public MetaDataProducerMultiOutput withSourceQBitName(String sourceQBitName)
+   {
+      setSourceQBitName(sourceQBitName);
+      return this;
+   }
 }

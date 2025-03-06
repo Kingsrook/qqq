@@ -82,7 +82,7 @@ public class StringUtils
 
 
    /*******************************************************************************
-    ** allCapsToMixedCase - ie, UNIT CODE -> Unit Code
+    ** allCapsToMixedCase - ie, UNIT_CODE -> Unit Code
     **
     ** @param input
     ** @return
@@ -127,7 +127,7 @@ public class StringUtils
          return (input);
       }
 
-      return (rs.toString());
+      return (rs.toString().replace('_', ' '));
    }
 
 
@@ -458,6 +458,21 @@ public class StringUtils
    public static boolean isUUID(String s)
    {
       return (Pattern.matches("[a-f0-9]{8}(?:-[a-f0-9]{4}){4}[a-f0-9]{8}", s));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String emptyToNull(String s)
+   {
+      if(!hasContent(s))
+      {
+         return (null);
+      }
+
+      return (s);
    }
 
 }

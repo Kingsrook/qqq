@@ -56,6 +56,8 @@ public class RDBMSBackendModule implements QBackendModuleInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RDBMSBackendModule.class);
 
+   public static final String NAME = "rdbms";
+
    static
    {
       QBackendModuleDispatcher.registerBackendModule(new RDBMSBackendModule());
@@ -66,7 +68,7 @@ public class RDBMSBackendModule implements QBackendModuleInterface
     *******************************************************************************/
    public String getBackendType()
    {
-      return ("rdbms");
+      return NAME;
    }
 
 

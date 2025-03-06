@@ -55,6 +55,16 @@ public class QQueryFilter implements Serializable, Cloneable
    private BooleanOperator    booleanOperator = BooleanOperator.AND;
    private List<QQueryFilter> subFilters      = new ArrayList<>();
 
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   // initial intent here was - put, e.g., UNION between multiple SELECT (with the individual selects being defined in subFilters) //
+   // but, actually SQL would let us do, e.g., SELECT UNION SELECT INTERSECT SELECT                                                //
+   // so - we could see a future implementation where we:                                                                          //
+   // - used the top-level subFilterSetOperator to indicate hat we are doing a multi-query set-operation query.                    //
+   // - looked within the subFilter, to see if it specified a subFilterSetOperator - and use that operator before that query       //
+   // but - in v0, just using the one at the top-level works                                                                       //
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private SubFilterSetOperator subFilterSetOperator = null;
+
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
    // skip & limit are meant to only apply to QueryAction (at least at the initial time they are added here) //
    // e.g., they are ignored in CountAction, AggregateAction, etc, where their meanings may be less obvious  //
@@ -71,6 +81,19 @@ public class QQueryFilter implements Serializable, Cloneable
    {
       AND,
       OR
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public enum SubFilterSetOperator
+   {
+      UNION,
+      UNION_ALL,
+      INTERSECT,
+      EXCEPT
    }
 
 
@@ -796,6 +819,53 @@ public class QQueryFilter implements Serializable, Cloneable
       private InputNotFound()
       {
 
+      }
+   }
+
+
+   /*******************************************************************************
+    ** Getter for subFilterSetOperator
+    *******************************************************************************/
+   public SubFilterSetOperator getSubFilterSetOperator()
+   {
+      return (this.subFilterSetOperator);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for subFilterSetOperator
+    *******************************************************************************/
+   public void setSubFilterSetOperator(SubFilterSetOperator subFilterSetOperator)
+   {
+      this.subFilterSetOperator = subFilterSetOperator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for subFilterSetOperator
+    *******************************************************************************/
+   public QQueryFilter withSubFilterSetOperator(SubFilterSetOperator subFilterSetOperator)
+   {
+      this.subFilterSetOperator = subFilterSetOperator;
+      return (this);
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void applyCriteriaOptionToAllCriteria(CriteriaOptionInterface criteriaOption)
+   {
+      for(QFilterCriteria criteria : CollectionUtils.nonNullList(this.criteria))
+      {
+         criteria.withOption(criteriaOption);
+      }
+
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))
+      {
+         subFilter.applyCriteriaOptionToAllCriteria(criteriaOption);
       }
    }
 

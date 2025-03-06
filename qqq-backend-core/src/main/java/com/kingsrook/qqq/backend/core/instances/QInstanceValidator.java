@@ -37,7 +37,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -70,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -107,12 +110,16 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.Automatio
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeLambda;
+import org.apache.commons.lang.BooleanUtils;
 import org.quartz.CronExpression;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -134,6 +141,8 @@ public class QInstanceValidator
    private boolean printWarnings = false;
 
    private static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> validatorPlugins = new ListingHash<>();
+
+   private JoinGraph joinGraph = null;
 
    private List<String> errors = new ArrayList<>();
 
@@ -162,8 +171,7 @@ public class QInstanceValidator
       // the enricher will build a join graph (if there are any joins).  we'd like to only do that       //
       // once, during the enrichment/validation work, so, capture it, and store it back in the instance. //
       /////////////////////////////////////////////////////////////////////////////////////////////////////
-      JoinGraph joinGraph = null;
-      long      start     = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
       try
       {
          /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +180,7 @@ public class QInstanceValidator
          // TODO - possible point of customization (use a different enricher, or none, or pass it options).
          QInstanceEnricher qInstanceEnricher = new QInstanceEnricher(qInstance);
          qInstanceEnricher.enrich();
-         joinGraph = qInstanceEnricher.getJoinGraph();
+         this.joinGraph = qInstanceEnricher.getJoinGraph();
       }
       catch(Exception e)
       {
@@ -372,8 +380,8 @@ public class QInstanceValidator
          assertCondition(join.getType() != null, "Missing type for join: " + joinName);
          assertCondition(CollectionUtils.nullSafeHasContents(join.getJoinOns()), "Missing joinOns for join: " + joinName);
 
-         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " join " + joinName + " is not a defined table in this instance.");
-         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " join " + joinName + " is not a defined table in this instance.");
+         boolean leftTableExists  = assertCondition(qInstance.getTable(join.getLeftTable()) != null, "Left-table name " + join.getLeftTable() + " in join " + joinName + " is not a defined table in this instance.");
+         boolean rightTableExists = assertCondition(qInstance.getTable(join.getRightTable()) != null, "Right-table name " + join.getRightTable() + " in join " + joinName + " is not a defined table in this instance.");
 
          for(JoinOn joinOn : CollectionUtils.nonNullList(join.getJoinOns()))
          {
@@ -542,6 +550,60 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(backendName, backend.getName()), "Inconsistent naming for backend: " + backendName + "/" + backend.getName() + ".");
 
+            ///////////////////////
+            // validate variants //
+            ///////////////////////
+            BackendVariantsConfig backendVariantsConfig = backend.getBackendVariantsConfig();
+            if(BooleanUtils.isTrue(backend.getUsesVariants()))
+            {
+               if(assertCondition(backendVariantsConfig != null, "Missing backendVariantsConfig in backend [" + backendName + "] which is marked as usesVariants"))
+               {
+                  assertCondition(StringUtils.hasContent(backendVariantsConfig.getVariantTypeKey()), "Missing variantTypeKey in backendVariantsConfig in [" + backendName + "]");
+
+                  String         optionsTableName = backendVariantsConfig.getOptionsTableName();
+                  QTableMetaData optionsTable     = qInstance.getTable(optionsTableName);
+                  if(assertCondition(StringUtils.hasContent(optionsTableName), "Missing optionsTableName in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     if(assertCondition(optionsTable != null, "Unrecognized optionsTableName [" + optionsTableName + "] in backendVariantsConfig in [" + backendName + "]"))
+                     {
+                        QQueryFilter optionsFilter = backendVariantsConfig.getOptionsFilter();
+                        if(optionsFilter != null)
+                        {
+                           validateQueryFilter(qInstance, "optionsFilter in backendVariantsConfig in backend [" + backendName + "]: ", optionsTable, optionsFilter, null);
+                        }
+                     }
+                  }
+
+                  Map<BackendVariantSetting, String> backendSettingSourceFieldNameMap = backendVariantsConfig.getBackendSettingSourceFieldNameMap();
+                  if(assertCondition(CollectionUtils.nullSafeHasContents(backendSettingSourceFieldNameMap), "Missing or empty backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]"))
+                  {
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     // only validate field names in the backendSettingSourceFieldNameMap if there is NOT a variantRecordSupplier //
+                     // (the idea being, that the supplier might be building a record with fieldNames that aren't in the table... //
+                     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                     if(optionsTable != null && backendVariantsConfig.getVariantRecordLookupFunction() == null)
+                     {
+                        for(Map.Entry<BackendVariantSetting, String> entry : backendSettingSourceFieldNameMap.entrySet())
+                        {
+                           assertCondition(optionsTable.getFields().containsKey(entry.getValue()), "Unrecognized fieldName [" + entry.getValue() + "] in backendSettingSourceFieldNameMap in backendVariantsConfig in [" + backendName + "]");
+                        }
+                     }
+                  }
+
+                  if(backendVariantsConfig.getVariantRecordLookupFunction() != null)
+                  {
+                     validateSimpleCodeReference("VariantRecordSupplier in backendVariantsConfig in backend [" + backendName + "]: ", backendVariantsConfig.getVariantRecordLookupFunction(), UnsafeFunction.class, Function.class);
+                  }
+               }
+            }
+            else
+            {
+               assertCondition(backendVariantsConfig == null, "Should not have a backendVariantsConfig in backend [" + backendName + "] which is not marked as usesVariants");
+            }
+
+            ///////////////////////////////////////////
+            // let the backend do its own validation //
+            ///////////////////////////////////////////
             backend.performValidation(this);
 
             runPlugins(QBackendMetaData.class, backend, qInstance);
@@ -576,7 +638,7 @@ public class QInstanceValidator
    private void validateAuthentication(QInstance qInstance)
    {
       QAuthenticationMetaData authentication = qInstance.getAuthentication();
-      if(authentication != null)
+      if(assertCondition(authentication != null, "Authentication MetaData must be defined."))
       {
          if(authentication.getCustomizer() != null)
          {
@@ -779,15 +841,38 @@ public class QInstanceValidator
       {
          if(assertCondition(StringUtils.hasContent(association.getName()), "missing a name for an Association on table " + table.getName()))
          {
-            String messageSuffix = " for Association " + association.getName() + " on table " + table.getName();
+            String  messageSuffix   = " for Association " + association.getName() + " on table " + table.getName();
+            boolean recognizedTable = false;
             if(assertCondition(StringUtils.hasContent(association.getAssociatedTableName()), "missing associatedTableName" + messageSuffix))
             {
-               assertCondition(qInstance.getTable(association.getAssociatedTableName()) != null, "unrecognized associatedTableName " + association.getAssociatedTableName() + messageSuffix);
+               if(assertCondition(qInstance.getTable(association.getAssociatedTableName()) != null, "unrecognized associatedTableName " + association.getAssociatedTableName() + messageSuffix))
+               {
+                  recognizedTable = true;
+               }
             }
 
             if(assertCondition(StringUtils.hasContent(association.getJoinName()), "missing joinName" + messageSuffix))
             {
-               assertCondition(qInstance.getJoin(association.getJoinName()) != null, "unrecognized joinName " + association.getJoinName() + messageSuffix);
+               QJoinMetaData join = qInstance.getJoin(association.getJoinName());
+               if(assertCondition(join != null, "unrecognized joinName " + association.getJoinName() + messageSuffix))
+               {
+                  assert join != null; // covered by the assertCondition
+
+                  if(recognizedTable)
+                  {
+                     boolean isLeftToRight = join.getLeftTable().equals(table.getName()) && join.getRightTable().equals(association.getAssociatedTableName());
+                     boolean isRightToLeft = join.getRightTable().equals(table.getName()) && join.getLeftTable().equals(association.getAssociatedTableName());
+                     assertCondition(isLeftToRight || isRightToLeft, "join [" + association.getJoinName() + "] does not connect tables [" + table.getName() + "] and [" + association.getAssociatedTableName() + "]" + messageSuffix);
+                     if(isLeftToRight)
+                     {
+                        assertCondition(join.getType().equals(JoinType.ONE_TO_MANY) || join.getType().equals(JoinType.ONE_TO_ONE), "Join type does not have 'one' on this table's side side (left)" + messageSuffix);
+                     }
+                     else if(isRightToLeft)
+                     {
+                        assertCondition(join.getType().equals(JoinType.MANY_TO_ONE) || join.getType().equals(JoinType.ONE_TO_ONE), "Join type does not have 'one' on this table's side (right)" + messageSuffix);
+                     }
+                  }
+               }
             }
          }
       }
@@ -964,7 +1049,15 @@ public class QInstanceValidator
             @SuppressWarnings("unchecked")
             Class<FieldBehavior<?>> behaviorClass = (Class<FieldBehavior<?>>) fieldBehavior.getClass();
 
-            errors.addAll(fieldBehavior.validateBehaviorConfiguration(table, field));
+            List<String> behaviorErrors = fieldBehavior.validateBehaviorConfiguration(table, field);
+            if(behaviorErrors != null)
+            {
+               String prefixMinusTrailingSpace = prefix.replaceFirst(" *$", "");
+               for(String behaviorError : behaviorErrors)
+               {
+                  errors.add(prefixMinusTrailingSpace + ": " + behaviorClass.getSimpleName() + ": " + behaviorError);
+               }
+            }
 
             if(!fieldBehavior.allowMultipleBehaviorsOfThisType())
             {
@@ -1324,7 +1417,7 @@ public class QInstanceValidator
                ////////////////////////////////////////////////////////////////////////
                if(customizerInstance != null && tableCustomizer.getExpectedType() != null)
                {
-                  assertObjectCanBeCasted(prefix, tableCustomizer.getExpectedType(), customizerInstance);
+                  assertObjectCanBeCasted(prefix, customizerInstance, tableCustomizer.getExpectedType());
                }
             }
          }
@@ -1336,18 +1429,31 @@ public class QInstanceValidator
    /*******************************************************************************
     ** Make sure that a given object can be casted to an expected type.
     *******************************************************************************/
-   private <T> T assertObjectCanBeCasted(String errorPrefix, Class<T> expectedType, Object object)
+   private void assertObjectCanBeCasted(String errorPrefix, Object object, Class<?>... anyOfExpectedClasses)
    {
-      T castedObject = null;
-      try
+      for(Class<?> expectedClass : anyOfExpectedClasses)
       {
-         castedObject = expectedType.cast(object);
+         try
+         {
+            expectedClass.cast(object);
+            return;
+         }
+         catch(ClassCastException e)
+         {
+            /////////////////////////////////////
+            // try next type (if there is one) //
+            /////////////////////////////////////
+         }
       }
-      catch(ClassCastException e)
+
+      if(anyOfExpectedClasses.length == 1)
       {
-         errors.add(errorPrefix + "CodeReference is not of the expected type: " + expectedType);
+         errors.add(errorPrefix + "CodeReference is not of the expected type: " + anyOfExpectedClasses[0]);
       }
-      return castedObject;
+      else
+      {
+         errors.add(errorPrefix + "CodeReference is not any of the expected types: " + Arrays.stream(anyOfExpectedClasses).map(c -> c.getName()).collect(Collectors.joining(", ")));
+      }
    }
 
 
@@ -1584,12 +1690,12 @@ public class QInstanceValidator
 
             for(QFieldMetaData field : process.getInputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", input field " + field.getName() + " ");
             }
 
             for(QFieldMetaData field : process.getOutputFields())
             {
-               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName());
+               validateFieldPossibleValueSourceAttributes(qInstance, field, "Process " + processName + ", output field " + field.getName() + " ");
             }
 
             if(process.getCancelStep() != null)
@@ -1800,7 +1906,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
+   public void validateQueryFilter(QInstance qInstance, String context, QTableMetaData table, QQueryFilter queryFilter, List<QueryJoin> queryJoins)
    {
       for(QFilterCriteria criterion : CollectionUtils.nonNullList(queryFilter.getCriteria()))
       {
@@ -1844,7 +1950,8 @@ public class QInstanceValidator
       {
          if(fieldName.contains("."))
          {
-            String fieldNameAfterDot = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+            String fieldNameAfterDot  = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+            String tableNameBeforeDot = fieldName.substring(0, fieldName.lastIndexOf("."));
 
             if(CollectionUtils.nullSafeHasContents(queryJoins))
             {
@@ -1868,11 +1975,32 @@ public class QInstanceValidator
             }
             else
             {
-               errors.add("QInstanceValidator does not yet support finding a field that looks like a join field, but isn't associated with a query.");
-               return (true);
-               // todo! for(QJoinMetaData join : CollectionUtils.nonNullMap(qInstance.getJoins()).values())
-               // {
-               // }
+               if(this.joinGraph != null)
+               {
+                  Set<JoinGraph.JoinConnectionList> joinConnections = joinGraph.getJoinConnections(table.getName());
+                  for(JoinGraph.JoinConnectionList joinConnectionList : joinConnections)
+                  {
+                     JoinGraph.JoinConnection joinConnection = joinConnectionList.list().get(joinConnectionList.list().size() - 1);
+                     if(tableNameBeforeDot.equals(joinConnection.joinTable()))
+                     {
+                        QTableMetaData joinTable = qInstance.getTable(tableNameBeforeDot);
+                        if(joinTable.getFields().containsKey(fieldNameAfterDot))
+                        {
+                           /////////////////////////
+                           // mmm, looks valid... //
+                           /////////////////////////
+                           return (true);
+                        }
+                     }
+                  }
+               }
+
+               //////////////////////////////////////////////////////////////////////////////////////
+               // todo - not sure how vulnerable we are to ongoing issues here...                  //
+               // idea:  let a filter (or any object?) be opted out of validation, some version of //
+               // a static map of objects we can check at the top of various validate methods...   //
+               //////////////////////////////////////////////////////////////////////////////////////
+               errors.add("Failed to find field named: " + fieldName);
             }
          }
       }
@@ -1976,6 +2104,11 @@ public class QInstanceValidator
                   }
                }
 
+               if(widget.getValidatorPlugin() != null)
+               {
+                  widget.getValidatorPlugin().validate(widget, qInstance, this);
+               }
+
                runPlugins(QWidgetMetaDataInterface.class, widget, qInstance);
             }
          );
@@ -2075,6 +2208,8 @@ public class QInstanceValidator
             default -> errors.add("Unexpected possibleValueSource type: " + possibleValueSource.getType());
          }
 
+         assertCondition(possibleValueSource.getIdType() != null, "possibleValueSource " + name + " is missing its idType.");
+
          runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
       }
    }
@@ -2084,7 +2219,8 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?> expectedClass)
+   @SafeVarargs
+   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
    {
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {
@@ -2112,7 +2248,7 @@ public class QInstanceValidator
             ////////////////////////////////////////////////////////////////////////
             if(classInstance != null)
             {
-               assertObjectCanBeCasted(prefix, expectedClass, classInstance);
+               assertObjectCanBeCasted(prefix, classInstance, anyOfExpectedClasses);
             }
          }
       }

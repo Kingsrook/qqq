@@ -38,9 +38,10 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
    private QQueryFilter       defaultQueryFilter;
    private String             searchTerm;
    private List<Serializable> idList;
+   private List<String>       labelList;
 
    private Integer skip  = 0;
-   private Integer limit = 100;
+   private Integer limit = 250;
 
 
 
@@ -281,4 +282,35 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
       this.limit = limit;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for labelList
+    *******************************************************************************/
+   public List<String> getLabelList()
+   {
+      return (this.labelList);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for labelList
+    *******************************************************************************/
+   public void setLabelList(List<String> labelList)
+   {
+      this.labelList = labelList;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for labelList
+    *******************************************************************************/
+   public SearchPossibleValueSourceInput withLabelList(List<String> labelList)
+   {
+      this.labelList = labelList;
+      return (this);
+   }
+
 }

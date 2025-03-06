@@ -239,6 +239,10 @@ public class ColumnStatsStep implements BackendStep
 
          QPossibleValueTranslator qPossibleValueTranslator = new QPossibleValueTranslator();
          qPossibleValueTranslator.translatePossibleValuesInRecords(table, valueCounts, queryJoin == null ? null : List.of(queryJoin), null);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - be aware of possible name collisions here!! (e.g., a table w/ a field named `count`) //
+         /////////////////////////////////////////////////////////////////////////////////////////////////
          QValueFormatter.setDisplayValuesInRecords(table, Map.of(fieldName, field, "count", countField), valueCounts);
 
          runBackendStepOutput.addValue("valueCounts", valueCounts);

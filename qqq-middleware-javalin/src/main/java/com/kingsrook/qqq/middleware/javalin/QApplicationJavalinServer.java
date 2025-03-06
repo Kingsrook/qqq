@@ -33,11 +33,13 @@ import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
+import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import org.apache.commons.lang.BooleanUtils;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /*******************************************************************************
@@ -68,7 +70,8 @@ public class QApplicationJavalinServer
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
    private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
    private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
-   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
+   private Consumer<Javalin> javalinConfigurationCustomizer = null;
+   private QJavalinMetaData  javalinMetaData                = null;
 
    private long                lastQInstanceHotSwapMillis;
    private long                millisBetweenHotSwaps = 2500;
@@ -100,19 +103,30 @@ public class QApplicationJavalinServer
       {
          if(serveFrontendMaterialDashboard)
          {
+            if(getClass().getResource("/material-dashboard/index.html") == null)
+            {
+               LOG.warn("/material-dashboard/index.html resource was not found.  This might happen if you're using a local (e.g., within-IDE) snapshot version... Try updating pom.xml to reference a released version of qfmd?");
+            }
+
             ////////////////////////////////////////////////////////////////////////////////////////
             // If you have any assets to add to the web server (e.g., logos, icons) place them at //
-            // src/main/resources/material-dashboard-overlay (or a directory of your choice       //
-            // under src/main/resources) and use this line of code to tell javalin about it.      //
-            // Make sure to add your app-specific directory to the javalin config before the core //
-            // material-dashboard directory, so in case the same file exists in both (e.g.,       //
-            // favicon.png), the app-specific one will be used.                                   //
+            // src/main/resources/material-dashboard-overlay                                      //
+            // we'll use the same check that javalin (jetty?) internally uses to see if this      //
+            // directory exists - because if it doesn't, then it'll fail to start the server...   //
+            // note that that Resource object is auto-closable, hence the try-with-resources      //
             ////////////////////////////////////////////////////////////////////////////////////////
-            config.staticFiles.add("/material-dashboard-overlay");
+            try(Resource resource = Resource.newClassPathResource("/material-dashboard-overlay"))
+            {
+               if(resource !=null)
+               {
+                  config.staticFiles.add("/material-dashboard-overlay");
+               }
+            }
 
-            /////////////////////////////////////////////////////////////////////
-            // tell javalin where to find material-dashboard static web assets //
-            /////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////
+            // tell javalin where to find material-dashboard static web assets                //
+            // in this case, this path is coming from the qqq-frontend-material-dashboard jar //
+            ////////////////////////////////////////////////////////////////////////////////////
             config.staticFiles.add("/material-dashboard");
 
             ////////////////////////////////////////////////////////////
@@ -128,7 +142,7 @@ public class QApplicationJavalinServer
          {
             try
             {
-               QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
+               QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance, javalinMetaData);
                config.router.apiBuilder(qJavalinImplementation.getRoutes());
             }
             catch(QInstanceValidationException e)
@@ -525,5 +539,36 @@ public class QApplicationJavalinServer
       this.javalinConfigurationCustomizer = javalinConfigurationCustomizer;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for javalinMetaData
+    *******************************************************************************/
+   public QJavalinMetaData getJavalinMetaData()
+   {
+      return (this.javalinMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for javalinMetaData
+    *******************************************************************************/
+   public void setJavalinMetaData(QJavalinMetaData javalinMetaData)
+   {
+      this.javalinMetaData = javalinMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for javalinMetaData
+    *******************************************************************************/
+   public QApplicationJavalinServer withJavalinMetaData(QJavalinMetaData javalinMetaData)
+   {
+      this.javalinMetaData = javalinMetaData;
+      return (this);
+   }
+
 
 }

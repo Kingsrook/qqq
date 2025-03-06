@@ -34,7 +34,11 @@ public class FilterAndColumnsSetupData extends QWidgetData
    private String       tableName;
    private Boolean      allowVariables = false;
    private Boolean      hideColumns    = false;
+   private Boolean      hidePreview    = false;
    private List<String> filterDefaultFieldNames;
+
+   private String filterFieldName = "queryFilterJson";
+   private String columnFieldName = "columnsJson";
 
 
 
@@ -190,6 +194,99 @@ public class FilterAndColumnsSetupData extends QWidgetData
    public FilterAndColumnsSetupData withAllowVariables(Boolean allowVariables)
    {
       this.allowVariables = allowVariables;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hidePreview
+    *******************************************************************************/
+   public Boolean getHidePreview()
+   {
+      return (this.hidePreview);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hidePreview
+    *******************************************************************************/
+   public void setHidePreview(Boolean hidePreview)
+   {
+      this.hidePreview = hidePreview;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hidePreview
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withHidePreview(Boolean hidePreview)
+   {
+      this.hidePreview = hidePreview;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for filterFieldName
+    *******************************************************************************/
+   public String getFilterFieldName()
+   {
+      return (this.filterFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for filterFieldName
+    *******************************************************************************/
+   public void setFilterFieldName(String filterFieldName)
+   {
+      this.filterFieldName = filterFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for filterFieldName
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withFilterFieldName(String filterFieldName)
+   {
+      this.filterFieldName = filterFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for columnFieldName
+    *******************************************************************************/
+   public String getColumnFieldName()
+   {
+      return (this.columnFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for columnFieldName
+    *******************************************************************************/
+   public void setColumnFieldName(String columnFieldName)
+   {
+      this.columnFieldName = columnFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for columnFieldName
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withColumnFieldName(String columnFieldName)
+   {
+      this.columnFieldName = columnFieldName;
       return (this);
    }
 

@@ -101,7 +101,7 @@ public class StoreScriptRevisionProcessStep implements BackendStep
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // in case the app added a security field to the scripts table, make sure the user is allowed to edit the script //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         ValidateRecordSecurityLockHelper.validateSecurityFields(QContext.getQInstance().getTable(Script.TABLE_NAME), List.of(script), ValidateRecordSecurityLockHelper.Action.UPDATE);
+         ValidateRecordSecurityLockHelper.validateSecurityFields(QContext.getQInstance().getTable(Script.TABLE_NAME), List.of(script), ValidateRecordSecurityLockHelper.Action.UPDATE, transaction);
          if(CollectionUtils.nullSafeHasContents(script.getErrors()))
          {
             throw (new QPermissionDeniedException(script.getErrors().get(0).getMessage()));

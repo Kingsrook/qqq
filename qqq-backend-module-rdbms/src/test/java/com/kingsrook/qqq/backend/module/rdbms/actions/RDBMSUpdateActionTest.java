@@ -36,7 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,8 +61,7 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
    {
       super.primeTestDatabase();
 
-      QueryManager.setCollectStatistics(true);
-      QueryManager.resetStatistics();
+      getBaseRDBMSActionStrategyAndActivateCollectingStatistics();
    }
 
 
@@ -112,8 +111,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       updateInput.setRecords(List.of(record));
 
       UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
-      Map<String, Integer> statistics   = QueryManager.getStatistics();
-      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      Map<String, Integer> statistics   = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(2, statistics.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN));
 
       assertEquals(1, updateResult.getRecords().size(), "Should return 1 row");
       assertEquals(2, updateResult.getRecords().get(0).getValue("id"), "Should have id=2 in the row");
@@ -169,9 +168,9 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       UpdateOutput updateResult = new UpdateAction().execute(updateInput);
 
       // this test runs one batch and one regular query
-      Map<String, Integer> statistics = QueryManager.getStatistics();
-      assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
-      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      Map<String, Integer> statistics = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(1, statistics.get(BaseRDBMSActionStrategy.STAT_BATCHES_RAN));
+      assertEquals(2, statistics.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN));
 
       assertEquals(3, updateResult.getRecords().size(), "Should return 3 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
@@ -241,8 +240,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       updateInput.setRecords(List.of(record1, record2));
 
       UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
-      Map<String, Integer> statistics   = QueryManager.getStatistics();
-      assertEquals(1, statistics.get(QueryManager.STAT_BATCHES_RAN));
+      Map<String, Integer> statistics   = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(1, statistics.get(BaseRDBMSActionStrategy.STAT_BATCHES_RAN));
 
       assertEquals(2, updateResult.getRecords().size(), "Should return 2 rows");
       assertEquals(1, updateResult.getRecords().get(0).getValue("id"), "Should have expected ids in the row");
@@ -296,8 +295,8 @@ public class RDBMSUpdateActionTest extends RDBMSActionTest
       updateInput.setRecords(records);
 
       UpdateOutput         updateResult = new UpdateAction().execute(updateInput);
-      Map<String, Integer> statistics   = QueryManager.getStatistics();
-      assertEquals(2, statistics.get(QueryManager.STAT_QUERIES_RAN));
+      Map<String, Integer> statistics   = getBaseRDBMSActionStrategy().getStatistics();
+      assertEquals(2, statistics.get(BaseRDBMSActionStrategy.STAT_QUERIES_RAN));
 
       assertEquals(5, updateResult.getRecords().size(), "Should return 5 rows");
       // todo - add errors to QRecord? assertTrue(updateResult.getRecords().stream().noneMatch(qrs -> CollectionUtils.nullSafeHasContents(qrs.getErrors())), "There should be no errors");

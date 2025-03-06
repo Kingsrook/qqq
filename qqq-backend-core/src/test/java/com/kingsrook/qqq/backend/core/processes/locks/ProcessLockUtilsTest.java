@@ -25,13 +25,17 @@ package com.kingsrook.qqq.backend.core.processes.locks;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.logging.QCollectingLogger;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerMultiOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -39,6 +43,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QUser;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -231,6 +236,28 @@ class ProcessLockUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testReleaseBadInputs()
+   {
+      //////////////////////////////////////////////////////////
+      // make sure we don't blow up, just noop in these cases //
+      //////////////////////////////////////////////////////////
+      QCollectingLogger qCollectingLogger = QLogger.activateCollectingLoggerForClass(ProcessLockUtils.class);
+      ProcessLockUtils.releaseById(null);
+      ProcessLockUtils.release(null);
+      ProcessLockUtils.releaseMany(null);
+      ProcessLockUtils.releaseByIds(null);
+      ProcessLockUtils.releaseMany(ListBuilder.of(null));
+      ProcessLockUtils.releaseByIds(ListBuilder.of(null));
+      QLogger.deactivateCollectingLoggerForClass(ProcessLockUtils.class);
+      assertEquals(6, qCollectingLogger.getCollectedMessages().stream().filter(m -> m.getMessage().contains("noop")).count());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testUserAndSessionNullness() throws QException
    {
       {
@@ -304,7 +331,7 @@ class ProcessLockUtilsTest extends BaseTest
       //////////////////////////////////////////////
       // checkin w/ a time - sets it to that time //
       //////////////////////////////////////////////
-      Instant specifiedTime = Instant.now();
+      Instant specifiedTime = Instant.now().plusSeconds(47);
       ProcessLockUtils.checkIn(processLock, specifiedTime);
       processLock = ProcessLockUtils.getById(processLock.getId());
       assertEquals(specifiedTime, processLock.getExpiresAtTimestamp());
@@ -378,6 +405,124 @@ class ProcessLockUtilsTest extends BaseTest
       ProcessLockUtils.checkIn(processLock, null);
       processLock = ProcessLockUtils.getById(processLock.getId());
       assertNull(processLock.getExpiresAtTimestamp());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMany() throws QException
+   {
+      /////////////////////////////////////////////////
+      // make sure that we can create multiple locks //
+      /////////////////////////////////////////////////
+      List<String>                                         keys         = List.of("1", "2", "3");
+      List<ProcessLock>                   processLocks = new ArrayList<>();
+      Map<String, ProcessLockOrException> results      = ProcessLockUtils.createMany(keys, "typeA", "me");
+      for(String key : keys)
+      {
+         ProcessLock processLock = results.get(key).processLock();
+         assertNotNull(processLock.getId());
+         assertNotNull(processLock.getCheckInTimestamp());
+         assertNull(processLock.getExpiresAtTimestamp());
+         processLocks.add(processLock);
+      }
+
+      /////////////////////////////////////////////////////////
+      // make sure we can't create a second for the same key //
+      /////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> ProcessLockUtils.create("1", "typeA", "you"))
+         .isInstanceOf(UnableToObtainProcessLockException.class)
+         .hasMessageContaining("Held by: " + QContext.getQSession().getUser().getIdReference())
+         .hasMessageContaining("with details: me")
+         .hasMessageNotContaining("expiring at: 20")
+         .matches(e -> ((UnableToObtainProcessLockException) e).getExistingLock() != null);
+
+      /////////////////////////////////////////////////////////
+      // make sure we can create another for a different key //
+      /////////////////////////////////////////////////////////
+      ProcessLockUtils.create("4", "typeA", "him");
+
+      /////////////////////////////////////////////////////////////////////
+      // make sure we can create another for a different type (same key) //
+      /////////////////////////////////////////////////////////////////////
+      ProcessLockUtils.create("1", "typeB", "her");
+
+      ////////////////////////////////////////////////////////////////////
+      // now try to create some that will overlap, but one that'll work //
+      ////////////////////////////////////////////////////////////////////
+      keys = List.of("3", "4", "5");
+      results = ProcessLockUtils.createMany(keys, "typeA", "me");
+      for(String key : List.of("3", "4"))
+      {
+         UnableToObtainProcessLockException exception = results.get(key).unableToObtainProcessLockException();
+         assertNotNull(exception);
+      }
+
+      ProcessLock processLock = results.get("5").processLock();
+      assertNotNull(processLock.getId());
+      assertNotNull(processLock.getCheckInTimestamp());
+      assertNull(processLock.getExpiresAtTimestamp());
+      processLocks.add(processLock);
+
+      //////////////////////////////
+      // make sure we can release //
+      //////////////////////////////
+      ProcessLockUtils.releaseMany(processLocks);
+
+      ///////////////////////////////////////////////////////
+      // make sure can re-lock 1 now after it was released //
+      ///////////////////////////////////////////////////////
+      processLock = ProcessLockUtils.create("1", "typeA", "you");
+      assertNotNull(processLock.getId());
+      assertEquals("you", processLock.getDetails());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testManyWithSleep() throws QException
+   {
+      /////////////////////////////////////////////////
+      // make sure that we can create multiple locks //
+      /////////////////////////////////////////////////
+      List<String>                        keys     = List.of("1", "2", "3");
+      Map<String, ProcessLockOrException> results0 = ProcessLockUtils.createMany(keys, "typeB", "me");
+      for(String key : keys)
+      {
+         assertNotNull(results0.get(key).processLock());
+      }
+
+      ////////////////////////////////////////////////////////////
+      // try again - and 2 and 3 should fail, if we don't sleep //
+      ////////////////////////////////////////////////////////////
+      keys = List.of("2", "3", "4");
+      Map<String, ProcessLockOrException> results1 = ProcessLockUtils.createMany(keys, "typeB", "you");
+      assertNull(results1.get("2").processLock());
+      assertNull(results1.get("3").processLock());
+      assertNotNull(results1.get("4").processLock());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // try another insert, which should initially succeed for #5, then sleep, and eventually succeed on 3 & 4 as well //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      keys = List.of("3", "4", "5");
+      Map<String, ProcessLockOrException> results2 = ProcessLockUtils.createMany(keys, "typeB", "them", Duration.of(1, ChronoUnit.SECONDS), Duration.of(3, ChronoUnit.SECONDS));
+      for(String key : keys)
+      {
+         assertNotNull(results2.get(key).processLock());
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure that we have a different ids for some that expired and then succeeded post-sleep //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      assertNotEquals(results0.get("3").processLock().getId(), results2.get("3").processLock().getId());
+      assertNotEquals(results1.get("4").processLock().getId(), results2.get("4").processLock().getId());
+
    }
 
 }

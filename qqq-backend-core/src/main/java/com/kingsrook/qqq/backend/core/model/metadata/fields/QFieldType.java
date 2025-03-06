@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -100,6 +101,16 @@ public enum QFieldType
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public String getMixedCaseLabel()
+   {
+      return StringUtils.allCapsToMixedCase(name());
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -116,6 +127,16 @@ public enum QFieldType
    public boolean isNumeric()
    {
       return this == QFieldType.INTEGER || this == QFieldType.LONG || this == QFieldType.DECIMAL;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean isTemporal()
+   {
+      return this == QFieldType.DATE || this == QFieldType.DATE_TIME || this == QFieldType.TIME;
    }
 
 

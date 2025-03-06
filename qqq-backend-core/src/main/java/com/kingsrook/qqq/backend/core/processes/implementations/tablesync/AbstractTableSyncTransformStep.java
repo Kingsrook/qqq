@@ -173,8 +173,21 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
     *******************************************************************************/
    protected QQueryFilter getExistingRecordQueryFilter(RunBackendStepInput runBackendStepInput, List<Serializable> sourceKeyList)
    {
-      String destinationTableForeignKeyField = getSyncProcessConfig().destinationTableForeignKey;
-      return new QQueryFilter().withCriteria(new QFilterCriteria(destinationTableForeignKeyField, QCriteriaOperator.IN, sourceKeyList));
+      String         destinationTableForeignKeyFieldName = getSyncProcessConfig().destinationTableForeignKey;
+      String         destinationTableName                = getSyncProcessConfig().destinationTable;
+      QFieldMetaData destinationForeignKeyField          = QContext.getQInstance().getTable(destinationTableName).getField(destinationTableForeignKeyFieldName);
+
+      List<Serializable> sourceKeysInDestinationKeyTypeList = null;
+      if(sourceKeyList != null)
+      {
+         sourceKeysInDestinationKeyTypeList = new ArrayList<>();
+         for(Serializable sourceKey : sourceKeyList)
+         {
+            sourceKeysInDestinationKeyTypeList.add(ValueUtils.getValueAsFieldType(destinationForeignKeyField.getType(), sourceKey));
+         }
+      }
+
+      return new QQueryFilter().withCriteria(new QFilterCriteria(destinationTableForeignKeyFieldName, QCriteriaOperator.IN, sourceKeysInDestinationKeyTypeList));
    }
 
 
@@ -223,7 +236,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
    {
       if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
       {
-         LOG.info("No input records were found.");
+         LOG.debug("No input records were found.");
          return;
       }
 

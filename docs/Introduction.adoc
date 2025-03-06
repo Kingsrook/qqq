@@ -136,17 +136,13 @@ This speaks to the fact that this "code" is not executable code - but rather is 
 **** The Filter button in the Query Screen will present a menu listing all fields from the table for the user to build ad-hoc queries against the table.
 The data-types specified for the fields (in the meta-data) dictate what operators QQQ allows the user to use against fields (e.g., Strings offer "contains" vs Numbers offer "greater than").
 **** Values for records from the table will be formatted for presentation based on the meta-data (such as a numeric field being shown with commas if it represents a quantity, or formatted as currency).
-...
-
-[start=2]
-. *Meta Data* - declarative code - java object instances (potentially which could be read from `.yaml` files or other data sources in a future version of QQQ), which tell QQQ about the backend systems, tables, processes, reports, widgets, etc, that make up the application.
-For example:
-* Details about the database you are using, and how to connect to it.
-* A database table's name, fields, their types, its keys, and basic business rules (required fields, read-only fields, field lengths).
-* The description of web API - its URL and authentication mechanism.
-* A table/path within a web API, and the fields returned in the JSON at that endpoint.
-* The specification of a custom workflow (process), including what screens are needed, with input & output values, and references to the custom application code for processing the data.
-* Details about a chart that summarizes data from a table for presentation as a dashboard widget.
+* Other kinds of information that you tell QQQ about in the form of meta-data objects includes:
+** Details about the database you are using, and how to connect to it.
+** A database table's name, fields, their types, its keys, and basic business rules (required fields, read-only fields, field lengths).
+** The specification of a custom workflow (process), including what screens are needed, with input & output values, and references to the custom application code for processing the data.
+** Details about a chart that summarizes data from a table for presentation as a dashboard widget.
+** The description of web API - its URL and authentication mechanism.
+** A table/path within a web API, and the fields returned in the JSON at that endpoint.
 // the section below is kinda dumb.  like, it says you have to write application code, but
 // then it just talks about how your app code gets for-free the same shit that QQQ does.
 // it should instead say more about what your custom app code is or does.
@@ -164,7 +160,8 @@ For example:
 // * The multi-threaded, paged producer/consumer pattern used in standard framework actions is how all custom application actions are also invoked.
 // ** For example, the standard QQQ Bulk Edit action uses the same streamed-ETL process that custom application processes can use.
 // Meaning your custom processes can take full advantage of the same complex frontend, middleware, and backend structural pieces, and you can just focus on your unique busines logic needs.
-2. *Application code* - to customize beyond what the QQQ framework does out-of-the box, and to provide application-specific business-logic.
+
+. *Application code* - to customize beyond what the QQQ framework does out-of-the box, and to provide application-specific business-logic.
 QQQ provides its programmers the same classes that it internally uses for record access, resulting in a unified application model.
 For example:
 

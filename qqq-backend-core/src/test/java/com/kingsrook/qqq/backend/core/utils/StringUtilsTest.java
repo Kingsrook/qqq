@@ -105,6 +105,7 @@ class StringUtilsTest extends BaseTest
       assertEquals("Foo bar", StringUtils.allCapsToMixedCase("FOo bar"));
       assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOo BAr"));
       assertEquals("foo bar", StringUtils.allCapsToMixedCase("foo bar"));
+      assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOO_BAR"));
    }
 
 
@@ -316,6 +317,21 @@ class StringUtilsTest extends BaseTest
 
       assertEquals("Apple was eaten", StringUtils.pluralFormat(1, "Apple{,s} {was,were} eaten"));
       assertEquals("Apples were eaten", StringUtils.pluralFormat(2, "Apple{,s} {was,were} eaten"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testEmptyToNull()
+   {
+      assertNull(StringUtils.emptyToNull(null));
+      assertNull(StringUtils.emptyToNull(""));
+      assertNull(StringUtils.emptyToNull(" "));
+      assertNull(StringUtils.emptyToNull("  "));
+      assertEquals("a", StringUtils.emptyToNull("a"));
    }
 
 }

@@ -63,7 +63,6 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemBackendModuleInterface;
 import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFilesystemAction;
-import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -314,13 +313,13 @@ public class FilesystemImporterStep implements BackendStep
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static <F> void removeSourceFileIfSoConfigured(Boolean removeFileAfterImport, AbstractBaseFilesystemAction<F> sourceActionBase, QTableMetaData sourceTable, QBackendMetaData sourceBackend, String sourceFileName) throws FilesystemException
+   private static <F> void removeSourceFileIfSoConfigured(Boolean removeFileAfterImport, AbstractBaseFilesystemAction<F> sourceActionBase, QTableMetaData sourceTable, QBackendMetaData sourceBackend, String sourceFileName) throws QException
    {
       if(removeFileAfterImport)
       {
          String fullBasePath = sourceActionBase.getFullBasePath(sourceTable, sourceBackend);
          LOG.info("Removing source file", logPair("path", fullBasePath + "/" + sourceFileName), logPair("sourceTable", sourceTable.getName()));
-         sourceActionBase.deleteFile(QContext.getQInstance(), sourceTable, fullBasePath + "/" + sourceFileName);
+         sourceActionBase.deleteFile(sourceTable, fullBasePath + "/" + sourceFileName);
       }
       else
       {

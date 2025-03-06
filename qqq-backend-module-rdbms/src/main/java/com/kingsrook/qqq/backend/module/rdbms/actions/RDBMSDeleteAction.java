@@ -39,7 +39,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
-import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 
 
 /*******************************************************************************
@@ -67,6 +66,8 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
     *******************************************************************************/
    public DeleteOutput execute(DeleteInput deleteInput) throws QException
    {
+      setBackendMetaData(deleteInput.getBackend());
+
       DeleteOutput deleteOutput = new DeleteOutput();
       deleteOutput.setRecordsWithErrors(new ArrayList<>());
 
@@ -196,7 +197,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
       try
       {
-         int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKey);
+         int rowCount = getActionStrategy().executeUpdateForRowCount(connection, sql, primaryKey);
          deleteOutput.addToDeletedRecordCount(rowCount);
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -249,7 +250,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
          // todo sql customization - can edit sql and/or param list
 
-         Integer rowCount = QueryManager.executeUpdateForRowCount(connection, sql, primaryKeys);
+         Integer rowCount = getActionStrategy().executeUpdateForRowCount(connection, sql, primaryKeys);
          deleteOutput.addToDeletedRecordCount(rowCount);
       }
       catch(Exception e)
@@ -287,7 +288,7 @@ public class RDBMSDeleteAction extends AbstractRDBMSAction implements DeleteInte
 
       try
       {
-         int rowCount = QueryManager.executeUpdateForRowCount(connection, sql, params);
+         int rowCount = getActionStrategy().executeUpdateForRowCount(connection, sql, params);
          deleteOutput.setDeletedRecordCount(rowCount);
       }
       catch(Exception e)

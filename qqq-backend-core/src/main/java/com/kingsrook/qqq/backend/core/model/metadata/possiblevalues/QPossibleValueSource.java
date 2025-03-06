@@ -22,12 +22,18 @@
 package com.kingsrook.qqq.backend.core.model.metadata.possiblevalues;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import net.sf.saxon.trans.SaxonErrorCode;
 
 
 /*******************************************************************************
@@ -41,6 +47,8 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
    private String                   name;
    private String                   label;
    private QPossibleValueSourceType type;
+
+   private QFieldType idType;
 
    private String       valueFormat           = PVSValueFormatAndFields.LABEL_ONLY.getFormat();
    private List<String> valueFields           = PVSValueFormatAndFields.LABEL_ONLY.getFields();
@@ -97,7 +105,7 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     ** Create a new possible value source, for an enum, with default settings.
     ** e.g., type=ENUM; name from param values from the param; LABEL_ONLY format
     *******************************************************************************/
-   public static <T extends PossibleValueEnum<?>> QPossibleValueSource newForEnum(String name, T[] values)
+   public static <I extends Serializable, T extends PossibleValueEnum<I>> QPossibleValueSource newForEnum(String name, T[] values)
    {
       return new QPossibleValueSource()
          .withName(name)
@@ -553,11 +561,25 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
     **   myPossibleValueSource.withValuesFromEnum(MyEnum.values()));
     **
     *******************************************************************************/
-   public <T extends PossibleValueEnum<?>> QPossibleValueSource withValuesFromEnum(T[] values)
+   public <I extends Serializable, T extends PossibleValueEnum<I>> QPossibleValueSource withValuesFromEnum(T[] values)
    {
+      Set<I> usedIds = new HashSet<>();
+      List<I> duplicatedIds = new ArrayList<>();
+
       for(T t : values)
       {
+         if(usedIds.contains(t.getPossibleValueId()))
+         {
+            duplicatedIds.add(t.getPossibleValueId());
+         }
+
          addEnumValue(new QPossibleValue<>(t.getPossibleValueId(), t.getPossibleValueLabel()));
+         usedIds.add(t.getPossibleValueId());
+      }
+
+      if(!duplicatedIds.isEmpty())
+      {
+         throw (new QRuntimeException("Error:  Duplicated id(s) found in enum values: " + duplicatedIds));
       }
 
       return (this);
@@ -661,5 +683,36 @@ public class QPossibleValueSource implements TopLevelMetaDataInterface
       this.overrideIdField = overrideIdField;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for idType
+    *******************************************************************************/
+   public QFieldType getIdType()
+   {
+      return (this.idType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for idType
+    *******************************************************************************/
+   public void setIdType(QFieldType idType)
+   {
+      this.idType = idType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for idType
+    *******************************************************************************/
+   public QPossibleValueSource withIdType(QFieldType idType)
+   {
+      this.idType = idType;
+      return (this);
+   }
+
 
 }

@@ -23,7 +23,11 @@ package com.kingsrook.qqq.backend.core.instances;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,21 +35,27 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
+import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType.FileUploadAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppSection;
@@ -54,6 +64,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPer
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QComponentType;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
@@ -75,13 +86,20 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEd
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertExtractStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertLoadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareFileUploadStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertPrepareValueMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveFileMappingStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertReceiveValueMappingStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.scheduler.QScheduleManager;
+import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -106,6 +124,8 @@ public class QInstanceEnricher
    // or to expand abbreviations in code (e.g., "Addr" should always be "Address"                  //
    //////////////////////////////////////////////////////////////////////////////////////////////////
    private static final Map<String, String> labelMappings = new LinkedHashMap<>();
+
+   private static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> enricherPlugins = new ListingHash<>();
 
 
 
@@ -168,6 +188,7 @@ public class QInstanceEnricher
       }
 
       enrichJoins();
+      enrichInstance();
 
       //////////////////////////////////////////////////////////////////////////////
       // if the instance DOES have 1 or more scheduler, but no schedulable types, //
@@ -180,6 +201,16 @@ public class QInstanceEnricher
             QScheduleManager.defineDefaultSchedulableTypesInInstance(qInstance);
          }
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void enrichInstance()
+   {
+      runPlugins(QInstance.class, qInstance, qInstance);
    }
 
 
@@ -248,6 +279,14 @@ public class QInstanceEnricher
                }
             }
          }
+
+         ///////////////////////////////////////////
+         // run plugins on joins if there are any //
+         ///////////////////////////////////////////
+         for(QJoinMetaData join : qInstance.getJoins().values())
+         {
+            runPlugins(QJoinMetaData.class, join, qInstance);
+         }
       }
       catch(Exception e)
       {
@@ -263,6 +302,7 @@ public class QInstanceEnricher
    private void enrichWidget(QWidgetMetaDataInterface widgetMetaData)
    {
       enrichPermissionRules(widgetMetaData);
+      runPlugins(QWidgetMetaDataInterface.class, widgetMetaData, qInstance);
    }
 
 
@@ -273,6 +313,7 @@ public class QInstanceEnricher
    private void enrichBackend(QBackendMetaData qBackendMetaData)
    {
       qBackendMetaData.enrich();
+      runPlugins(QBackendMetaData.class, qBackendMetaData, qInstance);
    }
 
 
@@ -313,6 +354,7 @@ public class QInstanceEnricher
 
       enrichPermissionRules(table);
       enrichAuditRules(table);
+      runPlugins(QTableMetaData.class, table, qInstance);
    }
 
 
@@ -403,6 +445,7 @@ public class QInstanceEnricher
       }
 
       enrichPermissionRules(process);
+      runPlugins(QProcessMetaData.class, process, qInstance);
    }
 
 
@@ -524,6 +567,8 @@ public class QInstanceEnricher
             field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
          }
       }
+
+      runPlugins(QFieldMetaData.class, field, qInstance);
    }
 
 
@@ -595,6 +640,7 @@ public class QInstanceEnricher
       ensureAppSectionMembersAreAppChildren(app);
 
       enrichPermissionRules(app);
+      runPlugins(QAppMetaData.class, app, qInstance);
    }
 
 
@@ -742,6 +788,7 @@ public class QInstanceEnricher
       }
 
       enrichPermissionRules(report);
+      runPlugins(QReportMetaData.class, report, qInstance);
    }
 
 
@@ -833,7 +880,7 @@ public class QInstanceEnricher
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void defineTableBulkInsert(QInstance qInstance, QTableMetaData table, String processName)
+   public void defineTableBulkInsert(QInstance qInstance, QTableMetaData table, String processName)
    {
       Map<String, Serializable> values = new HashMap<>();
       values.put(StreamedETLWithFrontendProcess.FIELD_DESTINATION_TABLE, table.getName());
@@ -845,6 +892,7 @@ public class QInstanceEnricher
             values
          )
          .withName(processName)
+         .withIcon(new QIcon().withName("library_add"))
          .withLabel(table.getLabel() + " Bulk Insert")
          .withTableName(table.getName())
          .withIsHidden(true)
@@ -875,18 +923,76 @@ public class QInstanceEnricher
          .map(QFieldMetaData::getLabel)
          .collect(Collectors.joining(", "));
 
+      QBackendStepMetaData prepareFileUploadStep = new QBackendStepMetaData()
+         .withName("prepareFileUpload")
+         .withCode(new QCodeReference(BulkInsertPrepareFileUploadStep.class));
+
       QFrontendStepMetaData uploadScreen = new QFrontendStepMetaData()
          .withName("upload")
          .withLabel("Upload File")
-         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB).withLabel(table.getLabel() + " File").withIsRequired(true))
-         .withComponent(new QFrontendComponentMetaData()
-            .withType(QComponentType.HELP_TEXT)
-            .withValue("previewText", "file upload instructions")
-            .withValue("text", "Upload a CSV file with the following columns:\n" + fieldsForHelpText))
+         .withFormField(new QFieldMetaData("theFile", QFieldType.BLOB)
+            .withFieldAdornment(FileUploadAdornment.newFieldAdornment()
+               .withValue(FileUploadAdornment.formatDragAndDrop())
+               .withValue(FileUploadAdornment.widthFull()))
+            .withLabel(table.getLabel() + " File")
+            .withIsRequired(true))
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.HTML))
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM));
 
-      process.addStep(0, uploadScreen);
-      process.getFrontendStep("review").setRecordListFields(editableFields);
+      QBackendStepMetaData prepareFileMappingStep = new QBackendStepMetaData()
+         .withName("prepareFileMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareFileMappingStep.class));
+
+      QFrontendStepMetaData fileMappingScreen = new QFrontendStepMetaData()
+         .withName("fileMapping")
+         .withLabel("File Mapping")
+         .withBackStepName("prepareFileUpload")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_FILE_MAPPING_FORM))
+         .withFormField(new QFieldMetaData("hasHeaderRow", QFieldType.BOOLEAN))
+         .withFormField(new QFieldMetaData("layout", QFieldType.STRING)); // is actually PVS, but, this field is only added to help support helpContent, so :shrug:
+
+      QBackendStepMetaData receiveFileMappingStep = new QBackendStepMetaData()
+         .withName("receiveFileMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveFileMappingStep.class));
+
+      QBackendStepMetaData prepareValueMappingStep = new QBackendStepMetaData()
+         .withName("prepareValueMapping")
+         .withCode(new QCodeReference(BulkInsertPrepareValueMappingStep.class));
+
+      QFrontendStepMetaData valueMappingScreen = new QFrontendStepMetaData()
+         .withName("valueMapping")
+         .withLabel("Value Mapping")
+         .withBackStepName("prepareFileMapping")
+         .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_VALUE_MAPPING_FORM));
+
+      QBackendStepMetaData receiveValueMappingStep = new QBackendStepMetaData()
+         .withName("receiveValueMapping")
+         .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
+
+      int i = 0;
+      process.addStep(i++, prepareFileUploadStep);
+      process.addStep(i++, uploadScreen);
+
+      process.addStep(i++, prepareFileMappingStep);
+      process.addStep(i++, fileMappingScreen);
+      process.addStep(i++, receiveFileMappingStep);
+
+      process.addStep(i++, prepareValueMappingStep);
+      process.addStep(i++, valueMappingScreen);
+      process.addStep(i++, receiveValueMappingStep);
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW).setRecordListFields(editableFields);
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // put the bulk-load profile form (e.g., for saving it) on the review & result screens) //
+      //////////////////////////////////////////////////////////////////////////////////////////
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW)
+         .withBackStepName("prepareFileMapping")
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
+      process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_RESULT)
+         .getComponents().add(0, new QFrontendComponentMetaData().withType(QComponentType.BULK_LOAD_PROFILE_FORM));
+
       qInstance.addProcess(process);
    }
 
@@ -1281,6 +1387,137 @@ public class QInstanceEnricher
             }
          }
 
+         if(possibleValueSource.getIdType() == null)
+         {
+            QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
+            if(table != null)
+            {
+               String         primaryKeyField         = table.getPrimaryKeyField();
+               QFieldMetaData primaryKeyFieldMetaData = table.getFields().get(primaryKeyField);
+               if(primaryKeyFieldMetaData != null)
+               {
+                  possibleValueSource.setIdType(primaryKeyFieldMetaData.getType());
+               }
+            }
+         }
+      }
+      else if(QPossibleValueSourceType.ENUM.equals(possibleValueSource.getType()))
+      {
+         if(possibleValueSource.getIdType() == null)
+         {
+            if(CollectionUtils.nullSafeHasContents(possibleValueSource.getEnumValues()))
+            {
+               Object id = possibleValueSource.getEnumValues().get(0).getId();
+               try
+               {
+                  possibleValueSource.setIdType(QFieldType.fromClass(id.getClass()));
+               }
+               catch(Exception e)
+               {
+                  LOG.warn("Error enriching possible value source with idType based on first enum value", e, logPair("possibleValueSource", possibleValueSource.getName()), logPair("id", id));
+               }
+            }
+         }
+      }
+      else if(QPossibleValueSourceType.CUSTOM.equals(possibleValueSource.getType()))
+      {
+         if(possibleValueSource.getIdType() == null)
+         {
+            try
+            {
+               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+
+               Method getPossibleValueMethod = customPossibleValueProvider.getClass().getDeclaredMethod("getPossibleValue", Serializable.class);
+               Type   returnType             = getPossibleValueMethod.getGenericReturnType();
+               Type   idType                 = ((ParameterizedType) returnType).getActualTypeArguments()[0];
+
+               if(idType instanceof Class<?> c)
+               {
+                  possibleValueSource.setIdType(QFieldType.fromClass(c));
+               }
+            }
+            catch(Exception e)
+            {
+               LOG.warn("Error enriching possible value source with idType based on first custom value", e, logPair("possibleValueSource", possibleValueSource.getName()));
+            }
+         }
+      }
+
+      runPlugins(QPossibleValueSource.class, possibleValueSource, qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void addEnricherPlugin(QInstanceEnricherPluginInterface<?> plugin)
+   {
+      Optional<Method> enrichMethod = Arrays.stream(plugin.getClass().getDeclaredMethods())
+         .filter(m -> m.getName().equals("enrich")
+            && m.getParameterCount() == 2
+            && !m.getParameterTypes()[0].equals(Object.class)
+            && m.getParameterTypes()[1].equals(QInstance.class)
+         ).findFirst();
+
+      if(enrichMethod.isPresent())
+      {
+         Class<?> parameterType = enrichMethod.get().getParameterTypes()[0];
+         enricherPlugins.add(parameterType, plugin);
+      }
+      else
+      {
+         LOG.warn("Could not find enrich method on enricher plugin [" + plugin.getClass().getName() + "] (to infer type being enriched) - this plugin will not be used.");
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void removeAllEnricherPlugins()
+   {
+      enricherPlugins.clear();
+   }
+
+
+
+   /***************************************************************************
+    ** scan the classpath for classes in the specified package name which
+    ** implement the QInstanceEnricherPluginInterface - any found get added
+    ***************************************************************************/
+   public static void discoverAndAddPluginsInPackage(String packageName) throws QException
+   {
+      try
+      {
+         for(Class<?> aClass : ClassPathUtils.getClassesInPackage(packageName))
+         {
+            if(QInstanceEnricherPluginInterface.class.isAssignableFrom(aClass))
+            {
+               QInstanceEnricherPluginInterface<?> plugin = (QInstanceEnricherPluginInterface<?>) aClass.getConstructor().newInstance();
+               addEnricherPlugin(plugin);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Error discovering and adding enricher plugins in package [" + packageName + "]", e));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private <T> void runPlugins(Class<T> c, T t, QInstance qInstance)
+   {
+      for(QInstanceEnricherPluginInterface<?> plugin : CollectionUtils.nonNullList(enricherPlugins.get(c)))
+      {
+         @SuppressWarnings("unchecked")
+         QInstanceEnricherPluginInterface<T> castedPlugin = (QInstanceEnricherPluginInterface<T>) plugin;
+         castedPlugin.enrich(t, qInstance);
       }
    }
 

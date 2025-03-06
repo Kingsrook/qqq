@@ -154,7 +154,7 @@ public class QRecord implements Serializable
          return (null);
       }
 
-      Map<String, V> clone = new LinkedHashMap<>();
+      Map<String, V> clone = new LinkedHashMap<>(map.size());
       for(Map.Entry<String, V> entry : map.entrySet())
       {
          Serializable value = entry.getValue();
@@ -242,6 +242,24 @@ public class QRecord implements Serializable
       else
       {
          setValue(fieldName, ValueUtils.getValueAsString(value));
+      }
+   }
+
+
+   /***************************************************************************
+    ** copy all values from 'joinedRecord' into this record's values map,
+    ** prefixing field names with joinTableNam + "."
+    ***************************************************************************/
+   public void addJoinedRecordValues(String joinTableName, QRecord joinedRecord)
+   {
+      if(joinedRecord == null)
+      {
+         return;
+      }
+
+      for(Map.Entry<String, Serializable> entry : joinedRecord.getValues().entrySet())
+      {
+         setValue(joinTableName + "." + entry.getKey(), entry.getValue());
       }
    }
 

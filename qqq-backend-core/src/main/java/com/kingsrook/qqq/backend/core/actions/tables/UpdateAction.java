@@ -74,6 +74,7 @@ import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.backend.QBackendModuleInterface;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -117,6 +118,11 @@ public class UpdateAction
    public UpdateOutput execute(UpdateInput updateInput) throws QException
    {
       ActionHelper.validateSession(updateInput);
+
+      if(!StringUtils.hasContent(updateInput.getTableName()))
+      {
+         throw (new QException("Table name was not specified in update input"));
+      }
 
       QTableMetaData table = updateInput.getTable();
 
@@ -261,7 +267,7 @@ public class UpdateAction
       }
       else
       {
-         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE, updateInput.getTransaction());
       }
 
       if(updateInput.getInputSource().shouldValidateRequiredFields())
@@ -374,7 +380,7 @@ public class UpdateAction
             }
          }
 
-         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE);
+         ValidateRecordSecurityLockHelper.validateSecurityFields(table, updateInput.getRecords(), ValidateRecordSecurityLockHelper.Action.UPDATE, updateInput.getTransaction());
 
          for(QRecord record : page)
          {

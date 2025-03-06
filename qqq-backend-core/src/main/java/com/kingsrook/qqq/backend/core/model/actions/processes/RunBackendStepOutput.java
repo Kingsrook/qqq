@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditInput;
 import com.kingsrook.qqq.backend.core.model.actions.audits.AuditSingleInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFrontendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -258,7 +259,7 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
 
 
    /*******************************************************************************
-    **
+    ** add a record to the step output, e.g., for going through to the next step.
     *******************************************************************************/
    public void addRecord(QRecord record)
    {
@@ -267,6 +268,16 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
          this.processState.setRecords(new ArrayList<>());
       }
       this.processState.getRecords().add(record);
+   }
+
+
+
+   /***************************************************************************
+    ** add a RecordEntity to the step output, e.g., for going through to the next step.
+    ***************************************************************************/
+   public void addRecordEntity(QRecordEntity recordEntity)
+   {
+      addRecord(recordEntity.toQRecord());
    }
 
 

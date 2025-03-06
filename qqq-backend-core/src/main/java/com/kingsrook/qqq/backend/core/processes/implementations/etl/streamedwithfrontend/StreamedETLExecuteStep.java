@@ -189,7 +189,7 @@ public class StreamedETLExecuteStep extends BaseStreamedETLStep implements Backe
 
          if(recordCount > 0)
          {
-            LOG.info("Processed [" + recordCount + "] records.");
+            LOG.debug("Processed [" + recordCount + "] records.");
          }
 
          //////////////////////////////////////////////////////////////////////////////

@@ -23,10 +23,14 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
@@ -50,4 +54,18 @@ class CountActionTest extends BaseTest
       CountOutput result = new CountAction().execute(request);
       assertNotNull(result);
    }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testStaticWrapper() throws QException
+   {
+      TestUtils.insertDefaultShapes(QContext.getQInstance());
+      assertEquals(3, CountAction.execute(TestUtils.TABLE_NAME_SHAPE, null));
+      assertEquals(3, CountAction.execute(TestUtils.TABLE_NAME_SHAPE, new QQueryFilter()));
+   }
+
 }

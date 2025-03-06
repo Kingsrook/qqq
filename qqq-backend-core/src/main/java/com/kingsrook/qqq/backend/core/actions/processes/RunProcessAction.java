@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.NoCodeWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -53,6 +54,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.NoCodeWidgetFrontendComponentMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
@@ -63,6 +65,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QStateMachineStep
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerInterface;
 import com.kingsrook.qqq.backend.core.state.InMemoryStateProvider;
 import com.kingsrook.qqq.backend.core.state.StateProviderInterface;
 import com.kingsrook.qqq.backend.core.state.StateType;
@@ -71,6 +74,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.BooleanUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -87,11 +91,15 @@ public class RunProcessAction
    public static final String BASEPULL_TIMESTAMP_FIELD  = "basepullTimestampField";
    public static final String BASEPULL_CONFIGURATION    = "basepullConfiguration";
 
+   public static final String PROCESS_TRACER_CODE_REFERENCE_FIELD = "processTracerCodeReference";
+
    ////////////////////////////////////////////////////////////////////////////////////////////////
    // indicator that the timestamp field should be updated - e.g., the execute step is finished. //
    ////////////////////////////////////////////////////////////////////////////////////////////////
    public static final String BASEPULL_READY_TO_UPDATE_TIMESTAMP_FIELD = "basepullReadyToUpdateTimestamp";
    public static final String BASEPULL_DID_QUERY_USING_TIMESTAMP_FIELD = "basepullDidQueryUsingTimestamp";
+
+   private ProcessTracerInterface processTracer;
 
 
 
@@ -119,8 +127,16 @@ public class RunProcessAction
       }
       runProcessOutput.setProcessUUID(runProcessInput.getProcessUUID());
 
+      traceStartOrResume(runProcessInput, process);
+
       UUIDAndTypeStateKey stateKey     = new UUIDAndTypeStateKey(UUID.fromString(runProcessInput.getProcessUUID()), StateType.PROCESS_STATUS);
       ProcessState        processState = primeProcessState(runProcessInput, stateKey, process);
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // these should always be clear when we're starting a run - so make sure they haven't leaked from previous //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      processState.clearNextStepName();
+      processState.clearBackStepName();
 
       /////////////////////////////////////////////////////////
       // if process is 'basepull' style, keep track of 'now' //
@@ -160,6 +176,7 @@ public class RunProcessAction
          ////////////////////////////////////////////////////////////
          // upon exception (e.g., one thrown by a step), throw it. //
          ////////////////////////////////////////////////////////////
+         traceBreakOrFinish(runProcessInput, runProcessOutput, qe);
          throw (qe);
       }
       catch(Exception e)
@@ -167,6 +184,7 @@ public class RunProcessAction
          ////////////////////////////////////////////////////////////
          // upon exception (e.g., one thrown by a step), throw it. //
          ////////////////////////////////////////////////////////////
+         traceBreakOrFinish(runProcessInput, runProcessOutput, e);
          throw (new QException("Error running process", e));
       }
       finally
@@ -176,6 +194,8 @@ public class RunProcessAction
          //////////////////////////////////////////////////////
          runProcessOutput.setProcessState(processState);
       }
+
+      traceBreakOrFinish(runProcessInput, runProcessOutput, null);
 
       return (runProcessOutput);
    }
@@ -188,14 +208,35 @@ public class RunProcessAction
    private void runLinearStepLoop(QProcessMetaData process, ProcessState processState, UUIDAndTypeStateKey stateKey, RunProcessInput runProcessInput, RunProcessOutput runProcessOutput) throws Exception
    {
       String lastStepName = runProcessInput.getStartAfterStep();
+      String startAtStep  = runProcessInput.getStartAtStep();
 
       while(true)
       {
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
          // always refresh the step list - as any step that runs can modify it (in the process state).        //
          // this is why we don't do a loop over the step list - as we'd get ConcurrentModificationExceptions. //
+         // deal with if we were told, from the input, to start After a step, or start At a step.             //
          ///////////////////////////////////////////////////////////////////////////////////////////////////////
-         List<QStepMetaData> stepList = getAvailableStepList(processState, process, lastStepName);
+         List<QStepMetaData> stepList;
+         if(startAtStep == null)
+         {
+            stepList = getAvailableStepList(processState, process, lastStepName, false);
+         }
+         else
+         {
+            stepList = getAvailableStepList(processState, process, startAtStep, true);
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // clear this field - so after we run a step, we'll then loop in last-step mode. //
+            ///////////////////////////////////////////////////////////////////////////////////
+            startAtStep = null;
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // if we're going to run a backend step now, let it see that this is a step-back //
+            ///////////////////////////////////////////////////////////////////////////////////
+            processState.setIsStepBack(true);
+         }
+
          if(stepList.isEmpty())
          {
             break;
@@ -232,7 +273,18 @@ public class RunProcessAction
             //////////////////////////////////////////////////
             throw (new QException("Unsure how to run a step of type: " + step.getClass().getName()));
          }
+
+         ////////////////////////////////////////////////////////////////////////////////////////
+         // only let this value be set for the original back step - don't let it stick around. //
+         // if a process wants to keep track of this itself, it can, but in a different slot.  //
+         ////////////////////////////////////////////////////////////////////////////////////////
+         processState.setIsStepBack(false);
       }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // in case we broke from the loop above (e.g., by going directly into a frontend step), once again make sure to lower this flag. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      processState.setIsStepBack(false);
    }
 
 
@@ -264,6 +316,12 @@ public class RunProcessAction
             processFrontendStepFieldDefaultValues(processState, step);
             processFrontendComponents(processState, step);
             processState.setNextStepName(step.getName());
+
+            if(StringUtils.hasContent(step.getBackStepName()) && processState.getBackStepName().isEmpty())
+            {
+               processState.setBackStepName(step.getBackStepName());
+            }
+
             return LoopTodo.BREAK;
          }
          case SKIP ->
@@ -317,6 +375,7 @@ public class RunProcessAction
          // else run the given lastStepName //
          /////////////////////////////////////
          processState.clearNextStepName();
+         processState.clearBackStepName();
          step = process.getStep(lastStepName);
          if(step == null)
          {
@@ -398,6 +457,7 @@ public class RunProcessAction
                // its sub-steps, or, to fall out of the loop and end the process.                                  //
                //////////////////////////////////////////////////////////////////////////////////////////////////////
                processState.clearNextStepName();
+               processState.clearBackStepName();
                runStateMachineStep(nextStepName.get(), process, processState, stateKey, runProcessInput, runProcessOutput, stackDepth + 1);
                return;
             }
@@ -584,6 +644,7 @@ public class RunProcessAction
       runBackendStepInput.setCallback(runProcessInput.getCallback());
       runBackendStepInput.setFrontendStepBehavior(runProcessInput.getFrontendStepBehavior());
       runBackendStepInput.setAsyncJobCallback(runProcessInput.getAsyncJobCallback());
+      runBackendStepInput.setProcessTracer(processTracer);
 
       runBackendStepInput.setTableName(process.getTableName());
       if(!StringUtils.hasContent(runBackendStepInput.getTableName()))
@@ -605,8 +666,12 @@ public class RunProcessAction
          runBackendStepInput.setBasepullLastRunTime((Instant) runProcessInput.getValues().get(BASEPULL_LAST_RUNTIME_KEY));
       }
 
+      traceStepStart(runBackendStepInput);
+
       RunBackendStepOutput runBackendStepOutput = new RunBackendStepAction().execute(runBackendStepInput);
       storeState(stateKey, runBackendStepOutput.getProcessState());
+
+      traceStepFinish(runBackendStepInput, runBackendStepOutput);
 
       if(runBackendStepOutput.getException() != null)
       {
@@ -621,8 +686,10 @@ public class RunProcessAction
 
    /*******************************************************************************
     ** Get the list of steps which are eligible to run.
+    **
+    ** lastStep will be included in the list, or not, based on includeLastStep.
     *******************************************************************************/
-   private List<QStepMetaData> getAvailableStepList(ProcessState processState, QProcessMetaData process, String lastStep) throws QException
+   static List<QStepMetaData> getAvailableStepList(ProcessState processState, QProcessMetaData process, String lastStep, boolean includeLastStep) throws QException
    {
       if(lastStep == null)
       {
@@ -649,6 +716,10 @@ public class RunProcessAction
             if(stepName.equals(lastStep))
             {
                foundLastStep = true;
+               if(includeLastStep)
+               {
+                  validStepNames.add(stepName);
+               }
             }
          }
          return (stepNamesToSteps(process, validStepNames));
@@ -660,7 +731,7 @@ public class RunProcessAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   private List<QStepMetaData> stepNamesToSteps(QProcessMetaData process, List<String> stepNames) throws QException
+   private static List<QStepMetaData> stepNamesToSteps(QProcessMetaData process, List<String> stepNames) throws QException
    {
       List<QStepMetaData> result = new ArrayList<>();
 
@@ -744,13 +815,14 @@ public class RunProcessAction
       {
          QSession         session         = QContext.getQSession();
          QBackendMetaData backendMetaData = QContext.getQInstance().getBackend(process.getVariantBackend());
-         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(backendMetaData.getVariantOptionsTableTypeValue()))
+         String           variantTypeKey  = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+         if(session.getBackendVariants() == null || !session.getBackendVariants().containsKey(variantTypeKey))
          {
             LOG.warn("Could not find Backend Variant information for Backend '" + backendMetaData.getName() + "'");
          }
          else
          {
-            basepullKeyValue += "-" + session.getBackendVariants().get(backendMetaData.getVariantOptionsTableTypeValue());
+            basepullKeyValue += "-" + session.getBackendVariants().get(variantTypeKey);
          }
       }
 
@@ -879,4 +951,153 @@ public class RunProcessAction
       runProcessInput.getValues().put(BASEPULL_TIMESTAMP_FIELD, basepullConfiguration.getTimestampField());
       runProcessInput.getValues().put(BASEPULL_CONFIGURATION, basepullConfiguration);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void setupProcessTracer(RunProcessInput runProcessInput, QProcessMetaData process)
+   {
+      try
+      {
+         if(process.getProcessTracerCodeReference() != null)
+         {
+            processTracer = QCodeLoader.getAdHoc(ProcessTracerInterface.class, process.getProcessTracerCodeReference());
+         }
+
+         Serializable processTracerCodeReference = runProcessInput.getValue(PROCESS_TRACER_CODE_REFERENCE_FIELD);
+         if(processTracerCodeReference != null)
+         {
+            if(processTracerCodeReference instanceof QCodeReference codeReference)
+            {
+               processTracer = QCodeLoader.getAdHoc(ProcessTracerInterface.class, codeReference);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error setting up processTracer", e, logPair("processName", runProcessInput.getProcessName()));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void traceStartOrResume(RunProcessInput runProcessInput, QProcessMetaData process)
+   {
+      setupProcessTracer(runProcessInput, process);
+
+      try
+      {
+         if(processTracer != null)
+         {
+            if(StringUtils.hasContent(runProcessInput.getStartAfterStep()) || StringUtils.hasContent(runProcessInput.getStartAtStep()))
+            {
+               processTracer.handleProcessResume(runProcessInput);
+            }
+            else
+            {
+               processTracer.handleProcessStart(runProcessInput);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error in traceStart", e, logPair("processName", runProcessInput.getProcessName()));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void traceBreakOrFinish(RunProcessInput runProcessInput, RunProcessOutput runProcessOutput, Exception processException)
+   {
+      try
+      {
+         if(processTracer != null)
+         {
+            ProcessState processState = runProcessOutput.getProcessState();
+            boolean      isBreak      = true;
+
+            /////////////////////////////////////////////////////////////
+            // if there's no next step, that means the process is done //
+            /////////////////////////////////////////////////////////////
+            if(processState.getNextStepName().isEmpty())
+            {
+               isBreak = false;
+            }
+            else
+            {
+               /////////////////////////////////////////////////////////////////
+               // or if the next step is the last index, then we're also done //
+               /////////////////////////////////////////////////////////////////
+               String nextStepName  = processState.getNextStepName().get();
+               int    nextStepIndex = processState.getStepList().indexOf(nextStepName);
+               if(nextStepIndex == processState.getStepList().size() - 1)
+               {
+                  isBreak = false;
+               }
+            }
+
+            if(isBreak)
+            {
+               processTracer.handleProcessBreak(runProcessInput, runProcessOutput, processException);
+            }
+            else
+            {
+               processTracer.handleProcessFinish(runProcessInput, runProcessOutput, processException);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error in traceProcessFinish", e, logPair("processName", runProcessInput.getProcessName()));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void traceStepStart(RunBackendStepInput runBackendStepInput)
+   {
+      try
+      {
+         if(processTracer != null)
+         {
+            processTracer.handleStepStart(runBackendStepInput);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error in traceStepFinish", e, logPair("processName", runBackendStepInput.getProcessName()), logPair("stepName", runBackendStepInput.getStepName()));
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void traceStepFinish(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput)
+   {
+      try
+      {
+         if(processTracer != null)
+         {
+            processTracer.handleStepFinish(runBackendStepInput, runBackendStepOutput);
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.info("Error in traceStepFinish", e, logPair("processName", runBackendStepInput.getProcessName()), logPair("stepName", runBackendStepInput.getStepName()));
+      }
+   }
+
 }

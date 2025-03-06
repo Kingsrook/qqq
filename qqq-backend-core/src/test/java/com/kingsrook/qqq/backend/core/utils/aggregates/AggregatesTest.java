@@ -95,6 +95,57 @@ class AggregatesTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testLong()
+   {
+      LongAggregates aggregates = new LongAggregates();
+
+      assertEquals(0, aggregates.getCount());
+      assertNull(aggregates.getMin());
+      assertNull(aggregates.getMax());
+      assertNull(aggregates.getSum());
+      assertNull(aggregates.getAverage());
+
+      aggregates.add(5L);
+      assertEquals(1, aggregates.getCount());
+      assertEquals(5, aggregates.getMin());
+      assertEquals(5, aggregates.getMax());
+      assertEquals(5, aggregates.getSum());
+      assertThat(aggregates.getAverage()).isCloseTo(new BigDecimal("5"), Offset.offset(BigDecimal.ZERO));
+
+      aggregates.add(10L);
+      assertEquals(2, aggregates.getCount());
+      assertEquals(5, aggregates.getMin());
+      assertEquals(10, aggregates.getMax());
+      assertEquals(15, aggregates.getSum());
+      assertThat(aggregates.getAverage()).isCloseTo(new BigDecimal("7.5"), Offset.offset(BigDecimal.ZERO));
+
+      aggregates.add(15L);
+      assertEquals(3, aggregates.getCount());
+      assertEquals(5, aggregates.getMin());
+      assertEquals(15, aggregates.getMax());
+      assertEquals(30, aggregates.getSum());
+      assertThat(aggregates.getAverage()).isCloseTo(new BigDecimal("10"), Offset.offset(BigDecimal.ZERO));
+
+      aggregates.add(null);
+      assertEquals(3, aggregates.getCount());
+      assertEquals(5, aggregates.getMin());
+      assertEquals(15, aggregates.getMax());
+      assertEquals(30, aggregates.getSum());
+      assertThat(aggregates.getAverage()).isCloseTo(new BigDecimal("10"), Offset.offset(BigDecimal.ZERO));
+
+      assertEquals(new BigDecimal("750"), aggregates.getProduct());
+      assertEquals(new BigDecimal("25.0000"), aggregates.getVariance());
+      assertEquals(new BigDecimal("5.0000"), aggregates.getStandardDeviation());
+      assertThat(aggregates.getVarP()).isCloseTo(new BigDecimal("16.6667"), Offset.offset(new BigDecimal(".0001")));
+      assertThat(aggregates.getStdDevP()).isCloseTo(new BigDecimal("4.0824"), Offset.offset(new BigDecimal(".0001")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testBigDecimal()
    {
       BigDecimalAggregates aggregates = new BigDecimalAggregates();
