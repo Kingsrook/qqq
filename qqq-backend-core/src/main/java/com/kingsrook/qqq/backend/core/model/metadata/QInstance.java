@@ -116,7 +116,10 @@ public class QInstance
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
 
+   @Deprecated(since = "migrated to metaDataCustomizer")
    private QCodeReference metaDataFilter = null;
+
+   private QCodeReference metaDataActionCustomizer = null;
 
    //////////////////////////////////////////////////////////////////////////////////////
    // todo - lock down the object (no more changes allowed) after it's been validated? //
@@ -1495,6 +1498,7 @@ public class QInstance
    /*******************************************************************************
     ** Getter for metaDataFilter
     *******************************************************************************/
+   @Deprecated(since = "migrated to metaDataCustomizer")
    public QCodeReference getMetaDataFilter()
    {
       return (this.metaDataFilter);
@@ -1505,6 +1509,7 @@ public class QInstance
    /*******************************************************************************
     ** Setter for metaDataFilter
     *******************************************************************************/
+   @Deprecated(since = "migrated to metaDataCustomizer")
    public void setMetaDataFilter(QCodeReference metaDataFilter)
    {
       this.metaDataFilter = metaDataFilter;
@@ -1515,6 +1520,7 @@ public class QInstance
    /*******************************************************************************
     ** Fluent setter for metaDataFilter
     *******************************************************************************/
+   @Deprecated(since = "migrated to metaDataCustomizer")
    public QInstance withMetaDataFilter(QCodeReference metaDataFilter)
    {
       this.metaDataFilter = metaDataFilter;
@@ -1583,6 +1589,37 @@ public class QInstance
    public QInstance withQBits(Map<String, QBitMetaData> qBits)
    {
       this.qBits = qBits;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for metaDataActionCustomizer
+    *******************************************************************************/
+   public QCodeReference getMetaDataActionCustomizer()
+   {
+      return (this.metaDataActionCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for metaDataActionCustomizer
+    *******************************************************************************/
+   public void setMetaDataActionCustomizer(QCodeReference metaDataActionCustomizer)
+   {
+      this.metaDataActionCustomizer = metaDataActionCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for metaDataActionCustomizer
+    *******************************************************************************/
+   public QInstance withMetaDataActionCustomizer(QCodeReference metaDataActionCustomizer)
+   {
+      this.metaDataActionCustomizer = metaDataActionCustomizer;
       return (this);
    }
 

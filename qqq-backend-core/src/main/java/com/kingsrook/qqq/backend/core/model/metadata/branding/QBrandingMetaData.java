@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.branding;
 
 
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
 
@@ -30,7 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
  ** Meta-Data to define branding in a QQQ instance.
  **
  *******************************************************************************/
-public class QBrandingMetaData implements TopLevelMetaDataInterface
+public class QBrandingMetaData implements TopLevelMetaDataInterface, Cloneable, Serializable
 {
    private String companyName;
    private String companyUrl;
@@ -39,8 +42,44 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    private String icon;
    private String accentColor;
 
+   @Deprecated(since = "migrate to use banners map instead")
    private String environmentBannerText;
+
+   @Deprecated(since = "migrate to use banners map instead")
    private String environmentBannerColor;
+
+   private Map<BannerSlot, Banner> banners;
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QBrandingMetaData clone()
+   {
+      try
+      {
+         QBrandingMetaData clone = (QBrandingMetaData) super.clone();
+
+         //////////////////////////////////////////////////////////////////////////////////////
+         // copy mutable state here, so the clone can't change the internals of the original //
+         //////////////////////////////////////////////////////////////////////////////////////
+         if(banners != null)
+         {
+            clone.banners = new LinkedHashMap<>();
+            for(Map.Entry<BannerSlot, Banner> entry : this.banners.entrySet())
+            {
+               clone.banners.put(entry.getKey(), entry.getValue().clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 
@@ -267,6 +306,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Getter for environmentBannerText
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public String getEnvironmentBannerText()
    {
       return (this.environmentBannerText);
@@ -277,6 +317,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for environmentBannerText
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public void setEnvironmentBannerText(String environmentBannerText)
    {
       this.environmentBannerText = environmentBannerText;
@@ -287,6 +328,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for environmentBannerText
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public QBrandingMetaData withEnvironmentBannerText(String environmentBannerText)
    {
       this.environmentBannerText = environmentBannerText;
@@ -298,6 +340,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Getter for environmentBannerColor
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public String getEnvironmentBannerColor()
    {
       return (this.environmentBannerColor);
@@ -308,6 +351,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Setter for environmentBannerColor
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public void setEnvironmentBannerColor(String environmentBannerColor)
    {
       this.environmentBannerColor = environmentBannerColor;
@@ -318,6 +362,7 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    /*******************************************************************************
     ** Fluent setter for environmentBannerColor
     *******************************************************************************/
+   @Deprecated(since = "migrate to use banners map instead")
    public QBrandingMetaData withEnvironmentBannerColor(String environmentBannerColor)
    {
       this.environmentBannerColor = environmentBannerColor;
@@ -334,4 +379,52 @@ public class QBrandingMetaData implements TopLevelMetaDataInterface
    {
       qInstance.setBranding(this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for banners
+    *******************************************************************************/
+   public Map<BannerSlot, Banner> getBanners()
+   {
+      return (this.banners);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for banners
+    *******************************************************************************/
+   public void setBanners(Map<BannerSlot, Banner> banners)
+   {
+      this.banners = banners;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for banners
+    *******************************************************************************/
+   public QBrandingMetaData withBanners(Map<BannerSlot, Banner> banners)
+   {
+      this.banners = banners;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QBrandingMetaData withBanner(BannerSlot slot, Banner banner)
+   {
+      if(this.banners == null)
+      {
+         this.banners = new LinkedHashMap<>();
+      }
+      this.banners.put(slot, banner);
+
+      return (this);
+   }
+
+
 }
