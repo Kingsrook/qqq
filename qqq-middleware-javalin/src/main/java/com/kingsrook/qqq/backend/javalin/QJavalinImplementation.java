@@ -453,9 +453,20 @@ public class QJavalinImplementation
          QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
          Map<String, String> authContext = new HashMap<>();
-         //? authContext.put("uuid", ValueUtils.getValueAsString(map.get("uuid")));
-         authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
          authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // before this code iterated the map, it had zombied uuid line, and only actually used ACCESS_TOKEN_KEY //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         //? authContext.put("uuid", ValueUtils.getValueAsString(map.get("uuid")));
+         // authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
+         /////////////////////////////////////////////////////////////////
+         // todo - have the auth module declare what values it expects? //
+         /////////////////////////////////////////////////////////////////
+         for(Map.Entry<?, ?> entry : map.entrySet())
+         {
+            authContext.put(ValueUtils.getValueAsString(entry.getKey()), ValueUtils.getValueAsString(entry.getValue()));
+         }
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // put the qInstance into context - but no session yet (since, the whole point of this call is to manage the session!) //
