@@ -1,0 +1,5 @@
+---
+class: QAuthenticationMetaData
+version: 1.0
+name:  mock
+type: MOCK

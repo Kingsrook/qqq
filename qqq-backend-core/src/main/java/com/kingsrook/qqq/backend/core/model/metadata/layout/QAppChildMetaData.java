@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+
+
 /*******************************************************************************
  ** Interface shared by meta-data objects which can be placed into an App.
  ** e.g., Tables, Processes, and Apps themselves (since they can be nested)
  *******************************************************************************/
-public interface QAppChildMetaData
+public interface QAppChildMetaData extends QMetaDataObject
 {
    /*******************************************************************************
     **

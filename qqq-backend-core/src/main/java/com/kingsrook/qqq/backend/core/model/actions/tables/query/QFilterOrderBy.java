@@ -23,13 +23,14 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.query;
 
 
 import java.io.Serializable;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 
 
 /*******************************************************************************
  ** Bean representing an element of a query order-by clause.
  **
  *******************************************************************************/
-public class QFilterOrderBy implements Serializable, Cloneable
+public class QFilterOrderBy implements Serializable, Cloneable, QMetaDataObject
 {
    private String  fieldName;
    private boolean isAscending = true;

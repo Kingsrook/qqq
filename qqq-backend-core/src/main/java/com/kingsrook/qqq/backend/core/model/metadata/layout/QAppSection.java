@@ -24,12 +24,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 
 
 /*******************************************************************************
  ** A section of apps/tables/processes - a logical grouping.
  *******************************************************************************/
-public class QAppSection implements Cloneable
+public class QAppSection implements Cloneable, QMetaDataObject
 {
    private String name;
    private String label;

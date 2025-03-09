@@ -25,13 +25,14 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables.automation;
 import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
  ** Definition of a specific action to run against a table
  *******************************************************************************/
-public class TableAutomationAction
+public class TableAutomationAction implements QMetaDataObject
 {
    private String       name;
    private TriggerEvent triggerEvent;

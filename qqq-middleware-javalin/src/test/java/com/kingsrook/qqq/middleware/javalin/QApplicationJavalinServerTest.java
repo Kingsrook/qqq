@@ -22,16 +22,23 @@
 package com.kingsrook.qqq.middleware.javalin;
 
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,11 +58,24 @@ class QApplicationJavalinServerTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @BeforeEach
+   void beforeEach() throws IOException
+   {
+      FileUtils.writeStringToFile(new File(TestUtils.STATIC_SITE_PATH + "/foo.html"), "Foo? Bar!", Charset.defaultCharset());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    @AfterEach
-   void afterEach()
+   void afterEach() throws IOException
    {
       javalinServer.stop();
       TestApplication.callCount = 0;
+
+      FileUtils.deleteDirectory(new File(TestUtils.STATIC_SITE_PATH));
    }
 
 
@@ -123,6 +143,7 @@ class QApplicationJavalinServerTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -169,6 +190,42 @@ class QApplicationJavalinServerTest
          assertThat(aTable.getString("label")).endsWith("1");
          assertThat(TestApplication.callCount).isEqualTo(1);
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testStaticRouter() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT);
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/statically-served/foo.html").asString();
+      assertEquals("Foo? Bar!", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testProcessRouter() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT);
+      javalinServer.start();
+
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/served-by-process/foo.html").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("So you've asked for: /served-by-process/foo.html", response.getBody());
    }
 
 

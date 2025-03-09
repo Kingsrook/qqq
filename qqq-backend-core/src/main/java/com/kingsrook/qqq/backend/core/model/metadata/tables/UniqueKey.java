@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
@@ -32,7 +33,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  ** Definition of a Unique Key (or "Constraint", if you wanna use fancy words)
  ** on a QTable.
  *******************************************************************************/
-public class UniqueKey
+public class UniqueKey implements QMetaDataObject
 {
    private List<String> fieldNames;
    private String       label;

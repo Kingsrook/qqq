@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin;
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import io.javalin.apibuilder.EndpointGroup;
+import io.javalin.config.JavalinConfig;
 
 
 /*******************************************************************************
@@ -42,6 +43,22 @@ public interface QJavalinRouteProviderInterface
    /***************************************************************************
     **
     ***************************************************************************/
-   EndpointGroup getJavalinEndpointGroup();
+   default EndpointGroup getJavalinEndpointGroup()
+   {
+      /////////////////////////////
+      // no endpoints at default //
+      /////////////////////////////
+      return (null);
+   }
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default void acceptJavalinConfig(JavalinConfig config)
+   {
+      /////////////////////
+      // noop at default //
+      /////////////////////
+   }
 }

@@ -26,7 +26,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
  ** Interface for meta-data classes that can be added directly (e.g, at the top
  ** level) to a QInstance (such as a QTableMetaData - not a QFieldMetaData).
  *******************************************************************************/
-public interface TopLevelMetaDataInterface extends MetaDataProducerOutput
+public interface TopLevelMetaDataInterface extends MetaDataProducerOutput, QMetaDataObject
 {
 
    /*******************************************************************************
