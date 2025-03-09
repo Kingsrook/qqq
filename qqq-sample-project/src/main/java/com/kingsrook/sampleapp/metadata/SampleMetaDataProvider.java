@@ -144,7 +144,6 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
    {
       QInstance qInstance = new QInstance();
 
-      // qInstance.setAuthentication(defineAuthentication());
       qInstance.addBackend(defineRdbmsBackend());
       qInstance.addBackend(defineMemoryBackend());
       qInstance.addBackend(defineFilesystemBackend());
@@ -171,6 +170,18 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    ** for tests, define the same instance as above, but use mock authentication.
+    ***************************************************************************/
+   public static QInstance defineTestInstance() throws QException
+   {
+      QInstance qInstance = defineInstance();
+      qInstance.setAuthentication(defineAuthentication());
+      return qInstance;
    }
 
 
