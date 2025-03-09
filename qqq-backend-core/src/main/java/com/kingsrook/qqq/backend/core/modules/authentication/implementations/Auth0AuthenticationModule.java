@@ -1020,7 +1020,7 @@ public class Auth0AuthenticationModule implements QAuthenticationModuleInterface
             // decode the accessToken and make sure it is not expired //
             ////////////////////////////////////////////////////////////
             boolean needNewToken = true;
-            if(accessToken != null)
+            if(StringUtils.hasContent(accessToken))
             {
                DecodedJWT jwt     = JWT.decode(accessToken);
                String     payload = jwt.getPayload();
