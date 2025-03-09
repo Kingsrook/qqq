@@ -82,6 +82,11 @@ public class DeleteAction
    {
       ActionHelper.validateSession(deleteInput);
 
+      if(deleteInput.getTableName() == null)
+      {
+         throw (new QException("Table name was not specified in delete input"));
+      }
+
       QTableMetaData table               = deleteInput.getTable();
       String         primaryKeyFieldName = table.getPrimaryKeyField();
       QFieldMetaData primaryKeyField     = table.getField(primaryKeyFieldName);
@@ -320,7 +325,7 @@ public class DeleteAction
       QTableMetaData table               = deleteInput.getTable();
       List<QRecord>  primaryKeysNotFound = validateRecordsExistAndCanBeAccessed(deleteInput, oldRecordList.get());
 
-      ValidateRecordSecurityLockHelper.validateSecurityFields(table, oldRecordList.get(), ValidateRecordSecurityLockHelper.Action.DELETE);
+      ValidateRecordSecurityLockHelper.validateSecurityFields(table, oldRecordList.get(), ValidateRecordSecurityLockHelper.Action.DELETE, deleteInput.getTransaction());
 
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-delete customizer, if there is one //

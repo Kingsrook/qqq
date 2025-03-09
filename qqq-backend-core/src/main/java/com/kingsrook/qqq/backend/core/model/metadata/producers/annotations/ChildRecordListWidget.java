@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.producers.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.MetaDataCustomizerInterface;
 
 
 /***************************************************************************
@@ -43,4 +44,6 @@ public @interface ChildRecordListWidget
    boolean canAddChildRecords() default false;
 
    String manageAssociationName() default "";
+
+   Class<? extends MetaDataCustomizerInterface> widgetMetaDataCustomizer() default MetaDataCustomizerInterface.NoopMetaDataCustomizer.class;
 }

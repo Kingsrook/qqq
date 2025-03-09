@@ -50,10 +50,12 @@ import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.MetaDataWithPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.qbits.SourceQBitAware;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.sharing.ShareableTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.QTableAutomationDetails;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -61,24 +63,18 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** Meta-Data to define a table in a QQQ instance.
  **
  *******************************************************************************/
-public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface
+public class QTableMetaData implements QAppChildMetaData, Serializable, MetaDataWithPermissionRules, TopLevelMetaDataInterface, SourceQBitAware
 {
    private static final QLogger LOG = QLogger.getLogger(QTableMetaData.class);
 
    private String name;
    private String label;
 
-   // TODO:  resolve confusion over:
-   //    Is this name of what backend the table is stored in (yes)
-   //    Or the "name" of the table WITHIN the backend (no)
-   //       although that's how "backendName" is used in QFieldMetaData.
-   //    Idea:
-   //       rename "backendName" here to "backend"
-   //       add "nameInBackend" (or similar) for the table name in the backend
-   //       OR - add a whole "backendDetails" object, with different details per backend-type
    private String  backendName;
    private String  primaryKeyField;
    private boolean isHidden = false;
+
+   private String sourceQBitName;
 
    private Map<String, QFieldMetaData> fields;
    private List<UniqueKey>             uniqueKeys;
@@ -183,6 +179,12 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
             setPrimaryKey = true;
          }
       }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      // stash a reference from this entityClass to this table in the QRecordEntity class              //
+      // (used within that class later, if it wants to know about a table that an Entity helped build) //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////
+      QRecordEntity.registerTable(entityClass, this);
 
       return (this);
    }
@@ -715,6 +717,25 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
 
    /*******************************************************************************
+    ** Getter for sections
+    **
+    *******************************************************************************/
+   public QFieldSection getSection(String name)
+   {
+      for(QFieldSection qFieldSection : CollectionUtils.nonNullList(sections))
+      {
+         if(qFieldSection.getName().equals(name))
+         {
+            return (qFieldSection);
+         }
+      }
+
+      return (null);
+   }
+
+
+
+   /*******************************************************************************
     ** Setter for sections
     **
     *******************************************************************************/
@@ -1038,7 +1059,7 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
    {
       for(Capability disabledCapability : disabledCapabilities)
       {
-         withCapability(disabledCapability);
+         withoutCapability(disabledCapability);
       }
       return (this);
    }
@@ -1535,5 +1556,39 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
       QInstanceHelpContentManager.removeHelpContentByRoleSetFromList(roles, listForSlot);
    }
+
+
+   /*******************************************************************************
+    ** Getter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public String getSourceQBitName()
+   {
+      return (this.sourceQBitName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public void setSourceQBitName(String sourceQBitName)
+   {
+      this.sourceQBitName = sourceQBitName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceQBitName
+    *******************************************************************************/
+   @Override
+   public QTableMetaData withSourceQBitName(String sourceQBitName)
+   {
+      this.sourceQBitName = sourceQBitName;
+      return (this);
+   }
+
 
 }

@@ -56,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRule
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.qbits.QBitMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.queues.QQueueProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
@@ -89,6 +90,7 @@ public class QInstance
    ////////////////////////////////////////////////////////////////////////////////////////////
    // Important to use LinkedHashmap here, to preserve the order in which entries are added. //
    ////////////////////////////////////////////////////////////////////////////////////////////
+   private Map<String, QBitMetaData>             qBits                = new LinkedHashMap<>();
    private Map<String, QTableMetaData>           tables               = new LinkedHashMap<>();
    private Map<String, QJoinMetaData>            joins                = new LinkedHashMap<>();
    private Map<String, QPossibleValueSource>     possibleValueSources = new LinkedHashMap<>();
@@ -1489,6 +1491,7 @@ public class QInstance
    }
 
 
+
    /*******************************************************************************
     ** Getter for metaDataFilter
     *******************************************************************************/
@@ -1518,5 +1521,69 @@ public class QInstance
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addQBit(QBitMetaData qBitMetaData)
+   {
+      List<String> missingParts = new ArrayList<>();
+      if(!StringUtils.hasContent(qBitMetaData.getGroupId()))
+      {
+         missingParts.add("groupId");
+      }
+      if(!StringUtils.hasContent(qBitMetaData.getArtifactId()))
+      {
+         missingParts.add("artifactId");
+      }
+      if(!StringUtils.hasContent(qBitMetaData.getVersion()))
+      {
+         missingParts.add("version");
+
+      }
+      if(!missingParts.isEmpty())
+      {
+         throw (new IllegalArgumentException("Attempted to add a qBit without a " + StringUtils.joinWithCommasAndAnd(missingParts)));
+      }
+
+      String name = qBitMetaData.getName();
+      if(this.qBits.containsKey(name))
+      {
+         throw (new IllegalArgumentException("Attempted to add a second qBit with name (formed from 'groupId:artifactId:version[:namespace]'): " + name));
+      }
+      this.qBits.put(name, qBitMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for qBits
+    *******************************************************************************/
+   public Map<String, QBitMetaData> getQBits()
+   {
+      return (this.qBits);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for qBits
+    *******************************************************************************/
+   public void setQBits(Map<String, QBitMetaData> qBits)
+   {
+      this.qBits = qBits;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for qBits
+    *******************************************************************************/
+   public QInstance withQBits(Map<String, QBitMetaData> qBits)
+   {
+      this.qBits = qBits;
+      return (this);
+   }
 
 }

@@ -22,16 +22,39 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
+import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ProcessSummaryProviderInterface;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class BulkInsertLoadStep extends LoadViaInsertStep
+public class BulkInsertLoadStep extends LoadViaInsertStep implements ProcessSummaryProviderInterface
 {
+   private static final QLogger LOG = QLogger.getLogger(BulkInsertLoadStep.class);
+
+   private Serializable firstInsertedPrimaryKey = null;
+   private Serializable lastInsertedPrimaryKey  = null;
+
+
 
    /*******************************************************************************
     **
@@ -42,4 +65,66 @@ public class BulkInsertLoadStep extends LoadViaInsertStep
       return (QInputSource.USER);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void runOnePage(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput) throws QException
+   {
+      super.runOnePage(runBackendStepInput, runBackendStepOutput);
+
+      QTableMetaData table = QContext.getQInstance().getTable(runBackendStepInput.getValueString("tableName"));
+
+      List<QRecord> insertedRecords = runBackendStepOutput.getRecords();
+      for(QRecord insertedRecord : insertedRecords)
+      {
+         if(CollectionUtils.nullSafeIsEmpty(insertedRecord.getErrors()))
+         {
+            if(firstInsertedPrimaryKey == null)
+            {
+               firstInsertedPrimaryKey = insertedRecord.getValue(table.getPrimaryKeyField());
+            }
+
+            lastInsertedPrimaryKey = insertedRecord.getValue(table.getPrimaryKeyField());
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public ArrayList<ProcessSummaryLineInterface> getProcessSummary(RunBackendStepOutput runBackendStepOutput, boolean isForResultScreen)
+   {
+      ArrayList<ProcessSummaryLineInterface> processSummary = getTransformStep().getProcessSummary(runBackendStepOutput, isForResultScreen);
+
+      try
+      {
+         if(firstInsertedPrimaryKey != null)
+         {
+            QTableMetaData table = QContext.getQInstance().getTable(runBackendStepOutput.getValueString("tableName"));
+            QFieldMetaData field = table.getField(table.getPrimaryKeyField());
+            if(field.getType().isNumeric())
+            {
+               ProcessSummaryLine idsLine = new ProcessSummaryLine(Status.INFO, "Inserted " + field.getLabel() + " values between " + firstInsertedPrimaryKey + " and " + lastInsertedPrimaryKey);
+               if(Objects.equals(firstInsertedPrimaryKey, lastInsertedPrimaryKey))
+               {
+                  idsLine.setMessage("Inserted " + field.getLabel() + " " + firstInsertedPrimaryKey);
+               }
+               idsLine.setCount(null);
+               processSummary.add(idsLine);
+            }
+         }
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Error adding inserted-keys process summary line", e);
+      }
+
+      return (processSummary);
+   }
 }

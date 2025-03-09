@@ -291,4 +291,24 @@ class QRecordTest extends BaseTest
       assertFalse(jsonObject.has("errorsAsString"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddJoinedRecordValues()
+   {
+      QRecord order = new QRecord().withValue("id", 1).withValue("shipTo", "St. Louis");
+      order.addJoinedRecordValues("orderInstructions", null);
+      assertEquals(2, order.getValues().size());
+
+      QRecord orderInstructions = new QRecord().withValue("id", 100).withValue("instructions", "Be Careful");
+      order.addJoinedRecordValues("orderInstructions", orderInstructions);
+
+      assertEquals(4, order.getValues().size());
+      assertEquals(100, order.getValue("orderInstructions.id"));
+      assertEquals("Be Careful", order.getValue("orderInstructions.instructions"));
+   }
+
 }

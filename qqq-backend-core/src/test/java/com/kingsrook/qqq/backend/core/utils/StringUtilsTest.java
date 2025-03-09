@@ -105,6 +105,7 @@ class StringUtilsTest extends BaseTest
       assertEquals("Foo bar", StringUtils.allCapsToMixedCase("FOo bar"));
       assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOo BAr"));
       assertEquals("foo bar", StringUtils.allCapsToMixedCase("foo bar"));
+      assertEquals("Foo Bar", StringUtils.allCapsToMixedCase("FOO_BAR"));
    }
 
 

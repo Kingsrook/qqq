@@ -34,6 +34,7 @@
       <module>qqq-backend-module-api</module>
       <module>qqq-backend-module-filesystem</module>
       <module>qqq-backend-module-rdbms</module>
+      <module>qqq-backend-module-sqlite</module>
       <module>qqq-backend-module-mongodb</module>
       <module>qqq-language-support-javascript</module>
       <module>qqq-openapi</module>
@@ -47,7 +48,7 @@
    </modules>
 
    <properties>
-      <revision>0.24.0-SNAPSHOT</revision>
+      <revision>0.25.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

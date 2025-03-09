@@ -86,7 +86,6 @@ public class QFrontendTableMetaData
    //////////////////////////////////////////////////////////////////////////////////
 
 
-
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -170,7 +169,7 @@ public class QFrontendTableMetaData
       if(backend != null && backend.getUsesVariants())
       {
          usesVariants = true;
-         variantTableLabel = QContext.getQInstance().getTable(backend.getVariantOptionsTableName()).getLabel();
+         variantTableLabel = QContext.getQInstance().getTable(backend.getBackendVariantsConfig().getOptionsTableName()).getLabel();
       }
 
       this.helpContents = tableMetaData.getHelpContent();

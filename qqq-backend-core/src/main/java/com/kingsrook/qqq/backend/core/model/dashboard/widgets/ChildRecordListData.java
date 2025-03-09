@@ -51,6 +51,7 @@ public class ChildRecordListData extends QWidgetData
    private boolean                   canAddChildRecord = false;
    private Map<String, Serializable> defaultValuesForNewChildRecords;
    private Set<String>               disabledFieldsForNewChildRecords;
+   private Map<String, String>       defaultValuesForNewChildRecordsFromParentFields;
 
 
 
@@ -520,6 +521,37 @@ public class ChildRecordListData extends QWidgetData
    public ChildRecordListData withIsInProcess(Boolean isInProcess)
    {
       this.isInProcess = isInProcess;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for defaultValuesForNewChildRecordsFromParentFields
+    *******************************************************************************/
+   public Map<String, String> getDefaultValuesForNewChildRecordsFromParentFields()
+   {
+      return (this.defaultValuesForNewChildRecordsFromParentFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for defaultValuesForNewChildRecordsFromParentFields
+    *******************************************************************************/
+   public void setDefaultValuesForNewChildRecordsFromParentFields(Map<String, String> defaultValuesForNewChildRecordsFromParentFields)
+   {
+      this.defaultValuesForNewChildRecordsFromParentFields = defaultValuesForNewChildRecordsFromParentFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for defaultValuesForNewChildRecordsFromParentFields
+    *******************************************************************************/
+   public ChildRecordListData withDefaultValuesForNewChildRecordsFromParentFields(Map<String, String> defaultValuesForNewChildRecordsFromParentFields)
+   {
+      this.defaultValuesForNewChildRecordsFromParentFields = defaultValuesForNewChildRecordsFromParentFields;
       return (this);
    }
 

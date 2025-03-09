@@ -26,9 +26,6 @@ import java.util.List;
 import java.util.UUID;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -38,7 +35,6 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.actions.AbstractS3Action;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -77,53 +73,59 @@ public class S3BackendModuleTest extends BaseS3Test
       /////////////////////////////////////////
       // filter for a file name that's found //
       /////////////////////////////////////////
-      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      files = actionBase.listFiles(table, backend, "BLOB-2.txt");
       assertEquals(1, files.size());
       assertThat(files.get(0).getKey()).contains("BLOB-2.txt");
 
-      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+      files = actionBase.listFiles(table, backend, "BLOB-1.txt");
       assertEquals(1, files.size());
       assertThat(files.get(0).getKey()).contains("BLOB-1.txt");
 
-      ///////////////////////////////////
-      // filter for 2 names that exist //
-      ///////////////////////////////////
-      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
-      assertEquals(2, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // ///////////////////////////////////
+      // // filter for 2 names that exist //
+      // ///////////////////////////////////
+      // files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-1.txt", "BLOB-2.txt")));
+      // assertEquals(2, files.size());
 
       /////////////////////////////////////////////
       // filter for a file name that isn't found //
       /////////////////////////////////////////////
-      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "NOT-FOUND.txt")));
+      files = actionBase.listFiles(table, backend, "NOT-FOUND.txt");
       assertEquals(0, files.size());
 
-      files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
-      assertEquals(1, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // files = actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IN, "BLOB-2.txt", "NOT-FOUND.txt")));
+      // assertEquals(1, files.size());
 
-      ////////////////////////////////////////////////////
-      // 2 criteria, and'ed, and can't match, so find 0 //
-      ////////////////////////////////////////////////////
-      files = actionBase.listFiles(table, backend, new QQueryFilter(
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
-      assertEquals(0, files.size());
+      ///////////////////////////
+      // not supported anymore //
+      ///////////////////////////
+      // ////////////////////////////////////////////////////
+      // // 2 criteria, and'ed, and can't match, so find 0 //
+      // ////////////////////////////////////////////////////
+      // files = actionBase.listFiles(table, backend, new QQueryFilter(
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt")));
+      // assertEquals(0, files.size());
 
-      //////////////////////////////////////////////////
-      // 2 criteria, or'ed, and both match, so find 2 //
-      //////////////////////////////////////////////////
-      files = actionBase.listFiles(table, backend, new QQueryFilter(
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
-         new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
-         .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
-      assertEquals(2, files.size());
+      // //////////////////////////////////////////////////
+      // // 2 criteria, or'ed, and both match, so find 2 //
+      // //////////////////////////////////////////////////
+      // files = actionBase.listFiles(table, backend, new QQueryFilter(
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt"),
+      //    new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-2.txt"))
+      //    .withBooleanOperator(QQueryFilter.BooleanOperator.OR));
+      // assertEquals(2, files.size());
 
-      //////////////////////////////////////
-      // ensure unsupported filters throw //
-      //////////////////////////////////////
-      assertThatThrownBy(() -> actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("foo", QCriteriaOperator.GREATER_THAN, 42))))
-         .hasMessageContaining("Unable to query filesystem table by field");
-      assertThatThrownBy(() -> actionBase.listFiles(table, backend, new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.IS_BLANK))))
-         .hasMessageContaining("Unable to query filename field using operator");
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // note that we used to try unsupported filters here, expecting them to throw - but those are           //
+      // more-or-less now implemented in the base class's query method, so, no longer expected to throw here. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
    }
 
 
@@ -145,7 +147,7 @@ public class S3BackendModuleTest extends BaseS3Test
       S3BackendModule  s3BackendModule = new S3BackendModule();
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
-      actionBase.deleteFile(qInstance, table, s3ObjectSummariesBeforeDelete.get(0).getKey());
+      actionBase.deleteFile(table, s3ObjectSummariesBeforeDelete.get(0).getKey());
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size() - 1, s3ObjectSummariesAfterDelete.size(),
@@ -174,7 +176,7 @@ public class S3BackendModuleTest extends BaseS3Test
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
       String path = "//" + s3ObjectSummariesBeforeDelete.get(0).getKey().replaceAll("/", "//");
-      actionBase.deleteFile(qInstance, table, "//" + path);
+      actionBase.deleteFile(table, "//" + path);
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size() - 1, s3ObjectSummariesAfterDelete.size(),
@@ -201,7 +203,7 @@ public class S3BackendModuleTest extends BaseS3Test
       S3BackendModule  s3BackendModule = new S3BackendModule();
       AbstractS3Action actionBase      = (AbstractS3Action) s3BackendModule.getActionBase();
       actionBase.setS3Utils(getS3Utils());
-      actionBase.deleteFile(qInstance, table, PATH_THAT_WONT_EXIST);
+      actionBase.deleteFile(table, PATH_THAT_WONT_EXIST);
 
       List<S3ObjectSummary> s3ObjectSummariesAfterDelete = getS3Utils().listObjectsInBucketMatchingGlob(BUCKET_NAME, TEST_FOLDER, "");
       Assertions.assertEquals(s3ObjectSummariesBeforeDelete.size(), s3ObjectSummariesAfterDelete.size(),

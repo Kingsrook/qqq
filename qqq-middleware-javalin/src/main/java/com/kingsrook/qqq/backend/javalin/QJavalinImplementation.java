@@ -95,8 +95,6 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
@@ -1200,15 +1198,18 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////////
          if(backend != null && backend.getUsesVariants())
          {
-            queryInput.setTableName(backend.getVariantOptionsTableName());
-            queryInput.setFilter(new QQueryFilter(new QFilterCriteria(backend.getVariantOptionsTableTypeField(), QCriteriaOperator.EQUALS, backend.getVariantOptionsTableTypeValue())));
+            QTableMetaData variantsTable = QContext.getQInstance().getTable(backend.getBackendVariantsConfig().getOptionsTableName());
+
+            queryInput.setTableName(variantsTable.getName());
+            queryInput.setFilter(backend.getBackendVariantsConfig().getOptionsFilter());
+            queryInput.setShouldGenerateDisplayValues(true);
             QueryOutput output = new QueryAction().execute(queryInput);
             for(QRecord qRecord : output.getRecords())
             {
                variants.add(new QFrontendVariant()
-                  .withId(qRecord.getValue(backend.getVariantOptionsTableIdField()))
-                  .withType(backend.getVariantOptionsTableTypeValue())
-                  .withName(qRecord.getValueString(backend.getVariantOptionsTableNameField())));
+                  .withId(qRecord.getValue(variantsTable.getPrimaryKeyField()))
+                  .withType(backend.getBackendVariantsConfig().getVariantTypeKey())
+                  .withName(qRecord.getRecordLabel()));
             }
 
             QJavalinAccessLogger.logStartSilent("variants");

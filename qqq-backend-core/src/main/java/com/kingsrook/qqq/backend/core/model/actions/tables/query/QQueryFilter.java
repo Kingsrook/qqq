@@ -854,4 +854,20 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
    }
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void applyCriteriaOptionToAllCriteria(CriteriaOptionInterface criteriaOption)
+   {
+      for(QFilterCriteria criteria : CollectionUtils.nonNullList(this.criteria))
+      {
+         criteria.withOption(criteriaOption);
+      }
+
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(subFilters))
+      {
+         subFilter.applyCriteriaOptionToAllCriteria(criteriaOption);
+      }
+   }
+
 }

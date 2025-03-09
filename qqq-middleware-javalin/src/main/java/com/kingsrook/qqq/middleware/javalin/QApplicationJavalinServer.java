@@ -77,7 +77,8 @@ public class QApplicationJavalinServer
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
    private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
    private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
-   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
+   private Consumer<Javalin> javalinConfigurationCustomizer = null;
+   private QJavalinMetaData  javalinMetaData                = null;
 
    private long                lastQInstanceHotSwapMillis;
    private long                millisBetweenHotSwaps = 2500;
@@ -115,6 +116,11 @@ public class QApplicationJavalinServer
       {
          if(serveFrontendMaterialDashboard)
          {
+            if(getClass().getResource("/material-dashboard/index.html") == null)
+            {
+               LOG.warn("/material-dashboard/index.html resource was not found.  This might happen if you're using a local (e.g., within-IDE) snapshot version... Try updating pom.xml to reference a released version of qfmd?");
+            }
+
             ////////////////////////////////////////////////////////////////////////////////////////
             // If you have any assets to add to the web server (e.g., logos, icons) place them at //
             // src/main/resources/material-dashboard-overlay                                      //
@@ -149,7 +155,7 @@ public class QApplicationJavalinServer
          {
             try
             {
-               QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance);
+               QJavalinImplementation qJavalinImplementation = new QJavalinImplementation(qInstance, javalinMetaData);
                config.router.apiBuilder(qJavalinImplementation.getRoutes());
             }
             catch(QInstanceValidationException e)
@@ -622,5 +628,36 @@ public class QApplicationJavalinServer
       this.javalinConfigurationCustomizer = javalinConfigurationCustomizer;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for javalinMetaData
+    *******************************************************************************/
+   public QJavalinMetaData getJavalinMetaData()
+   {
+      return (this.javalinMetaData);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for javalinMetaData
+    *******************************************************************************/
+   public void setJavalinMetaData(QJavalinMetaData javalinMetaData)
+   {
+      this.javalinMetaData = javalinMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for javalinMetaData
+    *******************************************************************************/
+   public QApplicationJavalinServer withJavalinMetaData(QJavalinMetaData javalinMetaData)
+   {
+      this.javalinMetaData = javalinMetaData;
+      return (this);
+   }
+
 
 }

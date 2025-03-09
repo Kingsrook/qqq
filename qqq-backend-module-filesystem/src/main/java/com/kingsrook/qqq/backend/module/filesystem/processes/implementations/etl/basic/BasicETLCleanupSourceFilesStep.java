@@ -94,7 +94,7 @@ public class BasicETLCleanupSourceFilesStep implements BackendStep
          if(VALUE_DELETE.equals(moveOrDelete))
          {
             LOG.info("Deleting ETL source file: " + sourceFile);
-            actionBase.deleteFile(QContext.getQInstance(), table, sourceFile);
+            actionBase.deleteFile(table, sourceFile);
          }
          else if(VALUE_MOVE.equals(moveOrDelete))
          {

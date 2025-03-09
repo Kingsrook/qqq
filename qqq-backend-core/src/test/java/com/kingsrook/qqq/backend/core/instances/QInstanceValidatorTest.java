@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -55,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
@@ -64,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DateTimeDisplayValue
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueRangeBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -92,12 +95,15 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAutomationAction;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSetting;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.AbstractTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaDeleteStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -177,6 +183,143 @@ public class QInstanceValidatorTest extends BaseTest
    {
       assertValidationFailureReasonsAllowingExtraReasons((qInstance) -> qInstance.setBackends(new HashMap<>()),
          "At least 1 backend must be defined");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testBackendVariants()
+   {
+      BackendVariantSetting setting = new BackendVariantSetting() {};
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)),
+         "Missing backendVariantsConfig in backend [variant] which is marked as usesVariants");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(false)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Should not have a backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(null)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Should not have a backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig())),
+         "Missing variantTypeKey in backendVariantsConfig",
+         "Missing optionsTableName in backendVariantsConfig",
+         "Missing or empty backendSettingSourceFieldNameMap");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName("notATable")
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "field")))),
+         "Unrecognized optionsTableName [notATable] in backendVariantsConfig");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withOptionsFilter(new QQueryFilter(new QFilterCriteria("notAField", QCriteriaOperator.EQUALS, 1)))
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "firstName")))),
+         "optionsFilter in backendVariantsConfig in backend [variant]: Criteria fieldName notAField is not a field");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "noSuchField")))),
+         "Unrecognized fieldName [noSuchField] in backendSettingSourceFieldNameMap");
+
+      assertValidationFailureReasons((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+            .withName("variant")
+            .withUsesVariants(true)
+            .withBackendVariantsConfig(new BackendVariantsConfig()
+               .withVariantTypeKey("myVariant")
+               .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+               .withVariantRecordLookupFunction(new QCodeReference(CustomizerThatIsNotOfTheRightBaseClass.class))
+               .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+            )),
+         "VariantRecordSupplier in backendVariantsConfig in backend [variant]: CodeReference is not any of the expected types: com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeFunction, java.util.function.Function");
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "firstName"))
+         )));
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withVariantRecordLookupFunction(new QCodeReference(VariantRecordFunction.class))
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+         )));
+
+      assertValidationSuccess((qInstance) -> qInstance.addBackend(new QBackendMetaData()
+         .withName("variant")
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey("myVariant")
+            .withOptionsTableName(TestUtils.TABLE_NAME_PERSON)
+            .withVariantRecordLookupFunction(new QCodeReference(VariantRecordUnsafeFunction.class))
+            .withBackendSettingSourceFieldNameMap(Map.of(setting, "no-field-but-okay-custom-supplier"))
+         )));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class VariantRecordFunction implements Function<Serializable, QRecord>
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public QRecord apply(Serializable serializable)
+      {
+         return null;
+      }
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class VariantRecordUnsafeFunction implements UnsafeFunction<Serializable, QRecord, QException>
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public QRecord apply(Serializable serializable) throws QException
+      {
+         return null;
+      }
    }
 
 
@@ -1185,10 +1328,12 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have searchFields",
          "should not have orderByFields",
          "should not have a customCodeReference",
-         "is missing enum values");
+         "is missing enum values",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_STATE).setEnumValues(new ArrayList<>()),
-         "is missing enum values");
+         "is missing enum values",
+         "is missing its idType.");
    }
 
 
@@ -1213,10 +1358,12 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have a customCodeReference",
          "is missing a tableName",
          "is missing searchFields",
-         "is missing orderByFields");
+         "is missing orderByFields",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setTableName("Not a table"),
-         "Unrecognized table");
+         "Unrecognized table",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_SHAPE).setSearchFields(List.of("id", "notAField", "name")),
          "unrecognized searchField: notAField");
@@ -1244,11 +1391,13 @@ public class QInstanceValidatorTest extends BaseTest
          "should not have a tableName",
          "should not have searchFields",
          "should not have orderByFields",
-         "is missing a customCodeReference");
+         "is missing a customCodeReference",
+         "is missing its idType.");
 
       assertValidationFailureReasons((qInstance) -> qInstance.getPossibleValueSource(TestUtils.POSSIBLE_VALUE_SOURCE_CUSTOM).setCustomCodeReference(new QCodeReference()),
          "missing a code reference name",
-         "missing a code type");
+         "missing a code type",
+         "is missing its idType.");
    }
 
 
@@ -1924,6 +2073,20 @@ public class QInstanceValidatorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testFieldBehaviorsWithTheirOwnValidateMethods()
+   {
+      Function<QInstance, QFieldMetaData> fieldExtractor = qInstance -> qInstance.getTable(TestUtils.TABLE_NAME_PERSON).getField("id");
+      assertValidationFailureReasons((qInstance -> fieldExtractor.apply(qInstance).withBehavior(new ValueRangeBehavior())),
+         "Field id in table person: ValueRangeBehavior: Either minValue or maxValue (or both) must be set.");
+
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testSecurityKeyTypes()
    {
       assertValidationFailureReasons((qInstance -> qInstance.addSecurityKeyType(new QSecurityKeyType())),
@@ -2348,7 +2511,7 @@ public class QInstanceValidatorTest extends BaseTest
       {
          int noOfReasons = actualReasons == null ? 0 : actualReasons.size();
          assertEquals(expectedReasons.length, noOfReasons, "Expected number of validation failure reasons.\nExpected reasons: " + String.join(",", expectedReasons)
-                                                           + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
+            + "\nActual reasons: " + (noOfReasons > 0 ? String.join("\n", actualReasons) : "--"));
       }
 
       for(String reason : expectedReasons)

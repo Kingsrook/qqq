@@ -38,6 +38,13 @@ See {link-permissionRules} for details.
 *** 1) by a single call to `.withStepList(List<QStepMetaData>)`, which internally adds each step into the `steps` map.
 *** 2) by multiple calls to `.addStep(QStepMetaData)`, which adds a step to both the `stepList` and `steps` map.
 ** If a process also needs optional steps (for a <<_custom_process_flow>>), they should be added by a call to `.addOptionalStep(QStepMetaData)`, which only places them in the `steps` map.
+* `stepFlow` - *enum, default LINEAR* - specifies the the flow-control logic between steps.  Possible values are:
+** `LINEAR` - steps are executed in-order, through the `stepList`.
+A backend step _can_ customize the `nextStepName` or re-order the `stepList`, if needed.
+In a frontend step, a user may be given the option to go _back_ to a previous step as well.
+** `STATE_MACHINE` - steps are executed as a Fine State Machine, starting with the first step in `stepList`,
+but then proceeding based on the `nextStepName` specified by the previous step.
+Thus allowing much more flexible flows.
 * `schedule` - *<<QScheduleMetaData>>* - set up the process to run automatically on the specified schedule.
 See below for details.
 * `minInputRecords` - *Integer* - #not used...#
@@ -67,6 +74,11 @@ For processes with a user-interface, they must define one or more "screens" in t
 * `formFields` - *List of String* - list of field names used by the screen as form-inputs.
 * `viewFields` - *List of String* - list of field names used by the screen as visible outputs.
 * `recordListFields` - *List of String* - list of field names used by the screen in a record listing.
+* `format` - *Optional String* - directive for a frontend to use specialized formatting for the display of the process.
+** Consult frontend documentation for supported values and their meanings.
+* `backStepName` - *Optional String* - For processes using `LINEAR` flow, if this value is given,
+then the frontend should offer a control that the user can take (e.g., a button) to move back to an
+earlier step in the process.
 
 ==== QFrontendComponentMetaData
 
@@ -90,10 +102,13 @@ Expects a process value named `html`.
 Expects process values named `downloadFileName` and `serverFilePath`.
 ** `GOOGLE_DRIVE_SELECT_FOLDER` - Special form that presents a UI from Google Drive, where the user can select a folder (e.g., as a target for uploading files in a subsequent backend step).
 ** `BULK_EDIT_FORM` - For use by the standard QQQ Bulk Edit process.
+** `BULK_LOAD_FILE_MAPPING_FORM`, `BULK_LOAD_VALUE_MAPPING_FORM`, or `BULK_LOAD_PROFILE_FORM` - For use by the standard QQQ Bulk Load process.
 ** `VALIDATION_REVIEW_SCREEN` - For use by the QQQ Streamed ETL With Frontend process family of processes.
 Displays a component prompting the user to run full validation or to skip it, or, if full validation has been ran, then showing the results of that validation.
 ** `PROCESS_SUMMARY_RESULTS` - For use by the QQQ Streamed ETL With Frontend process family of processes.
 Displays the summary results of running the process.
+** `WIDGET` - Render a QQQ Widget.
+Requires that `widgetName` be given as a value for the component.
 ** `RECORD_LIST` - _Deprecated.
 Showed a grid with a list of records as populated by the process._
 * `values` - *Map of String → Serializable* - Key=value pairs, with different expectations based on the component's `type`.
@@ -115,6 +130,27 @@ In general, a process does not _have to_ specify the fields that its steps use.
 It can be used, however, for example, to cause a `defaultValue` to be applied to a field if it isn't specified in the process's input.
 It can also be used to cause the process to throw an error, if a field is marked as `isRequired`, but a value is not present.
 ** `recordListMetaData` - *RecordListMetaData object* - _Not used at this time._
+
+==== QStateMachineStep
+
+Processes that use `flow = STATE_MACHINE` should use process steps of type `QStateMachineStep`.
+
+A common pattern seen in state-machine processes, is that they will present a frontend-step to a user,
+then always run a given backend-step in response to that screen which the user submitted.
+Inside that backend-step, custom application logic will determine the next state to go to,
+which is typically another frontend-step (which would then submit data to its corresponding backend-step,
+and continue the FSM).
+
+To help facilitate this pattern, factory methods exist on `QStateMachineStep`,
+for constructing the commonly-expected types of state-machine steps:
+
+* `frontendThenBackend(name, frontendStep, backendStep)` - for the frontend-then-backend pattern described above.
+* `backendOnly(name, backendStep)` - for a state that only has a backend step.
+This might be useful as a “reset” step, to run before restarting a state-loop.
+* `frontendOnly(name, frontendStep)` - for a state that only has a frontend step,
+which would always be followed by another state, which must be specified as the `defaultNextStepName`
+on the `QStateMachineStep`.
+
 
 ==== BasepullConfiguration
 
@@ -218,12 +254,10 @@ But for some cases, doing page-level transactions can reduce long-transactions a
 * `withSchedule(QScheduleMetaData schedule)` - Add a <<QScheduleMetaData>> to the process.
 
 [#_custom_process_flow]
-==== Custom Process Flow
-As referenced in the definition of the <<_QProcessMetaData_Properties,QProcessMetaData Properties>>, by default, a process
-will execute each of its steps in-order, as defined in the `stepList` property.
-However, a Backend Step can customize this flow #todo - write more clearly here...
-
-There are generally 2 method to call (in a `BackendStep`) to do a dynamic flow:
+==== How to customize a Linear process flow
+As referenced in the definition of the <<_QProcessMetaData_Properties,QProcessMetaData Properties>>, by default,
+(with `flow = LINEAR`) a process will execute each of its steps in-order, as defined in the `stepList` property.
+However, a Backend Step can customize this flow as follows:
 
 * `RunBackendStepOutput.setOverrideLastStepName(String stepName)`
 ** QQQ's `RunProcessAction` keeps track of which step it "last" ran, e.g., to tell it which one to run next.
@@ -239,7 +273,7 @@ does need to be found in the new `stepNameList` - otherwise, the framework will 
 for figuring out where to go next.
 
 [source,java]
-.Example of a defining process that can use a flexible flow:
+.Example of a defining process that can use a customized linear flow:
 ----
 // for a case like this, it would be recommended to define all step names in constants:
 public final static String STEP_START = "start";
@@ -324,4 +358,21 @@ public static class StartStep implements BackendStep
 }
 ----
 
+[#_process_back]
+==== How to allow a process to go back
+
+The simplest option to allow a process to present a "Back" button to users,
+thus allowing them to move backward through a process
+(e.g., from a review screen back to an earlier input screen), is to set the property `backStepName`
+on a `QFrontendStepMetaData`.
+
+If the step that is executed after the user hits "Back" is a backend step, then within that
+step, `runBackendStepInput.getIsStepBack()` will return `true` (but ONLY within that first step after
+the user hits "Back").  It may be necessary within individual processes to be aware that the user
+has chosen to go back, to reset certain values in the process's state.
+
+Alternatively, if a frontend step's "Back" behavior needs to be dynamic (e.g., sometimes not available,
+or sometimes targeting different steps in the process), then in a backend step that runs before the
+frontend step, a call to `runBackendStepOutput.getProcessState().setBackStepName()` can be made,
+to customize the value which would otherwise come from the `QFrontendStepMetaData`.
 

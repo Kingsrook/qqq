@@ -58,6 +58,8 @@ public interface ProcessInitOrStepOrStatusOutputInterface extends AbstractMiddle
     *******************************************************************************/
    void setNextStep(String nextStep);
 
+   // todo - add (in next version?) backStep
+
    /*******************************************************************************
     ** Setter for values
     *******************************************************************************/

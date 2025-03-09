@@ -105,9 +105,20 @@ public class RenderTemplateAction extends AbstractQActionFunction<RenderTemplate
 
 
    /*******************************************************************************
+    ** Static wrapper to render a Velocity template.
+    *******************************************************************************/
+   @Deprecated(since = "Call the version that doesn't take an ActionInput")
+   public static String renderVelocity(AbstractActionInput parentActionInput, Map<String, Object> context, String code) throws QException
+   {
+      return (renderVelocity(context, code));
+   }
+
+
+
+   /*******************************************************************************
     ** Most convenient static wrapper to render a Velocity template.
     *******************************************************************************/
-   public static String renderVelocity(AbstractActionInput parentActionInput, Map<String, Object> context, String code) throws QException
+   public static String renderVelocity(Map<String, Object> context, String code) throws QException
    {
       return (render(TemplateType.VELOCITY, context, code));
    }

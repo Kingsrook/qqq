@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.producers;
 
 
+import java.io.Serializable;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PossibleValueEnum;
@@ -34,10 +35,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleVal
  ** based on a PossibleValueEnum
  **
  ***************************************************************************/
-public class PossibleValueSourceOfEnumGenericMetaDataProducer<T extends PossibleValueEnum<T>> implements MetaDataProducerInterface<QPossibleValueSource>
+public class PossibleValueSourceOfEnumGenericMetaDataProducer<T extends Serializable & PossibleValueEnum<T>> implements MetaDataProducerInterface<QPossibleValueSource>
 {
    private final String                 name;
    private final PossibleValueEnum<T>[] values;
+
+   private Class<?> sourceClass;
+
+
 
 
 
@@ -61,4 +66,37 @@ public class PossibleValueSourceOfEnumGenericMetaDataProducer<T extends Possible
    {
       return (QPossibleValueSource.newForEnum(name, values));
    }
+
+
+   /*******************************************************************************
+    ** Getter for sourceClass
+    **
+    *******************************************************************************/
+   public Class<?> getSourceClass()
+   {
+      return sourceClass;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for sourceClass
+    **
+    *******************************************************************************/
+   public void setSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+   }
+
+
+   /*******************************************************************************
+    ** Fluent setter for sourceClass
+    **
+    *******************************************************************************/
+   public PossibleValueSourceOfEnumGenericMetaDataProducer<T> withSourceClass(Class<?> sourceClass)
+   {
+      this.sourceClass = sourceClass;
+      return (this);
+   }
+
 }

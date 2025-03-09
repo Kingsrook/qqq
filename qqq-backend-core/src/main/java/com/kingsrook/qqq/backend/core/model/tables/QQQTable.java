@@ -30,7 +30,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior
 
 
 /*******************************************************************************
- ** QRecord Entity for QQQTable table
+ ** QRecord Entity for QQQTable table - e.g., table that stores an id, name
+ ** and the label for all tables in the QQQ application.  Useful as a foreign
+ ** key from other logging type tables.
  *******************************************************************************/
 public class QQQTable extends QRecordEntity
 {

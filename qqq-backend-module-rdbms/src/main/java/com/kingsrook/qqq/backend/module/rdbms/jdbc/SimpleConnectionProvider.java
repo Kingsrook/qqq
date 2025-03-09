@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.module.rdbms.jdbc;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import static com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager.getJdbcUrl;
 
@@ -57,7 +59,28 @@ public class SimpleConnectionProvider implements ConnectionProviderInterface
    public Connection getConnection() throws SQLException
    {
       String jdbcURL = getJdbcUrl(backend);
-      return DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
+      Connection connection = DriverManager.getConnection(jdbcURL, backend.getUsername(), backend.getPassword());
+
+      if(CollectionUtils.nullSafeHasContents(backend.getQueriesForNewConnections()))
+      {
+         runQueriesForNewConnections(connection);
+      }
+
+      return (connection);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private void runQueriesForNewConnections(Connection connection) throws SQLException
+   {
+      for(String sql : backend.getQueriesForNewConnections())
+      {
+         Statement statement = connection.createStatement();
+         statement.execute(sql);
+      }
    }
 
 }

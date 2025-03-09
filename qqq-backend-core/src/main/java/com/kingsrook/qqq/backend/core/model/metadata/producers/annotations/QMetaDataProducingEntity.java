@@ -26,6 +26,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.MetaDataCustomizerInterface;
 
 
 /*******************************************************************************
@@ -41,8 +42,10 @@ import java.lang.annotation.Target;
 @SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface QMetaDataProducingEntity
 {
-   boolean producePossibleValueSource() default true;
+   boolean produceTableMetaData() default false;
+   Class<? extends MetaDataCustomizerInterface> tableMetaDataCustomizer() default MetaDataCustomizerInterface.NoopMetaDataCustomizer.class;
 
+   boolean producePossibleValueSource() default false;
    ChildTable[] childTables() default { };
 
 }

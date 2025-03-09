@@ -238,6 +238,11 @@ public class GetAction
     *******************************************************************************/
    public static QRecord execute(String tableName, Serializable primaryKey) throws QException
    {
+      if(primaryKey instanceof QQueryFilter)
+      {
+         LOG.warn("Unexpected use of QQueryFilter instead of primary key in GetAction call");
+      }
+
       GetAction getAction = new GetAction();
       GetInput  getInput  = new GetInput(tableName).withPrimaryKey(primaryKey);
       return getAction.executeForRecord(getInput);

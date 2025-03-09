@@ -26,8 +26,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.serialization.QFilterCriteriaDeserializer;
@@ -45,7 +47,7 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
 {
    private static final QLogger LOG = QLogger.getLogger(QFilterCriteria.class);
 
-   private String fieldName;
+   private String             fieldName;
    private QCriteriaOperator  operator;
    private List<Serializable> values;
 
@@ -53,6 +55,8 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
    // todo - probably implement this as a type of expression - though would require a little special handling i think when evaluating... //
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private String otherFieldName;
+
+   private Set<CriteriaOptionInterface> options = null;
 
 
 
@@ -70,6 +74,13 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
             clone.values = new ArrayList<>();
             clone.values.addAll(values);
          }
+
+         if(options != null)
+         {
+            clone.options = new HashSet<>();
+            clone.options.addAll(options);
+         }
+
          return clone;
       }
       catch(CloneNotSupportedException e)
@@ -384,6 +395,80 @@ public class QFilterCriteria implements Serializable, Cloneable, QMetaDataObject
    public int hashCode()
    {
       return Objects.hash(fieldName, operator, values, otherFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for options
+    *******************************************************************************/
+   public Set<CriteriaOptionInterface> getOptions()
+   {
+      return (this.options);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for options
+    *******************************************************************************/
+   public void setOptions(Set<CriteriaOptionInterface> options)
+   {
+      this.options = options;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for options
+    *******************************************************************************/
+   public QFilterCriteria withOptions(Set<CriteriaOptionInterface> options)
+   {
+      this.options = options;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QFilterCriteria withOption(CriteriaOptionInterface option)
+   {
+      if(options == null)
+      {
+         options = new HashSet<>();
+      }
+      options.add(option);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QFilterCriteria withoutOption(CriteriaOptionInterface option)
+   {
+      if(options != null)
+      {
+         options.remove(option);
+      }
+      return (this);
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public boolean hasOption(CriteriaOptionInterface option)
+   {
+      if(options == null)
+      {
+         return (false);
+      }
+
+      return (options.contains(option));
    }
 
 }

@@ -22,14 +22,23 @@
 package com.kingsrook.qqq.backend.module.filesystem.base.model.metadata;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.SectionFactory;
 import com.kingsrook.qqq.backend.module.filesystem.local.FilesystemBackendModule;
 import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.FilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.SFTPBackendModule;
+import com.kingsrook.qqq.backend.module.filesystem.sftp.model.metadata.SFTPTableBackendDetails;
 
 
 /*******************************************************************************
@@ -53,6 +62,8 @@ public class FilesystemTableMetaDataBuilder
    private String           basePath;
    private String           glob;
 
+   private String contentsAdornmentFileNameField = "baseName";
+
 
 
    /*******************************************************************************
@@ -60,26 +71,64 @@ public class FilesystemTableMetaDataBuilder
     *******************************************************************************/
    public QTableMetaData buildStandardCardinalityOneTable()
    {
+      boolean includeCreateDate = true;
       AbstractFilesystemTableBackendDetails tableBackendDetails = switch(backend.getBackendType())
       {
-         case S3BackendModule.BACKEND_TYPE -> new S3TableBackendDetails();
+         case S3BackendModule.BACKEND_TYPE ->
+         {
+            includeCreateDate = false;
+            yield new S3TableBackendDetails();
+         }
          case FilesystemBackendModule.BACKEND_TYPE -> new FilesystemTableBackendDetails();
+         case SFTPBackendModule.BACKEND_TYPE -> new SFTPTableBackendDetails();
          default -> throw new IllegalStateException("Unexpected value: " + backend.getBackendType());
       };
+
+      List<QFieldMetaData> fields = new ArrayList<>();
+
+      fields.add((new QFieldMetaData("fileName", QFieldType.STRING)));
+      fields.add((new QFieldMetaData("baseName", QFieldType.STRING)));
+      fields.add((new QFieldMetaData("size", QFieldType.LONG).withDisplayFormat(DisplayFormat.COMMAS)));
+      fields.add((new QFieldMetaData("modifyDate", QFieldType.DATE_TIME)));
+      fields.add((new QFieldMetaData("contents", QFieldType.BLOB)
+         .withIsHeavy(true)
+         .withFieldAdornment(new FieldAdornment(AdornmentType.FILE_DOWNLOAD)
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FORMAT, "%s")
+            .withValue(AdornmentType.FileDownloadValues.FILE_NAME_FIELD, contentsAdornmentFileNameField
+         ))));
+
+      QFieldSection t3Section = SectionFactory.defaultT3("modifyDate");
+
+      AbstractFilesystemTableBackendDetails backendDetails = tableBackendDetails
+         .withCardinality(Cardinality.ONE)
+         .withFileNameFieldName("fileName")
+         .withBaseNameFieldName("baseName")
+         .withContentsFieldName("contents")
+         .withSizeFieldName("size")
+         .withModifyDateFieldName("modifyDate")
+         .withBasePath(basePath)
+         .withGlob(glob);
+
+      if(includeCreateDate)
+      {
+         fields.add((new QFieldMetaData("createDate", QFieldType.DATE_TIME)));
+         backendDetails.setCreateDateFieldName("createDate");
+
+         ArrayList<String> t3FieldNames = new ArrayList<>(t3Section.getFieldNames());
+         t3FieldNames.add(0, "createDate");
+         t3Section.setFieldNames(t3FieldNames);
+      }
 
       return new QTableMetaData()
          .withName(name)
          .withIsHidden(true)
          .withBackendName(backend.getName())
          .withPrimaryKeyField("fileName")
-         .withField(new QFieldMetaData("fileName", QFieldType.INTEGER))
-         .withField(new QFieldMetaData("contents", QFieldType.STRING))
-         .withBackendDetails(tableBackendDetails
-            .withCardinality(Cardinality.ONE)
-            .withFileNameFieldName("fileName")
-            .withContentsFieldName("contents")
-            .withBasePath(basePath)
-            .withGlob(glob));
+         .withFields(fields)
+         .withSection(SectionFactory.defaultT1("fileName"))
+         .withSection(SectionFactory.defaultT2("baseName", "contents", "size"))
+         .withSection(t3Section)
+         .withBackendDetails(backendDetails);
    }
 
 
@@ -205,5 +254,36 @@ public class FilesystemTableMetaDataBuilder
       this.glob = glob;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for contentsAdornmentFileNameField
+    *******************************************************************************/
+   public String getContentsAdornmentFileNameField()
+   {
+      return (this.contentsAdornmentFileNameField);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentsAdornmentFileNameField
+    *******************************************************************************/
+   public void setContentsAdornmentFileNameField(String contentsAdornmentFileNameField)
+   {
+      this.contentsAdornmentFileNameField = contentsAdornmentFileNameField;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentsAdornmentFileNameField
+    *******************************************************************************/
+   public FilesystemTableMetaDataBuilder withContentsAdornmentFileNameField(String contentsAdornmentFileNameField)
+   {
+      this.contentsAdornmentFileNameField = contentsAdornmentFileNameField;
+      return (this);
+   }
+
 
 }

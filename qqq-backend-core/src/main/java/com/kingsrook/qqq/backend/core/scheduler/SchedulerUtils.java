@@ -34,9 +34,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -102,7 +99,8 @@ public class SchedulerUtils
                try
                {
                   QBackendMetaData  backendMetaData  = qInstance.getBackend(process.getVariantBackend());
-                  Map<String, Serializable> thisVariantData = MapBuilder.of(backendMetaData.getVariantOptionsTableTypeValue(), qRecord.getValue(backendMetaData.getVariantOptionsTableIdField()));
+                  QTableMetaData variantTable = QContext.getQInstance().getTable(backendMetaData.getBackendVariantsConfig().getOptionsTableName());
+                  Map<String, Serializable> thisVariantData = MapBuilder.of(backendMetaData.getBackendVariantsConfig().getVariantTypeKey(), qRecord.getValue(variantTable.getPrimaryKeyField()));
                   executeSingleProcess(process, thisVariantData, processInputValues);
                }
                catch(Exception e)
@@ -181,8 +179,8 @@ public class SchedulerUtils
          QBackendMetaData  backendMetaData  = QContext.getQInstance().getBackend(processMetaData.getVariantBackend());
 
          QueryInput queryInput = new QueryInput();
-         queryInput.setTableName(backendMetaData.getVariantOptionsTableName());
-         queryInput.setFilter(new QQueryFilter(new QFilterCriteria(backendMetaData.getVariantOptionsTableTypeField(), QCriteriaOperator.EQUALS, backendMetaData.getVariantOptionsTableTypeValue())));
+         queryInput.setTableName(backendMetaData.getBackendVariantsConfig().getOptionsTableName());
+         queryInput.setFilter(backendMetaData.getBackendVariantsConfig().getOptionsFilter());
 
          QueryOutput queryOutput = new QueryAction().execute(queryInput);
          records = queryOutput.getRecords();

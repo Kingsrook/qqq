@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
@@ -158,6 +159,20 @@ public interface RecordCustomizerUtilityInterface
       }
 
       return (oldRecordMap);
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   static <T extends Serializable> T getValueFromRecordOrOldRecord(String fieldName, QRecord record, Serializable primaryKey, Optional<Map<Serializable, QRecord>> oldRecordMap)
+   {
+      T value = (T) record.getValue(fieldName);
+      if(value == null && primaryKey != null && oldRecordMap.isPresent() && oldRecordMap.get().containsKey(primaryKey))
+      {
+         value = (T) oldRecordMap.get().get(primaryKey).getValue(fieldName);
+      }
+      return value;
    }
 
 }

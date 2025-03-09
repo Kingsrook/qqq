@@ -35,10 +35,14 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -61,11 +65,55 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 
 
 
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public Long getFileSize(File file)
+   {
+      return (file.length());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileCreateDate(File file)
+   {
+      try
+      {
+         Path                path         = file.toPath();
+         BasicFileAttributes attrs        = Files.readAttributes(path, BasicFileAttributes.class);
+         FileTime            creationTime = attrs.creationTime();
+         return creationTime.toInstant();
+      }
+      catch(IOException e)
+      {
+         LOG.warn("Error getting file createDate", e, logPair("file", file));
+         return (null);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Instant getFileModifyDate(File file)
+   {
+      return Instant.ofEpochMilli(file.lastModified());
+   }
+
+
+
    /*******************************************************************************
     ** List the files for this table.
     *******************************************************************************/
    @Override
-   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, QQueryFilter filter) throws QException
+   public List<File> listFiles(QTableMetaData table, QBackendMetaData backendBase, String requestedPath) throws QException
    {
       try
       {
@@ -84,7 +132,14 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
 
          for(String matchedFile : matchedFiles)
          {
-            if(SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails))
+            boolean isMatch = true;
+            if(StringUtils.hasContent(requestedPath))
+            {
+               QQueryFilter filter = new QQueryFilter(new QFilterCriteria(tableBackendDetails.getFileNameFieldName(), QCriteriaOperator.EQUALS, requestedPath));
+               isMatch = SharedFilesystemBackendModuleUtils.doesFilePathMatchFilter(matchedFile, filter, tableBackendDetails);
+            }
+
+            if(isMatch)
             {
                rs.add(new File(fullPath + File.separatorChar + matchedFile));
             }
@@ -175,7 +230,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** @throws FilesystemException if the delete is known to have failed, and the file is thought to still exit
     *******************************************************************************/
    @Override
-   public void deleteFile(QInstance instance, QTableMetaData table, String fileReference) throws FilesystemException
+   public void deleteFile(QTableMetaData table, String fileReference) throws FilesystemException
    {
       File file = new File(fileReference);
       if(!file.exists())

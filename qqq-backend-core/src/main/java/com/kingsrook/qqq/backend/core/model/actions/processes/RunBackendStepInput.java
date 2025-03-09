@@ -25,19 +25,28 @@ package com.kingsrook.qqq.backend.core.model.actions.processes;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobStatus;
 import com.kingsrook.qqq.backend.core.actions.async.NonPersistedAsyncJobCallback;
 import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallback;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
+import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerInterface;
+import com.kingsrook.qqq.backend.core.processes.tracing.ProcessTracerMessage;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -46,6 +55,8 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RunBackendStepInput extends AbstractActionInput
 {
+   private static final QLogger LOG = QLogger.getLogger(RunBackendStepInput.class);
+
    private ProcessState                         processState;
    private String                               processName;
    private String                               tableName;
@@ -55,10 +66,11 @@ public class RunBackendStepInput extends AbstractActionInput
    private RunProcessInput.FrontendStepBehavior frontendStepBehavior;
    private Instant                              basepullLastRunTime;
 
+   private ProcessTracerInterface processTracer;
+
    ////////////////////////////////////////////////////////////////////////////
    // note - new fields should generally be added in method: cloneFieldsInto //
    ////////////////////////////////////////////////////////////////////////////
-
 
 
    /*******************************************************************************
@@ -96,6 +108,7 @@ public class RunBackendStepInput extends AbstractActionInput
       target.setAsyncJobCallback(getAsyncJobCallback());
       target.setFrontendStepBehavior(getFrontendStepBehavior());
       target.setValues(getValues());
+      target.setProcessTracer(getProcessTracer().orElse(null));
    }
 
 
@@ -234,6 +247,26 @@ public class RunBackendStepInput extends AbstractActionInput
    public List<QRecord> getRecords()
    {
       return processState.getRecords();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for records converted to entities of a given type.
+    **
+    *******************************************************************************/
+   public <E extends QRecordEntity> List<E> getRecordsAsEntities(Class<E> entityClass) throws QException
+   {
+      List<E> rs = new ArrayList<>();
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // note - important to call getRecords here, which is overwritten in subclasses! //
+      ///////////////////////////////////////////////////////////////////////////////////
+      for(QRecord record : getRecords())
+      {
+         rs.add(QRecordEntity.fromQRecord(entityClass, record));
+      }
+      return (rs);
    }
 
 
@@ -420,6 +453,17 @@ public class RunBackendStepInput extends AbstractActionInput
 
 
    /*******************************************************************************
+    ** Accessor for processState's isStepBack attribute
+    **
+    *******************************************************************************/
+   public boolean getIsStepBack()
+   {
+      return processState.getIsStepBack();
+   }
+
+
+
+   /*******************************************************************************
     ** Accessor for processState - protected, because we generally want to access
     ** its members through wrapper methods, we think
     **
@@ -524,4 +568,64 @@ public class RunBackendStepInput extends AbstractActionInput
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Setter for processTracer
+    *******************************************************************************/
+   public void setProcessTracer(ProcessTracerInterface processTracer)
+   {
+      this.processTracer = processTracer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for processTracer
+    *******************************************************************************/
+   public RunBackendStepInput withProcessTracer(ProcessTracerInterface processTracer)
+   {
+      this.processTracer = processTracer;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public Optional<ProcessTracerInterface> getProcessTracer()
+   {
+      return Optional.ofNullable(processTracer);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void traceMessage(ProcessTracerMessage message)
+   {
+      if(processTracer != null && message != null)
+      {
+         try
+         {
+            processTracer.handleMessage(this, message);
+         }
+         catch(Exception e)
+         {
+            LOG.warn("Error tracing message", e, logPair("message", message));
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QProcessMetaData getProcess()
+   {
+      return (QContext.getQInstance().getProcess(getProcessName()));
+   }
 }

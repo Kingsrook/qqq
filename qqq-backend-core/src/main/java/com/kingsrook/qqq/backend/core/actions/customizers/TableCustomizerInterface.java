@@ -22,15 +22,19 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -46,7 +50,6 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public interface TableCustomizerInterface
 {
    QLogger LOG = QLogger.getLogger(TableCustomizerInterface.class);
-
 
    /*******************************************************************************
     ** custom actions to run after a query (or get!) takes place.
@@ -77,8 +80,15 @@ public interface TableCustomizerInterface
     *******************************************************************************/
    default List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
    {
-      LOG.info("A default implementation of preInsert is running...  Probably not expected!", logPair("tableName", insertInput.getTableName()));
-      return (records);
+      try
+      {
+         return (preInsertOrUpdate(insertInput, records, isPreview, Optional.empty()));
+      }
+      catch(NotImplementedHereException e)
+      {
+         LOG.info("A default implementation of preInsert is running...  Probably not expected!", logPair("tableName", insertInput.getTableName()));
+         return (records);
+      }
    }
 
 
@@ -104,8 +114,15 @@ public interface TableCustomizerInterface
     *******************************************************************************/
    default List<QRecord> postInsert(InsertInput insertInput, List<QRecord> records) throws QException
    {
-      LOG.info("A default implementation of postInsert is running...  Probably not expected!", logPair("tableName", insertInput.getTableName()));
-      return (records);
+      try
+      {
+         return (postInsertOrUpdate(insertInput, records, Optional.empty()));
+      }
+      catch(NotImplementedHereException e)
+      {
+         LOG.info("A default implementation of postInsert is running...  Probably not expected!", logPair("tableName", insertInput.getTableName()));
+         return (records);
+      }
    }
 
 
@@ -130,8 +147,15 @@ public interface TableCustomizerInterface
     *******************************************************************************/
    default List<QRecord> preUpdate(UpdateInput updateInput, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      LOG.info("A default implementation of preUpdate is running...  Probably not expected!", logPair("tableName", updateInput.getTableName()));
-      return (records);
+      try
+      {
+         return (preInsertOrUpdate(updateInput, records, isPreview, oldRecordList));
+      }
+      catch(NotImplementedHereException e)
+      {
+         LOG.info("A default implementation of preUpdate is running...  Probably not expected!", logPair("tableName", updateInput.getTableName()));
+         return (records);
+      }
    }
 
 
@@ -151,8 +175,15 @@ public interface TableCustomizerInterface
     *******************************************************************************/
    default List<QRecord> postUpdate(UpdateInput updateInput, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      LOG.info("A default implementation of postUpdate is running...  Probably not expected!", logPair("tableName", updateInput.getTableName()));
-      return (records);
+      try
+      {
+         return (postInsertOrUpdate(updateInput, records, oldRecordList));
+      }
+      catch(NotImplementedHereException e)
+      {
+         LOG.info("A default implementation of postUpdate is running...  Probably not expected!", logPair("tableName", updateInput.getTableName()));
+         return (records);
+      }
    }
 
 
@@ -199,4 +230,59 @@ public interface TableCustomizerInterface
       return (records);
    }
 
+
+   /***************************************************************************
+    ** Optional method to override in a customizer that does the same thing for
+    ** both preInsert & preUpdate.
+    ***************************************************************************/
+   default List<QRecord> preInsertOrUpdate(AbstractActionInput input, List<QRecord> records, boolean isPreview, Optional<List<QRecord>> oldRecordList) throws QException
+   {
+      throw NotImplementedHereException.instance;
+   }
+
+
+   /***************************************************************************
+    ** Optional method to override in a customizer that does the same thing for
+    ** both postInsert & postUpdate.
+    ***************************************************************************/
+   default List<QRecord> postInsertOrUpdate(AbstractActionInput input, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
+   {
+      throw NotImplementedHereException.instance;
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default Optional<Map<Serializable, QRecord>> oldRecordListToMap(String primaryKeyField, Optional<List<QRecord>> oldRecordList)
+   {
+      if(oldRecordList.isPresent())
+      {
+         return (Optional.of(CollectionUtils.listToMap(oldRecordList.get(), r -> r.getValue(primaryKeyField))));
+      }
+      else
+      {
+         return (Optional.empty());
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   class NotImplementedHereException extends QException
+   {
+      private static NotImplementedHereException instance = new NotImplementedHereException();
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      private NotImplementedHereException()
+      {
+         super("Not implemented here");
+      }
+   }
 }
