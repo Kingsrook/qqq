@@ -27,22 +27,31 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
+import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -55,7 +64,10 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
    private final String       hostedPath;
    private final String       processName;
    private final List<String> methods;
-   private       QInstance    qInstance;
+
+   private QCodeReference routeAuthenticator;
+
+   private QInstance qInstance;
 
 
 
@@ -76,6 +88,7 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
    public ProcessBasedRouter(JavalinRouteProviderMetaData routeProvider)
    {
       this(routeProvider.getHostedPath(), routeProvider.getProcessName(), routeProvider.getMethods());
+      setRouteAuthenticator(routeProvider.getRouteAuthenticator());
    }
 
 
@@ -145,41 +158,36 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
       RunProcessInput input = new RunProcessInput();
       input.setProcessName(processName);
 
-      try
+      QContext.init(qInstance, new QSystemUserSession());
+
+      boolean isAuthenticated = false;
+      if(routeAuthenticator == null)
       {
-         QJavalinImplementation.setupSession(context, input);
+         isAuthenticated = true;
       }
-      catch(Exception e)
+      else
       {
-         context.header("WWW-Authenticate", "Basic realm=\"Access to this QQQ site\"");
-         context.status(HttpStatus.UNAUTHORIZED);
+         try
+         {
+            RouteAuthenticatorInterface routeAuthenticator = QCodeLoader.getAdHoc(RouteAuthenticatorInterface.class, this.routeAuthenticator);
+            isAuthenticated = routeAuthenticator.authenticateRequest(context);
+         }
+         catch(Exception e)
+         {
+            context.skipRemainingHandlers();
+            QJavalinImplementation.handleException(context, e);
+         }
+      }
+
+      if(!isAuthenticated)
+      {
+         LOG.info("Request is not authenticated, so returning before running process", logPair("processName", processName), logPair("path", context.path()));
          return;
       }
 
-      /*
-      boolean authorized = false;
-      String authorization = context.header("Authorization");
-      if(authorization != null && authorization.matches("^Basic .+"))
-      {
-         String base64Authorization = authorization.substring("Basic ".length());
-         String decoded = new String(Base64.getDecoder().decode(base64Authorization), StandardCharsets.UTF_8);
-         String[] parts = decoded.split(":", 2);
-
-         QAuthenticationModuleDispatcher qAuthenticationModuleDispatcher = new QAuthenticationModuleDispatcher();
-         QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
-      }
-
-      if(!authorized)
-      {
-      }
-
-      // todo - not always system-user session!!
-      QContext.init(this.qInstance, new QSystemUserSession());
-      */
-
       try
       {
-         LOG.info("Running [" + processName + "] to serve [" + context.path() + "]...");
+         LOG.info("Running process to serve route", logPair("processName", processName), logPair("path", context.path()));
 
          /////////////////////
          // run the process //
@@ -190,16 +198,10 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
          input.addValue("pathParams", new HashMap<>(context.pathParamMap()));
          input.addValue("queryParams", new HashMap<>(context.queryParamMap()));
          input.addValue("formParams", new HashMap<>(context.formParamMap()));
-         RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
+         input.addValue("cookies", new HashMap<>(context.cookieMap()));
+         input.addValue("requestHeaders", new HashMap<>(context.headerMap()));
 
-         /////////////////
-         // status code //
-         /////////////////
-         Integer statusCode = runProcessOutput.getValueInteger("statusCode");
-         if(statusCode != null)
-         {
-            context.status(statusCode);
-         }
+         RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
 
          /////////////////
          // headers map //
@@ -217,26 +219,46 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
          //  maybe via the callback object??? input.setCallback(new QProcessCallback() {});
          //  context.resultInputStream();
 
-         ///////////////////
-         // response body //
-         ///////////////////
-         Serializable response = runProcessOutput.getValue("response");
-         if(response instanceof String s)
+         //////////////
+         // response //
+         //////////////
+         Integer      statusCode           = runProcessOutput.getValueInteger("statusCode");
+         String       redirectURL          = runProcessOutput.getValueString("redirectURL");
+         String       responseString       = runProcessOutput.getValueString("responseString");
+         byte[]       responseBytes        = runProcessOutput.getValueByteArray("responseBytes");
+         StorageInput responseStorageInput = (StorageInput) runProcessOutput.getValue("responseStorageInput");
+
+         if(StringUtils.hasContent(redirectURL))
          {
-            context.result(s);
+            context.redirect(redirectURL, statusCode == null ? HttpStatus.FOUND : HttpStatus.forStatus(statusCode));
+            return;
          }
-         else if(response instanceof byte[] ba)
+
+         if(statusCode != null)
          {
-            context.result(ba);
+            context.status(statusCode);
          }
-         else if(response instanceof InputStream is)
+
+         if(StringUtils.hasContent(responseString))
          {
-            context.result(is);
+            context.result(responseString);
+            return;
          }
-         else
+
+         if(responseBytes != null && responseBytes.length > 0)
          {
-            context.result(ValueUtils.getValueAsString(response));
+            context.result(responseBytes);
+            return;
          }
+
+         if(responseStorageInput != null)
+         {
+            InputStream inputStream = new StorageAction().getInputStream(responseStorageInput);
+            context.result(inputStream);
+            return;
+         }
+
+         throw (new QException("No response value was set in the process output state."));
       }
       catch(Exception e)
       {
@@ -246,6 +268,37 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
       {
          QContext.clear();
       }
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for routeAuthenticator
+    *******************************************************************************/
+   public QCodeReference getRouteAuthenticator()
+   {
+      return (this.routeAuthenticator);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for routeAuthenticator
+    *******************************************************************************/
+   public void setRouteAuthenticator(QCodeReference routeAuthenticator)
+   {
+      this.routeAuthenticator = routeAuthenticator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for routeAuthenticator
+    *******************************************************************************/
+   public ProcessBasedRouter withRouteAuthenticator(QCodeReference routeAuthenticator)
+   {
+      this.routeAuthenticator = routeAuthenticator;
+      return (this);
    }
 
 }

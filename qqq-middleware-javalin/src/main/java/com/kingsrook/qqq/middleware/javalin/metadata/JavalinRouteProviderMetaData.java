@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin.metadata;
 
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
@@ -37,6 +38,8 @@ public class JavalinRouteProviderMetaData implements QMetaDataObject
    private String processName;
 
    private List<String> methods;
+
+   private QCodeReference routeAuthenticator;
 
 
 
@@ -169,6 +172,37 @@ public class JavalinRouteProviderMetaData implements QMetaDataObject
    public JavalinRouteProviderMetaData withMethods(List<String> methods)
    {
       this.methods = methods;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for routeAuthenticator
+    *******************************************************************************/
+   public QCodeReference getRouteAuthenticator()
+   {
+      return (this.routeAuthenticator);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for routeAuthenticator
+    *******************************************************************************/
+   public void setRouteAuthenticator(QCodeReference routeAuthenticator)
+   {
+      this.routeAuthenticator = routeAuthenticator;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for routeAuthenticator
+    *******************************************************************************/
+   public JavalinRouteProviderMetaData withRouteAuthenticator(QCodeReference routeAuthenticator)
+   {
+      this.routeAuthenticator = routeAuthenticator;
       return (this);
    }
 

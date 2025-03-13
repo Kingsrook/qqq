@@ -77,8 +77,8 @@ public class QApplicationJavalinServer
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
    private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
    private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
-   private Consumer<Javalin> javalinConfigurationCustomizer = null;
-   private QJavalinMetaData  javalinMetaData                = null;
+   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
+   private QJavalinMetaData                     javalinMetaData                     = null;
 
    private long                lastQInstanceHotSwapMillis;
    private long                millisBetweenHotSwaps = 2500;
@@ -197,6 +197,15 @@ public class QApplicationJavalinServer
          }
       });
 
+      //////////////////////////////////////////////////////////////////////
+      // also pass the javalin service into any additionalRouteProviders, //
+      // in case they need additional setup, e.g., before/after handlers. //
+      //////////////////////////////////////////////////////////////////////
+      for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
+      {
+         routeProvider.acceptJavalinService(service);
+      }
+
       //////////////////////////////////////////////////////////////////////////////////////
       // per system property, set the server to hot-swap the q instance before all routes //
       //////////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +237,7 @@ public class QApplicationJavalinServer
    /***************************************************************************
     ** initial tests with the SimpleFileSystemDirectoryRouter would sometimes
     ** have a Content-Type:text/html;charset=null !
-    ** which doesn't seem every valid (and at least it broke our unit test).
+    ** which doesn't seem ever valid (and at least it broke our unit test).
     ** so, if w see charset=null in contentType, replace it with the system
     ** default, which may not be 100% right, but has to be better than "null"...
     ***************************************************************************/
@@ -242,7 +251,6 @@ public class QApplicationJavalinServer
             contentType = contentType.replace("charset=null", "charset=" + Charset.defaultCharset().name());
             context.res().setContentType(contentType);
          }
-         System.out.println();
       });
    }
 
@@ -630,6 +638,7 @@ public class QApplicationJavalinServer
    }
 
 
+
    /*******************************************************************************
     ** Getter for javalinMetaData
     *******************************************************************************/
@@ -658,6 +667,5 @@ public class QApplicationJavalinServer
       this.javalinMetaData = javalinMetaData;
       return (this);
    }
-
 
 }

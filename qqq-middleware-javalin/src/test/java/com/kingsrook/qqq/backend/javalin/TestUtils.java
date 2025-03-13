@@ -22,10 +22,8 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -98,6 +96,8 @@ import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.ProcessBasedRouterPayload;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.SimpleRouteAuthenticator;
 import org.apache.commons.io.IOUtils;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -126,7 +126,7 @@ public class TestUtils
    public static final String SCREEN_0 = "screen0";
    public static final String SCREEN_1 = "screen1";
 
-   public static final String STATIC_SITE_PATH = Paths.get("").toAbsolutePath() + "/static-site";
+   public static final String STATIC_SITE_PATH = "static-site";
 
 
 
@@ -134,12 +134,9 @@ public class TestUtils
     ** Prime a test database (e.g., h2, in-memory)
     **
     *******************************************************************************/
-   @SuppressWarnings("unchecked")
    public static void primeTestDatabase() throws Exception
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-
-      try(Connection connection = connectionManager.getConnection(TestUtils.defineDefaultH2Backend()))
+      try(Connection connection = ConnectionManager.getConnection(TestUtils.defineDefaultH2Backend()))
       {
          InputStream primeTestDatabaseSqlStream = TestUtils.class.getResourceAsStream("/prime-test-database.sql");
          assertNotNull(primeTestDatabaseSqlStream);
@@ -161,8 +158,7 @@ public class TestUtils
     *******************************************************************************/
    public static void runTestSql(String sql, QueryManager.ResultSetProcessor resultSetProcessor) throws Exception
    {
-      ConnectionManager connectionManager = new ConnectionManager();
-      try(Connection connection = connectionManager.getConnection(defineDefaultH2Backend()))
+      try(Connection connection = ConnectionManager.getConnection(defineDefaultH2Backend()))
       {
          QueryManager.executeStatement(connection, sql, resultSetProcessor);
       }
@@ -195,16 +191,23 @@ public class TestUtils
       defineWidgets(qInstance);
 
       List<JavalinRouteProviderMetaData> routeProviders = new ArrayList<>();
-      if(new File(STATIC_SITE_PATH).exists())
-      {
-         routeProviders.add(new JavalinRouteProviderMetaData()
-            .withHostedPath("/statically-served")
-            .withFileSystemPath(STATIC_SITE_PATH));
-      }
+      routeProviders.add(new JavalinRouteProviderMetaData()
+         .withHostedPath("/statically-served")
+         .withFileSystemPath(STATIC_SITE_PATH));
+
+      routeProviders.add(new JavalinRouteProviderMetaData()
+         .withHostedPath("/protected-statically-served")
+         .withFileSystemPath(STATIC_SITE_PATH)
+         .withRouteAuthenticator(new QCodeReference(SimpleRouteAuthenticator.class)));
 
       routeProviders.add(new JavalinRouteProviderMetaData()
          .withHostedPath("/served-by-process/<pagePath>")
          .withProcessName("routerProcess"));
+
+      routeProviders.add(new JavalinRouteProviderMetaData()
+         .withHostedPath("/protected-served-by-process/<pagePath>")
+         .withProcessName("routerProcess")
+         .withRouteAuthenticator(new QCodeReference(SimpleRouteAuthenticator.class)));
 
       qInstance.withSupplementalMetaData(new QJavalinMetaData().withRouteProviders(routeProviders));
 
@@ -237,8 +240,10 @@ public class TestUtils
             .withName("step")
             .withCode(new QCodeReferenceLambda<BackendStep>((runBackendStepInput, runBackendStepOutput) ->
             {
-               String path = runBackendStepInput.getValueString("path");
-               runBackendStepOutput.addValue("response", "So you've asked for: " + path);
+               ProcessBasedRouterPayload processPayload = runBackendStepInput.getProcessPayload(ProcessBasedRouterPayload.class);
+               String                    path           = processPayload.getPath();
+               processPayload.setResponseString("So you've asked for: " + path);
+               runBackendStepOutput.setProcessPayload(processPayload);
             }))
          ));
    }
@@ -793,7 +798,7 @@ public class TestUtils
       {
          return (new RenderWidgetOutput(new RawHTML("title",
             QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE_OFFSET_MINUTES)
-            + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
+               + "|" + QContext.getQSession().getValue(QSession.VALUE_KEY_USER_TIMEZONE)
          )));
       }
    }

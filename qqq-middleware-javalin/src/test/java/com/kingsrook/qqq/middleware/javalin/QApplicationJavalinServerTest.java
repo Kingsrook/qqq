@@ -22,23 +22,18 @@
 package com.kingsrook.qqq.middleware.javalin;
 
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
+import io.javalin.http.HttpStatus;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
-import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,24 +53,11 @@ class QApplicationJavalinServerTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   @BeforeEach
-   void beforeEach() throws IOException
-   {
-      FileUtils.writeStringToFile(new File(TestUtils.STATIC_SITE_PATH + "/foo.html"), "Foo? Bar!", Charset.defaultCharset());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
    @AfterEach
    void afterEach() throws IOException
    {
       javalinServer.stop();
       TestApplication.callCount = 0;
-
-      FileUtils.deleteDirectory(new File(TestUtils.STATIC_SITE_PATH));
    }
 
 
@@ -216,6 +198,35 @@ class QApplicationJavalinServerTest
     **
     *******************************************************************************/
    @Test
+   void testAuthenticatedStaticRouter() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT);
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8")
+         .followRedirects(false);
+
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/protected-statically-served/foo.html")
+         .header("Authorization", "Bearer Deny")
+         .asString();
+
+      assertEquals(HttpStatus.FOUND.getCode(), response.getStatus());
+      assertThat(response.getHeaders().getFirst("Location")).contains("createMockSession");
+
+      response = Unirest.get("http://localhost:" + PORT + "/protected-statically-served/foo.html")
+         .asString();
+      assertEquals(HttpStatus.OK.getCode(), response.getStatus());
+      assertEquals("Foo? Bar!", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testProcessRouter() throws Exception
    {
       javalinServer = new QApplicationJavalinServer(getQqqApplication())
@@ -224,6 +235,35 @@ class QApplicationJavalinServerTest
       javalinServer.start();
 
       HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/served-by-process/foo.html").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("So you've asked for: /served-by-process/foo.html", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAuthenticatedProcessRouter() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT);
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8")
+         .followRedirects(false);
+
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/protected-served-by-process/foo.html")
+         .header("Authorization", "Bearer Deny")
+         .asString();
+
+      assertEquals(HttpStatus.FOUND.getCode(), response.getStatus());
+      assertThat(response.getHeaders().getFirst("Location")).contains("createMockSession");
+
+      response = Unirest.get("http://localhost:" + PORT + "/protected-statically-served/foo.html")
+         .asString();
       assertEquals(200, response.getStatus());
       assertEquals("So you've asked for: /served-by-process/foo.html", response.getBody());
    }
