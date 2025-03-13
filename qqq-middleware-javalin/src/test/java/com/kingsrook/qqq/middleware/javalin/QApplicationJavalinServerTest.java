@@ -206,6 +206,7 @@ class QApplicationJavalinServerTest
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8")
+         .reset()
          .followRedirects(false);
 
       HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/protected-statically-served/foo.html")
@@ -253,6 +254,7 @@ class QApplicationJavalinServerTest
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8")
+         .reset()
          .followRedirects(false);
 
       HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/protected-served-by-process/foo.html")
@@ -262,10 +264,10 @@ class QApplicationJavalinServerTest
       assertEquals(HttpStatus.FOUND.getCode(), response.getStatus());
       assertThat(response.getHeaders().getFirst("Location")).contains("createMockSession");
 
-      response = Unirest.get("http://localhost:" + PORT + "/protected-statically-served/foo.html")
+      response = Unirest.get("http://localhost:" + PORT + "/protected-served-by-process/foo.html")
          .asString();
       assertEquals(200, response.getStatus());
-      assertEquals("So you've asked for: /served-by-process/foo.html", response.getBody());
+      assertEquals("So you've asked for: /protected-served-by-process/foo.html", response.getBody());
    }
 
 
