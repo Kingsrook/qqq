@@ -628,4 +628,15 @@ public class RunBackendStepInput extends AbstractActionInput
    {
       return (QContext.getQInstance().getProcess(getProcessName()));
    }
+
+
+
+   /***************************************************************************
+    ** return a QProcessPayload subclass instance, with values populated from
+    ** the current process state.
+    ***************************************************************************/
+   public <T extends QProcessPayload> T getProcessPayload(Class<T> payloadClass) throws QException
+   {
+      return QProcessPayload.fromProcessState(payloadClass, getProcessState());
+   }
 }

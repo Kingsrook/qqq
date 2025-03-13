@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,6 +39,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
@@ -1011,5 +1013,38 @@ public class ValueUtils
       LOG.debug("Could not infer QFieldType from value [" + (value == null ? "null" : value.getClass().getSimpleName()) + "]");
 
       return defaultIfCannotInfer;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static Map getValueAsMap(Serializable value)
+   {
+      if(value == null)
+      {
+         return (null);
+      }
+      else if(value instanceof Map<?, ?> map)
+      {
+         return (map);
+      }
+      else if(value instanceof String string && string.startsWith("{") && string.endsWith("}"))
+      {
+         try
+         {
+            Map map = JsonUtils.toObject(string, Map.class);
+            return (map);
+         }
+         catch(IOException e)
+         {
+            throw new QValueException("Error parsing string to map", e);
+         }
+      }
+      else
+      {
+         throw new QValueException("Unrecognized object type in getValueAsMap: " + value.getClass().getSimpleName());
+      }
    }
 }

@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 import java.util.Map;
 import java.util.UUID;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
@@ -45,8 +46,13 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
     **
     *******************************************************************************/
    @Override
-   public QSession createSession(QInstance qInstance, Map<String, String> context)
+   public QSession createSession(QInstance qInstance, Map<String, String> context) throws QAuthenticationException
    {
+      if("Deny".equalsIgnoreCase(context.get("accessToken")))
+      {
+         throw (new QAuthenticationException("Access denied (per accessToken requesting as such)"));
+      }
+
       QUser qUser = new QUser();
       qUser.setIdReference("User:" + (System.currentTimeMillis() % USER_ID_MODULO));
       qUser.setFullName("John Smith");
@@ -80,4 +86,16 @@ public class MockAuthenticationModule implements QAuthenticationModuleInterface
 
       return (true);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public String getLoginRedirectUrl(String originalUrl)
+   {
+      return originalUrl + "?createMockSession=true";
+   }
+
 }

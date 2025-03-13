@@ -1247,7 +1247,7 @@ public class QInstance
       {
          this.supplementalMetaData = new HashMap<>();
       }
-      this.supplementalMetaData.put(supplementalMetaData.getType(), supplementalMetaData);
+      this.supplementalMetaData.put(supplementalMetaData.getName(), supplementalMetaData);
       return (this);
    }
 

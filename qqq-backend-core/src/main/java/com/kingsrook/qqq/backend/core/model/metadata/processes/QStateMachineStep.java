@@ -185,4 +185,25 @@ public class QStateMachineStep extends QStepMetaData
       return (rs);
    }
 
+
+   /*******************************************************************************
+    ** Setter for subSteps
+    *******************************************************************************/
+   public void setSubSteps(List<QStepMetaData> subSteps)
+   {
+      this.subSteps = subSteps;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for subSteps
+    *******************************************************************************/
+   public QStateMachineStep withSubSteps(List<QStepMetaData> subSteps)
+   {
+      this.subSteps = subSteps;
+      return (this);
+   }
+
+
 }

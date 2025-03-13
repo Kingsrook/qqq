@@ -23,7 +23,11 @@ package com.kingsrook.sampleapp;
 
 
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.middleware.javalin.QApplicationJavalinServer;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.ProcessBasedRouter;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.SimpleRouteAuthenticator;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 
 
@@ -53,7 +57,15 @@ public class SampleJavalinServer
    {
       try
       {
-         new QApplicationJavalinServer(new SampleMetaDataProvider()).start();
+         QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(new SampleMetaDataProvider());
+
+         javalinServer.withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter("/static-site", "static-site/")
+            .withRouteAuthenticator(new QCodeReference(SimpleRouteAuthenticator.class)));
+
+         javalinServer.withAdditionalRouteProvider(new ProcessBasedRouter("dynamic-site/<pagePath>", "DynamicSiteProcess")
+            .withRouteAuthenticator(new QCodeReference(SimpleRouteAuthenticator.class)));
+
+         javalinServer.start();
       }
       catch(Exception e)
       {

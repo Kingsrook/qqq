@@ -87,7 +87,17 @@ public interface QAuthenticationModuleInterface
     *******************************************************************************/
    default String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
    {
-      throw (new NotImplementedException("The method createAccessToken() is not implemented in the class: " + this.getClass().getSimpleName()));
+      throw (new NotImplementedException("The method createAccessToken() is not implemented in the authentication module: " + this.getClass().getSimpleName()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default String getLoginRedirectUrl(String originalUrl)
+   {
+      throw (new NotImplementedException("The method getLoginRedirectUrl() is not implemented in the authentication module: " + this.getClass().getSimpleName()));
    }
 
 }

@@ -22,13 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.permissions;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QPermissionRules implements Cloneable
+public class QPermissionRules implements Cloneable, QMetaDataObject
 {
    private PermissionLevel level;
    private DenyBehavior    denyBehavior;

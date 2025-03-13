@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -1289,7 +1290,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static QSession getMockSession()
+   public static QSession getMockSession() throws QAuthenticationException
    {
       MockAuthenticationModule mockAuthenticationModule = new MockAuthenticationModule();
       return (mockAuthenticationModule.createSession(null, null));

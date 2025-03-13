@@ -63,6 +63,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaDa
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.automation.QAutomationProviderMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceLambda;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeType;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.ParentWidgetMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
@@ -1400,7 +1401,7 @@ public class QInstanceValidator
             //////////////////////////////////////////////////
             // make sure the customizer can be instantiated //
             //////////////////////////////////////////////////
-            Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass);
+            Object customizerInstance = getInstanceOfCodeReference(prefix, customizerClass, codeReference);
 
             TableCustomizers tableCustomizer = TableCustomizers.forRole(roleName);
             if(tableCustomizer == null)
@@ -1461,8 +1462,13 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Object getInstanceOfCodeReference(String prefix, Class<?> clazz)
+   private Object getInstanceOfCodeReference(String prefix, Class<?> clazz, QCodeReference codeReference)
    {
+      if(codeReference instanceof QCodeReferenceLambda<?> lambdaCodeReference)
+      {
+         return (lambdaCodeReference.getLambda());
+      }
+
       Object instance = null;
       try
       {
@@ -1641,21 +1647,26 @@ public class QInstanceValidator
             Set<String> usedStepNames = new HashSet<>();
             if(assertCondition(CollectionUtils.nullSafeHasContents(process.getStepList()), "At least 1 step must be defined in process " + processName + "."))
             {
-               int index = 0;
+               int index = -1;
                for(QStepMetaData step : process.getStepList())
                {
+                  index++;
                   if(assertCondition(StringUtils.hasContent(step.getName()), "Missing name for a step at index " + index + " in process " + processName))
                   {
                      assertCondition(!usedStepNames.contains(step.getName()), "Duplicate step name [" + step.getName() + "] in process " + processName);
                      usedStepNames.add(step.getName());
                   }
-                  index++;
 
                   ////////////////////////////////////////////
                   // validate instantiation of step classes //
                   ////////////////////////////////////////////
                   if(step instanceof QBackendStepMetaData backendStepMetaData)
                   {
+                     if(assertCondition(backendStepMetaData.getCode() != null, "Missing code for a backend step at index " + index + " in process " + processName))
+                     {
+                        validateSimpleCodeReference("Process " + processName + ", backend step at index " + index + ", code reference: ", backendStepMetaData.getCode(), BackendStep.class);
+                     }
+
                      if(backendStepMetaData.getInputMetaData() != null && CollectionUtils.nullSafeHasContents(backendStepMetaData.getInputMetaData().getFieldList()))
                      {
                         for(QFieldMetaData fieldMetaData : backendStepMetaData.getInputMetaData().getFieldList())
@@ -2241,7 +2252,7 @@ public class QInstanceValidator
             //////////////////////////////////////////////////
             // make sure the customizer can be instantiated //
             //////////////////////////////////////////////////
-            Object classInstance = getInstanceOfCodeReference(prefix, clazz);
+            Object classInstance = getInstanceOfCodeReference(prefix, clazz, codeReference);
 
             ////////////////////////////////////////////////////////////////////////
             // make sure the customizer instance can be cast to the expected type //
@@ -2264,6 +2275,11 @@ public class QInstanceValidator
       Class<?> clazz = null;
       try
       {
+         if(codeReference instanceof QCodeReferenceLambda<?> lambdaCodeReference)
+         {
+            return (lambdaCodeReference.getLambda().getClass());
+         }
+
          clazz = Class.forName(codeReference.getName());
       }
       catch(ClassNotFoundException e)

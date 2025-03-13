@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QIcon;
@@ -36,7 +37,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
  ** A section of fields - a logical grouping.
  ** TODO - this class should be named QTableSection!
  *******************************************************************************/
-public class QFieldSection
+public class QFieldSection implements QMetaDataObject
 {
    private String name;
    private String label;

@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.help;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 
 
 /*******************************************************************************
@@ -41,7 +42,7 @@ import java.util.Set;
  ** May be dynamically added to meta-data via (non-meta-) data - see
  ** HelpContentMetaDataProvider and QInstanceHelpContentManager
  *******************************************************************************/
-public class QHelpContent
+public class QHelpContent implements QMetaDataObject
 {
    private String        content;
    private HelpFormat    format;

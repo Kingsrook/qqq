@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.FilterVariableExpression;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
@@ -45,7 +46,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  * Full "filter" for a query - a list of criteria and order-bys
  *
  *******************************************************************************/
-public class QQueryFilter implements Serializable, Cloneable
+public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
 {
    private static final QLogger LOG = QLogger.getLogger(QQueryFilter.class);
 

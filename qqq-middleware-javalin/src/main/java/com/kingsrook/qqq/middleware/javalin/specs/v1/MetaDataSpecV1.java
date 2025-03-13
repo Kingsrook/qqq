@@ -242,23 +242,29 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
          .withChild(exampleTable);
       exampleInstance.addApp(exampleApp);
 
-      QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // double-wrap the context here, so the instance will exist when the system-user-session is created //
+      // to avoid warnings out of system-user-session about there not being an instance in context.       //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.withTemporaryContext(new CapturedContext(exampleInstance, null), () ->
       {
-         try
+         QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
          {
-            MetaDataAction metaDataAction = new MetaDataAction();
-            MetaDataOutput output         = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
-            examples.put("Example", new Example()
-               .withValue(new MetaDataResponseV1()
-                  .withMetaDataOutput(output)
-               )
-            );
-         }
-         catch(Exception e)
-         {
-            examples.put("Example", new Example().withValue("Error building example: " + e.getMessage())
-            );
-         }
+            try
+            {
+               MetaDataAction metaDataAction = new MetaDataAction();
+               MetaDataOutput output         = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
+               examples.put("Example", new Example()
+                  .withValue(new MetaDataResponseV1()
+                     .withMetaDataOutput(output)
+                  )
+               );
+            }
+            catch(Exception e)
+            {
+               examples.put("Example", new Example().withValue("Error building example: " + e.getMessage()));
+            }
+         });
       });
 
       return new BasicResponse("""

@@ -22,11 +22,14 @@
 package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+
+
 /*******************************************************************************
  ** definition of a qqq table that is "associated" with another table, e.g.,
  ** managed along with it - such as child-records under a parent record.
  *******************************************************************************/
-public class Association
+public class Association implements QMetaDataObject
 {
    private String name;
    private String associatedTableName;
