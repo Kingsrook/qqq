@@ -25,13 +25,12 @@ package com.kingsrook.qqq.backend.core.modules.authentication;
 import java.io.Serializable;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.exceptions.AccessTokenException;
 import com.kingsrook.qqq.backend.core.exceptions.QAuthenticationException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
-import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
+
 
 
 /*******************************************************************************
@@ -80,16 +79,6 @@ public interface QAuthenticationModuleInterface
    {
       return (false);
    }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   default String createAccessToken(QAuthenticationMetaData metaData, String clientId, String clientSecret) throws AccessTokenException
-   {
-      throw (new NotImplementedException("The method createAccessToken() is not implemented in the authentication module: " + this.getClass().getSimpleName()));
-   }
-
 
 
    /***************************************************************************

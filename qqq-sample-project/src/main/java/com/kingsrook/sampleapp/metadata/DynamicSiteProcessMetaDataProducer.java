@@ -50,8 +50,7 @@ public class DynamicSiteProcessMetaDataProducer extends MetaDataProducer<QProces
          .withName(NAME)
          .withStep(new QBackendStepMetaData()
             .withName("DynamicSiteProcessStep")
-            .withCode(new QCodeReference(DynamicSiteProcessStep.class)))
-      );
+            .withCode(new QCodeReference(DynamicSiteProcessStep.class))));
    }
 
 }
