@@ -24,20 +24,11 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.ReflectiveBeanLikeClassUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -325,13 +317,13 @@ public abstract class QRecordEntity
          List<QRecordEntityField> fieldList = new ArrayList<>();
          for(Method possibleGetter : c.getMethods())
          {
-            if(isGetter(possibleGetter))
+            if(ReflectiveBeanLikeClassUtils.isGetter(possibleGetter, true))
             {
-               Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+               Optional<Method> setter = ReflectiveBeanLikeClassUtils.getSetterForGetter(c, possibleGetter);
 
                if(setter.isPresent())
                {
-                  String           fieldName       = getFieldNameFromGetter(possibleGetter);
+                  String           fieldName       = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(possibleGetter);
                   Optional<QField> fieldAnnotation = getQFieldAnnotation(c, fieldName);
 
                   if(fieldAnnotation.isPresent())
@@ -378,19 +370,19 @@ public abstract class QRecordEntity
          List<QRecordEntityAssociation> associationList = new ArrayList<>();
          for(Method possibleGetter : c.getMethods())
          {
-            if(isGetter(possibleGetter))
+            if(ReflectiveBeanLikeClassUtils.isGetter(possibleGetter, true))
             {
-               Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+               Optional<Method> setter = ReflectiveBeanLikeClassUtils.getSetterForGetter(c, possibleGetter);
 
                if(setter.isPresent())
                {
-                  String                 fieldName             = getFieldNameFromGetter(possibleGetter);
+                  String                 fieldName             = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(possibleGetter);
                   Optional<QAssociation> associationAnnotation = getQAssociationAnnotation(c, fieldName);
 
                   if(associationAnnotation.isPresent())
                   {
                      @SuppressWarnings("unchecked")
-                     Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
+                     Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) ReflectiveBeanLikeClassUtils.getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
                      associationList.add(new QRecordEntityAssociation(fieldName, possibleGetter, setter.get(), listTypeParam, associationAnnotation.orElse(null)));
                   }
                }
@@ -456,131 +448,5 @@ public abstract class QRecordEntity
       return (Optional.empty());
    }
 
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public static String getFieldNameFromGetter(Method getter)
-   {
-      String nameWithoutGet = getter.getName().replaceFirst("^get", "");
-      if(nameWithoutGet.length() == 1)
-      {
-         return (nameWithoutGet.toLowerCase(Locale.ROOT));
-      }
-      return (nameWithoutGet.substring(0, 1).toLowerCase(Locale.ROOT) + nameWithoutGet.substring(1));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static boolean isGetter(Method method)
-   {
-      if(method.getParameterTypes().length == 0 && method.getName().matches("^get[A-Z].*"))
-      {
-         if(isSupportedFieldType(method.getReturnType()) || isSupportedAssociation(method.getReturnType(), method.getAnnotatedReturnType()))
-         {
-            return (true);
-         }
-         else
-         {
-            if(!method.getName().equals("getClass") && method.getAnnotation(QIgnore.class) == null)
-            {
-               LOG.debug("Method [" + method.getName() + "] in [" + method.getDeclaringClass().getSimpleName() + "] looks like a getter, but its return type, [" + method.getReturnType().getSimpleName() + "], isn't supported.");
-            }
-         }
-      }
-      return (false);
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static Optional<Method> getSetterForGetter(Class<? extends QRecordEntity> c, Method getter)
-   {
-      String setterName = getter.getName().replaceFirst("^get", "set");
-      for(Method method : c.getMethods())
-      {
-         if(method.getName().equals(setterName))
-         {
-            if(method.getParameterTypes().length == 1 && method.getParameterTypes()[0].equals(getter.getReturnType()))
-            {
-               return (Optional.of(method));
-            }
-            else
-            {
-               LOG.info("Method [" + method.getName() + "] looks like a setter for [" + getter.getName() + "], but its parameters, [" + Arrays.toString(method.getParameterTypes()) + "], don't match the getter's return type [" + getter.getReturnType() + "]");
-            }
-         }
-      }
-      return (Optional.empty());
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static boolean isSupportedFieldType(Class<?> returnType)
-   {
-      // todo - more types!!
-      return (returnType.equals(String.class)
-              || returnType.equals(Integer.class)
-              || returnType.equals(Long.class)
-              || returnType.equals(int.class)
-              || returnType.equals(Boolean.class)
-              || returnType.equals(boolean.class)
-              || returnType.equals(BigDecimal.class)
-              || returnType.equals(Instant.class)
-              || returnType.equals(LocalDate.class)
-              || returnType.equals(LocalTime.class)
-              || returnType.equals(byte[].class));
-      /////////////////////////////////////////////
-      // note - this list has implications upon: //
-      // - QFieldType.fromClass                  //
-      // - QRecordEntityField.convertValueType   //
-      /////////////////////////////////////////////
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static boolean isSupportedAssociation(Class<?> returnType, AnnotatedType annotatedType)
-   {
-      Class<?> listTypeParam = getListTypeParam(returnType, annotatedType);
-      return (listTypeParam != null && QRecordEntity.class.isAssignableFrom(listTypeParam));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   private static Class<?> getListTypeParam(Class<?> listType, AnnotatedType annotatedType)
-   {
-      if(listType.equals(List.class))
-      {
-         if(annotatedType instanceof AnnotatedParameterizedType apt)
-         {
-            AnnotatedType[] annotatedActualTypeArguments = apt.getAnnotatedActualTypeArguments();
-            for(AnnotatedType annotatedActualTypeArgument : annotatedActualTypeArguments)
-            {
-               Type type = annotatedActualTypeArgument.getType();
-               if(type instanceof Class<?> c)
-               {
-                  return (c);
-               }
-            }
-         }
-      }
-
-      return (null);
-   }
 
 }
