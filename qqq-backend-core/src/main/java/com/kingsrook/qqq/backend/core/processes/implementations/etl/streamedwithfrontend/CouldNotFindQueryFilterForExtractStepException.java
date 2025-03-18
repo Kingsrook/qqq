@@ -22,13 +22,13 @@
 package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public class CouldNotFindQueryFilterForExtractStepException extends QException
+public class CouldNotFindQueryFilterForExtractStepException extends QUserFacingException
 {
    /*******************************************************************************
     **
