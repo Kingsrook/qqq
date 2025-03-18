@@ -31,7 +31,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
  ** Future may allow something like a "namespace", and/or multiple icons for
  ** use in different frontends, etc.
  *******************************************************************************/
-public class QIcon
+public class QIcon implements Cloneable
 {
    private String name;
    private String path;
@@ -54,6 +54,25 @@ public class QIcon
    public QIcon(String name)
    {
       this.name = name;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QIcon clone()
+   {
+      try
+      {
+         QIcon clone = (QIcon) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
@@ -154,6 +173,4 @@ public class QIcon
       this.color = color;
       return (this);
    }
-
-
 }
