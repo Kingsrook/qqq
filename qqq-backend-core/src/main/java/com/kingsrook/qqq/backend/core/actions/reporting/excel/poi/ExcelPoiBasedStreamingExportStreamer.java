@@ -46,6 +46,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.ExportStyleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.ReportUtils;
 import com.kingsrook.qqq.backend.core.exceptions.QReportingException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
@@ -77,6 +78,7 @@ import org.apache.poi.xssf.usermodel.XSSFPivotTable;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -112,9 +114,10 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    public static final String EXCEL_DATE_FORMAT      = "yyyy-MM-dd";
    public static final String EXCEL_DATE_TIME_FORMAT = "yyyy-MM-dd H:mm:ss";
 
-   private PoiExcelStylerInterface    poiExcelStylerInterface = getStylerInterface();
+   private ExcelPoiBasedStreamingStyleCustomizerInterface styleCustomizerInterface;
+
    private Map<String, String>        excelCellFormats;
-   private Map<String, XSSFCellStyle> styles                  = new HashMap<>();
+   private Map<String, XSSFCellStyle> styles = new HashMap<>();
 
    private int rowNo      = 0;
    private int sheetIndex = 1;
@@ -402,6 +405,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       dateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_TIME_FORMAT));
       styles.put("datetime", dateTimeStyle);
 
+      PoiExcelStylerInterface poiExcelStylerInterface = getStylerInterface();
       styles.put("title", poiExcelStylerInterface.createStyleForTitle(workbook, createHelper));
       styles.put("header", poiExcelStylerInterface.createStyleForHeader(workbook, createHelper));
       styles.put("footer", poiExcelStylerInterface.createStyleForFooter(workbook, createHelper));
@@ -413,6 +417,11 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       XSSFCellStyle footerDateTimeStyle = poiExcelStylerInterface.createStyleForFooter(workbook, createHelper);
       footerDateTimeStyle.setDataFormat(createHelper.createDataFormat().getFormat(EXCEL_DATE_TIME_FORMAT));
       styles.put("footer-datetime", footerDateTimeStyle);
+
+      if(styleCustomizerInterface != null)
+      {
+         styleCustomizerInterface.customizeStyles(styles, workbook, createHelper);
+      }
    }
 
 
@@ -458,7 +467,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
          }
          else
          {
-            sheetWriter.beginSheet();
+            sheetWriter.beginSheet(view, styleCustomizerInterface);
 
             ////////////////////////////////////////////////
             // put the title and header rows in the sheet //
@@ -560,6 +569,16 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setStyleForField(QRecord record, String fieldName, String styleName)
+   {
+      record.setDisplayValue(fieldName + ":excelStyle", styleName);
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -567,12 +586,12 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
    {
       sheetWriter.insertRow(rowNo++);
 
-      int styleIndex         = -1;
+      int baseStyleIndex     = -1;
       int dateStyleIndex     = styles.get("date").getIndex();
       int dateTimeStyleIndex = styles.get("datetime").getIndex();
       if(isFooter)
       {
-         styleIndex = styles.get("footer").getIndex();
+         baseStyleIndex = styles.get("footer").getIndex();
          dateStyleIndex = styles.get("footer-date").getIndex();
          dateTimeStyleIndex = styles.get("footer-datetime").getIndex();
       }
@@ -581,6 +600,13 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       for(QFieldMetaData field : fields)
       {
          Serializable value = qRecord.getValue(field.getName());
+
+         String overrideStyleName = qRecord.getDisplayValue(field.getName() + ":excelStyle");
+         int    styleIndex        = baseStyleIndex;
+         if(overrideStyleName != null)
+         {
+            styleIndex = styles.get(overrideStyleName).getIndex();
+         }
 
          if(value != null)
          {
@@ -706,7 +732,7 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
       {
          if(!ReportType.PIVOT.equals(currentView.getType()))
          {
-            sheetWriter.endSheet();
+            sheetWriter.endSheet(currentView, styleCustomizerInterface);
          }
 
          activeSheetWriter.flush();
@@ -815,7 +841,29 @@ public class ExcelPoiBasedStreamingExportStreamer implements ExportStreamerInter
     *******************************************************************************/
    protected PoiExcelStylerInterface getStylerInterface()
    {
+      if(styleCustomizerInterface != null)
+      {
+         return styleCustomizerInterface.getExcelStyler();
+      }
+
       return (new PlainPoiExcelStyler());
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void setExportStyleCustomizer(ExportStyleCustomizerInterface exportStyleCustomizer)
+   {
+      if(exportStyleCustomizer instanceof ExcelPoiBasedStreamingStyleCustomizerInterface poiExcelStylerInterface)
+      {
+         this.styleCustomizerInterface = poiExcelStylerInterface;
+      }
+      else
+      {
+         LOG.debug("Supplied export style customizer is not an instance of ExcelPoiStyleCustomizerInterface, so will not be used for an excel export", logPair("exportStyleCustomizerClass", exportStyleCustomizer.getClass().getSimpleName()));
+      }
+   }
 }

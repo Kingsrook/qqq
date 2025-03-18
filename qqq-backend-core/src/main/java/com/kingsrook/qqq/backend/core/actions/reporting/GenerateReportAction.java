@@ -168,6 +168,11 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          ExportStyleCustomizerInterface styleCustomizer = QCodeLoader.getAdHoc(ExportStyleCustomizerInterface.class, reportInput.getExportStyleCustomizer());
          reportStreamer.setExportStyleCustomizer(styleCustomizer);
       }
+      else if(report.getExportStyleCustomizer() != null)
+      {
+         ExportStyleCustomizerInterface styleCustomizer = QCodeLoader.getAdHoc(ExportStyleCustomizerInterface.class, report.getExportStyleCustomizer());
+         reportStreamer.setExportStyleCustomizer(styleCustomizer);
+      }
 
       reportStreamer.preRun(reportInput.getReportDestination(), views);
 
