@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -311,5 +312,21 @@ public class QJavalinMetaData implements QSupplementalInstanceMetaData
       this.routeProviders = routeProviders;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter to add 1 routeProvider
+    *******************************************************************************/
+   public QJavalinMetaData withRouteProvider(JavalinRouteProviderMetaData routeProvider)
+   {
+      if(this.routeProviders == null)
+      {
+         this.routeProviders = new ArrayList<>();
+      }
+      this.routeProviders.add(routeProvider);
+      return (this);
+   }
+
 
 }

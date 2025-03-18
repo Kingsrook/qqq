@@ -32,12 +32,13 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import io.javalin.http.Context;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
  ** simple implementation of a route authenticator.  Assumes that unauthenticated
  ** requests should redirect to a login page.  Note though, maybe that should be
- ** more intelligent, like, only redirect requets for a .html file, but not
+ ** more intelligent, like, only redirect requests for a .html file, but not
  ** requests for include files like images or .js/.css?
  *******************************************************************************/
 public class SimpleRouteAuthenticator implements RouteAuthenticatorInterface
@@ -53,7 +54,7 @@ public class SimpleRouteAuthenticator implements RouteAuthenticatorInterface
       try
       {
          QSession qSession = QJavalinImplementation.setupSession(context, null);
-         LOG.debug("Session has been activated", "uuid=" + qSession.getUuid());
+         LOG.debug("Session has been activated", logPair("uuid", qSession.getUuid()));
          return (true);
       }
       catch(QAuthenticationException e)

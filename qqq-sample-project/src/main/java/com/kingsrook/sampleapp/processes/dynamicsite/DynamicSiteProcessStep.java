@@ -43,7 +43,7 @@ public class DynamicSiteProcessStep implements BackendStep
       ProcessBasedRouterPayload processPayload = runBackendStepInput.getProcessPayload(ProcessBasedRouterPayload.class);
 
       String path = processPayload.getPath();
-      processPayload.setResponseString("You requested: " + path);
+      processPayload.setResponseString("You requested: " + path + "(at path-param: " + processPayload.getPathParams().get("pagePath") + ")");
       runBackendStepOutput.setProcessPayload(processPayload);
    }
 
