@@ -22,12 +22,19 @@
 package com.kingsrook.qqq.backend.core.actions.customizers;
 
 
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.model.metadata.code.InitializableViaCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReferenceWithProperties;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.Timer;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 /*******************************************************************************
@@ -80,6 +87,7 @@ class QCodeLoaderTest extends BaseTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -88,6 +96,52 @@ class QCodeLoaderTest extends BaseTest
       for(int i = 0; i < count; i++)
       {
          QCodeLoader qCodeLoader = QCodeLoader.getAdHoc(QCodeLoader.class, new QCodeReference(QCodeLoader.class));
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCodeReferenceWithProperties()
+   {
+      assertNull(QCodeLoader.getAdHoc(SomeClass.class, new QCodeReference(SomeClass.class)));
+
+      SomeClass someObject = QCodeLoader.getAdHoc(SomeClass.class, new QCodeReferenceWithProperties(SomeClass.class, Map.of("property", "someValue")));
+      assertEquals("someValue", someObject.someProperty);
+
+      SomeClass someOtherObject = QCodeLoader.getAdHoc(SomeClass.class, new QCodeReferenceWithProperties(SomeClass.class, Map.of("property", "someOtherValue")));
+      assertEquals("someOtherValue", someOtherObject.someProperty);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class SomeClass implements InitializableViaCodeReference
+   {
+      private String someProperty;
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public void initialize(QCodeReference codeReference)
+      {
+         if(codeReference instanceof QCodeReferenceWithProperties codeReferenceWithProperties)
+         {
+            someProperty = ValueUtils.getValueAsString(codeReferenceWithProperties.getProperties().get("property"));
+         }
+
+         if(!StringUtils.hasContent(someProperty))
+         {
+            throw new IllegalStateException("Missing property");
+         }
       }
    }
 

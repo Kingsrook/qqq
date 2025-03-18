@@ -222,7 +222,8 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
                /////////////////////////////////////////////////////////////////////////////////////////
                if(dataSourceTableView.getViewCustomizer() != null)
                {
-                  Function<QReportView, QReportView> viewCustomizerFunction = QCodeLoader.getFunction(dataSourceTableView.getViewCustomizer());
+                  @SuppressWarnings("unchecked")
+                  Function<QReportView, QReportView> viewCustomizerFunction = QCodeLoader.getAdHoc(Function.class, dataSourceTableView.getViewCustomizer());
                   if(viewCustomizerFunction instanceof ReportViewCustomizer reportViewCustomizer)
                   {
                      reportViewCustomizer.setReportInput(reportInput);

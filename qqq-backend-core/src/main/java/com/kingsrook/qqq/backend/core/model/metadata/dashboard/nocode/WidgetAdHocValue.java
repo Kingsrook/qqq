@@ -62,7 +62,8 @@ public class WidgetAdHocValue extends AbstractWidgetValueSource
          context.putAll(inputValues);
       }
 
-      Function<Object, Object> function = QCodeLoader.getFunction(codeReference);
+      @SuppressWarnings("unchecked")
+      Function<Object, Object> function = QCodeLoader.getAdHoc(Function.class, codeReference);
       Object                   result   = function.apply(context);
       return (result);
    }
