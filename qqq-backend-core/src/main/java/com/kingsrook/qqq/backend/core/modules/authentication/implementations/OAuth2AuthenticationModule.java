@@ -24,6 +24,8 @@ package com.kingsrook.qqq.backend.core.modules.authentication.implementations;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,6 +33,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
@@ -81,6 +84,9 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       .withTimeout(Duration.of(1, ChronoUnit.MINUTES))
       .withMaxSize(1000);
 
+   // todo wip
+   private static Map<String, String> stateToRedirectUrl = new HashMap<>();
+
 
 
    /***************************************************************************
@@ -93,7 +99,37 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       {
          OAuth2AuthenticationMetaData oauth2MetaData = (OAuth2AuthenticationMetaData) qInstance.getAuthentication();
 
-         if(context.containsKey("code") && context.containsKey("redirectUri") && context.containsKey("codeVerifier"))
+         if(context.containsKey("code") && context.containsKey("state"))
+         {
+            AuthorizationCode code = new AuthorizationCode(context.get("code"));
+
+            // todo - maybe this comes from lookup of state?
+            URI redirectURI = new URI(stateToRedirectUrl.get(context.get("state")));
+
+            ClientSecretBasic      clientSecretBasic = new ClientSecretBasic(new ClientID(oauth2MetaData.getClientId()), new Secret(oauth2MetaData.getClientSecret()));
+            AuthorizationCodeGrant codeGrant         = new AuthorizationCodeGrant(code, redirectURI);
+
+            URI           tokenEndpoint = new URI(oauth2MetaData.getTokenUrl());
+            TokenRequest  tokenRequest  = new TokenRequest(tokenEndpoint, clientSecretBasic, codeGrant);
+            TokenResponse tokenResponse = TokenResponse.parse(tokenRequest.toHTTPRequest().send());
+
+            if(tokenResponse.indicatesSuccess())
+            {
+               AccessToken accessToken = tokenResponse.toSuccessResponse().getTokens().getAccessToken();
+               // todo - what?? RefreshToken refreshToken = tokenResponse.toSuccessResponse().getTokens().getRefreshToken();
+
+               QSession session = createSessionFromToken(accessToken.getValue());
+               insertUserSession(accessToken.getValue(), session);
+               return (session);
+            }
+            else
+            {
+               ErrorObject errorObject = tokenResponse.toErrorResponse().getErrorObject();
+               LOG.info("Token request failed", logPair("code", errorObject.getCode()), logPair("description", errorObject.getDescription()));
+               throw (new QAuthenticationException(errorObject.getDescription()));
+            }
+         }
+         else if(context.containsKey("code") && context.containsKey("redirectUri") && context.containsKey("codeVerifier"))
          {
             AuthorizationCode  code         = new AuthorizationCode(context.get("code"));
             URI                callback     = new URI(context.get("redirectUri"));
@@ -126,9 +162,12 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
                throw (new QAuthenticationException(errorObject.getDescription()));
             }
          }
-         else if(context.containsKey("sessionUUID") || context.containsKey("uuid"))
+         else if(context.containsKey("sessionUUID") || context.containsKey("sessionId") || context.containsKey("uuid"))
          {
-            String   uuid        = Objects.requireNonNullElseGet(context.get("sessionUUID"), () -> context.get("uuid"));
+            String uuid = Objects.requireNonNullElseGet(context.get("sessionUUID"), () ->
+               Objects.requireNonNullElseGet(context.get("sessionId"), () ->
+                  context.get("uuid")));
+
             String   accessToken = getAccessTokenFromSessionUUID(uuid);
             QSession session     = createSessionFromToken(accessToken);
             session.setUuid(uuid);
@@ -181,6 +220,31 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       {
          return (false);
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public String getLoginRedirectUrl(String originalUrl)
+   {
+      QInstance                    qInstance      = QContext.getQInstance();
+      OAuth2AuthenticationMetaData oauth2MetaData = (OAuth2AuthenticationMetaData) qInstance.getAuthentication();
+
+      // todo wip - get from meta-data or from that thing that knows the other things?
+      String authUrl = oauth2MetaData.getTokenUrl().replace("token", "authorize");
+
+      String state = UUID.randomUUID().toString();
+      stateToRedirectUrl.put(state, originalUrl);
+
+      return authUrl +
+         "?client_id=" + URLEncoder.encode(oauth2MetaData.getClientId(), StandardCharsets.UTF_8) +
+         "&redirect_uri=" + URLEncoder.encode(originalUrl, StandardCharsets.UTF_8) +
+         "&response_type=code" +
+         "&scope=" + URLEncoder.encode("openid profile email", StandardCharsets.UTF_8) +
+         "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8);
    }
 
 
@@ -334,7 +398,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
    @Override
    public boolean usesSessionIdCookie()
    {
-      return (false);
+      return (true);
    }
 
 }
