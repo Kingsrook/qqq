@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
@@ -44,6 +45,7 @@ public class ReportInput extends AbstractTableActionInput
    private ReportDestination reportDestination;
 
    private Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier;
+   private QCodeReference                              exportStyleCustomizer;
 
 
 
@@ -205,6 +207,37 @@ public class ReportInput extends AbstractTableActionInput
    public ReportInput withOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
    {
       this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for exportStyleCustomizer
+    *******************************************************************************/
+   public QCodeReference getExportStyleCustomizer()
+   {
+      return (this.exportStyleCustomizer);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for exportStyleCustomizer
+    *******************************************************************************/
+   public void setExportStyleCustomizer(QCodeReference exportStyleCustomizer)
+   {
+      this.exportStyleCustomizer = exportStyleCustomizer;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for exportStyleCustomizer
+    *******************************************************************************/
+   public ReportInput withExportStyleCustomizer(QCodeReference exportStyleCustomizer)
+   {
+      this.exportStyleCustomizer = exportStyleCustomizer;
       return (this);
    }
 

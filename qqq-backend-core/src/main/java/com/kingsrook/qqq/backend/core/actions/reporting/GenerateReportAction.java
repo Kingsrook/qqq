@@ -163,6 +163,12 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          reportStreamer = reportFormat.newReportStreamer();
       }
 
+      if(reportInput.getExportStyleCustomizer() != null)
+      {
+         ExportStyleCustomizerInterface styleCustomizer = QCodeLoader.getAdHoc(ExportStyleCustomizerInterface.class, reportInput.getExportStyleCustomizer());
+         reportStreamer.setExportStyleCustomizer(styleCustomizer);
+      }
+
       reportStreamer.preRun(reportInput.getReportDestination(), views);
 
       ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -660,7 +666,7 @@ public class GenerateReportAction extends AbstractQActionFunction<ReportInput, R
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // if any fields are 'showPossibleValueLabel', then move display values for them into the record's values map //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         for(QReportField column : tableView.getColumns())
+         for(QReportField column : CollectionUtils.nonNullList(tableView.getColumns()))
          {
             if(column.getShowPossibleValueLabel())
             {
