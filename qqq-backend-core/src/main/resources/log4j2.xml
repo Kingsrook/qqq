@@ -18,21 +18,14 @@
       </File>
    </Appenders>
    <Loggers>
-      <Logger name="org.apache.log4j.xml" additivity="false">
-      </Logger>
-      <Logger name="org.mongodb.driver" level="WARN">
-      </Logger>
-      <Logger name="org.eclipse.jetty" level="INFO">
-      </Logger>
-      <Logger name="io.javalin" level="INFO">
-      </Logger>
-      <!-- c3p0 -->
-      <Logger name="com.mchange.v2" level="INFO">
-      </Logger>
-      <Logger name="org.quartz" level="INFO">
-      </Logger>
-      <Logger name="liquibase" level="INFO">
-      </Logger>
+      <Logger name="org.apache.log4j.xml" additivity="false"/>
+      <Logger name="org.mongodb.driver" level="WARN"/>
+      <Logger name="org.eclipse.jetty" level="INFO"/>
+      <Logger name="io.javalin" level="INFO"/>
+      <Logger name="com.mchange.v2" level="INFO"/> <!-- c3p0 -->
+      <Logger name="org.quartz" level="INFO"/>
+      <Logger name="org.apache.http" level="INFO"/>
+      <Logger name="liquibase" level="INFO"/>
       <Root level="all">
          <AppenderRef ref="SystemOutAppender"/>
          <AppenderRef ref="SyslogAppender"/>
