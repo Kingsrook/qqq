@@ -24,7 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.reporting.excel;
 
 import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiStyleCustomizerInterface;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiBasedStreamingStyleCustomizerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Font;
@@ -35,7 +35,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class TestExcelStyler implements ExcelPoiStyleCustomizerInterface
+public class TestExcelStyler implements ExcelPoiBasedStreamingStyleCustomizerInterface
 {
 
    /***************************************************************************

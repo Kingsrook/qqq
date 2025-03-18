@@ -56,7 +56,7 @@ public class StreamedSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void beginSheet(QReportView view, ExcelPoiStyleCustomizerInterface styleCustomizerInterface) throws IOException
+   public void beginSheet(QReportView view, ExcelPoiBasedStreamingStyleCustomizerInterface styleCustomizerInterface) throws IOException
    {
       writer.write("""
          <?xml version="1.0" encoding="UTF-8"?>
@@ -70,9 +70,13 @@ public class StreamedSheetWriter
             writer.write("<cols>");
             for(int i = 0; i < columnWidths.size(); i++)
             {
-               writer.write("""
-                  <col min="%d" max="%d" width="%d" customWidth="1"/>
-                  """.formatted(i + 1, i + 1, columnWidths.get(i)));
+               Integer width = columnWidths.get(i);
+               if(width != null)
+               {
+                  writer.write("""
+                     <col min="%d" max="%d" width="%d" customWidth="1"/>
+                     """.formatted(i + 1, i + 1, width));
+               }
             }
             writer.write("</cols>");
          }
@@ -86,7 +90,7 @@ public class StreamedSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void endSheet(QReportView view, ExcelPoiStyleCustomizerInterface styleCustomizerInterface) throws IOException
+   public void endSheet(QReportView view, ExcelPoiBasedStreamingStyleCustomizerInterface styleCustomizerInterface) throws IOException
    {
       writer.write("</sheetData>");
 
