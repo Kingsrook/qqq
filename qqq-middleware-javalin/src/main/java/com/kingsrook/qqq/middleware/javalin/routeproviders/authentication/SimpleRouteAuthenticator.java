@@ -55,6 +55,23 @@ public class SimpleRouteAuthenticator implements RouteAuthenticatorInterface
       {
          QSession qSession = QJavalinImplementation.setupSession(context, null);
          LOG.debug("Session has been activated", logPair("uuid", qSession.getUuid()));
+
+         if(context.queryParamMap().containsKey("code") && context.queryParamMap().containsKey("state"))
+         {
+            //////////////////////////////////////////////////////////////////////////
+            // if this request was a callback from oauth, with code & state params, //
+            // then redirect one last time removing those from the query string     //
+            //////////////////////////////////////////////////////////////////////////
+            String redirectURL = context.fullUrl().replace("code=" + context.queryParam("code"), "")
+               .replace("state=" + context.queryParam("state"), "")
+               .replaceFirst("&+$", "")
+               .replaceFirst("\\?&", "?")
+               .replaceFirst("\\?$", "");
+            context.redirect(redirectURL);
+            LOG.debug("Redirecting request to remove code and state parameters");
+            return (false);
+         }
+
          return (true);
       }
       catch(QAuthenticationException e)

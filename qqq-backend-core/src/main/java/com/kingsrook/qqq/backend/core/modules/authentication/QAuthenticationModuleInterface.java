@@ -84,7 +84,7 @@ public interface QAuthenticationModuleInterface
    /***************************************************************************
     **
     ***************************************************************************/
-   default String getLoginRedirectUrl(String originalUrl)
+   default String getLoginRedirectUrl(String originalUrl) throws QAuthenticationException
    {
       throw (new NotImplementedException("The method getLoginRedirectUrl() is not implemented in the authentication module: " + this.getClass().getSimpleName()));
    }

@@ -646,6 +646,8 @@ public class QInstanceValidator
             validateSimpleCodeReference("Instance Authentication meta data customizer ", authentication.getCustomizer(), QAuthenticationModuleCustomizerInterface.class);
          }
 
+         authentication.validate(qInstance, this);
+
          runPlugins(QAuthenticationMetaData.class, authentication, qInstance);
       }
    }

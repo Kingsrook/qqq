@@ -137,6 +137,7 @@ import com.kingsrook.qqq.middleware.javalin.misc.DownloadFileSupplementalAction;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
+import io.javalin.http.Cookie;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -535,14 +536,24 @@ public class QJavalinImplementation
 
       try
       {
+         ///////////////////////////////////////////////
+         // note:  duplicated in ExecutorSessionUtils //
+         ///////////////////////////////////////////////
          Map<String, String> authenticationContext = new HashMap<>();
 
          String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
          String sessionUuidCookieValue   = context.cookie(Auth0AuthenticationModule.SESSION_UUID_KEY);
          String authorizationHeaderValue = context.header("Authorization");
          String apiKeyHeaderValue        = context.header("x-api-key");
+         String codeQueryParamValue      = context.queryParam("code");
+         String stateQueryParamValue     = context.queryParam("state");
 
-         if(StringUtils.hasContent(sessionIdCookieValue))
+         if(StringUtils.hasContent(codeQueryParamValue) && StringUtils.hasContent(stateQueryParamValue))
+         {
+            authenticationContext.put("code", codeQueryParamValue);
+            authenticationContext.put("state", stateQueryParamValue);
+         }
+         else if(StringUtils.hasContent(sessionIdCookieValue))
          {
             ///////////////////////////////////////////////////////
             // sessionId - maybe used by table-based auth module //

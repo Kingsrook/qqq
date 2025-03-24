@@ -23,9 +23,12 @@ package com.kingsrook.qqq.backend.core.model.metadata.authentication;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleDispatcher;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.OAuth2AuthenticationModule;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
@@ -36,6 +39,9 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
    private String baseUrl;
    private String tokenUrl;
    private String clientId;
+
+   private String userSessionTableName;
+   private String redirectStateTableName;
 
    ////////////////////////////////////////////////////////////////////////////////////////
    // keep this secret, on the server - don't let it be serialized and sent to a client! //
@@ -57,6 +63,33 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
       // ensure this module is registered with the dispatcher //
       //////////////////////////////////////////////////////////
       QAuthenticationModuleDispatcher.registerModule(QAuthenticationType.OAUTH2.getName(), OAuth2AuthenticationModule.class.getName());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QInstanceValidator qInstanceValidator)
+   {
+      super.validate(qInstance, qInstanceValidator);
+
+      String prefix = "OAuth2AuthenticationMetaData (named '" + getName() + "'): ";
+
+      qInstanceValidator.assertCondition(StringUtils.hasContent(baseUrl), prefix + "baseUrl must be set");
+      qInstanceValidator.assertCondition(StringUtils.hasContent(clientId), prefix + "clientId must be set");
+      qInstanceValidator.assertCondition(StringUtils.hasContent(clientSecret), prefix + "clientSecret must be set");
+
+      if(qInstanceValidator.assertCondition(StringUtils.hasContent(userSessionTableName), prefix + "userSessionTableName must be set"))
+      {
+         qInstanceValidator.assertCondition(qInstance.getTable(userSessionTableName) != null, prefix + "userSessionTableName ('" + userSessionTableName + "') was not found in the instance");
+      }
+
+      if(qInstanceValidator.assertCondition(StringUtils.hasContent(redirectStateTableName), prefix + "redirectStateTableName must be set"))
+      {
+         qInstanceValidator.assertCondition(qInstance.getTable(redirectStateTableName) != null, prefix + "redirectStateTableName ('" + redirectStateTableName + "') was not found in the instance");
+      }
    }
 
 
@@ -186,6 +219,68 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
    public OAuth2AuthenticationMetaData withTokenUrl(String tokenUrl)
    {
       this.tokenUrl = tokenUrl;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for userSessionTableName
+    *******************************************************************************/
+   public String getUserSessionTableName()
+   {
+      return (this.userSessionTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for userSessionTableName
+    *******************************************************************************/
+   public void setUserSessionTableName(String userSessionTableName)
+   {
+      this.userSessionTableName = userSessionTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for userSessionTableName
+    *******************************************************************************/
+   public OAuth2AuthenticationMetaData withUserSessionTableName(String userSessionTableName)
+   {
+      this.userSessionTableName = userSessionTableName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for redirectStateTableName
+    *******************************************************************************/
+   public String getRedirectStateTableName()
+   {
+      return (this.redirectStateTableName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for redirectStateTableName
+    *******************************************************************************/
+   public void setRedirectStateTableName(String redirectStateTableName)
+   {
+      this.redirectStateTableName = redirectStateTableName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for redirectStateTableName
+    *******************************************************************************/
+   public OAuth2AuthenticationMetaData withRedirectStateTableName(String redirectStateTableName)
+   {
+      this.redirectStateTableName = redirectStateTableName;
       return (this);
    }
 
