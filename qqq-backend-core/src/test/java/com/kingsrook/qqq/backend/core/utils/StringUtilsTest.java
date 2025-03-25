@@ -334,4 +334,20 @@ class StringUtilsTest extends BaseTest
       assertEquals("a", StringUtils.emptyToNull("a"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppendIncrementingSuffix()
+   {
+      assertEquals("test (1)", StringUtils.appendIncrementingSuffix("test"));
+      assertEquals("test (2)", StringUtils.appendIncrementingSuffix("test (1)"));
+      assertEquals("test (a) (1)", StringUtils.appendIncrementingSuffix("test (a)"));
+      assertEquals("test (a32) (1)", StringUtils.appendIncrementingSuffix("test (a32)"));
+      assertEquals("test ((2)) (1)", StringUtils.appendIncrementingSuffix("test ((2))"));
+      assertEquals("test ((2)) (101)", StringUtils.appendIncrementingSuffix("test ((2)) (100)"));
+   }
+
 }

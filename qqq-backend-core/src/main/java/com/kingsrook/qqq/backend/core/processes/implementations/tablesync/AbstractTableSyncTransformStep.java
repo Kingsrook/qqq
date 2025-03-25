@@ -356,12 +356,12 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
             {
                if(existingRecord != null)
                {
-                  LOG.info("Skipping storing existing record because this sync process is set to not perform updates");
+                  LOG.debug("Skipping storing existing record because this sync process is set to not perform updates");
                   willNotInsert.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
                }
                else
                {
-                  LOG.info("Skipping storing new record because this sync process is set to not perform inserts");
+                  LOG.debug("Skipping storing new record because this sync process is set to not perform inserts");
                   willNotUpdate.incrementCountAndAddPrimaryKey(sourcePrimaryKey);
                }
                continue;
