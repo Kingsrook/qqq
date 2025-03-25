@@ -212,7 +212,7 @@ public class BaseAPIActionUtil
       catch(QNotFoundException qnfe)
       {
          LOG.info("Not found", qnfe);
-         throw new QException("Error executing get: " + qnfe.getMessage(), qnfe);
+         throw (qnfe);
       }
       catch(Exception e)
       {

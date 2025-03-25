@@ -18,7 +18,6 @@
       </File>
    </Appenders>
    <Loggers>
-      <Logger name="org.apache.log4j.xml" additivity="false" />
       <Logger name="org.mongodb.driver" level="WARN" />
       <Logger name="org.eclipse.jetty" level="INFO" />
       <Logger name="io.javalin" level="INFO" />
