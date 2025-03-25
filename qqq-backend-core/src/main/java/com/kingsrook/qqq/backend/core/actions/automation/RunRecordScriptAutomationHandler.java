@@ -83,7 +83,7 @@ public class RunRecordScriptAutomationHandler extends RecordAutomationHandler
       }
 
       QRecord scriptRevision = queryOutput.getRecords().get(0);
-      LOG.info("Running script against records", logPair("scriptRevisionId", scriptRevision.getValue("id")), logPair("scriptId", scriptRevision.getValue("scriptIdd")));
+      LOG.debug("Running script against records", logPair("scriptRevisionId", scriptRevision.getValue("id")), logPair("scriptId", scriptRevision.getValue("scriptIdd")));
 
       RunAdHocRecordScriptInput input = new RunAdHocRecordScriptInput();
       input.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionRecord(scriptRevision));

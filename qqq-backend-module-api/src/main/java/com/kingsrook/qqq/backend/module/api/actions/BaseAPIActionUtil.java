@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -207,6 +208,11 @@ public class BaseAPIActionUtil
          }
 
          return rs;
+      }
+      catch(QNotFoundException qnfe)
+      {
+         LOG.info("Not found", qnfe);
+         throw new QException("Error executing get: " + qnfe.getMessage(), qnfe);
       }
       catch(Exception e)
       {

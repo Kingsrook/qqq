@@ -56,6 +56,7 @@ public class ValueUtils
 
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMddWithDashes = DateTimeFormatter.ofPattern("yyyy-MM-dd");
    private static final DateTimeFormatter dateTimeFormatter_MdyyyyWithSlashes  = DateTimeFormatter.ofPattern("M/d/yyyy");
+   private static final DateTimeFormatter dateTimeFormatter_MdyyWithSlashes    = DateTimeFormatter.ofPattern("M/d/yyyy");
    private static final DateTimeFormatter dateTimeFormatter_yyyyMMdd           = DateTimeFormatter.ofPattern("yyyyMMdd");
 
 
@@ -450,7 +451,7 @@ public class ValueUtils
    private static LocalDate tryLocalDateParsers(String s)
    {
       DateTimeParseException lastException = null;
-      for(DateTimeFormatter dateTimeFormatter : List.of(dateTimeFormatter_yyyyMMddWithDashes, dateTimeFormatter_MdyyyyWithSlashes, dateTimeFormatter_yyyyMMdd))
+      for(DateTimeFormatter dateTimeFormatter : List.of(dateTimeFormatter_yyyyMMddWithDashes, dateTimeFormatter_MdyyyyWithSlashes, dateTimeFormatter_yyyyMMdd, dateTimeFormatter_MdyyWithSlashes))
       {
          try
          {

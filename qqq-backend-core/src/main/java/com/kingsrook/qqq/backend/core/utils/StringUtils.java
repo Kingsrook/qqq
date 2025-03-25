@@ -475,4 +475,31 @@ public class StringUtils
       return (s);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String appendIncrementingSuffix(String input)
+   {
+      ////////////////////////////////
+      // remove any existing suffix //
+      ////////////////////////////////
+      String base = input.replaceAll(" \\(\\d+\\)$", "");
+      if(input.matches(".* \\(\\d+\\)$"))
+      {
+         //////////////////////////
+         // increment if matches //
+         //////////////////////////
+         int current = Integer.parseInt(input.replaceAll(".* \\((\\d+)\\)$", "$1"));
+         return base + " (" + (current + 1) + ")";
+      }
+      else
+      {
+         ////////////////////////////////////
+         // no match so put a 1 at the end //
+         ////////////////////////////////////
+         return base + " (1)";
+      }
+   }
 }
