@@ -27,14 +27,14 @@ if [ \! $(echo "$REVISION" | grep SNAPSHOT) ]; then
 fi
 
 ##################################################################################
-## ## figure out if we need a SLUG:  a snapshot- tag, or an integration/ branch ##
+## ## figure out if we need a SLUG:  a snapshot- tag, or an integration branch ##
 ##################################################################################
 SLUG=""
 if [ $(echo "$CIRCLE_TAG" | grep ^snapshot-) ]; then
    SLUG=$(echo "$CIRCLE_TAG" | sed "s/^snapshot-//")-
    echo "Using slug [$SLUG] from tag [$CIRCLE_TAG]"
 
-elif [ $(echo "$CIRCLE_BRANCH" |  grep ^integration/) ]; then
+elif [ $(echo "$CIRCLE_BRANCH" |  grep ^integration) ]; then
    SLUG=$(echo "$CIRCLE_BRANCH" | sed "s,/,-,g")-
    echo "Using slug [$SLUG] from branch [$CIRCLE_BRANCH]"
 fi
