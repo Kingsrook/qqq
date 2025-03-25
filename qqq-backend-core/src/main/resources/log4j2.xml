@@ -26,8 +26,7 @@
       <Logger name="com.mchange.v2" level="INFO" />
       <Logger name="org.quartz" level="INFO" />
       <Logger name="liquibase" level="INFO" />
-      <Logger name="com.amazonaws" level="INFO" />
-      <Root level="INFO">
+      <Root level="all">
          <AppenderRef ref="SystemOutAppender"/>
          <AppenderRef ref="SyslogAppender"/>
          <!-- <AppenderRef ref="LogFileAppender"/> -->
