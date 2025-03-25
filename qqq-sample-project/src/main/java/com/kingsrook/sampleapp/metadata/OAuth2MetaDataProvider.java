@@ -28,6 +28,8 @@ import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.OAuth2AuthenticationMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.authentication.QAuthenticationMetaData;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.metadata.RedirectStateMetaDataProducer;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.model.UserSession;
 
 
 /*******************************************************************************
@@ -49,15 +51,15 @@ public class OAuth2MetaDataProvider implements MetaDataProducerInterface<QAuthen
       QMetaDataVariableInterpreter qMetaDataVariableInterpreter = new QMetaDataVariableInterpreter();
 
       String oauth2BaseUrl      = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_BASE_URL}");
-      String oauth2TokenUrl     = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_TOKEN_URL}");
       String oauth2ClientId     = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_CLIENT_ID}");
       String oauth2ClientSecret = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_CLIENT_SECRET}");
 
       return (new OAuth2AuthenticationMetaData()
          .withBaseUrl(oauth2BaseUrl)
-         .withTokenUrl(oauth2TokenUrl)
          .withClientId(oauth2ClientId)
          .withClientSecret(oauth2ClientSecret)
+         .withUserSessionTableName(UserSession.TABLE_NAME)
+         .withRedirectStateTableName(RedirectStateMetaDataProducer.TABLE_NAME)
          .withName(NAME));
    }
 }

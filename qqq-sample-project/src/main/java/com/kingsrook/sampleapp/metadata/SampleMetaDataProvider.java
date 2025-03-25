@@ -72,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.modules.authentication.implementations.metadata.RedirectStateMetaDataProducer;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.metadata.UserSessionMetaDataProducer;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
@@ -86,6 +87,7 @@ import com.kingsrook.qqq.backend.module.filesystem.local.model.metadata.Filesyst
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
 import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSBackendMetaData;
+import com.kingsrook.qqq.backend.module.rdbms.model.metadata.RDBMSTableBackendDetails;
 import com.kingsrook.sampleapp.dashboard.widgets.PersonsByCreateDateBarChart;
 import com.kingsrook.sampleapp.processes.clonepeople.ClonePeopleTransformStep;
 import org.apache.commons.io.IOUtils;
@@ -161,7 +163,8 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
       qInstance.addProcess(defineProcessScreenThenSleep());
       qInstance.addProcess(defineProcessSimpleThrow());
 
-      qInstance.addTable(new UserSessionMetaDataProducer(MEMORY_BACKEND_NAME).produce(qInstance));
+      qInstance.addTable(setTableBackendNamesForRdbms(new UserSessionMetaDataProducer(RDBMS_BACKEND_NAME).produce(qInstance)));
+      qInstance.addTable(setTableBackendNamesForRdbms(new RedirectStateMetaDataProducer(RDBMS_BACKEND_NAME).produce(qInstance)));
 
       MetaDataProducerHelper.processAllMetaDataProducersInPackage(qInstance, SampleMetaDataProvider.class.getPackageName());
 
@@ -170,6 +173,21 @@ public class SampleMetaDataProvider extends AbstractQQQApplication
       defineApps(qInstance);
 
       return (qInstance);
+   }
+
+
+
+   /*******************************************************************************
+    ** if rdbms backend uses snake_case table & column names, instead of camelCase
+    ** style used for qqq meta-data tableNames and fieldNames, then set those via
+    ** this method.
+    *******************************************************************************/
+   private static QTableMetaData setTableBackendNamesForRdbms(QTableMetaData table)
+   {
+      table.setBackendDetails(new RDBMSTableBackendDetails()
+         .withTableName(QInstanceEnricher.inferBackendName(table.getName())));
+      QInstanceEnricher.setInferredFieldBackendNames(table);
+      return (table);
    }
 
 
