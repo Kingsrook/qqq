@@ -300,12 +300,12 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
             }
          });
 
-         return authUrl +
-            "?client_id=" + URLEncoder.encode(oauth2MetaData.getClientId(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + URLEncoder.encode(originalUrl, StandardCharsets.UTF_8) +
-            "&response_type=code" +
-            "&scope=" + URLEncoder.encode("openid profile email", StandardCharsets.UTF_8) +
-            "&state=" + URLEncoder.encode(state.getValue(), StandardCharsets.UTF_8);
+         return authUrl
+            + "?client_id=" + URLEncoder.encode(oauth2MetaData.getClientId(), StandardCharsets.UTF_8)
+            + "&redirect_uri=" + URLEncoder.encode(originalUrl, StandardCharsets.UTF_8)
+            + "&response_type=code"
+            + "&scope=" + URLEncoder.encode("openid profile email", StandardCharsets.UTF_8)
+            + "&state=" + URLEncoder.encode(state.getValue(), StandardCharsets.UTF_8);
       }
       catch(Exception e)
       {
@@ -338,7 +338,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
       user.setFullName(name);
 
       ////////////////////////////////////////////////////////////
-      // todo - this needs to be much better standardized w/ fe //
+      // todo wip - this needs to be much better standardized w/ fe //
       ////////////////////////////////////////////////////////////
       session.withValueForFrontend("user", new HashMap<>(Map.of("name", name, "email", email)));
 

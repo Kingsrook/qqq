@@ -39,7 +39,6 @@ public class SampleJavalinMetaDataProducer extends MetaDataProducer<QJavalinMeta
 
    /*******************************************************************************
     ** todo wip - test sub-directories of each other
-    ** todo wip - another redirect to get rid of the code & state from url
     ** todo wip - allow mat-dash to be served at a different path
     ** todo wip - get mat-dash committed
     *******************************************************************************/
@@ -59,8 +58,7 @@ public class SampleJavalinMetaDataProducer extends MetaDataProducer<QJavalinMeta
          .withRouteProvider(new JavalinRouteProviderMetaData()
             .withRouteAuthenticator(new QCodeReference(SimpleRouteAuthenticator.class))
             .withHostedPath("/dynamic-site/<pagePath>")
-            .withProcessName(DynamicSiteProcessMetaDataProducer.NAME))
-      );
+            .withProcessName(DynamicSiteProcessMetaDataProducer.NAME)));
    }
 
 }
