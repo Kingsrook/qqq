@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,225 +19,250 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.actions.reporting;
+package com.kingsrook.qqq.backend.core.model.metadata.branding;
 
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
-import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
-import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 
 
 /*******************************************************************************
- ** Input for a Report action
+ ** element of BrandingMetaData - content to send to a frontend for showing a
+ ** user across the whole UI - e.g., what environment you're in, or a message
+ ** about your account - site announcements, etc.  
  *******************************************************************************/
-public class ReportInput extends AbstractTableActionInput
+public class Banner implements Serializable, Cloneable
 {
-   private String          reportName;
-   private QReportMetaData reportMetaData;
+   private Severity severity;
+   private String   textColor;
+   private String   backgroundColor;
+   private String   messageText;
+   private String   messageHTML;
 
-   private Map<String, Serializable> inputValues;
-
-   private ReportDestination reportDestination;
-
-   private Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier;
-   private QCodeReference                              exportStyleCustomizer;
+   private Map<String, Serializable> additionalStyles;
 
 
 
-   /*******************************************************************************
+   /***************************************************************************
     **
-    *******************************************************************************/
-   public ReportInput()
+    ***************************************************************************/
+   public enum Severity
    {
+      INFO, WARNING, ERROR, SUCCESS
    }
 
 
 
-   /*******************************************************************************
-    ** Getter for reportName
+   /***************************************************************************
     **
-    *******************************************************************************/
-   public String getReportName()
+    ***************************************************************************/
+   @Override
+   public Banner clone()
    {
-      return reportName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for reportName
-    **
-    *******************************************************************************/
-   public void setReportName(String reportName)
-   {
-      this.reportName = reportName;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for inputValues
-    **
-    *******************************************************************************/
-   public Map<String, Serializable> getInputValues()
-   {
-      return inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for inputValues
-    **
-    *******************************************************************************/
-   public void setInputValues(Map<String, Serializable> inputValues)
-   {
-      this.inputValues = inputValues;
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addInputValue(String key, Serializable value)
-   {
-      if(this.inputValues == null)
+      try
       {
-         this.inputValues = new HashMap<>();
+         Banner clone = (Banner) super.clone();
+
+         //////////////////////////////////////////////////////////////////////////////////////
+         // copy mutable state here, so the clone can't change the internals of the original //
+         //////////////////////////////////////////////////////////////////////////////////////
+         if(additionalStyles != null)
+         {
+            clone.setAdditionalStyles(new LinkedHashMap<>(additionalStyles));
+         }
+
+         return clone;
       }
-      this.inputValues.put(key, value);
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
 
    /*******************************************************************************
-    ** Getter for reportDestination
+    ** Getter for textColor
     *******************************************************************************/
-   public ReportDestination getReportDestination()
+   public String getTextColor()
    {
-      return (this.reportDestination);
+      return (this.textColor);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportDestination
+    ** Setter for textColor
     *******************************************************************************/
-   public void setReportDestination(ReportDestination reportDestination)
+   public void setTextColor(String textColor)
    {
-      this.reportDestination = reportDestination;
+      this.textColor = textColor;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for reportDestination
+    ** Fluent setter for textColor
     *******************************************************************************/
-   public ReportInput withReportDestination(ReportDestination reportDestination)
+   public Banner withTextColor(String textColor)
    {
-      this.reportDestination = reportDestination;
+      this.textColor = textColor;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for reportMetaData
+    ** Getter for backgroundColor
     *******************************************************************************/
-   public QReportMetaData getReportMetaData()
+   public String getBackgroundColor()
    {
-      return (this.reportMetaData);
+      return (this.backgroundColor);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for reportMetaData
+    ** Setter for backgroundColor
     *******************************************************************************/
-   public void setReportMetaData(QReportMetaData reportMetaData)
+   public void setBackgroundColor(String backgroundColor)
    {
-      this.reportMetaData = reportMetaData;
+      this.backgroundColor = backgroundColor;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for reportMetaData
+    ** Fluent setter for backgroundColor
     *******************************************************************************/
-   public ReportInput withReportMetaData(QReportMetaData reportMetaData)
+   public Banner withBackgroundColor(String backgroundColor)
    {
-      this.reportMetaData = reportMetaData;
+      this.backgroundColor = backgroundColor;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for overrideExportStreamerSupplier
-    **
+    ** Getter for additionalStyles
     *******************************************************************************/
-   public Supplier<? extends ExportStreamerInterface> getOverrideExportStreamerSupplier()
+   public Map<String, Serializable> getAdditionalStyles()
    {
-      return overrideExportStreamerSupplier;
+      return (this.additionalStyles);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for overrideExportStreamerSupplier
-    **
+    ** Setter for additionalStyles
     *******************************************************************************/
-   public void setOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   public void setAdditionalStyles(Map<String, Serializable> additionalStyles)
    {
-      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+      this.additionalStyles = additionalStyles;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for overrideExportStreamerSupplier
-    **
+    ** Fluent setter for additionalStyles
     *******************************************************************************/
-   public ReportInput withOverrideExportStreamerSupplier(Supplier<? extends ExportStreamerInterface> overrideExportStreamerSupplier)
+   public Banner withAdditionalStyles(Map<String, Serializable> additionalStyles)
    {
-      this.overrideExportStreamerSupplier = overrideExportStreamerSupplier;
+      this.additionalStyles = additionalStyles;
       return (this);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for exportStyleCustomizer
+    ** Getter for messageText
     *******************************************************************************/
-   public QCodeReference getExportStyleCustomizer()
+   public String getMessageText()
    {
-      return (this.exportStyleCustomizer);
+      return (this.messageText);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for exportStyleCustomizer
+    ** Setter for messageText
     *******************************************************************************/
-   public void setExportStyleCustomizer(QCodeReference exportStyleCustomizer)
+   public void setMessageText(String messageText)
    {
-      this.exportStyleCustomizer = exportStyleCustomizer;
+      this.messageText = messageText;
    }
 
 
 
    /*******************************************************************************
-    ** Fluent setter for exportStyleCustomizer
+    ** Fluent setter for messageText
     *******************************************************************************/
-   public ReportInput withExportStyleCustomizer(QCodeReference exportStyleCustomizer)
+   public Banner withMessageText(String messageText)
    {
-      this.exportStyleCustomizer = exportStyleCustomizer;
+      this.messageText = messageText;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for messageHTML
+    *******************************************************************************/
+   public String getMessageHTML()
+   {
+      return (this.messageHTML);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for messageHTML
+    *******************************************************************************/
+   public void setMessageHTML(String messageHTML)
+   {
+      this.messageHTML = messageHTML;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for messageHTML
+    *******************************************************************************/
+   public Banner withMessageHTML(String messageHTML)
+   {
+      this.messageHTML = messageHTML;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for severity
+    *******************************************************************************/
+   public Severity getSeverity()
+   {
+      return (this.severity);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for severity
+    *******************************************************************************/
+   public void setSeverity(Severity severity)
+   {
+      this.severity = severity;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for severity
+    *******************************************************************************/
+   public Banner withSeverity(Severity severity)
+   {
+      this.severity = severity;
       return (this);
    }
 

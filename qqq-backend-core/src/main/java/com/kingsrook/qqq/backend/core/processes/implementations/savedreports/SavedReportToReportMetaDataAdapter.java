@@ -318,7 +318,7 @@ public class SavedReportToReportMetaDataAdapter
    /*******************************************************************************
     **
     *******************************************************************************/
-   private static QReportField makeQReportField(String fieldName, FieldAndJoinTable fieldAndJoinTable)
+   public static QReportField makeQReportField(String fieldName, FieldAndJoinTable fieldAndJoinTable)
    {
       QReportField reportField = new QReportField();
 
@@ -404,5 +404,5 @@ public class SavedReportToReportMetaDataAdapter
    /*******************************************************************************
     **
     *******************************************************************************/
-   private record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable) {}
+   public record FieldAndJoinTable(QFieldMetaData field, QTableMetaData joinTable) {}
 }

@@ -417,7 +417,7 @@ public class MetaDataProducerHelper
          return (null);
       }
 
-      ChildJoinFromRecordEntityGenericMetaDataProducer producer = new ChildJoinFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, possibleValueFieldName);
+      ChildJoinFromRecordEntityGenericMetaDataProducer producer = new ChildJoinFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, possibleValueFieldName, childTable.childJoin().orderBy());
       producer.setSourceClass(entityClass);
       return producer;
    }

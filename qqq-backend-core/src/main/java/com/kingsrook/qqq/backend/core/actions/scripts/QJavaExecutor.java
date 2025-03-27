@@ -53,7 +53,8 @@ public class QJavaExecutor implements QCodeExecutor
       Serializable output;
       try
       {
-         Function<Map<String, Object>, Serializable> function = QCodeLoader.getFunction(codeReference);
+         @SuppressWarnings("unchecked")
+         Function<Map<String, Object>, Serializable> function = QCodeLoader.getAdHoc(Function.class, codeReference);
          output = function.apply(context);
       }
       catch(Exception e)

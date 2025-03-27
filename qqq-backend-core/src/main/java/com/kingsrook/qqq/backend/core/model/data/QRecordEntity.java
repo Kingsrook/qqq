@@ -583,4 +583,31 @@ public abstract class QRecordEntity
       return (null);
    }
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String getTableName(Class<? extends QRecordEntity> entityClass) throws QException
+   {
+      try
+      {
+         Field  tableNameField = entityClass.getDeclaredField("TABLE_NAME");
+         String tableNameValue = (String) tableNameField.get(null);
+         return (tableNameValue);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Could not get TABLE_NAME from entity class: " + entityClass.getSimpleName(), e));
+      }
+   }
+
+
+   /***************************************************************************
+    ** named without the 'get' to avoid conflict w/ entity fields named that...
+    ***************************************************************************/
+   public String tableName() throws QException
+   {
+      return (getTableName(this.getClass()));
+   }
+
 }
