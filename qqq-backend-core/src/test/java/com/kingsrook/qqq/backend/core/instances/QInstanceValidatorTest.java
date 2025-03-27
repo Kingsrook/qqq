@@ -40,6 +40,7 @@ import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarCh
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.ParentWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.AllowAllMetaDataFilter;
+import com.kingsrook.qqq.backend.core.actions.metadata.DefaultNoopMetaDataActionCustomizer;
 import com.kingsrook.qqq.backend.core.actions.processes.CancelProcessActionTest;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
@@ -157,6 +158,20 @@ public class QInstanceValidatorTest extends BaseTest
 
       assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(new QCodeReference(AllowAllMetaDataFilter.class)));
       assertValidationSuccess((qInstance) -> qInstance.setMetaDataFilter(null));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMetaDataActionCustomizer()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.setMetaDataActionCustomizer(new QCodeReference(QInstanceValidator.class)),
+         "Instance metaDataActionCustomizer CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataActionCustomizer(new QCodeReference(DefaultNoopMetaDataActionCustomizer.class)));
+      assertValidationSuccess((qInstance) -> qInstance.setMetaDataActionCustomizer(null));
    }
 
 

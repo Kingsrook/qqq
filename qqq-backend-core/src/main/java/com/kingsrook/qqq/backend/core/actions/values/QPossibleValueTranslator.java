@@ -341,7 +341,7 @@ public class QPossibleValueTranslator
 
       try
       {
-         QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+         QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getAdHoc(QCustomPossibleValueProvider.class, possibleValueSource.getCustomCodeReference());
          return (formatPossibleValue(possibleValueSource, customPossibleValueProvider.getPossibleValue(value)));
       }
       catch(Exception e)

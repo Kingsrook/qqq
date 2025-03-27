@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,22 +19,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
-
-
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+package com.kingsrook.qqq.backend.core.actions.reporting;
 
 
 /*******************************************************************************
+ ** interface for classes that can be used to customize visual style aspects of
+ ** exports/reports.
  **
+ ** Anticipates very different sub-interfaces based on the file type being generated,
+ ** and the capabilities of each.  e.g., excel (bolds, fonts, cell merging) vs
+ ** json (different structure of objects).
  *******************************************************************************/
-public class CouldNotFindQueryFilterForExtractStepException extends QUserFacingException
+public interface ExportStyleCustomizerInterface
 {
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public CouldNotFindQueryFilterForExtractStepException(String message)
-   {
-      super(message);
-   }
 }

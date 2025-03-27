@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.reporting.excel.TestExcelStyler;
 import com.kingsrook.qqq.backend.core.actions.reporting.excel.fastexcel.ExcelFastexcelExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.BoldHeaderAndFooterPoiExcelStyler;
 import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiBasedStreamingExportStreamer;
@@ -56,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -481,6 +483,34 @@ public class GenerateReportActionTest extends BaseTest
          reportInput.setReportName(REPORT_NAME);
          reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
          reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         new GenerateReportAction().execute(reportInput);
+         System.out.println("Wrote File: " + name);
+
+         LocalMacDevUtils.openFile(name);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void runXlsxWithStyleCustomizer() throws Exception
+   {
+      ReportFormat format = ReportFormat.XLSX;
+      String       name   = "/tmp/report-customized.xlsx";
+      try(FileOutputStream fileOutputStream = new FileOutputStream(name))
+      {
+         QInstance qInstance = QContext.getQInstance();
+         qInstance.addReport(defineTableOnlyReport());
+         insertPersonRecords(qInstance);
+
+         ReportInput reportInput = new ReportInput();
+         reportInput.setReportName(REPORT_NAME);
+         reportInput.setReportDestination(new ReportDestination().withReportFormat(format).withReportOutputStream(fileOutputStream));
+         reportInput.setInputValues(Map.of("startDate", LocalDate.of(1970, Month.MAY, 15), "endDate", LocalDate.now()));
+         reportInput.setExportStyleCustomizer(new QCodeReference(TestExcelStyler.class));
          new GenerateReportAction().execute(reportInput);
          System.out.println("Wrote File: " + name);
 

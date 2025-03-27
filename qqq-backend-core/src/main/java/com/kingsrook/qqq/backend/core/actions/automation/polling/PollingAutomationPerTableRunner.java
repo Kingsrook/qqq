@@ -649,7 +649,7 @@ public class PollingAutomationPerTableRunner implements Runnable
          input.setRecordList(records);
          input.setAction(action);
 
-         RecordAutomationHandler recordAutomationHandler = QCodeLoader.getRecordAutomationHandler(action);
+         RecordAutomationHandler recordAutomationHandler = QCodeLoader.getAdHoc(RecordAutomationHandler.class, action.getCodeReference());
          recordAutomationHandler.execute(input);
       }
    }

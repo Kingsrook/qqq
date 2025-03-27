@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,32 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.producers.annotations;
+package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-
-/***************************************************************************
- ** value that goes inside a QMetadataProducingEntity annotation, to control
- ** the generation of a QJoinMetaData
- ***************************************************************************/
-@Retention(RetentionPolicy.RUNTIME)
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
-public @interface ChildJoin
+/*******************************************************************************
+ ** an object which is intended to be constructed via a CodeReference, and,
+ ** moreso, after it is created, then the initialize method here gets called,
+ ** passing the codeRefernce in - e.g., to do additional initalization of the
+ ** object, e.g., properties in a QCodeReferenceWithProperties
+ *******************************************************************************/
+public interface InitializableViaCodeReference
 {
-   boolean enabled();
-
-   OrderBy[] orderBy() default { };
-
    /***************************************************************************
     **
     ***************************************************************************/
-   @interface OrderBy
-   {
-      String fieldName();
+   void initialize(QCodeReference codeReference);
 
-      boolean isAscending() default true;
-   }
 }

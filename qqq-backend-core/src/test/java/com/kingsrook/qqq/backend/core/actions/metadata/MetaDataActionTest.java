@@ -364,6 +364,7 @@ class MetaDataActionTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   @Deprecated(since = "migrated to metaDataCustomizer")
    void testFilter() throws QException
    {
       QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(MetaDataAction.class);
@@ -397,7 +398,7 @@ class MetaDataActionTest extends BaseTest
       // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       new MetaDataAction().execute(new MetaDataInput());
-      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("filter of type: DenyAllFilter")).hasSize(1);
+      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("actionCustomizer (via metaDataFilter reference) of type: DenyAllFilter")).hasSize(1);
 
       QLogger.deactivateCollectingLoggerForClass(MetaDataAction.class);
 
@@ -413,10 +414,124 @@ class MetaDataActionTest extends BaseTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCustomizer() throws QException
+   {
+      QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(MetaDataAction.class);
+
+      //////////////////////////////////////////////////////
+      // run default version, and assert tables are found //
+      //////////////////////////////////////////////////////
+      MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
+      assertFalse(result.getTables().isEmpty(), "should be some tables");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new MetaDataAction().execute(new MetaDataInput());
+      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("Using new default")).hasSize(1);
+
+      /////////////////////////////////////////////////////////////
+      // set up new instance to use a custom filter, to deny all //
+      /////////////////////////////////////////////////////////////
+      QInstance instance = TestUtils.defineInstance();
+      instance.setMetaDataActionCustomizer(new QCodeReference(DenyAllFilteringCustomizer.class));
+      reInitInstanceInContext(instance);
+
+      /////////////////////////////////////////////////////
+      // re-run, and assert all tables are filtered away //
+      /////////////////////////////////////////////////////
+      result = new MetaDataAction().execute(new MetaDataInput());
+      assertTrue(result.getTables().isEmpty(), "should be no tables");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // run again (with the same instance as before) to assert about memoization of the filter based on the QInstance //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      new MetaDataAction().execute(new MetaDataInput());
+      assertThat(collectingLogger.getCollectedMessages()).filteredOn(clm -> clm.getMessage().contains("meta-data actionCustomizer of type: DenyAllFilteringCustomizer")).hasSize(1);
+
+      QLogger.deactivateCollectingLoggerForClass(MetaDataAction.class);
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // run now with the DefaultNoopMetaDataActionCustomizer, confirm we get tables //
+      /////////////////////////////////////////////////////////////////////////////////
+      instance = TestUtils.defineInstance();
+      instance.setMetaDataActionCustomizer(new QCodeReference(DefaultNoopMetaDataActionCustomizer.class));
+      reInitInstanceInContext(instance);
+      result = new MetaDataAction().execute(new MetaDataInput());
+      assertFalse(result.getTables().isEmpty(), "should be some tables");
+   }
+
+
+
    /***************************************************************************
     **
     ***************************************************************************/
    public static class DenyAllFilter implements MetaDataFilterInterface
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowTable(MetaDataInput input, QTableMetaData table)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowProcess(MetaDataInput input, QProcessMetaData process)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowReport(MetaDataInput input, QReportMetaData report)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowApp(MetaDataInput input, QAppMetaData app)
+      {
+         return false;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget)
+      {
+         return false;
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class DenyAllFilteringCustomizer implements MetaDataActionCustomizerInterface
    {
       /***************************************************************************
        **

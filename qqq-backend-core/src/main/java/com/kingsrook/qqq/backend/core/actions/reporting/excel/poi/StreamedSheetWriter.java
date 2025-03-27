@@ -25,7 +25,10 @@ package com.kingsrook.qqq.backend.core.actions.reporting.excel.poi;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import org.apache.poi.ss.util.CellReference;
 
 
@@ -53,13 +56,33 @@ public class StreamedSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void beginSheet() throws IOException
+   public void beginSheet(QReportView view, ExcelPoiBasedStreamingStyleCustomizerInterface styleCustomizerInterface) throws IOException
    {
       writer.write("""
          <?xml version="1.0" encoding="UTF-8"?>
-            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-               <sheetData>""");
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">""");
 
+      if(styleCustomizerInterface != null && view != null)
+      {
+         List<Integer> columnWidths = styleCustomizerInterface.getColumnWidthsForView(view);
+         if(CollectionUtils.nullSafeHasContents(columnWidths))
+         {
+            writer.write("<cols>");
+            for(int i = 0; i < columnWidths.size(); i++)
+            {
+               Integer width = columnWidths.get(i);
+               if(width != null)
+               {
+                  writer.write("""
+                     <col min="%d" max="%d" width="%d" customWidth="1"/>
+                     """.formatted(i + 1, i + 1, width));
+               }
+            }
+            writer.write("</cols>");
+         }
+      }
+
+      writer.write("<sheetData>");
    }
 
 
@@ -67,11 +90,25 @@ public class StreamedSheetWriter
    /*******************************************************************************
     **
     *******************************************************************************/
-   public void endSheet() throws IOException
+   public void endSheet(QReportView view, ExcelPoiBasedStreamingStyleCustomizerInterface styleCustomizerInterface) throws IOException
    {
-      writer.write("""
-            </sheetData>
-         </worksheet>""");
+      writer.write("</sheetData>");
+
+      if(styleCustomizerInterface != null && view != null)
+      {
+         List<String> mergedRanges = styleCustomizerInterface.getMergedRangesForView(view);
+         if(CollectionUtils.nullSafeHasContents(mergedRanges))
+         {
+            writer.write(String.format("<mergeCells count=\"%d\">", mergedRanges.size()));
+            for(String range : mergedRanges)
+            {
+               writer.write(String.format("<mergeCell ref=\"%s\"/>", range));
+            }
+            writer.write("</mergeCells>");
+         }
+      }
+
+      writer.write("</worksheet>");
    }
 
 
@@ -151,7 +188,7 @@ public class StreamedSheetWriter
             {
                rs.append("&quot;");
             }
-            else if (c < 32 && c != '\t' && c != '\n')
+            else if(c < 32 && c != '\t' && c != '\n')
             {
                rs.append(' ');
             }
