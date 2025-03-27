@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -196,6 +197,64 @@ public class QRecordWithJoinedRecords extends QRecord
          }
       }
       return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public Map<String, List<QRecord>> getAssociatedRecords()
+   {
+      return mainRecord.getAssociatedRecords();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QRecord withAssociatedRecord(String name, QRecord associatedRecord)
+   {
+      mainRecord.withAssociatedRecord(name, associatedRecord);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QRecord withAssociatedRecords(Map<String, List<QRecord>> associatedRecords)
+   {
+      mainRecord.withAssociatedRecords(associatedRecords);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void setAssociatedRecords(Map<String, List<QRecord>> associatedRecords)
+   {
+      mainRecord.setAssociatedRecords(associatedRecords);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QRecord withAssociatedRecords(String name, List<QRecord> associatedRecords)
+   {
+      mainRecord.withAssociatedRecords(name, associatedRecords);
+      return (this);
    }
 
 }
