@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2023.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,22 +19,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend;
+package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
+import java.io.Serializable;
+import java.util.Map;
 
 
 /*******************************************************************************
- **
+ ** a code reference that also has a map of properties.  This object (with the
+ ** properties) will be passed in to the referenced object, if it implements
+ ** InitializableViaCodeReference.
  *******************************************************************************/
-public class CouldNotFindQueryFilterForExtractStepException extends QUserFacingException
+public class QCodeReferenceWithProperties extends QCodeReference
 {
+   private final Map<String, Serializable> properties;
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public QCodeReferenceWithProperties(Class<?> javaClass, Map<String, Serializable> properties)
+   {
+      super(javaClass);
+      this.properties = properties;
+   }
+
+
+
    /*******************************************************************************
+    ** Getter for properties
     **
     *******************************************************************************/
-   public CouldNotFindQueryFilterForExtractStepException(String message)
+   public Map<String, Serializable> getProperties()
    {
-      super(message);
+      return properties;
    }
 }

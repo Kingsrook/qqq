@@ -48,6 +48,8 @@ public class QFrontendProcessMetaData
    private String  label;
    private String  tableName;
    private boolean isHidden;
+   private Integer minInputRecords;
+   private Integer maxInputRecords;
 
    private QIcon icon;
 
@@ -72,6 +74,8 @@ public class QFrontendProcessMetaData
       this.tableName = processMetaData.getTableName();
       this.isHidden = processMetaData.getIsHidden();
       this.stepFlow = processMetaData.getStepFlow().toString();
+      this.minInputRecords = processMetaData.getMinInputRecords();
+      this.maxInputRecords = processMetaData.getMaxInputRecords();
 
       if(includeSteps)
       {
@@ -213,4 +217,27 @@ public class QFrontendProcessMetaData
    {
       return icon;
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for minInputRecords
+    **
+    *******************************************************************************/
+   public Integer getMinInputRecords()
+   {
+      return minInputRecords;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxInputRecords
+    **
+    *******************************************************************************/
+   public Integer getMaxInputRecords()
+   {
+      return maxInputRecords;
+   }
+
 }

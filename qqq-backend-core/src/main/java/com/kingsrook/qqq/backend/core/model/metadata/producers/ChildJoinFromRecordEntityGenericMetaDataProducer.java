@@ -24,11 +24,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.producers;
 
 import java.util.Objects;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
@@ -39,12 +41,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
  **
  ** e.g., Orders & LineItems - on the Order entity
  ** <code>
- @QMetaDataProducingEntity(
-    childTables = { @ChildTable(
-       childTableEntityClass = LineItem.class,
-       childJoin = @ChildJoin(enabled = true),
-       childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Order Lines"))
-    }
+ @QMetaDataProducingEntity( childTables = { @ChildTable(
+ childTableEntityClass = LineItem.class,
+ childJoin = @ChildJoin(enabled = true),
+ childRecordListWidget = @ChildRecordListWidget(enabled = true, label = "Order Lines"))
+ }
  )
  public class Order extends QRecordEntity
  ** </code>
@@ -62,13 +63,16 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    private String parentTableName; // e.g., order
    private String foreignKeyFieldName; // e.g., orderId
 
+   private ChildJoin.OrderBy[] orderBys;
+
    private Class<?> sourceClass;
+
 
 
    /***************************************************************************
     **
     ***************************************************************************/
-   public ChildJoinFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, String foreignKeyFieldName)
+   public ChildJoinFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, String foreignKeyFieldName, ChildJoin.OrderBy[] orderBys)
    {
       Objects.requireNonNull(childTableName, "childTableName cannot be null");
       Objects.requireNonNull(parentTableName, "parentTableName cannot be null");
@@ -77,6 +81,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
       this.childTableName = childTableName;
       this.parentTableName = parentTableName;
       this.foreignKeyFieldName = foreignKeyFieldName;
+      this.orderBys = orderBys;
    }
 
 
@@ -87,10 +92,16 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    @Override
    public QJoinMetaData produce(QInstance qInstance) throws QException
    {
-      QTableMetaData possibleValueTable = qInstance.getTable(parentTableName);
-      if(possibleValueTable == null)
+      QTableMetaData parentTable = qInstance.getTable(parentTableName);
+      if(parentTable == null)
       {
          throw (new QException("Could not find tableMetaData " + parentTableName));
+      }
+
+      QTableMetaData childTable = qInstance.getTable(childTableName);
+      if(childTable == null)
+      {
+         throw (new QException("Could not find tableMetaData " + childTable));
       }
 
       QJoinMetaData join = new QJoinMetaData()
@@ -98,7 +109,22 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
          .withRightTable(childTableName)
          .withInferredName()
          .withType(JoinType.ONE_TO_MANY)
-         .withJoinOn(new JoinOn(possibleValueTable.getPrimaryKeyField(), foreignKeyFieldName));
+         .withJoinOn(new JoinOn(parentTable.getPrimaryKeyField(), foreignKeyFieldName));
+
+      if(orderBys != null && orderBys.length > 0)
+      {
+         for(ChildJoin.OrderBy orderBy : orderBys)
+         {
+            join.withOrderBy(new QFilterOrderBy(orderBy.fieldName(), orderBy.isAscending()));
+         }
+      }
+      else
+      {
+         //////////////////////////////////////////////////////////
+         // by default, sort by the id of the child table... mmm //
+         //////////////////////////////////////////////////////////
+         join.withOrderBy(new QFilterOrderBy(childTable.getPrimaryKeyField()));
+      }
 
       return (join);
    }
@@ -124,6 +150,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    {
       this.sourceClass = sourceClass;
    }
+
 
 
    /*******************************************************************************

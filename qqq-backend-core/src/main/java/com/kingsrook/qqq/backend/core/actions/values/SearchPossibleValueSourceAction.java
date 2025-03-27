@@ -424,7 +424,7 @@ public class SearchPossibleValueSourceAction
    {
       try
       {
-         QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+         QCustomPossibleValueProvider customPossibleValueProvider = QCodeLoader.getAdHoc(QCustomPossibleValueProvider.class, possibleValueSource.getCustomCodeReference());
          List<QPossibleValue<?>>      possibleValues              = customPossibleValueProvider.search(input);
 
          SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceOutput();

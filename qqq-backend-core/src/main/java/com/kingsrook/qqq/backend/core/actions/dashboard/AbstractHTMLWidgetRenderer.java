@@ -290,7 +290,18 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Deprecated(since = "call one that doesn't take input param")
    public static String linkRecordEdit(AbstractActionInput input, String tableName, Serializable recordId) throws QException
+   {
+      return linkRecordEdit(tableName, recordId);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkRecordEdit(String tableName, Serializable recordId) throws QException
    {
       String tablePath = QContext.getQInstance().getTablePath(tableName);
       return (tablePath + "/" + recordId + "/edit");
@@ -317,7 +328,17 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Deprecated(since = "call one that doesn't take input param")
    public static String linkProcessForFilter(AbstractActionInput input, String processName, QQueryFilter filter) throws QException
+   {
+      return linkProcessForFilter(processName, filter);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkProcessForFilter(String processName, QQueryFilter filter) throws QException
    {
       QProcessMetaData process = QContext.getQInstance().getProcess(processName);
       if(process == null)
@@ -337,10 +358,21 @@ public abstract class AbstractHTMLWidgetRenderer extends AbstractWidgetRenderer
 
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Deprecated(since = "call one that doesn't take input param")
    public static String linkProcessForRecord(AbstractActionInput input, String processName, Serializable recordId) throws QException
+   {
+      return linkProcessForRecord(processName, recordId);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String linkProcessForRecord(String processName, Serializable recordId) throws QException
    {
       QProcessMetaData process   = QContext.getQInstance().getProcess(processName);
       String           tableName = process.getTableName();

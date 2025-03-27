@@ -76,6 +76,23 @@ public class XlsxFileToRows extends AbstractIteratorBasedFileToRows<org.dhatim.f
    }
 
 
+   /***************************************************************************
+    ** open/go-to a specific sheet (by 0-based index).  resets rows & iterator.
+    ***************************************************************************/
+   public void openSheet(int index) throws IOException
+   {
+      Optional<Sheet> sheet = workbook.getSheet(index);
+
+      if(sheet.isEmpty())
+      {
+         throw (new IOException("No sheet found for index: " + index));
+      }
+
+      rows = sheet.get().openStream();
+      setIterator(rows.iterator());
+   }
+
+
 
    /***************************************************************************
     **
