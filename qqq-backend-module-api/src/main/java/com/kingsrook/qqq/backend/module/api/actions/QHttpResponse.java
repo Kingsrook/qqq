@@ -60,18 +60,16 @@ public class QHttpResponse
     *******************************************************************************/
    public QHttpResponse(HttpResponse httpResponse, boolean readContentAsBytes) throws Exception
    {
-      setGeneralHttpResponseData(httpResponse);
+      if(!readContentAsBytes)
+      {
+         new QHttpResponse(httpResponse);
+         return;
+      }
 
+      setGeneralHttpResponseData(httpResponse);
       if(this.statusCode == null || this.statusCode != 204)
       {
-         if(readContentAsBytes)
-         {
-            this.contentBytes = httpResponse.getEntity().getContent().readAllBytes();
-         }
-         else
-         {
-            this.content = EntityUtils.toString(httpResponse.getEntity());
-         }
+         this.contentBytes = httpResponse.getEntity().getContent().readAllBytes();
       }
    }
 
@@ -84,7 +82,6 @@ public class QHttpResponse
    public QHttpResponse(HttpResponse httpResponse) throws Exception
    {
       setGeneralHttpResponseData(httpResponse);
-
       if(this.statusCode == null || this.statusCode != 204)
       {
          this.content = EntityUtils.toString(httpResponse.getEntity());
