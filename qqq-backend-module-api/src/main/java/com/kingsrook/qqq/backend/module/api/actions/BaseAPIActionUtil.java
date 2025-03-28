@@ -743,6 +743,10 @@ public class BaseAPIActionUtil
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM -> addApiKeyQueryParamToRequest(request);
          case CUSTOM -> handleCustomAuthorization(request);
+         case NONE ->
+         {
+            /* nothing to do here */
+         }
          default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
    }
@@ -1177,6 +1181,16 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
+   protected QHttpResponse getQHttpResponse(HttpResponse response) throws Exception
+   {
+      return (new QHttpResponse(response));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
       int     rateLimitSleepMillis      = getInitialRateLimitBackoffMillis();
@@ -1207,7 +1221,7 @@ public class BaseAPIActionUtil
 
             try(CloseableHttpResponse response = executeHttpRequest(request, httpClient))
             {
-               QHttpResponse qResponse = new QHttpResponse(response);
+               QHttpResponse qResponse = getQHttpResponse(response);
 
                logOutboundApiCall(request, qResponse);
 
