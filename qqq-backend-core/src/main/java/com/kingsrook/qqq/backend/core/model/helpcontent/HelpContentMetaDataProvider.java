@@ -82,6 +82,7 @@ public class HelpContentMetaDataProvider
       table.getField("key").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
       table.getField("content").withFieldAdornment(AdornmentType.Size.LARGE.toAdornment());
       table.getField("content").withFieldAdornment(new FieldAdornment(AdornmentType.CODE_EDITOR).withValue(AdornmentType.CodeEditorValues.languageMode("html")));
+      table.getField("content").withGridColumns(12);
 
       if(backendDetailEnricher != null)
       {
