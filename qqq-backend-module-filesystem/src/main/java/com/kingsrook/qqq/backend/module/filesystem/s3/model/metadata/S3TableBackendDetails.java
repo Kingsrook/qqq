@@ -22,6 +22,11 @@
 package com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata;
 
 
+import java.util.Objects;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
 
@@ -31,6 +36,21 @@ import com.kingsrook.qqq.backend.module.filesystem.s3.S3BackendModule;
  *******************************************************************************/
 public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
 {
+   private ContentTypeStrategy contentTypeStrategy = ContentTypeStrategy.NONE;
+   private String contentTypeFieldName;
+   private String hardcodedContentType;
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public enum ContentTypeStrategy
+   {
+      BASED_ON_FILE_NAME,
+      FROM_FIELD,
+      HARDCODED,
+      NONE
+   }
 
 
 
@@ -42,5 +62,136 @@ public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
       super();
       setBackendType(S3BackendModule.class);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QTableMetaData table, QInstanceValidator qInstanceValidator)
+   {
+      super.validate(qInstance, table, qInstanceValidator);
+
+      String prefix = "Table " + (table == null ? "null" : table.getName()) + " backend details - ";
+      switch (Objects.requireNonNullElse(contentTypeStrategy, ContentTypeStrategy.NONE))
+      {
+         case FROM_FIELD ->
+         {
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(hardcodedContentType), prefix + "hardcodedContentType should not be set when contentTypeStrategy is " + contentTypeStrategy);
+
+            if(table != null && qInstanceValidator.assertCondition(StringUtils.hasContent(contentTypeFieldName), prefix + "contentTypeFieldName must be set when contentTypeStrategy is " + contentTypeStrategy))
+            {
+               qInstanceValidator.assertCondition(table.getFields().containsKey(contentTypeFieldName), prefix + "contentTypeFieldName must be a valid field name in the table");
+            }
+         }
+         case HARDCODED ->
+         {
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(contentTypeFieldName), prefix + "contentTypeFieldName should not be set when contentTypeStrategy is " + contentTypeStrategy);
+            qInstanceValidator.assertCondition(StringUtils.hasContent(hardcodedContentType), prefix + "hardcodedContentType must be set when contentTypeStrategy is " + contentTypeStrategy);
+         }
+         case BASED_ON_FILE_NAME, NONE ->
+         {
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(contentTypeFieldName), prefix + "contentTypeFieldName should not be set when contentTypeStrategy is " + contentTypeStrategy);
+            qInstanceValidator.assertCondition(!StringUtils.hasContent(hardcodedContentType), prefix + "hardcodedContentType should not be set when contentTypeStrategy is " + contentTypeStrategy);
+         }
+         default ->
+         {
+            throw new IllegalStateException("Unexpected value: " + contentTypeStrategy);
+         }
+      }
+   }
+
+   /*******************************************************************************
+    ** Getter for contentTypeStrategy
+    *******************************************************************************/
+   public ContentTypeStrategy getContentTypeStrategy()
+   {
+      return (this.contentTypeStrategy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentTypeStrategy
+    *******************************************************************************/
+   public void setContentTypeStrategy(ContentTypeStrategy contentTypeStrategy)
+   {
+      this.contentTypeStrategy = contentTypeStrategy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentTypeStrategy
+    *******************************************************************************/
+   public S3TableBackendDetails withContentTypeStrategy(ContentTypeStrategy contentTypeStrategy)
+   {
+      this.contentTypeStrategy = contentTypeStrategy;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contentTypeFieldName
+    *******************************************************************************/
+   public String getContentTypeFieldName()
+   {
+      return (this.contentTypeFieldName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentTypeFieldName
+    *******************************************************************************/
+   public void setContentTypeFieldName(String contentTypeFieldName)
+   {
+      this.contentTypeFieldName = contentTypeFieldName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentTypeFieldName
+    *******************************************************************************/
+   public S3TableBackendDetails withContentTypeFieldName(String contentTypeFieldName)
+   {
+      this.contentTypeFieldName = contentTypeFieldName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hardcodedContentType
+    *******************************************************************************/
+   public String getHardcodedContentType()
+   {
+      return (this.hardcodedContentType);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hardcodedContentType
+    *******************************************************************************/
+   public void setHardcodedContentType(String hardcodedContentType)
+   {
+      this.hardcodedContentType = hardcodedContentType;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hardcodedContentType
+    *******************************************************************************/
+   public S3TableBackendDetails withHardcodedContentType(String hardcodedContentType)
+   {
+      this.hardcodedContentType = hardcodedContentType;
+      return (this);
+   }
+
 
 }
