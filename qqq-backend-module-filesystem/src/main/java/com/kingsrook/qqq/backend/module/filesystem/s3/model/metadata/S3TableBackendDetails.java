@@ -90,10 +90,14 @@ public class S3TableBackendDetails extends AbstractFilesystemTableBackendDetails
             qInstanceValidator.assertCondition(!StringUtils.hasContent(contentTypeFieldName), prefix + "contentTypeFieldName should not be set when contentTypeStrategy is " + contentTypeStrategy);
             qInstanceValidator.assertCondition(StringUtils.hasContent(hardcodedContentType), prefix + "hardcodedContentType must be set when contentTypeStrategy is " + contentTypeStrategy);
          }
-         case BASED_ON_FILE_NAME, NONE, default ->
+         case BASED_ON_FILE_NAME, NONE ->
          {
             qInstanceValidator.assertCondition(!StringUtils.hasContent(contentTypeFieldName), prefix + "contentTypeFieldName should not be set when contentTypeStrategy is " + contentTypeStrategy);
             qInstanceValidator.assertCondition(!StringUtils.hasContent(hardcodedContentType), prefix + "hardcodedContentType should not be set when contentTypeStrategy is " + contentTypeStrategy);
+         }
+         default ->
+         {
+            throw new IllegalStateException("Unexpected value: " + contentTypeStrategy);
          }
       }
    }
