@@ -229,7 +229,7 @@ class FilesystemSyncProcessS3Test extends BaseS3Test
       AbstractS3Action actionBase = (AbstractS3Action) module.getActionBase();
       String           fullPath   = actionBase.getFullBasePath(table, backend);
 
-      actionBase.writeFile(backend, fullPath + "/" + name, content.getBytes());
+      actionBase.writeFile(backend, table, null, fullPath + "/" + name, content.getBytes());
    }
 
 

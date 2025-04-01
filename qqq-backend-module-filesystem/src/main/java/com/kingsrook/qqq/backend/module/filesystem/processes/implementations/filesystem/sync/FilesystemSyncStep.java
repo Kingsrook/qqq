@@ -111,10 +111,10 @@ public class FilesystemSyncStep implements BackendStep
                   byte[] bytes = inputStream.readAllBytes();
 
                   String archivePath = archiveActionBase.getFullBasePath(archiveTable, archiveBackend);
-                  archiveActionBase.writeFile(archiveBackend, archivePath + File.separator + sourceFileName, bytes);
+                  archiveActionBase.writeFile(archiveBackend, archiveTable, null, archivePath + File.separator + sourceFileName, bytes);
 
                   String processingPath = processingActionBase.getFullBasePath(processingTable, processingBackend);
-                  processingActionBase.writeFile(processingBackend, processingPath + File.separator + sourceFileName, bytes);
+                  processingActionBase.writeFile(processingBackend, processingTable, null, processingPath + File.separator + sourceFileName, bytes);
                   syncedFileCount++;
 
                   if(maxFilesToSync != null && syncedFileCount >= maxFilesToSync)

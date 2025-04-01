@@ -124,10 +124,19 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public abstract InputStream readFile(FILE file) throws IOException;
 
+   /***************************************************************************
+    ** Legacy signature for this method - before table & record params were added.
+    ***************************************************************************/
+   @Deprecated(since = "call the overload that takes table and record")
+   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
+   {
+      writeFile(backend, null, null, path, contents);
+   }
+
    /*******************************************************************************
     ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
-   public abstract void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException;
+   public abstract void writeFile(QBackendMetaData backend, QTableMetaData table, QRecord record, String path, byte[] contents) throws IOException;
 
    /*******************************************************************************
     ** Get a string that represents the full path to a file.
@@ -632,7 +641,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                try
                {
                   String fullPath = stripDuplicatedSlashes(getFullBasePath(table, backend) + File.separator + record.getValueString(tableDetails.getFileNameFieldName()));
-                  writeFile(backend, fullPath, record.getValueByteArray(tableDetails.getContentsFieldName()));
+                  writeFile(backend, table, record, fullPath, record.getValueByteArray(tableDetails.getContentsFieldName()));
                   record.addBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fullPath);
                   output.addRecord(record);
                }

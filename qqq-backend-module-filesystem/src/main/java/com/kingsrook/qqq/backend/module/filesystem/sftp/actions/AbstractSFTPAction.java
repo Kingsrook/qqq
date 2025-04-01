@@ -372,7 +372,7 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
     **
     ***************************************************************************/
    @Override
-   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
+   public void writeFile(QBackendMetaData backend, QTableMetaData table, QRecord record, String path, byte[] contents) throws IOException
    {
       sftpClient.put(new ByteArrayInputStream(contents), path);
    }

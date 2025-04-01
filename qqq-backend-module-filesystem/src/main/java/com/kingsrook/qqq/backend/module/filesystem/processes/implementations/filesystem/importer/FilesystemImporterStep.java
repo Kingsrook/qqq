@@ -363,7 +363,7 @@ public class FilesystemImporterStep implements BackendStep
       path = AbstractBaseFilesystemAction.stripDuplicatedSlashes(path);
 
       LOG.info("Archiving file", logPair("path", path), logPair("archiveBackendName", archiveBackend.getName()), logPair("archiveTableName", archiveTable.getName()));
-      archiveActionBase.writeFile(archiveBackend, path, bytes);
+      archiveActionBase.writeFile(archiveBackend, archiveTable, null, path, bytes);
 
       return (path);
    }
