@@ -66,7 +66,7 @@ public class BaseS3Test extends BaseTest
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/" + SUB_FOLDER + "/3.csv", getCSVData3());
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-1.txt", "Hello, Blob");
       amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-2.txt", "Hi, Bob");
-      amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB-3.md", "# Hi, MD");
+      amazonS3.putObject(BUCKET_NAME, TEST_FOLDER + "/blobs/BLOB 3.md", "# Hi, MD"); // this one, with a space in the name, tripped up listObjectsInBucketMatchingGlob's path matching at one time
 
       amazonS3.createBucket(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND);
       amazonS3.putObject(BUCKET_NAME_FOR_SANS_PREFIX_BACKEND, "BLOB-1.txt", "Hello, Blob");
