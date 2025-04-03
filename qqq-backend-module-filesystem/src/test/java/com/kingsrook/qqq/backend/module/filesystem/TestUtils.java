@@ -362,6 +362,7 @@ public class TestUtils
          .withField(new QFieldMetaData("fileName", QFieldType.STRING))
          .withField(new QFieldMetaData("contents", QFieldType.BLOB))
          .withBackendDetails(new S3TableBackendDetails()
+            .withContentTypeStrategy(S3TableBackendDetails.ContentTypeStrategy.BASED_ON_FILE_NAME)
             .withBasePath("blobs")
             .withCardinality(Cardinality.ONE)
             .withFileNameFieldName("fileName")
