@@ -291,7 +291,7 @@ class QApplicationJavalinServerTest
       response = Unirest.get("http://localhost:" + PORT + "/protected-served-by-process/foo.html")
          .asString();
       assertEquals(200, response.getStatus());
-      assertEquals("So you've asked for: /protected-served-by-process/foo.html", response.getBody());
+      assertEquals("So you've done a GET for: /protected-served-by-process/foo.html", response.getBody());
    }
 
 
