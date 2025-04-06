@@ -137,7 +137,6 @@ import com.kingsrook.qqq.middleware.javalin.misc.DownloadFileSupplementalAction;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
-import io.javalin.http.Cookie;
 import io.javalin.http.UploadedFile;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -619,7 +618,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////
          if(authenticationModule.usesSessionIdCookie())
          {
-            context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+            context.cookie(SESSION_ID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
          }
 
          setUserTimezoneOffsetMinutesInSession(context, session);
