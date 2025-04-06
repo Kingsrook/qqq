@@ -23,6 +23,7 @@ package com.kingsrook.qqq.middleware.javalin;
 
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
@@ -36,6 +37,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -237,7 +239,29 @@ class QApplicationJavalinServerTest
 
       HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/served-by-process/foo.html").asString();
       assertEquals(200, response.getStatus());
-      assertEquals("So you've asked for: /served-by-process/foo.html", response.getBody());
+      assertEquals("So you've done a GET for: /served-by-process/foo.html", response.getBody());
+
+      response = Unirest.post("http://localhost:" + PORT + "/served-by-process/foo.html").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("So you've done a POST for: /served-by-process/foo.html", response.getBody());
+      assertEquals("Yes, Test", response.getHeaders().getFirst("X-Test"));
+
+      response = Unirest.put("http://localhost:" + PORT + "/served-by-process/foo.html?requestedRedirect=google.com").asString();
+      assertEquals(302, response.getStatus());
+      assertEquals("google.com", response.getHeaders().getFirst("Location"));
+
+      HttpResponse<byte[]> responseBytes = Unirest.delete("http://localhost:" + PORT + "/served-by-process/foo.html?respondInBytes=true").asBytes();
+      assertEquals(200, responseBytes.getStatus());
+      assertArrayEquals("So you've done a DELETE for: /served-by-process/foo.html".getBytes(StandardCharsets.UTF_8), responseBytes.getBody());
+
+      response = Unirest.get("http://localhost:" + PORT + "/served-by-process/foo.html?noResponse=true").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("", response.getBody());
+
+      response = Unirest.get("http://localhost:" + PORT + "/served-by-process/foo.html?doThrow=true").asString();
+      assertEquals(500, response.getStatus());
+      assertThat(response.getBody()).contains("Test Exception");
+
    }
 
 

@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.middleware.javalin.routeproviders;
 
 
+import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QProcessPayload;
@@ -34,12 +35,12 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.QProcessPayload;
  *******************************************************************************/
 public class ProcessBasedRouterPayload extends QProcessPayload
 {
-   private String              path;
-   private String              method;
-   private Map<String, String> pathParams;
-   private Map<String, String> queryParams;
-   private Map<String, String> formParams;
-   private Map<String, String> cookies;
+   private String                    path;
+   private String                    method;
+   private Map<String, String>       pathParams;
+   private Map<String, List<String>> queryParams;
+   private Map<String, List<String>> formParams;
+   private Map<String, String>       cookies;
 
    private Integer             statusCode;
    private String              redirectURL;
@@ -158,68 +159,6 @@ public class ProcessBasedRouterPayload extends QProcessPayload
    public ProcessBasedRouterPayload withPathParams(Map<String, String> pathParams)
    {
       this.pathParams = pathParams;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for queryParams
-    *******************************************************************************/
-   public Map<String, String> getQueryParams()
-   {
-      return (this.queryParams);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for queryParams
-    *******************************************************************************/
-   public void setQueryParams(Map<String, String> queryParams)
-   {
-      this.queryParams = queryParams;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for queryParams
-    *******************************************************************************/
-   public ProcessBasedRouterPayload withQueryParams(Map<String, String> queryParams)
-   {
-      this.queryParams = queryParams;
-      return (this);
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for formParams
-    *******************************************************************************/
-   public Map<String, String> getFormParams()
-   {
-      return (this.formParams);
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for formParams
-    *******************************************************************************/
-   public void setFormParams(Map<String, String> formParams)
-   {
-      this.formParams = formParams;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for formParams
-    *******************************************************************************/
-   public ProcessBasedRouterPayload withFormParams(Map<String, String> formParams)
-   {
-      this.formParams = formParams;
       return (this);
    }
 
@@ -406,6 +345,68 @@ public class ProcessBasedRouterPayload extends QProcessPayload
    public ProcessBasedRouterPayload withRedirectURL(String redirectURL)
    {
       this.redirectURL = redirectURL;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryParams
+    *******************************************************************************/
+   public Map<String, List<String>> getQueryParams()
+   {
+      return (this.queryParams);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryParams
+    *******************************************************************************/
+   public void setQueryParams(Map<String, List<String>> queryParams)
+   {
+      this.queryParams = queryParams;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryParams
+    *******************************************************************************/
+   public ProcessBasedRouterPayload withQueryParams(Map<String, List<String>> queryParams)
+   {
+      this.queryParams = queryParams;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for formParams
+    *******************************************************************************/
+   public Map<String, List<String>> getFormParams()
+   {
+      return (this.formParams);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for formParams
+    *******************************************************************************/
+   public void setFormParams(Map<String, List<String>> formParams)
+   {
+      this.formParams = formParams;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for formParams
+    *******************************************************************************/
+   public ProcessBasedRouterPayload withFormParams(Map<String, List<String>> formParams)
+   {
+      this.formParams = formParams;
       return (this);
    }
 

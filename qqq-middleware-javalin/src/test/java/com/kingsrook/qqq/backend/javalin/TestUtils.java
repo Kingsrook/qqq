@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
@@ -202,6 +203,7 @@ public class TestUtils
 
       routeProviders.add(new JavalinRouteProviderMetaData()
          .withHostedPath("/served-by-process/<pagePath>")
+         .withMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"))
          .withProcessName("routerProcess"));
 
       routeProviders.add(new JavalinRouteProviderMetaData()
@@ -242,7 +244,35 @@ public class TestUtils
             {
                ProcessBasedRouterPayload processPayload = runBackendStepInput.getProcessPayload(ProcessBasedRouterPayload.class);
                String                    path           = processPayload.getPath();
-               processPayload.setResponseString("So you've asked for: " + path);
+
+               if(processPayload.getQueryParams().containsKey("requestedRedirect"))
+               {
+                  processPayload.setRedirectURL(processPayload.getQueryParams().get("requestedRedirect").get(0));
+               }
+               else
+               {
+                  String response = "So you've done a " + processPayload.getMethod() + " for: " + path;
+                  if(processPayload.getQueryParams().containsKey("respondInBytes"))
+                  {
+                     processPayload.setResponseBytes(response.getBytes(StandardCharsets.UTF_8));
+                  }
+                  else if(processPayload.getQueryParams().containsKey("noResponse"))
+                  {
+                     ///////////////////////////////////////
+                     // don't call any setResponse method //
+                     ///////////////////////////////////////
+                  }
+                  else if(processPayload.getQueryParams().containsKey("doThrow"))
+                  {
+                     throw (new QException("Test Exception"));
+                  }
+                  else
+                  {
+                     processPayload.setResponseString(response);
+                  }
+                  processPayload.setResponseHeaders(Map.of("X-Test", "Yes, Test"));
+                  processPayload.setStatusCode(200);
+               }
                runBackendStepOutput.setProcessPayload(processPayload);
             }))
          ));
