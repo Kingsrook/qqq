@@ -325,20 +325,51 @@ public class AbstractSFTPAction extends AbstractBaseFilesystemAction<SFTPDirEntr
             fullPath = "." + fullPath;
          }
 
-         for(SftpClient.DirEntry dirEntry : sftpClient.readDir(fullPath))
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // in case we were asked to list a single file name, make sure we don't put a slash on the end (which wouldn't be found) //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(fullPath.endsWith("/"))
          {
-            if(".".equals(dirEntry.getFilename()) || "..".equals(dirEntry.getFilename()))
-            {
-               continue;
-            }
+            fullPath = fullPath.substring(0, fullPath.length() - 1);
+         }
 
-            if(dirEntry.getAttributes().isDirectory())
-            {
-               // todo - recursive??
-               continue;
-            }
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // make a 'stat' call, to find out if the path is found, and if it is, if it describes a single file, or a directory //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         SftpClient.Attributes stat = sftpClient.stat(fullPath);
+         if(stat == null)
+         {
+            return (rs);
+         }
+         else if(stat.isRegularFile())
+         {
+            ///////////////////////////////////////////////////////////////////////////
+            // split up the fullPath into its directory prefix, and file name suffix //
+            ///////////////////////////////////////////////////////////////////////////
+            int    lastSlashIndex = fullPath.lastIndexOf("/");
+            String directory      = lastSlashIndex == -1 ? "./" : fullPath.substring(0, lastSlashIndex);
+            String fileBaseName   = lastSlashIndex == -1 ? fullPath : fullPath.substring(lastSlashIndex + 1);
 
-            rs.add(new SFTPDirEntryWithPath(fullPath, dirEntry));
+            SftpClient.DirEntry dirEntry = new SftpClient.DirEntry(fileBaseName, fullPath, stat);
+            rs.add(new SFTPDirEntryWithPath(directory, dirEntry));
+         }
+         else if(stat.isDirectory())
+         {
+            for(SftpClient.DirEntry dirEntry : sftpClient.readEntries(fullPath))
+            {
+               if(".".equals(dirEntry.getFilename()) || "..".equals(dirEntry.getFilename()))
+               {
+                  continue;
+               }
+
+               if(dirEntry.getAttributes().isDirectory())
+               {
+                  // todo - recursive??
+                  continue;
+               }
+
+               rs.add(new SFTPDirEntryWithPath(fullPath, dirEntry));
+            }
          }
 
          return (rs);
