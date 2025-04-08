@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.utils;
 
 
+import java.time.Duration;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import org.apache.logging.log4j.Level;
 
@@ -80,8 +81,35 @@ public class Timer
     *******************************************************************************/
    public void mark(String message)
    {
+      mark(message, false);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void mark(String message, boolean prettyPrint)
+   {
       long now = System.currentTimeMillis();
-      LOG.log(level, String.format("%s: Last [%5d] Total [%5d] %s", name, (now - last), (now - start), message));
+
+      if(!prettyPrint)
+      {
+         LOG.log(level, String.format("%s: Last [%5d] Total [%5d] %s", name, (now - last), (now - start), message));
+      }
+      else
+      {
+
+         Duration lastDuration  = Duration.ofMillis(now - last);
+         Duration totalDuration = Duration.ofMillis(now - start);
+
+         LOG.log(level, String.format(
+            "%s: Last [%d hours, %d minutes, %d seconds, %d milliseconds] Total [%d hours, %d minutes, %d seconds, %d milliseconds] %s",
+            name, lastDuration.toHours(), lastDuration.toMinutesPart(), lastDuration.toSecondsPart(), lastDuration.toMillisPart(),
+            totalDuration.toHours(), totalDuration.toMinutesPart(), totalDuration.toSecondsPart(), totalDuration.toMillisPart(),
+            message));
+      }
+
       last = now;
    }
 }

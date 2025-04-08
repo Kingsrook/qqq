@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.ibm.icu.text.Transliterator;
 
 
 /*******************************************************************************
@@ -458,6 +459,17 @@ public class StringUtils
    public static boolean isUUID(String s)
    {
       return (Pattern.matches("[a-f0-9]{8}(?:-[a-f0-9]{4}){4}[a-f0-9]{8}", s));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String replaceNonAsciiCharacters(String s)
+   {
+      Transliterator transliterator = Transliterator.getInstance("Any-Latin; Latin-ASCII");
+      return (transliterator.transliterate(s));
    }
 
 

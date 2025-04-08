@@ -65,7 +65,11 @@
          <artifactId>aws-java-sdk-secretsmanager</artifactId>
          <version>1.12.385</version>
       </dependency>
-
+      <dependency>
+         <groupId>com.ibm.icu</groupId>
+         <artifactId>icu4j</artifactId>
+         <version>77.1</version>
+      </dependency>
       <dependency>
          <groupId>com.fasterxml.jackson.core</groupId>
          <artifactId>jackson-databind</artifactId>
