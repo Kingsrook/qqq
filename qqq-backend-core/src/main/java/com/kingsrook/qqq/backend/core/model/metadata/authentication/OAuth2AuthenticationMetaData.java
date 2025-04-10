@@ -39,6 +39,7 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
    private String baseUrl;
    private String tokenUrl;
    private String clientId;
+   private String scopes;
 
    private String userSessionTableName;
    private String redirectStateTableName;
@@ -80,6 +81,7 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
       qInstanceValidator.assertCondition(StringUtils.hasContent(baseUrl), prefix + "baseUrl must be set");
       qInstanceValidator.assertCondition(StringUtils.hasContent(clientId), prefix + "clientId must be set");
       qInstanceValidator.assertCondition(StringUtils.hasContent(clientSecret), prefix + "clientSecret must be set");
+      qInstanceValidator.assertCondition(StringUtils.hasContent(scopes), prefix + "scopes must be set");
 
       if(qInstanceValidator.assertCondition(StringUtils.hasContent(userSessionTableName), prefix + "userSessionTableName must be set"))
       {
@@ -283,5 +285,36 @@ public class OAuth2AuthenticationMetaData extends QAuthenticationMetaData
       this.redirectStateTableName = redirectStateTableName;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for scopes
+    *******************************************************************************/
+   public String getScopes()
+   {
+      return (this.scopes);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for scopes
+    *******************************************************************************/
+   public void setScopes(String scopes)
+   {
+      this.scopes = scopes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for scopes
+    *******************************************************************************/
+   public OAuth2AuthenticationMetaData withScopes(String scopes)
+   {
+      this.scopes = scopes;
+      return (this);
+   }
+
 
 }

@@ -134,7 +134,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
             AuthorizationCodeGrant codeGrant         = new AuthorizationCodeGrant(code, redirectURI);
 
             URI          tokenEndpoint = getOIDCProviderMetadata(oauth2MetaData).getTokenEndpointURI();
-            Scope        scope         = new Scope("openid profile email offline_access");
+            Scope        scope         = new Scope(oauth2MetaData.getScopes());
             TokenRequest tokenRequest  = new TokenRequest(tokenEndpoint, clientSecretBasic, codeGrant, scope);
 
             return createSessionFromTokenRequest(tokenRequest);
@@ -155,7 +155,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
             ClientAuthentication clientAuth   = new ClientSecretBasic(clientID, clientSecret);
 
             URI          tokenEndpoint = getOIDCProviderMetadata(oauth2MetaData).getTokenEndpointURI();
-            Scope        scope         = new Scope("openid profile email offline_access");
+            Scope        scope         = new Scope(oauth2MetaData.getScopes());
             TokenRequest tokenRequest  = new TokenRequest(tokenEndpoint, clientAuth, codeGrant, scope);
 
             return createSessionFromTokenRequest(tokenRequest);
@@ -304,7 +304,7 @@ public class OAuth2AuthenticationModule implements QAuthenticationModuleInterfac
             + "?client_id=" + URLEncoder.encode(oauth2MetaData.getClientId(), StandardCharsets.UTF_8)
             + "&redirect_uri=" + URLEncoder.encode(originalUrl, StandardCharsets.UTF_8)
             + "&response_type=code"
-            + "&scope=" + URLEncoder.encode("openid profile email", StandardCharsets.UTF_8)
+            + "&scope=" + URLEncoder.encode(oauth2MetaData.getScopes(), StandardCharsets.UTF_8)
             + "&state=" + URLEncoder.encode(state.getValue(), StandardCharsets.UTF_8);
       }
       catch(Exception e)

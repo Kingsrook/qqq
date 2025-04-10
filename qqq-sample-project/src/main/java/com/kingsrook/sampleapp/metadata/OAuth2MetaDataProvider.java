@@ -53,11 +53,13 @@ public class OAuth2MetaDataProvider implements MetaDataProducerInterface<QAuthen
       String oauth2BaseUrl      = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_BASE_URL}");
       String oauth2ClientId     = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_CLIENT_ID}");
       String oauth2ClientSecret = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_CLIENT_SECRET}");
+      String oauth2Scopes       = qMetaDataVariableInterpreter.interpret("${env.OAUTH2_SCOPES}");
 
       return (new OAuth2AuthenticationMetaData()
          .withBaseUrl(oauth2BaseUrl)
          .withClientId(oauth2ClientId)
          .withClientSecret(oauth2ClientSecret)
+         .withScopes(oauth2Scopes)
          .withUserSessionTableName(UserSession.TABLE_NAME)
          .withRedirectStateTableName(RedirectStateMetaDataProducer.TABLE_NAME)
          .withName(NAME));
