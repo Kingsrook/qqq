@@ -492,6 +492,24 @@ public class StringUtils
    /***************************************************************************
     **
     ***************************************************************************/
+   public static boolean safeEqualsIgnoreCase(String a, String b)
+   {
+      if(a == null && b == null)
+      {
+         return true;
+      }
+      if(a == null || b == null)
+      {
+         return false;
+      }
+      return (a.equalsIgnoreCase(b));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public static String appendIncrementingSuffix(String input)
    {
       ////////////////////////////////
