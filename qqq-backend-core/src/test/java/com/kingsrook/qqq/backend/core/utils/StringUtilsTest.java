@@ -350,4 +350,22 @@ class StringUtilsTest extends BaseTest
       assertEquals("test ((2)) (101)", StringUtils.appendIncrementingSuffix("test ((2)) (100)"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSafeEqualsIgnoreCase()
+   {
+      assertTrue(StringUtils.safeEqualsIgnoreCase(null, null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase(null, "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("a", "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("A", "a"));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", "b"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "TIMOThy d. chaMberlain"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "timothy d. chamberlain"));
+   }
+
 }
