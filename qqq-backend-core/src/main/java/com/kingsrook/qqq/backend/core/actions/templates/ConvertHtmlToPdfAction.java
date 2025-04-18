@@ -35,6 +35,7 @@ import com.openhtmltopdf.pdfboxout.PdfBoxFontResolver;
 import com.openhtmltopdf.pdfboxout.PdfBoxRenderer;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
 
 
@@ -67,6 +68,7 @@ public class ConvertHtmlToPdfAction extends AbstractQActionFunction<ConvertHtmlT
          //////////////////////////////////////////////////////////////////
          Document document = Jsoup.parse(input.getHtml());
          document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
+         org.w3c.dom.Document w3cDoc = new W3CDom().fromJsoup(document);
 
          //////////////////////////////
          // convert the XHTML to PDF //
@@ -74,7 +76,7 @@ public class ConvertHtmlToPdfAction extends AbstractQActionFunction<ConvertHtmlT
          PdfRendererBuilder builder = new PdfRendererBuilder();
          builder.toStream(input.getOutputStream());
          builder.useFastMode();
-         builder.withHtmlContent(document.html(), input.getBasePath() == null ? "./" : input.getBasePath().toUri().toString());
+         builder.withW3cDocument(w3cDoc, input.getBasePath() == null ? "./" : input.getBasePath().toUri().toString());
 
          try(PdfBoxRenderer pdfBoxRenderer = builder.buildPdfRenderer())
          {
