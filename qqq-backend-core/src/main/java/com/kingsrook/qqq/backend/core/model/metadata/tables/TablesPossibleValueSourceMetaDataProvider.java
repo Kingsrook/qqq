@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.tables;
 
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
@@ -45,6 +46,7 @@ public class TablesPossibleValueSourceMetaDataProvider
    {
       QPossibleValueSource possibleValueSource = new QPossibleValueSource()
          .withName(NAME)
+         .withIdType(QFieldType.STRING)
          .withType(QPossibleValueSourceType.CUSTOM)
          .withCustomCodeReference(new QCodeReference(TablesCustomPossibleValueProvider.class))
          .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY);

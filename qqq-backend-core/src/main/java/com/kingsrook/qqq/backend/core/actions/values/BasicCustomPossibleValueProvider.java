@@ -19,35 +19,56 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.model.metadata.tables;
+package com.kingsrook.qqq.backend.core.actions.values;
 
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
-import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
-import com.kingsrook.qqq.backend.core.actions.values.BasicCustomPossibleValueProvider;
-import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
 
 /*******************************************************************************
- ** possible-value source provider for the `Tables` PVS - a list of all tables
- ** in an application/qInstance.
+ ** Basic implementation of a possible value provider, for where there's a limited
+ ** set of possible source objects - so you just have to define how to make one
+ ** PV from a source object, how to list all of the source objects, and how to
+ ** look up a PV from an id.
  *******************************************************************************/
-public class TablesCustomPossibleValueProvider extends BasicCustomPossibleValueProvider<QTableMetaData, String>
+public abstract class BasicCustomPossibleValueProvider<S, ID extends Serializable> implements QCustomPossibleValueProvider<ID>
 {
 
    /***************************************************************************
     **
     ***************************************************************************/
+   protected abstract QPossibleValue<ID> makePossibleValue(S sourceObject);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected abstract S getSourceObject(Serializable id);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected abstract List<S> getAllSourceObjects();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @Override
-   protected QPossibleValue<String> makePossibleValue(QTableMetaData sourceObject)
+   public QPossibleValue<ID> getPossibleValue(Serializable idValue)
    {
-      return (new QPossibleValue<>(sourceObject.getName(), sourceObject.getLabel()));
+      S sourceObject = getSourceObject(idValue);
+      if(sourceObject == null)
+      {
+         return (null);
+      }
+
+      return makePossibleValue(sourceObject);
    }
 
 
@@ -56,54 +77,15 @@ public class TablesCustomPossibleValueProvider extends BasicCustomPossibleValueP
     **
     ***************************************************************************/
    @Override
-   protected QTableMetaData getSourceObject(Serializable id)
+   public List<QPossibleValue<ID>> search(SearchPossibleValueSourceInput input) throws QException
    {
-      QTableMetaData table = QContext.getQInstance().getTable(ValueUtils.getValueAsString(id));
-      return isTableAllowed(table) ? table : null;
+      List<QPossibleValue<ID>> allPossibleValues = new ArrayList<>();
+      List<S>                  allSourceObjects  = getAllSourceObjects();
+      for(S sourceObject : allSourceObjects)
+      {
+         allPossibleValues.add(makePossibleValue(sourceObject));
+      }
+
+      return completeCustomPVSSearch(input, allPossibleValues);
    }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   protected List<QTableMetaData> getAllSourceObjects()
-   {
-      ArrayList<QTableMetaData> rs = new ArrayList<>();
-      for(QTableMetaData table : QContext.getQInstance().getTables().values())
-      {
-         if(isTableAllowed(table))
-         {
-            rs.add(table);
-         }
-      }
-      return rs;
-   }
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private boolean isTableAllowed(QTableMetaData table)
-   {
-      if(table == null)
-      {
-         return (false);
-      }
-
-      if(table.getIsHidden())
-      {
-         return (false);
-      }
-
-      PermissionCheckResult permissionCheckResult = PermissionsHelper.getPermissionCheckResult(new QueryInput(table.getName()), table);
-      if(!PermissionCheckResult.ALLOW.equals(permissionCheckResult))
-      {
-         return (false);
-      }
-
-      return (true);
-   }
-
 }

@@ -66,6 +66,7 @@ public enum WidgetType
    // record view/edit widgets //
    //////////////////////////////
    CHILD_RECORD_LIST("childRecordList"),
+   CUSTOM_COMPONENT("customComponent"),
    DYNAMIC_FORM("dynamicForm"),
    DATA_BAG_VIEWER("dataBagViewer"),
    PIVOT_TABLE_SETUP("pivotTableSetup"),
