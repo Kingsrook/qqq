@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaInsertStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ProcessSummaryProviderInterface;
+import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -77,19 +78,77 @@ public class BulkInsertLoadStep extends LoadViaInsertStep implements ProcessSumm
 
       QTableMetaData table = QContext.getQInstance().getTable(runBackendStepInput.getValueString("tableName"));
 
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // the transform step builds summary lines that it predicts will insert successfully.      //
+      // but those lines don't have ids, which we'd like to have (e.g., for a process trace that //
+      // might link to the built record).  also, it's possible that there was a fail that only   //
+      // happened in the actual insert, so, basically, re-do the summary here                    //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      BulkInsertTransformStep transformStep = (BulkInsertTransformStep) getTransformStep();
+      ProcessSummaryLine      okSummary     = transformStep.okSummary;
+      okSummary.setCount(0);
+      okSummary.setPrimaryKeys(new ArrayList<>());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // but - since errors from the transform step don't even make it through to us here in the load step,   //
+      // do re-use the ProcessSummaryWarningsAndErrorsRollup from transform step as follows:                  //
+      // clear out its warnings - we'll completely rebuild them here (with primary keys)                      //
+      // and add new error lines, e.g., in case of errors that only happened past the validation if possible. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = transformStep.processSummaryWarningsAndErrorsRollup;
+      processSummaryWarningsAndErrorsRollup.resetWarnings();
+
       List<QRecord> insertedRecords = runBackendStepOutput.getRecords();
       for(QRecord insertedRecord : insertedRecords)
       {
-         if(CollectionUtils.nullSafeIsEmpty(insertedRecord.getErrors()))
+         Serializable primaryKey = insertedRecord.getValue(table.getPrimaryKeyField());
+         if(CollectionUtils.nullSafeIsEmpty(insertedRecord.getErrors()) && primaryKey != null)
          {
+            /////////////////////////////////////////////////////////////////////////
+            // if the record had no errors, and we have a primary key for it, then //
+            // keep track of the range of primary keys (first and last)            //
+            /////////////////////////////////////////////////////////////////////////
             if(firstInsertedPrimaryKey == null)
             {
-               firstInsertedPrimaryKey = insertedRecord.getValue(table.getPrimaryKeyField());
+               firstInsertedPrimaryKey = primaryKey;
             }
 
-            lastInsertedPrimaryKey = insertedRecord.getValue(table.getPrimaryKeyField());
+            lastInsertedPrimaryKey = primaryKey;
+
+            if(!CollectionUtils.nullSafeIsEmpty(insertedRecord.getWarnings()))
+            {
+               /////////////////////////////////////////////////////////////////////////////
+               // if there were warnings on the inserted record, put it in a warning line //
+               /////////////////////////////////////////////////////////////////////////////
+               String message = insertedRecord.getWarnings().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addWarning(message, primaryKey);
+            }
+            else
+            {
+               ////////////////////////////////////////////////////////////////////////
+               // if no warnings for the inserted record, then put it in the OK line //
+               ////////////////////////////////////////////////////////////////////////
+               okSummary.incrementCountAndAddPrimaryKey(primaryKey);
+            }
+         }
+         else
+         {
+            //////////////////////////////////////////////////////////////////////
+            // else if there were errors or no primary key, build an error line //
+            //////////////////////////////////////////////////////////////////////
+            String message = "Failed to insert";
+            if(!CollectionUtils.nullSafeIsEmpty(insertedRecord.getErrors()))
+            {
+               //////////////////////////////////////////////////////////
+               // use the error message from the record if we have one //
+               //////////////////////////////////////////////////////////
+               message = insertedRecord.getErrors().get(0).getMessage();
+            }
+            processSummaryWarningsAndErrorsRollup.addError(message, primaryKey);
          }
       }
+
+      okSummary.pickMessage(true);
    }
 
 

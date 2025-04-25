@@ -29,15 +29,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryAssert;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine;
+import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLineInterface;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
+import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
@@ -176,7 +187,15 @@ class BulkInsertFullProcessTest extends BaseTest
       assertThat(runProcessOutput.getValues().get(StreamedETLWithFrontendProcess.FIELD_PROCESS_SUMMARY)).isNotNull().isInstanceOf(List.class);
       assertThat(runProcessOutput.getException()).isEmpty();
 
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 2");
+      ProcessSummaryLineInterface okLine = ProcessSummaryAssert.assertThat(runProcessOutput)
+         .hasLineWithMessageContaining("Person Memory records were inserted")
+         .hasStatus(Status.OK)
+         .hasCount(2)
+         .getLine();
+      assertEquals(List.of(1, 2), ((ProcessSummaryLine) okLine).getPrimaryKeys());
+
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("records were processed from the file").hasStatus(Status.INFO);
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 2").hasStatus(Status.INFO);
 
       ////////////////////////////////////
       // query for the inserted records //
@@ -197,6 +216,86 @@ class BulkInsertFullProcessTest extends BaseTest
 
       assertEquals(42, records.get(0).getValueInteger("noOfShoes"));
       assertNull(records.get(1).getValue("noOfShoes"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSummaryLinePrimaryKeys() throws Exception
+   {
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
+
+      /////////////////////////////////////////////////////////
+      // start the process - expect to go to the upload step //
+      /////////////////////////////////////////////////////////
+      RunProcessInput  runProcessInput  = new RunProcessInput();
+      RunProcessOutput runProcessOutput = startProcess(runProcessInput);
+      String           processUUID      = runProcessOutput.getProcessUUID();
+
+      continueProcessPostUpload(runProcessInput, processUUID, simulateFileUploadForWarningCase());
+      continueProcessPostFileMapping(runProcessInput);
+      continueProcessPostValueMapping(runProcessInput);
+      runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
+
+      ProcessSummaryLineInterface okLine = ProcessSummaryAssert.assertThat(runProcessOutput)
+         .hasLineWithMessageContaining("Person Memory record was inserted")
+         .hasStatus(Status.OK)
+         .hasCount(1)
+         .getLine();
+      assertEquals(List.of(1), ((ProcessSummaryLine) okLine).getPrimaryKeys());
+
+      ProcessSummaryLineInterface warnTornadoLine = ProcessSummaryAssert.assertThat(runProcessOutput)
+         .hasLineWithMessageContaining("records were inserted, but had a warning: Tornado warning")
+         .hasStatus(Status.WARNING)
+         .hasCount(2)
+         .getLine();
+      assertEquals(List.of(2, 3), ((ProcessSummaryLine) warnTornadoLine).getPrimaryKeys());
+
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("record was inserted, but had a warning: Hurricane warning").hasStatus(Status.WARNING).hasCount(1);
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("records were processed from the file").hasStatus(Status.INFO).hasCount(4);
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 4").hasStatus(Status.INFO);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSummaryLineErrors() throws Exception
+   {
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
+         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
+
+      /////////////////////////////////////////////////////////
+      // start the process - expect to go to the upload step //
+      /////////////////////////////////////////////////////////
+      RunProcessInput  runProcessInput  = new RunProcessInput();
+      RunProcessOutput runProcessOutput = startProcess(runProcessInput);
+      String           processUUID      = runProcessOutput.getProcessUUID();
+
+      continueProcessPostUpload(runProcessInput, processUUID, simulateFileUploadForErrorCase());
+      continueProcessPostFileMapping(runProcessInput);
+      continueProcessPostValueMapping(runProcessInput);
+      runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
+
+       ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was inserted.").hasStatus(Status.OK).hasCount(1);
+
+      ProcessSummaryAssert.assertThat(runProcessOutput)
+         .hasLineWithMessageContaining("plane")
+         .hasStatus(Status.ERROR)
+         .hasCount(1);
+
+      ProcessSummaryAssert.assertThat(runProcessOutput)
+         .hasLineWithMessageContaining("purifier")
+         .hasStatus(Status.ERROR)
+         .hasCount(1);
    }
 
 
@@ -304,6 +403,47 @@ class BulkInsertFullProcessTest extends BaseTest
    /***************************************************************************
     **
     ***************************************************************************/
+   private static StorageInput simulateFileUploadForWarningCase() throws Exception
+   {
+      String       storageReference = UUID.randomUUID() + ".csv";
+      StorageInput storageInput     = new StorageInput(TestUtils.TABLE_NAME_MEMORY_STORAGE).withReference(storageReference);
+      try(OutputStream outputStream = new StorageAction().createOutputStream(storageInput))
+      {
+         outputStream.write((getPersonCsvHeaderUsingLabels() + """
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doe","1980-01-01","john@doe.com","Missouri",42
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doey","1980-01-01","john@doe.com","Missouri",42
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Hurricane warning","Doe","1980-01-01","john@doe.com","Missouri",42
+            """).getBytes());
+      }
+      return storageInput;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static StorageInput simulateFileUploadForErrorCase() throws Exception
+   {
+      String       storageReference = UUID.randomUUID() + ".csv";
+      StorageInput storageInput     = new StorageInput(TestUtils.TABLE_NAME_MEMORY_STORAGE).withReference(storageReference);
+      try(OutputStream outputStream = new StorageAction().createOutputStream(storageInput))
+      {
+         outputStream.write((getPersonCsvHeaderUsingLabels() + """
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","not-pre-Error plane","Doe","1980-01-01","john@doe.com","Missouri",42
+            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Error purifier","Doe","1980-01-01","john@doe.com","Missouri",42
+            """).getBytes());
+      }
+      return storageInput;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    private static RunProcessOutput startProcess(RunProcessInput runProcessInput) throws QException
    {
       runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkInsert");
@@ -331,4 +471,47 @@ class BulkInsertFullProcessTest extends BaseTest
       )));
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static class PersonWarnOrErrorCustomizer implements TableCustomizerInterface
+   {
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public AbstractPreInsertCustomizer.WhenToRun whenToRunPreInsert(InsertInput insertInput, boolean isPreview)
+      {
+         return AbstractPreInsertCustomizer.WhenToRun.BEFORE_ALL_VALIDATIONS;
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public List<QRecord> preInsert(InsertInput insertInput, List<QRecord> records, boolean isPreview) throws QException
+      {
+         for(QRecord record : records)
+         {
+            if(record.getValueString("firstName").toLowerCase().contains("warn"))
+            {
+               record.addWarning(new QWarningMessage(record.getValueString("firstName")));
+            }
+            else if(record.getValueString("firstName").toLowerCase().contains("error"))
+            {
+               if(isPreview && record.getValueString("firstName").toLowerCase().contains("not-pre-error"))
+               {
+                  continue;
+               }
+
+               record.addError(new BadInputStatusMessage(record.getValueString("firstName")));
+            }
+         }
+         return records;
+      }
+   }
 }
