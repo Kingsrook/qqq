@@ -285,7 +285,7 @@ class BulkInsertFullProcessTest extends BaseTest
       continueProcessPostValueMapping(runProcessInput);
       runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
 
-       ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was inserted.").hasStatus(Status.OK).hasCount(1);
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was inserted.").hasStatus(Status.OK).hasCount(1);
 
       ProcessSummaryAssert.assertThat(runProcessOutput)
          .hasLineWithMessageContaining("plane")
