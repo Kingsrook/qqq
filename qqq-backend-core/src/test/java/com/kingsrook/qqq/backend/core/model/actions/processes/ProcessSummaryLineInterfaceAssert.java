@@ -185,4 +185,13 @@ public class ProcessSummaryLineInterfaceAssert extends AbstractAssert<ProcessSum
       return (this);
    }
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public ProcessSummaryLineInterface getLine()
+   {
+      return actual;
+   }
+
 }

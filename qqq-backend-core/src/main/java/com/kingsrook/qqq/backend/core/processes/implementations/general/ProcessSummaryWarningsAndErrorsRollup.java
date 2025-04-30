@@ -195,7 +195,7 @@ public class ProcessSummaryWarningsAndErrorsRollup
             {
                if(otherWarningsSummary == null)
                {
-                  otherWarningsSummary = new ProcessSummaryLine(Status.WARNING).withMessageSuffix("records had an other warning.");
+                  otherWarningsSummary = buildOtherWarningsSummary();
                }
                processSummaryLine = otherWarningsSummary;
             }
@@ -210,6 +210,27 @@ public class ProcessSummaryWarningsAndErrorsRollup
       {
          processSummaryLine.incrementCountAndAddPrimaryKey(primaryKey);
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static ProcessSummaryLine buildOtherWarningsSummary()
+   {
+      return new ProcessSummaryLine(Status.WARNING).withMessageSuffix("records had an other warning.");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void resetWarnings()
+   {
+      warningSummaries.clear();
+      otherWarningsSummary = buildOtherWarningsSummary();
    }
 
 
