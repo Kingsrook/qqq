@@ -30,7 +30,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
  ** Pointer to code to be ran by the qqq framework, e.g., for custom behavior -
  ** maybe process steps, maybe customization to a table, etc.
  *******************************************************************************/
-public class QCodeReference implements Serializable, QMetaDataObject
+public class QCodeReference implements Serializable, Cloneable, QMetaDataObject
 {
    private String    name;
    private QCodeType codeType;
@@ -55,6 +55,25 @@ public class QCodeReference implements Serializable, QMetaDataObject
    {
       this.name = name;
       this.codeType = codeType;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QCodeReference clone()
+   {
+      try
+      {
+         QCodeReference clone = (QCodeReference) super.clone();
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
    }
 
 
@@ -180,5 +199,4 @@ public class QCodeReference implements Serializable, QMetaDataObject
       this.inlineCode = inlineCode;
       return (this);
    }
-
 }

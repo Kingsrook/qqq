@@ -24,8 +24,12 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -37,9 +41,14 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapp
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mapping.BulkLoadTableStructureBuilder;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadFileRow;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadTableStructure;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -72,7 +81,7 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       {
          @SuppressWarnings("unchecked")
          List<String> headerValues = (List<String>) runBackendStepOutput.getValue("headerValues");
-         buildSuggestedMapping(headerValues, tableStructure, runBackendStepOutput);
+         buildSuggestedMapping(headerValues, getPrepopulatedValues(runBackendStepInput), tableStructure, runBackendStepOutput);
       }
    }
 
@@ -81,10 +90,62 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
    /***************************************************************************
     **
     ***************************************************************************/
-   private void buildSuggestedMapping(List<String> headerValues, BulkLoadTableStructure tableStructure, RunBackendStepOutput runBackendStepOutput)
+   private Map<String, Serializable> getPrepopulatedValues(RunBackendStepInput runBackendStepInput)
+   {
+      String prepopulatedValuesJson = runBackendStepInput.getValueString("prepopulatedValues");
+      if(StringUtils.hasContent(prepopulatedValuesJson))
+      {
+         Map<String, Serializable> rs = new LinkedHashMap<>();
+         JSONObject jsonObject = JsonUtils.toJSONObject(prepopulatedValuesJson);
+         for(String key : jsonObject.keySet())
+         {
+            rs.put(key, jsonObject.optString(key, null));
+         }
+         return (rs);
+      }
+
+      return (Collections.emptyMap());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void buildSuggestedMapping(List<String> headerValues, Map<String, Serializable> prepopulatedValues, BulkLoadTableStructure tableStructure, RunBackendStepOutput runBackendStepOutput)
    {
       BulkLoadMappingSuggester bulkLoadMappingSuggester = new BulkLoadMappingSuggester();
       BulkLoadProfile          bulkLoadProfile          = bulkLoadMappingSuggester.suggestBulkLoadMappingProfile(tableStructure, headerValues);
+
+      if(CollectionUtils.nullSafeHasContents(prepopulatedValues))
+      {
+         for(Map.Entry<String, Serializable> entry : prepopulatedValues.entrySet())
+         {
+            String fieldName = entry.getKey();
+            boolean foundFieldInProfile = false;
+
+            for(BulkLoadProfileField bulkLoadProfileField : bulkLoadProfile.getFieldList())
+            {
+               if(bulkLoadProfileField.getFieldName().equals(fieldName))
+               {
+                  foundFieldInProfile = true;
+                  bulkLoadProfileField.setColumnIndex(null);
+                  bulkLoadProfileField.setHeaderName(null);
+                  bulkLoadProfileField.setDefaultValue(entry.getValue());
+                  break;
+               }
+            }
+
+            if(!foundFieldInProfile)
+            {
+               BulkLoadProfileField bulkLoadProfileField = new BulkLoadProfileField();
+               bulkLoadProfileField.setFieldName(fieldName);
+               bulkLoadProfileField.setDefaultValue(entry.getValue());
+               bulkLoadProfile.getFieldList().add(bulkLoadProfileField);
+            }
+         }
+      }
+
       runBackendStepOutput.addValue("bulkLoadProfile", bulkLoadProfile);
       runBackendStepOutput.addValue("suggestedBulkLoadProfile", bulkLoadProfile);
    }

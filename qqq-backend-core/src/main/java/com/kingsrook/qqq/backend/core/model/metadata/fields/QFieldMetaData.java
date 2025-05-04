@@ -240,7 +240,7 @@ public class QFieldMetaData implements Cloneable, QMetaDataObject
 
             if(StringUtils.hasContent(fieldAnnotation.defaultValue()))
             {
-               ValueUtils.getValueAsFieldType(this.type, fieldAnnotation.defaultValue());
+               withDefaultValue(ValueUtils.getValueAsFieldType(this.type, fieldAnnotation.defaultValue()));
             }
          }
       }

@@ -65,7 +65,11 @@
          <artifactId>aws-java-sdk-secretsmanager</artifactId>
          <version>1.12.385</version>
       </dependency>
-
+      <dependency>
+         <groupId>com.ibm.icu</groupId>
+         <artifactId>icu4j</artifactId>
+         <version>77.1</version>
+      </dependency>
       <dependency>
          <groupId>com.fasterxml.jackson.core</groupId>
          <artifactId>jackson-databind</artifactId>
@@ -157,16 +161,21 @@
          <version>2.3</version>
       </dependency>
 
-      <!-- the next 2 deps are for html to pdf - per https://www.baeldung.com/java-html-to-pdf -->
+      <!-- the next 3 deps are for html to pdf -->
       <dependency>
          <groupId>org.jsoup</groupId>
          <artifactId>jsoup</artifactId>
          <version>1.15.3</version>
       </dependency>
       <dependency>
-         <groupId>org.xhtmlrenderer</groupId>
-         <artifactId>flying-saucer-pdf-openpdf</artifactId>
-         <version>9.1.22</version>
+         <groupId>com.openhtmltopdf</groupId>
+         <artifactId>openhtmltopdf-core</artifactId>
+         <version>1.0.10</version>
+      </dependency>
+      <dependency>
+         <groupId>com.openhtmltopdf</groupId>
+         <artifactId>openhtmltopdf-pdfbox</artifactId>
+         <version>1.0.10</version>
       </dependency>
 
       <!-- the next 3 deps are being added for google drive support -->

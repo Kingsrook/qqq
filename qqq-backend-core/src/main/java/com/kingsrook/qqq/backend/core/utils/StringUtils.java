@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.ibm.icu.text.Transliterator;
 
 
 /*******************************************************************************
@@ -466,6 +467,17 @@ public class StringUtils
    /***************************************************************************
     **
     ***************************************************************************/
+   public static String replaceNonAsciiCharacters(String s)
+   {
+      Transliterator transliterator = Transliterator.getInstance("Any-Latin; Latin-ASCII");
+      return (transliterator.transliterate(s));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    public static String emptyToNull(String s)
    {
       if(!hasContent(s))
@@ -476,6 +488,51 @@ public class StringUtils
       return (s);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean safeEqualsIgnoreCase(String a, String b)
+   {
+      if(a == null && b == null)
+      {
+         return true;
+      }
+      if(a == null || b == null)
+      {
+         return false;
+      }
+      return (a.equalsIgnoreCase(b));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String appendIncrementingSuffix(String input)
+   {
+      ////////////////////////////////
+      // remove any existing suffix //
+      ////////////////////////////////
+      String base = input.replaceAll(" \\(\\d+\\)$", "");
+      if(input.matches(".* \\(\\d+\\)$"))
+      {
+         //////////////////////////
+         // increment if matches //
+         //////////////////////////
+         int current = Integer.parseInt(input.replaceAll(".* \\((\\d+)\\)$", "$1"));
+         return base + " (" + (current + 1) + ")";
+      }
+      else
+      {
+         ////////////////////////////////////
+         // no match so put a 1 at the end //
+         ////////////////////////////////////
+         return base + " (1)";
+      }
+   }
 
 
    /*******************************************************************************

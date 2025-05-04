@@ -26,22 +26,32 @@ import java.nio.file.Path;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.templates.ConvertHtmlToPdfInput;
 import com.kingsrook.qqq.backend.core.model.actions.templates.ConvertHtmlToPdfOutput;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.openhtmltopdf.css.constants.IdentValue;
+import com.openhtmltopdf.pdfboxout.PdfBoxFontResolver;
+import com.openhtmltopdf.pdfboxout.PdfBoxRenderer;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Document;
-import org.xhtmlrenderer.layout.SharedContext;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
 
 /*******************************************************************************
  ** Action to convert a string of HTML to a PDF!
  **
  ** Much credit to https://www.baeldung.com/java-html-to-pdf
- *******************************************************************************/
+ **
+ ** Updated in March 2025 to go from flying-saucer-pdf-openpdf lib to openhtmltopdf,
+ ** mostly to get support for max-height on images...
+ ********************************************************************************/
 public class ConvertHtmlToPdfAction extends AbstractQActionFunction<ConvertHtmlToPdfInput, ConvertHtmlToPdfOutput>
 {
+   private static final QLogger LOG = QLogger.getLogger(ConvertHtmlToPdfAction.class);
+
+
 
    /*******************************************************************************
     **
@@ -58,35 +68,37 @@ public class ConvertHtmlToPdfAction extends AbstractQActionFunction<ConvertHtmlT
          //////////////////////////////////////////////////////////////////
          Document document = Jsoup.parse(input.getHtml());
          document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
+         org.w3c.dom.Document w3cDoc = new W3CDom().fromJsoup(document);
 
          //////////////////////////////
          // convert the XHTML to PDF //
          //////////////////////////////
-         ITextRenderer renderer      = new ITextRenderer();
-         SharedContext sharedContext = renderer.getSharedContext();
-         sharedContext.setPrint(true);
-         sharedContext.setInteractive(false);
+         PdfRendererBuilder builder = new PdfRendererBuilder();
+         builder.toStream(input.getOutputStream());
+         builder.useFastMode();
+         builder.withW3cDocument(w3cDoc, input.getBasePath() == null ? "./" : input.getBasePath().toUri().toString());
 
-         if(input.getBasePath() != null)
+         try(PdfBoxRenderer pdfBoxRenderer = builder.buildPdfRenderer())
          {
-            String baseUrl = input.getBasePath().toUri().toURL().toString();
-            renderer.setDocumentFromString(document.html(), baseUrl);
-         }
-         else
-         {
-            renderer.setDocumentFromString(document.html());
-         }
+            pdfBoxRenderer.layout();
+            pdfBoxRenderer.getSharedContext().setPrint(true);
+            pdfBoxRenderer.getSharedContext().setInteractive(false);
 
-         //////////////////////////////////////////////////
-         // register any custom fonts the input supplied //
-         //////////////////////////////////////////////////
-         for(Map.Entry<String, Path> entry : CollectionUtils.nonNullMap(input.getCustomFonts()).entrySet())
-         {
-            renderer.getFontResolver().addFont(entry.getValue().toAbsolutePath().toString(), entry.getKey(), "UTF-8", true, null);
-         }
+            for(Map.Entry<String, Path> entry : CollectionUtils.nonNullMap(input.getCustomFonts()).entrySet())
+            {
+               LOG.warn("Note:  Custom fonts appear to not be working in this class at this time...");
+               pdfBoxRenderer.getFontResolver().addFont(
+                  entry.getValue().toAbsolutePath().toFile(), // Path to the TrueType font file
+                  entry.getKey(),                             // Font family name to use in CSS
+                  400,                                        // Font weight (e.g., 400 for normal, 700 for bold)
+                  IdentValue.NORMAL,                          // Font style (e.g., NORMAL, ITALIC)
+                  true,                                       // Whether to subset the font
+                  PdfBoxFontResolver.FontGroup.MAIN           // ??
+               );
+            }
 
-         renderer.layout();
-         renderer.createPDF(input.getOutputStream());
+            pdfBoxRenderer.createPDF();
+         }
 
          return (output);
       }

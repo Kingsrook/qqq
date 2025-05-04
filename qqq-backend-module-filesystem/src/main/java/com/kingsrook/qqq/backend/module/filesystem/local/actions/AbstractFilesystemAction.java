@@ -44,6 +44,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -204,7 +205,7 @@ public class AbstractFilesystemAction extends AbstractBaseFilesystemAction<File>
     ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
    @Override
-   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
+   public void writeFile(QBackendMetaData backend, QTableMetaData table, QRecord record, String path, byte[] contents) throws IOException
    {
       FileUtils.writeByteArrayToFile(new File(path), contents);
    }

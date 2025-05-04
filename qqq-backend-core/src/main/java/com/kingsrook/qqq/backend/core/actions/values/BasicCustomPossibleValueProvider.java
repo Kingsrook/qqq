@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2024.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,31 +19,56 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.actions.metadata;
+package com.kingsrook.qqq.backend.core.actions.values;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 
 
 /*******************************************************************************
- ** a default implementation of MetaDataFilterInterface, that allows all the things
+ ** Basic implementation of a possible value provider, for where there's a limited
+ ** set of possible source objects - so you just have to define how to make one
+ ** PV from a source object, how to list all of the source objects, and how to
+ ** look up a PV from an id.
  *******************************************************************************/
-@Deprecated(since = "migrated to metaDataCustomizer")
-public class AllowAllMetaDataFilter implements MetaDataFilterInterface
+public abstract class BasicCustomPossibleValueProvider<S, ID extends Serializable> implements QCustomPossibleValueProvider<ID>
 {
 
    /***************************************************************************
     **
     ***************************************************************************/
+   protected abstract QPossibleValue<ID> makePossibleValue(S sourceObject);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected abstract S getSourceObject(Serializable id);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected abstract List<S> getAllSourceObjects();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    @Override
-   public boolean allowTable(MetaDataInput input, QTableMetaData table)
+   public QPossibleValue<ID> getPossibleValue(Serializable idValue)
    {
-      return (true);
+      S sourceObject = getSourceObject(idValue);
+      if(sourceObject == null)
+      {
+         return (null);
+      }
+
+      return makePossibleValue(sourceObject);
    }
 
 
@@ -52,42 +77,15 @@ public class AllowAllMetaDataFilter implements MetaDataFilterInterface
     **
     ***************************************************************************/
    @Override
-   public boolean allowProcess(MetaDataInput input, QProcessMetaData process)
+   public List<QPossibleValue<ID>> search(SearchPossibleValueSourceInput input) throws QException
    {
-      return (true);
+      List<QPossibleValue<ID>> allPossibleValues = new ArrayList<>();
+      List<S>                  allSourceObjects  = getAllSourceObjects();
+      for(S sourceObject : allSourceObjects)
+      {
+         allPossibleValues.add(makePossibleValue(sourceObject));
+      }
+
+      return completeCustomPVSSearch(input, allPossibleValues);
    }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public boolean allowReport(MetaDataInput input, QReportMetaData report)
-   {
-      return (true);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public boolean allowApp(MetaDataInput input, QAppMetaData app)
-   {
-      return (true);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget)
-   {
-      return (true);
-   }
-
 }

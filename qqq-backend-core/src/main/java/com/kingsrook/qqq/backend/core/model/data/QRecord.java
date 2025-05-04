@@ -468,7 +468,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public String getValueString(String fieldName)
    {
-      return (ValueUtils.getValueAsString(values.get(fieldName)));
+      return (ValueUtils.getValueAsString(getValue(fieldName)));
    }
 
 
@@ -479,7 +479,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Integer getValueInteger(String fieldName)
    {
-      return (ValueUtils.getValueAsInteger(values.get(fieldName)));
+      return (ValueUtils.getValueAsInteger(getValue(fieldName)));
    }
 
 
@@ -490,7 +490,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Long getValueLong(String fieldName)
    {
-      return (ValueUtils.getValueAsLong(values.get(fieldName)));
+      return (ValueUtils.getValueAsLong(getValue(fieldName)));
    }
 
 
@@ -500,7 +500,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public BigDecimal getValueBigDecimal(String fieldName)
    {
-      return (ValueUtils.getValueAsBigDecimal(values.get(fieldName)));
+      return (ValueUtils.getValueAsBigDecimal(getValue(fieldName)));
    }
 
 
@@ -510,7 +510,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Boolean getValueBoolean(String fieldName)
    {
-      return (ValueUtils.getValueAsBoolean(values.get(fieldName)));
+      return (ValueUtils.getValueAsBoolean(getValue(fieldName)));
    }
 
 
@@ -520,7 +520,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public LocalTime getValueLocalTime(String fieldName)
    {
-      return (ValueUtils.getValueAsLocalTime(values.get(fieldName)));
+      return (ValueUtils.getValueAsLocalTime(getValue(fieldName)));
    }
 
 
@@ -530,7 +530,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public LocalDate getValueLocalDate(String fieldName)
    {
-      return (ValueUtils.getValueAsLocalDate(values.get(fieldName)));
+      return (ValueUtils.getValueAsLocalDate(getValue(fieldName)));
    }
 
 
@@ -540,7 +540,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public byte[] getValueByteArray(String fieldName)
    {
-      return (ValueUtils.getValueAsByteArray(values.get(fieldName)));
+      return (ValueUtils.getValueAsByteArray(getValue(fieldName)));
    }
 
 
@@ -550,7 +550,7 @@ public class QRecord implements Serializable
     *******************************************************************************/
    public Instant getValueInstant(String fieldName)
    {
-      return (ValueUtils.getValueAsInstant(values.get(fieldName)));
+      return (ValueUtils.getValueAsInstant(getValue(fieldName)));
    }
 
 

@@ -1439,7 +1439,7 @@ public class QInstanceEnricher
          {
             try
             {
-               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getAdHoc(QCustomPossibleValueProvider.class, possibleValueSource.getCustomCodeReference());
 
                Method getPossibleValueMethod = customPossibleValueProvider.getClass().getDeclaredMethod("getPossibleValue", Serializable.class);
                Type   returnType             = getPossibleValueMethod.getGenericReturnType();

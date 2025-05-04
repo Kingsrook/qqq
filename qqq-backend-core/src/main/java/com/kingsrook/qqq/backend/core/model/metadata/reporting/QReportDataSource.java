@@ -40,7 +40,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  ** (optionally along with queryJoins and queryInputCustomizer) is used.
  ** - else a staticDataSupplier is used.
  *******************************************************************************/
-public class QReportDataSource
+public class QReportDataSource implements Cloneable
 {
    private String name;
 
@@ -52,6 +52,39 @@ public class QReportDataSource
    private QCodeReference queryInputCustomizer;
    private QCodeReference staticDataSupplier;
    private QCodeReference customRecordSource;
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public QReportDataSource clone()
+   {
+      try
+      {
+         QReportDataSource clone = (QReportDataSource) super.clone();
+         if(queryFilter != null)
+         {
+            clone.queryFilter = queryFilter.clone();
+         }
+
+         if(queryJoins != null)
+         {
+            clone.queryJoins = new ArrayList<>();
+            for(QueryJoin join : queryJoins)
+            {
+               queryJoins.add(join.clone());
+            }
+         }
+
+         return clone;
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw new AssertionError();
+      }
+   }
 
 
 
@@ -274,6 +307,7 @@ public class QReportDataSource
    }
 
 
+
    /*******************************************************************************
     ** Getter for customRecordSource
     *******************************************************************************/
@@ -302,6 +336,5 @@ public class QReportDataSource
       this.customRecordSource = customRecordSource;
       return (this);
    }
-
 
 }

@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -19,20 +19,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.module.api.model;
+package com.kingsrook.qqq.backend.core.model.metadata.branding;
 
 
 /*******************************************************************************
- **
+ ** interface to define keys for where banners should be displayed.
+ ** expect frontends to implement this interface with enums of known possible values
  *******************************************************************************/
-public enum AuthorizationType
+public interface BannerSlot
 {
-   API_KEY_HEADER,
-   API_TOKEN,
-   BASIC_AUTH_API_KEY,
-   BASIC_AUTH_USERNAME_PASSWORD,
-   CUSTOM,
-   OAUTH2,
-   NONE,
-   API_KEY_QUERY_PARAM,
 }

@@ -31,10 +31,9 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** a default implementation of MetaDataFilterInterface, that allows all the things
+ ** a default implementation of MetaDataFilterInterface, that is all noop.
  *******************************************************************************/
-@Deprecated(since = "migrated to metaDataCustomizer")
-public class AllowAllMetaDataFilter implements MetaDataFilterInterface
+public class DefaultNoopMetaDataActionCustomizer implements MetaDataActionCustomizerInterface
 {
 
    /***************************************************************************

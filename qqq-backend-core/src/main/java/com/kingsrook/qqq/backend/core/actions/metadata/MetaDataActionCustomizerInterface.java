@@ -22,7 +22,9 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
+import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
@@ -31,63 +33,46 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
- ** a default implementation of MetaDataFilterInterface, that allows all the things
+ ** Interface for customizations that can be injected by an application into
+ ** the MetaDataAction - e.g., loading applicable meta-data for a user into a
+ ** frontend.
  *******************************************************************************/
-@Deprecated(since = "migrated to metaDataCustomizer")
-public class AllowAllMetaDataFilter implements MetaDataFilterInterface
+public interface MetaDataActionCustomizerInterface
 {
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public boolean allowTable(MetaDataInput input, QTableMetaData table)
-   {
-      return (true);
-   }
-
-
+   boolean allowTable(MetaDataInput input, QTableMetaData table);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public boolean allowProcess(MetaDataInput input, QProcessMetaData process)
-   {
-      return (true);
-   }
-
-
+   boolean allowProcess(MetaDataInput input, QProcessMetaData process);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public boolean allowReport(MetaDataInput input, QReportMetaData report)
-   {
-      return (true);
-   }
-
-
+   boolean allowReport(MetaDataInput input, QReportMetaData report);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public boolean allowApp(MetaDataInput input, QAppMetaData app)
-   {
-      return (true);
-   }
-
-
+   boolean allowApp(MetaDataInput input, QAppMetaData app);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget)
+   boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default void postProcess(MetaDataOutput metaDataOutput) throws QException
    {
-      return (true);
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
 
 }

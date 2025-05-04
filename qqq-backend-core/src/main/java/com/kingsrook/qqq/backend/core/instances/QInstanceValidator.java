@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
+import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataActionCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataFilterInterface;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.reporting.customizers.ReportCustomRecordSourceInterface;
@@ -245,6 +246,11 @@ public class QInstanceValidator
       if(qInstance.getMetaDataFilter() != null)
       {
          validateSimpleCodeReference("Instance metaDataFilter ", qInstance.getMetaDataFilter(), MetaDataFilterInterface.class);
+      }
+
+      if(qInstance.getMetaDataActionCustomizer() != null)
+      {
+         validateSimpleCodeReference("Instance metaDataActionCustomizer ", qInstance.getMetaDataActionCustomizer(), MetaDataActionCustomizerInterface.class);
       }
    }
 

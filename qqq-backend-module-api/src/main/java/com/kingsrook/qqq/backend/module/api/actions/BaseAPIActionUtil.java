@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
@@ -207,6 +208,11 @@ public class BaseAPIActionUtil
          }
 
          return rs;
+      }
+      catch(QNotFoundException qnfe)
+      {
+         LOG.info("Not found", qnfe);
+         throw (qnfe);
       }
       catch(Exception e)
       {
@@ -737,6 +743,10 @@ public class BaseAPIActionUtil
          case OAUTH2 -> request.setHeader("Authorization", "Bearer " + getOAuth2Token());
          case API_KEY_QUERY_PARAM -> addApiKeyQueryParamToRequest(request);
          case CUSTOM -> handleCustomAuthorization(request);
+         case NONE ->
+         {
+            /* nothing to do here */
+         }
          default -> throw new IllegalArgumentException("Unexpected authorization type: " + backendMetaData.getAuthorizationType());
       }
    }
@@ -1171,6 +1181,16 @@ public class BaseAPIActionUtil
    /*******************************************************************************
     **
     *******************************************************************************/
+   protected QHttpResponse getQHttpResponse(HttpResponse response) throws Exception
+   {
+      return (new QHttpResponse(response));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    public QHttpResponse makeRequest(QTableMetaData table, HttpRequestBase request) throws QException
    {
       int     rateLimitSleepMillis      = getInitialRateLimitBackoffMillis();
@@ -1201,7 +1221,7 @@ public class BaseAPIActionUtil
 
             try(CloseableHttpResponse response = executeHttpRequest(request, httpClient))
             {
-               QHttpResponse qResponse = new QHttpResponse(response);
+               QHttpResponse qResponse = getQHttpResponse(response);
 
                logOutboundApiCall(request, qResponse);
 

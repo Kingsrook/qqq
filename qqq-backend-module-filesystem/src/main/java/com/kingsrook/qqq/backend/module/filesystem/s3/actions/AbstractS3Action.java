@@ -24,8 +24,10 @@ package com.kingsrook.qqq.backend.module.filesystem.s3.actions;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLConnection;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
@@ -34,6 +36,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -42,6 +45,7 @@ import com.kingsrook.qqq.backend.module.filesystem.base.actions.AbstractBaseFile
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemTableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.exceptions.FilesystemException;
 import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3BackendMetaData;
+import com.kingsrook.qqq.backend.module.filesystem.s3.model.metadata.S3TableBackendDetails;
 import com.kingsrook.qqq.backend.module.filesystem.s3.utils.S3Utils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -195,14 +199,27 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
     ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
    @Override
-   public void writeFile(QBackendMetaData backendMetaData, String path, byte[] contents) throws IOException
+   public void writeFile(QBackendMetaData backendMetaData, QTableMetaData table, QRecord record, String path, byte[] contents) throws IOException
    {
       String bucketName = ((S3BackendMetaData) backendMetaData).getBucketName();
 
       try
       {
          path = stripLeadingSlash(stripDuplicatedSlashes(path));
-         getS3Utils().writeFile(bucketName, path, contents);
+         String contentType = null;
+
+         if(table.getBackendDetails() instanceof S3TableBackendDetails s3TableBackendDetails)
+         {
+            contentType = switch(Objects.requireNonNullElse(s3TableBackendDetails.getContentTypeStrategy(), S3TableBackendDetails.ContentTypeStrategy.NONE))
+            {
+               case BASED_ON_FILE_NAME -> URLConnection.guessContentTypeFromName(path);
+               case FROM_FIELD -> record == null ? null : record.getValueString(s3TableBackendDetails.getContentTypeFieldName());
+               case HARDCODED -> s3TableBackendDetails.getHardcodedContentType();
+               case NONE -> null;
+            };
+         }
+
+         getS3Utils().writeFile(bucketName, path, contents, contentType);
       }
       catch(Exception e)
       {
@@ -276,6 +293,5 @@ public class AbstractS3Action extends AbstractBaseFilesystemAction<S3ObjectSumma
 
       getS3Utils().moveObject(bucketName, source, destination);
    }
-
 
 }

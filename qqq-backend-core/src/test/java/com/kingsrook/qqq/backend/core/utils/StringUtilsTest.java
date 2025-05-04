@@ -340,6 +340,40 @@ class StringUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testAppendIncrementingSuffix()
+   {
+      assertEquals("test (1)", StringUtils.appendIncrementingSuffix("test"));
+      assertEquals("test (2)", StringUtils.appendIncrementingSuffix("test (1)"));
+      assertEquals("test (a) (1)", StringUtils.appendIncrementingSuffix("test (a)"));
+      assertEquals("test (a32) (1)", StringUtils.appendIncrementingSuffix("test (a32)"));
+      assertEquals("test ((2)) (1)", StringUtils.appendIncrementingSuffix("test ((2))"));
+      assertEquals("test ((2)) (101)", StringUtils.appendIncrementingSuffix("test ((2)) (100)"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSafeEqualsIgnoreCase()
+   {
+      assertTrue(StringUtils.safeEqualsIgnoreCase(null, null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase(null, "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("a", "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("A", "a"));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", "b"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "TIMOThy d. chaMberlain"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "timothy d. chamberlain"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testNCopies()
    {
       assertEquals("", StringUtils.nCopies(0, "a"));

@@ -23,10 +23,12 @@ package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
@@ -34,6 +36,7 @@ import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
+import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -65,7 +68,7 @@ public class MetaDataAction
 {
    private static final QLogger LOG = QLogger.getLogger(MetaDataAction.class);
 
-   private static Memoization<QInstance, MetaDataFilterInterface> metaDataFilterMemoization = new Memoization<>();
+   private static Memoization<QInstance, MetaDataActionCustomizerInterface> metaDataActionCustomizerMemoization = new Memoization<>();
 
 
 
@@ -79,7 +82,7 @@ public class MetaDataAction
       MetaDataOutput           metaDataOutput = new MetaDataOutput();
       Map<String, AppTreeNode> treeNodes      = new LinkedHashMap<>();
 
-      MetaDataFilterInterface filter = getMetaDataFilter();
+      MetaDataActionCustomizerInterface customizer = getMetaDataActionCustomizer();
 
       /////////////////////////////////////
       // map tables to frontend metadata //
@@ -90,7 +93,7 @@ public class MetaDataAction
          String         tableName = entry.getKey();
          QTableMetaData table     = entry.getValue();
 
-         if(!filter.allowTable(metaDataInput, table))
+         if(!customizer.allowTable(metaDataInput, table))
          {
             continue;
          }
@@ -119,7 +122,7 @@ public class MetaDataAction
          String           processName = entry.getKey();
          QProcessMetaData process     = entry.getValue();
 
-         if(!filter.allowProcess(metaDataInput, process))
+         if(!customizer.allowProcess(metaDataInput, process))
          {
             continue;
          }
@@ -144,7 +147,7 @@ public class MetaDataAction
          String          reportName = entry.getKey();
          QReportMetaData report     = entry.getValue();
 
-         if(!filter.allowReport(metaDataInput, report))
+         if(!customizer.allowReport(metaDataInput, report))
          {
             continue;
          }
@@ -169,7 +172,7 @@ public class MetaDataAction
          String                   widgetName = entry.getKey();
          QWidgetMetaDataInterface widget     = entry.getValue();
 
-         if(!filter.allowWidget(metaDataInput, widget))
+         if(!customizer.allowWidget(metaDataInput, widget))
          {
             continue;
          }
@@ -206,7 +209,7 @@ public class MetaDataAction
             continue;
          }
 
-         if(!filter.allowApp(metaDataInput, app))
+         if(!customizer.allowApp(metaDataInput, app))
          {
             continue;
          }
@@ -292,11 +295,22 @@ public class MetaDataAction
          metaDataOutput.setBranding(QContext.getQInstance().getBranding());
       }
 
-      metaDataOutput.setEnvironmentValues(QContext.getQInstance().getEnvironmentValues());
+      metaDataOutput.setEnvironmentValues(Objects.requireNonNullElse(QContext.getQInstance().getEnvironmentValues(), Collections.emptyMap()));
 
-      metaDataOutput.setHelpContents(QContext.getQInstance().getHelpContent());
+      metaDataOutput.setHelpContents(Objects.requireNonNullElse(QContext.getQInstance().getHelpContent(), Collections.emptyMap()));
 
-      // todo post-customization - can do whatever w/ the result if you want?
+      try
+      {
+         customizer.postProcess(metaDataOutput);
+      }
+      catch(QUserFacingException e)
+      {
+         LOG.debug("User-facing exception thrown in meta-data customizer post-processing", e);
+      }
+      catch(Exception e)
+      {
+         LOG.warn("Unexpected error thrown in meta-data customizer post-processing", e);
+      }
 
       return metaDataOutput;
    }
@@ -306,26 +320,36 @@ public class MetaDataAction
    /***************************************************************************
     **
     ***************************************************************************/
-   private MetaDataFilterInterface getMetaDataFilter()
+   private MetaDataActionCustomizerInterface getMetaDataActionCustomizer()
    {
-      return metaDataFilterMemoization.getResult(QContext.getQInstance(), i ->
+      return metaDataActionCustomizerMemoization.getResult(QContext.getQInstance(), i ->
       {
-         MetaDataFilterInterface filter                  = null;
-         QCodeReference          metaDataFilterReference = QContext.getQInstance().getMetaDataFilter();
-         if(metaDataFilterReference != null)
+         MetaDataActionCustomizerInterface actionCustomizer                  = null;
+         QCodeReference                    metaDataActionCustomizerReference = QContext.getQInstance().getMetaDataActionCustomizer();
+         if(metaDataActionCustomizerReference != null)
          {
-            filter = QCodeLoader.getAdHoc(MetaDataFilterInterface.class, metaDataFilterReference);
-            LOG.debug("Using new meta-data filter of type: " + filter.getClass().getSimpleName());
+            actionCustomizer = QCodeLoader.getAdHoc(MetaDataActionCustomizerInterface.class, metaDataActionCustomizerReference);
+            LOG.debug("Using new meta-data actionCustomizer of type: " + actionCustomizer.getClass().getSimpleName());
          }
 
-         if(filter == null)
+         if(actionCustomizer == null)
          {
-            filter = new AllowAllMetaDataFilter();
-            LOG.debug("Using new default (allow-all) meta-data filter");
+            QCodeReference metaDataFilterReference = QContext.getQInstance().getMetaDataFilter();
+            if(metaDataFilterReference != null)
+            {
+               actionCustomizer = QCodeLoader.getAdHoc(MetaDataActionCustomizerInterface.class, metaDataFilterReference);
+               LOG.debug("Using new meta-data actionCustomizer (via metaDataFilter reference) of type: " + actionCustomizer.getClass().getSimpleName());
+            }
          }
 
-         return (filter);
-      }).orElseThrow(() -> new QRuntimeException("Error getting metaDataFilter"));
+         if(actionCustomizer == null)
+         {
+            actionCustomizer = new DefaultNoopMetaDataActionCustomizer();
+            LOG.debug("Using new default (allow-all) meta-data actionCustomizer");
+         }
+
+         return (actionCustomizer);
+      }).orElseThrow(() -> new QRuntimeException("Error getting MetaDataActionCustomizer"));
    }
 
 

@@ -22,43 +22,11 @@
 package com.kingsrook.qqq.backend.core.actions.metadata;
 
 
-import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
-import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
-import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-
-
 /*******************************************************************************
  **
  *******************************************************************************/
-public interface MetaDataFilterInterface
+@Deprecated(since = "migrated to metaDataCustomizer")
+public interface MetaDataFilterInterface extends MetaDataActionCustomizerInterface
 {
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   boolean allowTable(MetaDataInput input, QTableMetaData table);
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   boolean allowProcess(MetaDataInput input, QProcessMetaData process);
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   boolean allowReport(MetaDataInput input, QReportMetaData report);
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   boolean allowApp(MetaDataInput input, QAppMetaData app);
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   boolean allowWidget(MetaDataInput input, QWidgetMetaDataInterface widget);
 
 }
