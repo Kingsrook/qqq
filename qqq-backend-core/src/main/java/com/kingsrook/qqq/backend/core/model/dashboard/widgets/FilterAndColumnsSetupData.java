@@ -32,9 +32,11 @@ import java.util.List;
 public class FilterAndColumnsSetupData extends QWidgetData
 {
    private String       tableName;
-   private Boolean      allowVariables = false;
-   private Boolean      hideColumns    = false;
-   private Boolean      hidePreview    = false;
+   private Boolean      allowVariables     = false;
+   private Boolean      hideColumns        = false;
+   private Boolean      hidePreview        = false;
+   private Boolean      hideSortBy         = false;
+   private Boolean      overrideIsEditable = false;
    private List<String> filterDefaultFieldNames;
 
    private String filterFieldName = "queryFilterJson";
@@ -289,5 +291,67 @@ public class FilterAndColumnsSetupData extends QWidgetData
       this.columnFieldName = columnFieldName;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for overrideIsEditable
+    *******************************************************************************/
+   public Boolean getOverrideIsEditable()
+   {
+      return (this.overrideIsEditable);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideIsEditable
+    *******************************************************************************/
+   public void setOverrideIsEditable(Boolean overrideIsEditable)
+   {
+      this.overrideIsEditable = overrideIsEditable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideIsEditable
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withOverrideIsEditable(Boolean overrideIsEditable)
+   {
+      this.overrideIsEditable = overrideIsEditable;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hideSortBy
+    *******************************************************************************/
+   public Boolean getHideSortBy()
+   {
+      return (this.hideSortBy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hideSortBy
+    *******************************************************************************/
+   public void setHideSortBy(Boolean hideSortBy)
+   {
+      this.hideSortBy = hideSortBy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hideSortBy
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withHideSortBy(Boolean hideSortBy)
+   {
+      this.hideSortBy = hideSortBy;
+      return (this);
+   }
+
 
 }

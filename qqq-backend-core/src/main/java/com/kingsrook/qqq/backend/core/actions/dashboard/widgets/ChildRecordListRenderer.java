@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -195,14 +196,16 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          QTableMetaData leftTable   = QContext.getQInstance().getTable(join.getLeftTable());
          QTableMetaData rightTable  = QContext.getQInstance().getTable(join.getRightTable());
 
+         Map<String, Serializable> widgetMetaDataDefaultValues = input.getWidgetMetaData().getDefaultValues();
+
          Integer maxRows = null;
          if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
          {
             maxRows = ValueUtils.getValueAsInteger(input.getQueryParams().get("maxRows"));
          }
-         else if(input.getWidgetMetaData().getDefaultValues().containsKey("maxRows"))
+         else if(widgetMetaDataDefaultValues.containsKey("maxRows"))
          {
-            maxRows = ValueUtils.getValueAsInteger(input.getWidgetMetaData().getDefaultValues().get("maxRows"));
+            maxRows = ValueUtils.getValueAsInteger(widgetMetaDataDefaultValues.get("maxRows"));
          }
 
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,7 +238,17 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             {
                filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(primaryRecord.getValue(joinOn.getLeftField()))));
             }
-            filter.setOrderBys(join.getOrderBys());
+
+            Serializable orderBy = widgetMetaDataDefaultValues.get("orderBy");
+            if(orderBy instanceof List orderByList && !orderByList.isEmpty() && orderByList.get(0) instanceof QFilterOrderBy)
+            {
+               filter.setOrderBys(orderByList);
+            }
+            else
+            {
+               filter.setOrderBys(join.getOrderBys());
+            }
+
             filter.setLimit(maxRows);
 
             QueryInput queryInput = new QueryInput();
@@ -284,11 +297,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
 
             widgetData.setDefaultValuesForNewChildRecords(defaultValuesForNewChildRecords);
 
-            Map<String, Serializable> widgetValues = input.getWidgetMetaData().getDefaultValues();
-            if(widgetValues.containsKey("disabledFieldsForNewChildRecords"))
+            if(widgetMetaDataDefaultValues.containsKey("disabledFieldsForNewChildRecords"))
             {
                @SuppressWarnings("unchecked")
-               Set<String> disabledFieldsForNewChildRecords = (Set<String>) widgetValues.get("disabledFieldsForNewChildRecords");
+               Set<String> disabledFieldsForNewChildRecords = (Set<String>) widgetMetaDataDefaultValues.get("disabledFieldsForNewChildRecords");
                widgetData.setDisabledFieldsForNewChildRecords(disabledFieldsForNewChildRecords);
             }
             else
@@ -308,10 +320,10 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
                }
             }
 
-            if(widgetValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
+            if(widgetMetaDataDefaultValues.containsKey("defaultValuesForNewChildRecordsFromParentFields"))
             {
                @SuppressWarnings("unchecked")
-               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetValues.get("defaultValuesForNewChildRecordsFromParentFields");
+               Map<String, String> defaultValuesForNewChildRecordsFromParentFields = (Map<String, String>) widgetMetaDataDefaultValues.get("defaultValuesForNewChildRecordsFromParentFields");
                widgetData.setDefaultValuesForNewChildRecordsFromParentFields(defaultValuesForNewChildRecordsFromParentFields);
             }
          }
