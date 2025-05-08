@@ -47,9 +47,14 @@
 
       <!-- 3rd party deps specifically for this module -->
       <dependency>
-         <groupId>org.openjdk.nashorn</groupId>
-         <artifactId>nashorn-core</artifactId>
-         <version>15.4</version>
+         <groupId>org.graalvm.js</groupId>
+         <artifactId>js</artifactId>
+         <version>22.3.0</version>
+      </dependency>
+      <dependency>
+         <groupId>org.graalvm.js</groupId>
+         <artifactId>js-scriptengine</artifactId>
+         <version>22.3.0</version>
       </dependency>
 
       <!-- Common deps for all qqq modules -->

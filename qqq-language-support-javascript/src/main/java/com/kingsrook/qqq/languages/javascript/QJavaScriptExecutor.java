@@ -21,11 +21,9 @@
 
 package com.kingsrook.qqq.languages.javascript;
 
+// Javax imports removed for GraalVM migration
 
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -39,14 +37,11 @@ import com.kingsrook.qqq.backend.core.actions.scripts.logging.QCodeExecutionLogg
 import com.kingsrook.qqq.backend.core.exceptions.QCodeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
-import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
-import org.openjdk.nashorn.api.scripting.ScriptObjectMirror;
-import org.openjdk.nashorn.internal.runtime.ECMAException;
-import org.openjdk.nashorn.internal.runtime.ParserException;
-import org.openjdk.nashorn.internal.runtime.Undefined;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 
 
 /*******************************************************************************
@@ -91,57 +86,85 @@ public class QJavaScriptExecutor implements QCodeExecutor
          {
             return (new BigDecimal(d));
          }
-         else if(object instanceof Undefined)
-         {
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // well, we always said we wanted javascript to treat null & undefined the same way...  here's our chance //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            return (null);
-         }
-
-         if(object instanceof ScriptObjectMirror scriptObjectMirror)
+         else if(object instanceof Value val)
          {
             try
             {
-               if("Date".equals(scriptObjectMirror.getClassName()))
+               //////////////////////////////////////////////////
+               // treat JavaScript null/undefined as Java null //
+               //////////////////////////////////////////////////
+               if(val.isNull() || val.isHostObject() && val.asHostObject() == null)
                {
-                  ////////////////////////////////////////////////////////////////////
-                  // looks like the js Date is in UTC (is that because our JVM is?) //
-                  // so the instant being in UTC matches                            //
-                  ////////////////////////////////////////////////////////////////////
-                  Double  millis  = (Double) scriptObjectMirror.callMember("getTime");
-                  Instant instant = Instant.ofEpochMilli(millis.longValue());
-                  return (instant);
+                  return null;
+               }
+               ////////////////
+               // primitives //
+               ////////////////
+               if(val.isString())
+               {
+                  return val.asString();
+               }
+               if(val.isBoolean())
+               {
+                  return val.asBoolean();
+               }
+               if(val.isNumber())
+               {
+                  //////////////////////////////////////////
+                  // preserve integer types when possible //
+                  //////////////////////////////////////////
+                  if(val.fitsInInt())
+                  {
+                     return val.asInt();
+                  }
+                  else if(val.fitsInLong())
+                  {
+                     return val.asLong();
+                  }
+                  else
+                  {
+                     return new BigDecimal(val.asDouble());
+                  }
+               }
+               //////////////////////////////////////////////
+               // detect JS Date by existence of getTime() //
+               //////////////////////////////////////////////
+               if(val.hasMember("getTime") && val.canInvokeMember("getTime"))
+               {
+                  double millis = val.invokeMember("getTime").asDouble();
+                  return Instant.ofEpochMilli((long) millis);
+               }
+               ////////////
+               // arrays //
+               ////////////
+               if(val.hasArrayElements())
+               {
+                  List<Object> result = new ArrayList<>();
+                  long         size   = val.getArraySize();
+                  for(long i = 0; i < size; i++)
+                  {
+                     result.add(convertObjectToJava(val.getArrayElement(i)));
+                  }
+                  return result;
+               }
+               /////////////
+               // objects //
+               /////////////
+               if(val.hasMembers())
+               {
+                  Map<String, Object> result = new HashMap<>();
+                  for(String key : val.getMemberKeys())
+                  {
+                     result.put(key, convertObjectToJava(val.getMember(key)));
+                  }
+                  return result;
                }
             }
             catch(Exception e)
             {
-               LOG.debug("Error unwrapping javascript date", e);
-            }
-
-            if(scriptObjectMirror.isArray())
-            {
-               List<Object> result = new ArrayList<>();
-               for(String key : scriptObjectMirror.keySet())
-               {
-                  result.add(Integer.parseInt(key), convertObjectToJava(scriptObjectMirror.get(key)));
-               }
-               return (result);
-            }
-            else
-            {
-               ///////////////////////////////////////////////////////////////////////////////////////////////////////
-               // last thing we know to try (though really, there's probably some check we should have around this) //
-               ///////////////////////////////////////////////////////////////////////////////////////////////////////
-               Map<String, Object> result = new HashMap<>();
-               for(String key : scriptObjectMirror.keySet())
-               {
-                  result.put(key, convertObjectToJava(scriptObjectMirror.get(key)));
-               }
-               return (result);
+               LOG.debug("Error converting GraalVM value", e);
             }
          }
-
          return QCodeExecutor.super.convertObjectToJava(object);
       }
       catch(Exception e)
@@ -165,9 +188,14 @@ public class QJavaScriptExecutor implements QCodeExecutor
          {
             if(object instanceof Instant i)
             {
-               long         millis = (i.getEpochSecond() * 1000 + i.getLong(ChronoField.MILLI_OF_SECOND));
-               ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-               return engine.eval("new Date(" + millis + ")");
+               long millis = (i.getEpochSecond() * 1000 + i.getLong(ChronoField.MILLI_OF_SECOND));
+               Context context = Context.newBuilder("js")
+                  .allowAllAccess(true)
+                  .allowExperimentalOptions(true)
+                  .option("js.ecmascript-version", "2022")
+                  .build();
+               Value jsDate = context.eval("js", "new Date(" + millis + ")");
+               return jsDate.asHostObject();
             }
          }
 
@@ -186,32 +214,29 @@ public class QJavaScriptExecutor implements QCodeExecutor
     *******************************************************************************/
    private Serializable runInline(String code, Map<String, Serializable> inputContext, QCodeExecutionLoggerInterface executionLogger) throws QCodeException
    {
-      new NashornScriptEngineFactory();
-      ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-
-      //////////////////////////////////////////////
-      // setup the javascript environment/context //
-      //////////////////////////////////////////////
-      Bindings bindings = engine.createBindings();
-      bindings.putAll(inputContext);
-
-      if(!bindings.containsKey("logger"))
+      Context context = Context.newBuilder("js")
+         .allowAllAccess(true)
+         .allowExperimentalOptions(true)
+         .option("js.ecmascript-version", "2022")
+         .build();
+      // Populate GraalJS bindings from the inputContext
+      Value bindingsScope = context.getBindings("js");
+      for(Map.Entry<String, Serializable> entry : inputContext.entrySet())
       {
-         bindings.put("logger", executionLogger);
+         bindingsScope.putMember(entry.getKey(), entry.getValue());
       }
-
-      ////////////////////////////////////////////////////////////////////////
-      // wrap the user's code in an immediately-invoked function expression //
-      // if the user's code (%s below) returns - then our IIFE is done.     //
-      // if the user's code doesn't return, but instead created a 'script'  //
-      // variable, with a 'main' function on it (e.g., from a compiled      //
-      // type script file), then call main function and return its result.  //
-      ////////////////////////////////////////////////////////////////////////
+      // Ensure logger is available
+      if(!bindingsScope.hasMember("logger"))
+      {
+         bindingsScope.putMember("logger", executionLogger);
+      }
+      // wrap the user's code in an immediately-invoked function expression
       String codeToRun = """
          (function userDefinedFunction()
          {
+            'use strict';
             %s
-
+         
             var mainFunction = null;
             try
             {
@@ -221,7 +246,7 @@ public class QJavaScriptExecutor implements QCodeExecutor
                }
             }
             catch(e) { }
-
+         
             if(mainFunction != null)
             {
                return (mainFunction());
@@ -232,66 +257,25 @@ public class QJavaScriptExecutor implements QCodeExecutor
       Serializable output;
       try
       {
-         output = (Serializable) engine.eval(codeToRun, bindings);
+         Source source = Source.newBuilder("js", codeToRun, "batchName.js")
+            .mimeType("application/javascript+module")
+            .build();
+         Value result = context.eval(source);
+         output = (Serializable) result.asHostObject();
       }
-      catch(ScriptException se)
+      catch(Exception se)
       {
-         QCodeException qCodeException = getQCodeExceptionFromScriptException(se);
-         throw (qCodeException);
+         // We no longer have ScriptException, so wrap as QCodeException
+         throw new QCodeException("Error during JavaScript execution: " + se.getMessage(), se);
       }
 
       return (output);
    }
 
-
-
    /*******************************************************************************
     **
     *******************************************************************************/
-   private QCodeException getQCodeExceptionFromScriptException(ScriptException se)
-   {
-      boolean isParserException     = ExceptionUtils.findClassInRootChain(se, ParserException.class) != null;
-      boolean isUserThrownException = ExceptionUtils.findClassInRootChain(se, ECMAException.class) != null;
-
-      String message      = se.getMessage();
-      String errorContext = null;
-      if(message != null)
-      {
-         message = message.replaceFirst(" in <eval>.*", "");
-         message = message.replaceFirst("<eval>:\\d+:\\d+", "");
-
-         if(message.contains("\n"))
-         {
-            String[] parts = message.split("\n", 2);
-            message = parts[0];
-            errorContext = parts[1];
-         }
-      }
-
-      int actualScriptLineNumber = se.getLineNumber() - 2;
-
-      String  prefix         = "Script Exception";
-      boolean includeColumn  = true;
-      boolean includeContext = false;
-      if(isParserException)
-      {
-         prefix = "Script parser exception";
-         includeContext = true;
-      }
-      else if(isUserThrownException)
-      {
-         prefix = "Script threw an exception";
-         includeColumn = false;
-      }
-
-      QCodeException qCodeException = new QCodeException(prefix + " at line " + actualScriptLineNumber + (includeColumn ? (" column " + se.getColumnNumber()) : "") + ": " + message);
-      if(includeContext)
-      {
-         qCodeException.setContext(errorContext);
-      }
-
-      return (qCodeException);
-   }
+   // getQCodeExceptionFromScriptException is now unused (ScriptException/Nashorn removed)
 
 
 
