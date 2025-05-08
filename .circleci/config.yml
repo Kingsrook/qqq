@@ -48,7 +48,11 @@ commands:
       - run:
           name: Run Maven Verify
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 verify
+            mvn -s .circleci/mvn-settings.xml -T4 verify | tee mvn-verify.log
+      - store_artifacts:
+          name: Full Maven Verify Log
+          path: mvn-verify.logo
+          destination: mvn-verify
       - store_jacoco_site:
           module: qqq-backend-core
       - store_jacoco_site:
