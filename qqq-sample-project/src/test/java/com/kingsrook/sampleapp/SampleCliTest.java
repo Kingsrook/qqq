@@ -24,6 +24,7 @@ package com.kingsrook.sampleapp;
 
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 import org.junit.jupiter.api.Test;
@@ -43,8 +44,9 @@ class SampleCliTest
    @Test
    void testExitSuccess() throws QException
    {
-      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
-      int exitCode = new SampleCli().run(new String[] { "--meta-data" });
+      QInstance qInstance = SampleMetaDataProvider.defineTestInstance();
+      QContext.init(qInstance, new QSession());
+      int exitCode = new SampleCli().run(qInstance, new String[] { "--meta-data" });
       assertEquals(0, exitCode);
    }
 
@@ -56,8 +58,9 @@ class SampleCliTest
    @Test
    void testNotExitSuccess() throws QException
    {
-      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
-      int exitCode = new SampleCli().run(new String[] { "asdfasdf" });
+      QInstance qInstance = SampleMetaDataProvider.defineTestInstance();
+      QContext.init(qInstance, new QSession());
+      int exitCode = new SampleCli().run(qInstance, new String[] { "asdfasdf" });
       assertNotEquals(0, exitCode);
    }
 

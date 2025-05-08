@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.serialization.QStepMetaDataDeserializer;
 
@@ -37,7 +38,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.serialization.QStepMetaData
  **
  *******************************************************************************/
 @JsonDeserialize(using = QStepMetaDataDeserializer.class)
-public abstract class QStepMetaData
+public abstract class QStepMetaData implements QMetaDataObject
 {
    private String name;
    private String label;

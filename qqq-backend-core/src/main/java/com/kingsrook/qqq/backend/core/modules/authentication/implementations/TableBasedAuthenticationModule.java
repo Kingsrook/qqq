@@ -406,6 +406,7 @@ public class TableBasedAuthenticationModule implements QAuthenticationModuleInte
          qUser.setIdReference(userRecord.getValueString(metaData.getUserTableUsernameField()));
 
          QSession qSession = new QSession();
+         qSession.setUuid(sessionUuid);
          qSession.setIdReference(sessionUuid);
          qSession.setUser(qUser);
 

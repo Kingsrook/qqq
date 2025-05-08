@@ -47,7 +47,7 @@ class RenderAllWidgetsTest
    @Test
    void test() throws QException
    {
-      QInstance qInstance = SampleMetaDataProvider.defineInstance();
+      QInstance qInstance = SampleMetaDataProvider.defineTestInstance();
       QContext.init(qInstance, new QSession());
 
       ////////////////////////////////////////////////////////////////

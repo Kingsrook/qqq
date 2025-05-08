@@ -445,4 +445,14 @@ public class RunBackendStepOutput extends AbstractActionOutput implements Serial
       this.processState.setProcessMetaDataAdjustment(processMetaDataAdjustment);
    }
 
+
+
+   /***************************************************************************
+    ** Update the process state with values from the input processPayload
+    ** subclass instance.
+    ***************************************************************************/
+   public void setProcessPayload(QProcessPayload processPayload)
+   {
+      processPayload.toProcessState(getProcessState());
+   }
 }
