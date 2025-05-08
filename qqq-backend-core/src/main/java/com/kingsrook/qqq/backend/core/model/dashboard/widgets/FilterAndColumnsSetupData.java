@@ -36,7 +36,7 @@ public class FilterAndColumnsSetupData extends QWidgetData
    private Boolean      hideColumns        = false;
    private Boolean      hidePreview        = false;
    private Boolean      hideSortBy         = false;
-   private Boolean      overrideIsEditable = false;
+   private Boolean      overrideIsEditable;
    private List<String> filterDefaultFieldNames;
 
    private String filterFieldName = "queryFilterJson";
