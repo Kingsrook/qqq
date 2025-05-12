@@ -22,11 +22,9 @@
 package com.kingsrook.sampleapp;
 
 
-import java.util.Arrays;
 import com.kingsrook.qqq.backend.core.instances.ConfigFilesBasedQQQApplication;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.middleware.javalin.QApplicationJavalinServer;
-import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 
 
 /*******************************************************************************
@@ -35,7 +33,6 @@ import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
 public class ConfigFileBasedSampleJavalinServer
 {
    private static final QLogger LOG = QLogger.getLogger(ConfigFileBasedSampleJavalinServer.class);
-   private final String path;
 
 
 
@@ -44,34 +41,18 @@ public class ConfigFileBasedSampleJavalinServer
     *******************************************************************************/
    public static void main(String[] args)
    {
-      String path = "src/main/resources/metadata";
-      if(args.length > 0)
-      {
-         path = args[0];
-         System.out.println("Using path from args [" + path + "]");
-      }
-
-      new ConfigFileBasedSampleJavalinServer(path).start();
-   }
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public ConfigFileBasedSampleJavalinServer(String path)
-   {
-      this.path = path;
-   }
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void start()
-   {
       try
       {
-         new QApplicationJavalinServer(new ConfigFilesBasedQQQApplication(path)).start();
+         String path = "src/main/resources/metadata";
+         if(args.length > 0)
+         {
+            path = args[0];
+            System.out.println("Using path from args [" + path + "]");
+         }
+
+         ConfigFilesBasedQQQApplication application   = new ConfigFilesBasedQQQApplication(path);
+         QApplicationJavalinServer      javalinServer = new QApplicationJavalinServer(application);
+         javalinServer.start();
       }
       catch(Exception e)
       {
