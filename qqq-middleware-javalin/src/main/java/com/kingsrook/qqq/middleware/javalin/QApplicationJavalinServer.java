@@ -106,10 +106,10 @@ public class QApplicationJavalinServer
    {
       QInstance qInstance = application.defineValidatedQInstance();
 
-      QJavalinMetaData qJavalinMetaData = QJavalinMetaData.of(qInstance);
-      if(qJavalinMetaData != null)
+      QJavalinMetaData javalinMetaData = getJavalinMetaDataToUse(qInstance);
+      if(javalinMetaData != null)
       {
-         addRouteProvidersFromMetaData(qJavalinMetaData);
+         addRouteProvidersFromMetaData(javalinMetaData);
       }
 
       service = Javalin.create(config ->
@@ -230,6 +230,28 @@ public class QApplicationJavalinServer
       }
 
       service.start(port);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private QJavalinMetaData getJavalinMetaDataToUse(QInstance qInstance)
+   {
+      if(this.javalinMetaData != null && QJavalinMetaData.of(qInstance) != null)
+      {
+         LOG.warn("JavalinMetaData is defined both in the QInstance and the QApplicationJavalinServer.  The one from the QInstance will be ignored - the one from the QJavalinApplicationServer will be used.");
+         return (this.javalinMetaData);
+      }
+      else if (this.javalinMetaData != null)
+      {
+         return (this.javalinMetaData);
+      }
+      else
+      {
+         return QJavalinMetaData.of(qInstance);
+      }
    }
 
 
