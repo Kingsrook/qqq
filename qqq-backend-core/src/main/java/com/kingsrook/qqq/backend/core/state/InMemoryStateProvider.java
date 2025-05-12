@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.state;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -58,7 +59,7 @@ public class InMemoryStateProvider implements StateProviderInterface
     *******************************************************************************/
    private InMemoryStateProvider()
    {
-      this.map = new HashMap<>();
+      this.map = Collections.synchronizedMap(new HashMap<>());
 
       ///////////////////////////////////////////////////////////
       // Start a single thread executor to handle the cleaning //
