@@ -97,6 +97,63 @@ class WhiteSpaceBehaviorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   void testTrimWhiteSpace()
+   {
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM, new QRecord(), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM, new QRecord().withValue(FIELD, null), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertEquals("doo bee doo\n bee doo", applyToRecord(WhiteSpaceBehavior.TRIM, new QRecord().withValue(FIELD, "    doo bee doo\n bee doo\r \n\n"), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+
+      assertEquals(ListBuilder.of("this is\rthe way", null, "that was the way"), applyToRecords(WhiteSpaceBehavior.TRIM, List.of(
+            new QRecord().withValue(FIELD, "      this is\rthe way   \t"),
+            new QRecord(),
+            new QRecord().withValue(FIELD, "that was the way\n")),
+         ValueBehaviorApplier.Action.INSERT).stream().map(r -> r.getValueString(FIELD)).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTrimLeftWhiteSpace()
+   {
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM_LEFT, new QRecord(), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM_LEFT, new QRecord().withValue(FIELD, null), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertEquals("doo bee doo\n bee doo\r \n\n", applyToRecord(WhiteSpaceBehavior.TRIM_LEFT, new QRecord().withValue(FIELD, "    doo bee doo\n bee doo\r \n\n"), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+
+      assertEquals(ListBuilder.of("this is\rthe way   \t", null, "that was the way\n"), applyToRecords(WhiteSpaceBehavior.TRIM_LEFT, List.of(
+            new QRecord().withValue(FIELD, "      this is\rthe way   \t"),
+            new QRecord(),
+            new QRecord().withValue(FIELD, "  \n that was the way\n")),
+         ValueBehaviorApplier.Action.INSERT).stream().map(r -> r.getValueString(FIELD)).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTrimRightWhiteSpace()
+   {
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM_RIGHT, new QRecord(), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertNull(applyToRecord(WhiteSpaceBehavior.TRIM_RIGHT, new QRecord().withValue(FIELD, null), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+      assertEquals("    doo bee doo\n bee doo", applyToRecord(WhiteSpaceBehavior.TRIM_RIGHT, new QRecord().withValue(FIELD, "    doo bee doo\n bee doo\r \n\n"), ValueBehaviorApplier.Action.INSERT).getValue(FIELD));
+
+      assertEquals(ListBuilder.of("      this is\rthe way", null, "  \n that was the way"), applyToRecords(WhiteSpaceBehavior.TRIM_RIGHT, List.of(
+            new QRecord().withValue(FIELD, "      this is\rthe way   \t"),
+            new QRecord(),
+            new QRecord().withValue(FIELD, "  \n that was the way\n")),
+         ValueBehaviorApplier.Action.INSERT).stream().map(r -> r.getValueString(FIELD)).toList());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QRecord applyToRecord(WhiteSpaceBehavior behavior, QRecord record, ValueBehaviorApplier.Action action)
    {
       return (applyToRecords(behavior, List.of(record), action).get(0));
@@ -167,7 +224,7 @@ class WhiteSpaceBehaviorTest extends BaseTest
       new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_SHAPE).withRecord(new QRecord().withValue("id", id).withValue("name", "Octagon")));
 
       ////////////////////////////////////////////////////////////////////////////////////
-      // turn off the to-lower-case behavior, so we'll see what was actually udpated to //
+      // turn off the to-lower-case behavior, so we'll see what was actually updated to //
       ////////////////////////////////////////////////////////////////////////////////////
       field.setBehaviors(Collections.emptySet());
       assertEquals("octagon", GetAction.execute(TestUtils.TABLE_NAME_SHAPE, id).getValueString("name"));

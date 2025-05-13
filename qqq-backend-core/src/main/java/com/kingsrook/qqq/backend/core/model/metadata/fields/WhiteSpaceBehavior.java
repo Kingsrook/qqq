@@ -41,7 +41,10 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 public enum WhiteSpaceBehavior implements FieldBehavior<WhiteSpaceBehavior>, FieldBehaviorForFrontend, FieldFilterBehavior<WhiteSpaceBehavior>
 {
    NONE(null),
-   REMOVE_ALL_WHITESPACE((String s) -> s.chars().filter(c -> !Character.isWhitespace(c)).collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString());
+   REMOVE_ALL_WHITESPACE((String s) -> s.chars().filter(c -> !Character.isWhitespace(c)).collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString()),
+   TRIM((String s) -> s.trim()),
+   TRIM_LEFT((String s) -> s.stripLeading()),
+   TRIM_RIGHT((String s) -> s.stripTrailing());
 
 
    private final Function<String, String> function;
@@ -82,7 +85,7 @@ public enum WhiteSpaceBehavior implements FieldBehavior<WhiteSpaceBehavior>, Fie
 
       switch(this)
       {
-         case REMOVE_ALL_WHITESPACE -> applyFunction(recordList, table, field);
+         case REMOVE_ALL_WHITESPACE, TRIM, TRIM_LEFT, TRIM_RIGHT -> applyFunction(recordList, table, field);
          default -> throw new IllegalStateException("Unexpected enum value: " + this);
       }
    }
