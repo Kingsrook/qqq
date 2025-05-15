@@ -111,7 +111,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
    public static final String QUERY_DESCRIPTION = """
       Execute a query on this table, using query criteria as specified in query string parameters.
-                     
+      
       * Pagination is managed via the `pageNo` & `pageSize` query string parameters.  pageNo starts at 1.  pageSize defaults to 50.
       * By default, the response includes the total count of records that match the query criteria.  The count can be omitted by specifying `includeCount=false`
       * By default, results are sorted by the table's primary key, descending.  This can be changed by specifying the `orderBy` query string parameter, following SQL ORDER BY syntax (e.g., `fieldName1 ASC, fieldName2 DESC`)
@@ -139,26 +139,26 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * The request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body.
       * Any unrecognized field names in the body will cause a 400 error.
       * Any read-only (non-editable) fields provided in the body will be silently ignored.
-                     
+      
       Upon success, a status code of 201 (`Created`) is returned, and the generated value for the primary key will be returned in the response body object.
       """;
 
    public static final String UPDATE_DESCRIPTION = """
       Update one record in this table, by specifying its primary key as a path parameter, and by supplying values to be updated in the request body.
-                     
+      
       * Only the fields provided in the request body will be updated.
       * To remove a value from a field, supply the key for the field, with a null value.
       * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
       * Any unrecognized field names in the body will cause a 400 error.
       * Any read-only (non-editable) fields provided in the body will be silently ignored.
       * Note that if the request body includes the primary key, it will be ignored.  Only the primary key value path parameter will be used.
-                     
+      
       Upon success, a status code of 204 (`No Content`) is returned, with no response body.
       """;
 
    public static final String DELETE_DESCRIPTION = """
       Delete one record from this table, by specifying its primary key as a path parameter.
-                     
+      
       Upon success, a status code of 204 (`No Content`) is returned, with no response body.
       """;
 
@@ -167,7 +167,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * The objects in the request body should not include a value for the table's primary key.  Rather, a value will be generated and returned in a successful response's body
       * Any unrecognized field names in the body will cause a 400 error.
       * Any read-only (non-editable) fields provided in the body will be silently ignored.
-                     
+      
       An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
       * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
       * For sub-status codes of 201 (`Created`), and the generated value for the primary key will be returned in the response body object.
@@ -180,7 +180,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
       * The request body does not need to contain all fields from the table.  Rather, only the fields to be updated should be supplied.
       * Any unrecognized field names in the body will cause a 400 error.
       * Any read-only (non-editable) fields provided in the body will be silently ignored.
-                    
+      
       An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
       * The 1st record in the request will have its response in the 1st object in the response, and so-forth.
       * Each input object's primary key will also be included in the corresponding response object.
@@ -188,7 +188,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
    public static final String BULK_DELETE_DESCRIPTION = """
       Delete one or more records from this table, by supplying an array of primary key values in the request body.
-                     
+      
       An HTTP 207 (`Multi-Status`) code is generally returned, with an array of objects giving the individual sub-status codes for each record in the request body.
       * The 1st primary key in the request will have its response in the 1st object in the response, and so-forth.
       * Each input primary key will also be included in the corresponding response object.
@@ -726,7 +726,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             ApiProcessMetaData apiProcessMetaData = pair.getA();
             QProcessMetaData   processMetaData    = pair.getB();
 
-            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tableProcessesTag, apiProcessMetaData, processMetaData);
+            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tableProcessesTag, apiProcessMetaData, processMetaData, apiVersion);
 
             usedProcessNames.add(processMetaData.getName());
          }
@@ -761,7 +761,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
                .withName(tag)
                .withDescription(tag));
 
-            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tag, apiProcessMetaData, processMetaData);
+            addProcessEndpoints(qInstance, apiInstanceMetaData, basePath, openAPI, tag, apiProcessMetaData, processMetaData, apiVersion);
 
             usedProcessNames.add(processMetaData.getName());
          }
@@ -807,14 +807,14 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void addProcessEndpoints(QInstance qInstance, ApiInstanceMetaData apiInstanceMetaData, String basePath, OpenAPI openAPI, String tag, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData)
+   private void addProcessEndpoints(QInstance qInstance, ApiInstanceMetaData apiInstanceMetaData, String basePath, OpenAPI openAPI, String tag, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, APIVersion apiVersion)
    {
       String processApiPath = ApiProcessUtils.getProcessApiPath(qInstance, processMetaData, apiProcessMetaData, apiInstanceMetaData);
 
       ///////////////////////////
       // do the process itself //
       ///////////////////////////
-      Path path = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tag));
+      Path path = generateProcessSpecPathObject(apiInstanceMetaData, apiProcessMetaData, processMetaData, ListBuilder.of(tag), apiVersion);
       openAPI.getPaths().put(basePath + processApiPath, path);
 
       ///////////////////////////////////////////////////////////////////////
@@ -872,7 +872,7 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Path generateProcessSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags)
+   private Path generateProcessSpecPathObject(ApiInstanceMetaData apiInstanceMetaData, ApiProcessMetaData apiProcessMetaData, QProcessMetaData processMetaData, List<String> tags, APIVersion apiVersion)
    {
       String description = apiProcessMetaData.getDescription();
       if(!StringUtils.hasContent(description))
@@ -927,7 +927,10 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
 
             for(QFieldMetaData field : CollectionUtils.nonNullList(queryStringParams.getFields()))
             {
-               parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("query"));
+               if(ApiFieldUtils.isIncluded(apiName, field) && ApiFieldUtils.getApiVersionRange(apiName, field).includes(apiVersion))
+               {
+                  parameters.add(processFieldToParameter(apiInstanceMetaData, field).withIn("query"));
+               }
             }
          }
 
