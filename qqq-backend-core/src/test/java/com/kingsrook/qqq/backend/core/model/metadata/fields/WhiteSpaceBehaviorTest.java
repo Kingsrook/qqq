@@ -177,86 +177,6 @@ class WhiteSpaceBehaviorTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testReads() throws QException
-   {
-      TestUtils.insertDefaultShapes(QContext.getQInstance());
-
-      List<QRecord> records = QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, null);
-      assertEquals(Set.of("Triangle", "Square", "Circle"), records.stream().map(r -> r.getValueString("name")).collect(Collectors.toSet()));
-
-      QFieldMetaData field = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE).getField("name");
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_UPPER_CASE));
-
-      records = QueryAction.execute(TestUtils.TABLE_NAME_SHAPE, null);
-      assertEquals(Set.of("TRIANGLE", "SQUARE", "CIRCLE"), records.stream().map(r -> r.getValueString("name")).collect(Collectors.toSet()));
-
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE));
-      assertEquals("triangle", GetAction.execute(TestUtils.TABLE_NAME_SHAPE, 1).getValueString("name"));
-
-      field.setBehaviors(Set.of(CaseChangeBehavior.NONE));
-      assertEquals("Triangle", GetAction.execute(TestUtils.TABLE_NAME_SHAPE, 1).getValueString("name"));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testWrites() throws QException
-   {
-      Integer id = 100;
-
-      QFieldMetaData field = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE).getField("name");
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_UPPER_CASE));
-      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_SHAPE).withRecord(new QRecord().withValue("id", id).withValue("name", "Octagon")));
-
-      //////////////////////////////////////////////////////////////////////////////////
-      // turn off the to-upper-case behavior, so we'll see what was actually inserted //
-      //////////////////////////////////////////////////////////////////////////////////
-      field.setBehaviors(Collections.emptySet());
-      assertEquals("OCTAGON", GetAction.execute(TestUtils.TABLE_NAME_SHAPE, id).getValueString("name"));
-
-      ////////////////////////////////////////////
-      // change to toLowerCase and do an update //
-      ////////////////////////////////////////////
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE));
-      new UpdateAction().execute(new UpdateInput(TestUtils.TABLE_NAME_SHAPE).withRecord(new QRecord().withValue("id", id).withValue("name", "Octagon")));
-
-      ////////////////////////////////////////////////////////////////////////////////////
-      // turn off the to-lower-case behavior, so we'll see what was actually updated to //
-      ////////////////////////////////////////////////////////////////////////////////////
-      field.setBehaviors(Collections.emptySet());
-      assertEquals("octagon", GetAction.execute(TestUtils.TABLE_NAME_SHAPE, id).getValueString("name"));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
-   void testFilter()
-   {
-      QInstance      qInstance = QContext.getQInstance();
-      QTableMetaData table     = qInstance.getTable(TestUtils.TABLE_NAME_SHAPE);
-      QFieldMetaData field     = table.getField("name");
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_UPPER_CASE));
-      assertEquals("SQUARE", CaseChangeBehavior.TO_UPPER_CASE.applyToFilterCriteriaValue("square", qInstance, table, field));
-
-      field.setBehaviors(Set.of(CaseChangeBehavior.TO_LOWER_CASE));
-      assertEquals("triangle", CaseChangeBehavior.TO_LOWER_CASE.applyToFilterCriteriaValue("Triangle", qInstance, table, field));
-
-      field.setBehaviors(Set.of(CaseChangeBehavior.NONE));
-      assertEquals("Circle", CaseChangeBehavior.NONE.applyToFilterCriteriaValue("Circle", qInstance, table, field));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Test
    void testValidation()
    {
       QTableMetaData table = QContext.getQInstance().getTable(TestUtils.TABLE_NAME_SHAPE);
@@ -264,17 +184,17 @@ class WhiteSpaceBehaviorTest extends BaseTest
       ///////////////////////////////////////////
       // should be no errors on a string field //
       ///////////////////////////////////////////
-      assertTrue(CaseChangeBehavior.TO_UPPER_CASE.validateBehaviorConfiguration(table, table.getField("name")).isEmpty());
+      assertTrue(WhiteSpaceBehavior.TRIM.validateBehaviorConfiguration(table, table.getField("name")).isEmpty());
 
       //////////////////////////////////////////
       // should be an error on a number field //
       //////////////////////////////////////////
-      assertEquals(1, CaseChangeBehavior.TO_LOWER_CASE.validateBehaviorConfiguration(table, table.getField("id")).size());
+      assertEquals(1, WhiteSpaceBehavior.REMOVE_ALL_WHITESPACE.validateBehaviorConfiguration(table, table.getField("id")).size());
 
       /////////////////////////////////////////
       // NONE should be allowed on any field //
       /////////////////////////////////////////
-      assertTrue(CaseChangeBehavior.NONE.validateBehaviorConfiguration(table, table.getField("id")).isEmpty());
+      assertTrue(WhiteSpaceBehavior.NONE.validateBehaviorConfiguration(table, table.getField("id")).isEmpty());
    }
 
 }
