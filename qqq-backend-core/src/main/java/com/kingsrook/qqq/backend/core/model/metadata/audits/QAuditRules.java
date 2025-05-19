@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.metadata.audits;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QAuditRules
+public class QAuditRules implements QMetaDataObject
 {
    private AuditLevel auditLevel;
 

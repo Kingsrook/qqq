@@ -22,24 +22,65 @@
 package com.kingsrook.qqq.backend.javalin;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import org.apache.logging.log4j.Level;
 
 
 /*******************************************************************************
  ** MetaData specific to a QQQ Javalin server.
  *******************************************************************************/
-public class QJavalinMetaData
+public class QJavalinMetaData implements QSupplementalInstanceMetaData
 {
+   public static final String NAME = "javalin";
+
    private String uploadedFileArchiveTableName;
 
    private boolean loggerDisabled = false;
 
+   // todo - should be a code reference!!
    private Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter;
 
    private boolean queryWithoutLimitAllowed  = false;
    private Integer queryWithoutLimitDefault  = 1000;
    private Level   queryWithoutLimitLogLevel = Level.INFO;
+
+   private List<JavalinRouteProviderMetaData> routeProviders;
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public String getName()
+   {
+      return (NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJavalinMetaData of(QInstance qInstance)
+   {
+      return QSupplementalInstanceMetaData.of(qInstance, NAME);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QJavalinMetaData ofOrWithNew(QInstance qInstance)
+   {
+      return QSupplementalInstanceMetaData.ofOrWithNew(qInstance, NAME, QJavalinMetaData::new);
+   }
 
 
 
@@ -240,5 +281,52 @@ public class QJavalinMetaData
       this.queryWithoutLimitLogLevel = queryWithoutLimitLogLevel;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for routeProviders
+    *******************************************************************************/
+   public List<JavalinRouteProviderMetaData> getRouteProviders()
+   {
+      return (this.routeProviders);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for routeProviders
+    *******************************************************************************/
+   public void setRouteProviders(List<JavalinRouteProviderMetaData> routeProviders)
+   {
+      this.routeProviders = routeProviders;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for routeProviders
+    *******************************************************************************/
+   public QJavalinMetaData withRouteProviders(List<JavalinRouteProviderMetaData> routeProviders)
+   {
+      this.routeProviders = routeProviders;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter to add 1 routeProvider
+    *******************************************************************************/
+   public QJavalinMetaData withRouteProvider(JavalinRouteProviderMetaData routeProvider)
+   {
+      if(this.routeProviders == null)
+      {
+         this.routeProviders = new ArrayList<>();
+      }
+      this.routeProviders.add(routeProvider);
+      return (this);
+   }
+
 
 }

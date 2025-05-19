@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.authentication;
 import java.util.HashMap;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.TopLevelMetaDataInterface;
@@ -225,4 +226,15 @@ public class QAuthenticationMetaData implements TopLevelMetaDataInterface
       return (this);
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void validate(QInstance qInstance, QInstanceValidator qInstanceValidator)
+   {
+      //////////////////
+      // noop at base //
+      //////////////////
+   }
 }

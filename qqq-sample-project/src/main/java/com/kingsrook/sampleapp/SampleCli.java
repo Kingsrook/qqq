@@ -50,7 +50,25 @@ public class SampleCli
    {
       try
       {
-         QInstance              qInstance              = SampleMetaDataProvider.defineInstance();
+         QInstance qInstance = SampleMetaDataProvider.defineInstance();
+         return (run(qInstance, args));
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         return (-1);
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   int run(QInstance qInstance, String[] args)
+   {
+      try
+      {
          QPicoCliImplementation qPicoCliImplementation = new QPicoCliImplementation(qInstance);
 
          return (qPicoCliImplementation.runCli("my-sample-cli", args));

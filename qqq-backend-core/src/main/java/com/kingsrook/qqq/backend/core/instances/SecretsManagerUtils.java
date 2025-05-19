@@ -73,6 +73,18 @@ public class SecretsManagerUtils
     *******************************************************************************/
    public static void writeEnvFromSecretsWithNamePrefix(String prefix) throws IOException
    {
+      writeEnvFromSecretsWithNamePrefix(prefix, true);
+   }
+
+
+
+   /*******************************************************************************
+    ** IF secret manager ENV vars are set,
+    ** THEN lookup all secrets starting with the given prefix,
+    ** and write them to a .env file (backing up any pre-existing .env files first).
+    *******************************************************************************/
+   public static void writeEnvFromSecretsWithNamePrefix(String prefix, boolean quoteValues) throws IOException
+   {
       Optional<AWSSecretsManager> optionalSecretsManagerClient = getSecretsManagerClient();
       if(optionalSecretsManagerClient.isPresent())
       {
@@ -91,7 +103,9 @@ public class SecretsManagerUtils
                Optional<String> secretValue       = getSecret(prefix, nameWithoutPrefix);
                if(secretValue.isPresent())
                {
-                  String envLine = nameWithoutPrefix + "=" + secretValue.get();
+                  String envLine = quoteValues
+                     ? nameWithoutPrefix + "=\"" + secretValue.get() + "\""
+                     : nameWithoutPrefix + "=" + secretValue.get();
                   fullEnv.append(envLine).append('\n');
                }
             }

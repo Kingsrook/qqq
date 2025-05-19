@@ -82,7 +82,7 @@ class ClonePeopleTransformStepTest
    @Test
    void testProcessStep() throws QException
    {
-      QInstance qInstance = SampleMetaDataProvider.defineInstance();
+      QInstance qInstance = SampleMetaDataProvider.defineTestInstance();
       QContext.init(qInstance, new QSession());
 
       QueryInput queryInput = new QueryInput();

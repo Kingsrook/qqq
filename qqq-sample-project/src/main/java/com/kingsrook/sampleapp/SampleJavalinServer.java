@@ -25,6 +25,7 @@ package com.kingsrook.sampleapp;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.middleware.javalin.QApplicationJavalinServer;
 import com.kingsrook.sampleapp.metadata.SampleMetaDataProvider;
+import static com.kingsrook.sampleapp.metadata.SampleMetaDataProvider.primeTestDatabase;
 
 
 /*******************************************************************************
@@ -53,7 +54,11 @@ public class SampleJavalinServer
    {
       try
       {
-         new QApplicationJavalinServer(new SampleMetaDataProvider()).start();
+         primeTestDatabase("prime-test-database.sql");
+
+         QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(new SampleMetaDataProvider());
+
+         javalinServer.start();
       }
       catch(Exception e)
       {

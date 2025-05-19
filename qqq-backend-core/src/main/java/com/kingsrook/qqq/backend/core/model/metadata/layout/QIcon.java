@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.layout;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
+
+
 /*******************************************************************************
  ** Icon to show associated with an App, Table, Process, etc.
  **
@@ -31,7 +34,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.layout;
  ** Future may allow something like a "namespace", and/or multiple icons for
  ** use in different frontends, etc.
  *******************************************************************************/
-public class QIcon implements Cloneable
+public class QIcon implements Cloneable, QMetaDataObject
 {
    private String name;
    private String path;
