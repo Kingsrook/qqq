@@ -75,9 +75,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class BulkInsertTransformStep extends AbstractTransformStep
 {
-   private ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
+   ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
 
-   private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted")
+   ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted")
       .withDoReplaceSingletonCountLinesWithSuffixOnly(false);
 
    private ListingHash<String, RowValue> errorToExampleRowValueMap = new ListingHash<>();

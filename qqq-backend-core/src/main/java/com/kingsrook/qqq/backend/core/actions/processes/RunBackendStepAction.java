@@ -36,6 +36,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -46,6 +48,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QFunctionInputMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QStepMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
@@ -188,21 +191,40 @@ public class RunBackendStepAction
       {
          if(CollectionUtils.nullSafeIsEmpty(runBackendStepInput.getRecords()))
          {
-            QueryInput queryInput = new QueryInput();
-            queryInput.setTableName(inputMetaData.getRecordListMetaData().getTableName());
+            QTableMetaData table      = QContext.getQInstance().getTable(inputMetaData.getRecordListMetaData().getTableName());
+            QueryInput     queryInput = new QueryInput();
+            queryInput.setTableName(table.getName());
 
-            // todo - handle this being async (e.g., http)
-            // seems like it just needs to throw, breaking this flow, and to send a response to the frontend, directing it to prompt the user for the needed data
-            // then this step can re-run, hopefully with the needed data.
-
-            QProcessCallback callback = runBackendStepInput.getCallback();
-            if(callback == null)
+            //////////////////////////////////////////////////
+            // look for record ids in the input data values //
+            //////////////////////////////////////////////////
+            String recordIds = (String) runBackendStepInput.getValue("recordIds");
+            if(recordIds == null)
             {
-               throw (new QUserFacingException("Missing input records.",
-                  new QException("Function is missing input records, but no callback was present to request fields from a user")));
+               recordIds = (String) runBackendStepInput.getValue("recordId");
             }
 
-            queryInput.setFilter(callback.getQueryFilter());
+            ///////////////////////////////////////////////////////////
+            // if records were found, add as criteria to query input //
+            ///////////////////////////////////////////////////////////
+            if(recordIds != null)
+            {
+               queryInput.setFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, recordIds.split(","))));
+            }
+            else
+            {
+               // todo - handle this being async (e.g., http)
+               // seems like it just needs to throw, breaking this flow, and to send a response to the frontend, directing it to prompt the user for the needed data
+               // then this step can re-run, hopefully with the needed data.
+               QProcessCallback callback = runBackendStepInput.getCallback();
+               if(callback == null)
+               {
+                  throw (new QUserFacingException("Missing input records.",
+                     new QException("Function is missing input records, but no callback was present to request fields from a user")));
+               }
+
+               queryInput.setFilter(callback.getQueryFilter());
+            }
 
             //////////////////////////////////////////////////////////////////////////////////////////
             // if process has a max-no of records, set a limit on the process of that number plus 1 //
@@ -210,7 +232,7 @@ public class RunBackendStepAction
             //////////////////////////////////////////////////////////////////////////////////////////
             if(process.getMaxInputRecords() != null)
             {
-               if(callback.getQueryFilter() == null)
+               if(queryInput.getFilter() == null)
                {
                   queryInput.setFilter(new QQueryFilter());
                }

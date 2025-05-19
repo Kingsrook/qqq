@@ -35,4 +35,16 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ChildJoin
 {
    boolean enabled();
+
+   OrderBy[] orderBy() default { };
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @interface OrderBy
+   {
+      String fieldName();
+
+      boolean isAscending() default true;
+   }
 }

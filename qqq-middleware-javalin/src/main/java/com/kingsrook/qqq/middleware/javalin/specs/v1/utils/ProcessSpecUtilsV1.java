@@ -163,7 +163,6 @@ public class ProcessSpecUtilsV1
       JSONObject outputJsonObject = convertResponseToJSONObject(response);
 
       String json = outputJsonObject.toString(3);
-      System.out.println(json);
       context.result(json);
    }
 
@@ -308,8 +307,8 @@ public class ProcessSpecUtilsV1
    private static void archiveUploadedFile(String processName, QUploadedFile qUploadedFile)
    {
       String fileName = QValueFormatter.formatDate(LocalDate.now())
-                        + File.separator + processName
-                        + File.separator + qUploadedFile.getFilename();
+         + File.separator + processName
+         + File.separator + qUploadedFile.getFilename();
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName(QJavalinImplementation.getJavalinMetaData().getUploadedFileArchiveTableName());

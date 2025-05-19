@@ -1,0 +1,10 @@
+---
+class: QAppMetaData
+version: 1.0
+name: people
+icon:
+  name: person
+sections:
+- name: People
+  tables:
+    - person

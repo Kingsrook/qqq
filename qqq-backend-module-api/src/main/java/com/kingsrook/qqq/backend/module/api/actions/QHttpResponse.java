@@ -40,6 +40,7 @@ public class QHttpResponse
    private String       statusReasonPhrase;
    private List<Header> headerList;
    private String       content;
+   private byte[]       contentBytes;
 
 
 
@@ -54,10 +55,46 @@ public class QHttpResponse
 
 
    /*******************************************************************************
+    ** Constructor for QHttpResponse that allows reading content as bytes
+    **
+    *******************************************************************************/
+   public QHttpResponse(HttpResponse httpResponse, boolean readContentAsBytes) throws Exception
+   {
+      if(!readContentAsBytes)
+      {
+         new QHttpResponse(httpResponse);
+         return;
+      }
+
+      setGeneralHttpResponseData(httpResponse);
+      if(this.statusCode == null || this.statusCode != 204)
+      {
+         this.contentBytes = httpResponse.getEntity().getContent().readAllBytes();
+      }
+   }
+
+
+
+   /*******************************************************************************
     ** Constructor for qHttpResponse
     **
     *******************************************************************************/
    public QHttpResponse(HttpResponse httpResponse) throws Exception
+   {
+      setGeneralHttpResponseData(httpResponse);
+      if(this.statusCode == null || this.statusCode != 204)
+      {
+         this.content = EntityUtils.toString(httpResponse.getEntity());
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Sets data into this entity from an HttpResponse but doesnt read response data
+    **
+    *******************************************************************************/
+   private void setGeneralHttpResponseData(HttpResponse httpResponse) throws Exception
    {
       this.headerList = Arrays.asList(httpResponse.getAllHeaders());
       if(httpResponse.getStatusLine() != null)
@@ -68,11 +105,6 @@ public class QHttpResponse
          {
             this.statusProtocolVersion = httpResponse.getStatusLine().getProtocolVersion().toString();
          }
-      }
-
-      if(this.statusCode == null || this.statusCode != 204)
-      {
-         this.content = EntityUtils.toString(httpResponse.getEntity());
       }
    }
 
@@ -239,6 +271,37 @@ public class QHttpResponse
    public QHttpResponse withHeaderList(List<Header> headerList)
    {
       this.headerList = headerList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contentBytes
+    *******************************************************************************/
+   public byte[] getContentBytes()
+   {
+      return (this.contentBytes);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contentBytes
+    *******************************************************************************/
+   public void setContentBytes(byte[] contentBytes)
+   {
+      this.contentBytes = contentBytes;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contentBytes
+    *******************************************************************************/
+   public QHttpResponse withContentBytes(byte[] contentBytes)
+   {
+      this.contentBytes = contentBytes;
       return (this);
    }
 

@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 /*******************************************************************************
  ** a default implementation of MetaDataFilterInterface, that allows all the things
  *******************************************************************************/
+@Deprecated(since = "migrated to metaDataCustomizer")
 public class AllowAllMetaDataFilter implements MetaDataFilterInterface
 {
 

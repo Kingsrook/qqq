@@ -216,11 +216,16 @@ public class SendSESAction
       {
          LOG.warn("More than one FROM value was found, will send using the first one found [" + partyList.get(0).getAddress() + "].");
       }
+      Party fromParty = partyList.get(0);
+      if(fromParty.getAddress() == null)
+      {
+         throw (new QException("Cannot send SES message because a FROM address was not provided."));
+      }
 
       /////////////////////////////
       // return the from address //
       /////////////////////////////
-      return (partyList.get(0).getAddress());
+      return (getFullEmailAddress(fromParty));
    }
 
 
@@ -267,15 +272,15 @@ public class SendSESAction
       {
          if(EmailPartyRole.CC.equals(party.getRole()))
          {
-            ccList.add(party.getAddress());
+            ccList.add(getFullEmailAddress(party));
          }
          else if(EmailPartyRole.BCC.equals(party.getRole()))
          {
-            bccList.add(party.getAddress());
+            bccList.add(getFullEmailAddress(party));
          }
          else if(party.getRole() == null || PartyRole.Default.DEFAULT.equals(party.getRole()) || EmailPartyRole.TO.equals(party.getRole()))
          {
-            toList.add(party.getAddress());
+            toList.add(getFullEmailAddress(party));
          }
          else
          {
@@ -331,5 +336,23 @@ public class SendSESAction
       }
 
       return amazonSES;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private String getFullEmailAddress(Party party)
+   {
+      if(party.getLabel() != null)
+      {
+         return (party.getLabel() + " <" + party.getAddress() + ">");
+      }
+
+      /////////////////////////////
+      // return the from address //
+      /////////////////////////////
+      return (party.getAddress());
    }
 }

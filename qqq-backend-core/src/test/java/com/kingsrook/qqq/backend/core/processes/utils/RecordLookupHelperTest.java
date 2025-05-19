@@ -22,8 +22,15 @@
 package com.kingsrook.qqq.backend.core.processes.utils;
 
 
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -32,6 +39,7 @@ import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -193,6 +201,56 @@ class RecordLookupHelperTest extends BaseTest
       // there shouldn't have been any additional queries ran //
       //////////////////////////////////////////////////////////
       assertEquals(1, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
+   }
+
+
+
+   /*******************************************************************************
+    ** run a lot of threads (eg, 100), each trying to do lots of work in a
+    ** shared recordLookupHelper.  w/o the flag to use sync'ed collections, this
+    ** (usually?) fails with a ConcurrentModificationException - but with the sync'ed
+    ** collections, is safe.
+    *******************************************************************************/
+   @Test
+   void testConcurrentModification() throws InterruptedException, ExecutionException
+   {
+      ExecutorService    executorService    = Executors.newFixedThreadPool(100);
+      RecordLookupHelper recordLookupHelper = new RecordLookupHelper(true);
+
+      CapturedContext capture = QContext.capture();
+
+      List<Future<?>> futures = new ArrayList<>();
+      for(int i = 0; i < 100; i++)
+      {
+         int finalI = i;
+         Future<?> future = executorService.submit(() ->
+         {
+            QContext.init(capture);
+            for(int j = 0; j < 25000; j++)
+            {
+               try
+               {
+                  recordLookupHelper.getRecordByKey(String.valueOf(j), "id", j);
+               }
+               catch(ConcurrentModificationException cme)
+               {
+                  fail("CME!", cme);
+               }
+               catch(Exception e)
+               {
+                  //////////////
+                  // expected //
+                  //////////////
+               }
+            }
+         });
+         futures.add(future);
+      }
+
+      for(Future<?> future : futures)
+      {
+         future.get();
+      }
    }
 
 }

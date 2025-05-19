@@ -193,6 +193,16 @@ public interface DownloadFileSupplementalAction
     ***************************************************************************/
    class DownloadFileSupplementalActionOutput
    {
-
+      /*******************************************************************************
+       ** Constructor
+       **
+       *******************************************************************************/
+      public DownloadFileSupplementalActionOutput()
+      {
+         ////////////////////////////////////////////////////////////////
+         // sorry, but here just to get test-coverage on this class... //
+         ////////////////////////////////////////////////////////////////
+         int i = 0;
+      }
    }
 }

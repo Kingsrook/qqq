@@ -49,6 +49,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import com.kingsrook.qqq.backend.core.utils.ReflectiveBeanLikeClassUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -325,13 +326,13 @@ public abstract class QRecordEntity
          List<QRecordEntityField> fieldList = new ArrayList<>();
          for(Method possibleGetter : c.getMethods())
          {
-            if(isGetter(possibleGetter))
+            if(ReflectiveBeanLikeClassUtils.isGetter(possibleGetter, true))
             {
-               Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+               Optional<Method> setter = ReflectiveBeanLikeClassUtils.getSetterForGetter(c, possibleGetter);
 
                if(setter.isPresent())
                {
-                  String           fieldName       = getFieldNameFromGetter(possibleGetter);
+                  String           fieldName       = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(possibleGetter);
                   Optional<QField> fieldAnnotation = getQFieldAnnotation(c, fieldName);
 
                   if(fieldAnnotation.isPresent())
@@ -378,19 +379,19 @@ public abstract class QRecordEntity
          List<QRecordEntityAssociation> associationList = new ArrayList<>();
          for(Method possibleGetter : c.getMethods())
          {
-            if(isGetter(possibleGetter))
+            if(ReflectiveBeanLikeClassUtils.isGetter(possibleGetter, true))
             {
-               Optional<Method> setter = getSetterForGetter(c, possibleGetter);
+               Optional<Method> setter = ReflectiveBeanLikeClassUtils.getSetterForGetter(c, possibleGetter);
 
                if(setter.isPresent())
                {
-                  String                 fieldName             = getFieldNameFromGetter(possibleGetter);
+                  String                 fieldName             = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(possibleGetter);
                   Optional<QAssociation> associationAnnotation = getQAssociationAnnotation(c, fieldName);
 
                   if(associationAnnotation.isPresent())
                   {
                      @SuppressWarnings("unchecked")
-                     Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
+                     Class<? extends QRecordEntity> listTypeParam = (Class<? extends QRecordEntity>) ReflectiveBeanLikeClassUtils.getListTypeParam(possibleGetter.getReturnType(), possibleGetter.getAnnotatedReturnType());
                      associationList.add(new QRecordEntityAssociation(fieldName, possibleGetter, setter.get(), listTypeParam, associationAnnotation.orElse(null)));
                   }
                }
@@ -581,6 +582,33 @@ public abstract class QRecordEntity
       }
 
       return (null);
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static String getTableName(Class<? extends QRecordEntity> entityClass) throws QException
+   {
+      try
+      {
+         Field  tableNameField = entityClass.getDeclaredField("TABLE_NAME");
+         String tableNameValue = (String) tableNameField.get(null);
+         return (tableNameValue);
+      }
+      catch(Exception e)
+      {
+         throw (new QException("Could not get TABLE_NAME from entity class: " + entityClass.getSimpleName(), e));
+      }
+   }
+
+
+   /***************************************************************************
+    ** named without the 'get' to avoid conflict w/ entity fields named that...
+    ***************************************************************************/
+   public String tableName() throws QException
+   {
+      return (getTableName(this.getClass()));
    }
 
 }

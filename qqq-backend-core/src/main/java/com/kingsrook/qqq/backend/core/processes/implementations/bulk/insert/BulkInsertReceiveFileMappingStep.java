@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.mode
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang3.BooleanUtils;
 
@@ -77,10 +78,14 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
             //////////////////////////////////////////////////////////////////////////////
             if(savedBulkLoadProfileRecord == null)
             {
-               throw (new QUserFacingException("Did not receive a saved bulk load profile record as input - unable to perform headless bulk load"));
+               throw (new QUserFacingException("Did not receive a Bulk Load Profile record as input.  Unable to perform headless bulk load"));
             }
 
             SavedBulkLoadProfile savedBulkLoadProfile = new SavedBulkLoadProfile(savedBulkLoadProfileRecord);
+            if(!StringUtils.hasContent(savedBulkLoadProfile.getMappingJson()))
+            {
+               throw (new QUserFacingException("Bulk Load Profile record's Mapping is empty.  Unable to perform headless bulk load"));
+            }
 
             try
             {
@@ -88,7 +93,7 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
             }
             catch(Exception e)
             {
-               throw (new QUserFacingException("Error processing saved bulk load profile record - unable to perform headless bulk load", e));
+               throw (new QUserFacingException("Error processing Bulk Load Profile record.  Unable to perform headless bulk load", e));
             }
          }
          else
@@ -239,6 +244,11 @@ public class BulkInsertReceiveFileMappingStep implements BackendStep
                BulkInsertStepUtils.setNextStepStreamedETLPreview(runBackendStepOutput);
             }
          }
+      }
+      catch(QUserFacingException ufe)
+      {
+         LOG.warn("User-facing error in bulk insert receive mapping", ufe);
+         throw ufe;
       }
       catch(Exception e)
       {

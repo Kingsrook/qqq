@@ -330,7 +330,21 @@ public class QInstanceEnricher
 
       if(table.getFields() != null)
       {
-         table.getFields().values().forEach(this::enrichField);
+         for(Map.Entry<String, QFieldMetaData> entry : table.getFields().entrySet())
+         {
+            String         name  = entry.getKey();
+            QFieldMetaData field = entry.getValue();
+
+            ////////////////////////////////////////////////////////////////////////////
+            // in case the field wasn't given a name, use its key from the fields map //
+            ////////////////////////////////////////////////////////////////////////////
+            if(!StringUtils.hasContent(field.getName()))
+            {
+               field.setName(name);
+            }
+
+            enrichField(field);
+         }
 
          for(QSupplementalTableMetaData supplementalTableMetaData : CollectionUtils.nonNullMap(table.getSupplementalMetaData()).values())
          {
@@ -1425,7 +1439,7 @@ public class QInstanceEnricher
          {
             try
             {
-               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getCustomPossibleValueProvider(possibleValueSource);
+               QCustomPossibleValueProvider<?> customPossibleValueProvider = QCodeLoader.getAdHoc(QCustomPossibleValueProvider.class, possibleValueSource.getCustomCodeReference());
 
                Method getPossibleValueMethod = customPossibleValueProvider.getClass().getDeclaredMethod("getPossibleValue", Serializable.class);
                Type   returnType             = getPossibleValueMethod.getGenericReturnType();

@@ -334,4 +334,110 @@ class StringUtilsTest extends BaseTest
       assertEquals("a", StringUtils.emptyToNull("a"));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAppendIncrementingSuffix()
+   {
+      assertEquals("test (1)", StringUtils.appendIncrementingSuffix("test"));
+      assertEquals("test (2)", StringUtils.appendIncrementingSuffix("test (1)"));
+      assertEquals("test (a) (1)", StringUtils.appendIncrementingSuffix("test (a)"));
+      assertEquals("test (a32) (1)", StringUtils.appendIncrementingSuffix("test (a32)"));
+      assertEquals("test ((2)) (1)", StringUtils.appendIncrementingSuffix("test ((2))"));
+      assertEquals("test ((2)) (101)", StringUtils.appendIncrementingSuffix("test ((2)) (100)"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSafeEqualsIgnoreCase()
+   {
+      assertTrue(StringUtils.safeEqualsIgnoreCase(null, null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", null));
+      assertFalse(StringUtils.safeEqualsIgnoreCase(null, "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("a", "a"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("A", "a"));
+      assertFalse(StringUtils.safeEqualsIgnoreCase("a", "b"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "TIMOThy d. chaMberlain"));
+      assertTrue(StringUtils.safeEqualsIgnoreCase("timothy d. chamberlain", "timothy d. chamberlain"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNCopies()
+   {
+      assertEquals("", StringUtils.nCopies(0, "a"));
+      assertEquals("a", StringUtils.nCopies(1, "a"));
+      assertEquals("aa", StringUtils.nCopies(2, "a"));
+      assertEquals("ab ab ab ", StringUtils.nCopies(3, "ab "));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNCopiesWithGlue()
+   {
+      assertEquals("", StringUtils.nCopiesWithGlue(0, "a", ""));
+      assertEquals("", StringUtils.nCopiesWithGlue(0, "a", ","));
+      assertEquals("a", StringUtils.nCopiesWithGlue(1, "a", ","));
+      assertEquals("aa", StringUtils.nCopiesWithGlue(2, "a", ""));
+      assertEquals("a,a", StringUtils.nCopiesWithGlue(2, "a", ","));
+      assertEquals("ab ab ab", StringUtils.nCopiesWithGlue(3, "ab", " "));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testMaskAndTruncate()
+   {
+      assertEquals("", StringUtils.maskAndTruncate(null));
+      assertEquals("", StringUtils.maskAndTruncate(""));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("1"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("12"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("123"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("1234"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("12345"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("123456"));
+      assertEquals("** MASKED **", StringUtils.maskAndTruncate("1234567"));
+      assertEquals("1234** MASKED **", StringUtils.maskAndTruncate("12345678"));
+      assertEquals("1234** MASKED **", StringUtils.maskAndTruncate("123456789"));
+      assertEquals("1234** MASKED **", StringUtils.maskAndTruncate("1234567890"));
+      assertEquals("1234** MASKED **", StringUtils.maskAndTruncate("12345678901"));
+      assertEquals("1234** MASKED **9012", StringUtils.maskAndTruncate("123456789012"));
+      assertEquals("1234** MASKED **6789", StringUtils.maskAndTruncate("123456789" + StringUtils.nCopies(100, "xyz") + "123456789"));
+
+      assertEquals("***", StringUtils.maskAndTruncate("12", "***", 3, 1));
+      assertEquals("1***3", StringUtils.maskAndTruncate("123", "***", 3, 1));
+      assertEquals("1***4", StringUtils.maskAndTruncate("1234", "***", 3, 1));
+      assertEquals("1***5", StringUtils.maskAndTruncate("12345", "***", 3, 1));
+      assertEquals("12***", StringUtils.maskAndTruncate("12345", "***", 3, 2));
+      assertEquals("12***56", StringUtils.maskAndTruncate("123456", "***", 3, 2));
+
+      assertEquals("***", StringUtils.maskAndTruncate("12", "***", 3, 4));
+      assertEquals("***", StringUtils.maskAndTruncate("123", "***", 3, 4));
+      assertEquals("***", StringUtils.maskAndTruncate("1234", "***", 3, 4));
+      assertEquals("***", StringUtils.maskAndTruncate("12345", "***", 3, 4));
+      assertEquals("***", StringUtils.maskAndTruncate("12345", "***", 3, 4));
+      assertEquals("***", StringUtils.maskAndTruncate("123456", "***", 3, 4));
+      assertEquals("1234***", StringUtils.maskAndTruncate("1234567890", "***", 3, 4));
+      assertEquals("1234***", StringUtils.maskAndTruncate("12345678901", "***", 3, 4));
+      assertEquals("1234***9012", StringUtils.maskAndTruncate("123456789012", "***", 3, 4));
+   }
+
 }

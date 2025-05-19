@@ -65,6 +65,23 @@ public class S3QueryActionTest extends BaseS3Test
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Test
+   public void testGet() throws QException
+   {
+      QueryInput queryInput = new QueryInput(TestUtils.TABLE_NAME_BLOB_S3)
+         .withFilter(new QQueryFilter(new QFilterCriteria("fileName", QCriteriaOperator.EQUALS, "BLOB-1.txt")));
+
+      S3QueryAction s3QueryAction = new S3QueryAction();
+      s3QueryAction.setS3Utils(getS3Utils());
+      QueryOutput queryOutput = s3QueryAction.execute(queryInput);
+      Assertions.assertEquals(1, queryOutput.getRecords().size(), "Expected # of rows from query");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
    private QueryInput initQueryRequest() throws QException
    {
       QueryInput queryInput = new QueryInput();

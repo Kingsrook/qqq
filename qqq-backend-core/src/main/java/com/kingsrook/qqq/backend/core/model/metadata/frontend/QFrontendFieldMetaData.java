@@ -55,6 +55,7 @@ public class QFrontendFieldMetaData implements Serializable
    private String       possibleValueSourceName;
    private String       displayFormat;
    private Serializable defaultValue;
+   private Integer      maxLength;
 
    private List<FieldAdornment> adornments;
    private List<QHelpContent>   helpContents;
@@ -85,6 +86,7 @@ public class QFrontendFieldMetaData implements Serializable
       this.defaultValue = fieldMetaData.getDefaultValue();
       this.helpContents = fieldMetaData.getHelpContents();
       this.inlinePossibleValueSource = fieldMetaData.getInlinePossibleValueSource();
+      this.maxLength = fieldMetaData.getMaxLength();
 
       for(FieldBehavior<?> behavior : CollectionUtils.nonNullCollection(fieldMetaData.getBehaviors()))
       {

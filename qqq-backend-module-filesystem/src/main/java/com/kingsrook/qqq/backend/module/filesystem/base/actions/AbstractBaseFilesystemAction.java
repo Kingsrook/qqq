@@ -59,9 +59,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantSett
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeSupplier;
 import com.kingsrook.qqq.backend.module.filesystem.base.FilesystemRecordBackendDetailFields;
 import com.kingsrook.qqq.backend.module.filesystem.base.model.metadata.AbstractFilesystemBackendMetaData;
@@ -124,10 +126,19 @@ public abstract class AbstractBaseFilesystemAction<FILE>
     *******************************************************************************/
    public abstract InputStream readFile(FILE file) throws IOException;
 
+   /***************************************************************************
+    ** Legacy signature for this method - before table & record params were added.
+    ***************************************************************************/
+   @Deprecated(since = "call the overload that takes table and record")
+   public void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException
+   {
+      writeFile(backend, null, null, path, contents);
+   }
+
    /*******************************************************************************
     ** Write a file - to be implemented in module-specific subclasses.
     *******************************************************************************/
-   public abstract void writeFile(QBackendMetaData backend, String path, byte[] contents) throws IOException;
+   public abstract void writeFile(QBackendMetaData backend, QTableMetaData table, QRecord record, String path, byte[] contents) throws IOException;
 
    /*******************************************************************************
     ** Get a string that represents the full path to a file.
@@ -287,8 +298,23 @@ public abstract class AbstractBaseFilesystemAction<FILE>
 
          QueryOutput queryOutput = new QueryOutput(queryInput);
 
-         String     requestedPath = null;
-         List<FILE> files         = listFiles(table, queryInput.getBackend(), requestedPath);
+         String requestedPath = null;
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if this is a query for a single file name, then get that file name in the requestedPath param for the listFiles call //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         if(queryInput.getFilter() != null)
+         {
+            for(QFilterCriteria criteria : CollectionUtils.nonNullList(queryInput.getFilter().getCriteria()))
+            {
+               if(criteria.getFieldName().equals(tableDetails.getFileNameFieldName()) && criteria.getOperator().equals(QCriteriaOperator.EQUALS))
+               {
+                  requestedPath = ValueUtils.getValueAsString(criteria.getValues().get(0));
+               }
+            }
+         }
+
+         List<FILE> files = listFiles(table, queryInput.getBackend(), requestedPath);
 
          switch(tableDetails.getCardinality())
          {
@@ -632,7 +658,7 @@ public abstract class AbstractBaseFilesystemAction<FILE>
                try
                {
                   String fullPath = stripDuplicatedSlashes(getFullBasePath(table, backend) + File.separator + record.getValueString(tableDetails.getFileNameFieldName()));
-                  writeFile(backend, fullPath, record.getValueByteArray(tableDetails.getContentsFieldName()));
+                  writeFile(backend, table, record, fullPath, record.getValueByteArray(tableDetails.getContentsFieldName()));
                   record.addBackendDetail(FilesystemRecordBackendDetailFields.FULL_PATH, fullPath);
                   output.addRecord(record);
                }

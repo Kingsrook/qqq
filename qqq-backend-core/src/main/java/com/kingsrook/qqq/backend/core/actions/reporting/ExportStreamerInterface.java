@@ -54,6 +54,14 @@ public interface ExportStreamerInterface
       // noop in base class
    }
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default void setExportStyleCustomizer(ExportStyleCustomizerInterface exportStyleCustomizer)
+   {
+      // noop in base class
+   }
+
    /*******************************************************************************
     ** Called once per sheet, before any rows are available.  Meant to write a
     ** header, for example.

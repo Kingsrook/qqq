@@ -75,7 +75,7 @@ public class SampleMetaDataProviderTest
    void beforeEach() throws Exception
    {
       primeTestDatabase("prime-test-database.sql");
-      QContext.init(SampleMetaDataProvider.defineInstance(), new QSession());
+      QContext.init(SampleMetaDataProvider.defineTestInstance(), new QSession());
    }
 
 
@@ -190,7 +190,7 @@ public class SampleMetaDataProviderTest
    @Test
    public void testGreetProcess() throws Exception
    {
-      QInstance       qInstance   = SampleMetaDataProvider.defineInstance();
+      QInstance       qInstance   = SampleMetaDataProvider.defineTestInstance();
       QTableMetaData  personTable = SampleMetaDataProvider.defineTablePerson();
       RunProcessInput request     = new RunProcessInput();
       request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_GREET);
@@ -216,7 +216,7 @@ public class SampleMetaDataProviderTest
    @Test
    public void testThrowProcess() throws Exception
    {
-      QInstance       qInstance = SampleMetaDataProvider.defineInstance();
+      QInstance       qInstance = SampleMetaDataProvider.defineTestInstance();
       RunProcessInput request   = new RunProcessInput();
       request.setProcessName(SampleMetaDataProvider.PROCESS_NAME_SIMPLE_THROW);
       request.addValue(SampleMetaDataProvider.ThrowerStep.FIELD_SLEEP_MILLIS, 10);

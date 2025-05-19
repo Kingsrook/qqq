@@ -40,11 +40,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.help.HelpRole;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.security.FieldSecurityLock;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ReflectiveBeanLikeClassUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -54,7 +56,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** Meta-data to represent a single field in a table.
  **
  *******************************************************************************/
-public class QFieldMetaData implements Cloneable
+public class QFieldMetaData implements Cloneable, QMetaDataObject
 {
    private static final QLogger LOG = QLogger.getLogger(QFieldMetaData.class);
 
@@ -187,7 +189,7 @@ public class QFieldMetaData implements Cloneable
    {
       try
       {
-         this.name = QRecordEntity.getFieldNameFromGetter(getter);
+         this.name = ReflectiveBeanLikeClassUtils.getFieldNameFromGetter(getter);
          this.type = QFieldType.fromClass(getter.getReturnType());
 
          @SuppressWarnings("unchecked")
@@ -238,7 +240,7 @@ public class QFieldMetaData implements Cloneable
 
             if(StringUtils.hasContent(fieldAnnotation.defaultValue()))
             {
-               ValueUtils.getValueAsFieldType(this.type, fieldAnnotation.defaultValue());
+               withDefaultValue(ValueUtils.getValueAsFieldType(this.type, fieldAnnotation.defaultValue()));
             }
          }
       }

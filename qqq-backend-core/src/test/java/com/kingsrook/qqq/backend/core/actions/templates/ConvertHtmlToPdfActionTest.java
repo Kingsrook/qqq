@@ -79,6 +79,7 @@ class ConvertHtmlToPdfActionTest extends BaseTest
                      </h1>
                      <div class="myclass">
                          <p>This is a test of converting HTML to PDF!!</p>
+                         <p>This is &nbsp; a line with &bull; some entities &lt;</p>
                          <p style="font-family: SF-Pro; font-size: 24px;">(btw, is this in SF-Pro???)</p>
                      </div>
                  </div>

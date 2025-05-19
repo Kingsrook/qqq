@@ -27,11 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
-import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
+import com.kingsrook.qqq.backend.core.actions.values.BasicCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.context.QContext;
-import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
-import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 
@@ -40,26 +38,16 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  ** possible-value source provider for the `Tables` PVS - a list of all tables
  ** in an application/qInstance.
  *******************************************************************************/
-public class TablesCustomPossibleValueProvider implements QCustomPossibleValueProvider<String>
+public class TablesCustomPossibleValueProvider extends BasicCustomPossibleValueProvider<QTableMetaData, String>
 {
 
    /***************************************************************************
     **
     ***************************************************************************/
    @Override
-   public QPossibleValue<String> getPossibleValue(Serializable idValue)
+   protected QPossibleValue<String> makePossibleValue(QTableMetaData sourceObject)
    {
-      QTableMetaData table = QContext.getQInstance().getTable(ValueUtils.getValueAsString(idValue));
-      if(table != null && !table.getIsHidden())
-      {
-         PermissionCheckResult permissionCheckResult = PermissionsHelper.getPermissionCheckResult(new QueryInput(table.getName()), table);
-         if(PermissionCheckResult.ALLOW.equals(permissionCheckResult))
-         {
-            return (new QPossibleValue<>(table.getName(), table.getLabel()));
-         }
-      }
-
-      return null;
+      return (new QPossibleValue<>(sourceObject.getName(), sourceObject.getLabel()));
    }
 
 
@@ -68,22 +56,54 @@ public class TablesCustomPossibleValueProvider implements QCustomPossibleValuePr
     **
     ***************************************************************************/
    @Override
-   public List<QPossibleValue<String>> search(SearchPossibleValueSourceInput input) throws QException
+   protected QTableMetaData getSourceObject(Serializable id)
    {
-      /////////////////////////////////////////////////////////////////////////////////////
-      // build all of the possible values (note, will be filtered by user's permissions) //
-      /////////////////////////////////////////////////////////////////////////////////////
-      List<QPossibleValue<String>> allPossibleValues = new ArrayList<>();
+      QTableMetaData table = QContext.getQInstance().getTable(ValueUtils.getValueAsString(id));
+      return isTableAllowed(table) ? table : null;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   protected List<QTableMetaData> getAllSourceObjects()
+   {
+      ArrayList<QTableMetaData> rs = new ArrayList<>();
       for(QTableMetaData table : QContext.getQInstance().getTables().values())
       {
-         QPossibleValue<String> possibleValue = getPossibleValue(table.getName());
-         if(possibleValue != null)
+         if(isTableAllowed(table))
          {
-            allPossibleValues.add(possibleValue);
+            rs.add(table);
          }
       }
+      return rs;
+   }
 
-      return completeCustomPVSSearch(input, allPossibleValues);
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private boolean isTableAllowed(QTableMetaData table)
+   {
+      if(table == null)
+      {
+         return (false);
+      }
+
+      if(table.getIsHidden())
+      {
+         return (false);
+      }
+
+      PermissionCheckResult permissionCheckResult = PermissionsHelper.getPermissionCheckResult(new QueryInput(table.getName()), table);
+      if(!PermissionCheckResult.ALLOW.equals(permissionCheckResult))
+      {
+         return (false);
+      }
+
+      return (true);
    }
 
 }

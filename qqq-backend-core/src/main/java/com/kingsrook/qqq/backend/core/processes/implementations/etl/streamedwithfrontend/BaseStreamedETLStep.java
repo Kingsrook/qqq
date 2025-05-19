@@ -53,7 +53,7 @@ public class BaseStreamedETLStep
    protected AbstractExtractStep getExtractStep(RunBackendStepInput runBackendStepInput)
    {
       QCodeReference codeReference = (QCodeReference) runBackendStepInput.getValue(StreamedETLWithFrontendProcess.FIELD_EXTRACT_CODE);
-      return (QCodeLoader.getBackendStep(AbstractExtractStep.class, codeReference));
+      return (QCodeLoader.getAdHoc(AbstractExtractStep.class, codeReference));
    }
 
 

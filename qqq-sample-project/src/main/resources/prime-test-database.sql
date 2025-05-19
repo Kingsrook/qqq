@@ -19,6 +19,31 @@
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --
 
+DROP TABLE IF EXISTS user_session;
+CREATE TABLE user_session
+(
+   id INTEGER AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT now(),
+   modify_date TIMESTAMP DEFAULT now(),
+   uuid VARCHAR(40) NOT NULL,
+   access_token MEDIUMTEXT,
+   user_id VARCHAR(100)
+);
+ALTER TABLE user_session ADD UNIQUE u_uuid (uuid);
+ALTER TABLE user_session ADD INDEX i_user_id (user_id);
+
+
+DROP TABLE IF EXISTS redirect_state;
+CREATE TABLE redirect_state
+(
+   id INTEGER AUTO_INCREMENT PRIMARY KEY,
+   create_date TIMESTAMP DEFAULT now(),
+   state VARCHAR(45) NOT NULL,
+   redirect_uri TEXT
+);
+ALTER TABLE redirect_state ADD UNIQUE u_state (state);
+
+
 DROP TABLE IF EXISTS person;
 CREATE TABLE person
 (

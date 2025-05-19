@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.state;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -103,17 +105,17 @@ public class InMemoryStateProviderTest extends BaseTest
       /////////////////////////////////////////////////////////////
       // Add an entry that is 3 hours old, should not be cleaned //
       /////////////////////////////////////////////////////////////
-      UUIDAndTypeStateKey   newKey           = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(3, ChronoUnit.HOURS));
-      String  newUUID    = UUID.randomUUID().toString();
-      QRecord newQRecord = new QRecord().withValue("uuid", newUUID);
+      UUIDAndTypeStateKey newKey     = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(3, ChronoUnit.HOURS));
+      String              newUUID    = UUID.randomUUID().toString();
+      QRecord             newQRecord = new QRecord().withValue("uuid", newUUID);
       stateProvider.put(newKey, newQRecord);
 
       ////////////////////////////////////////////////////////////
       // Add an entry that is 5 hours old, it should be cleaned //
       ////////////////////////////////////////////////////////////
-      UUIDAndTypeStateKey   oldKey           = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(5, ChronoUnit.HOURS));
-      String  oldUUID    = UUID.randomUUID().toString();
-      QRecord oldQRecord = new QRecord().withValue("uuid", oldUUID);
+      UUIDAndTypeStateKey oldKey     = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(5, ChronoUnit.HOURS));
+      String              oldUUID    = UUID.randomUUID().toString();
+      QRecord             oldQRecord = new QRecord().withValue("uuid", oldUUID);
       stateProvider.put(oldKey, oldQRecord);
 
       ///////////////////
@@ -125,7 +127,33 @@ public class InMemoryStateProviderTest extends BaseTest
       Assertions.assertEquals(newUUID, qRecordFromState.getValueString("uuid"), "Should read value from state persistence");
 
       Assertions.assertTrue(stateProvider.get(QRecord.class, oldKey).isEmpty(), "Key not found in state should return empty");
+   }
 
+
+
+   /*******************************************************************************
+    ** originally written with N=100000, but showed the error as small as 1000.
+    *******************************************************************************/
+   @Test
+   void testDemonstrateConcurrentModificationIfNonSynchronizedMap()
+   {
+      int N = 1000;
+      InMemoryStateProvider stateProvider = InMemoryStateProvider.getInstance();
+
+      ExecutorService executorService = Executors.newFixedThreadPool(10);
+      executorService.submit(() ->
+      {
+         for(int i = 0; i < N; i++)
+         {
+            UUIDAndTypeStateKey oldKey = new UUIDAndTypeStateKey(UUID.randomUUID(), StateType.PROCESS_STATUS, Instant.now().minus(5, ChronoUnit.HOURS));
+            stateProvider.put(oldKey, UUID.randomUUID());
+         }
+      });
+
+      for(int i = 0; i < N; i++)
+      {
+         stateProvider.clean(Instant.now().minus(4, ChronoUnit.HOURS));
+      }
    }
 
 }

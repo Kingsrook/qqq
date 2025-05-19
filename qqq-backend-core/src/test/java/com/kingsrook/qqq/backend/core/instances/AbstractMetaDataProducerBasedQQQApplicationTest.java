@@ -43,6 +43,9 @@ class AbstractMetaDataProducerBasedQQQApplicationTest extends BaseTest
    {
       QInstance qInstance = new TestApplication().defineQInstance();
       assertEquals(1, qInstance.getTables().size());
+      assertEquals("fromProducer", qInstance.getTables().get("fromProducer").getName());
+      assertEquals(1, qInstance.getProcesses().size());
+      assertEquals("fromProducer", qInstance.getProcesses().get("fromProducer").getName());
    }
 
 

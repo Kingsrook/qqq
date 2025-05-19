@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -564,6 +565,24 @@ class QRecordEntityTest extends BaseTest
       order = qRecord.toEntity(Order.class);
       assertNotNull(order.getLineItems());
       assertEquals(0, order.getLineItems().size());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTableName() throws QException
+   {
+      assertEquals(Item.TABLE_NAME, QRecordEntity.getTableName(Item.class));
+      assertEquals(Item.TABLE_NAME, Item.getTableName(Item.class));
+      assertEquals(Item.TABLE_NAME, new Item().tableName());
+
+      //////////////////////////////////
+      // no TABLE_NAME in Order class //
+      //////////////////////////////////
+      assertThatThrownBy(() -> Order.getTableName(Order.class));
    }
 
 }
