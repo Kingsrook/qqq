@@ -34,7 +34,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
+public class ApiInstanceMetaDataContainer implements QSupplementalInstanceMetaData
 {
    private Map<String, ApiInstanceMetaData> apis;
 
@@ -67,17 +67,6 @@ public class ApiInstanceMetaDataContainer extends QSupplementalInstanceMetaData
    public static ApiInstanceMetaDataContainer of(QInstance qInstance)
    {
       return ((ApiInstanceMetaDataContainer) qInstance.getSupplementalMetaData(ApiSupplementType.NAME));
-   }
-
-
-
-   /*******************************************************************************
-    **
-    *******************************************************************************/
-   @Override
-   public String getType()
-   {
-      return (ApiSupplementType.NAME);
    }
 
 

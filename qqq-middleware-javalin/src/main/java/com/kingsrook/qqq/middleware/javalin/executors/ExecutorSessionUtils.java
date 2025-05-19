@@ -60,14 +60,24 @@ public class ExecutorSessionUtils
 
       try
       {
+         /////////////////////////////////////////////////
+         // note:  duplicated in QJavalinImplementation //
+         /////////////////////////////////////////////////
          Map<String, String> authenticationContext = new HashMap<>();
 
          String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
          String sessionUuidCookieValue   = context.cookie(Auth0AuthenticationModule.SESSION_UUID_KEY);
          String authorizationHeaderValue = context.header("Authorization");
          String apiKeyHeaderValue        = context.header("x-api-key");
+         String codeQueryParamValue      = context.queryParam("code");
+         String stateQueryParamValue     = context.queryParam("state");
 
-         if(StringUtils.hasContent(sessionIdCookieValue))
+         if(StringUtils.hasContent(codeQueryParamValue) && StringUtils.hasContent(stateQueryParamValue))
+         {
+            authenticationContext.put("code", codeQueryParamValue);
+            authenticationContext.put("state", stateQueryParamValue);
+         }
+         else if(StringUtils.hasContent(sessionIdCookieValue))
          {
             ///////////////////////////////////////////////////////
             // sessionId - maybe used by table-based auth module //

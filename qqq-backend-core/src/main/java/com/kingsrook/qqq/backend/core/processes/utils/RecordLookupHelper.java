@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.processes.utils;
 
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,13 +52,14 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class RecordLookupHelper
 {
-   private Map<String, Map<Serializable, QRecord>> recordMaps = new HashMap<>();
+   private Map<String, Map<Serializable, QRecord>> recordMaps;
 
-   private Map<String, Map<Map<String, Serializable>, QRecord>> uniqueKeyMaps = new HashMap<>();
+   private Map<String, Map<Map<String, Serializable>, QRecord>> uniqueKeyMaps;
 
-   private Set<String> preloadedKeys = new HashSet<>();
+   private Set<String> preloadedKeys;
 
-   private Set<Pair<String, String>> disallowedOneOffLookups = new HashSet<>();
+   private Set<Pair<String, String>> disallowedOneOffLookups;
+   private boolean                   useSynchronizedCollections;
 
 
 
@@ -67,6 +69,33 @@ public class RecordLookupHelper
     *******************************************************************************/
    public RecordLookupHelper()
    {
+      this(false);
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public RecordLookupHelper(boolean useSynchronizedCollections)
+   {
+      this.useSynchronizedCollections = useSynchronizedCollections;
+
+      if(useSynchronizedCollections)
+      {
+         recordMaps = Collections.synchronizedMap(new HashMap<>());
+         uniqueKeyMaps = Collections.synchronizedMap(new HashMap<>());
+         preloadedKeys = Collections.synchronizedSet(new HashSet<>());
+         disallowedOneOffLookups = Collections.synchronizedSet(new HashSet<>());
+      }
+      else
+      {
+         recordMaps = new HashMap<>();
+         uniqueKeyMaps = new HashMap<>();
+         preloadedKeys = new HashSet<>();
+         disallowedOneOffLookups = new HashSet<>();
+      }
    }
 
 
@@ -77,7 +106,7 @@ public class RecordLookupHelper
    public QRecord getRecordByUniqueKey(String tableName, Map<String, Serializable> uniqueKey) throws QException
    {
       String                                  mapKey    = tableName + "." + uniqueKey.keySet().stream().sorted().collect(Collectors.joining(","));
-      Map<Map<String, Serializable>, QRecord> recordMap = uniqueKeyMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
+      Map<Map<String, Serializable>, QRecord> recordMap = uniqueKeyMaps.computeIfAbsent(mapKey, (k) -> useSynchronizedCollections ? Collections.synchronizedMap(new HashMap<>()) : new HashMap<>());
 
       if(!recordMap.containsKey(uniqueKey))
       {
@@ -96,7 +125,7 @@ public class RecordLookupHelper
    public QRecord getRecordByKey(String tableName, String keyFieldName, Serializable key) throws QException
    {
       String                     mapKey    = tableName + "." + keyFieldName;
-      Map<Serializable, QRecord> recordMap = recordMaps.computeIfAbsent(mapKey, (k) -> new HashMap<>());
+      Map<Serializable, QRecord> recordMap = recordMaps.computeIfAbsent(mapKey, (k) -> useSynchronizedCollections ? Collections.synchronizedMap(new HashMap<>()) : new HashMap<>());
 
       ////////////////////////////////////////////////////////////
       // make sure we have they key object in the expected type //
@@ -150,7 +179,7 @@ public class RecordLookupHelper
    public void preloadRecords(String tableName, String keyFieldName, QQueryFilter filter) throws QException
    {
       String                     mapKey   = tableName + "." + keyFieldName;
-      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
+      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> useSynchronizedCollections ? Collections.synchronizedMap(new HashMap<>()) : new HashMap<>());
       tableMap.putAll(GeneralProcessUtils.loadTableToMap(tableName, keyFieldName, filter));
    }
 
@@ -170,7 +199,7 @@ public class RecordLookupHelper
       }
 
       String                     mapKey   = tableName + "." + keyFieldName;
-      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> new HashMap<>());
+      Map<Serializable, QRecord> tableMap = recordMaps.computeIfAbsent(mapKey, s -> useSynchronizedCollections ? Collections.synchronizedMap(new HashMap<>()) : new HashMap<>());
 
       QQueryFilter filter = new QQueryFilter(new QFilterCriteria(keyFieldName, QCriteriaOperator.IN, inList));
       tableMap.putAll(GeneralProcessUtils.loadTableToMap(tableName, keyFieldName, filter));

@@ -22,6 +22,8 @@
 package com.kingsrook.qqq.middleware.javalin;
 
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -31,12 +33,17 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.ClassPathUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinMetaData;
+import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.ProcessBasedRouter;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
+import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
 import org.apache.commons.lang.BooleanUtils;
 import org.eclipse.jetty.util.resource.Resource;
@@ -70,8 +77,8 @@ public class QApplicationJavalinServer
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
    private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
    private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
-   private Consumer<Javalin> javalinConfigurationCustomizer = null;
-   private QJavalinMetaData  javalinMetaData                = null;
+   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
+   private QJavalinMetaData                     javalinMetaData                     = null;
 
    private long                lastQInstanceHotSwapMillis;
    private long                millisBetweenHotSwaps = 2500;
@@ -99,6 +106,12 @@ public class QApplicationJavalinServer
    {
       QInstance qInstance = application.defineValidatedQInstance();
 
+      QJavalinMetaData javalinMetaData = getJavalinMetaDataToUse(qInstance);
+      if(javalinMetaData != null)
+      {
+         addRouteProvidersFromMetaData(javalinMetaData);
+      }
+
       service = Javalin.create(config ->
       {
          if(serveFrontendMaterialDashboard)
@@ -117,7 +130,7 @@ public class QApplicationJavalinServer
             ////////////////////////////////////////////////////////////////////////////////////////
             try(Resource resource = Resource.newClassPathResource("/material-dashboard-overlay"))
             {
-               if(resource !=null)
+               if(resource != null)
                {
                   config.staticFiles.add("/material-dashboard-overlay");
                }
@@ -173,9 +186,25 @@ public class QApplicationJavalinServer
          for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
          {
             routeProvider.setQInstance(qInstance);
-            config.router.apiBuilder(routeProvider.getJavalinEndpointGroup());
+
+            EndpointGroup javalinEndpointGroup = routeProvider.getJavalinEndpointGroup();
+            if(javalinEndpointGroup != null)
+            {
+               config.router.apiBuilder(javalinEndpointGroup);
+            }
+
+            routeProvider.acceptJavalinConfig(config);
          }
       });
+
+      //////////////////////////////////////////////////////////////////////
+      // also pass the javalin service into any additionalRouteProviders, //
+      // in case they need additional setup, e.g., before/after handlers. //
+      //////////////////////////////////////////////////////////////////////
+      for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
+      {
+         routeProvider.acceptJavalinService(service);
+      }
 
       //////////////////////////////////////////////////////////////////////////////////////
       // per system property, set the server to hot-swap the q instance before all routes //
@@ -190,6 +219,8 @@ public class QApplicationJavalinServer
       service.before((Context context) -> context.header("Content-Type", "application/json"));
       service.after(QJavalinImplementation::clearQContext);
 
+      addNullResponseCharsetFixer();
+
       ////////////////////////////////////////////////
       // allow a configuration-customizer to be run //
       ////////////////////////////////////////////////
@@ -199,6 +230,79 @@ public class QApplicationJavalinServer
       }
 
       service.start(port);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private QJavalinMetaData getJavalinMetaDataToUse(QInstance qInstance)
+   {
+      if(this.javalinMetaData != null && QJavalinMetaData.of(qInstance) != null)
+      {
+         LOG.warn("JavalinMetaData is defined both in the QInstance and the QApplicationJavalinServer.  The one from the QInstance will be ignored - the one from the QJavalinApplicationServer will be used.");
+         return (this.javalinMetaData);
+      }
+      else if (this.javalinMetaData != null)
+      {
+         return (this.javalinMetaData);
+      }
+      else
+      {
+         return QJavalinMetaData.of(qInstance);
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** initial tests with the SimpleFileSystemDirectoryRouter would sometimes
+    ** have a Content-Type:text/html;charset=null !
+    ** which doesn't seem ever valid (and at least it broke our unit test).
+    ** so, if w see charset=null in contentType, replace it with the system
+    ** default, which may not be 100% right, but has to be better than "null"...
+    ***************************************************************************/
+   private void addNullResponseCharsetFixer()
+   {
+      service.after((Context context) ->
+      {
+         String contentType = context.res().getContentType();
+         if(contentType != null && contentType.contains("charset=null"))
+         {
+            contentType = contentType.replace("charset=null", "charset=" + Charset.defaultCharset().name());
+            context.res().setContentType(contentType);
+         }
+      });
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void addRouteProvidersFromMetaData(QJavalinMetaData qJavalinMetaData) throws QException
+   {
+      if(qJavalinMetaData == null)
+      {
+         return;
+      }
+
+      for(JavalinRouteProviderMetaData routeProviderMetaData : CollectionUtils.nonNullList(qJavalinMetaData.getRouteProviders()))
+      {
+         if(StringUtils.hasContent(routeProviderMetaData.getProcessName()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
+         {
+            withAdditionalRouteProvider(new ProcessBasedRouter(routeProviderMetaData));
+         }
+         else if(StringUtils.hasContent(routeProviderMetaData.getFileSystemPath()) && StringUtils.hasContent(routeProviderMetaData.getHostedPath()))
+         {
+            withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter(routeProviderMetaData));
+         }
+         else
+         {
+            throw (new QException("Error processing route provider - does not have sufficient fields set."));
+         }
+      }
    }
 
 
@@ -460,6 +564,21 @@ public class QApplicationJavalinServer
 
 
    /*******************************************************************************
+    ** Fluent setter to add a single additionalRouteProvider
+    *******************************************************************************/
+   public QApplicationJavalinServer withAdditionalRouteProvider(QJavalinRouteProviderInterface additionalRouteProvider)
+   {
+      if(this.additionalRouteProviders == null)
+      {
+         this.additionalRouteProviders = new ArrayList<>();
+      }
+      this.additionalRouteProviders.add(additionalRouteProvider);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for MILLIS_BETWEEN_HOT_SWAPS
     *******************************************************************************/
    public long getMillisBetweenHotSwaps()
@@ -541,6 +660,7 @@ public class QApplicationJavalinServer
    }
 
 
+
    /*******************************************************************************
     ** Getter for javalinMetaData
     *******************************************************************************/
@@ -569,6 +689,5 @@ public class QApplicationJavalinServer
       this.javalinMetaData = javalinMetaData;
       return (this);
    }
-
 
 }

@@ -25,12 +25,13 @@ package com.kingsrook.qqq.backend.core.model.metadata.processes;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 
 
 /*******************************************************************************
  ** Definition of a UI component in a frontend process steps.
  *******************************************************************************/
-public class QFrontendComponentMetaData
+public class QFrontendComponentMetaData implements QMetaDataObject
 {
    private QComponentType type;
 

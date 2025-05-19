@@ -327,12 +327,23 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
 
 
    /*******************************************************************************
-    ** Setter for stepList
+    ** Setter for stepList - note - calling this method ALSO overwrites the steps map!
     **
     *******************************************************************************/
    public void setStepList(List<QStepMetaData> stepList)
    {
-      this.stepList = stepList;
+      if(stepList == null)
+      {
+         this.stepList = null;
+         this.steps = null;
+      }
+      else
+      {
+         this.stepList = new ArrayList<>();
+         this.steps = new HashMap<>();
+      }
+
+      withStepList(stepList);
    }
 
 

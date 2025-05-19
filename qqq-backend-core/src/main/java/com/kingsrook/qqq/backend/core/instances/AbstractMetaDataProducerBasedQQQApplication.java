@@ -29,7 +29,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 
 /*******************************************************************************
  ** Version of AbstractQQQApplication that assumes all meta-data is produced
- ** by MetaDataProducers in a single package.
+ ** by MetaDataProducers in (or under) a single package.
  *******************************************************************************/
 public abstract class AbstractMetaDataProducerBasedQQQApplication extends AbstractQQQApplication
 {

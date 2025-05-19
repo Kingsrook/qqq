@@ -22,10 +22,13 @@
 package com.kingsrook.qqq.backend.core.model.session;
 
 
+import java.io.Serializable;
+
+
 /*******************************************************************************
  **
  *******************************************************************************/
-public class QUser implements Cloneable
+public class QUser implements Cloneable, Serializable
 {
    private String idReference;
    private String fullName;

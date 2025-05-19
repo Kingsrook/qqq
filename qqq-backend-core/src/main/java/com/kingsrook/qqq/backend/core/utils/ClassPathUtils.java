@@ -62,6 +62,39 @@ public class ClassPathUtils
 
 
    /*******************************************************************************
+    ** from https://stackoverflow.com/questions/520328/can-you-find-all-classes-in-a-package-using-reflection
+    **
+    *******************************************************************************/
+   public static List<Class<?>> getClassesContainingNameAndOfType(String nameContains, Class<?> type) throws IOException
+   {
+      List<Class<?>> classes = new ArrayList<>();
+      ClassLoader    loader  = Thread.currentThread().getContextClassLoader();
+
+      for(ClassPath.ClassInfo info : getTopLevelClasses(loader))
+      {
+         try
+         {
+            if(info.getName().contains(nameContains))
+            {
+               Class<?> testClass = info.load();
+               if(type.isAssignableFrom(testClass))
+               {
+                  classes.add(testClass);
+               }
+            }
+         }
+         catch(Throwable t)
+         {
+            // ignore - comes up for non-class entries, like module-info
+         }
+      }
+
+      return (classes);
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private static ImmutableSet<ClassPath.ClassInfo> getTopLevelClasses(ClassLoader loader) throws IOException

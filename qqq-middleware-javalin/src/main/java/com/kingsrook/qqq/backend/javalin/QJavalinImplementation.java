@@ -206,7 +206,7 @@ public class QJavalinImplementation
     *******************************************************************************/
    public QJavalinImplementation(QInstance qInstance) throws QInstanceValidationException
    {
-      this(qInstance, new QJavalinMetaData());
+      this(qInstance, QJavalinMetaData.ofOrWithNew(qInstance));
    }
 
 
@@ -453,9 +453,20 @@ public class QJavalinImplementation
          QAuthenticationModuleInterface  authenticationModule            = qAuthenticationModuleDispatcher.getQModule(qInstance.getAuthentication());
 
          Map<String, String> authContext = new HashMap<>();
-         //? authContext.put("uuid", ValueUtils.getValueAsString(map.get("uuid")));
-         authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
          authContext.put(Auth0AuthenticationModule.DO_STORE_USER_SESSION_KEY, "true");
+
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // before this code iterated the map, it had zombied uuid line, and only actually used ACCESS_TOKEN_KEY //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////////
+         //? authContext.put("uuid", ValueUtils.getValueAsString(map.get("uuid")));
+         // authContext.put(Auth0AuthenticationModule.ACCESS_TOKEN_KEY, ValueUtils.getValueAsString(map.get("accessToken")));
+         /////////////////////////////////////////////////////////////////
+         // todo - have the auth module declare what values it expects? //
+         /////////////////////////////////////////////////////////////////
+         for(Map.Entry<?, ?> entry : map.entrySet())
+         {
+            authContext.put(ValueUtils.getValueAsString(entry.getKey()), ValueUtils.getValueAsString(entry.getValue()));
+         }
 
          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          // put the qInstance into context - but no session yet (since, the whole point of this call is to manage the session!) //
@@ -524,14 +535,24 @@ public class QJavalinImplementation
 
       try
       {
+         ///////////////////////////////////////////////
+         // note:  duplicated in ExecutorSessionUtils //
+         ///////////////////////////////////////////////
          Map<String, String> authenticationContext = new HashMap<>();
 
          String sessionIdCookieValue     = context.cookie(SESSION_ID_COOKIE_NAME);
          String sessionUuidCookieValue   = context.cookie(Auth0AuthenticationModule.SESSION_UUID_KEY);
          String authorizationHeaderValue = context.header("Authorization");
          String apiKeyHeaderValue        = context.header("x-api-key");
+         String codeQueryParamValue      = context.queryParam("code");
+         String stateQueryParamValue     = context.queryParam("state");
 
-         if(StringUtils.hasContent(sessionIdCookieValue))
+         if(StringUtils.hasContent(codeQueryParamValue) && StringUtils.hasContent(stateQueryParamValue))
+         {
+            authenticationContext.put("code", codeQueryParamValue);
+            authenticationContext.put("state", stateQueryParamValue);
+         }
+         else if(StringUtils.hasContent(sessionIdCookieValue))
          {
             ///////////////////////////////////////////////////////
             // sessionId - maybe used by table-based auth module //
@@ -597,7 +618,7 @@ public class QJavalinImplementation
          /////////////////////////////////////////////////////////////////////////////////
          if(authenticationModule.usesSessionIdCookie())
          {
-            context.cookie(SESSION_ID_COOKIE_NAME, session.getIdReference(), SESSION_COOKIE_AGE);
+            context.cookie(SESSION_ID_COOKIE_NAME, session.getUuid(), SESSION_COOKIE_AGE);
          }
 
          setUserTimezoneOffsetMinutesInSession(context, session);
