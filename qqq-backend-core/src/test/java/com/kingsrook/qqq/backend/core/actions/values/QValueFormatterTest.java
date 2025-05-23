@@ -209,6 +209,54 @@ class QValueFormatterTest extends BaseTest
       assertEquals("2", records.get(1).getDisplayValue("homeStateId")); // PVS NOT translated by this class.
    }
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetDisplayValuesInRecordsIncludingPossibleValueTranslations()
+   {
+      QTableMetaData table = new QTableMetaData()
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("firstName", "lastName")
+         .withField(new QFieldMetaData("firstName", QFieldType.STRING))
+         .withField(new QFieldMetaData("lastName", QFieldType.STRING))
+         .withField(new QFieldMetaData("price", QFieldType.DECIMAL).withDisplayFormat(DisplayFormat.CURRENCY))
+         .withField(new QFieldMetaData("quantity", QFieldType.INTEGER).withDisplayFormat(DisplayFormat.COMMAS))
+         .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(TestUtils.POSSIBLE_VALUE_SOURCE_STATE));
+
+      /////////////////////////////////////////////////////////////////
+      // first, make sure it doesn't crash with null or empty inputs //
+      /////////////////////////////////////////////////////////////////
+      QValueFormatter.setDisplayValuesInRecordsIncludingPossibleValueTranslations(table, null);
+      QValueFormatter.setDisplayValuesInRecordsIncludingPossibleValueTranslations(table, Collections.emptyList());
+
+      List<QRecord> records = List.of(
+         new QRecord()
+            .withValue("firstName", "Tim")
+            .withValue("lastName", "Chamberlain")
+            .withValue("price", new BigDecimal("3.50"))
+            .withValue("quantity", 1701)
+            .withValue("homeStateId", 1),
+         new QRecord()
+            .withValue("firstName", "Tyler")
+            .withValue("lastName", "Samples")
+            .withValue("price", new BigDecimal("174999.99"))
+            .withValue("quantity", 47)
+            .withValue("homeStateId", 2)
+      );
+
+      QValueFormatter.setDisplayValuesInRecordsIncludingPossibleValueTranslations(table, records);
+
+      assertEquals("Tim Chamberlain", records.get(0).getRecordLabel());
+      assertEquals("$3.50", records.get(0).getDisplayValue("price"));
+      assertEquals("1,701", records.get(0).getDisplayValue("quantity"));
+      assertEquals("IL", records.get(0).getDisplayValue("homeStateId")); // PVS is translated by this method.
+
+      assertEquals("Tyler Samples", records.get(1).getRecordLabel());
+      assertEquals("$174,999.99", records.get(1).getDisplayValue("price"));
+      assertEquals("47", records.get(1).getDisplayValue("quantity"));
+      assertEquals("MO", records.get(1).getDisplayValue("homeStateId")); // PVS is translated by this method.
+   }
 
 
    /*******************************************************************************
