@@ -62,6 +62,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Tier;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TablesSupportingAutomationsPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.LoadScriptTestDetailsProcessStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.scripts.RunRecordScriptExtractStep;
@@ -97,6 +98,7 @@ public class ScriptsMetaDataProvider
       defineStandardScriptsJoins(instance);
       defineStandardScriptsWidgets(instance);
       instance.addPossibleValueSource(TablesPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
+      instance.addPossibleValueSource(TablesSupportingAutomationsPossibleValueSourceMetaDataProvider.defineTablesPossibleValueSource(instance));
       instance.addProcess(defineStoreScriptRevisionProcess());
       instance.addProcess(defineTestScriptProcess());
       instance.addProcess(defineLoadScriptTestDetailsProcess());
