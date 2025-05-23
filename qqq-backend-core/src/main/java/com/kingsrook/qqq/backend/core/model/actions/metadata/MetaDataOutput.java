@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.metadata;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionOutput;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.branding.QBrandingMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.AppTreeNode;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendAppMetaData;
@@ -41,12 +42,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
  *******************************************************************************/
 public class MetaDataOutput extends AbstractActionOutput
 {
-   private Map<String, QFrontendTableMetaData>   tables;
-   private Map<String, QFrontendProcessMetaData> processes;
-   private Map<String, QFrontendReportMetaData>  reports;
-   private Map<String, QFrontendAppMetaData>     apps;
-   private Map<String, QFrontendWidgetMetaData>  widgets;
-   private Map<String, String>                   environmentValues;
+   private Map<String, QFrontendTableMetaData>        tables;
+   private Map<String, QFrontendProcessMetaData>      processes;
+   private Map<String, QFrontendReportMetaData>       reports;
+   private Map<String, QFrontendAppMetaData>          apps;
+   private Map<String, QFrontendWidgetMetaData>       widgets;
+   private Map<String, String>                        environmentValues;
+   private Map<String, QSupplementalInstanceMetaData> supplementalInstanceMetaData;
 
    private List<AppTreeNode>               appTree;
    private QBrandingMetaData               branding;
@@ -226,6 +228,28 @@ public class MetaDataOutput extends AbstractActionOutput
    public void setEnvironmentValues(Map<String, String> environmentValues)
    {
       this.environmentValues = environmentValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalInstanceMetaData
+    **
+    *******************************************************************************/
+   public Map<String, QSupplementalInstanceMetaData> getSupplementalInstanceMetaData()
+   {
+      return supplementalInstanceMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for supplementalInstanceMetaData
+    **
+    *******************************************************************************/
+   public void setSupplementalInstanceMetaData(Map<String, QSupplementalInstanceMetaData> supplementalInstanceMetaData)
+   {
+      this.supplementalInstanceMetaData = supplementalInstanceMetaData;
    }
 
 
