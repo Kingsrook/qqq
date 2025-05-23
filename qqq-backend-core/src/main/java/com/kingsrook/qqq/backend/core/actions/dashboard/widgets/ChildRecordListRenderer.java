@@ -25,11 +25,13 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -66,6 +68,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MutableList;
 import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
@@ -177,6 +180,18 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          return (this);
       }
 
+
+
+      /*******************************************************************************
+       **
+       *******************************************************************************/
+      public Builder withOmitFieldNames(List<String> omitFieldNames)
+      {
+         ArrayList<String> arrayList = CollectionUtils.useOrWrap(omitFieldNames, new TypeToken<>() {});
+         widgetMetaData.withDefaultValue("omitFieldNames", arrayList);
+         return (this);
+      }
+
    }
 
 
@@ -197,6 +212,15 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          QTableMetaData rightTable  = QContext.getQInstance().getTable(join.getRightTable());
 
          Map<String, Serializable> widgetMetaDataDefaultValues = input.getWidgetMetaData().getDefaultValues();
+         List<String> omitFieldNames = (List<String>) widgetMetaDataDefaultValues.get("omitFieldNames");
+         if(omitFieldNames == null)
+         {
+            omitFieldNames = new ArrayList<>();
+         }
+         else
+         {
+            omitFieldNames = new MutableList<>(omitFieldNames);
+         }
 
          Integer maxRows = null;
          if(StringUtils.hasContent(input.getQueryParams().get("maxRows")))
@@ -237,6 +261,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             for(JoinOn joinOn : join.getJoinOns())
             {
                filter.addCriteria(new QFilterCriteria(joinOn.getRightField(), QCriteriaOperator.EQUALS, List.of(primaryRecord.getValue(joinOn.getLeftField()))));
+               omitFieldNames.add(joinOn.getRightField());
             }
 
             Serializable orderBy = widgetMetaDataDefaultValues.get("orderBy");
@@ -278,6 +303,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), Charset.defaultCharset()));
 
          ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, rightTable, tablePath, viewAllLink, totalRows);
+         widgetData.setOmitFieldNames(omitFieldNames);
 
          if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
          {
