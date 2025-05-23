@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.AbstractMiddlewareExecutor;
@@ -81,11 +82,15 @@ public abstract class AbstractEndpointSpec<
    public abstract INPUT buildInput(Context context) throws Exception;
 
 
+
    /***************************************************************************
     ** build the endpoint's http response (written to the javalin context) from
     ** an execution output object
     ***************************************************************************/
-   public abstract void handleOutput(Context context, OUTPUT output) throws Exception;
+   public void handleOutput(Context context, OUTPUT output) throws Exception
+   {
+      context.result(JsonUtils.toJson(output));
+   }
 
 
 
@@ -120,7 +125,16 @@ public abstract class AbstractEndpointSpec<
    {
       try
       {
-         Type     superClass         = getClass().getGenericSuperclass();
+         /////////////////////////////////////////////////
+         // moving up type hierarchy to find this class //
+         /////////////////////////////////////////////////
+         Class<?> s = getClass();
+         while(!s.getSuperclass().equals(AbstractEndpointSpec.class))
+         {
+            s = s.getSuperclass();
+         }
+
+         Type     superClass         = s.getGenericSuperclass();
          Type     actualTypeArgument = ((ParameterizedType) superClass).getActualTypeArguments()[argumentIndex];
          String   className          = actualTypeArgument.getTypeName().replaceAll("<.*", "");
          Class<?> aClass             = Class.forName(className);
@@ -137,14 +151,14 @@ public abstract class AbstractEndpointSpec<
    /***************************************************************************
     ** define a javalin route for the spec
     ***************************************************************************/
-   public void defineRoute(String versionBasePath)
+   public void defineRoute(AbstractMiddlewareVersion abstractMiddlewareVersion, String versionBasePath)
    {
       CompleteOperation completeOperation = defineCompleteOperation();
 
       String fullPath = "/qqq/" + versionBasePath + completeOperation.getPath();
       fullPath = fullPath.replaceAll("/+", "/");
 
-      final Handler handler = context -> serveRequest(context);
+      final Handler handler = context -> serveRequest(abstractMiddlewareVersion, context);
 
       switch(completeOperation.getHttpMethod())
       {
@@ -162,7 +176,7 @@ public abstract class AbstractEndpointSpec<
    /***************************************************************************
     **
     ***************************************************************************/
-   public OUTPUT serveRequest(Context context) throws Exception
+   public OUTPUT serveRequest(AbstractMiddlewareVersion abstractMiddlewareVersion, Context context) throws Exception
    {
       try
       {
@@ -174,6 +188,8 @@ public abstract class AbstractEndpointSpec<
          {
             QContext.setQInstance(qInstance);
          }
+
+         abstractMiddlewareVersion.preExecute(context);
 
          INPUT    input    = buildInput(context);
          EXECUTOR executor = newExecutor();
@@ -363,6 +379,53 @@ public abstract class AbstractEndpointSpec<
    /***************************************************************************
     **
     ***************************************************************************/
+   protected JSONObject getRequestBodyAsJsonObject(Context context)
+   {
+      RequestBody requestBody = getMemoizedRequestBody();
+      if(requestBody != null)
+      {
+         String requestContentType = context.contentType();
+         if(requestContentType != null)
+         {
+            requestContentType = requestContentType.toLowerCase().replaceAll(" *;.*", "");
+         }
+
+         Content contentSpec = requestContentType == null ? null : requestBody.getContent().get(requestContentType);
+         if(contentSpec != null && "object".equals(contentSpec.getSchema().getType()))
+         {
+            if(ContentType.APPLICATION_JSON.getMimeType().equals(requestContentType))
+            {
+               /////////////////////////////////////////////////////////////////////////////
+               // avoid re-parsing the JSON object if getting multiple attributes from it //
+               // by stashing it in a (request) attribute.                                //
+               /////////////////////////////////////////////////////////////////////////////
+               Object     jsonBodyAttribute = context.attribute("jsonBody");
+               JSONObject jsonObject        = null;
+
+               if(jsonBodyAttribute instanceof JSONObject jo)
+               {
+                  jsonObject = jo;
+               }
+
+               if(jsonObject == null)
+               {
+                  jsonObject = new JSONObject(context.body());
+                  context.attribute("jsonBody", jsonObject);
+               }
+
+               return (jsonObject);
+            }
+         }
+      }
+
+      return (null);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
    protected String getRequestParam(Context context, String name)
    {
       for(Parameter parameter : CollectionUtils.nonNullList(getMemoizedRequestParameters()))
@@ -404,24 +467,7 @@ public abstract class AbstractEndpointSpec<
                }
                else if(ContentType.APPLICATION_JSON.getMimeType().equals(requestContentType))
                {
-                  /////////////////////////////////////////////////////////////////////////////
-                  // avoid re-parsing the JSON object if getting multiple attributes from it //
-                  // by stashing it in a (request) attribute.                                //
-                  /////////////////////////////////////////////////////////////////////////////
-                  Object     jsonBodyAttribute = context.attribute("jsonBody");
-                  JSONObject jsonObject        = null;
-
-                  if(jsonBodyAttribute instanceof JSONObject jo)
-                  {
-                     jsonObject = jo;
-                  }
-
-                  if(jsonObject == null)
-                  {
-                     jsonObject = new JSONObject(context.body());
-                     context.attribute("jsonBody", jsonObject);
-                  }
-
+                  JSONObject jsonObject = getRequestBodyAsJsonObject(context);
                   if(jsonObject.has(name))
                   {
                      value = jsonObject.getString(name);
