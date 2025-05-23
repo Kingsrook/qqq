@@ -198,10 +198,10 @@ public class RunBackendStepAction
             //////////////////////////////////////////////////
             // look for record ids in the input data values //
             //////////////////////////////////////////////////
-            String recordIds = (String) runBackendStepInput.getValue("recordIds");
+            String recordIds = runBackendStepInput.getValueString("recordIds");
             if(recordIds == null)
             {
-               recordIds = (String) runBackendStepInput.getValue("recordId");
+               recordIds = runBackendStepInput.getValueString("recordId");
             }
 
             ///////////////////////////////////////////////////////////
