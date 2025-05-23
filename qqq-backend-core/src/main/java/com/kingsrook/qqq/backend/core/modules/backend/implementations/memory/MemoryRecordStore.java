@@ -175,8 +175,9 @@ public class MemoryRecordStore
       BackendVariantsConfig backendVariantsConfig = backendMetaData.getBackendVariantsConfig();
       if(backendVariantsConfig != null)
       {
-         String       variantType = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
-         Serializable variantId   = BackendVariantsUtil.getVariantId(backendMetaData);
+         String       variantType   = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+         QRecord      variantRecord = BackendVariantsUtil.getVariantRecord(backendMetaData);
+         Serializable variantId     = variantRecord.getValue(QContext.getQInstance().getTable(variantRecord.getTableName()).getPrimaryKeyField());
          backendIdentifier = new Variant(variantType, variantId);
       }
       return backendIdentifier;

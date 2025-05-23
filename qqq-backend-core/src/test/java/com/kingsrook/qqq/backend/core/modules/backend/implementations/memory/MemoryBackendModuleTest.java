@@ -247,14 +247,23 @@ class MemoryBackendModuleTest extends BaseTest
       ))).getRecords().get(0).getValueInteger("id");
       assertEquals(1, planetId1);
 
-      ////////////////////////////////////////////////////////
-      // make sure counts return what we expect per-variant //
-      ////////////////////////////////////////////////////////
-      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 2));
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // make sure counts return what we expect per-variant                                         //
+      // also, put the variant ids as strings, just to make sure we're a little type-flexible there //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, "2"));
       assertEquals(3, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
 
-      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 1));
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, "1"));
       assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
+
+      /////////////////////////////////////////////
+      // assert we fail if trying unknown variant //
+      /////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 4));
+      assertThatThrownBy(() -> new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "England")
+      )))).hasMessageContaining("Could not find Backend Variant in table memoryVariantOptions with id '4'");
 
    }
 
