@@ -49,6 +49,7 @@ import com.kingsrook.qqq.openapi.model.SecurityScheme;
 import com.kingsrook.qqq.openapi.model.SecuritySchemeType;
 import com.kingsrook.qqq.openapi.model.Type;
 import io.javalin.apibuilder.EndpointGroup;
+import io.javalin.http.Context;
 
 
 /*******************************************************************************
@@ -82,9 +83,18 @@ public abstract class AbstractMiddlewareVersion
       {
          for(AbstractEndpointSpec<?, ?, ?> spec : CollectionUtils.nonNullList(getEndpointSpecs()))
          {
-            spec.defineRoute("/" + getVersion() + "/");
+            spec.defineRoute(this, getVersionBasePath());
          }
       });
+   }
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public String getVersionBasePath()
+   {
+      return ("/" + getVersion() + "/");
    }
 
 
@@ -123,7 +133,7 @@ public abstract class AbstractMiddlewareVersion
       for(AbstractEndpointSpec<?, ?, ?> spec : list)
       {
          CompleteOperation completeOperation = spec.defineCompleteOperation();
-         String            fullPath          = ("/" + basePath + "/" + getVersion() + "/" + completeOperation.getPath()).replaceAll("/+", "/");
+         String            fullPath          = ("/" + basePath + getVersionBasePath() + completeOperation.getPath()).replaceAll("/+", "/");
          Path              path              = paths.computeIfAbsent(fullPath, (k) -> new Path());
          Method            method            = completeOperation.getMethod();
 
@@ -357,5 +367,17 @@ public abstract class AbstractMiddlewareVersion
       {
          LOG.warn("More than one endpoint spec for version " + getVersion() + " defined a " + completeOperation.getHttpMethod() + " at path: " + completeOperation.getPath() + ".  The last one encountered (from " + spec.getClass().getSimpleName() + ") will be used.");
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void preExecute(Context context)
+   {
+      /////////////////////
+      // noop at default //
+      /////////////////////
    }
 }
