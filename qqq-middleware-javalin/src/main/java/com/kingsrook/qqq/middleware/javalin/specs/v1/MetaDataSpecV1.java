@@ -30,6 +30,11 @@ import java.util.TreeSet;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
+import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
+import com.kingsrook.qqq.backend.core.instances.validation.plugins.QInstanceValidatorPluginInterface;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -47,7 +52,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.middleware.javalin.executors.MetaDataExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.io.MetaDataInput;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
@@ -69,6 +74,13 @@ import io.javalin.http.Context;
  *******************************************************************************/
 public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaDataResponseV1, MetaDataExecutor>
 {
+   private static QInstance exampleInstance;
+
+   static
+   {
+      exampleInstance = defineExampleInstance();
+      validateExampleInstance(exampleInstance);
+   }
 
    /***************************************************************************
     **
@@ -187,8 +199,46 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
    {
       Map<String, Example> examples = new HashMap<>();
 
-      QInstance exampleInstance = new QInstance();
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // double-wrap the context here, so the instance will exist when the system-user-session is created //
+      // to avoid warnings out of system-user-session about there not being an instance in context.       //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.withTemporaryContext(new CapturedContext(exampleInstance, null), () ->
+      {
+         QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
+         {
+            try
+            {
+               MetaDataAction metaDataAction = new MetaDataAction();
+               MetaDataOutput output         = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
+               examples.put("Example", new Example()
+                  .withValue(new MetaDataResponseV1()
+                     .withMetaDataOutput(output)
+                  )
+               );
+            }
+            catch(Exception e)
+            {
+               examples.put("Example", new Example().withValue("Error building example: " + e.getMessage()));
+            }
+         });
+      });
 
+      return new BasicResponse("""
+         Overall metadata for the application.""",
+         MetaDataResponseV1.class.getSimpleName(),
+         examples
+      );
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static QInstance defineExampleInstance()
+   {
+      QInstance exampleInstance = new QInstance();
       exampleInstance.setAuthentication(new QAuthenticationMetaData().withName("anonymous").withType(QAuthenticationType.FULLY_ANONYMOUS));
 
       QBackendMetaData exampleBackend = new QBackendMetaData()
@@ -241,37 +291,7 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
          .withChild(childApp)
          .withChild(exampleTable);
       exampleInstance.addApp(exampleApp);
-
-      //////////////////////////////////////////////////////////////////////////////////////////////////////
-      // double-wrap the context here, so the instance will exist when the system-user-session is created //
-      // to avoid warnings out of system-user-session about there not being an instance in context.       //
-      //////////////////////////////////////////////////////////////////////////////////////////////////////
-      QContext.withTemporaryContext(new CapturedContext(exampleInstance, null), () ->
-      {
-         QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
-         {
-            try
-            {
-               MetaDataAction metaDataAction = new MetaDataAction();
-               MetaDataOutput output         = metaDataAction.execute(new com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput());
-               examples.put("Example", new Example()
-                  .withValue(new MetaDataResponseV1()
-                     .withMetaDataOutput(output)
-                  )
-               );
-            }
-            catch(Exception e)
-            {
-               examples.put("Example", new Example().withValue("Error building example: " + e.getMessage()));
-            }
-         });
-      });
-
-      return new BasicResponse("""
-         Overall metadata for the application.""",
-         MetaDataResponseV1.class.getSimpleName(),
-         examples
-      );
+      return exampleInstance;
    }
 
 
@@ -279,10 +299,24 @@ public class MetaDataSpecV1 extends AbstractEndpointSpec<MetaDataInput, MetaData
    /***************************************************************************
     **
     ***************************************************************************/
-   @Override
-   public void handleOutput(Context context, MetaDataResponseV1 output) throws Exception
+   private static void validateExampleInstance(QInstance exampleInstance)
    {
-      context.result(JsonUtils.toJson(output));
-   }
+      ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> enricherPlugins = QInstanceEnricher.getEnricherPlugins();
+      QInstanceEnricher.removeAllEnricherPlugins();
 
+      ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> validatorPlugins = QInstanceValidator.getValidatorPlugins();
+      QInstanceValidator.removeAllValidatorPlugins();
+
+      try
+      {
+         new QInstanceValidator().validate(exampleInstance);
+      }
+      catch(QInstanceValidationException e)
+      {
+         System.err.println("Error validating example instance: " + e.getMessage());
+      }
+
+      enricherPlugins.values().forEach(l -> l.forEach(QInstanceEnricher::addEnricherPlugin));
+      validatorPlugins.values().forEach(l -> l.forEach(QInstanceValidator::addValidatorPlugin));
+   }
 }
