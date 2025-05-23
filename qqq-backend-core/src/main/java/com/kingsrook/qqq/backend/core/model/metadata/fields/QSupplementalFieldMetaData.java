@@ -22,6 +22,10 @@
 package com.kingsrook.qqq.backend.core.model.metadata.fields;
 
 
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+
+
 /*******************************************************************************
  ** Base-class for field-level meta-data defined by some supplemental module, etc,
  ** outside of qqq core
@@ -30,8 +34,42 @@ public abstract class QSupplementalFieldMetaData
 {
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   public boolean includeInFrontendMetaData()
+   {
+      return (false);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for type
     *******************************************************************************/
    public abstract String getType();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void enrich(QInstance qInstance, QFieldMetaData fieldMetaData)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void validate(QInstance qInstance, QFieldMetaData fieldMetaData, QInstanceValidator qInstanceValidator)
+   {
+      ////////////////////////
+      // noop in base class //
+      ////////////////////////
+   }
 
 }

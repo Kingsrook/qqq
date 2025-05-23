@@ -72,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -1148,6 +1149,21 @@ public class QInstanceValidator
             }
          }
       }
+
+      validateFieldSupplementalMetaData(field, qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void validateFieldSupplementalMetaData(QFieldMetaData field, QInstance qInstance)
+   {
+      for(QSupplementalFieldMetaData supplementalFieldMetaData : CollectionUtils.nonNullMap(field.getSupplementalMetaData()).values())
+      {
+         supplementalFieldMetaData.validate(qInstance, field, this);
+      }
    }
 
 
@@ -1701,6 +1717,8 @@ public class QInstanceValidator
 
                               validateSimpleCodeReference("Process " + processName + " code reference:", codeReference, expectedClass);
                            }
+
+                           validateFieldSupplementalMetaData(fieldMetaData, qInstance);
                         }
                      }
                   }
@@ -2238,8 +2256,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SafeVarargs
-   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
+   public void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
    {
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {
