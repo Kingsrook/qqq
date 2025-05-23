@@ -91,7 +91,7 @@ And then having a bug in the check permission logic on the _Light Bulb Inventory
 No!
 
 All of the (really important, even though application developers hate doing it) aspects of security - you don't need to write ANY code for dealing with that.
-Just tell QQQ what Authentication provider you want to use (e.g., https://auth0.com/[Auth0]), and - to paraphrase the old https://www.youtube.com/watch?v=YHzM4avGrKI[iMac ad] - there's no step 2.
+Just tell QQQ what Authentication provider you want to use (e.g., OAuth2 or https://auth0.com/[Auth0]), and - to paraphrase the old https://www.youtube.com/watch?v=YHzM4avGrKI[iMac ad] - there's no step 2.
 QQQ just does it.
 
 ''''

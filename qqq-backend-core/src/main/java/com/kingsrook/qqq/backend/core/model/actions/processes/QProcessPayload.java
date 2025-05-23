@@ -78,51 +78,13 @@ public class QProcessPayload
       try
       {
          List<QRecordEntityField> fieldList = getFieldList(this.getClass());
-         // originalRecordValues = new HashMap<>();
 
          for(QRecordEntityField qRecordEntityField : fieldList)
          {
             Serializable value      = processState.getValues().get(qRecordEntityField.getFieldName());
             Object       typedValue = qRecordEntityField.convertValueType(value);
             qRecordEntityField.getSetter().invoke(this, typedValue);
-            // originalRecordValues.put(qRecordEntityField.getFieldName(), value);
          }
-
-         // for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
-         // {
-         //    List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(qRecordEntityAssociation.getAssociationAnnotation().name());
-         //    if(associatedRecords == null)
-         //    {
-         //       qRecordEntityAssociation.getSetter().invoke(this, (Object) null);
-         //    }
-         //    else
-         //    {
-         //       List<QRecordEntity> associatedEntityList = new ArrayList<>();
-         //       for(QRecord associatedRecord : CollectionUtils.nonNullList(associatedRecords))
-         //       {
-         //          associatedEntityList.add(QRecordEntity.fromQRecord(qRecordEntityAssociation.getAssociatedType(), associatedRecord));
-         //       }
-         //       qRecordEntityAssociation.getSetter().invoke(this, associatedEntityList);
-         //    }
-         // }
-
-         // for(QRecordEntityAssociation qRecordEntityAssociation : getAssociationList(this.getClass()))
-         // {
-         //    List<QRecord> associatedRecords = qRecord.getAssociatedRecords().get(qRecordEntityAssociation.getAssociationAnnotation().name());
-         //    if(associatedRecords == null)
-         //    {
-         //       qRecordEntityAssociation.getSetter().invoke(this, (Object) null);
-         //    }
-         //    else
-         //    {
-         //       List<QRecordEntity> associatedEntityList = new ArrayList<>();
-         //       for(QRecord associatedRecord : CollectionUtils.nonNullList(associatedRecords))
-         //       {
-         //          associatedEntityList.add(QRecordEntity.fromQRecord(qRecordEntityAssociation.getAssociatedType(), associatedRecord));
-         //       }
-         //       qRecordEntityAssociation.getSetter().invoke(this, associatedEntityList);
-         //    }
-         // }
       }
       catch(Exception e)
       {

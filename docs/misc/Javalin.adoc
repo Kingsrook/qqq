@@ -1,0 +1,109 @@
+== QQQ Middleware:  Javalin web server
+include::../variables.adoc[]
+
+QQQ provides a standard implementation of a middleware layer - that is - code that exists between the
+QQQ backend and user interface.  This implementation is a web server built using the https://javalin.io/[Javalin framework],
+packaged and deployed in the `qqq-middleware-javalin` maven module
+
+The de facto way to create a QQQ application server is to write a class which uses an instance of one of the
+subclasses of `QApplicationJavalinServer`.
+
+For example, if your application metadata is defined in a directory of yaml files, your server class could be implemented as:
+
+[source,java]
+.ConfigFileBasedQQQApplication usage example
+----
+public static void main(String[] args)
+{
+   try
+   {
+      String path = "src/main/resources/metadata";
+      ConfigFilesBasedQQQApplication application = new ConfigFilesBasedQQQApplication(path);
+      QApplicationJavalinServer javalinServer = new QApplicationJavalinServer(application);
+      javalinServer.start();
+   }
+   catch(Exception e)
+   {
+      LOG.error("Failed to start javalin server.  See stack trace for details.", e);
+   }
+}
+----
+
+A similar class exists if your metadata is produced by a package of Java MetaDataProducer objects:  `MetaDataProducerBasedQQQApplication`.
+
+=== QApplicationJavalinServer
+This class provides the bridge between your QQQ Application (e.g., your metadata) and the QQQ Middleware layer
+served by a Javalin web server.  It has several properties to control behaviors:
+
+* `Integer port` - (default `8000`) - port to use for serving HTTP.
+* `boolean serveFrontendMaterialDashboard` - (default `true`) whether to serve the javascript frontend provided
+in the maven artifact `qqq-frontend-material-dashboard`.
+* `boolean serveLegacyUnversionedMiddlewareAPI` - (default `true`) whether to serve a version the original implementation
+of the QQQ middleware, which current version of `qqq-frontend-material-dashboard` are compatible with.
+* `List<AbstractMiddlewareVersion> middlewareVersionList` - (default contains `MiddlewareVersionV1`) - list of
+newer, formally versioned implementations of the QQQ middleware interface to be served.
+* `Consumer<Javalin> javalinConfigurationCustomizer` - (default `null`) - optional hook to customize the
+javalin service object before it is started.
+* `List<QJavalinRouteProviderInterface> additionalRouteProviders` - (default `null`) - list of fully custom
+implementations of `QJavalinRouteProviderInterface`, to add additional endpoints to the javalin server.
+** _Note, you may first want to consider using JavalinRouteProviderMetaData instead - see below._
+* `QJavalinMetaData javalinMetaData` - (default `null`) - optional alternative place to define `JavalinMetaData` (vs.
+defining it in the `QInstance`). _Note that if it is set in both places, the one in the QApplicationJavalinServer
+is used._
+
+=== JavalinMetaData
+Certain behaviors of a QQQ Javalin server are configured in a declarative manner by adding a `QJavalinMetaData`
+object to the `supplementalMetaData` in your `QInstance` (or, as mentioned above, by setting it directly on the
+`QApplicationJavalinServer`):
+
+* `List<JavalinRouteProviderMetaData> routeProviders` - (default `null`) optional list of custom route providers to
+add to the Javalin server.  See below for details.
+* `String uploadedFileArchiveTableName` - (default `null`) - reference to a QQQ Table in your application instance,
+needed to support the Bulk Load process, as well as any other processes which need to accept an uploaded file
+as input.
+* `boolean loggerDisabled` - (default `false`)
+* `Function<QJavalinAccessLogger.LogEntry, Boolean> logFilter` - (default `null`)
+* `boolean queryWithoutLimitAllowed` - (default `false`)
+* `Integer queryWithoutLimitDefault` - (default `1000`)
+* `Level queryWithoutLimitLogLevel` - (default `INFO`)
+
+==== JavalinRouteProviderMetaData
+This type of metadata allows you to add additional http route providers to your Javalin instance, e.g., for
+serving static files or for running custom code from your application (in the form of QQQ Processes) to respond
+to HTTP requests.
+
+* `String hostedPath` - (required)
+* `String fileSystemPath` - (required for a static router)
+* `String processName` - required for a dynamic, process-based router.  Must be a process name within the QQQ Instance.
+See below for additional details
+* `List<String> methods` - required list of HTTP methods (verbs) that are served by the route provider
+* `QCodeReference routeAuthenticator - Optional reference to a class that implements `RouteAuthenticatorInterface`,
+to provide security authentication to all requests handled by the route provider.
+** A default implementation is provided as `SimpleRouteAuthenticator`, which requires that a user session be present
+to access paths served by the route provider.
+
+===== Process-based route provider processes
+If you define a `JavalinRouteProviderMetaData` with a `processName` (e.g., to serve dynamic HTTP responses from your javalin
+server), the process that you implement will be called to respond to any HTTP requests received by the javalin
+server which match the `hostedPath` and `methods` that are specified in the metadata.
+
+The QQQ javalin server will marshal request data from the javalin context into the process's payload, conforming to
+the shape of the `ProcessBasedRouterPayload` class.  Similarly, the http response will be built by taking values from
+the process's output/state conforming to the fields in that class.  As such, it is recommended to use a
+`ProcessBasedRouterPayload`  instance, as show in this example:
+
+[source,java]
+.Process-based router usage example (including ProcessBasedRouterPayload)
+----
+public class MyDynamicSiteProcessStep implements BackendStep
+{
+   @Override
+   public void run(RunBackendStepInput input, RunBackendStepOutput output) throws QException
+   {
+      ProcessBasedRouterPayload payload = input.getProcessPayload(ProcessBasedRouterPayload.class);
+      String path = payload.getPath();
+      payload.setResponseString("You requested: " + path);
+      output.setProcessPayload(payload);
+   }
+}
+----

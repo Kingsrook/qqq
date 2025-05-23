@@ -31,10 +31,8 @@ include::metaData/PermissionRules.adoc[leveloffset=+1]
 
 == Services
 
+include::misc/Javalin.adoc[leveloffset=+1]
 include::misc/ScheduledJobs.adoc[leveloffset=+1]
-
-=== Web server (Javalin)
-#todo#
 
 === API server (OpenAPI)
 #todo#
