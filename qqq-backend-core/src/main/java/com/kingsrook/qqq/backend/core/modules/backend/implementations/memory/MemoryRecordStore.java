@@ -63,12 +63,15 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
@@ -85,8 +88,11 @@ public class MemoryRecordStore
 
    private static MemoryRecordStore instance;
 
-   private Map<String, Map<Serializable, QRecord>> data;
-   private Map<String, Integer>                    nextSerials;
+   //////////////////////////////////////////////////////////
+   // these maps are: BackendIdentifier > tableName > data //
+   //////////////////////////////////////////////////////////
+   private Map<BackendIdentifier, Map<String, Map<Serializable, QRecord>>> data;
+   private Map<BackendIdentifier, Map<String, Integer>>                    nextSerials;
 
    private static boolean collectStatistics = false;
 
@@ -150,13 +156,30 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<Serializable, QRecord> getTableData(QTableMetaData table)
+   private Map<Serializable, QRecord> getTableData(QTableMetaData table) throws QException
    {
-      if(!data.containsKey(table.getName()))
+      BackendIdentifier                       backendIdentifier = getBackendIdentifier(table);
+      Map<String, Map<Serializable, QRecord>> dataForBackend    = data.computeIfAbsent(backendIdentifier, k -> new HashMap<>());
+      return (dataForBackend.computeIfAbsent(table.getName(), k -> new HashMap<>()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private BackendIdentifier getBackendIdentifier(QTableMetaData table) throws QException
+   {
+      BackendIdentifier     backendIdentifier     = NonVariant.getInstance();
+      QBackendMetaData      backendMetaData       = QContext.getQInstance().getBackend(table.getBackendName());
+      BackendVariantsConfig backendVariantsConfig = backendMetaData.getBackendVariantsConfig();
+      if(backendVariantsConfig != null)
       {
-         data.put(table.getName(), new HashMap<>());
+         String       variantType = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+         Serializable variantId   = BackendVariantsUtil.getVariantId(backendMetaData);
+         backendIdentifier = new Variant(variantType, variantId);
       }
-      return (data.get(table.getName()));
+      return backendIdentifier;
    }
 
 
@@ -329,7 +352,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> insert(InsertInput input, boolean returnInsertedRecords)
+   public List<QRecord> insert(InsertInput input, boolean returnInsertedRecords) throws QException
    {
       incrementStatistic(input);
 
@@ -344,7 +367,7 @@ public class MemoryRecordStore
       ////////////////////////////////////////
       // grab the next unique serial to use //
       ////////////////////////////////////////
-      Integer nextSerial = nextSerials.get(table.getName());
+      Integer nextSerial = getNextSerial(table);
       if(nextSerial == null)
       {
          nextSerial = 1;
@@ -407,9 +430,33 @@ public class MemoryRecordStore
          }
       }
 
-      nextSerials.put(table.getName(), nextSerial);
+      setNextSerial(table, nextSerial);
 
       return (outputRecords);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void setNextSerial(QTableMetaData table, Integer nextSerial) throws QException
+   {
+      BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      nextSerialsForBackend.put(table.getName(), nextSerial);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Integer getNextSerial(QTableMetaData table) throws QException
+   {
+      BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      return (nextSerialsForBackend.get(table.getName()));
    }
 
 
@@ -417,7 +464,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> update(UpdateInput input, boolean returnUpdatedRecords)
+   public List<QRecord> update(UpdateInput input, boolean returnUpdatedRecords) throws QException
    {
       if(input.getRecords() == null)
       {
@@ -462,7 +509,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public int delete(DeleteInput input)
+   public int delete(DeleteInput input) throws QException
    {
       if(input.getPrimaryKeys() == null)
       {
@@ -927,4 +974,58 @@ public class MemoryRecordStore
          return (filter.clone());
       }
    }
+
+
+
+   /***************************************************************************
+    ** key for the internal maps of this class - either for a non-variant version
+    ** of the memory backend, or for one based on variants.
+    ***************************************************************************/
+   private sealed interface BackendIdentifier permits NonVariant, Variant
+   {
+   }
+
+
+
+   /***************************************************************************
+    ** singleton, representing non-variant instance of memory backend.
+    ***************************************************************************/
+   private static final class NonVariant implements BackendIdentifier
+   {
+      private static NonVariant nonVariant = null;
+
+
+
+      /*******************************************************************************
+       ** Singleton constructor
+       *******************************************************************************/
+      private NonVariant()
+      {
+
+      }
+
+
+
+      /*******************************************************************************
+       ** Singleton accessor
+       *******************************************************************************/
+      public static NonVariant getInstance()
+      {
+         if(nonVariant == null)
+         {
+            nonVariant = new NonVariant();
+         }
+         return (nonVariant);
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** record representing a variant type & id
+    ***************************************************************************/
+   private record Variant(String type, Serializable id) implements BackendIdentifier
+   {
+   }
+
 }

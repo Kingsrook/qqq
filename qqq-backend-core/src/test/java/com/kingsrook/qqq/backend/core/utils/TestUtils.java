@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
@@ -114,9 +115,11 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TableAuto
 import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TriggerEvent;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheOf;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.cache.CacheUseCase;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.MockAuthenticationModule;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryModuleBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.mock.MockBackendModule;
 import com.kingsrook.qqq.backend.core.processes.implementations.basepull.BasepullConfiguration;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.basic.BasicETLProcess;
@@ -152,6 +155,10 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM           = "orderLine";
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
+
+   public static final String MEMORY_BACKEND_WITH_VARIANTS_NAME = "memoryWithVariants";
+   public static final String TABLE_NAME_MEMORY_VARIANT_OPTIONS = "memoryVariantOptions";
+   public static final String TABLE_NAME_MEMORY_VARIANT_DATA    = "memoryVariantData";
 
    public static final String PROCESS_NAME_GREET_PEOPLE             = "greet";
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
@@ -255,12 +262,48 @@ public class TestUtils
       qInstance.addMessagingProvider(defineEmailMessagingProvider());
       qInstance.addMessagingProvider(defineSESMessagingProvider());
 
+      defineMemoryBackendVariantUseCases(qInstance);
+
       defineWidgets(qInstance);
       defineApps(qInstance);
 
       qInstance.addScheduler(defineSimpleScheduler());
 
       return (qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void defineMemoryBackendVariantUseCases(QInstance qInstance)
+   {
+      qInstance.addBackend(new QBackendMetaData()
+         .withName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withBackendType(MemoryBackendModule.class)
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withOptionsTableName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withBackendSettingSourceFieldNameMap(Map.of(MemoryModuleBackendVariantSetting.PRIMARY_KEY, "id"))
+         ));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_DATA)
+         .withBackendName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+         .withBackendName(MEMORY_BACKEND_NAME) // note, the version without variants!
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
    }
 
 

@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostQueryCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
@@ -201,6 +202,60 @@ class MemoryBackendModuleTest extends BaseTest
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(1)));
       assertTrue(queryOutput.getRecords().stream().noneMatch(r -> r.getValueInteger("id").equals(2)));
       assertTrue(queryOutput.getRecords().stream().anyMatch(r -> r.getValueInteger("id").equals(3)));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testVariants() throws QException
+   {
+      ////////////////////////////////////
+      // insert our two variant options //
+      ////////////////////////////////////
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "People"),
+         new QRecord().withValue("id", 2).withValue("name", "Planets")
+      )));
+
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      // assert we fail if no variant set in session when working with a table that needs them //
+      ///////////////////////////////////////////////////////////////////////////////////////////
+      assertThatThrownBy(() -> new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Tom")
+      )))).hasMessageContaining("Could not find Backend Variant information");
+
+      ///////////////////////////////////////////////////////////
+      // set the variant in session, and assert we insert once //
+      ///////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 1));
+      Integer peopleId1 = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("name", "Tom")
+      ))).getRecords().get(0).getValueInteger("id");
+      assertEquals(1, peopleId1);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set the other variant - make sure we insert, and get the same serial (e.g., they differ per variant) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 2));
+      Integer planetId1 = new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA).withRecords(List.of(
+         new QRecord().withValue("name", "Mercury"),
+         new QRecord().withValue("name", "Venus"),
+         new QRecord().withValue("name", "Earth")
+      ))).getRecords().get(0).getValueInteger("id");
+      assertEquals(1, planetId1);
+
+      ////////////////////////////////////////////////////////
+      // make sure counts return what we expect per-variant //
+      ////////////////////////////////////////////////////////
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 2));
+      assertEquals(3, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
+
+      QContext.getQSession().setBackendVariants(Map.of(TestUtils.TABLE_NAME_MEMORY_VARIANT_OPTIONS, 1));
+      assertEquals(1, new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_MEMORY_VARIANT_DATA)).getCount());
+
    }
 
 
