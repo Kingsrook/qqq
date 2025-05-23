@@ -22,8 +22,11 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
+import java.io.Serializable;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendFieldMetaData;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
@@ -36,7 +39,10 @@ import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPILis
 public class FieldMetaData implements ToSchema
 {
    @OpenAPIExclude()
-   private QFieldMetaData wrapped;
+   private QFieldMetaData wrappedFull;
+
+   @OpenAPIExclude()
+   private QFrontendFieldMetaData wrappedFrontend;
 
 
 
@@ -46,7 +52,18 @@ public class FieldMetaData implements ToSchema
     *******************************************************************************/
    public FieldMetaData(QFieldMetaData wrapped)
    {
-      this.wrapped = wrapped;
+      this.wrappedFull = wrapped;
+   }
+
+
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public FieldMetaData(QFrontendFieldMetaData wrapped)
+   {
+      this.wrappedFrontend = wrapped;
    }
 
 
@@ -67,7 +84,7 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Unique name for this field within its container (table or process)")
    public String getName()
    {
-      return (this.wrapped.getName());
+      return (this.wrappedFull != null ? this.wrappedFull.getName() : this.wrappedFrontend.getName());
    }
 
 
@@ -78,7 +95,7 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("User-facing name for this field")
    public String getLabel()
    {
-      return (this.wrapped.getLabel());
+      return (this.wrappedFull != null ? this.wrappedFull.getLabel() : this.wrappedFrontend.getLabel());
    }
 
 
@@ -89,7 +106,8 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Data-type for this field") // todo enum
    public String getType()
    {
-      return (this.wrapped.getType() == null ? null : this.wrapped.getType().name());
+      QFieldType fieldType = this.wrappedFull != null ? this.wrappedFull.getType() : this.wrappedFrontend.getType();
+      return (fieldType == null ? null : fieldType.name());
    }
 
 
@@ -100,7 +118,8 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Indicate if a value in this field is required.")
    public Boolean getIsRequired()
    {
-      return (this.wrapped.getIsRequired());
+      return (this.wrappedFull != null ? this.wrappedFull.getIsRequired() : this.wrappedFrontend.getIsRequired());
+
    }
 
 
@@ -111,7 +130,7 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Indicate if user may edit the value in this field.")
    public Boolean getIsEditable()
    {
-      return (this.wrapped.getIsEditable());
+      return (this.wrappedFull != null ? this.wrappedFull.getIsEditable() : this.wrappedFrontend.getIsEditable());
    }
 
 
@@ -122,7 +141,10 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Indicate if this field should be hidden from users")
    public Boolean getIsHidden()
    {
-      return (this.wrapped.getIsHidden());
+      //////////////////////////////////////////////////
+      // frontend-fields are assumed to be non-hidden //
+      //////////////////////////////////////////////////
+      return (this.wrappedFull != null ? this.wrappedFull.getIsHidden() : false);
    }
 
 
@@ -133,7 +155,7 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Indicator of 'heavy' fields, which are not loaded by default.  e.g., some blobs or long-texts")
    public Boolean getIsHeavy()
    {
-      return (this.wrapped.getIsHeavy());
+      return (this.wrappedFull != null ? this.wrappedFull.getIsHeavy() : this.wrappedFrontend.getIsHeavy());
    }
 
 
@@ -144,7 +166,7 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("C-style format specifier for displaying values in this field.")
    public String getDisplayFormat()
    {
-      return (this.wrapped.getDisplayFormat());
+      return (this.wrappedFull != null ? this.wrappedFull.getDisplayFormat() : this.wrappedFrontend.getDisplayFormat());
    }
 
 
@@ -155,7 +177,8 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("Default value to use in this field.")
    public String getDefaultValue()
    {
-      return (this.wrapped.getDefaultValue() == null ? null : String.valueOf(this.wrapped.getDefaultValue()));
+      Serializable defaultValue = this.wrappedFull != null ? this.wrappedFull.getDefaultValue() : this.wrappedFrontend.getDefaultValue();
+      return (defaultValue == null ? null : String.valueOf(defaultValue));
    }
 
 
@@ -166,7 +189,8 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("If this field's values should come from a possible value source, then that PVS is named here.")
    public String getPossibleValueSourceName()
    {
-      return (this.wrapped.getPossibleValueSourceName());
+      return (this.wrappedFull != null ? this.wrappedFull.getPossibleValueSourceName() : this.wrappedFrontend.getPossibleValueSourceName());
+
    }
 
    // todo - PVS filter!!
@@ -181,11 +205,10 @@ public class FieldMetaData implements ToSchema
    @OpenAPIDescription("For String fields, the max length the field supports.")
    public Integer getMaxLength()
    {
-      return (this.wrapped.getMaxLength());
+      return (this.wrappedFull != null ? this.wrappedFull.getMaxLength() : this.wrappedFrontend.getMaxLength());
    }
 
    // todo behaviors?
-
 
 
 
@@ -196,7 +219,8 @@ public class FieldMetaData implements ToSchema
    @OpenAPIListItems(value = FieldAdornment.class, useRef = true)
    public List<FieldAdornment> getAdornments()
    {
-      return (this.wrapped.getAdornments() == null ? null : this.wrapped.getAdornments().stream().map(a -> new FieldAdornment(a)).toList());
+      List<com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment> fieldAdornments = this.wrappedFull != null ? this.wrappedFull.getAdornments() : this.wrappedFrontend.getAdornments();
+      return (fieldAdornments == null ? null : fieldAdornments.stream().map(a -> new FieldAdornment(a)).toList());
    }
 
    // todo help content
