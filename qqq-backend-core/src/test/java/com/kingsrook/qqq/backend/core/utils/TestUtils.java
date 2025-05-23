@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.dashboard.PersonsByCreateDateBarChart;
 import com.kingsrook.qqq.backend.core.actions.processes.BackendStep;
 import com.kingsrook.qqq.backend.core.actions.processes.person.addtopeoplesage.AddAge;
@@ -1070,7 +1070,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CheckAge extends RecordAutomationHandler
+   public static class CheckAge implements RecordAutomationHandlerInterface
    {
       public static String SUFFIX_FOR_MINORS = " (a minor)";
 
@@ -1119,7 +1119,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class FailAutomationForSith extends RecordAutomationHandler
+   public static class FailAutomationForSith implements RecordAutomationHandlerInterface
    {
 
       /*******************************************************************************
@@ -1142,7 +1142,7 @@ public class TestUtils
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class LogPersonUpdate extends RecordAutomationHandler
+   public static class LogPersonUpdate implements RecordAutomationHandlerInterface
    {
       public static List<Integer> updatedIds = new ArrayList<>();
 

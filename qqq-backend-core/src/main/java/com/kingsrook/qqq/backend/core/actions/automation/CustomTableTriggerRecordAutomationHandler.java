@@ -1,6 +1,6 @@
 /*
  * QQQ - Low-code Application Framework for Engineers.
- * Copyright (C) 2021-2022.  Kingsrook, LLC
+ * Copyright (C) 2021-2025.  Kingsrook, LLC
  * 651 N Broad St Ste 205 # 6917 | Middletown DE 19709 | United States
  * contact@kingsrook.com
  * https://github.com/Kingsrook/
@@ -22,11 +22,17 @@
 package com.kingsrook.qqq.backend.core.actions.automation;
 
 
-/*******************************************************************************
- ** Base class for custom-codes to run as an automation action
- *******************************************************************************/
-@Deprecated(since = "0.26.0 - when RecordAutomationHandlerInterface was introduced")
-public abstract class RecordAutomationHandler implements RecordAutomationHandlerInterface
-{
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.automation.RecordAutomationInput;
 
+
+/*******************************************************************************
+ ** interface to be implemented by one that wishes to execute custom table triggers
+ *******************************************************************************/
+public interface CustomTableTriggerRecordAutomationHandler extends RecordAutomationHandlerInterface
+{
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   boolean handlesThisInput(RecordAutomationInput recordAutomationInput) throws QException;
 }
