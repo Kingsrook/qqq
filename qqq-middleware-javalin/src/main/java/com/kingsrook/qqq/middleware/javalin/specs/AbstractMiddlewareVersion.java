@@ -374,7 +374,7 @@ public abstract class AbstractMiddlewareVersion
    /***************************************************************************
     **
     ***************************************************************************/
-   public void preExecute(Context context)
+   public void preExecute(Context context) throws QException
    {
       /////////////////////
       // noop at default //

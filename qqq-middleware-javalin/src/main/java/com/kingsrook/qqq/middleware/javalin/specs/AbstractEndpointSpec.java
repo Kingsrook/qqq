@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.AbstractMiddlewareExecutor;
@@ -160,6 +161,7 @@ public abstract class AbstractEndpointSpec<
 
       final Handler handler = context -> serveRequest(abstractMiddlewareVersion, context);
 
+      LOG.trace("Binding: " + completeOperation.getHttpMethod() + " " + fullPath);
       switch(completeOperation.getHttpMethod())
       {
          case GET -> ApiBuilder.get(fullPath, handler);
@@ -409,8 +411,12 @@ public abstract class AbstractEndpointSpec<
 
                if(jsonObject == null)
                {
-                  jsonObject = new JSONObject(context.body());
-                  context.attribute("jsonBody", jsonObject);
+                  String body = context.body();
+                  if(StringUtils.hasContent(body))
+                  {
+                     jsonObject = new JSONObject(body);
+                     context.attribute("jsonBody", jsonObject);
+                  }
                }
 
                return (jsonObject);
