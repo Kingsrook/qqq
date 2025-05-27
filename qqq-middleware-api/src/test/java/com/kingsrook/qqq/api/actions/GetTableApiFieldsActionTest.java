@@ -35,12 +35,14 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaData;
 import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceEnricher;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType.STRING;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -60,7 +62,16 @@ class GetTableApiFieldsActionTest extends BaseTest
     *******************************************************************************/
    private List<? extends QFieldMetaData> getFields(String tableName, String version) throws QException
    {
-      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withApiName(TestUtils.API_NAME).withTableName(tableName).withVersion(version)).getFields();
+      return (getFields(TestUtils.API_NAME, tableName, version));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private List<? extends QFieldMetaData> getFields(String apiName, String tableName, String version) throws QException
+   {
+      return new GetTableApiFieldsAction().execute(new GetTableApiFieldsInput().withApiName(apiName).withTableName(tableName).withVersion(version)).getFields();
    }
 
 
@@ -111,6 +122,49 @@ class GetTableApiFieldsActionTest extends BaseTest
       assertEquals(Set.of("a", "b", "c"), fieldListToNameSet.apply(getFields(TABLE_NAME, "1")));
       assertEquals(Set.of("a", "b", "c"), fieldListToNameSet.apply(getFields(TABLE_NAME, "2")));
       assertEquals(Set.of("a", "b", "d"), fieldListToNameSet.apply(getFields(TABLE_NAME, "3")));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testTablesNotFound() throws QException
+   {
+      String tableNameVersion2plus = "tableNameVersion2plus";
+      QInstance qInstance = QContext.getQInstance();
+      qInstance.addTable(new QTableMetaData()
+         .withName(tableNameVersion2plus)
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2")))
+         .withField(new QFieldMetaData("a", STRING)));
+
+      String tableNameVersion2through4 = "tableNameVersion2through4";
+      qInstance.addTable(new QTableMetaData()
+         .withName(tableNameVersion2through4)
+         .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2").withFinalVersion("4")))
+         .withField(new QFieldMetaData("a", STRING)));
+
+      String tableNameNoApis = "tableNameNoApis";
+      qInstance.addTable(new QTableMetaData()
+         .withName(tableNameNoApis)
+         .withField(new QFieldMetaData("a", STRING)));
+
+      new QInstanceEnricher(qInstance).enrich();
+
+      assertThatThrownBy(() -> getFields("no-such-table", "1")).isInstanceOf(QNotFoundException.class);
+
+      assertThatThrownBy(() -> getFields(tableNameVersion2plus, "1")).isInstanceOf(QNotFoundException.class);
+      getFields(tableNameVersion2plus, "2");
+      assertThatThrownBy(() -> getFields("noSuchApi", tableNameVersion2plus, "2")).isInstanceOf(QNotFoundException.class);
+
+      assertThatThrownBy(() -> getFields(tableNameVersion2through4, "1")).isInstanceOf(QNotFoundException.class);
+      getFields(tableNameVersion2through4, "2");
+      getFields(tableNameVersion2through4, "3");
+      getFields(tableNameVersion2through4, "4");
+      assertThatThrownBy(() -> getFields(tableNameVersion2through4, "5")).isInstanceOf(QNotFoundException.class);
+
+      assertThatThrownBy(() -> getFields(tableNameNoApis, "1")).isInstanceOf(QNotFoundException.class);
    }
 
 }

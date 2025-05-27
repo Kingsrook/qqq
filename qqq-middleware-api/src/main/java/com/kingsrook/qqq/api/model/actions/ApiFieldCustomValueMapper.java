@@ -24,6 +24,7 @@ package com.kingsrook.qqq.api.model.actions;
 
 import java.io.Serializable;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -70,11 +71,24 @@ public abstract class ApiFieldCustomValueMapper
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Deprecated(since = "0.26.0 changed QueryInput to QueryOrCountInputInterface")
    public void customizeFilterCriteria(QueryInput queryInput, QQueryFilter filter, QFilterCriteria criteria, String apiFieldName, ApiFieldMetaData apiFieldMetaData)
    {
       /////////////////////
       // noop by default //
       /////////////////////
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void customizeFilterCriteriaForQueryOrCount(QueryOrCountInputInterface input, QQueryFilter filter, QFilterCriteria criteria, String apiFieldName, ApiFieldMetaData apiFieldMetaData)
+   {
+      if(input instanceof QueryInput queryInput)
+      {
+         customizeFilterCriteria(queryInput, filter, criteria, apiFieldName, apiFieldMetaData);
+      }
    }
 
 
