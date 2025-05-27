@@ -1848,13 +1848,15 @@ public class QJavalinImplementation
       {
          String possibleValueSourceName = context.pathParam("possibleValueSourceName");
 
+         Map<String, Serializable> otherValues = getOtherValueForPossibleValueRequest(context);
+
          QPossibleValueSource pvs = qInstance.getPossibleValueSource(possibleValueSourceName);
          if(pvs == null)
          {
             throw (new QNotFoundException("Could not find possible value source " + possibleValueSourceName + " in this instance."));
          }
 
-         finishPossibleValuesRequest(context, possibleValueSourceName, null);
+         finishPossibleValuesRequest(context, possibleValueSourceName, null, otherValues);
       }
       catch(Exception e)
       {
@@ -1870,28 +1872,39 @@ public class QJavalinImplementation
    static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
    {
       QQueryFilter defaultQueryFilter = null;
+      Map<String, Serializable> otherValues = getOtherValueForPossibleValueRequest(context);
+
       if(field.getPossibleValueSourceFilter() != null)
       {
-         Map<String, Serializable> values = new HashMap<>();
-         if(context.formParamMap().containsKey("values"))
-         {
-            List<String> valuesParamList = context.formParamMap().get("values");
-            if(CollectionUtils.nullSafeHasContents(valuesParamList))
-            {
-               String valuesParam = valuesParamList.get(0);
-               values = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
-            }
-         }
-
          defaultQueryFilter = field.getPossibleValueSourceFilter().clone();
 
          String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
          PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
 
-         defaultQueryFilter.interpretValues(values, useCase);
+         defaultQueryFilter.interpretValues(otherValues, useCase);
       }
 
-      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter);
+      finishPossibleValuesRequest(context, field.getPossibleValueSourceName(), defaultQueryFilter, otherValues);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static Map<String, Serializable> getOtherValueForPossibleValueRequest(Context context) throws IOException
+   {
+      Map<String, Serializable> otherValues = new HashMap<>();
+      if(context.formParamMap().containsKey("values"))
+      {
+         List<String> valuesParamList = context.formParamMap().get("values");
+         if(CollectionUtils.nullSafeHasContents(valuesParamList))
+         {
+            String valuesParam = valuesParamList.get(0);
+            otherValues = JsonUtils.toObject(valuesParam, new TypeReference<>() {});
+         }
+      }
+      return otherValues;
    }
 
 
@@ -1899,7 +1912,7 @@ public class QJavalinImplementation
    /*******************************************************************************
     **
     *******************************************************************************/
-   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter) throws QException
+   static void finishPossibleValuesRequest(Context context, String possibleValueSourceName, QQueryFilter defaultFilter, Map<String, Serializable> otherValues) throws QException
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
@@ -1909,6 +1922,7 @@ public class QJavalinImplementation
       input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
       input.setDefaultQueryFilter(defaultFilter);
+      input.setOtherValues(otherValues);
 
       if(StringUtils.hasContent(ids))
       {
