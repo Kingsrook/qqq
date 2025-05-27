@@ -28,6 +28,7 @@ import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 
@@ -36,7 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
  ** Input data for the Count action
  **
  *******************************************************************************/
-public class CountInput extends AbstractTableActionInput
+public class CountInput extends AbstractTableActionInput implements QueryOrCountInputInterface
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;
