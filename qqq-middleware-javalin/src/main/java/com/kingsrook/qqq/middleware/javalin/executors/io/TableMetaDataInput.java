@@ -19,45 +19,48 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.specs.v1.utils;
-
-
-import com.kingsrook.qqq.middleware.javalin.specs.TagsInterface;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public enum TagsV1 implements TagsInterface
+public class TableMetaDataInput extends AbstractMiddlewareInput
 {
-   AUTHENTICATION("Authentication"),
-   GENERAL("General"),
-   TABLES("Tables"),
-   PROCESSES("Processes"),
-   REPORTS("Reports"),
-   WIDGETS("Widgets");
-
-
-   private final String text;
+   private String tableName;
 
 
 
-   /***************************************************************************
+   /*******************************************************************************
+    ** Getter for tableName
     **
-    ***************************************************************************/
-   TagsV1(String text)
+    *******************************************************************************/
+   public String getTableName()
    {
-      this.text = text;
+      return tableName;
    }
 
 
 
    /*******************************************************************************
-    ** Getter for text
+    ** Setter for tableName
     **
     *******************************************************************************/
-   public String getText()
+   public void setTableName(String tableName)
    {
-      return text;
+      this.tableName = tableName;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableName
+    **
+    *******************************************************************************/
+   public TableMetaDataInput withTableName(String tableName)
+   {
+      this.tableName = tableName;
+      return (this);
+   }
+
 }

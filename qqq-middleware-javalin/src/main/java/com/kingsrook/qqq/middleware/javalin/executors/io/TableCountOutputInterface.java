@@ -19,45 +19,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.specs.v1.utils;
-
-
-import com.kingsrook.qqq.middleware.javalin.specs.TagsInterface;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public enum TagsV1 implements TagsInterface
+public interface TableCountOutputInterface extends AbstractMiddlewareOutputInterface
 {
-   AUTHENTICATION("Authentication"),
-   GENERAL("General"),
-   TABLES("Tables"),
-   PROCESSES("Processes"),
-   REPORTS("Reports"),
-   WIDGETS("Widgets");
-
-
-   private final String text;
-
-
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   void setCount(Long count);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   TagsV1(String text)
-   {
-      this.text = text;
-   }
+   void setDistinctCount(Long count);
 
-
-
-   /*******************************************************************************
-    ** Getter for text
-    **
-    *******************************************************************************/
-   public String getText()
-   {
-      return text;
-   }
 }

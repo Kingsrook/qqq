@@ -19,45 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.specs.v1.utils;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
-import com.kingsrook.qqq.middleware.javalin.specs.TagsInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public enum TagsV1 implements TagsInterface
+public interface TableMetaDataOutputInterface extends AbstractMiddlewareOutputInterface
 {
-   AUTHENTICATION("Authentication"),
-   GENERAL("General"),
-   TABLES("Tables"),
-   PROCESSES("Processes"),
-   REPORTS("Reports"),
-   WIDGETS("Widgets");
-
-
-   private final String text;
-
-
-
    /***************************************************************************
     **
     ***************************************************************************/
-   TagsV1(String text)
-   {
-      this.text = text;
-   }
-
-
-
-   /*******************************************************************************
-    ** Getter for text
-    **
-    *******************************************************************************/
-   public String getText()
-   {
-      return text;
-   }
+   void setTableMetaData(QFrontendTableMetaData tableMetaData);
 }

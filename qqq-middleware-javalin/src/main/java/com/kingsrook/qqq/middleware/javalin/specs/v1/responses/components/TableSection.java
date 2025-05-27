@@ -22,25 +22,21 @@
 package com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components;
 
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.ToSchema;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIDescription;
 import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIExclude;
-import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIListItems;
-import com.kingsrook.qqq.middleware.javalin.schemabuilder.annotations.OpenAPIMapKnownEntries;
 
 
 /***************************************************************************
  **
  ***************************************************************************/
-public class TableMetaDataLight implements ToSchema
+public class TableSection implements ToSchema
 {
    @OpenAPIExclude()
-   protected QFrontendTableMetaData wrapped;
+   private QFieldSection wrapped;
 
 
 
@@ -48,9 +44,9 @@ public class TableMetaDataLight implements ToSchema
     ** Constructor
     **
     *******************************************************************************/
-   public TableMetaDataLight(QFrontendTableMetaData wrapped)
+   public TableSection(QFieldSection section)
    {
-      this.wrapped = wrapped;
+      this.wrapped = section;
    }
 
 
@@ -59,7 +55,7 @@ public class TableMetaDataLight implements ToSchema
     ** Constructor
     **
     *******************************************************************************/
-   public TableMetaDataLight()
+   public TableSection()
    {
    }
 
@@ -68,7 +64,7 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Unique name for this table within the QQQ Instance")
+   @OpenAPIDescription("Unique identifier for this section within this table")
    public String getName()
    {
       return (this.wrapped.getName());
@@ -79,7 +75,7 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("User-facing name for this table")
+   @OpenAPIDescription("User-facing label to display for this section")
    public String getLabel()
    {
       return (this.wrapped.getLabel());
@@ -90,10 +86,32 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Boolean indicator of whether the table should be shown to users or not")
-   public Boolean getIsHidden()
+   @OpenAPIDescription("Importance of this section (T1, T2, or T3)")
+   public String getTier()
    {
-      return (this.wrapped.getIsHidden());
+      return (this.wrapped.getTier().name());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("List of field names to include in this section.")
+   public List<String> getFieldNames()
+   {
+      return (this.wrapped.getFieldNames());
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @OpenAPIDescription("Name of a widget in this QQQ instance to include in this section (instead of fields).")
+   public String getWidgetName()
+   {
+      return (this.wrapped.getWidgetName());
    }
 
 
@@ -102,7 +120,6 @@ public class TableMetaDataLight implements ToSchema
     **
     ***************************************************************************/
    @OpenAPIDescription("Icon to display for the table")
-   @OpenAPIMapKnownEntries(value = Icon.class, useRef = true)
    public Icon getIcon()
    {
       return (this.wrapped.getIcon() == null ? null : new Icon(this.wrapped.getIcon()));
@@ -113,11 +130,10 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("List of strings describing actions that are supported by the backend application for the table.")
-   @OpenAPIListItems(value = String.class) // todo - better, enum
-   public List<String> getCapabilities()
+   @OpenAPIDescription("Whether or not to hide this section")
+   public Boolean isHidden()
    {
-      return (new ArrayList<>(this.wrapped.getCapabilities()));
+      return (this.wrapped.getIsHidden());
    }
 
 
@@ -125,10 +141,10 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Boolean to indicate if the user has read permission for the table.")
-   public Boolean getReadPermission()
+   @OpenAPIDescription("Layout suggestion, for how many columns of a 12-grid this section should use.")
+   public Integer getGridColumns()
    {
-      return (this.wrapped.getReadPermission());
+      return (this.wrapped.getGridColumns());
    }
 
 
@@ -136,52 +152,8 @@ public class TableMetaDataLight implements ToSchema
    /***************************************************************************
     **
     ***************************************************************************/
-   @OpenAPIDescription("Boolean to indicate if the user has insert permission for the table.")
-   public Boolean getInsertPermission()
-   {
-      return (this.wrapped.getInsertPermission());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Boolean to indicate if the user has edit permission for the table.")
-   public Boolean getEditPermission()
-   {
-      return (this.wrapped.getEditPermission());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Boolean to indicate if the user has delete permission for the table.")
-   public Boolean getDeletePermission()
-   {
-      return (this.wrapped.getDeletePermission());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("If the table uses variants, this is the user-facing label for the table that supplies variants for this table.")
-   public String getVariantTableLabel()
-   {
-      return (this.wrapped.getVariantTableLabel());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @OpenAPIDescription("Help Contents for this table.") // todo describe more
-   public Map<String, List<QHelpContent>> getHelpContents()
+   @OpenAPIDescription("Help Contents for this section table.") // todo describe more
+   public List<QHelpContent> getHelpContents()
    {
       return (this.wrapped.getHelpContents());
    }

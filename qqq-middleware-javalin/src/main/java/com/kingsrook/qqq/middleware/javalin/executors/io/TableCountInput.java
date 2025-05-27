@@ -19,45 +19,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.middleware.javalin.specs.v1.utils;
-
-
-import com.kingsrook.qqq.middleware.javalin.specs.TagsInterface;
+package com.kingsrook.qqq.middleware.javalin.executors.io;
 
 
 /*******************************************************************************
  **
  *******************************************************************************/
-public enum TagsV1 implements TagsInterface
+public class TableCountInput extends TableQueryOrCountInput
 {
-   AUTHENTICATION("Authentication"),
-   GENERAL("General"),
-   TABLES("Tables"),
-   PROCESSES("Processes"),
-   REPORTS("Reports"),
-   WIDGETS("Widgets");
-
-
-   private final String text;
+   private Boolean includeDistinct = false;
 
 
 
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   TagsV1(String text)
+   /*******************************************************************************
+    ** Getter for includeDistinct
+    *******************************************************************************/
+   public Boolean getIncludeDistinct()
    {
-      this.text = text;
+      return (this.includeDistinct);
    }
 
 
 
    /*******************************************************************************
-    ** Getter for text
-    **
+    ** Setter for includeDistinct
     *******************************************************************************/
-   public String getText()
+   public void setIncludeDistinct(Boolean includeDistinct)
    {
-      return text;
+      this.includeDistinct = includeDistinct;
    }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for includeDistinct
+    *******************************************************************************/
+   public TableCountInput withIncludeDistinct(Boolean includeDistinct)
+   {
+      this.includeDistinct = includeDistinct;
+      return (this);
+   }
+
 }

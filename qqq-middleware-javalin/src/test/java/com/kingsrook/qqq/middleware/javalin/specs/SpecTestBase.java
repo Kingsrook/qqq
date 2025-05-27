@@ -109,6 +109,8 @@ public abstract class SpecTestBase
          service = null;
       }
 
+      TestMiddlewareVersion testMiddlewareVersion = new TestMiddlewareVersion();
+
       if(service == null)
       {
          service = Javalin.create(config ->
@@ -117,18 +119,47 @@ public abstract class SpecTestBase
 
                AbstractEndpointSpec<?, ?, ?> spec = getSpec();
                spec.setQInstance(qInstance);
-               config.router.apiBuilder(() -> spec.defineRoute(getVersion()));
+               config.router.apiBuilder(() -> spec.defineRoute(testMiddlewareVersion, getVersion()));
 
                for(AbstractEndpointSpec<?, ?, ?> additionalSpec : getAdditionalSpecs())
                {
                   additionalSpec.setQInstance(qInstance);
-                  config.router.apiBuilder(() -> additionalSpec.defineRoute(getVersion()));
+                  config.router.apiBuilder(() -> additionalSpec.defineRoute(testMiddlewareVersion, getVersion()));
                }
             }
          ).start(PORT);
       }
 
       TestUtils.primeTestDatabase();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static class TestMiddlewareVersion extends AbstractMiddlewareVersion
+   {
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public String getVersion()
+      {
+         return "test";
+      }
+
+
+
+      /***************************************************************************
+       **
+       ***************************************************************************/
+      @Override
+      public List<AbstractEndpointSpec<?, ?, ?>> getEndpointSpecs()
+      {
+         return List.of();
+      }
    }
 
 

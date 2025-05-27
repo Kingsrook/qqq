@@ -87,11 +87,13 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedViewsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryModuleBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.processes.implementations.mock.MockBackendStep;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.ConnectionManager;
 import com.kingsrook.qqq.backend.module.rdbms.jdbc.QueryManager;
@@ -113,6 +115,10 @@ public class TestUtils
 
    public static final String TABLE_NAME_PERSON = "person";
    public static final String TABLE_NAME_PET    = "pet";
+
+   public static final String MEMORY_BACKEND_WITH_VARIANTS_NAME = "memoryWithVariants";
+   public static final String TABLE_NAME_MEMORY_VARIANT_OPTIONS = "memoryVariantOptions";
+   public static final String TABLE_NAME_MEMORY_VARIANT_DATA    = "memoryVariantData";
 
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP             = "simpleSleep";
@@ -190,6 +196,8 @@ public class TestUtils
       qInstance.addReport(definePersonsReport());
       qInstance.addPossibleValueSource(definePossibleValueSourcePerson());
       defineWidgets(qInstance);
+
+      defineMemoryBackendVariantUseCases(qInstance);
 
       List<JavalinRouteProviderMetaData> routeProviders = new ArrayList<>();
       routeProviders.add(new JavalinRouteProviderMetaData()
@@ -832,4 +840,39 @@ public class TestUtils
          )));
       }
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void defineMemoryBackendVariantUseCases(QInstance qInstance)
+   {
+      qInstance.addBackend(new QBackendMetaData()
+         .withName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withBackendType(MemoryBackendModule.class)
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withOptionsTableName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withBackendSettingSourceFieldNameMap(Map.of(MemoryModuleBackendVariantSetting.PRIMARY_KEY, "id"))
+         ));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_DATA)
+         .withBackendName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+         .withBackendName(BACKEND_NAME_MEMORY) // note, the version without variants!
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+   }
+
 }
