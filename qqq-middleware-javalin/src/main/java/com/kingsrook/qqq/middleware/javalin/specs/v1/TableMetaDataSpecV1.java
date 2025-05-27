@@ -25,7 +25,12 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.TableMetaDataExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.io.TableMetaDataInput;
@@ -33,6 +38,7 @@ import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicOperation;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicResponse;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.TableMetaDataResponseV1;
+import com.kingsrook.qqq.middleware.javalin.specs.v1.utils.MetaDataSpecUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.utils.TagsV1;
 import com.kingsrook.qqq.openapi.model.Example;
 import com.kingsrook.qqq.openapi.model.HttpMethod;
@@ -116,11 +122,32 @@ public class TableMetaDataSpecV1 extends AbstractEndpointSpec<TableMetaDataInput
    @Override
    public BasicResponse defineBasicSuccessResponse()
    {
-      QFrontendTableMetaData frontendTableMetaData = null; // todo
-
       Map<String, Example> examples = new LinkedHashMap<>();
-      examples.put("TODO", new Example()
-         .withValue(new TableMetaDataResponseV1().withTableMetaData(frontendTableMetaData)));
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      // double-wrap the context here, so the instance will exist when the system-user-session is created //
+      // to avoid warnings out of system-user-session about there not being an instance in context.       //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////
+      QInstance exampleInstance = MetaDataSpecUtils.getExampleInstance();
+      QContext.withTemporaryContext(new CapturedContext(exampleInstance, null), () ->
+      {
+         QContext.withTemporaryContext(new CapturedContext(exampleInstance, new QSystemUserSession()), () ->
+         {
+            String                   tableName             = "person";
+            AbstractTableActionInput actionInput           = new com.kingsrook.qqq.backend.core.model.actions.metadata.TableMetaDataInput().withTableName(tableName);
+            QFrontendTableMetaData   frontendTableMetaData = new QFrontendTableMetaData(actionInput, exampleInstance.getBackendForTable(tableName), exampleInstance.getTable(tableName), true, true);
+
+            try
+            {
+               examples.put("Example", new Example()
+                  .withValue(new TableMetaDataResponseV1().withTableMetaData(frontendTableMetaData)));
+            }
+            catch(Exception e)
+            {
+               examples.put("Example", new Example().withValue("Error building example: " + e.getMessage()));
+            }
+         });
+      });
 
       return new BasicResponse("""
          The full table metadata""",
