@@ -1506,6 +1506,17 @@ public class QInstanceEnricher
 
 
 
+   /*******************************************************************************
+    ** Getter for enricherPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> getEnricherPlugins()
+   {
+      return enricherPlugins;
+   }
+
+
+
    /***************************************************************************
     ** scan the classpath for classes in the specified package name which
     ** implement the QInstanceEnricherPluginInterface - any found get added

@@ -305,6 +305,17 @@ public class QInstanceValidator
 
 
    /*******************************************************************************
+    ** Getter for validatorPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> getValidatorPlugins()
+   {
+      return validatorPlugins;
+   }
+
+
+
+   /*******************************************************************************
     **
     *******************************************************************************/
    private <T> void runPlugins(Class<T> c, T t, QInstance qInstance)
