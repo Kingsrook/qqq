@@ -103,7 +103,7 @@ public class QMiddlewareApiSpecHandler
          for(AbstractMiddlewareVersion middlewareSpec : middlewareVersionList)
          {
             String version     = middlewareSpec.getVersion();
-            String versionPath = "/" + basePath + "/" + version;
+            String versionPath = "/" + basePath + middlewareSpec.getVersionBasePath();
             ApiBuilder.get(versionPath + "/", context -> doSpecHtml(context, version));
 
             ///////////////////////////////////////////
