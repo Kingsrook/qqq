@@ -24,7 +24,12 @@ package com.kingsrook.qqq.middleware.javalin.specs;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
 import io.javalin.Javalin;
@@ -38,7 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
  *******************************************************************************/
 public abstract class SpecTestBase
 {
-   private static int PORT = 6273;
+   protected static int PORT = 6273;
 
    protected static Javalin service;
 
@@ -109,28 +114,70 @@ public abstract class SpecTestBase
          service = null;
       }
 
-      TestMiddlewareVersion testMiddlewareVersion = new TestMiddlewareVersion();
-
       if(service == null)
       {
          service = Javalin.create(config ->
             {
-               QInstance qInstance = TestUtils.defineInstance();
+               QInstance qInstance;
+               try
+               {
+                  qInstance = defineQInstance();
+                  primeTestData(qInstance);
+               }
+               catch(Exception e)
+               {
+                  throw new RuntimeException(e);
+               }
+
+               AtomicReference<AbstractMiddlewareVersion> middlewareVersionRef = new AtomicReference<>();
+               QContext.withTemporaryContext(new CapturedContext(qInstance, new QSystemUserSession()), () ->
+                  middlewareVersionRef.set(getMiddlewareVersion()));
+               AbstractMiddlewareVersion middlewareVersion = middlewareVersionRef.get();
 
                AbstractEndpointSpec<?, ?, ?> spec = getSpec();
                spec.setQInstance(qInstance);
-               config.router.apiBuilder(() -> spec.defineRoute(testMiddlewareVersion, getVersion()));
+
+               String versionBasePath = middlewareVersion.getVersionBasePath();
+               config.router.apiBuilder(() -> spec.defineRoute(middlewareVersion, versionBasePath));
 
                for(AbstractEndpointSpec<?, ?, ?> additionalSpec : getAdditionalSpecs())
                {
                   additionalSpec.setQInstance(qInstance);
-                  config.router.apiBuilder(() -> additionalSpec.defineRoute(testMiddlewareVersion, getVersion()));
+                  config.router.apiBuilder(() -> additionalSpec.defineRoute(middlewareVersion, versionBasePath));
                }
             }
          ).start(PORT);
       }
+   }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected void primeTestData(QInstance qInstance) throws Exception
+   {
       TestUtils.primeTestDatabase();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected AbstractMiddlewareVersion getMiddlewareVersion()
+   {
+      return new TestMiddlewareVersion();
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   protected QInstance defineQInstance() throws QException
+   {
+      return (TestUtils.defineInstance());
    }
 
 
