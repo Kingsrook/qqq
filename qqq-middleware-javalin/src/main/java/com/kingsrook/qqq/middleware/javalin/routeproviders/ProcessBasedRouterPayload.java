@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessState;
 import com.kingsrook.qqq.backend.core.model.actions.processes.QProcessPayload;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -67,6 +68,46 @@ public class ProcessBasedRouterPayload extends QProcessPayload
    public ProcessBasedRouterPayload(ProcessState processState)
    {
       this.populateFromProcessState(processState);
+   }
+
+
+
+   /***************************************************************************
+    ** for the common use-case, get a single formParam by name (vs the list that the
+    ** actual proper formal interface would give).
+    ***************************************************************************/
+   public String getFormParam(String name)
+   {
+      if(formParams != null)
+      {
+         List<String> values = formParams.get(name);
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            return values.get(0);
+         }
+      }
+
+      return (null);
+   }
+
+
+
+   /***************************************************************************
+    ** for the common use-case, get a single queryParam by name (vs the list that the
+    ** actual proper formal interface would give).
+    ***************************************************************************/
+   public String getQueryParam(String name)
+   {
+      if(queryParams != null)
+      {
+         List<String> values = queryParams.get(name);
+         if(CollectionUtils.nullSafeHasContents(values))
+         {
+            return values.get(0);
+         }
+      }
+
+      return (null);
    }
 
 
