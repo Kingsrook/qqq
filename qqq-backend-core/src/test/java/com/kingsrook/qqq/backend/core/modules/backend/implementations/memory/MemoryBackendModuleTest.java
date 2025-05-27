@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
@@ -56,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
@@ -721,6 +723,38 @@ class MemoryBackendModuleTest extends BaseTest
             assertEquals("Flanders", aggregateResult.getGroupByValue(new GroupBy(QFieldType.STRING, "lastName")));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoins() throws QException
+   {
+      QContext.getQSession().setSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, List.of(true)));
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_ORDER).withRecords(List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)
+      )));
+
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_LINE_ITEM).withRecords(List.of(
+         new QRecord().withValue("sku", "A").withValue("orderId", 1),
+         new QRecord().withValue("sku", "B").withValue("orderId", 1),
+         new QRecord().withValue("sku", "A").withValue("orderId", 2)
+      )));
+
+      QueryOutput queryOutput = new QueryAction().execute(new QueryInput(TestUtils.TABLE_NAME_ORDER)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_LINE_ITEM)));
+      assertEquals(3, queryOutput.getRecords().size());
+
+      CountOutput countOutput = new CountAction().execute(new CountInput(TestUtils.TABLE_NAME_ORDER)
+         .withQueryJoin(new QueryJoin(TestUtils.TABLE_NAME_LINE_ITEM))
+         .withIncludeDistinctCount(true));
+      assertEquals(3, countOutput.getCount());
+      assertEquals(2, countOutput.getDistinctCount());
    }
 
 

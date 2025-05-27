@@ -33,10 +33,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
@@ -54,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -77,6 +80,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 
 /*******************************************************************************
@@ -335,17 +339,55 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Integer count(CountInput input) throws QException
+   public CountOutput count(CountInput input) throws QException
    {
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // set up a query input - we'll implement count by counting the records in a query output //
+      ////////////////////////////////////////////////////////////////////////////////////////////
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
+
       if(input.getFilter() != null)
       {
          queryInput.setFilter(input.getFilter().clone().withSkip(null).withLimit(null));
       }
+
+      if(input.getQueryJoins() != null)
+      {
+         queryInput.setQueryJoins(new ArrayList<>());
+         for(QueryJoin queryJoin : input.getQueryJoins())
+         {
+            queryInput.getQueryJoins().add(queryJoin.clone());
+         }
+      }
+
+      ///////////////////
+      // run the query //
+      ///////////////////
       List<QRecord> queryResult = query(queryInput);
 
-      return (queryResult.size());
+      ////////////////////////
+      // build count output //
+      ////////////////////////
+      CountOutput countOutput = new CountOutput();
+      countOutput.setCount(queryResult.size());
+
+      //////////////////////////////////////
+      // figure out distinct if requested //
+      //////////////////////////////////////
+      if(BooleanUtils.isTrue(input.getIncludeDistinctCount()))
+      {
+         QTableMetaData    table           = QContext.getQInstance().getTable(input.getTableName());
+         String            primaryKeyField = table.getPrimaryKeyField();
+         Set<Serializable> distinctValues  = new HashSet<>();
+         for(QRecord record : queryResult)
+         {
+            distinctValues.add(record.getValue(primaryKeyField));
+         }
+         countOutput.setDistinctCount(distinctValues.size());
+      }
+
+      return (countOutput);
    }
 
 
