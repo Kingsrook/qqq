@@ -29,12 +29,10 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
 
 
 /*******************************************************************************
- ** Sample of an entity that can be converted to & from a QRecord
+ ** Sample of an entity that is missing a TABLE_NAME field
  *******************************************************************************/
-public class Order extends QRecordEntity
+public class OrderWithoutTableName extends QRecordEntity
 {
-   public static final String TABLE_NAME = "order";
-
    @QField()
    private String orderNo;
 
@@ -66,7 +64,7 @@ public class Order extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for orderNo
     *******************************************************************************/
-   public Order withOrderNo(String orderNo)
+   public OrderWithoutTableName withOrderNo(String orderNo)
    {
       this.orderNo = orderNo;
       return (this);
@@ -97,7 +95,7 @@ public class Order extends QRecordEntity
    /*******************************************************************************
     ** Fluent setter for lineItems
     *******************************************************************************/
-   public Order withLineItems(List<LineItem> lineItems)
+   public OrderWithoutTableName withLineItems(List<LineItem> lineItems)
    {
       this.lineItems = lineItems;
       return (this);
