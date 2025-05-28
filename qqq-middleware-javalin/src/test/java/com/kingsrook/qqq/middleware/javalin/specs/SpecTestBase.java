@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
+import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -167,7 +168,9 @@ public abstract class SpecTestBase
     ***************************************************************************/
    protected AbstractMiddlewareVersion getMiddlewareVersion()
    {
-      return new TestMiddlewareVersion();
+      // todo - when we introduce v2, idk...
+      // there is getVersion method in the specs, i guess we could switch on that...
+      return new MiddlewareVersionV1();
    }
 
 
@@ -178,35 +181,6 @@ public abstract class SpecTestBase
    protected QInstance defineQInstance() throws QException
    {
       return (TestUtils.defineInstance());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private static class TestMiddlewareVersion extends AbstractMiddlewareVersion
-   {
-
-      /***************************************************************************
-       **
-       ***************************************************************************/
-      @Override
-      public String getVersion()
-      {
-         return "test";
-      }
-
-
-
-      /***************************************************************************
-       **
-       ***************************************************************************/
-      @Override
-      public List<AbstractEndpointSpec<?, ?, ?>> getEndpointSpecs()
-      {
-         return List.of();
-      }
    }
 
 
