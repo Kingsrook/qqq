@@ -53,25 +53,25 @@ public class QuerySpecUtils
     ***************************************************************************/
    public static RequestBody defineQueryOrCountRequestBody()
    {
+      Map<String, Schema> properties = new LinkedHashMap<>();
+      properties.put("filter", new Schema()
+         .withDescription("QueryFilter to specify matching records to be returned by the query")
+         .withRef("#/components/schemas/QueryFilter"));
+      properties.put("joins", new Schema()
+         .withDescription("QueryJoin objects to specify tables to be joined into the query")
+         .withType(Type.ARRAY)
+         .withItems(new Schema()
+            .withRef("#/components/schemas/QueryJoin")));
+      properties.put("tableVariant", new Schema()
+         .withDescription("For tables that use variant backends, specification of which variant to use.")
+         .withRef("#/components/schemas/TableVariant"));
+
       return new RequestBody()
          .withContent(Map.of(
             ContentType.APPLICATION_JSON.getMimeType(), new Content()
                .withSchema(new Schema()
                   .withType(Type.OBJECT)
-                  .withProperties(new LinkedHashMap<>(Map.of(
-                     "filter", new Schema()
-                        .withDescription("QueryFilter to specify matching records to be returned by the query")
-                        .withRef("#/components/schemas/QueryFilter"),
-                     "joins", new Schema()
-                        .withDescription("QueryJoin objects to specify tables to be joined into the query")
-                        .withType(Type.ARRAY)
-                        .withItems(new Schema()
-                           .withRef("#/components/schemas/QueryJoin")),
-                     "tableVariant", new Schema()
-                        .withDescription("For tables that use variant backends, specification of which variant to use.")
-                        .withRef("#/components/schemas/TableVariant")
-                  )))
-               )
+                  .withProperties(properties))
          ));
    }
 
