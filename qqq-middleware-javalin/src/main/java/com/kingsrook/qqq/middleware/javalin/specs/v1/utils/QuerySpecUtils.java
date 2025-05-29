@@ -24,6 +24,7 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1.utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -57,7 +58,7 @@ public class QuerySpecUtils
             ContentType.APPLICATION_JSON.getMimeType(), new Content()
                .withSchema(new Schema()
                   .withType(Type.OBJECT)
-                  .withProperties(Map.of(
+                  .withProperties(new LinkedHashMap<>(Map.of(
                      "filter", new Schema()
                         .withDescription("QueryFilter to specify matching records to be returned by the query")
                         .withRef("#/components/schemas/QueryFilter"),
@@ -69,7 +70,7 @@ public class QuerySpecUtils
                      "tableVariant", new Schema()
                         .withDescription("For tables that use variant backends, specification of which variant to use.")
                         .withRef("#/components/schemas/TableVariant")
-                  ))
+                  )))
                )
          ));
    }
