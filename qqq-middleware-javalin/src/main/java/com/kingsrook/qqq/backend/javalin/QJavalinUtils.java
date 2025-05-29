@@ -31,12 +31,15 @@ import com.kingsrook.qqq.backend.core.exceptions.QPermissionDeniedException;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.exceptions.QValueException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.utils.ExceptionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import io.javalin.http.Context;
 import org.eclipse.jetty.http.HttpStatus;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -45,7 +48,6 @@ import org.eclipse.jetty.http.HttpStatus;
 public class QJavalinUtils
 {
    private static final QLogger LOG = QLogger.getLogger(QJavalinUtils.class);
-
 
 
 
@@ -252,4 +254,32 @@ public class QJavalinUtils
       context.status(statusCode.getCode());
       context.result(JsonUtils.toJson(Map.of("error", errorMessage)));
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void handleQueryNullLimit(QJavalinMetaData javalinMetaData, QueryInput queryInput, Context context)
+   {
+      if(javalinMetaData == null)
+      {
+         javalinMetaData = new QJavalinMetaData();
+      }
+
+      boolean allowed = javalinMetaData.getQueryWithoutLimitAllowed();
+      if(!allowed)
+      {
+         if(queryInput.getFilter() == null)
+         {
+            queryInput.setFilter(new QQueryFilter());
+         }
+
+         queryInput.getFilter().setLimit(javalinMetaData.getQueryWithoutLimitDefault());
+         LOG.log(javalinMetaData.getQueryWithoutLimitLogLevel(), "Query request did not specify a limit, which is not allowed.  Using default instead", null,
+            logPair("defaultLimit", javalinMetaData.getQueryWithoutLimitDefault()),
+            logPair("path", context == null ? null : context.path()));
+      }
+   }
+
 }

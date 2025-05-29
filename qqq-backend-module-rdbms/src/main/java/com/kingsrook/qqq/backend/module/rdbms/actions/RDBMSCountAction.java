@@ -88,7 +88,19 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          CountOutput rs = new CountOutput();
          long mark = System.currentTimeMillis();
 
-         try(Connection connection = getConnection(countInput))
+         Connection connection;
+         boolean    needToCloseConnection = false;
+         if(countInput.getTransaction() != null && countInput.getTransaction() instanceof RDBMSTransaction rdbmsTransaction)
+         {
+            connection = rdbmsTransaction.getConnection();
+         }
+         else
+         {
+            connection = getConnection(countInput);
+            needToCloseConnection = true;
+         }
+
+         try
          {
             statement = connection.prepareStatement(sql);
 
@@ -130,6 +142,11 @@ public class RDBMSCountAction extends AbstractRDBMSAction implements CountInterf
          finally
          {
             logSQL(sql, params, mark);
+
+            if(needToCloseConnection)
+            {
+               connection.close();
+            }
          }
 
          return rs;

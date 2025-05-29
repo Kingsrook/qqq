@@ -55,6 +55,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueB
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -580,6 +581,14 @@ public class QInstanceEnricher
          {
             field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
          }
+      }
+
+      ////////////////////////////////////////////////////
+      // enrich any supplemental meta data on the field //
+      ////////////////////////////////////////////////////
+      for(QSupplementalFieldMetaData supplementalFieldMetaData : CollectionUtils.nonNullMap(field.getSupplementalMetaData()).values())
+      {
+         supplementalFieldMetaData.enrich(qInstance, field);
       }
 
       runPlugins(QFieldMetaData.class, field, qInstance);
@@ -1493,6 +1502,17 @@ public class QInstanceEnricher
    public static void removeAllEnricherPlugins()
    {
       enricherPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for enricherPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> getEnricherPlugins()
+   {
+      return enricherPlugins;
    }
 
 

@@ -32,6 +32,7 @@ import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.reporting.RecordPipe;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryHint;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 
 
@@ -42,7 +43,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterf
  ** CountInput, and AggregateInput}, with common attributes for all of these
  ** "read" operations (like, queryHints,
  *******************************************************************************/
-public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, Cloneable
+public class QueryInput extends AbstractTableActionInput implements QueryOrGetInputInterface, QueryOrCountInputInterface, Cloneable
 {
    private QBackendTransaction transaction;
    private QQueryFilter        filter;

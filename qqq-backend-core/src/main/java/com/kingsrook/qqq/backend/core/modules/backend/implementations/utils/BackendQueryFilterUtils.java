@@ -197,7 +197,7 @@ public class BackendQueryFilterUtils
    {
       String fieldName = field == null ? "__unknownField" : field.getName();
 
-      ListIterator<Serializable> valueListIterator = criterion.getValues().listIterator();
+      ListIterator<Serializable> valueListIterator = CollectionUtils.nonNullList(criterion.getValues()).listIterator();
       while(valueListIterator.hasNext())
       {
          Serializable criteriaValue = valueListIterator.next();

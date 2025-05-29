@@ -25,7 +25,6 @@ package com.kingsrook.qqq.middleware.javalin.specs.v1;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.metadata.QAuthenticationType;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.middleware.javalin.executors.AuthenticationMetaDataExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.io.AuthenticationMetaDataInput;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
@@ -121,17 +120,6 @@ public class AuthenticationMetaDataSpecV1 extends AbstractEndpointSpec<Authentic
                .withAudience("myapp.mydomain.com"))));
 
       return new BasicResponse("Successful Response", AuthenticationMetaDataResponseV1.class.getSimpleName(), examples);
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public void handleOutput(Context context, AuthenticationMetaDataResponseV1 output) throws Exception
-   {
-      context.result(JsonUtils.toJson(output));
    }
 
 }

@@ -84,7 +84,7 @@ public class MongoDBAggregateAction extends AbstractMongoDBAction implements Agg
          String                 backendTableName = getBackendTableName(table);
          MongoDBBackendMetaData backend          = (MongoDBBackendMetaData) aggregateInput.getBackend();
 
-         mongoClientContainer = openClient(backend, null); // todo - aggregate input has no transaction!?
+         mongoClientContainer = openClient(backend, aggregateInput.getTransaction());
          MongoDatabase             database   = mongoClientContainer.getMongoClient().getDatabase(backend.getDatabaseName());
          MongoCollection<Document> collection = database.getCollection(backendTableName);
 

@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetOutput;
@@ -569,7 +570,7 @@ public class QueryActionCacheHelper
 
          QQueryFilter filter = new QQueryFilter().withBooleanOperator(QQueryFilter.BooleanOperator.OR);
          sourceQueryInput.setFilter(filter);
-         sourceQueryInput.setCommonParamsFrom(cacheQueryInput);
+         ((QueryOrGetInputInterface) sourceQueryInput).setCommonParamsFrom(cacheQueryInput);
 
          for(List<Serializable> uniqueKeyValue : uniqueKeyValues)
          {

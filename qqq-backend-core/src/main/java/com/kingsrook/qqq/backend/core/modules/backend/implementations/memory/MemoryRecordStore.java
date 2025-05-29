@@ -33,10 +33,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.DateTimeGroupBy;
@@ -54,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.GroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByAggregate;
 import com.kingsrook.qqq.backend.core.model.actions.tables.aggregate.QFilterOrderByGroupBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
@@ -63,17 +66,21 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsUtil;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.utils.BackendQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 
 /*******************************************************************************
@@ -85,8 +92,11 @@ public class MemoryRecordStore
 
    private static MemoryRecordStore instance;
 
-   private Map<String, Map<Serializable, QRecord>> data;
-   private Map<String, Integer>                    nextSerials;
+   //////////////////////////////////////////////////////////
+   // these maps are: BackendIdentifier > tableName > data //
+   //////////////////////////////////////////////////////////
+   private Map<BackendIdentifier, Map<String, Map<Serializable, QRecord>>> data;
+   private Map<BackendIdentifier, Map<String, Integer>>                    nextSerials;
 
    private static boolean collectStatistics = false;
 
@@ -150,13 +160,31 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   private Map<Serializable, QRecord> getTableData(QTableMetaData table)
+   private Map<Serializable, QRecord> getTableData(QTableMetaData table) throws QException
    {
-      if(!data.containsKey(table.getName()))
+      BackendIdentifier                       backendIdentifier = getBackendIdentifier(table);
+      Map<String, Map<Serializable, QRecord>> dataForBackend    = data.computeIfAbsent(backendIdentifier, k -> new HashMap<>());
+      return (dataForBackend.computeIfAbsent(table.getName(), k -> new HashMap<>()));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private BackendIdentifier getBackendIdentifier(QTableMetaData table) throws QException
+   {
+      BackendIdentifier     backendIdentifier     = NonVariant.getInstance();
+      QBackendMetaData      backendMetaData       = QContext.getQInstance().getBackend(table.getBackendName());
+      BackendVariantsConfig backendVariantsConfig = backendMetaData.getBackendVariantsConfig();
+      if(backendVariantsConfig != null)
       {
-         data.put(table.getName(), new HashMap<>());
+         String       variantType   = backendMetaData.getBackendVariantsConfig().getVariantTypeKey();
+         QRecord      variantRecord = BackendVariantsUtil.getVariantRecord(backendMetaData);
+         Serializable variantId     = variantRecord.getValue(QContext.getQInstance().getTable(variantRecord.getTableName()).getPrimaryKeyField());
+         backendIdentifier = new Variant(variantType, variantId);
       }
-      return (data.get(table.getName()));
+      return backendIdentifier;
    }
 
 
@@ -311,17 +339,55 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public Integer count(CountInput input) throws QException
+   public CountOutput count(CountInput input) throws QException
    {
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      // set up a query input - we'll implement count by counting the records in a query output //
+      ////////////////////////////////////////////////////////////////////////////////////////////
       QueryInput queryInput = new QueryInput();
       queryInput.setTableName(input.getTableName());
+
       if(input.getFilter() != null)
       {
          queryInput.setFilter(input.getFilter().clone().withSkip(null).withLimit(null));
       }
+
+      if(input.getQueryJoins() != null)
+      {
+         queryInput.setQueryJoins(new ArrayList<>());
+         for(QueryJoin queryJoin : input.getQueryJoins())
+         {
+            queryInput.getQueryJoins().add(queryJoin.clone());
+         }
+      }
+
+      ///////////////////
+      // run the query //
+      ///////////////////
       List<QRecord> queryResult = query(queryInput);
 
-      return (queryResult.size());
+      ////////////////////////
+      // build count output //
+      ////////////////////////
+      CountOutput countOutput = new CountOutput();
+      countOutput.setCount(queryResult.size());
+
+      //////////////////////////////////////
+      // figure out distinct if requested //
+      //////////////////////////////////////
+      if(BooleanUtils.isTrue(input.getIncludeDistinctCount()))
+      {
+         QTableMetaData    table           = QContext.getQInstance().getTable(input.getTableName());
+         String            primaryKeyField = table.getPrimaryKeyField();
+         Set<Serializable> distinctValues  = new HashSet<>();
+         for(QRecord record : queryResult)
+         {
+            distinctValues.add(record.getValue(primaryKeyField));
+         }
+         countOutput.setDistinctCount(distinctValues.size());
+      }
+
+      return (countOutput);
    }
 
 
@@ -329,7 +395,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> insert(InsertInput input, boolean returnInsertedRecords)
+   public List<QRecord> insert(InsertInput input, boolean returnInsertedRecords) throws QException
    {
       incrementStatistic(input);
 
@@ -344,7 +410,7 @@ public class MemoryRecordStore
       ////////////////////////////////////////
       // grab the next unique serial to use //
       ////////////////////////////////////////
-      Integer nextSerial = nextSerials.get(table.getName());
+      Integer nextSerial = getNextSerial(table);
       if(nextSerial == null)
       {
          nextSerial = 1;
@@ -407,9 +473,33 @@ public class MemoryRecordStore
          }
       }
 
-      nextSerials.put(table.getName(), nextSerial);
+      setNextSerial(table, nextSerial);
 
       return (outputRecords);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void setNextSerial(QTableMetaData table, Integer nextSerial) throws QException
+   {
+      BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      nextSerialsForBackend.put(table.getName(), nextSerial);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private Integer getNextSerial(QTableMetaData table) throws QException
+   {
+      BackendIdentifier    backendIdentifier     = getBackendIdentifier(table);
+      Map<String, Integer> nextSerialsForBackend = nextSerials.computeIfAbsent(backendIdentifier, (k) -> new HashMap<>());
+      return (nextSerialsForBackend.get(table.getName()));
    }
 
 
@@ -417,7 +507,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public List<QRecord> update(UpdateInput input, boolean returnUpdatedRecords)
+   public List<QRecord> update(UpdateInput input, boolean returnUpdatedRecords) throws QException
    {
       if(input.getRecords() == null)
       {
@@ -462,7 +552,7 @@ public class MemoryRecordStore
    /*******************************************************************************
     **
     *******************************************************************************/
-   public int delete(DeleteInput input)
+   public int delete(DeleteInput input) throws QException
    {
       if(input.getPrimaryKeys() == null)
       {
@@ -927,4 +1017,58 @@ public class MemoryRecordStore
          return (filter.clone());
       }
    }
+
+
+
+   /***************************************************************************
+    ** key for the internal maps of this class - either for a non-variant version
+    ** of the memory backend, or for one based on variants.
+    ***************************************************************************/
+   private sealed interface BackendIdentifier permits NonVariant, Variant
+   {
+   }
+
+
+
+   /***************************************************************************
+    ** singleton, representing non-variant instance of memory backend.
+    ***************************************************************************/
+   private static final class NonVariant implements BackendIdentifier
+   {
+      private static NonVariant nonVariant = null;
+
+
+
+      /*******************************************************************************
+       ** Singleton constructor
+       *******************************************************************************/
+      private NonVariant()
+      {
+
+      }
+
+
+
+      /*******************************************************************************
+       ** Singleton accessor
+       *******************************************************************************/
+      public static NonVariant getInstance()
+      {
+         if(nonVariant == null)
+         {
+            nonVariant = new NonVariant();
+         }
+         return (nonVariant);
+      }
+   }
+
+
+
+   /***************************************************************************
+    ** record representing a variant type & id
+    ***************************************************************************/
+   private record Variant(String type, Serializable id) implements BackendIdentifier
+   {
+   }
+
 }

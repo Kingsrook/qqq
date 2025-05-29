@@ -85,7 +85,7 @@ public class TablesCustomPossibleValueProvider extends BasicCustomPossibleValueP
    /***************************************************************************
     **
     ***************************************************************************/
-   private boolean isTableAllowed(QTableMetaData table)
+   protected boolean isTableAllowed(QTableMetaData table)
    {
       if(table == null)
       {

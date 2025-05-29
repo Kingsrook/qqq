@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.api.actions.output.ApiOutputMapWrapper;
+import com.kingsrook.qqq.api.actions.output.ApiOutputQRecordWrapper;
+import com.kingsrook.qqq.api.actions.output.ApiOutputRecordWrapperInterface;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.api.model.APIVersion;
 import com.kingsrook.qqq.api.model.APIVersionRange;
@@ -85,14 +88,52 @@ public class QRecordApiAdapter
     *******************************************************************************/
    public static ArrayList<Map<String, Serializable>> qRecordsToApiMapList(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
    {
+      Map<String, ApiFieldCustomValueMapper> fieldValueMappers = getFieldValueMappers(records, tableName, apiName, apiVersion);
+
+      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         ApiOutputMapWrapper apiOutputMap = qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers, new ApiOutputMapWrapper(new LinkedHashMap<>()));
+         rs.add(apiOutputMap.getContents());
+      }
+
+      return (rs);
+   }
+
+
+
+   /*******************************************************************************
+    ** version of the qRecordToApiMap that returns QRecords, not maps.
+    ** useful for cases where we're staying inside QQQ, but working with an api-
+    ** versioned application.
+    *******************************************************************************/
+   public static List<QRecord> qRecordsToApiVersionedQRecordList(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
+   {
+      Map<String, ApiFieldCustomValueMapper> fieldValueMappers = getFieldValueMappers(records, tableName, apiName, apiVersion);
+
+      List<QRecord> rs = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         ApiOutputQRecordWrapper apiOutputQRecord = qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers, new ApiOutputQRecordWrapper(new QRecord().withTableName(tableName)));
+         rs.add(apiOutputQRecord.getContents());
+      }
+
+      return (rs);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static Map<String, ApiFieldCustomValueMapper> getFieldValueMappers(List<QRecord> records, String tableName, String apiName, String apiVersion) throws QException
+   {
       Map<String, ApiFieldCustomValueMapper> fieldValueMappers = new HashMap<>();
 
       List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
       for(QFieldMetaData field : tableApiFields)
       {
          ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
-         String           apiFieldName     = ApiFieldMetaData.getEffectiveApiFieldName(apiName, field);
-
          if(apiFieldMetaData.getCustomValueMapper() != null)
          {
             if(!fieldValueMappers.containsKey(apiFieldMetaData.getCustomValueMapper().getName()))
@@ -107,31 +148,24 @@ public class QRecordApiAdapter
             }
          }
       }
-
-      ArrayList<Map<String, Serializable>> rs = new ArrayList<>();
-      for(QRecord record : records)
-      {
-         rs.add(QRecordApiAdapter.qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers));
-      }
-
-      return (rs);
+      return fieldValueMappers;
    }
 
 
 
    /*******************************************************************************
-    ** private version of convert a QRecord to a map for the API - takes params to
+    ** private version of convert a QRecord to a map for the API (or, another
+    ** QRecord - whatever object is in the `O output` param). Takes params to
     ** support working in bulk w/ customizers much better.
     *******************************************************************************/
-   private static Map<String, Serializable> qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion, Map<String, ApiFieldCustomValueMapper> fieldValueMappers) throws QException
+   private static <C, O extends ApiOutputRecordWrapperInterface<C, O>> O qRecordToApiMap(QRecord record, String tableName, String apiName, String apiVersion, Map<String, ApiFieldCustomValueMapper> fieldValueMappers, O output) throws QException
    {
       if(record == null)
       {
          return (null);
       }
 
-      List<QFieldMetaData>                tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
-      LinkedHashMap<String, Serializable> outputRecord   = new LinkedHashMap<>();
+      List<QFieldMetaData> tableApiFields = GetTableApiFieldsAction.getTableApiFieldList(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, tableName));
 
       /////////////////////////////////////////
       // iterate over the table's api fields //
@@ -172,7 +206,7 @@ public class QRecordApiAdapter
             value = Base64.getEncoder().encodeToString(bytes);
          }
 
-         outputRecord.put(apiFieldName, value);
+         output.putValue(apiFieldName, value);
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,16 +221,18 @@ public class QRecordApiAdapter
             continue;
          }
 
-         ArrayList<Map<String, Serializable>> associationList = new ArrayList<>();
-         outputRecord.put(association.getName(), associationList);
+         ArrayList<O> associationList = new ArrayList<>();
 
          for(QRecord associatedRecord : CollectionUtils.nonNullList(CollectionUtils.nonNullMap(record.getAssociatedRecords()).get(association.getName())))
          {
-            associationList.add(qRecordToApiMap(associatedRecord, association.getAssociatedTableName(), apiName, apiVersion));
+            ApiOutputRecordWrapperInterface<C, O> apiOutputAssociation = output.newSibling(associatedRecord.getTableName());
+            associationList.add(qRecordToApiMap(associatedRecord, association.getAssociatedTableName(), apiName, apiVersion, fieldValueMappers, apiOutputAssociation.unwrap()));
          }
+
+         output.putAssociation(association.getName(), associationList);
       }
 
-      return (outputRecord);
+      return (output);
    }
 
 
