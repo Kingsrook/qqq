@@ -26,12 +26,12 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.middleware.javalin.executors.ManageSessionExecutor;
 import com.kingsrook.qqq.middleware.javalin.executors.io.ManageSessionInput;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
+import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicOperation;
 import com.kingsrook.qqq.middleware.javalin.specs.BasicResponse;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.BasicErrorResponseV1;
@@ -91,9 +91,9 @@ public class ManageSessionSpecV1 extends AbstractEndpointSpec<ManageSessionInput
     **
     ***************************************************************************/
    @Override
-   public ManageSessionResponseV1 serveRequest(Context context) throws Exception
+   public ManageSessionResponseV1 serveRequest(AbstractMiddlewareVersion abstractMiddlewareVersion, Context context) throws Exception
    {
-      ManageSessionResponseV1 result = super.serveRequest(context);
+      ManageSessionResponseV1 result = super.serveRequest(abstractMiddlewareVersion, context);
       if(result != null)
       {
          String sessionUuid = result.getUuid();
@@ -197,17 +197,6 @@ public class ManageSessionSpecV1 extends AbstractEndpointSpec<ManageSessionInput
             examples
          )
       );
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   @Override
-   public void handleOutput(Context context, ManageSessionResponseV1 output) throws Exception
-   {
-      context.result(JsonUtils.toJson(output));
    }
 
 }

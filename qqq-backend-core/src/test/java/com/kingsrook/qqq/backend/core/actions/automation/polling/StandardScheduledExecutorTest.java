@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -162,7 +162,7 @@ class StandardScheduledExecutorTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class CaptureSessionIdAutomationHandler extends RecordAutomationHandler
+   public static class CaptureSessionIdAutomationHandler implements RecordAutomationHandlerInterface
    {
       static String sessionId;
 

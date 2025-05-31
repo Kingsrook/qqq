@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.dashboard.widgets;
 
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
@@ -52,6 +53,7 @@ public class ChildRecordListData extends QWidgetData
    private Map<String, Serializable> defaultValuesForNewChildRecords;
    private Set<String>               disabledFieldsForNewChildRecords;
    private Map<String, String>       defaultValuesForNewChildRecordsFromParentFields;
+   private List<String>              omitFieldNames;
 
 
 
@@ -552,6 +554,37 @@ public class ChildRecordListData extends QWidgetData
    public ChildRecordListData withDefaultValuesForNewChildRecordsFromParentFields(Map<String, String> defaultValuesForNewChildRecordsFromParentFields)
    {
       this.defaultValuesForNewChildRecordsFromParentFields = defaultValuesForNewChildRecordsFromParentFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for omitFieldNames
+    *******************************************************************************/
+   public List<String> getOmitFieldNames()
+   {
+      return (this.omitFieldNames);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for omitFieldNames
+    *******************************************************************************/
+   public void setOmitFieldNames(List<String> omitFieldNames)
+   {
+      this.omitFieldNames = omitFieldNames;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for omitFieldNames
+    *******************************************************************************/
+   public ChildRecordListData withOmitFieldNames(List<String> omitFieldNames)
+   {
+      this.omitFieldNames = omitFieldNames;
       return (this);
    }
 

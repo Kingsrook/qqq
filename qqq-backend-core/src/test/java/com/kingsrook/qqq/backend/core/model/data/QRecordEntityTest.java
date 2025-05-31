@@ -33,6 +33,7 @@ import com.kingsrook.qqq.backend.core.model.data.testentities.Item;
 import com.kingsrook.qqq.backend.core.model.data.testentities.ItemWithPrimitives;
 import com.kingsrook.qqq.backend.core.model.data.testentities.LineItem;
 import com.kingsrook.qqq.backend.core.model.data.testentities.Order;
+import com.kingsrook.qqq.backend.core.model.data.testentities.OrderWithoutTableName;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DisplayFormat;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
@@ -582,7 +583,7 @@ class QRecordEntityTest extends BaseTest
       //////////////////////////////////
       // no TABLE_NAME in Order class //
       //////////////////////////////////
-      assertThatThrownBy(() -> Order.getTableName(Order.class));
+      assertThatThrownBy(() -> OrderWithoutTableName.getTableName(OrderWithoutTableName.class));
    }
 
 }

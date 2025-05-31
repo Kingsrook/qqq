@@ -299,6 +299,8 @@ public class MetaDataAction
 
       metaDataOutput.setHelpContents(Objects.requireNonNullElse(QContext.getQInstance().getHelpContent(), Collections.emptyMap()));
 
+      metaDataOutput.setSupplementalInstanceMetaData(QContext.getQInstance().getSupplementalMetaData());
+
       try
       {
          customizer.postProcess(metaDataOutput);

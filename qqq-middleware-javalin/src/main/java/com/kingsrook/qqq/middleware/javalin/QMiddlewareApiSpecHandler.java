@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -36,7 +35,6 @@ import com.kingsrook.qqq.backend.core.utils.YamlUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractMiddlewareVersion;
-import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import com.kingsrook.qqq.openapi.model.OpenAPI;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
@@ -100,18 +98,18 @@ public class QMiddlewareApiSpecHandler
          ////////////////////////////////////////////
          // default page for a version is its spec //
          ////////////////////////////////////////////
-         for(AbstractMiddlewareVersion middlewareSpec : middlewareVersionList)
+         for(AbstractMiddlewareVersion middlewareVersion : middlewareVersionList)
          {
-            String version     = middlewareSpec.getVersion();
-            String versionPath = "/" + basePath + "/" + version;
-            ApiBuilder.get(versionPath + "/", context -> doSpecHtml(context, version));
+            String version     = middlewareVersion.getVersion();
+            String versionPath = "/" + basePath + middlewareVersion.getVersionBasePath();
+            ApiBuilder.get(versionPath + "/", context -> doSpecHtml(middlewareVersion, context, version));
 
             ///////////////////////////////////////////
             // add known paths for specs & docs page //
             ///////////////////////////////////////////
-            ApiBuilder.get(versionPath + "/openapi.yaml", context -> doSpecYaml(context, version));
-            ApiBuilder.get(versionPath + "/openapi.json", context -> doSpecJson(context, version));
-            ApiBuilder.get(versionPath + "/openapi.html", context -> doSpecHtml(context, version));
+            ApiBuilder.get(versionPath + "/openapi.yaml", context -> doSpecYaml(middlewareVersion, context, version));
+            ApiBuilder.get(versionPath + "/openapi.json", context -> doSpecJson(middlewareVersion, context, version));
+            ApiBuilder.get(versionPath + "/openapi.html", context -> doSpecHtml(middlewareVersion, context, version));
          }
       });
    }
@@ -155,11 +153,11 @@ public class QMiddlewareApiSpecHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void doSpecYaml(Context context, String version)
+   private void doSpecYaml(AbstractMiddlewareVersion middlewareVersion, Context context, String version)
    {
       try
       {
-         OpenAPI openAPI = new MiddlewareVersionV1().generateOpenAPIModel(basePath);
+         OpenAPI openAPI = middlewareVersion.generateOpenAPIModel(basePath);
          context.contentType(ContentType.APPLICATION_YAML);
          context.result(YamlUtils.toYaml(openAPI));
       }
@@ -174,11 +172,11 @@ public class QMiddlewareApiSpecHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void doSpecJson(Context context, String version)
+   private void doSpecJson(AbstractMiddlewareVersion middlewareVersion, Context context, String version)
    {
       try
       {
-         OpenAPI openAPI = new MiddlewareVersionV1().generateOpenAPIModel(basePath);
+         OpenAPI openAPI = middlewareVersion.generateOpenAPIModel(basePath);
          context.contentType(ContentType.APPLICATION_JSON);
          context.result(JsonUtils.toJson(openAPI));
       }
@@ -210,11 +208,14 @@ public class QMiddlewareApiSpecHandler
 
       if(!StringUtils.hasContent(version))
       {
-         List<String> supportedVersions = middlewareVersionList.stream().map(msi -> msi.getVersion()).toList();
+         List<String> supportedVersions = middlewareVersionList.stream().map(mv -> mv.getVersion()).toList();
          version = supportedVersions.get(supportedVersions.size() - 1);
       }
 
-      doSpecHtml(context, version);
+      String finalVersion = version;
+      Optional<AbstractMiddlewareVersion> optionalMiddlewareVersion = middlewareVersionList.stream().filter(mv -> mv.getVersion().equals(finalVersion)).findFirst();
+
+      doSpecHtml(optionalMiddlewareVersion.orElseThrow(), context, version);
    }
 
 
@@ -222,7 +223,7 @@ public class QMiddlewareApiSpecHandler
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void doSpecHtml(Context context, String version)
+   private void doSpecHtml(AbstractMiddlewareVersion middlewareVersion, Context context, String version)
    {
       try
       {
@@ -240,13 +241,7 @@ public class QMiddlewareApiSpecHandler
          html = html.replace("{primaryColor}", "#444444");
          html = html.replace("{navLogoImg}", "<img id=\"navLogo\" slot=\"nav-logo\" src=\"/images/qqq-api-logo.png\" />");
 
-         Optional<AbstractMiddlewareVersion> middlewareSpec = middlewareVersionList.stream().filter(msi -> msi.getVersion().equals(version)).findFirst();
-         if(middlewareSpec.isEmpty())
-         {
-            throw (new QUserFacingException("Unrecognized version: " + version));
-         }
-
-         OpenAPI openAPI = middlewareSpec.get().generateOpenAPIModel(basePath);
+         OpenAPI openAPI = middlewareVersion.generateOpenAPIModel(basePath);
          html = html.replace("{title}", openAPI.getInfo().getTitle() + " - " + version);
 
          StringBuilder otherVersionOptions = new StringBuilder();

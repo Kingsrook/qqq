@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.api.model.APIVersion;
+import com.kingsrook.qqq.api.model.APIVersionRange;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsInput;
 import com.kingsrook.qqq.api.model.actions.GetTableApiFieldsOutput;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
@@ -39,10 +40,13 @@ import com.kingsrook.qqq.api.model.metadata.tables.ApiTableMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -51,6 +55,8 @@ import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
  *******************************************************************************/
 public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApiFieldsInput, GetTableApiFieldsOutput>
 {
+   private static final QLogger LOG = QLogger.getLogger(GetTableApiFieldsAction.class);
+
    private static Map<ApiNameVersionAndTableName, List<QFieldMetaData>>        fieldListCache = new HashMap<>();
    private static Map<ApiNameVersionAndTableName, Map<String, QFieldMetaData>> fieldMapCache  = new HashMap<>();
 
@@ -141,13 +147,16 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       QTableMetaData table = QContext.getQInstance().getTable(input.getTableName());
       if(table == null)
       {
-         throw (new QException("Unrecognized table name: " + input.getTableName()));
+         throw (new QNotFoundException("Unrecognized table name: " + input.getTableName()));
       }
 
-      // todo - verify the table is in this version?
-
       APIVersion version = new APIVersion(input.getVersion());
-      // todo - validate the version?
+
+      APIVersionRange tableApiVersionRange = getApiVersionRange(input.getApiName(), table);
+      if(!tableApiVersionRange.includes(version))
+      {
+         throw (new QNotFoundException("Table [" + input.getTableName() + "] was not found in this version of this api."));
+      }
 
       ///////////////////////////////////////////////////////
       // get fields on the table which are in this version //
@@ -176,6 +185,42 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       fields.sort(Comparator.comparing(QFieldMetaData::getLabel));
 
       return (new GetTableApiFieldsOutput().withFields(fields));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private APIVersionRange getApiVersionRange(String apiName, QTableMetaData table) throws QNotFoundException
+   {
+      ApiTableMetaDataContainer apiTableMetaDataContainer = ApiTableMetaDataContainer.of(table);
+      if(apiTableMetaDataContainer == null)
+      {
+         LOG.debug("Returning not found because table doesn't have an apiTableMetaDataContainer", logPair("tableName", table.getName()));
+         throw (new QNotFoundException("Table [" + table.getName() + "] was not found in this api."));
+      }
+
+      ApiTableMetaData apiTableMetaData = apiTableMetaDataContainer.getApis().get(apiName);
+      if(apiTableMetaData == null)
+      {
+         LOG.debug("Returning not found because api isn't present in table's apiTableMetaDataContainer", logPair("apiName", apiName), logPair("tableName", table.getName()));
+         throw (new QNotFoundException("Table [" + table.getName() + "] was not found in this api."));
+      }
+
+      if(apiTableMetaData.getInitialVersion() != null)
+      {
+         if(apiTableMetaData.getFinalVersion() != null)
+         {
+            return (APIVersionRange.betweenAndIncluding(apiTableMetaData.getInitialVersion(), apiTableMetaData.getFinalVersion()));
+         }
+         else
+         {
+            return (APIVersionRange.afterAndIncluding(apiTableMetaData.getInitialVersion()));
+         }
+      }
+
+      return (APIVersionRange.none());
    }
 
 

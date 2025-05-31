@@ -209,6 +209,7 @@ public abstract class QRecordEntity
       try
       {
          QRecord qRecord = new QRecord();
+         qRecord.setTableName(tableName());
 
          for(QRecordEntityField qRecordEntityField : getFieldList(this.getClass()))
          {

@@ -72,7 +72,7 @@ public class MongoDBCountAction extends AbstractMongoDBAction implements CountIn
          String                 backendTableName = getBackendTableName(table);
          MongoDBBackendMetaData backend          = (MongoDBBackendMetaData) countInput.getBackend();
 
-         mongoClientContainer = openClient(backend, null); // todo - count input has no transaction!?
+         mongoClientContainer = openClient(backend, countInput.getTransaction());
          MongoDatabase             database   = mongoClientContainer.getMongoClient().getDatabase(backend.getDatabaseName());
          MongoCollection<Document> collection = database.getCollection(backendTableName);
 

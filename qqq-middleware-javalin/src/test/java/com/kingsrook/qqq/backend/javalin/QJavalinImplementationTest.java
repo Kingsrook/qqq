@@ -563,7 +563,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
             .withQueryWithoutLimitDefault(3)
             .withQueryWithoutLimitLogLevel(Level.WARN);
 
-         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         QCollectingLogger collectingLogger = QLogger.activateCollectingLoggerForClass(QJavalinUtils.class);
 
          String filterJson = """
             {"criteria":[]}""";
@@ -583,7 +583,7 @@ class QJavalinImplementationTest extends QJavalinTestBase
       }
       finally
       {
-         QLogger.activateCollectingLoggerForClass(QJavalinImplementation.class);
+         QLogger.activateCollectingLoggerForClass(QJavalinUtils.class);
          resetMetaDataQueryWithoutLimitSettings();
       }
    }
