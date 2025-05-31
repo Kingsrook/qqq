@@ -119,6 +119,7 @@ public class QQueryFilterFormatter
          case NOT_BETWEEN -> rs.append(" is not ");
          case TRUE -> rs.append(" is True ");
          case FALSE -> rs.append(" is False ");
+         default -> rs.append(" ").append(StringUtils.allCapsToMixedCase(String.valueOf(criteria.getOperator())).replaceAll("_", " ")).append(" ");
       }
 
       List<Serializable> values = criteria.getValues();
