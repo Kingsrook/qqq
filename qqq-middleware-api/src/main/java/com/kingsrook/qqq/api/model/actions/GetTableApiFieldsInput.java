@@ -34,6 +34,12 @@ public class GetTableApiFieldsInput extends AbstractActionInput
    private String tableName;
    private String version;
 
+   /////////////////////////////////////////////////////////////////////////////////////
+   // by default, this action will throw if the input table isn't in the api version. //
+   // but, to preserve legacy behavior where that didn't happen, allow this input.    //
+   /////////////////////////////////////////////////////////////////////////////////////
+   private Boolean doCheckTableApiVersion = true;
+
 
 
    /*******************************************************************************
@@ -124,6 +130,37 @@ public class GetTableApiFieldsInput extends AbstractActionInput
    public GetTableApiFieldsInput withApiName(String apiName)
    {
       this.apiName = apiName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for doCheckTableApiVersion
+    *******************************************************************************/
+   public Boolean getDoCheckTableApiVersion()
+   {
+      return (this.doCheckTableApiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for doCheckTableApiVersion
+    *******************************************************************************/
+   public void setDoCheckTableApiVersion(Boolean doCheckTableApiVersion)
+   {
+      this.doCheckTableApiVersion = doCheckTableApiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for doCheckTableApiVersion
+    *******************************************************************************/
+   public GetTableApiFieldsInput withDoCheckTableApiVersion(Boolean doCheckTableApiVersion)
+   {
+      this.doCheckTableApiVersion = doCheckTableApiVersion;
       return (this);
    }
 

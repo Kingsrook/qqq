@@ -46,6 +46,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -153,7 +154,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
       APIVersion version = new APIVersion(input.getVersion());
 
       APIVersionRange tableApiVersionRange = getApiVersionRange(input.getApiName(), table);
-      if(!tableApiVersionRange.includes(version))
+      if(BooleanUtils.isTrue(input.getDoCheckTableApiVersion()) && !tableApiVersionRange.includes(version))
       {
          throw (new QNotFoundException("Table [" + input.getTableName() + "] was not found in this version of this api."));
       }
