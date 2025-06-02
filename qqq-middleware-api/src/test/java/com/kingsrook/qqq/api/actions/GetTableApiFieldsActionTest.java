@@ -66,6 +66,7 @@ class GetTableApiFieldsActionTest extends BaseTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -132,8 +133,8 @@ class GetTableApiFieldsActionTest extends BaseTest
    @Test
    void testTablesNotFound() throws QException
    {
-      String tableNameVersion2plus = "tableNameVersion2plus";
-      QInstance qInstance = QContext.getQInstance();
+      String    tableNameVersion2plus = "tableNameVersion2plus";
+      QInstance qInstance             = QContext.getQInstance();
       qInstance.addTable(new QTableMetaData()
          .withName(tableNameVersion2plus)
          .withSupplementalMetaData(new ApiTableMetaDataContainer().withApiTableMetaData(TestUtils.API_NAME, new ApiTableMetaData().withInitialVersion("2")))
@@ -165,6 +166,14 @@ class GetTableApiFieldsActionTest extends BaseTest
       assertThatThrownBy(() -> getFields(tableNameVersion2through4, "5")).isInstanceOf(QNotFoundException.class);
 
       assertThatThrownBy(() -> getFields(tableNameNoApis, "1")).isInstanceOf(QNotFoundException.class);
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // test the withDoCheckTableApiVersion input flag.                                                   //
+      // set up an input that'll fail (verify it fails) - then set the flag to false and make sure no fail //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      GetTableApiFieldsInput input = new GetTableApiFieldsInput().withApiName(TestUtils.API_NAME).withTableName(tableNameVersion2through4).withVersion("1");
+      assertThatThrownBy(() -> new GetTableApiFieldsAction().execute(input));
+      new GetTableApiFieldsAction().execute(input.withDoCheckTableApiVersion(false));
    }
 
 }
