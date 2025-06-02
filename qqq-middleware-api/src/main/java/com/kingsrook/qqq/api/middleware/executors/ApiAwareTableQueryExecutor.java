@@ -33,6 +33,7 @@ import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
+import com.kingsrook.qqq.api.utils.ApiQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
@@ -105,12 +106,12 @@ public class ApiAwareTableQueryExecutor extends TableQueryExecutor implements Ap
       // take care of managing order-by fields and criteria, which may not be in this version, etc //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       manageOrderByFields(filter, tableApiFields, badRequestMessages, apiName, queryInput);
-      QueryExecutorUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, queryInput);
+      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, queryInput);
 
       //////////////////////////////////////////
       // no more badRequest checks below here //
       //////////////////////////////////////////
-      QueryExecutorUtils.throwIfBadRequestMessages(badRequestMessages);
+      ApiQueryFilterUtils.throwIfBadRequestMessages(badRequestMessages);
 
       ///////////////////////
       // execute the query //

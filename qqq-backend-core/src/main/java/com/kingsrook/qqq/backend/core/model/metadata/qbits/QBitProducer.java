@@ -81,9 +81,9 @@ public interface QBitProducer
       ///////////////////////////////
       for(MetaDataProducerInterface<?> producer : producers)
       {
-         if(producer instanceof QBitComponentMetaDataProducer<?, ?>)
+         if(producer instanceof QBitComponentMetaDataProducerInterface<?,?>)
          {
-            QBitComponentMetaDataProducer<?, C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducer<?, C>) producer;
+            QBitComponentMetaDataProducerInterface<?,C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducerInterface<?,C>) producer;
             qBitComponentMetaDataProducer.setQBitConfig(qBitConfig);
          }
 

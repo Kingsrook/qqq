@@ -22,6 +22,7 @@
 package com.kingsrook.qqq.backend.core.model.metadata.qbits;
 
 
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerOutput;
 
 
@@ -32,41 +33,18 @@ import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerOutput;
  ** Specifically exists to accept the QBitConfig as a type parameter and a value,
  ** easily accessed in the producer's methods as getQBitConfig()
  *******************************************************************************/
-public abstract class QBitComponentMetaDataProducer<T extends MetaDataProducerOutput, C extends QBitConfig> implements QBitComponentMetaDataProducerInterface<T, C>
+public interface QBitComponentMetaDataProducerInterface<T extends MetaDataProducerOutput, C extends QBitConfig> extends MetaDataProducerInterface<T>
 {
-   private C qBitConfig = null;
-
-
 
    /*******************************************************************************
     ** Getter for qBitConfig
     *******************************************************************************/
-   @Override
-   public C getQBitConfig()
-   {
-      return (this.qBitConfig);
-   }
-
+   C getQBitConfig();
 
 
    /*******************************************************************************
     ** Setter for qBitConfig
     *******************************************************************************/
-   @Override
-   public void setQBitConfig(C qBitConfig)
-   {
-      this.qBitConfig = qBitConfig;
-   }
-
-
-
-   /*******************************************************************************
-    ** Fluent setter for qBitConfig
-    *******************************************************************************/
-   public QBitComponentMetaDataProducer<T, C> withQBitConfig(C qBitConfig)
-   {
-      this.qBitConfig = qBitConfig;
-      return (this);
-   }
+   void setQBitConfig(C qBitConfig);
 
 }

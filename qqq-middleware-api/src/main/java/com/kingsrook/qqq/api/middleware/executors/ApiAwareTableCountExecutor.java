@@ -29,6 +29,7 @@ import java.util.Objects;
 import com.kingsrook.qqq.api.actions.ApiImplementation;
 import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.metadata.ApiOperation;
+import com.kingsrook.qqq.api.utils.ApiQueryFilterUtils;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
 import com.kingsrook.qqq.backend.core.actions.permissions.TablePermissionSubType;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
@@ -81,12 +82,12 @@ public class ApiAwareTableCountExecutor extends TableCountExecutor implements Ap
       // take care of managing criteria, which may not be in this version, etc //
       ///////////////////////////////////////////////////////////////////////////
       QQueryFilter filter = Objects.requireNonNullElseGet(input.getFilter(), () -> new QQueryFilter());
-      QueryExecutorUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, countInput);
+      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, countInput);
 
       //////////////////////////////////////////
       // no more badRequest checks below here //
       //////////////////////////////////////////
-      QueryExecutorUtils.throwIfBadRequestMessages(badRequestMessages);
+      ApiQueryFilterUtils.throwIfBadRequestMessages(badRequestMessages);
 
       //
       CountAction countAction = new CountAction();

@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.api.middleware.executors;
+package com.kingsrook.qqq.api.utils;
 
 
 import java.util.List;
@@ -39,15 +39,15 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 
 
 /*******************************************************************************
- ** shared code for query & count executors
+ ** Utilities for working with Query Filters in the API (e.g., versioned field fun)
  *******************************************************************************/
-public class QueryExecutorUtils
+public class ApiQueryFilterUtils
 {
 
    /***************************************************************************
     **
     ***************************************************************************/
-   static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, QueryOrCountInputInterface input)
+   public static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, QueryOrCountInputInterface input)
    {
       for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
       {
@@ -85,7 +85,7 @@ public class QueryExecutorUtils
    /***************************************************************************
     *
     ***************************************************************************/
-   static void throwIfBadRequestMessages(List<String> badRequestMessages) throws QBadRequestException
+   public static void throwIfBadRequestMessages(List<String> badRequestMessages) throws QBadRequestException
    {
       if(!badRequestMessages.isEmpty())
       {
