@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -47,6 +48,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *******************************************************************************/
 class QRecordApiAdapterTest extends BaseTest
 {
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testNullInputRecord() throws QException
+   {
+      assertNull(QRecordApiAdapter.qRecordToApiMap(null, TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2022_Q4));
+   }
+
+
 
    /*******************************************************************************
     **
