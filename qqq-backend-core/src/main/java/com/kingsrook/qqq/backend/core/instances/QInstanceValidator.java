@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
@@ -72,6 +72,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.ValueTooLongBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
@@ -299,6 +300,17 @@ public class QInstanceValidator
    public static void removeAllValidatorPlugins()
    {
       validatorPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for validatorPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> getValidatorPlugins()
+   {
+      return validatorPlugins;
    }
 
 
@@ -1148,6 +1160,21 @@ public class QInstanceValidator
             }
          }
       }
+
+      validateFieldSupplementalMetaData(field, qInstance);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void validateFieldSupplementalMetaData(QFieldMetaData field, QInstance qInstance)
+   {
+      for(QSupplementalFieldMetaData supplementalFieldMetaData : CollectionUtils.nonNullMap(field.getSupplementalMetaData()).values())
+      {
+         supplementalFieldMetaData.validate(qInstance, field, this);
+      }
    }
 
 
@@ -1340,7 +1367,7 @@ public class QInstanceValidator
                numberSet++;
                if(preAssertionsForCodeReference(action.getCodeReference(), actionPrefix))
                {
-                  validateSimpleCodeReference(actionPrefix + "code reference: ", action.getCodeReference(), RecordAutomationHandler.class);
+                  validateSimpleCodeReference(actionPrefix + "code reference: ", action.getCodeReference(), RecordAutomationHandlerInterface.class);
                }
             }
 
@@ -1701,6 +1728,8 @@ public class QInstanceValidator
 
                               validateSimpleCodeReference("Process " + processName + " code reference:", codeReference, expectedClass);
                            }
+
+                           validateFieldSupplementalMetaData(fieldMetaData, qInstance);
                         }
                      }
                   }
@@ -2238,8 +2267,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SafeVarargs
-   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
+   public void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
    {
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {

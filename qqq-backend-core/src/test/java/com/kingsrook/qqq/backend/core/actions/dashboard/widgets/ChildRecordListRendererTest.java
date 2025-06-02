@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -153,6 +154,61 @@ class ChildRecordListRendererTest extends BaseTest
       assertThat(childRecordListData.getQueryOutput().getRecords()).hasSize(2);
       assertThat(childRecordListData.getQueryOutput().getRecords().get(0).getValueString("sku")).isEqualTo("BCD");
       assertThat(childRecordListData.getQueryOutput().getRecords().get(1).getValueString("sku")).isEqualTo("ABC");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // order id, being the join field, should implicitly be omitted - and we asked to omit lineNumber //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(childRecordListData.getOmitFieldNames().contains("orderId"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testOmitFields() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+      QContext.getQSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      QWidgetMetaData widget = ChildRecordListRenderer.widgetMetaDataBuilder(qInstance.getJoin("orderLineItem"))
+         .withLabel("Line Items")
+         .withOmitFieldNames(List.of("lineNumber"))
+         .getWidgetMetaData();
+      qInstance.addWidget(widget);
+
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_ORDER), List.of(
+         new QRecord().withValue("id", 1),
+         new QRecord().withValue("id", 2)
+      ));
+
+      TestUtils.insertRecords(qInstance.getTable(TestUtils.TABLE_NAME_LINE_ITEM), List.of(
+         new QRecord().withValue("orderId", 1).withValue("sku", "ABC").withValue("lineNumber", 2),
+         new QRecord().withValue("orderId", 1).withValue("sku", "BCD").withValue("lineNumber", 1),
+         new QRecord().withValue("orderId", 2).withValue("sku", "XYZ") // should not be found.
+      ));
+
+      RenderWidgetInput input = new RenderWidgetInput();
+      input.setWidgetMetaData(widget);
+      input.setQueryParams(new HashMap<>(Map.of("id", "1")));
+
+      RenderWidgetAction renderWidgetAction = new RenderWidgetAction();
+      RenderWidgetOutput output             = renderWidgetAction.execute(input);
+
+      ChildRecordListData childRecordListData = (ChildRecordListData) output.getWidgetData();
+      assertThat(childRecordListData.getChildTableMetaData()).hasFieldOrPropertyWithValue("name", TestUtils.TABLE_NAME_LINE_ITEM);
+      assertThat(childRecordListData.getQueryOutput().getRecords()).hasSize(2);
+
+      ///////////////////////////////////////////////////////////////////////////
+      // we still get the data - it just includes a list of omitFieldNames now //
+      ///////////////////////////////////////////////////////////////////////////
+      assertThat(childRecordListData.getQueryOutput().getRecords().get(0).getValue("orderId")).isNotNull();
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      // order id, being the join field, should implicitly be omitted - and we asked to omit lineNumber //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////
+      assertTrue(childRecordListData.getOmitFieldNames().contains("orderId"));
+      assertTrue(childRecordListData.getOmitFieldNames().contains("lineNumber"));
    }
 
 }
