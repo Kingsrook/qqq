@@ -94,7 +94,7 @@ public class QRecordApiAdapter
       for(QRecord record : records)
       {
          ApiOutputMapWrapper apiOutputMap = qRecordToApiMap(record, tableName, apiName, apiVersion, fieldValueMappers, new ApiOutputMapWrapper(new LinkedHashMap<>()));
-         rs.add(apiOutputMap.getContents());
+         rs.add(apiOutputMap == null ? null : apiOutputMap.getContents());
       }
 
       return (rs);
