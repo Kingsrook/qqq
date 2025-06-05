@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.common;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.function.Function;
@@ -47,7 +48,7 @@ public class TimeZonePossibleValueSourceMetaDataProvider
     *******************************************************************************/
    public QPossibleValueSource produce()
    {
-      return (produce(null, null));
+      return (produce(null, null, null));
    }
 
 
@@ -56,6 +57,16 @@ public class TimeZonePossibleValueSourceMetaDataProvider
     **
     *******************************************************************************/
    public QPossibleValueSource produce(Predicate<String> filter, Function<String, String> labelMapper)
+   {
+      return (produce(filter, labelMapper, null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QPossibleValueSource produce(Predicate<String> filter, Function<String, String> labelMapper, Comparator<QPossibleValue<?>> comparator)
    {
       QPossibleValueSource possibleValueSource = new QPossibleValueSource()
          .withName("timeZones")
@@ -70,6 +81,11 @@ public class TimeZonePossibleValueSourceMetaDataProvider
             String label = labelMapper == null ? availableID : labelMapper.apply(availableID);
             enumValues.add(new QPossibleValue<>(availableID, label));
          }
+      }
+
+      if(comparator != null)
+      {
+         enumValues.sort(comparator);
       }
 
       possibleValueSource.withEnumValues(enumValues);
