@@ -32,6 +32,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
  *******************************************************************************/
 public class ItemWithPrimitives extends QRecordEntity
 {
+   public static final String TABLE_NAME = "item";
+
    @QField()
    private String sku;
   

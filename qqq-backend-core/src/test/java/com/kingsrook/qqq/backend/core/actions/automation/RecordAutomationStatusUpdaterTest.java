@@ -81,12 +81,12 @@ class RecordAutomationStatusUpdaterTest extends BaseTest
       QTableMetaData tableWithInsertTrigger = new QTableMetaData()
          .withName("tableWithInsertTrigger");
       new InsertAction().execute(new InsertInput(TableTrigger.TABLE_NAME)
-         .withRecordEntity(new TableTrigger().withTableName(tableWithInsertTrigger.getName()).withPostInsert(true).withPostUpdate(false)));
+         .withRecordEntity(new TableTrigger().withTableName(tableWithInsertTrigger.getName()).withScriptId(-1).withPostInsert(true).withPostUpdate(false)));
 
       QTableMetaData tableWithUpdateTrigger = new QTableMetaData()
          .withName("tableWithUpdateTrigger");
       new InsertAction().execute(new InsertInput(TableTrigger.TABLE_NAME)
-         .withRecordEntity(new TableTrigger().withTableName(tableWithUpdateTrigger.getName()).withPostInsert(false).withPostUpdate(true)));
+         .withRecordEntity(new TableTrigger().withTableName(tableWithUpdateTrigger.getName()).withScriptId(-1).withPostInsert(false).withPostUpdate(true)));
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // tests for going to PENDING_INSERT.                                                                                     //

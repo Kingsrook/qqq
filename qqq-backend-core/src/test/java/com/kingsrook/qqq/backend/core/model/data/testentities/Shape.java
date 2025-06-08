@@ -33,6 +33,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
  *******************************************************************************/
 public class Shape extends QRecordEntity
 {
+   public static final String TABLE_NAME = "shape";
+
    @QField()
    private Integer id;
 

@@ -25,6 +25,8 @@ package com.kingsrook.qqq.backend.core.utils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 
@@ -36,6 +38,29 @@ import com.google.common.reflect.ClassPath;
 public class ClassPathUtils
 {
    private static ImmutableSet<ClassPath.ClassInfo> topLevelClasses;
+
+   private static final Map<String, Boolean> cache = new ConcurrentHashMap<>();
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static boolean isClassAvailable(String className)
+   {
+      return cache.computeIfAbsent(className, c ->
+      {
+         try
+         {
+            Class.forName(c, false, ClassPathUtils.class.getClassLoader());
+            return true;
+         }
+         catch(ClassNotFoundException e)
+         {
+            return false;
+         }
+      });
+   }
 
 
 

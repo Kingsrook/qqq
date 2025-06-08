@@ -33,7 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPostInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.AggregateAction;
@@ -147,7 +147,7 @@ public class PollingAutomationPerTableRunnerChildPostInsertCustomizerTest extend
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class OrderPostInsertAction extends RecordAutomationHandler
+   public static class OrderPostInsertAction implements RecordAutomationHandlerInterface
    {
 
       /*******************************************************************************

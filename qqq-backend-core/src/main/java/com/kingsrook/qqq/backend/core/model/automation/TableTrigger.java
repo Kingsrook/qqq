@@ -27,7 +27,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QField;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.automation.TablesSupportingAutomationsPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedView;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 
@@ -48,16 +48,16 @@ public class TableTrigger extends QRecordEntity
    @QField(isEditable = false)
    private Instant modifyDate;
 
-   @QField(possibleValueSourceName = TablesPossibleValueSourceMetaDataProvider.NAME)
+   @QField(possibleValueSourceName = TablesSupportingAutomationsPossibleValueSourceMetaDataProvider.NAME, isRequired = true)
    private String tableName;
 
    @QField(possibleValueSourceName = SavedView.TABLE_NAME)
    private Integer filterId;
 
-   @QField(possibleValueSourceName = Script.TABLE_NAME)
+   @QField(possibleValueSourceName = Script.TABLE_NAME, isRequired = true)
    private Integer scriptId;
 
-   @QField()
+   @QField(defaultValue = "500")
    private Integer priority;
 
    @QField()

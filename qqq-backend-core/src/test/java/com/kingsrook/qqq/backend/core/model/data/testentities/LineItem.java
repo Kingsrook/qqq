@@ -31,6 +31,8 @@ import com.kingsrook.qqq.backend.core.model.data.QRecordEntity;
  *******************************************************************************/
 public class LineItem extends QRecordEntity
 {
+   public static final String TABLE_NAME = "lineItem";
+
    @QField()
    private String sku;
 

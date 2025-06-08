@@ -51,7 +51,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class RunRecordScriptAutomationHandler extends RecordAutomationHandler
+public class RunRecordScriptAutomationHandler implements RecordAutomationHandlerInterface
 {
    private static final QLogger LOG = QLogger.getLogger(RunRecordScriptAutomationHandler.class);
 

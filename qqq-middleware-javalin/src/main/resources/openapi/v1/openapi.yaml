@@ -130,6 +130,42 @@ components:
           description: "Description of the error"
           type: "string"
       type: "object"
+    ExposedJoin:
+      properties:
+        isMany:
+          description: "Whether or not this join is 'to many' in nature"
+          type: "boolean"
+        joinPath:
+          description: "A list of joins that travel from the base table to the exposed\
+            \ join table"
+          items:
+            properties:
+              joinOns:
+                type: "array"
+              leftTable:
+                type: "string"
+              name:
+                type: "string"
+              orderBys:
+                type: "array"
+              rightTable:
+                type: "string"
+              type:
+                enum:
+                - "ONE_TO_ONE"
+                - "ONE_TO_MANY"
+                - "MANY_TO_ONE"
+                - "MANY_TO_MANY"
+                type: "string"
+            type: "object"
+          type: "array"
+        joinTable:
+          $ref: "#/components/schemas/TableMetaData"
+          description: "The meta-data for the joined table"
+        label:
+          description: "User-facing label to display for this join"
+          type: "string"
+      type: "object"
     FieldAdornment:
       properties:
         type:
@@ -192,6 +228,45 @@ components:
         type:
           description: "Data-type for this field"
           type: "string"
+      type: "object"
+    FilterCriteria:
+      properties:
+        fieldName:
+          description: "Field name that this criteria applies to"
+          type: "string"
+        operator:
+          description: "Logical operator that applies to this criteria"
+          enum:
+          - "EQUALS"
+          - "NOT_EQUALS"
+          - "NOT_EQUALS_OR_IS_NULL"
+          - "IN"
+          - "NOT_IN"
+          - "IS_NULL_OR_IN"
+          - "LIKE"
+          - "NOT_LIKE"
+          - "STARTS_WITH"
+          - "ENDS_WITH"
+          - "CONTAINS"
+          - "NOT_STARTS_WITH"
+          - "NOT_ENDS_WITH"
+          - "NOT_CONTAINS"
+          - "LESS_THAN"
+          - "LESS_THAN_OR_EQUALS"
+          - "GREATER_THAN"
+          - "GREATER_THAN_OR_EQUALS"
+          - "IS_BLANK"
+          - "IS_NOT_BLANK"
+          - "BETWEEN"
+          - "NOT_BETWEEN"
+          - "TRUE"
+          - "FALSE"
+          type: "string"
+        values:
+          description: "Values to apply via the operator to the field"
+          items:
+            type: "string"
+          type: "array"
       type: "object"
     FrontendComponent:
       properties:
@@ -351,6 +426,34 @@ components:
             $ref: "#/components/schemas/ProcessMetaDataLight"
           description: "Map of all widgets within the QQQ Instance (that the user\
             \ has permission to see that they exist)."
+          type: "object"
+      type: "object"
+    OrderBy:
+      properties:
+        fieldName:
+          description: "Field name that this order-by applies to"
+          type: "string"
+        isAscending:
+          description: "Whether this order-by is ascending or descending"
+          type: "boolean"
+      type: "object"
+    OutputRecord:
+      properties:
+        displayValues:
+          description: "Formatted string versions of the values that make up the record.\
+            \  Keys are Strings, which match the table's field names. Values are all\
+            \ Strings."
+          type: "object"
+        recordLabel:
+          description: "Label to identify the record to a user."
+          type: "string"
+        tableName:
+          description: "Name of the table that the record is from."
+          type: "string"
+        values:
+          description: "Raw values that make up the record.  Keys are Strings, which\
+            \ match the table's field names. Values can be any type, as per the table's\
+            \ fields."
           type: "object"
       type: "object"
     ProcessMetaData:
@@ -720,6 +823,157 @@ components:
             \ additional fields will be set."
           type: "string"
       type: "object"
+    QueryFilter:
+      properties:
+        booleanOperator:
+          description: "Boolean operator to apply between criteria"
+          enum:
+          - "AND"
+          - "OR"
+          type: "string"
+        criteria:
+          description: "Field level criteria that make up the query filter"
+          items:
+            $ref: "#/components/schemas/FilterCriteria"
+          type: "array"
+        limit:
+          description: "Maximum number of results to return."
+          type: "number"
+        orderBys:
+          description: "How the query's results should be ordered (sorted)."
+          items:
+            $ref: "#/components/schemas/OrderBy"
+          type: "array"
+        skip:
+          description: "Records to skip (e.g., to implement pagination)"
+          type: "number"
+      type: "object"
+    QueryJoin:
+      properties:
+        alias:
+          description: "Alias to apply to this table in the join query"
+          type: "string"
+        baseTableOrAlias:
+          description: "Base table (or an alias) that this QueryJoin is joined against"
+          type: "string"
+        joinName:
+          description: "Name of a join to use in case the baseTable and joinTable\
+            \ have more than one"
+          type: "string"
+        joinTable:
+          description: "Table being joined into the query by this QueryJoin"
+          type: "string"
+        select:
+          description: "Whether or not to select values from the join table"
+          type: "boolean"
+        type:
+          description: "Type of join being performed (SQL semantics)"
+          enum:
+          - "INNER"
+          - "LEFT"
+          - "RIGHT"
+          - "FULL"
+          type: "string"
+      type: "object"
+    TableCountResponseV1:
+      properties:
+        count:
+          description: "Number (count) of records that satisfy the query request"
+          type: "number"
+        distinctCount:
+          description: "Number (count) of distinct records that satisfy the query\
+            \ request.  Only included if requested."
+          type: "number"
+      type: "object"
+    TableMetaData:
+      properties:
+        capabilities:
+          description: "List of strings describing actions that are supported by the\
+            \ backend application for the table."
+          items:
+            type: "string"
+          type: "array"
+        deletePermission:
+          description: "Boolean to indicate if the user has delete permission for\
+            \ the table."
+          type: "boolean"
+        editPermission:
+          description: "Boolean to indicate if the user has edit permission for the\
+            \ table."
+          type: "boolean"
+        exposedJoins:
+          description: "Sections to organize fields on screens for this record"
+          items:
+            $ref: "#/components/schemas/ExposedJoin"
+          type: "array"
+        fields:
+          additionalProperties:
+            $ref: "#/components/schemas/FieldMetaData"
+          description: "Fields in this table"
+          type: "object"
+        helpContents:
+          description: "Help Contents for this table."
+          type: "object"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the table"
+        insertPermission:
+          description: "Boolean to indicate if the user has insert permission for\
+            \ the table."
+          type: "boolean"
+        isHidden:
+          description: "Boolean indicator of whether the table should be shown to\
+            \ users or not"
+          type: "boolean"
+        label:
+          description: "User-facing name for this table"
+          type: "string"
+        name:
+          description: "Unique name for this table within the QQQ Instance"
+          type: "string"
+        primaryKeyField:
+          description: "Name of the primary key field in this table"
+          type: "string"
+        readPermission:
+          description: "Boolean to indicate if the user has read permission for the\
+            \ table."
+          type: "boolean"
+        sections:
+          description: "Sections to organize fields on screens for this record"
+          items:
+            $ref: "#/components/schemas/TableSection"
+          type: "array"
+        shareableTableMetaData:
+          description: "For tables that support the sharing feature, meta-data about\
+            \ the sharing setup."
+          properties:
+            assetIdFieldName:
+              type: "string"
+            audiencePossibleValueSourceName:
+              type: "string"
+            audienceTypes:
+              type: "object"
+            audienceTypesPossibleValueSourceName:
+              type: "string"
+            scopeFieldName:
+              type: "string"
+            sharedRecordTableName:
+              type: "string"
+            thisTableOwnerIdFieldName:
+              type: "string"
+          type: "object"
+        supplementalMetaData:
+          description: "Additional meta data about the table, not necessarily known\
+            \ to QQQ."
+          type: "object"
+        usesVariants:
+          description: "Whether or not this table's backend uses variants."
+          type: "boolean"
+        variantTableLabel:
+          description: "If the table uses variants, this is the user-facing label\
+            \ for the table that supplies variants for this table."
+          type: "string"
+      type: "object"
     TableMetaDataLight:
       properties:
         capabilities:
@@ -763,6 +1017,157 @@ components:
         variantTableLabel:
           description: "If the table uses variants, this is the user-facing label\
             \ for the table that supplies variants for this table."
+          type: "string"
+      type: "object"
+    TableMetaDataResponseV1:
+      properties:
+        capabilities:
+          description: "List of strings describing actions that are supported by the\
+            \ backend application for the table."
+          items:
+            type: "string"
+          type: "array"
+        deletePermission:
+          description: "Boolean to indicate if the user has delete permission for\
+            \ the table."
+          type: "boolean"
+        editPermission:
+          description: "Boolean to indicate if the user has edit permission for the\
+            \ table."
+          type: "boolean"
+        exposedJoins:
+          description: "Sections to organize fields on screens for this record"
+          items:
+            $ref: "#/components/schemas/ExposedJoin"
+          type: "array"
+        fields:
+          additionalProperties:
+            $ref: "#/components/schemas/FieldMetaData"
+          description: "Fields in this table"
+          type: "object"
+        helpContents:
+          description: "Help Contents for this table."
+          type: "object"
+        icon:
+          description: "Icon to display for the table"
+          properties:
+            color:
+              description: "A color code to use for displaying the icon"
+              type: "string"
+            name:
+              description: "A material UI icon name."
+              type: "string"
+            path:
+              description: "A path to an image file that can be requested from the\
+                \ server, to serve as the icon image instead of a material UI icon."
+              type: "string"
+          type: "object"
+        insertPermission:
+          description: "Boolean to indicate if the user has insert permission for\
+            \ the table."
+          type: "boolean"
+        isHidden:
+          description: "Boolean indicator of whether the table should be shown to\
+            \ users or not"
+          type: "boolean"
+        label:
+          description: "User-facing name for this table"
+          type: "string"
+        name:
+          description: "Unique name for this table within the QQQ Instance"
+          type: "string"
+        primaryKeyField:
+          description: "Name of the primary key field in this table"
+          type: "string"
+        readPermission:
+          description: "Boolean to indicate if the user has read permission for the\
+            \ table."
+          type: "boolean"
+        sections:
+          description: "Sections to organize fields on screens for this record"
+          items:
+            $ref: "#/components/schemas/TableSection"
+          type: "array"
+        shareableTableMetaData:
+          description: "For tables that support the sharing feature, meta-data about\
+            \ the sharing setup."
+          properties:
+            assetIdFieldName:
+              type: "string"
+            audiencePossibleValueSourceName:
+              type: "string"
+            audienceTypes:
+              type: "object"
+            audienceTypesPossibleValueSourceName:
+              type: "string"
+            scopeFieldName:
+              type: "string"
+            sharedRecordTableName:
+              type: "string"
+            thisTableOwnerIdFieldName:
+              type: "string"
+          type: "object"
+        supplementalMetaData:
+          description: "Additional meta data about the table, not necessarily known\
+            \ to QQQ."
+          type: "object"
+        usesVariants:
+          description: "Whether or not this table's backend uses variants."
+          type: "boolean"
+        variantTableLabel:
+          description: "If the table uses variants, this is the user-facing label\
+            \ for the table that supplies variants for this table."
+          type: "string"
+      type: "object"
+    TableQueryResponseV1:
+      properties:
+        records:
+          description: "List of records that satisfy the query request"
+          items:
+            $ref: "#/components/schemas/OutputRecord"
+          type: "array"
+      type: "object"
+    TableSection:
+      properties:
+        fieldNames:
+          description: "List of field names to include in this section."
+          type: "array"
+        gridColumns:
+          description: "Layout suggestion, for how many columns of a 12-grid this\
+            \ section should use."
+          type: "number"
+        helpContents:
+          description: "Help Contents for this section table."
+          type: "array"
+        icon:
+          $ref: "#/components/schemas/Icon"
+          description: "Icon to display for the table"
+        label:
+          description: "User-facing label to display for this section"
+          type: "string"
+        name:
+          description: "Unique identifier for this section within this table"
+          type: "string"
+        tier:
+          description: "Importance of this section (T1, T2, or T3)"
+          type: "string"
+        widgetName:
+          description: "Name of a widget in this QQQ instance to include in this section\
+            \ (instead of fields)."
+          type: "string"
+      type: "object"
+    TableVariant:
+      properties:
+        id:
+          description: "Identifier for the variant option (record) being used."
+          type: "string"
+        name:
+          description: "A user-facing name (or label) for the variant option being\
+            \ used."
+          type: "string"
+        type:
+          description: "Specification for the variant type (variantTypeKey from QQQ\
+            \ BackendVariantsConfig)"
           type: "string"
       type: "object"
     WidgetBlock:
@@ -1532,6 +1937,191 @@ paths:
       summary: "Get instance metaData"
       tags:
       - "General"
+  /qqq/v1/metaData/table/{tableName}:
+    get:
+      description: "Load the full metadata for a single table, including all fields,\
+        \ which a frontend\nneeds to display to users."
+      parameters:
+      - description: "Name of the table to load."
+        example: "person"
+        in: "path"
+        name: "tableName"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        200:
+          content:
+            application/json:
+              examples:
+                Example:
+                  value:
+                    tableMetaData:
+                      capabilities:
+                      - "TABLE_COUNT"
+                      - "TABLE_GET"
+                      - "TABLE_QUERY"
+                      - "QUERY_STATS"
+                      - "TABLE_INSERT"
+                      - "TABLE_UPDATE"
+                      - "TABLE_DELETE"
+                      deletePermission: true
+                      editPermission: true
+                      fields:
+                        id:
+                          displayFormat: "%s"
+                          isEditable: true
+                          isHeavy: false
+                          isHidden: false
+                          isRequired: false
+                          label: "Id"
+                          name: "id"
+                          type: "INTEGER"
+                      icon:
+                        name: "person_outline"
+                      insertPermission: true
+                      isHidden: false
+                      label: "Person"
+                      name: "person"
+                      primaryKeyField: "id"
+                      readPermission: true
+                      sections:
+                      - fieldNames:
+                        - "id"
+                        hidden: false
+                        icon:
+                          name: "badge"
+                        label: "Identity"
+                        name: "identity"
+                        tier: "T1"
+                      usesVariants: false
+              schema:
+                $ref: "#/components/schemas/TableMetaDataResponseV1"
+          description: "The full table metadata"
+      security:
+      - sessionUuidCookie:
+        - "N/A"
+      summary: "Get table metaData"
+      tags:
+      - "Tables"
+  /qqq/v1/table/{tableName}/query:
+    post:
+      description: "Execute a query against a table, returning records that match\
+        \ a filter."
+      parameters:
+      - description: "Name of the table to query."
+        example: "person"
+        in: "path"
+        name: "tableName"
+        required: true
+        schema:
+          type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                filter:
+                  $ref: "#/components/schemas/QueryFilter"
+                  description: "QueryFilter to specify matching records to be returned\
+                    \ by the query"
+                joins:
+                  description: "QueryJoin objects to specify tables to be joined into\
+                    \ the query"
+                  items:
+                    $ref: "#/components/schemas/QueryJoin"
+                  type: "array"
+                tableVariant:
+                  $ref: "#/components/schemas/TableVariant"
+                  description: "For tables that use variant backends, specification\
+                    \ of which variant to use."
+              type: "object"
+        required: false
+      responses:
+        200:
+          content:
+            application/json:
+              examples:
+                TODO:
+                  value:
+                    records:
+                    - displayValues:
+                        id: "17"
+                        quantity: "1,000"
+                        storeId: "QQQ-Mart"
+                      recordLabel: "Item 17"
+                      tableName: "item"
+                      values:
+                        id: 17
+                        quantity: 1000
+                        storeId: 42
+              schema:
+                $ref: "#/components/schemas/TableQueryResponseV1"
+          description: "The records matching query"
+      security:
+      - sessionUuidCookie:
+        - "N/A"
+      summary: "Query for records from a table"
+      tags:
+      - "Tables"
+  /qqq/v1/table/{tableName}/count:
+    post:
+      description: "Execute a query against a table, returning the number of records\
+        \ that match a filter."
+      parameters:
+      - description: "Name of the table to count."
+        example: "person"
+        in: "path"
+        name: "tableName"
+        required: true
+        schema:
+          type: "string"
+      - description: "Whether or not to also return the count distinct records from\
+          \ the main table (e.g., in case of a to-many join; by default, do not)."
+        example: "true"
+        in: "query"
+        name: "includeDistinct"
+        required: true
+        schema:
+          type: "boolean"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                filter:
+                  $ref: "#/components/schemas/QueryFilter"
+                  description: "QueryFilter to specify matching records to be returned\
+                    \ by the query"
+                joins:
+                  description: "QueryJoin objects to specify tables to be joined into\
+                    \ the query"
+                  items:
+                    $ref: "#/components/schemas/QueryJoin"
+                  type: "array"
+                tableVariant:
+                  $ref: "#/components/schemas/TableVariant"
+                  description: "For tables that use variant backends, specification\
+                    \ of which variant to use."
+              type: "object"
+        required: false
+      responses:
+        200:
+          content:
+            application/json:
+              examples:
+                TODO:
+                  value:
+                    count: 42
+              schema:
+                $ref: "#/components/schemas/TableCountResponseV1"
+          description: "The number (count) of records matching the query"
+      security:
+      - sessionUuidCookie:
+        - "N/A"
+      summary: "Count records in a table"
+      tags:
+      - "Tables"
   /qqq/v1/metaData/process/{processName}:
     get:
       description: "Load the full metadata for a single process, including all screens\

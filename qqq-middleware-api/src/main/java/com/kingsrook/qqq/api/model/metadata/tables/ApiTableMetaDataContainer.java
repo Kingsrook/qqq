@@ -31,6 +31,7 @@ import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaData;
 import com.kingsrook.qqq.api.model.metadata.ApiInstanceMetaDataContainer;
 import com.kingsrook.qqq.backend.core.context.CapturedContext;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QNotFoundException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
@@ -215,6 +216,12 @@ public class ApiTableMetaDataContainer extends QSupplementalTableMetaData
                // removed-list and the table's normal field list.                                               //
                ///////////////////////////////////////////////////////////////////////////////////////////////////
                GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, version.toString(), tableMetaData.getName()));
+            }
+            catch(QNotFoundException qnfe)
+            {
+               /////////////////////////////
+               // skip tables not in apis //
+               /////////////////////////////
             }
             catch(Exception e)
             {
