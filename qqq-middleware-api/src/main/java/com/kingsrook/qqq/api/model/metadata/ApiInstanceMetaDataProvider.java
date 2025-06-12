@@ -56,6 +56,9 @@ public class ApiInstanceMetaDataProvider
    public static final String TABLE_NAME_API_LOG      = "apiLog";
    public static final String TABLE_NAME_API_LOG_USER = "apiLogUser";
 
+   public static final String API_NAME_PVS_NAME    = "apiName";
+   public static final String API_VERSION_PVS_NAME = "apiVersion";
+
 
 
    /*******************************************************************************
@@ -142,7 +145,7 @@ public class ApiInstanceMetaDataProvider
       }
 
       instance.addPossibleValueSource(new QPossibleValueSource()
-         .withName("apiName")
+         .withName(API_NAME_PVS_NAME)
          .withType(QPossibleValueSourceType.ENUM)
          .withEnumValues(apiNamePossibleValues));
 
@@ -152,7 +155,7 @@ public class ApiInstanceMetaDataProvider
       }
 
       instance.addPossibleValueSource(new QPossibleValueSource()
-         .withName("apiVersion")
+         .withName(API_VERSION_PVS_NAME)
          .withType(QPossibleValueSourceType.ENUM)
          .withEnumValues(apiVersionPossibleValues));
    }
