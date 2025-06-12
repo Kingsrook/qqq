@@ -177,6 +177,30 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testInstanceLevelTableCustomizers()
+   {
+      assertValidationFailureReasons((qInstance) -> qInstance.withTableCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(QInstanceValidator.class)),
+         "Instance tableCustomizer of type preInsertRecord: CodeReference is not of the expected type");
+
+      assertValidationFailureReasons((qInstance) ->
+         {
+            qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(QInstanceValidator.class));
+            qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(QInstanceValidator.class));
+            qInstance.withTableCustomizer(TableCustomizers.PRE_DELETE_RECORD, new QCodeReference(QInstanceValidator.class));
+         },
+         "Instance tableCustomizer of type postUpdateRecord: CodeReference is not of the expected type",
+         "Instance tableCustomizer of type postUpdateRecord: CodeReference is not of the expected type",
+         "Instance tableCustomizer of type preDeleteRecord: CodeReference is not of the expected type");
+
+      assertValidationSuccess((qInstance) -> qInstance.withTableCustomizer(TableCustomizers.POST_UPDATE_RECORD, new QCodeReference(CustomizerValid.class)));
+   }
+
+
+
+   /*******************************************************************************
     ** Test an instance with null backends - should throw.
     **
     *******************************************************************************/
