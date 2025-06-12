@@ -1404,7 +1404,7 @@ public class QInstanceEnricher
          if(possibleValueSource.getIdType() == null)
          {
             QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
-            if(table != null)
+            if(table != null && table.getFields() != null)
             {
                String         primaryKeyField         = table.getPrimaryKeyField();
                QFieldMetaData primaryKeyFieldMetaData = table.getFields().get(primaryKeyField);
