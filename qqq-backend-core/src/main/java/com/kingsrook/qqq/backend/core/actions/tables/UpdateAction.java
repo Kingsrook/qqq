@@ -456,7 +456,7 @@ public class UpdateAction
                   QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
                   Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
 
-                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap());
+                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap(), QContext.getQSession());
                   if(CollectionUtils.nullSafeHasContents(errors))
                   {
                      errors.forEach(e -> record.addError(e));
