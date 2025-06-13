@@ -23,14 +23,22 @@ package com.kingsrook.qqq.backend.core.actions.tables.helpers;
 
 
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.ValidateRecordSecurityLockHelper.RecordWithErrors;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import static com.kingsrook.qqq.backend.core.model.metadata.security.MultiRecordSecurityLock.BooleanOperator.AND;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /*******************************************************************************
@@ -104,6 +112,31 @@ class ValidateRecordSecurityLockHelperTest extends BaseTest
          )));
          System.out.println("----------------------------------------------------------------------------");
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAllowedToReadRecord() throws QException
+   {
+      QTableMetaData table = QContext.getQInstance().getTables().get(TestUtils.TABLE_NAME_ORDER);
+
+      QSession sessionWithStore1          = new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 1);
+      QSession sessionWithStore2          = new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE, 2);
+      QSession sessionWithStore1and2      = new QSession().withSecurityKeyValues(Map.of(TestUtils.SECURITY_KEY_TYPE_STORE, List.of(1, 2)));
+      QSession sessionWithStoresAllAccess = new QSession().withSecurityKeyValue(TestUtils.SECURITY_KEY_TYPE_STORE_ALL_ACCESS, true);
+      QSession sessionWithNoStores        = new QSession();
+
+      QRecord recordStore1  = new QRecord().withValue("storeId", 1);
+
+      assertTrue(ValidateRecordSecurityLockHelper.allowedToReadRecord(table, recordStore1, sessionWithStore1, null));
+      assertFalse(ValidateRecordSecurityLockHelper.allowedToReadRecord(table, recordStore1, sessionWithStore2, null));
+      assertTrue(ValidateRecordSecurityLockHelper.allowedToReadRecord(table, recordStore1, sessionWithStore1and2, null));
+      assertTrue(ValidateRecordSecurityLockHelper.allowedToReadRecord(table, recordStore1, sessionWithStoresAllAccess, null));
+      assertFalse(ValidateRecordSecurityLockHelper.allowedToReadRecord(table, recordStore1, sessionWithNoStores, null));
    }
 
 }

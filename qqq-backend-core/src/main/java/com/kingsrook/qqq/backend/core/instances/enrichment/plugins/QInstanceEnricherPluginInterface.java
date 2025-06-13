@@ -37,4 +37,13 @@ public interface QInstanceEnricherPluginInterface<T>
     *******************************************************************************/
    void enrich(T object, QInstance qInstance);
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default String getPluginIdentifier()
+   {
+      return getClass().getName();
+   }
+
 }

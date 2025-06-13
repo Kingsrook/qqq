@@ -57,6 +57,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -199,6 +200,18 @@ public class UpdateAction
       //////////////////////////////////////////////////////////////
       // finally, run the post-update customizer, if there is one //
       //////////////////////////////////////////////////////////////
+      runPostUpdateCustomizers(updateInput, table, updateOutput, oldRecordList);
+
+      return updateOutput;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void runPostUpdateCustomizers(UpdateInput updateInput, QTableMetaData table, UpdateOutput updateOutput, Optional<List<QRecord>> oldRecordList)
+   {
       Optional<TableCustomizerInterface> postUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_UPDATE_RECORD.getRole());
       if(postUpdateCustomizer.isPresent())
       {
@@ -215,7 +228,49 @@ public class UpdateAction
          }
       }
 
-      return updateOutput;
+      ///////////////////////////////////////////////
+      // run all of the instance-level customizers //
+      ///////////////////////////////////////////////
+      List<QCodeReference> tableCustomizerCodes = QContext.getQInstance().getTableCustomizers(TableCustomizers.POST_UPDATE_RECORD);
+      for(QCodeReference tableCustomizerCode : tableCustomizerCodes)
+      {
+         try
+         {
+            TableCustomizerInterface tableCustomizer = QCodeLoader.getAdHoc(TableCustomizerInterface.class, tableCustomizerCode);
+            updateOutput.setRecords(tableCustomizer.postUpdate(updateInput, updateOutput.getRecords(), oldRecordList));
+         }
+         catch(Exception e)
+         {
+            for(QRecord record : updateOutput.getRecords())
+            {
+               record.addWarning(new QWarningMessage("An error occurred after the update: " + e.getMessage()));
+            }
+         }
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void runPreUpdateCustomizers(UpdateInput updateInput, QTableMetaData table, Optional<List<QRecord>> oldRecordList, boolean isPreview) throws QException
+   {
+      Optional<TableCustomizerInterface> preUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      if(preUpdateCustomizer.isPresent())
+      {
+         updateInput.setRecords(preUpdateCustomizer.get().preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
+      }
+
+      ///////////////////////////////////////////////
+      // run all of the instance-level customizers //
+      ///////////////////////////////////////////////
+      List<QCodeReference> tableCustomizerCodes = QContext.getQInstance().getTableCustomizers(TableCustomizers.PRE_UPDATE_RECORD);
+      for(QCodeReference tableCustomizerCode : tableCustomizerCodes)
+      {
+         TableCustomizerInterface tableCustomizer = QCodeLoader.getAdHoc(TableCustomizerInterface.class, tableCustomizerCode);
+         updateInput.setRecords(tableCustomizer.preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
+      }
    }
 
 
@@ -278,11 +333,7 @@ public class UpdateAction
       ///////////////////////////////////////////////////////////////////////////
       // after all validations, run the pre-update customizer, if there is one //
       ///////////////////////////////////////////////////////////////////////////
-      Optional<TableCustomizerInterface> preUpdateCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
-      if(preUpdateCustomizer.isPresent())
-      {
-         updateInput.setRecords(preUpdateCustomizer.get().preUpdate(updateInput, updateInput.getRecords(), isPreview, oldRecordList));
-      }
+      runPreUpdateCustomizers(updateInput, table, oldRecordList, isPreview);
    }
 
 
@@ -405,7 +456,7 @@ public class UpdateAction
                   QFieldType   fieldType = table.getField(lock.getFieldName()).getType();
                   Serializable lockValue = ValueUtils.getValueAsFieldType(fieldType, oldRecord.getValue(lock.getFieldName()));
 
-                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap());
+                  List<QErrorMessage> errors = ValidateRecordSecurityLockHelper.validateRecordSecurityValue(table, lock, lockValue, fieldType, ValidateRecordSecurityLockHelper.Action.UPDATE, Collections.emptyMap(), QContext.getQSession());
                   if(CollectionUtils.nullSafeHasContents(errors))
                   {
                      errors.forEach(e -> record.addError(e));

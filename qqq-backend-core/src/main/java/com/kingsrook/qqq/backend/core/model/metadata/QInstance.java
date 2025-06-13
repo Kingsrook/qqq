@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -65,6 +67,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
@@ -115,6 +118,8 @@ public class QInstance
 
    private QPermissionRules defaultPermissionRules = QPermissionRules.defaultInstance();
    private QAuditRules      defaultAuditRules      = QAuditRules.defaultInstanceLevelNone();
+
+   private ListingHash<String, QCodeReference> tableCustomizers;
 
    @Deprecated(since = "migrated to metaDataCustomizer")
    private QCodeReference metaDataFilter = null;
@@ -1621,6 +1626,78 @@ public class QInstance
    {
       this.metaDataActionCustomizer = metaDataActionCustomizer;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableCustomizers
+    *******************************************************************************/
+   public ListingHash<String, QCodeReference> getTableCustomizers()
+   {
+      return (this.tableCustomizers);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for tableCustomizers
+    *******************************************************************************/
+   public void setTableCustomizers(ListingHash<String, QCodeReference> tableCustomizers)
+   {
+      this.tableCustomizers = tableCustomizers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for tableCustomizers
+    *******************************************************************************/
+   public QInstance withTableCustomizers(ListingHash<String, QCodeReference> tableCustomizers)
+   {
+      this.tableCustomizers = tableCustomizers;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QInstance withTableCustomizer(String role, QCodeReference customizer)
+   {
+      if(this.tableCustomizers == null)
+      {
+         this.tableCustomizers = new ListingHash<>();
+      }
+
+      this.tableCustomizers.add(role, customizer);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QInstance withTableCustomizer(TableCustomizers tableCustomizer, QCodeReference customizer)
+   {
+      return (withTableCustomizer(tableCustomizer.getRole(), customizer));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for tableCustomizers
+    *******************************************************************************/
+   public List<QCodeReference> getTableCustomizers(TableCustomizers tableCustomizer)
+   {
+      if(this.tableCustomizers == null)
+      {
+         return (Collections.emptyList());
+      }
+
+      return (this.tableCustomizers.getOrDefault(tableCustomizer.getRole(), Collections.emptyList()));
    }
 
 }

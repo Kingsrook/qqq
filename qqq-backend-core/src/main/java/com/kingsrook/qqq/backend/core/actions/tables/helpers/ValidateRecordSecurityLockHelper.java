@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLock;
 import com.kingsrook.qqq.backend.core.model.metadata.security.RecordSecurityLockFilters;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.model.statusmessages.PermissionDeniedMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QErrorMessage;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -102,7 +103,7 @@ public class ValidateRecordSecurityLockHelper
       // actually check lock values //
       ////////////////////////////////
       Map<Serializable, RecordWithErrors> errorRecords = new HashMap<>();
-      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>(), madeUpPrimaryKeys, transaction);
+      evaluateRecordLocks(table, records, action, locksToCheck, errorRecords, new ArrayList<>(), madeUpPrimaryKeys, transaction, QContext.getQSession());
 
       /////////////////////////////////
       // propagate errors to records //
@@ -120,6 +121,29 @@ public class ValidateRecordSecurityLockHelper
       {
          record.setValue(primaryKeyField, null);
       }
+   }
+
+
+
+   /***************************************************************************
+    ** return boolean if given session can read given record
+    ***************************************************************************/
+   public static boolean allowedToReadRecord(QTableMetaData table, QRecord record, QSession qSession, QBackendTransaction transaction) throws QException
+   {
+      MultiRecordSecurityLock locksToCheck = getRecordSecurityLocks(table, Action.SELECT);
+      if(locksToCheck == null || CollectionUtils.nullSafeIsEmpty(locksToCheck.getLocks()))
+      {
+         return (true);
+      }
+
+      Map<Serializable, RecordWithErrors> errorRecords = new HashMap<>();
+      evaluateRecordLocks(table, List.of(record), Action.SELECT, locksToCheck, errorRecords, new ArrayList<>(), Collections.emptyMap(), transaction, qSession);
+      if(errorRecords.containsKey(record.getValue(table.getPrimaryKeyField())))
+      {
+         return (false);
+      }
+
+      return (true);
    }
 
 
@@ -142,7 +166,7 @@ public class ValidateRecordSecurityLockHelper
     ** BUT - WRITE locks - in their case, we read the record no matter what, and in
     ** here we need to verify we have a key that allows us to WRITE the record.
     *******************************************************************************/
-   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition, Map<Serializable, QRecord> madeUpPrimaryKeys, QBackendTransaction transaction) throws QException
+   private static void evaluateRecordLocks(QTableMetaData table, List<QRecord> records, Action action, RecordSecurityLock recordSecurityLock, Map<Serializable, RecordWithErrors> errorRecords, List<Integer> treePosition, Map<Serializable, QRecord> madeUpPrimaryKeys, QBackendTransaction transaction, QSession qSession) throws QException
    {
       if(recordSecurityLock instanceof MultiRecordSecurityLock multiRecordSecurityLock)
       {
@@ -153,7 +177,7 @@ public class ValidateRecordSecurityLockHelper
          for(RecordSecurityLock childLock : CollectionUtils.nonNullList(multiRecordSecurityLock.getLocks()))
          {
             treePosition.add(i);
-            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition, madeUpPrimaryKeys, transaction);
+            evaluateRecordLocks(table, records, action, childLock, errorRecords, treePosition, madeUpPrimaryKeys, transaction, qSession);
             treePosition.remove(treePosition.size() - 1);
             i++;
          }
@@ -165,7 +189,7 @@ public class ValidateRecordSecurityLockHelper
       // if this lock has an all-access key, and the user has that key, then there can't be any errors here, so return early //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       QSecurityKeyType securityKeyType = QContext.getQInstance().getSecurityKeyType(recordSecurityLock.getSecurityKeyType());
-      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()) && QContext.getQSession().hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
+      if(StringUtils.hasContent(securityKeyType.getAllAccessKeyName()) && qSession.hasSecurityKeyValue(securityKeyType.getAllAccessKeyName(), true, QFieldType.BOOLEAN))
       {
          return;
       }
@@ -193,7 +217,7 @@ public class ValidateRecordSecurityLockHelper
             }
 
             Serializable        recordSecurityValue = record.getValue(field.getName());
-            List<QErrorMessage> recordErrors        = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys);
+            List<QErrorMessage> recordErrors        = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys, qSession);
             if(CollectionUtils.nullSafeHasContents(recordErrors))
             {
                errorRecords.computeIfAbsent(record.getValue(primaryKeyField), (k) -> new RecordWithErrors(record)).addAll(recordErrors, treePosition);
@@ -339,7 +363,7 @@ public class ValidateRecordSecurityLockHelper
 
                   for(QRecord inputRecord : inputRecords)
                   {
-                     List<QErrorMessage> recordErrors = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys);
+                     List<QErrorMessage> recordErrors = validateRecordSecurityValue(table, recordSecurityLock, recordSecurityValue, field.getType(), action, madeUpPrimaryKeys, qSession);
                      if(CollectionUtils.nullSafeHasContents(recordErrors))
                      {
                         errorRecords.computeIfAbsent(inputRecord.getValue(primaryKeyField), (k) -> new RecordWithErrors(inputRecord)).addAll(recordErrors, treePosition);
@@ -446,7 +470,7 @@ public class ValidateRecordSecurityLockHelper
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static List<QErrorMessage> validateRecordSecurityValue(QTableMetaData table, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action, Map<Serializable, QRecord> madeUpPrimaryKeys)
+   public static List<QErrorMessage> validateRecordSecurityValue(QTableMetaData table, RecordSecurityLock recordSecurityLock, Serializable recordSecurityValue, QFieldType fieldType, Action action, Map<Serializable, QRecord> madeUpPrimaryKeys, QSession qSession)
    {
       if(recordSecurityValue == null || (madeUpPrimaryKeys != null && madeUpPrimaryKeys.containsKey(recordSecurityValue)))
       {
@@ -461,7 +485,7 @@ public class ValidateRecordSecurityLockHelper
       }
       else
       {
-         if(!QContext.getQSession().hasSecurityKeyValue(recordSecurityLock.getSecurityKeyType(), recordSecurityValue, fieldType))
+         if(!qSession.hasSecurityKeyValue(recordSecurityLock.getSecurityKeyType(), recordSecurityValue, fieldType))
          {
             if(CollectionUtils.nullSafeHasContents(recordSecurityLock.getJoinNameChain()))
             {

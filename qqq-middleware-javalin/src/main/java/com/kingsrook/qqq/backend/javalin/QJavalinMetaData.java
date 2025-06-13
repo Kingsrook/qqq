@@ -25,8 +25,10 @@ package com.kingsrook.qqq.backend.javalin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import org.apache.logging.log4j.Level;
 
@@ -329,4 +331,16 @@ public class QJavalinMetaData implements QSupplementalInstanceMetaData
    }
 
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void validate(QInstance qInstance, QInstanceValidator validator)
+   {
+      for(JavalinRouteProviderMetaData routeProviderMetaData : CollectionUtils.nonNullList(routeProviders))
+      {
+         routeProviderMetaData.validate(qInstance, validator);
+      }
+   }
 }

@@ -23,8 +23,13 @@ package com.kingsrook.qqq.middleware.javalin.metadata;
 
 
 import java.util.List;
+import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.contexthandlers.RouteProviderContextHandlerInterface;
 
 
 /*******************************************************************************
@@ -32,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
  *******************************************************************************/
 public class JavalinRouteProviderMetaData implements QMetaDataObject
 {
+   private String name;
    private String hostedPath;
 
    private String fileSystemPath;
@@ -40,6 +46,7 @@ public class JavalinRouteProviderMetaData implements QMetaDataObject
    private List<String> methods;
 
    private QCodeReference routeAuthenticator;
+   private QCodeReference contextHandler;
 
 
 
@@ -204,6 +211,92 @@ public class JavalinRouteProviderMetaData implements QMetaDataObject
    {
       this.routeAuthenticator = routeAuthenticator;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for contextHandler
+    *******************************************************************************/
+   public QCodeReference getContextHandler()
+   {
+      return (this.contextHandler);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contextHandler
+    *******************************************************************************/
+   public void setContextHandler(QCodeReference contextHandler)
+   {
+      this.contextHandler = contextHandler;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contextHandler
+    *******************************************************************************/
+   public JavalinRouteProviderMetaData withContextHandler(QCodeReference contextHandler)
+   {
+      this.contextHandler = contextHandler;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for name
+    *******************************************************************************/
+   public String getName()
+   {
+      return (this.name);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for name
+    *******************************************************************************/
+   public void setName(String name)
+   {
+      this.name = name;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for name
+    *******************************************************************************/
+   public JavalinRouteProviderMetaData withName(String name)
+   {
+      this.name = name;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public void validate(QInstance qInstance, QInstanceValidator validator)
+   {
+      String prefix = "In javalinRouteProvider '" + name + "', ";
+      if(StringUtils.hasContent(processName))
+      {
+         validator.assertCondition(qInstance.getProcesses().containsKey(processName), prefix + "unrecognized process name: " + processName + " in a javalinRouteProvider");
+      }
+
+      if(routeAuthenticator != null)
+      {
+         validator.validateSimpleCodeReference(prefix + "routeAuthenticator ", routeAuthenticator, RouteAuthenticatorInterface.class);
+      }
+
+      if(contextHandler != null)
+      {
+         validator.validateSimpleCodeReference(prefix + "contextHandler ", contextHandler, RouteProviderContextHandlerInterface.class);
+      }
    }
 
 }

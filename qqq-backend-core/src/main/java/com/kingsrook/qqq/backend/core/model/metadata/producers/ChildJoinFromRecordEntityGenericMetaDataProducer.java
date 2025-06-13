@@ -26,12 +26,15 @@ import java.util.Objects;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerInterface;
+import com.kingsrook.qqq.backend.core.model.metadata.MetaDataProducerMultiOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.producers.annotations.ChildJoin;
+import com.kingsrook.qqq.backend.core.model.metadata.qbits.QBitProductionContext;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 
 
 /*******************************************************************************
@@ -62,6 +65,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    private String childTableName; // e.g., lineItem
    private String parentTableName; // e.g., order
    private String foreignKeyFieldName; // e.g., orderId
+   private boolean isOneToOne;
 
    private ChildJoin.OrderBy[] orderBys;
 
@@ -72,7 +76,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    /***************************************************************************
     **
     ***************************************************************************/
-   public ChildJoinFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, String foreignKeyFieldName, ChildJoin.OrderBy[] orderBys)
+   public ChildJoinFromRecordEntityGenericMetaDataProducer(String childTableName, String parentTableName, String foreignKeyFieldName, ChildJoin.OrderBy[] orderBys, boolean isOneToOne)
    {
       Objects.requireNonNull(childTableName, "childTableName cannot be null");
       Objects.requireNonNull(parentTableName, "parentTableName cannot be null");
@@ -82,6 +86,7 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
       this.parentTableName = parentTableName;
       this.foreignKeyFieldName = foreignKeyFieldName;
       this.orderBys = orderBys;
+      this.isOneToOne = isOneToOne;
    }
 
 
@@ -92,23 +97,14 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
    @Override
    public QJoinMetaData produce(QInstance qInstance) throws QException
    {
-      QTableMetaData parentTable = qInstance.getTable(parentTableName);
-      if(parentTable == null)
-      {
-         throw (new QException("Could not find tableMetaData " + parentTableName));
-      }
-
-      QTableMetaData childTable = qInstance.getTable(childTableName);
-      if(childTable == null)
-      {
-         throw (new QException("Could not find tableMetaData " + childTable));
-      }
+      QTableMetaData parentTable = getTable(qInstance, parentTableName);
+      QTableMetaData childTable  = getTable(qInstance, childTableName);
 
       QJoinMetaData join = new QJoinMetaData()
          .withLeftTable(parentTableName)
          .withRightTable(childTableName)
          .withInferredName()
-         .withType(JoinType.ONE_TO_MANY)
+         .withType(isOneToOne ? JoinType.ONE_TO_ONE : JoinType.ONE_TO_MANY)
          .withJoinOn(new JoinOn(parentTable.getPrimaryKeyField(), foreignKeyFieldName));
 
       if(orderBys != null && orderBys.length > 0)
@@ -127,6 +123,41 @@ public class ChildJoinFromRecordEntityGenericMetaDataProducer implements MetaDat
       }
 
       return (join);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   private QTableMetaData getTable(QInstance qInstance, String tableName) throws QException
+   {
+      QTableMetaData table = qInstance.getTable(tableName);
+      if(table == null)
+      {
+         ///////////////////////////////////////////////////////////////////////////////
+         // in case we're producing a QBit, and it's added a table to a multi-output, //
+         // but not yet the instance, see if we can get table from there              //
+         ///////////////////////////////////////////////////////////////////////////////
+         for(MetaDataProducerMultiOutput metaDataProducerMultiOutput : QBitProductionContext.getReadOnlyViewOfMetaDataProducerMultiOutputStack())
+         {
+            table = CollectionUtils.nonNullList(metaDataProducerMultiOutput.getEach(QTableMetaData.class)).stream()
+               .filter(t -> t.getName().equals(tableName))
+               .findFirst().orElse(null);
+
+            if(table != null)
+            {
+               break;
+            }
+         }
+      }
+
+      if(table == null)
+      {
+         throw (new QException("Could not find tableMetaData: " + table));
+      }
+
+      return table;
    }
 
 

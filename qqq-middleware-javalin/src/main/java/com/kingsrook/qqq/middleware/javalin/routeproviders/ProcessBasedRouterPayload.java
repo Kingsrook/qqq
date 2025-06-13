@@ -42,6 +42,7 @@ public class ProcessBasedRouterPayload extends QProcessPayload
    private Map<String, List<String>> queryParams;
    private Map<String, List<String>> formParams;
    private Map<String, String>       cookies;
+   private String                    bodyString;
 
    private Integer             statusCode;
    private String              redirectURL;
@@ -450,5 +451,36 @@ public class ProcessBasedRouterPayload extends QProcessPayload
       this.formParams = formParams;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for bodyString
+    *******************************************************************************/
+   public String getBodyString()
+   {
+      return (this.bodyString);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for bodyString
+    *******************************************************************************/
+   public void setBodyString(String bodyString)
+   {
+      this.bodyString = bodyString;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for bodyString
+    *******************************************************************************/
+   public ProcessBasedRouterPayload withBodyString(String bodyString)
+   {
+      this.bodyString = bodyString;
+      return (this);
+   }
+
 
 }

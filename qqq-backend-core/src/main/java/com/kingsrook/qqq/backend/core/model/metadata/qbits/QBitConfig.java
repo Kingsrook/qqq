@@ -107,4 +107,14 @@ public interface QBitConfig extends Serializable
    {
       return (null);
    }
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   default String getDefaultBackendNameForTables()
+   {
+      return (null);
+   }
+
 }
