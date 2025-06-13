@@ -295,7 +295,18 @@ public class QInstanceValidator
       if(validateMethod.isPresent())
       {
          Class<?> parameterType = validateMethod.get().getParameterTypes()[0];
-         validatorPlugins.add(parameterType, plugin);
+
+         Set<String> existingPluginIdentifiers = validatorPlugins.getOrDefault(parameterType, Collections.emptyList())
+            .stream().map(p -> p.getPluginIdentifier())
+            .collect(Collectors.toSet());
+         if(existingPluginIdentifiers.contains(plugin.getPluginIdentifier()))
+         {
+            LOG.debug("Validator plugin is already registered - not re-adding it", logPair("pluginIdentifer", plugin.getPluginIdentifier()));
+         }
+         else
+         {
+            validatorPlugins.add(parameterType, plugin);
+         }
       }
       else
       {
@@ -313,7 +324,7 @@ public class QInstanceValidator
       validatorPlugins.clear();
    }
 
-   
+
 
    /*******************************************************************************
     ** Getter for validatorPlugins

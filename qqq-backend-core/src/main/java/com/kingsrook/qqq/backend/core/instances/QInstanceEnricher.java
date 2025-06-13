@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnri
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -210,6 +211,11 @@ public class QInstanceEnricher
     ***************************************************************************/
    private void enrichInstance()
    {
+      for(QSupplementalInstanceMetaData supplementalInstanceMetaData : qInstance.getSupplementalMetaData().values())
+      {
+         supplementalInstanceMetaData.enrich(qInstance);
+      }
+
       runPlugins(QInstance.class, qInstance, qInstance);
    }
 
@@ -1477,7 +1483,18 @@ public class QInstanceEnricher
       if(enrichMethod.isPresent())
       {
          Class<?> parameterType = enrichMethod.get().getParameterTypes()[0];
-         enricherPlugins.add(parameterType, plugin);
+
+         Set<String> existingPluginIdentifiers = enricherPlugins.getOrDefault(parameterType, Collections.emptyList())
+            .stream().map(p -> p.getPluginIdentifier())
+            .collect(Collectors.toSet());
+         if(existingPluginIdentifiers.contains(plugin.getPluginIdentifier()))
+         {
+            LOG.debug("Enricher plugin is already registered - not re-adding it", logPair("pluginIdentifer", plugin.getPluginIdentifier()));
+         }
+         else
+         {
+            enricherPlugins.add(parameterType, plugin);
+         }
       }
       else
       {
