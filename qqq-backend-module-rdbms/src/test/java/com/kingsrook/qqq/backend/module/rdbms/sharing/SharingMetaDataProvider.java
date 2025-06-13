@@ -122,6 +122,7 @@ public class SharingMetaDataProvider
       qInstance.addTable(new QTableMetaData()
          .withName(User.TABLE_NAME)
          .withPrimaryKeyField("id")
+         .withBackendDetails(new RDBMSTableBackendDetails().withTableName("user"))
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
          .withFieldsFromEntity(User.class)
          .withRecordSecurityLock(new RecordSecurityLock()
@@ -132,6 +133,7 @@ public class SharingMetaDataProvider
       qInstance.addTable(new QTableMetaData()
          .withName(Group.TABLE_NAME)
          .withPrimaryKeyField("id")
+         .withBackendDetails(new RDBMSTableBackendDetails().withTableName("group"))
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
          .withFieldsFromEntity(Group.class));
       QInstanceEnricher.setInferredFieldBackendNames(qInstance.getTable(Group.TABLE_NAME));
@@ -139,6 +141,7 @@ public class SharingMetaDataProvider
       qInstance.addTable(new QTableMetaData()
          .withName(Client.TABLE_NAME)
          .withPrimaryKeyField("id")
+         .withBackendDetails(new RDBMSTableBackendDetails().withTableName("client"))
          .withBackendName(TestUtils.DEFAULT_BACKEND_NAME)
          .withFieldsFromEntity(Client.class));
       QInstanceEnricher.setInferredFieldBackendNames(qInstance.getTable(Client.TABLE_NAME));

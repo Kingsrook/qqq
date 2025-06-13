@@ -438,8 +438,8 @@ class QueryManagerTest extends BaseTest
             """);
          List<Map<String, Object>> rows = QueryManager.executeStatementForRows(connection, "SELECT * FROM test_table");
          assertNotNull(rows);
-         assertEquals(47, rows.get(0).get("INT_COL"));
-         assertEquals("Q", rows.get(0).get("CHAR_COL"));
+         assertEquals(47, rows.get(0).get("int_col"));
+         assertEquals("Q", rows.get(0).get("char_col"));
       }
    }
 
