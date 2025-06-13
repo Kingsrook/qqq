@@ -22,12 +22,18 @@
 package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.instances.QMetaDataVariableInterpreter;
+import com.kingsrook.qqq.backend.core.instances.assessment.Assessable;
+import com.kingsrook.qqq.backend.core.instances.assessment.QInstanceAssessor;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
@@ -36,7 +42,7 @@ import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterf
 /*******************************************************************************
  ** Meta-data to provide details of an RDBMS backend (e.g., connection params)
  *******************************************************************************/
-public class RDBMSBackendMetaData extends QBackendMetaData
+public class RDBMSBackendMetaData extends QBackendMetaData implements Assessable
 {
    private String  vendor;
    private String  hostName;
@@ -580,4 +586,25 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    }
 
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
+   public void assess(QInstanceAssessor qInstanceAssessor, QInstance qInstance)
+   {
+      List<QTableMetaData> tables = new ArrayList<>();
+      for(QTableMetaData table : qInstance.getTables().values())
+      {
+         if(Objects.equals(getName(), table.getBackendName()))
+         {
+            tables.add(table);
+         }
+      }
+
+      if(!tables.isEmpty())
+      {
+         new RDBMSBackendAssessor(qInstanceAssessor, this, tables).assess();
+      }
+   }
 }
