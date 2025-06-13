@@ -44,7 +44,7 @@ public class MultiRecordSecurityLock extends RecordSecurityLock implements Clone
     **
     *******************************************************************************/
    @Override
-   protected MultiRecordSecurityLock clone() throws CloneNotSupportedException
+   public MultiRecordSecurityLock clone()
    {
       MultiRecordSecurityLock clone = (MultiRecordSecurityLock) super.clone();
 
