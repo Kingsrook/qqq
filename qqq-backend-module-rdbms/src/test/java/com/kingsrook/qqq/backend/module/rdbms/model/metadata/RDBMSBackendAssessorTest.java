@@ -24,8 +24,8 @@ package com.kingsrook.qqq.backend.module.rdbms.model.metadata;
 
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.instances.assessment.QInstanceAssessor;
+import com.kingsrook.qqq.backend.module.rdbms.BaseTest;
 import com.kingsrook.qqq.backend.module.rdbms.TestUtils;
-import com.kingsrook.qqq.backend.module.rdbms.actions.RDBMSActionTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 /*******************************************************************************
  ** Unit test for RDBMSBackendAssessor 
  *******************************************************************************/
-class RDBMSBackendAssessorTest extends RDBMSActionTest
+class RDBMSBackendAssessorTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -53,16 +53,17 @@ class RDBMSBackendAssessorTest extends RDBMSActionTest
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
    @Test
    void testIssues() throws Exception
    {
-      //////////////////////////////
-      // don't prime the database //
-      //////////////////////////////
-      // TestUtils.primeTestDatabase("prime-test-database.sql");
+      ///////////////////////////
+      // un-prime the database //
+      ///////////////////////////
+      TestUtils.primeTestDatabase("drop-test-database.sql");
       QInstanceAssessor assessor = new QInstanceAssessor(QContext.getQInstance());
       assessor.assess();
       assessor.printSummary();
