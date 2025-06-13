@@ -164,6 +164,7 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
       if(QContext.getQInstance().getTable(ScheduledJob.TABLE_NAME) == null)
       {
          LOG.info("ScheduledJob table not found, skipping scheduled job sync.");
+         return;
       }
 
       String primaryKeyField = QContext.getQInstance().getTable(tableName).getPrimaryKeyField();
@@ -205,6 +206,7 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
       if(QContext.getQInstance().getTable(ScheduledJob.TABLE_NAME) == null)
       {
          LOG.info("ScheduledJob table not found, skipping scheduled job delete.");
+         return;
       }
 
       List<String> sourceRecordIds = records.stream()
