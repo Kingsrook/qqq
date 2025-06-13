@@ -164,7 +164,7 @@ public class RDBMSBackendAssessor
                         QFieldMetaData columnMetaData = new QFieldMetaData(columnName, typeMap.get(dataTypeName));
                         columnMap.put(columnName, columnMetaData);
 
-                        if("YES" .equals(isAutoIncrement))
+                        if("YES".equals(isAutoIncrement))
                         {
                            primaryKeyColumnName = columnName;
                         }
