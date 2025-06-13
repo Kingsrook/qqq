@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.actions.tables;
 
 import java.util.List;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class InsertActionInstanceLevelTableCustomizersTest
+public class InsertActionInstanceLevelTableCustomizersTest extends BaseTest
 {
 
 
