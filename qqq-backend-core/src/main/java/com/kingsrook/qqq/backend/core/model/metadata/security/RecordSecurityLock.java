@@ -57,20 +57,27 @@ public class RecordSecurityLock implements Cloneable
     **
     *******************************************************************************/
    @Override
-   protected RecordSecurityLock clone() throws CloneNotSupportedException
+   public RecordSecurityLock clone()
    {
-      RecordSecurityLock clone = (RecordSecurityLock) super.clone();
-
-      /////////////////////////
-      // deep-clone the list //
-      /////////////////////////
-      if(joinNameChain != null)
+      try
       {
-         clone.joinNameChain = new ArrayList<>();
-         clone.joinNameChain.addAll(joinNameChain);
-      }
+         RecordSecurityLock clone = (RecordSecurityLock) super.clone();
 
-      return (clone);
+         /////////////////////////
+         // deep-clone the list //
+         /////////////////////////
+         if(joinNameChain != null)
+         {
+            clone.joinNameChain = new ArrayList<>();
+            clone.joinNameChain.addAll(joinNameChain);
+         }
+
+         return (clone);
+      }
+      catch(CloneNotSupportedException e)
+      {
+         throw (new RuntimeException("Could not clone", e));
+      }
    }
 
 

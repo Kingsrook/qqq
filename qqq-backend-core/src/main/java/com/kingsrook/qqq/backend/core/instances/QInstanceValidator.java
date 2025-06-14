@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.dashboard.widgets.AbstractWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
@@ -252,6 +253,17 @@ public class QInstanceValidator
       {
          validateSimpleCodeReference("Instance metaDataActionCustomizer ", qInstance.getMetaDataActionCustomizer(), MetaDataActionCustomizerInterface.class);
       }
+
+      if(qInstance.getTableCustomizers() != null)
+      {
+         for(Map.Entry<String, List<QCodeReference>> entry : qInstance.getTableCustomizers().entrySet())
+         {
+            for(QCodeReference codeReference : CollectionUtils.nonNullList(entry.getValue()))
+            {
+               validateSimpleCodeReference("Instance tableCustomizer of type " + entry.getKey() + ": ", codeReference, TableCustomizerInterface.class);
+            }
+         }
+      }
    }
 
 
@@ -283,7 +295,18 @@ public class QInstanceValidator
       if(validateMethod.isPresent())
       {
          Class<?> parameterType = validateMethod.get().getParameterTypes()[0];
-         validatorPlugins.add(parameterType, plugin);
+
+         Set<String> existingPluginIdentifiers = validatorPlugins.getOrDefault(parameterType, Collections.emptyList())
+            .stream().map(p -> p.getPluginIdentifier())
+            .collect(Collectors.toSet());
+         if(existingPluginIdentifiers.contains(plugin.getPluginIdentifier()))
+         {
+            LOG.debug("Validator plugin is already registered - not re-adding it", logPair("pluginIdentifer", plugin.getPluginIdentifier()));
+         }
+         else
+         {
+            validatorPlugins.add(parameterType, plugin);
+         }
       }
       else
       {
@@ -299,6 +322,17 @@ public class QInstanceValidator
    public static void removeAllValidatorPlugins()
    {
       validatorPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for validatorPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceValidatorPluginInterface<?>> getValidatorPlugins()
+   {
+      return validatorPlugins;
    }
 
 
@@ -2238,8 +2272,7 @@ public class QInstanceValidator
    /*******************************************************************************
     **
     *******************************************************************************/
-   @SafeVarargs
-   private void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
+   public void validateSimpleCodeReference(String prefix, QCodeReference codeReference, Class<?>... anyOfExpectedClasses)
    {
       if(!preAssertionsForCodeReference(codeReference, prefix))
       {

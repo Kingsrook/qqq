@@ -38,4 +38,13 @@ public interface QInstanceValidatorPluginInterface<T>
     *******************************************************************************/
    void validate(T object, QInstance qInstance, QInstanceValidator qInstanceValidator);
 
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   default String getPluginIdentifier()
+   {
+      return getClass().getName();
+   }
+
 }
