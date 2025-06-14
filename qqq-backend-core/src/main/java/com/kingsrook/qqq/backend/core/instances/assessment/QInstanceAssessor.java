@@ -77,22 +77,24 @@ public class QInstanceAssessor
     **
     *******************************************************************************/
    @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
-   public void printSummary()
+   public String getSummary()
    {
+      StringBuilder rs = new StringBuilder();
+
       ///////////////////////////
       // print header & errors //
       ///////////////////////////
       if(CollectionUtils.nullSafeIsEmpty(errors))
       {
-         System.out.println("Assessment passed with no errors! \uD83D\uDE0E");
+         rs.append("Assessment passed with no errors! \uD83D\uDE0E\n");
       }
       else
       {
-         System.out.println("Assessment found the following " + StringUtils.plural(errors, "error", "errors") + ": \uD83D\uDE32");
+         rs.append("Assessment found the following ").append(StringUtils.plural(errors, "error", "errors")).append(": \uD83D\uDE32\n");
 
          for(String error : errors)
          {
-            System.out.println(" - " + error);
+            rs.append(" - ").append(error).append("\n");
          }
       }
 
@@ -101,11 +103,11 @@ public class QInstanceAssessor
       /////////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(warnings))
       {
-         System.out.println("\nAssessment found the following " + StringUtils.plural(warnings, "warning", "warnings") + ": \uD83E\uDD28");
+         rs.append("\nAssessment found the following ").append(StringUtils.plural(warnings, "warning", "warnings")).append(": \uD83E\uDD28\n");
 
          for(String warning : warnings)
          {
-            System.out.println(" - " + warning);
+            rs.append(" - ").append(warning).append("\n");
          }
       }
 
@@ -114,13 +116,15 @@ public class QInstanceAssessor
       //////////////////////////////////////////
       if(CollectionUtils.nullSafeHasContents(suggestions))
       {
-         System.out.println("\nThe following " + StringUtils.plural(suggestions, "fix is", "fixes are") + " suggested: \uD83E\uDD13");
+         rs.append("\nThe following ").append(StringUtils.plural(suggestions, "fix is", "fixes are")).append(" suggested: \uD83E\uDD13\n");
 
          for(String suggestion : suggestions)
          {
-            System.out.println("\n" + suggestion + "\n");
+            rs.append("\n").append(suggestion).append("\n\n");
          }
       }
+
+      return (rs.toString());
    }
 
 
