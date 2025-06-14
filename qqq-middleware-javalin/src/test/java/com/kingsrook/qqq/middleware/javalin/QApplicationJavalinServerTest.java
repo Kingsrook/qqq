@@ -52,6 +52,16 @@ class QApplicationJavalinServerTest
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static AbstractQQQApplication getQqqApplication()
+   {
+      return new TestApplication();
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -200,6 +210,26 @@ class QApplicationJavalinServerTest
     **
     *******************************************************************************/
    @Test
+   void testStaticRouterFilesFromExternal() throws Exception
+   {
+      System.setProperty("qqq.javalin.enableStaticFilesFromJar", "false");
+
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT);
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/statically-served/foo.html").asString();
+      assertEquals("Foo? Bar!", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testAuthenticatedStaticRouter() throws Exception
    {
       javalinServer = new QApplicationJavalinServer(getQqqApplication())
@@ -292,16 +322,6 @@ class QApplicationJavalinServerTest
          .asString();
       assertEquals(200, response.getStatus());
       assertEquals("So you've done a GET for: /protected-served-by-process/foo.html", response.getBody());
-   }
-
-
-
-   /***************************************************************************
-    **
-    ***************************************************************************/
-   private static AbstractQQQApplication getQqqApplication()
-   {
-      return new TestApplication();
    }
 
 
