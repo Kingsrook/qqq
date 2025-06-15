@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.MiddlewareVersionV1;
 import io.javalin.http.HttpStatus;
 import kong.unirest.HttpResponse;
@@ -70,6 +71,7 @@ class QApplicationJavalinServerTest
    {
       javalinServer.stop();
       TestApplication.callCount = 0;
+      System.clearProperty("qqq.javalin.enableStaticFilesFromJar");
    }
 
 
@@ -222,6 +224,28 @@ class QApplicationJavalinServerTest
       Unirest.config().setDefaultResponseEncoding("UTF-8");
       HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/statically-served/foo.html").asString();
       assertEquals("Foo? Bar!", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testStaticRouterFilesFromClasspath() throws Exception
+   {
+      System.setProperty("qqq.javalin.enableStaticFilesFromJar", "true");
+
+      javalinServer = new QApplicationJavalinServer(new QApplicationJavalinServerTest.TestApplication())
+         .withServeFrontendMaterialDashboard(false)
+         .withPort(PORT)
+         .withAdditionalRouteProvider(new SimpleFileSystemDirectoryRouter("/statically-served-from-jar", "static-site-from-jar/"));
+
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/statically-served-from-jar/foo-in-jar.html").asString();
+      assertEquals("Foo in a Jar!\n", response.getBody());
    }
 
 

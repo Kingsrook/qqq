@@ -51,8 +51,21 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
    private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
    public static boolean loadStaticFilesFromJar = false;
 
-   static
+
+   private final String hostedPath;
+   private final String fileSystemPath;
+   private QCodeReference routeAuthenticator;
+   private QInstance qInstance;
+
+   /*******************************************************************************
+    ** Constructor
+    **
+    *******************************************************************************/
+   public SimpleFileSystemDirectoryRouter(String hostedPath, String fileSystemPath)
    {
+      this.hostedPath = hostedPath;
+      this.fileSystemPath = fileSystemPath;
+
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       // read the property to see if we should load static files from the jar file or from the file system //
       // Javan only supports loading via one method per path, so its a choice of one or the other...       //
@@ -70,21 +83,6 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       {
          e.printStackTrace();
       }
-   }
-
-   private final String hostedPath;
-   private final String fileSystemPath;
-   private QCodeReference routeAuthenticator;
-   private QInstance qInstance;
-
-   /*******************************************************************************
-    ** Constructor
-    **
-    *******************************************************************************/
-   public SimpleFileSystemDirectoryRouter(String hostedPath, String fileSystemPath)
-   {
-      this.hostedPath = hostedPath;
-      this.fileSystemPath = fileSystemPath;
    }
 
 
