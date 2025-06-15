@@ -86,7 +86,7 @@ public class MetaDataProducerMultiOutput implements MetaDataProducerOutput, Sour
    {
       List<T> rs = new ArrayList<>();
 
-      for(MetaDataProducerOutput content : contents)
+      for(MetaDataProducerOutput content : CollectionUtils.nonNullList(contents))
       {
          if(content instanceof MetaDataProducerMultiOutput multiOutput)
          {

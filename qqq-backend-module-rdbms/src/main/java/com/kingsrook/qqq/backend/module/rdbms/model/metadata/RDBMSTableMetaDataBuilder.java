@@ -101,12 +101,6 @@ public class RDBMSTableMetaDataBuilder
          String schemaName   = null;
          String tableNameForMetaDataQueries = tableName;
 
-         if(backendMetaData.getVendor().equals("h2"))
-         {
-            databaseName = databaseName.toUpperCase();
-            tableNameForMetaDataQueries = tableName.toUpperCase();
-         }
-
          try(ResultSet tableResultSet = databaseMetaData.getTables(databaseName, schemaName, tableNameForMetaDataQueries, null))
          {
             if(!tableResultSet.next())
