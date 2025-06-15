@@ -49,15 +49,13 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInterface
 {
    private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
+   public static boolean loadStaticFilesFromJar = false;
+
 
    private final String hostedPath;
    private final String fileSystemPath;
-
    private QCodeReference routeAuthenticator;
-
    private QInstance qInstance;
-
-
 
    /*******************************************************************************
     ** Constructor
@@ -67,6 +65,24 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
    {
       this.hostedPath = hostedPath;
       this.fileSystemPath = fileSystemPath;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      // read the property to see if we should load static files from the jar file or from the file system //
+      // Javan only supports loading via one method per path, so its a choice of one or the other...       //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      try
+      {
+         String propertyName  = "qqq.javalin.enableStaticFilesFromJar";  // TODO: make a more general way to handle properties like this system-wide via a central config class
+         String propertyValue = System.getProperty(propertyName, "");
+         if(propertyValue.equals("true"))
+         {
+            loadStaticFilesFromJar = true;
+         }
+      }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+      }
    }
 
 
@@ -98,25 +114,41 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
     ***************************************************************************/
    private void handleJavalinStaticFileConfig(StaticFileConfig staticFileConfig)
    {
-      URL resource = getClass().getClassLoader().getResource(fileSystemPath);
-      if(resource == null)
-      {
-         String message = "Could not find file system path: " + fileSystemPath;
-         if(fileSystemPath.startsWith("/") && getClass().getClassLoader().getResource(fileSystemPath.replaceFirst("^/+", "")) != null)
-         {
-            message += ".  For non-absolute paths, do not prefix with a leading slash.";
-         }
-         throw new RuntimeException(message);
-      }
 
       if(!hostedPath.startsWith("/"))
       {
          LOG.warn("hostedPath [" + hostedPath + "] should probably start with a leading slash...");
       }
 
-      staticFileConfig.directory = resource.getFile();
-      staticFileConfig.hostedPath = hostedPath;
-      staticFileConfig.location = Location.EXTERNAL;
+      /// /////////////////////////////////////////////////////////////////////////////////////
+      // Handle loading static files from the jar OR the filesystem based on system property //
+      /// /////////////////////////////////////////////////////////////////////////////////////
+      if(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJar)
+      {
+         staticFileConfig.directory = fileSystemPath;
+         staticFileConfig.hostedPath = hostedPath;
+         staticFileConfig.location = Location.CLASSPATH;
+         LOG.info("Static File Config : hostedPath [" + hostedPath + "] : directory [" + staticFileConfig.directory + "] : location [CLASSPATH]");
+      }
+      else
+      {
+         URL resource = getClass().getClassLoader().getResource(fileSystemPath);
+         if(resource == null)
+         {
+            String message = "Could not find file system path: " + fileSystemPath;
+            if(fileSystemPath.startsWith("/") && getClass().getClassLoader().getResource(fileSystemPath.replaceFirst("^/+", "")) != null)
+            {
+               message += ".  For non-absolute paths, do not prefix with a leading slash.";
+            }
+            throw new RuntimeException(message);
+         }
+
+         staticFileConfig.directory = resource.getFile();
+         staticFileConfig.hostedPath = hostedPath;
+         staticFileConfig.location = Location.EXTERNAL;
+         LOG.info("Static File Config : hostedPath [" + hostedPath + "] : directory [" + staticFileConfig.directory + "] : location [EXTERNAL]");
+      }
+
    }
 
 
