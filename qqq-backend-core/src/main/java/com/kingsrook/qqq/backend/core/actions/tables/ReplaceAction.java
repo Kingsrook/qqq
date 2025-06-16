@@ -126,6 +126,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          InsertInput insertInput = new InsertInput();
          insertInput.setTableName(table.getName());
          insertInput.setRecords(insertList);
+         insertInput.withFlags(input.getFlags());
          insertInput.setTransaction(transaction);
          insertInput.setOmitDmlAudit(input.getOmitDmlAudit());
          InsertOutput insertOutput = new InsertAction().execute(insertInput);
@@ -135,6 +136,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
          UpdateInput updateInput = new UpdateInput();
          updateInput.setTableName(table.getName());
          updateInput.setRecords(updateList);
+         updateInput.withFlags(input.getFlags());
          updateInput.setTransaction(transaction);
          updateInput.setOmitDmlAudit(input.getOmitDmlAudit());
          UpdateOutput updateOutput = new UpdateAction().execute(updateInput);
@@ -151,6 +153,7 @@ public class ReplaceAction extends AbstractQActionFunction<ReplaceInput, Replace
             DeleteInput deleteInput = new DeleteInput();
             deleteInput.setTableName(table.getName());
             deleteInput.setQueryFilter(deleteFilter);
+            deleteInput.withFlags(input.getFlags());
             deleteInput.setTransaction(transaction);
             deleteInput.setOmitDmlAudit(input.getOmitDmlAudit());
             DeleteOutput deleteOutput = new DeleteAction().execute(deleteInput);

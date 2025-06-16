@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
@@ -158,7 +157,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       //////////////////////////////////////////////////
       // insert any associations in the input records //
       //////////////////////////////////////////////////
-      manageAssociations(table, insertOutput.getRecords(), insertInput.getTransaction());
+      manageAssociations(table, insertOutput.getRecords(), insertInput);
 
       //////////////////
       // do the audit //
@@ -386,7 +385,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords, QBackendTransaction transaction) throws QException
+   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords, InsertInput insertInput) throws QException
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -419,7 +418,8 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          if(CollectionUtils.nullSafeHasContents(nextLevelInserts))
          {
             InsertInput nextLevelInsertInput = new InsertInput();
-            nextLevelInsertInput.setTransaction(transaction);
+            nextLevelInsertInput.withFlags(insertInput.getFlags());
+            nextLevelInsertInput.setTransaction(insertInput.getTransaction());
             nextLevelInsertInput.setTableName(association.getAssociatedTableName());
             nextLevelInsertInput.setRecords(nextLevelInserts);
             InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);

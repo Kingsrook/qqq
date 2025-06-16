@@ -401,6 +401,7 @@ public class DeleteAction
          if(CollectionUtils.nullSafeHasContents(associatedKeys))
          {
             DeleteInput nextLevelDeleteInput = new DeleteInput();
+            nextLevelDeleteInput.setFlags(deleteInput.getFlags());
             nextLevelDeleteInput.setTransaction(deleteInput.getTransaction());
             nextLevelDeleteInput.setTableName(association.getAssociatedTableName());
             nextLevelDeleteInput.setPrimaryKeys(associatedKeys);
