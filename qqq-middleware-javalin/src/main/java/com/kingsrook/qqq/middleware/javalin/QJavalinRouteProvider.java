@@ -32,19 +32,19 @@ import io.javalin.config.JavalinConfig;
  ** Interface for classes that can provide a list of endpoints to a javalin
  ** server.
  *******************************************************************************/
-public interface QJavalinRouteProviderInterface
+public abstract class QJavalinRouteProviderInterface
 {
 
    /***************************************************************************
     ** For initial setup when server boots, set the qInstance - but also,
     ** e.g., for development, to do a hot-swap.
     ***************************************************************************/
-   void setQInstance(QInstance qInstance);
+   public abstract void setQInstance(QInstance qInstance);
 
    /***************************************************************************
     **
     ***************************************************************************/
-   default EndpointGroup getJavalinEndpointGroup()
+   public EndpointGroup getJavalinEndpointGroup()
    {
       /////////////////////////////
       // no endpoints at default //
@@ -58,7 +58,7 @@ public interface QJavalinRouteProviderInterface
     ** accept the javalinConfig object, to perform whatever setup you need,
     ** such as setting up routes.
     ***************************************************************************/
-   default void acceptJavalinConfig(JavalinConfig config)
+   public void acceptJavalinConfig(JavalinConfig config)
    {
       /////////////////////
       // noop at default //
@@ -70,7 +70,7 @@ public interface QJavalinRouteProviderInterface
     ** accept the Javalin service object, to perform whatever setup you need,
     ** such as setting up before/after handlers.
     ***************************************************************************/
-   default void acceptJavalinService(Javalin service)
+    public void acceptJavalinService(Javalin service)
    {
       /////////////////////
       // noop at default //
