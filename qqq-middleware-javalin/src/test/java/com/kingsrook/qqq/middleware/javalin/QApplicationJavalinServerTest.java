@@ -71,7 +71,7 @@ class QApplicationJavalinServerTest
    {
       javalinServer.stop();
       TestApplication.callCount = 0;
-      System.clearProperty("qqq.javalin.enableStaticFilesFromJar");
+      System.clearProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty);
    }
 
 
@@ -214,7 +214,7 @@ class QApplicationJavalinServerTest
    @Test
    void testStaticRouterFilesFromExternal() throws Exception
    {
-      System.setProperty("qqq.javalin.enableStaticFilesFromJar", "false");
+      System.setProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "false");
 
       javalinServer = new QApplicationJavalinServer(getQqqApplication())
          .withServeFrontendMaterialDashboard(false)
@@ -232,9 +232,49 @@ class QApplicationJavalinServerTest
     **
     *******************************************************************************/
    @Test
+   void testFrontendMaterialDashboardHostedPathDefault() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(true)
+         .withPort(PORT)
+         .withFrontendMaterialDashboardHostedPath("/");
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/index.html").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("This is a mock of /material-dashboard/index.html for testing purposes.", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFrontendMaterialDashboardHostedPathCustomApp() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(true)
+         .withPort(PORT)
+         .withFrontendMaterialDashboardHostedPath("/app");
+      javalinServer.start();
+
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/app/index.html").asString();
+      assertEquals(200, response.getStatus());
+      assertEquals("This is a mock of /material-dashboard/index.html for testing purposes.", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testStaticRouterFilesFromClasspath() throws Exception
    {
-      System.setProperty("qqq.javalin.enableStaticFilesFromJar", "true");
+      System.setProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "true");
 
       javalinServer = new QApplicationJavalinServer(new QApplicationJavalinServerTest.TestApplication())
          .withServeFrontendMaterialDashboard(false)

@@ -74,6 +74,7 @@ public class QApplicationJavalinServer
 
    private Integer                              port                                = 8000;
    private boolean                              serveFrontendMaterialDashboard      = true;
+   private String                               frontendMaterialDashboardHostedPath = "/";  // TODO - Things like this should be moved into a central configuration file system, so that it can be changed in userspace without code changes.
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
    private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
    private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
@@ -145,7 +146,7 @@ public class QApplicationJavalinServer
             ////////////////////////////////////////////////////////////
             // set the index page for the SPA from material dashboard //
             ////////////////////////////////////////////////////////////
-            config.spaRoot.addFile("/", "material-dashboard/index.html");
+            config.spaRoot.addFile(this.frontendMaterialDashboardHostedPath, "material-dashboard/index.html");
          }
 
          ///////////////////////////////////////////
@@ -471,6 +472,26 @@ public class QApplicationJavalinServer
 
 
    /*******************************************************************************
+    *  Sets the hosted path for the frontend Material Dashboard UI.
+    *
+    *  This value determines the base URL path under which the static frontend
+    *  dashboard assets are served. It should match the path configured in your
+    *  frontend build or static asset router.
+    *
+    *  @param frontendMaterialDashboardHostedPath the hosted path (e.g., "/admin" or "/dashboard").  Default is "/"
+    *  @return this instance for method chaining
+    *
+    *  @see #withServeFrontendMaterialDashboard(boolean)
+    *******************************************************************************/
+   public QApplicationJavalinServer withFrontendMaterialDashboardHostedPath(String frontendMaterialDashboardHostedPath)
+   {
+      this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for serveLegacyUnversionedMiddlewareAPI
     *******************************************************************************/
    public boolean getServeLegacyUnversionedMiddlewareAPI()
@@ -689,5 +710,25 @@ public class QApplicationJavalinServer
       this.javalinMetaData = javalinMetaData;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for frontendMaterialDashboardHostedPath
+    *******************************************************************************/
+   public String getFrontendMaterialDashboardHostedPath()
+   {
+      return (this.frontendMaterialDashboardHostedPath);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for frontendMaterialDashboardHostedPath
+    *******************************************************************************/
+   public void setFrontendMaterialDashboardHostedPath(String frontendMaterialDashboardHostedPath)
+   {
+      this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
+   }
+
 
 }
