@@ -82,7 +82,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       catch(Exception e)
       {
          loadStaticFilesFromJar = false;
-         LOG.warn("Exception attempting to read system property, defaulting to false. ", logPair("system property", SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty));
+         LOG.warn("Exception attempting to read system property, defaulting to false. ", e, logPair("system property", SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty));
       }
    }
 
