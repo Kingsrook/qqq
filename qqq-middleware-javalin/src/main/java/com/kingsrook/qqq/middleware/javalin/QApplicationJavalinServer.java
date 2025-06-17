@@ -479,7 +479,6 @@ public class QApplicationJavalinServer
     *  frontend build or static asset router.
     *
     *  @param frontendMaterialDashboardHostedPath the hosted path (e.g., "/admin" or "/dashboard").  Default is "/"
-    *  @return this instance for method chaining
     *
     *  @see #withServeFrontendMaterialDashboard(boolean)
     *******************************************************************************/
@@ -714,6 +713,8 @@ public class QApplicationJavalinServer
 
    /*******************************************************************************
     ** Getter for frontendMaterialDashboardHostedPath
+    *
+    * @see #withFrontendMaterialDashboardHostedPath(String)
     *******************************************************************************/
    public String getFrontendMaterialDashboardHostedPath()
    {
@@ -724,11 +725,11 @@ public class QApplicationJavalinServer
 
    /*******************************************************************************
     ** Setter for frontendMaterialDashboardHostedPath
+    *
+    * @see #withFrontendMaterialDashboardHostedPath(String)
     *******************************************************************************/
    public void setFrontendMaterialDashboardHostedPath(String frontendMaterialDashboardHostedPath)
    {
       this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
    }
-
-
 }
