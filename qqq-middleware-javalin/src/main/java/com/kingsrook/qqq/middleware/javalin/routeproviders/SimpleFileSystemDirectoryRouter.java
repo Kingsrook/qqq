@@ -73,7 +73,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       try
       {
-         String propertyValue = System.getProperty(this.loadStaticFilesFromJarProperty, "");
+         String propertyValue = System.getProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "");
          if(propertyValue.equals("true"))
          {
             loadStaticFilesFromJar = true;
@@ -82,7 +82,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       catch(Exception e)
       {
          loadStaticFilesFromJar = false;
-         LOG.warn("Exception attemping to read system property, defaulting to false. ", logPair("system property", this.loadStaticFilesFromJarProperty));
+         LOG.warn("Exception attempting to read system property, defaulting to false. ", logPair("system property", SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty));
       }
    }
 
