@@ -241,9 +241,39 @@ class QApplicationJavalinServerTest
          .withFrontendMaterialDashboardHostedPath("/");
       javalinServer.start();
 
+
+      //////////////////////////////////////////////////////
+      // Verify that we can get access the file correctly //
+      //////////////////////////////////////////////////////
       Unirest.config().setDefaultResponseEncoding("UTF-8");
-      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/index.html").asString();
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/dashboard.html").asString();
       assertEquals(200, response.getStatus());
+      assertEquals("This is a mock of /material-dashboard/dashboard.html for testing purposes.", response.getBody());
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testFrontendMaterialDashboardHostedPathDefaultInverse() throws Exception
+   {
+      javalinServer = new QApplicationJavalinServer(getQqqApplication())
+         .withServeFrontendMaterialDashboard(true)
+         .withPort(PORT)
+         .withFrontendMaterialDashboardHostedPath("/");
+      javalinServer.start();
+
+      ////////////////////////////////////////////////////////////
+      // Verify that the file is not accessible at the app path //
+      ////////////////////////////////////////////////////////////
+      Unirest.config().setDefaultResponseEncoding("UTF-8");
+      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/bs-directory/dashboard.html").asString();
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // Note, this will not 404, instead it will return the default index.html file //
+      /////////////////////////////////////////////////////////////////////////////////
       assertEquals("This is a mock of /material-dashboard/index.html for testing purposes.", response.getBody());
    }
 
@@ -262,9 +292,19 @@ class QApplicationJavalinServerTest
       javalinServer.start();
 
       Unirest.config().setDefaultResponseEncoding("UTF-8");
-      HttpResponse<String> response = Unirest.get("http://localhost:" + PORT + "/app/index.html").asString();
-      assertEquals(200, response.getStatus());
-      assertEquals("This is a mock of /material-dashboard/index.html for testing purposes.", response.getBody());
+
+      //////////////////////////////////////////////////////
+      // verify that we can get access the file correctly //
+      //////////////////////////////////////////////////////
+      HttpResponse<String> response1 = Unirest.get("http://localhost:" + PORT + "/app/dashboard.html").asString();
+      assertEquals(200, response1.getStatus());
+      assertEquals("This is a mock of /material-dashboard/dashboard.html for testing purposes.", response1.getBody());
+
+      /////////////////////////////////////////////////////////////
+      // Verify that the file is not accessible at the root path //
+      /////////////////////////////////////////////////////////////
+      HttpResponse<String> response2 = Unirest.get("http://localhost:" + PORT + "/index.html").asString();
+      assertEquals(404, response2.getStatus());
    }
 
 
