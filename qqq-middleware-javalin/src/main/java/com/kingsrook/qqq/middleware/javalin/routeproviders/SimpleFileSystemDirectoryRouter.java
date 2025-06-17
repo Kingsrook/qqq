@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
-import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
+import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProvider;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
 import io.javalin.Javalin;
@@ -46,7 +46,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** javalin route provider that hosts a path in the http server via a path on
  ** the file system
  *******************************************************************************/
-public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInterface
+public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
 {
    private QCodeReference routeAuthenticator;
    private QInstance qInstance;
