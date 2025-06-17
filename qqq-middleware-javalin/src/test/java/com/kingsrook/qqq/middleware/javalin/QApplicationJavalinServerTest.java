@@ -37,6 +37,7 @@ import kong.unirest.Unirest;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import static com.kingsrook.qqq.middleware.javalin.routeproviders.SimpleFileSystemDirectoryRouter.LOAD_STATIC_FILES_FROM_JAR_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,7 +72,7 @@ class QApplicationJavalinServerTest
    {
       javalinServer.stop();
       TestApplication.callCount = 0;
-      System.clearProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty);
+      System.clearProperty(LOAD_STATIC_FILES_FROM_JAR_PROPERTY);
    }
 
 
@@ -214,7 +215,7 @@ class QApplicationJavalinServerTest
    @Test
    void testStaticRouterFilesFromExternal() throws Exception
    {
-      System.setProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "false");
+      System.setProperty(LOAD_STATIC_FILES_FROM_JAR_PROPERTY, "false");
 
       javalinServer = new QApplicationJavalinServer(getQqqApplication())
          .withServeFrontendMaterialDashboard(false)
@@ -274,7 +275,7 @@ class QApplicationJavalinServerTest
    @Test
    void testStaticRouterFilesFromClasspath() throws Exception
    {
-      System.setProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "true");
+      System.setProperty(LOAD_STATIC_FILES_FROM_JAR_PROPERTY, "true");
 
       javalinServer = new QApplicationJavalinServer(new QApplicationJavalinServerTest.TestApplication())
          .withServeFrontendMaterialDashboard(false)

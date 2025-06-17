@@ -55,7 +55,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
 
    private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
 
-   public static final String loadStaticFilesFromJarProperty = "qqq.javalin.enableStaticFilesFromJar";
+   public static final String LOAD_STATIC_FILES_FROM_JAR_PROPERTY = "qqq.javalin.enableStaticFilesFromJar";
    public static boolean loadStaticFilesFromJar = false;
 
    /*******************************************************************************
@@ -73,7 +73,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       try
       {
-         String propertyValue = System.getProperty(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty, "");
+         String propertyValue = System.getProperty(SimpleFileSystemDirectoryRouter.LOAD_STATIC_FILES_FROM_JAR_PROPERTY, "");
          if(propertyValue.equals("true"))
          {
             loadStaticFilesFromJar = true;
@@ -82,7 +82,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       catch(Exception e)
       {
          loadStaticFilesFromJar = false;
-         LOG.warn("Exception attempting to read system property, defaulting to false. ", e, logPair("system property", SimpleFileSystemDirectoryRouter.loadStaticFilesFromJarProperty));
+         LOG.warn("Exception attempting to read system property, defaulting to false. ", e, logPair("system property", SimpleFileSystemDirectoryRouter.LOAD_STATIC_FILES_FROM_JAR_PROPERTY));
       }
    }
 
