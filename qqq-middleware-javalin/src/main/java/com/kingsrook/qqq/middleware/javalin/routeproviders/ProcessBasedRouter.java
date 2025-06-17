@@ -43,7 +43,7 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
-import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
+import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProvider;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
 import io.javalin.apibuilder.ApiBuilder;
@@ -56,7 +56,7 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 /*******************************************************************************
  **
  *******************************************************************************/
-public class ProcessBasedRouter implements QJavalinRouteProviderInterface
+public class ProcessBasedRouter extends QJavalinRouteProvider
 {
    private static final QLogger LOG = QLogger.getLogger(ProcessBasedRouter.class);
 

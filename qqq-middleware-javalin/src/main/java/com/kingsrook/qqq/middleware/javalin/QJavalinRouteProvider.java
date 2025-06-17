@@ -32,14 +32,17 @@ import io.javalin.config.JavalinConfig;
  ** Interface for classes that can provide a list of endpoints to a javalin
  ** server.
  *******************************************************************************/
-public abstract class QJavalinRouteProviderInterface
+public abstract class QJavalinRouteProvider
 {
+   private String spaRootPath = null;
 
    /***************************************************************************
     ** For initial setup when server boots, set the qInstance - but also,
     ** e.g., for development, to do a hot-swap.
     ***************************************************************************/
    public abstract void setQInstance(QInstance qInstance);
+
+
 
    /***************************************************************************
     **
