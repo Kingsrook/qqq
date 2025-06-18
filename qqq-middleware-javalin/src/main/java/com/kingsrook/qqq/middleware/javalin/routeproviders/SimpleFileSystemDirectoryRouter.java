@@ -31,7 +31,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
-import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
+import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProvider;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
 import io.javalin.Javalin;
@@ -46,16 +46,17 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  ** javalin route provider that hosts a path in the http server via a path on
  ** the file system
  *******************************************************************************/
-public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInterface
+public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
 {
-   private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
-   public static boolean loadStaticFilesFromJar = false;
-
-
-   private final String hostedPath;
-   private final String fileSystemPath;
    private QCodeReference routeAuthenticator;
    private QInstance qInstance;
+   private final String fileSystemPath;
+   private final String hostedPath;
+
+   private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
+
+   public static final String LOAD_STATIC_FILES_FROM_JAR_PROPERTY = "qqq.javalin.enableStaticFilesFromJar";
+   public static boolean loadStaticFilesFromJar = false;
 
    /*******************************************************************************
     ** Constructor
@@ -72,8 +73,7 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       ///////////////////////////////////////////////////////////////////////////////////////////////////////
       try
       {
-         String propertyName  = "qqq.javalin.enableStaticFilesFromJar";  // TODO: make a more general way to handle properties like this system-wide via a central config class
-         String propertyValue = System.getProperty(propertyName, "");
+         String propertyValue = System.getProperty(SimpleFileSystemDirectoryRouter.LOAD_STATIC_FILES_FROM_JAR_PROPERTY, "");
          if(propertyValue.equals("true"))
          {
             loadStaticFilesFromJar = true;
@@ -81,7 +81,8 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
       }
       catch(Exception e)
       {
-         e.printStackTrace();
+         loadStaticFilesFromJar = false;
+         LOG.warn("Exception attempting to read system property, defaulting to false. ", e, logPair("system property", SimpleFileSystemDirectoryRouter.LOAD_STATIC_FILES_FROM_JAR_PROPERTY));
       }
    }
 
@@ -117,18 +118,17 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
 
       if(!hostedPath.startsWith("/"))
       {
-         LOG.warn("hostedPath [" + hostedPath + "] should probably start with a leading slash...");
+         LOG.warn("hostedPath should probably start with a leading slash...", logPair("hostedPath", hostedPath));
       }
 
-      /// /////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////
       // Handle loading static files from the jar OR the filesystem based on system property //
-      /// /////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////
       if(SimpleFileSystemDirectoryRouter.loadStaticFilesFromJar)
       {
          staticFileConfig.directory = fileSystemPath;
          staticFileConfig.hostedPath = hostedPath;
          staticFileConfig.location = Location.CLASSPATH;
-         LOG.info("Static File Config : hostedPath [" + hostedPath + "] : directory [" + staticFileConfig.directory + "] : location [CLASSPATH]");
       }
       else
       {
@@ -146,9 +146,9 @@ public class SimpleFileSystemDirectoryRouter implements QJavalinRouteProviderInt
          staticFileConfig.directory = resource.getFile();
          staticFileConfig.hostedPath = hostedPath;
          staticFileConfig.location = Location.EXTERNAL;
-         LOG.info("Static File Config : hostedPath [" + hostedPath + "] : directory [" + staticFileConfig.directory + "] : location [EXTERNAL]");
       }
 
+      LOG.info("Static File Config", logPair("hostedPath", hostedPath), logPair("directory", staticFileConfig.directory), logPair("location", staticFileConfig.location));
    }
 
 

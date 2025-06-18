@@ -74,10 +74,11 @@ public class QApplicationJavalinServer
 
    private Integer                              port                                = 8000;
    private boolean                              serveFrontendMaterialDashboard      = true;
+   private String                               frontendMaterialDashboardHostedPath = "/";  // TODO - Things like this should be moved into a central configuration file system, so that it can be changed in userspace without code changes.
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
-   private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());
-   private List<QJavalinRouteProviderInterface> additionalRouteProviders            = null;
-   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
+   private List<AbstractMiddlewareVersion> middlewareVersionList          = List.of(new MiddlewareVersionV1());
+   private List<QJavalinRouteProvider>     additionalRouteProviders       = null;
+   private Consumer<Javalin>               javalinConfigurationCustomizer = null;
    private QJavalinMetaData                     javalinMetaData                     = null;
 
    private long                lastQInstanceHotSwapMillis;
@@ -132,20 +133,22 @@ public class QApplicationJavalinServer
             {
                if(resource != null)
                {
-                  config.staticFiles.add("/material-dashboard-overlay");
+                  config.staticFiles.add(staticFileConfig -> {
+                     staticFileConfig.hostedPath = this.frontendMaterialDashboardHostedPath;
+                     staticFileConfig.directory = "/material-dashboard-overlay";
+                  });
                }
             }
 
-            ////////////////////////////////////////////////////////////////////////////////////
-            // tell javalin where to find material-dashboard static web assets                //
-            // in this case, this path is coming from the qqq-frontend-material-dashboard jar //
-            ////////////////////////////////////////////////////////////////////////////////////
-            config.staticFiles.add("/material-dashboard");
+            config.staticFiles.add(staticFileConfig -> {
+               staticFileConfig.hostedPath = this.frontendMaterialDashboardHostedPath;
+               staticFileConfig.directory = "/material-dashboard";
+            });
 
             ////////////////////////////////////////////////////////////
             // set the index page for the SPA from material dashboard //
             ////////////////////////////////////////////////////////////
-            config.spaRoot.addFile("/", "material-dashboard/index.html");
+            config.spaRoot.addFile(this.frontendMaterialDashboardHostedPath, "material-dashboard/index.html");
          }
 
          ///////////////////////////////////////////
@@ -183,7 +186,7 @@ public class QApplicationJavalinServer
          ////////////////////////////////////////////////////////////////////////////
          // additional route providers (e.g., application-apis, other middlewares) //
          ////////////////////////////////////////////////////////////////////////////
-         for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
+         for(QJavalinRouteProvider routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
          {
             routeProvider.setQInstance(qInstance);
 
@@ -193,6 +196,10 @@ public class QApplicationJavalinServer
                config.router.apiBuilder(javalinEndpointGroup);
             }
 
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            // If the additional route provider has an SPA root defined, add it to the Javalin config. //
+            /////////////////////////////////////////////////////////////////////////////////////////////
+
             routeProvider.acceptJavalinConfig(config);
          }
       });
@@ -201,7 +208,7 @@ public class QApplicationJavalinServer
       // also pass the javalin service into any additionalRouteProviders, //
       // in case they need additional setup, e.g., before/after handlers. //
       //////////////////////////////////////////////////////////////////////
-      for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
+      for(QJavalinRouteProvider routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
       {
          routeProvider.acceptJavalinService(service);
       }
@@ -379,7 +386,7 @@ public class QApplicationJavalinServer
             }
          }
 
-         for(QJavalinRouteProviderInterface routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
+         for(QJavalinRouteProvider routeProvider : CollectionUtils.nonNullList(additionalRouteProviders))
          {
             routeProvider.setQInstance(newQInstance);
          }
@@ -471,6 +478,25 @@ public class QApplicationJavalinServer
 
 
    /*******************************************************************************
+    *  Sets the hosted path for the frontend Material Dashboard UI.
+    *
+    *  This value determines the base URL path under which the static frontend
+    *  dashboard assets are served. It should match the path configured in your
+    *  frontend build or static asset router.
+    *
+    *  @param frontendMaterialDashboardHostedPath the hosted path (e.g., "/admin" or "/dashboard").  Default is "/"
+    *
+    *  @see #withServeFrontendMaterialDashboard(boolean)
+    *******************************************************************************/
+   public QApplicationJavalinServer withFrontendMaterialDashboardHostedPath(String frontendMaterialDashboardHostedPath)
+   {
+      this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
     ** Getter for serveLegacyUnversionedMiddlewareAPI
     *******************************************************************************/
    public boolean getServeLegacyUnversionedMiddlewareAPI()
@@ -535,7 +561,7 @@ public class QApplicationJavalinServer
    /*******************************************************************************
     ** Getter for additionalRouteProviders
     *******************************************************************************/
-   public List<QJavalinRouteProviderInterface> getAdditionalRouteProviders()
+   public List<QJavalinRouteProvider> getAdditionalRouteProviders()
    {
       return (this.additionalRouteProviders);
    }
@@ -545,7 +571,7 @@ public class QApplicationJavalinServer
    /*******************************************************************************
     ** Setter for additionalRouteProviders
     *******************************************************************************/
-   public void setAdditionalRouteProviders(List<QJavalinRouteProviderInterface> additionalRouteProviders)
+   public void setAdditionalRouteProviders(List<QJavalinRouteProvider> additionalRouteProviders)
    {
       this.additionalRouteProviders = additionalRouteProviders;
    }
@@ -555,7 +581,7 @@ public class QApplicationJavalinServer
    /*******************************************************************************
     ** Fluent setter for additionalRouteProviders
     *******************************************************************************/
-   public QApplicationJavalinServer withAdditionalRouteProviders(List<QJavalinRouteProviderInterface> additionalRouteProviders)
+   public QApplicationJavalinServer withAdditionalRouteProviders(List<QJavalinRouteProvider> additionalRouteProviders)
    {
       this.additionalRouteProviders = additionalRouteProviders;
       return (this);
@@ -566,7 +592,7 @@ public class QApplicationJavalinServer
    /*******************************************************************************
     ** Fluent setter to add a single additionalRouteProvider
     *******************************************************************************/
-   public QApplicationJavalinServer withAdditionalRouteProvider(QJavalinRouteProviderInterface additionalRouteProvider)
+   public QApplicationJavalinServer withAdditionalRouteProvider(QJavalinRouteProvider additionalRouteProvider)
    {
       if(this.additionalRouteProviders == null)
       {
@@ -690,4 +716,26 @@ public class QApplicationJavalinServer
       return (this);
    }
 
+
+   /*******************************************************************************
+    ** Getter for frontendMaterialDashboardHostedPath
+    *
+    * @see #withFrontendMaterialDashboardHostedPath(String)
+    *******************************************************************************/
+   public String getFrontendMaterialDashboardHostedPath()
+   {
+      return (this.frontendMaterialDashboardHostedPath);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for frontendMaterialDashboardHostedPath
+    *
+    * @see #withFrontendMaterialDashboardHostedPath(String)
+    *******************************************************************************/
+   public void setFrontendMaterialDashboardHostedPath(String frontendMaterialDashboardHostedPath)
+   {
+      this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
+   }
 }
