@@ -47,12 +47,12 @@ public abstract class BasicCustomPossibleValueProvider<S, ID extends Serializabl
    /***************************************************************************
     **
     ***************************************************************************/
-   protected abstract S getSourceObject(Serializable id);
+   protected abstract S getSourceObject(Serializable id) throws QException;
 
    /***************************************************************************
     **
     ***************************************************************************/
-   protected abstract List<S> getAllSourceObjects();
+   protected abstract List<S> getAllSourceObjects() throws QException;
 
 
 
@@ -60,7 +60,7 @@ public abstract class BasicCustomPossibleValueProvider<S, ID extends Serializabl
     **
     ***************************************************************************/
    @Override
-   public QPossibleValue<ID> getPossibleValue(Serializable idValue)
+   public QPossibleValue<ID> getPossibleValue(Serializable idValue) throws QException
    {
       S sourceObject = getSourceObject(idValue);
       if(sourceObject == null)
