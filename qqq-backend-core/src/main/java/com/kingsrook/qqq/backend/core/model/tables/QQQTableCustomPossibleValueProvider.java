@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.tables;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionCheckResult;
 import com.kingsrook.qqq.backend.core.actions.permissions.PermissionsHelper;
@@ -79,7 +80,18 @@ public class QQQTableCustomPossibleValueProvider extends BasicCustomPossibleValu
    @Override
    protected List<QRecord> getAllSourceObjects() throws QException
    {
-      return (QueryAction.execute(QQQTable.TABLE_NAME, null));
+      List<QRecord>      records = QueryAction.execute(QQQTable.TABLE_NAME, null);
+      ArrayList<QRecord> rs      = new ArrayList<>();
+      for(QRecord record : records)
+      {
+         QTableMetaData table = QContext.getQInstance().getTable(record.getValueString("name"));
+         if(isTableAllowed(table))
+         {
+            rs.add(record);
+         }
+      }
+
+      return rs;
    }
 
 

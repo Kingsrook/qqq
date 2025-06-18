@@ -34,8 +34,6 @@ import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel
 import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesCustomPossibleValueProvider;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,9 +89,8 @@ class QQQTableCustomPossibleValueProviderTest extends BaseTest
    @Test
    void testGetPossibleValue() throws QException
    {
-      Integer personTableId = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON);
-
-      QQQTableCustomPossibleValueProvider provider = new QQQTableCustomPossibleValueProvider();
+      Integer                             personTableId = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON);
+      QQQTableCustomPossibleValueProvider provider      = new QQQTableCustomPossibleValueProvider();
 
       QPossibleValue<Integer> possibleValue = provider.getPossibleValue(personTableId);
       assertEquals(personTableId, possibleValue.getId());
@@ -119,34 +116,39 @@ class QQQTableCustomPossibleValueProviderTest extends BaseTest
    @Test
    void testSearchPossibleValue() throws QException
    {
-      TablesCustomPossibleValueProvider provider = new TablesCustomPossibleValueProvider();
+      Integer personTableId     = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), TestUtils.TABLE_NAME_PERSON);
+      Integer shapeTableId      = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), TestUtils.TABLE_NAME_SHAPE);
+      Integer hiddenTableId     = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), "hidden");
+      Integer restrictedTableId = QQQTableTableManager.getQQQTableId(QContext.getQInstance(), "restricted");
 
-      List<QPossibleValue<String>> list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME));
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_PERSON));
-      assertThat(list).noneMatch(p -> p.getId().equals("no-such-table"));
-      assertThat(list).noneMatch(p -> p.getId().equals("hidden"));
-      assertThat(list).noneMatch(p -> p.getId().equals("restricted"));
+      QQQTableCustomPossibleValueProvider provider = new QQQTableCustomPossibleValueProvider();
+
+      List<QPossibleValue<Integer>> list = provider.search(new SearchPossibleValueSourceInput()
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME));
+      assertThat(list).anyMatch(p -> p.getId().equals(personTableId));
+      assertThat(list).noneMatch(p -> p.getId().equals(-1));
+      assertThat(list).noneMatch(p -> p.getId().equals(hiddenTableId));
+      assertThat(list).noneMatch(p -> p.getId().equals(restrictedTableId));
       assertNull(provider.getPossibleValue("restricted"));
 
       list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME)
-         .withIdList(List.of(TestUtils.TABLE_NAME_PERSON, TestUtils.TABLE_NAME_SHAPE, "hidden")));
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME)
+         .withIdList(List.of(personTableId, shapeTableId, hiddenTableId)));
       assertEquals(2, list.size());
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_PERSON));
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_SHAPE));
-      assertThat(list).noneMatch(p -> p.getId().equals("hidden"));
+      assertThat(list).anyMatch(p -> p.getId().equals(personTableId));
+      assertThat(list).anyMatch(p -> p.getId().equals(shapeTableId));
+      assertThat(list).noneMatch(p -> p.getId().equals(hiddenTableId));
 
       list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME)
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME)
          .withLabelList(List.of("Person", "Shape", "Restricted")));
       assertEquals(2, list.size());
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_PERSON));
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_SHAPE));
-      assertThat(list).noneMatch(p -> p.getId().equals("restricted"));
+      assertThat(list).anyMatch(p -> p.getId().equals(personTableId));
+      assertThat(list).anyMatch(p -> p.getId().equals(shapeTableId));
+      assertThat(list).noneMatch(p -> p.getId().equals(restrictedTableId));
 
       list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME)
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME)
          .withSearchTerm("restricted"));
       assertEquals(0, list.size());
 
@@ -155,17 +157,17 @@ class QQQTableCustomPossibleValueProviderTest extends BaseTest
       /////////////////////////////////////////
       QContext.getQSession().withPermission("restricted.hasAccess");
       list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME)
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME)
          .withSearchTerm("restricted"));
       assertEquals(1, list.size());
 
       list = provider.search(new SearchPossibleValueSourceInput()
-         .withPossibleValueSourceName(TablesPossibleValueSourceMetaDataProvider.NAME)
+         .withPossibleValueSourceName(QQQTable.TABLE_NAME)
          .withLabelList(List.of("Person", "Shape", "Restricted")));
       assertEquals(3, list.size());
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_PERSON));
-      assertThat(list).anyMatch(p -> p.getId().equals(TestUtils.TABLE_NAME_SHAPE));
-      assertThat(list).anyMatch(p -> p.getId().equals("restricted"));
+      assertThat(list).anyMatch(p -> p.getId().equals(personTableId));
+      assertThat(list).anyMatch(p -> p.getId().equals(shapeTableId));
+      assertThat(list).anyMatch(p -> p.getId().equals(restrictedTableId));
 
    }
 
