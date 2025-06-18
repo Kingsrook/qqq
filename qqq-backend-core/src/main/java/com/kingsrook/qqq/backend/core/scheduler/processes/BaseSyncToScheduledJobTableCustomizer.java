@@ -40,9 +40,11 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.ProcessSummaryLine
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.code.InitializableViaCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
@@ -84,16 +86,44 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
 
 
    /***************************************************************************
-    **
+    * Create a {@link QCodeReferenceWithProperties} that can be used to add this
+    * class to a table.
+    *
+    * If this is the only customizer for the post insert/update/delete events
+    * on your table, you can instead call setTableCustomizers.  But if you want,
+    * for example, a sync-scheduled-job (what this customizer does) plus some other
+    * customizers, then you can call this method to get a code reference that you
+    * can add, for example, to {@link com.kingsrook.qqq.backend.core.actions.customizers.MultiCustomizer}
+    *
+    * @param tableMetaData the table that the customizer will be used on.
+    * @param syncProcess instance of the subclass of AbstractRecordSyncToScheduledJobProcess
+    *                    that should run in the table's post insert/update/delete
+    *                    events.
+    * @see #setTableCustomizers(QTableMetaData, AbstractRecordSyncToScheduledJobProcess)
     ***************************************************************************/
-   public static void setTableCustomizers(QTableMetaData tableMetaData, AbstractRecordSyncToScheduledJobProcess syncProcess)
+   public static QCodeReferenceWithProperties makeCodeReference(QTableMetaData tableMetaData, AbstractRecordSyncToScheduledJobProcess syncProcess)
    {
-      QCodeReference codeReference = new QCodeReferenceWithProperties(BaseSyncToScheduledJobTableCustomizer.class, Map.of(
+      return new QCodeReferenceWithProperties(BaseSyncToScheduledJobTableCustomizer.class, Map.of(
          KEY_TABLE_NAME, tableMetaData.getName(),
          KEY_SYNC_PROCESS_NAME, syncProcess.getClass().getSimpleName(),
          KEY_SCHEDULED_JOB_FOREIGN_KEY_TYPE, syncProcess.getScheduledJobForeignKeyType()
       ));
+   }
 
+
+
+   /***************************************************************************
+    * Add post insert/update/delete customizers to a table, that will run a
+    * sync-scheduled-job process.
+    *
+    * @param tableMetaData the table that the customizer will be used on.
+    * @param syncProcess instance of the subclass of AbstractRecordSyncToScheduledJobProcess
+    *                    that should run in the table's post insert/update/delete
+    *                    events.
+    ***************************************************************************/
+   public static void setTableCustomizers(QTableMetaData tableMetaData, AbstractRecordSyncToScheduledJobProcess syncProcess)
+   {
+      QCodeReference codeReference = makeCodeReference(tableMetaData, syncProcess);
       tableMetaData.withCustomizer(TableCustomizers.POST_INSERT_RECORD, codeReference);
       tableMetaData.withCustomizer(TableCustomizers.POST_UPDATE_RECORD, codeReference);
       tableMetaData.withCustomizer(TableCustomizers.POST_DELETE_RECORD, codeReference);
@@ -138,6 +168,16 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
    @Override
    public List<QRecord> postInsertOrUpdate(AbstractActionInput input, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
+      if(input instanceof UpdateInput updateInput && updateInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+      {
+         return records;
+      }
+
+      if(input instanceof InsertInput insertInput && insertInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+      {
+         return records;
+      }
+
       runSyncProcessForRecordList(records, syncProcessName);
       return records;
    }
@@ -157,7 +197,17 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
 
 
    /***************************************************************************
-    **
+    * Run the named process over a set of records (e.g., that were inserted or
+    * updated).
+    *
+    * This method is normally called from within this class, in postInsertOrUpdate.
+    *
+    * Note that if the {@link ScheduledJob} table isn't defined in the QInstance,
+    * that the process will not be called.
+    *
+    * @param records list of records to use as source records in the table-sync
+    *                to the scheduledJob table.
+    * @param processName name of the sync-process to run.
     ***************************************************************************/
    public void runSyncProcessForRecordList(List<QRecord> records, String processName)
    {
@@ -199,7 +249,15 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
 
 
    /***************************************************************************
-    **
+    * Delete scheduled job records for source-table records that have been deleted.
+    *
+    * This method is normally called from within this class, in postDelete.
+    *
+    * Note that if the {@link ScheduledJob} table isn't defined in the QInstance,
+    * that the process will not be called.
+    *
+    * @param records list of records to use as foreign-key sources to identify
+    *                scheduledJob records to delete
     ***************************************************************************/
    public void deleteScheduledJobsForRecordList(List<QRecord> records)
    {
@@ -296,15 +354,6 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
    }
 
 
-   /*******************************************************************************
-    ** Getter for KEY_SCHEDULED_JOB_FOREIGN_KEY_TYPE
-    *******************************************************************************/
-   public String getKEY_SCHEDULED_JOB_FOREIGN_KEY_TYPE()
-   {
-      return (BaseSyncToScheduledJobTableCustomizer.KEY_SCHEDULED_JOB_FOREIGN_KEY_TYPE);
-   }
-
-
 
    /*******************************************************************************
     ** Getter for scheduledJobForeignKeyType
@@ -334,6 +383,5 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
       this.scheduledJobForeignKeyType = scheduledJobForeignKeyType;
       return (this);
    }
-
 
 }
