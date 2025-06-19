@@ -605,6 +605,7 @@ public class UpdateAction
                {
                   LOG.debug("Deleting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", queryOutput.getRecords().size()));
                   DeleteInput deleteInput = new DeleteInput();
+                  deleteInput.setFlags(updateInput.getFlags());
                   deleteInput.setTransaction(updateInput.getTransaction());
                   deleteInput.setTableName(association.getAssociatedTableName());
                   deleteInput.setPrimaryKeys(queryOutput.getRecords().stream().map(r -> r.getValue(associatedTable.getPrimaryKeyField())).collect(Collectors.toList()));
@@ -617,6 +618,7 @@ public class UpdateAction
                LOG.debug("Updating associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
                UpdateInput nextLevelUpdateInput = new UpdateInput();
                nextLevelUpdateInput.setTransaction(updateInput.getTransaction());
+               nextLevelUpdateInput.setFlags(updateInput.getFlags());
                nextLevelUpdateInput.setTableName(association.getAssociatedTableName());
                nextLevelUpdateInput.setRecords(nextLevelUpdates);
                UpdateOutput nextLevelUpdateOutput = new UpdateAction().execute(nextLevelUpdateInput);
@@ -627,6 +629,7 @@ public class UpdateAction
                LOG.debug("Inserting associatedRecords", logPair("associatedTable", associatedTable.getName()), logPair("noOfRecords", nextLevelUpdates.size()));
                InsertInput nextLevelInsertInput = new InsertInput();
                nextLevelInsertInput.setTransaction(updateInput.getTransaction());
+               nextLevelInsertInput.setFlags(updateInput.getFlags());
                nextLevelInsertInput.setTableName(association.getAssociatedTableName());
                nextLevelInsertInput.setRecords(nextLevelInserts);
                InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);

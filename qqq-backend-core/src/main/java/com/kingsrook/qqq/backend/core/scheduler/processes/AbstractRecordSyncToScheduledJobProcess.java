@@ -29,6 +29,7 @@ import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -52,16 +53,30 @@ import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 
 
 /*******************************************************************************
- ** Base class to manage creating scheduled jobs based on records in another table
- **
- ** Expected to be used via BaseSyncToScheduledJobTableCustomizer - see its javadoc.
- **
+ * Base class to manage creating scheduled jobs based on records in another table
+ *
+ * Expected to be used via BaseSyncToScheduledJobTableCustomizer - see its javadoc.
+ * @see BaseSyncToScheduledJobTableCustomizer
  *******************************************************************************/
 public abstract class AbstractRecordSyncToScheduledJobProcess extends AbstractTableSyncTransformStep implements MetaDataProducerInterface<QProcessMetaData>
 {
    private static final QLogger LOG = QLogger.getLogger(AbstractRecordSyncToScheduledJobProcess.class);
 
    public static final String SCHEDULER_NAME_FIELD_NAME = "schedulerName";
+
+
+
+   /***************************************************************************
+    * action flags that can be put in an insert/update/delete input to control
+    * behavior of this process.
+    ***************************************************************************/
+   public enum ActionFlags implements ActionFlag
+   {
+      /***************************************************************************
+       * tell this process not to run upon such an action taken on the source table.
+       ***************************************************************************/
+      DO_NOT_SYNC
+   }
 
 
 
@@ -86,7 +101,6 @@ public abstract class AbstractRecordSyncToScheduledJobProcess extends AbstractTa
 
       return (processMetaData);
    }
-
 
 
 
