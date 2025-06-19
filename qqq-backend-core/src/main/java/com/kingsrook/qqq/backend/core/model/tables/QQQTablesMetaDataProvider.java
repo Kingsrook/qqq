@@ -27,6 +27,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.AuditLevel;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.PVSValueFormatAndFields;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSourceType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
@@ -125,10 +128,11 @@ public class QQQTablesMetaDataProvider
    public QPossibleValueSource defineQQQTablePossibleValueSource()
    {
       return (new QPossibleValueSource()
-         .withType(QPossibleValueSourceType.TABLE)
          .withName(QQQTable.TABLE_NAME)
-         .withTableName(QQQTable.TABLE_NAME))
-         .withOrderByField("label");
+         .withType(QPossibleValueSourceType.CUSTOM)
+         .withIdType(QFieldType.INTEGER)
+         .withCustomCodeReference(new QCodeReference(QQQTableCustomPossibleValueProvider.class))
+         .withValueFormatAndFields(PVSValueFormatAndFields.LABEL_ONLY));
    }
 
 }

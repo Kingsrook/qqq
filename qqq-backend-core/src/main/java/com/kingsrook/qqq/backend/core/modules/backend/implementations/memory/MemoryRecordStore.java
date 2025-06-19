@@ -74,6 +74,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -364,6 +365,9 @@ public class MemoryRecordStore
          // differently from other backends, because of having the same record variable in the backend store and in the user-code. //
          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          QRecord recordToInsert = new QRecord(record);
+
+         makeValueTypesMatchFieldTypes(table, recordToInsert);
+
          if(CollectionUtils.nullSafeHasContents(recordToInsert.getErrors()))
          {
             outputRecords.add(recordToInsert);
@@ -414,6 +418,30 @@ public class MemoryRecordStore
 
 
 
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void makeValueTypesMatchFieldTypes(QTableMetaData table, QRecord recordToInsert)
+   {
+      for(QFieldMetaData field : table.getFields().values())
+      {
+         Serializable value = recordToInsert.getValue(field.getName());
+         if(value != null)
+         {
+            try
+            {
+               recordToInsert.setValue(field.getName(), ValueUtils.getValueAsFieldType(field.getType(), value));
+            }
+            catch(Exception e)
+            {
+               LOG.info("Error converting value to field's type", e, logPair("fieldName", field.getName()), logPair("value", value));
+            }
+         }
+      }
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -444,7 +472,19 @@ public class MemoryRecordStore
             QRecord recordToUpdate = tableData.get(primaryKeyValue);
             for(Map.Entry<String, Serializable> valueEntry : record.getValues().entrySet())
             {
-               recordToUpdate.setValue(valueEntry.getKey(), valueEntry.getValue());
+               String fieldName = valueEntry.getKey();
+               try
+               {
+                  ///////////////////////////////////////////////
+                  // try to make field values match field type //
+                  ///////////////////////////////////////////////
+                  recordToUpdate.setValue(fieldName, ValueUtils.getValueAsFieldType(table.getField(fieldName).getType(), valueEntry.getValue()));
+               }
+               catch(Exception e)
+               {
+                  LOG.info("Error converting value to field's type", e, logPair("fieldName", fieldName), logPair("value", valueEntry.getValue()));
+                  recordToUpdate.setValue(fieldName, valueEntry.getValue());
+               }
             }
 
             if(returnUpdatedRecords)

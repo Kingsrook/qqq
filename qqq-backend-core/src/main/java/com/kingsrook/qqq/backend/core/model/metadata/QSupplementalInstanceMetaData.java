@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.model.metadata;
 
 import java.util.function.Supplier;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidator;
-import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 
 
 /*******************************************************************************
@@ -37,7 +36,7 @@ public interface QSupplementalInstanceMetaData extends TopLevelMetaDataInterface
    /*******************************************************************************
     **
     *******************************************************************************/
-   default void enrich(QTableMetaData table)
+   default void enrich(QInstance qInstance)
    {
       ////////////////////////
       // noop in base class //

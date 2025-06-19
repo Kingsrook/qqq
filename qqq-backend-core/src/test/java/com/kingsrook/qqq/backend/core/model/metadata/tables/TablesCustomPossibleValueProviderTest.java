@@ -80,7 +80,7 @@ class TablesCustomPossibleValueProviderTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   void testGetPossibleValue()
+   void testGetPossibleValue() throws QException
    {
       TablesCustomPossibleValueProvider provider = new TablesCustomPossibleValueProvider();
 

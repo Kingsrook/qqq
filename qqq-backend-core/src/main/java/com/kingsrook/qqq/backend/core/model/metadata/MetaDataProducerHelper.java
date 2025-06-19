@@ -177,6 +177,18 @@ public class MetaDataProducerHelper
       /////////////////////////////////////////////////////////////////////////////////////////////
       // sort them by sort order, then by the type that they return, as set up in the static map //
       /////////////////////////////////////////////////////////////////////////////////////////////
+      sortMetaDataProducers(producers);
+
+      return (producers);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void sortMetaDataProducers(List<MetaDataProducerInterface<?>> producers)
+   {
       producers.sort(Comparator
          .comparing((MetaDataProducerInterface<?> p) -> p.getSortOrder())
          .thenComparing((MetaDataProducerInterface<?> p) ->
@@ -191,9 +203,8 @@ public class MetaDataProducerHelper
                return (0);
             }
          }));
-
-      return (producers);
    }
+
 
 
    /*******************************************************************************
@@ -417,7 +428,7 @@ public class MetaDataProducerHelper
          return (null);
       }
 
-      ChildJoinFromRecordEntityGenericMetaDataProducer producer = new ChildJoinFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, possibleValueFieldName, childTable.childJoin().orderBy());
+      ChildJoinFromRecordEntityGenericMetaDataProducer producer = new ChildJoinFromRecordEntityGenericMetaDataProducer(childTableName, parentTableName, possibleValueFieldName, childTable.childJoin().orderBy(), childTable.childJoin().isOneToOne());
       producer.setSourceClass(entityClass);
       return producer;
    }
