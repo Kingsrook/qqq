@@ -338,7 +338,7 @@ public class ApiImplementation
                      else if(apiFieldMetaData.getCustomValueMapper() != null)
                      {
                         ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
-                        customValueMapper.customizeFilterCriteria(queryInput, filter, criteria, name, apiFieldMetaData);
+                        customValueMapper.customizeFilterCriteriaForQueryOrCount(queryInput, filter, criteria, name, apiFieldMetaData);
                      }
 
                      filter.addCriteria(criteria);
@@ -389,8 +389,14 @@ public class ApiImplementation
       /////////////////////////////
       if(includeCount)
       {
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - at one time we wondered if we might need a call to customValueMapper.customizeFilterCriteriaForQueryOrCount //
+         // as the filter would have already gone through there, but not other attributes of the input, e.g, joins...          //
+         // but, instead we're trying to just put the query joins in here FROM the query input...                              //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          CountInput countInput = new CountInput();
          countInput.setTableName(tableName);
+         countInput.setQueryJoins(queryInput.getQueryJoins());
          countInput.setFilter(filter);
          countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
          CountOutput countOutput = new CountAction().execute(countInput);

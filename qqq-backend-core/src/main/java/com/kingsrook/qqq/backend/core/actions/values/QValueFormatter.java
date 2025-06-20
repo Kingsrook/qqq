@@ -314,6 +314,19 @@ public class QValueFormatter
     ** For a list of records, set their recordLabels and display values - including
     ** record label (e.g., from the table meta data).
     *******************************************************************************/
+   public static void setDisplayValuesInRecordsIncludingPossibleValueTranslations(QTableMetaData table, List<QRecord> records)
+   {
+      QPossibleValueTranslator possibleValueTranslator = new QPossibleValueTranslator(QContext.getQInstance(), QContext.getQSession());
+      possibleValueTranslator.translatePossibleValuesInRecords(table, records);
+      setDisplayValuesInRecords(table, records);
+   }
+
+
+
+   /*******************************************************************************
+    ** For a list of records, set their recordLabels and display values - including
+    ** record label (e.g., from the table meta data).
+    *******************************************************************************/
    public static void setDisplayValuesInRecords(QTableMetaData table, List<QRecord> records)
    {
       if(records == null)

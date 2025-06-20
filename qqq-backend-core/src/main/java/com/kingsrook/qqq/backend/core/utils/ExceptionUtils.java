@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
 
 
 /*******************************************************************************
@@ -183,4 +185,41 @@ public class ExceptionUtils
       }
       return (rs);
    }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void tryIgnore(UnsafeVoidVoidMethod<?> method)
+   {
+      try
+      {
+         method.run();
+      }
+      catch(Throwable t)
+      {
+         ///////////////////////////
+         // ignore, as name says! //
+         ///////////////////////////
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void tryCatch(UnsafeVoidVoidMethod<?> method, Consumer<Throwable> catcher)
+   {
+      try
+      {
+         method.run();
+      }
+      catch(Throwable t)
+      {
+         catcher.accept(t);
+      }
+   }
+
 }

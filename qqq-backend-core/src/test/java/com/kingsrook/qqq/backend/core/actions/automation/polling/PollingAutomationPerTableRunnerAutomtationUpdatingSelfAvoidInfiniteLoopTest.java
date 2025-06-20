@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
-import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandler;
+import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationHandlerInterface;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
@@ -163,7 +163,7 @@ public class PollingAutomationPerTableRunnerAutomtationUpdatingSelfAvoidInfinite
    /*******************************************************************************
     **
     *******************************************************************************/
-   public static class OrderPostInsertAndUpdateAction extends RecordAutomationHandler
+   public static class OrderPostInsertAndUpdateAction implements RecordAutomationHandlerInterface
    {
 
       /*******************************************************************************

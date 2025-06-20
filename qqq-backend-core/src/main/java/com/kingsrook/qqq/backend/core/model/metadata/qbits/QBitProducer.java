@@ -76,14 +76,11 @@ public interface QBitProducer
    {
       qBitConfig.validate(qInstance);
 
-      ///////////////////////////////
-      // todo - move to base class //
-      ///////////////////////////////
       for(MetaDataProducerInterface<?> producer : producers)
       {
-         if(producer instanceof QBitComponentMetaDataProducer<?, ?>)
+         if(producer instanceof QBitComponentMetaDataProducerInterface<?,?>)
          {
-            QBitComponentMetaDataProducer<?, C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducer<?, C>) producer;
+            QBitComponentMetaDataProducerInterface<?,C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducerInterface<?,C>) producer;
             qBitComponentMetaDataProducer.setQBitConfig(qBitConfig);
          }
 

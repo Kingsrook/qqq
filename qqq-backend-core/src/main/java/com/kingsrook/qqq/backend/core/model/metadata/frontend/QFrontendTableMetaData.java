@@ -85,23 +85,35 @@ public class QFrontendTableMetaData
    // do not add setters.  take values from the source-object in the constructor!! //
    //////////////////////////////////////////////////////////////////////////////////
 
+   /***************************************************************************
+    ** standard constructor - uses all fields on the table.
+    ***************************************************************************/
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
+   {
+      this(actionInput, backendForTable, tableMetaData, includeFullMetaData, includeJoins, tableMetaData.getFields());
+   }
+
+
 
    /*******************************************************************************
-    **
+    ** alternative constructor - takes a map of fields to use (e.g., for an old
+    ** api version of the table w/ different fields!)
     *******************************************************************************/
-   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins)
+   public QFrontendTableMetaData(AbstractActionInput actionInput, QBackendMetaData backendForTable, QTableMetaData tableMetaData, boolean includeFullMetaData, boolean includeJoins, Map<String, QFieldMetaData> overrideFields)
    {
       this.name = tableMetaData.getName();
       this.label = tableMetaData.getLabel();
       this.isHidden = tableMetaData.getIsHidden();
 
+      Map<String, QFieldMetaData> inputFields = overrideFields == null ? tableMetaData.getFields() : overrideFields;
+
       if(includeFullMetaData)
       {
          this.primaryKeyField = tableMetaData.getPrimaryKeyField();
          this.fields = new HashMap<>();
-         for(String fieldName : tableMetaData.getFields().keySet())
+         for(String fieldName : inputFields.keySet())
          {
-            QFieldMetaData field = tableMetaData.getField(fieldName);
+            QFieldMetaData field = inputFields.get(fieldName);
             if(!field.getIsHidden())
             {
                this.fields.put(fieldName, new QFrontendFieldMetaData(field));

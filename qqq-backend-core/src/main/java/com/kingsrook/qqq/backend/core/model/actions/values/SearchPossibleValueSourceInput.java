@@ -25,6 +25,7 @@ package com.kingsrook.qqq.backend.core.model.actions.values;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 
@@ -39,6 +40,8 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
    private String             searchTerm;
    private List<Serializable> idList;
    private List<String>       labelList;
+
+   private Map<String, Serializable> otherValues;
 
    private Integer skip  = 0;
    private Integer limit = 250;
@@ -284,6 +287,7 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
    }
 
 
+
    /*******************************************************************************
     ** Getter for labelList
     *******************************************************************************/
@@ -310,6 +314,37 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
    public SearchPossibleValueSourceInput withLabelList(List<String> labelList)
    {
       this.labelList = labelList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for otherValues
+    *******************************************************************************/
+   public Map<String, Serializable> getOtherValues()
+   {
+      return (this.otherValues);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for otherValues
+    *******************************************************************************/
+   public void setOtherValues(Map<String, Serializable> otherValues)
+   {
+      this.otherValues = otherValues;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for otherValues
+    *******************************************************************************/
+   public SearchPossibleValueSourceInput withOtherValues(Map<String, Serializable> otherValues)
+   {
+      this.otherValues = otherValues;
       return (this);
    }
 

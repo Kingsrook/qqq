@@ -22,34 +22,27 @@
 package com.kingsrook.qqq.middleware.javalin.routeproviders;
 
 
-import java.io.InputStream;
-import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
-import com.kingsrook.qqq.backend.core.actions.tables.StorageAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessInput;
 import com.kingsrook.qqq.backend.core.model.actions.processes.RunProcessOutput;
-import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
-import com.kingsrook.qqq.backend.core.utils.StringUtils;
-import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import com.kingsrook.qqq.backend.javalin.QJavalinImplementation;
 import com.kingsrook.qqq.backend.javalin.QJavalinUtils;
 import com.kingsrook.qqq.middleware.javalin.QJavalinRouteProviderInterface;
 import com.kingsrook.qqq.middleware.javalin.metadata.JavalinRouteProviderMetaData;
 import com.kingsrook.qqq.middleware.javalin.routeproviders.authentication.RouteAuthenticatorInterface;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.contexthandlers.DefaultRouteProviderContextHandler;
+import com.kingsrook.qqq.middleware.javalin.routeproviders.contexthandlers.RouteProviderContextHandlerInterface;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.apibuilder.EndpointGroup;
 import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -65,6 +58,7 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
    private final List<String> methods;
 
    private QCodeReference routeAuthenticator;
+   private QCodeReference contextHandler;
 
    private QInstance qInstance;
 
@@ -88,6 +82,7 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
    {
       this(routeProvider.getHostedPath(), routeProvider.getProcessName(), routeProvider.getMethods());
       setRouteAuthenticator(routeProvider.getRouteAuthenticator());
+      setContextHandler(routeProvider.getContextHandler());
    }
 
 
@@ -188,72 +183,27 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
       {
          LOG.info("Running process to serve route", logPair("processName", processName), logPair("path", context.path()));
 
+         //////////////////////////////////////////////////////////////////////////////////////
+         // handle request (either using route's specific context handler, or a default one) //
+         //////////////////////////////////////////////////////////////////////////////////////
+         RouteProviderContextHandlerInterface contextHandler = createContextHandler();
+         contextHandler.handleRequest(context, input);
+
+         // todo - make the inputStream available to the process to stream results?
+         //  maybe via the callback object??? input.setCallback(new QProcessCallback() {});
+         //  context.resultInputStream();
+
          /////////////////////
          // run the process //
          /////////////////////
          input.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
-         input.addValue("path", context.path());
-         input.addValue("method", context.method());
-         input.addValue("pathParams", new HashMap<>(context.pathParamMap()));
-         input.addValue("queryParams", new HashMap<>(context.queryParamMap()));
-         input.addValue("formParams", new HashMap<>(context.formParamMap()));
-         input.addValue("cookies", new HashMap<>(context.cookieMap()));
-         input.addValue("requestHeaders", new HashMap<>(context.headerMap()));
-
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(input);
 
-         /////////////////
-         // headers map //
-         /////////////////
-         Serializable headers = runProcessOutput.getValue("responseHeaders");
-         if(headers instanceof Map headersMap)
+         /////////////////////
+         // handle response //
+         /////////////////////
+         if(contextHandler.handleResponse(context, runProcessOutput))
          {
-            for(Object key : headersMap.keySet())
-            {
-               context.header(ValueUtils.getValueAsString(key), ValueUtils.getValueAsString(headersMap.get(key)));
-            }
-         }
-
-         // todo - make the inputStream available to the process
-         //  maybe via the callback object??? input.setCallback(new QProcessCallback() {});
-         //  context.resultInputStream();
-
-         //////////////
-         // response //
-         //////////////
-         Integer      statusCode           = runProcessOutput.getValueInteger("statusCode");
-         String       redirectURL          = runProcessOutput.getValueString("redirectURL");
-         String       responseString       = runProcessOutput.getValueString("responseString");
-         byte[]       responseBytes        = runProcessOutput.getValueByteArray("responseBytes");
-         StorageInput responseStorageInput = (StorageInput) runProcessOutput.getValue("responseStorageInput");
-
-         if(StringUtils.hasContent(redirectURL))
-         {
-            context.redirect(redirectURL, statusCode == null ? HttpStatus.FOUND : HttpStatus.forStatus(statusCode));
-            return;
-         }
-
-         if(statusCode != null)
-         {
-            context.status(statusCode);
-         }
-
-         if(StringUtils.hasContent(responseString))
-         {
-            context.result(responseString);
-            return;
-         }
-
-         if(responseBytes != null && responseBytes.length > 0)
-         {
-            context.result(responseBytes);
-            return;
-         }
-
-         if(responseStorageInput != null)
-         {
-            InputStream inputStream = new StorageAction().getInputStream(responseStorageInput);
-            context.result(inputStream);
             return;
          }
 
@@ -266,6 +216,23 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
       finally
       {
          QContext.clear();
+      }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private RouteProviderContextHandlerInterface createContextHandler()
+   {
+      if(contextHandler != null)
+      {
+         return QCodeLoader.getAdHoc(RouteProviderContextHandlerInterface.class, this.contextHandler);
+      }
+      else
+      {
+         return (new DefaultRouteProviderContextHandler());
       }
    }
 
@@ -299,5 +266,36 @@ public class ProcessBasedRouter implements QJavalinRouteProviderInterface
       this.routeAuthenticator = routeAuthenticator;
       return (this);
    }
+
+
+   /*******************************************************************************
+    ** Getter for contextHandler
+    *******************************************************************************/
+   public QCodeReference getContextHandler()
+   {
+      return (this.contextHandler);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for contextHandler
+    *******************************************************************************/
+   public void setContextHandler(QCodeReference contextHandler)
+   {
+      this.contextHandler = contextHandler;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for contextHandler
+    *******************************************************************************/
+   public ProcessBasedRouter withContextHandler(QCodeReference contextHandler)
+   {
+      this.contextHandler = contextHandler;
+      return (this);
+   }
+
 
 }

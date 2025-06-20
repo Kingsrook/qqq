@@ -47,6 +47,7 @@ import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnri
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.QSupplementalInstanceMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.AdornmentType;
@@ -55,6 +56,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.DynamicDefaultValueB
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppChildMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.layout.QAppMetaData;
@@ -210,6 +212,11 @@ public class QInstanceEnricher
     ***************************************************************************/
    private void enrichInstance()
    {
+      for(QSupplementalInstanceMetaData supplementalInstanceMetaData : qInstance.getSupplementalMetaData().values())
+      {
+         supplementalInstanceMetaData.enrich(qInstance);
+      }
+
       runPlugins(QInstance.class, qInstance, qInstance);
    }
 
@@ -580,6 +587,14 @@ public class QInstanceEnricher
          {
             field.withBehavior(DynamicDefaultValueBehavior.MODIFY_DATE);
          }
+      }
+
+      ////////////////////////////////////////////////////
+      // enrich any supplemental meta data on the field //
+      ////////////////////////////////////////////////////
+      for(QSupplementalFieldMetaData supplementalFieldMetaData : CollectionUtils.nonNullMap(field.getSupplementalMetaData()).values())
+      {
+         supplementalFieldMetaData.enrich(qInstance, field);
       }
 
       runPlugins(QFieldMetaData.class, field, qInstance);
@@ -1404,10 +1419,10 @@ public class QInstanceEnricher
          if(possibleValueSource.getIdType() == null)
          {
             QTableMetaData table = qInstance.getTable(possibleValueSource.getTableName());
-            if(table != null)
+            if(table != null && table.getFields() != null)
             {
                String         primaryKeyField         = table.getPrimaryKeyField();
-               QFieldMetaData primaryKeyFieldMetaData = table.getFields().get(primaryKeyField);
+               QFieldMetaData primaryKeyFieldMetaData = CollectionUtils.nonNullMap(table.getFields()).get(primaryKeyField);
                if(primaryKeyFieldMetaData != null)
                {
                   possibleValueSource.setIdType(primaryKeyFieldMetaData.getType());
@@ -1477,7 +1492,18 @@ public class QInstanceEnricher
       if(enrichMethod.isPresent())
       {
          Class<?> parameterType = enrichMethod.get().getParameterTypes()[0];
-         enricherPlugins.add(parameterType, plugin);
+
+         Set<String> existingPluginIdentifiers = enricherPlugins.getOrDefault(parameterType, Collections.emptyList())
+            .stream().map(p -> p.getPluginIdentifier())
+            .collect(Collectors.toSet());
+         if(existingPluginIdentifiers.contains(plugin.getPluginIdentifier()))
+         {
+            LOG.debug("Enricher plugin is already registered - not re-adding it", logPair("pluginIdentifer", plugin.getPluginIdentifier()));
+         }
+         else
+         {
+            enricherPlugins.add(parameterType, plugin);
+         }
       }
       else
       {
@@ -1493,6 +1519,17 @@ public class QInstanceEnricher
    public static void removeAllEnricherPlugins()
    {
       enricherPlugins.clear();
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for enricherPlugins
+    **
+    *******************************************************************************/
+   public static ListingHash<Class<?>, QInstanceEnricherPluginInterface<?>> getEnricherPlugins()
+   {
+      return enricherPlugins;
    }
 
 

@@ -24,7 +24,9 @@ package com.kingsrook.qqq.backend.core.model.metadata.frontend;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
@@ -32,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehaviorForFrontend;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QSupplementalFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.help.QHelpContent;
 import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValueSource;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
@@ -51,6 +54,7 @@ public class QFrontendFieldMetaData implements Serializable
    private boolean      isRequired;
    private boolean      isEditable;
    private boolean      isHeavy;
+   private boolean      isHidden;
    private Integer      gridColumns;
    private String       possibleValueSourceName;
    private String       displayFormat;
@@ -61,7 +65,8 @@ public class QFrontendFieldMetaData implements Serializable
    private List<QHelpContent>   helpContents;
    private QPossibleValueSource inlinePossibleValueSource;
 
-   private List<FieldBehaviorForFrontend> behaviors;
+   private List<FieldBehaviorForFrontend>          behaviors;
+   private Map<String, QSupplementalFieldMetaData> supplementalFieldMetaData;
 
    //////////////////////////////////////////////////////////////////////////////////
    // do not add setters.  take values from the source-object in the constructor!! //
@@ -79,6 +84,7 @@ public class QFrontendFieldMetaData implements Serializable
       this.isRequired = fieldMetaData.getIsRequired();
       this.isEditable = fieldMetaData.getIsEditable();
       this.isHeavy = fieldMetaData.getIsHeavy();
+      this.isHidden = fieldMetaData.getIsHidden();
       this.gridColumns = fieldMetaData.getGridColumns();
       this.possibleValueSourceName = fieldMetaData.getPossibleValueSourceName();
       this.displayFormat = fieldMetaData.getDisplayFormat();
@@ -97,6 +103,19 @@ public class QFrontendFieldMetaData implements Serializable
                behaviors = new ArrayList<>();
             }
             behaviors.add(fbff);
+         }
+      }
+
+      for(Map.Entry<String, QSupplementalFieldMetaData> entry : CollectionUtils.nonNullMap(fieldMetaData.getSupplementalMetaData()).entrySet())
+      {
+         QSupplementalFieldMetaData supplementalFieldMetaData = entry.getValue();
+         if(supplementalFieldMetaData.includeInFrontendMetaData())
+         {
+            if(this.supplementalFieldMetaData == null)
+            {
+               this.supplementalFieldMetaData = new HashMap<>();
+            }
+            this.supplementalFieldMetaData.put(entry.getKey(), supplementalFieldMetaData);
          }
       }
    }
@@ -165,6 +184,17 @@ public class QFrontendFieldMetaData implements Serializable
    public boolean getIsHeavy()
    {
       return isHeavy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for isHidden
+    **
+    *******************************************************************************/
+   public boolean getIsHidden()
+   {
+      return isHidden;
    }
 
 
@@ -253,5 +283,27 @@ public class QFrontendFieldMetaData implements Serializable
    public List<FieldBehaviorForFrontend> getBehaviors()
    {
       return behaviors;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalFieldMetaData
+    **
+    *******************************************************************************/
+   public Map<String, QSupplementalFieldMetaData> getSupplementalFieldMetaData()
+   {
+      return supplementalFieldMetaData;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for maxLength
+    **
+    *******************************************************************************/
+   public Integer getMaxLength()
+   {
+      return maxLength;
    }
 }

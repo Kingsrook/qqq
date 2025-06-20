@@ -22,7 +22,11 @@
 package com.kingsrook.qqq.api;
 
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import com.kingsrook.qqq.api.implementations.savedreports.RenderSavedReportProcessApiMetaDataEnricher;
 import com.kingsrook.qqq.api.model.APIVersion;
@@ -74,12 +78,14 @@ import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.TablesPossibleValueSourceMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReport;
 import com.kingsrook.qqq.backend.core.model.savedreports.SavedReportsMetaDataProvider;
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.SystemErrorStatusMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryBackendModule;
+import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryModuleBackendVariantSetting;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ExtractViaQueryStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
@@ -101,11 +107,18 @@ public class TestUtils
    public static final String TABLE_NAME_LINE_ITEM_EXTRINSIC = "orderLineExtrinsic";
    public static final String TABLE_NAME_ORDER_EXTRINSIC     = "orderExtrinsic";
 
+   public static final String MEMORY_BACKEND_WITH_VARIANTS_NAME = "memoryWithVariants";
+   public static final String TABLE_NAME_MEMORY_VARIANT_OPTIONS = "memoryVariantOptions";
+   public static final String TABLE_NAME_MEMORY_VARIANT_DATA    = "memoryVariantData";
+
    public static final String PROCESS_NAME_GET_PERSON_INFO  = "getPersonInfo";
    public static final String PROCESS_NAME_TRANSFORM_PEOPLE = "transformPeople";
 
    public static final String API_NAME             = "test-api";
    public static final String ALTERNATIVE_API_NAME = "person-api";
+
+   public static final String API_PATH             = "/api/";
+   public static final String ALTERNATIVE_API_PATH = "/person-api/";
 
    public static final String V2022_Q4 = "2022.Q4";
    public static final String V2023_Q1 = "2023.Q1";
@@ -139,12 +152,14 @@ public class TestUtils
 
       qInstance.setAuthentication(new Auth0AuthenticationMetaData().withType(QAuthenticationType.FULLY_ANONYMOUS).withName("anonymous"));
 
+      defineMemoryBackendVariantUseCases(qInstance);
+
       addSavedReports(qInstance);
 
       qInstance.withSupplementalMetaData(new ApiInstanceMetaDataContainer()
          .withApiInstanceMetaData(new ApiInstanceMetaData()
             .withName(API_NAME)
-            .withPath("/api/")
+            .withPath(API_PATH)
             .withLabel("Test API")
             .withDescription("QQQ Test API")
             .withContactEmail("contact@kingsrook.com")
@@ -154,7 +169,7 @@ public class TestUtils
             .withFutureVersions(List.of(new APIVersion(V2023_Q2))))
          .withApiInstanceMetaData(new ApiInstanceMetaData()
             .withName(ALTERNATIVE_API_NAME)
-            .withPath("/person-api/")
+            .withPath(ALTERNATIVE_API_PATH)
             .withLabel("Person-Only API")
             .withDescription("QQQ Test API, that only has the Person table.")
             .withContactEmail("contact@kingsrook.com")
@@ -331,6 +346,8 @@ public class TestUtils
       QTableMetaData table = new QTableMetaData()
          .withName(TABLE_NAME_PERSON)
          .withLabel("Person")
+         .withRecordLabelFormat("%s %s")
+         .withRecordLabelFields("firstName", "lastName")
          .withBackendName(MEMORY_BACKEND_NAME)
          .withPrimaryKeyField("id")
          .withUniqueKey(new UniqueKey("email"))
@@ -342,6 +359,7 @@ public class TestUtils
          .withField(new QFieldMetaData("lastName", QFieldType.STRING))
          .withField(new QFieldMetaData("birthDate", QFieldType.DATE))
          .withField(new QFieldMetaData("email", QFieldType.STRING))
+         .withField(new QFieldMetaData("bestFriendPersonId", QFieldType.INTEGER).withPossibleValueSourceName(TABLE_NAME_PERSON))
          // .withField(new QFieldMetaData("homeStateId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_STATE))
          // .withField(new QFieldMetaData("favoriteShapeId", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_SHAPE))
          // .withField(new QFieldMetaData("customValue", QFieldType.INTEGER).withPossibleValueSourceName(POSSIBLE_VALUE_SOURCE_CUSTOM))
@@ -551,6 +569,7 @@ public class TestUtils
    }
 
 
+
    /*******************************************************************************
     **
     *******************************************************************************/
@@ -575,6 +594,33 @@ public class TestUtils
       insertPersonRecord(3, "Bart", "Simpson");
       insertPersonRecord(4, "Lisa", "Simpson");
       insertPersonRecord(5, "Maggie", "Simpson");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static void insertTim2Shoes() throws QException
+   {
+      new InsertAction().execute(new InsertInput(TestUtils.TABLE_NAME_PERSON).withRecord(getTim2ShoesRecord()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static QRecord getTim2ShoesRecord() throws QException
+   {
+      return new QRecord()
+         .withValue("firstName", "Tim")
+         .withValue("noOfShoes", 2)
+         .withValue("birthDate", LocalDate.of(1980, Month.MAY, 31))
+         .withValue("cost", new BigDecimal("3.50"))
+         .withValue("price", new BigDecimal("9.99"))
+         .withValue("photo", "ABCD".getBytes())
+         .withValue("bestFriendPersonId", 1);
    }
 
 
@@ -681,6 +727,40 @@ public class TestUtils
 
          return (records);
       }
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void defineMemoryBackendVariantUseCases(QInstance qInstance)
+   {
+      qInstance.addBackend(new QBackendMetaData()
+         .withName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withBackendType(MemoryBackendModule.class)
+         .withUsesVariants(true)
+         .withBackendVariantsConfig(new BackendVariantsConfig()
+            .withVariantTypeKey(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withOptionsTableName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+            .withBackendSettingSourceFieldNameMap(Map.of(MemoryModuleBackendVariantSetting.PRIMARY_KEY, "id"))
+         ));
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_DATA)
+         .withBackendName(MEMORY_BACKEND_WITH_VARIANTS_NAME)
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
+
+      qInstance.addTable(new QTableMetaData()
+         .withName(TABLE_NAME_MEMORY_VARIANT_OPTIONS)
+         .withBackendName(MEMORY_BACKEND_NAME) // note, the version without variants!
+         .withPrimaryKeyField("id")
+         .withField(new QFieldMetaData("id", QFieldType.INTEGER))
+         .withField(new QFieldMetaData("name", QFieldType.STRING))
+      );
    }
 
 }

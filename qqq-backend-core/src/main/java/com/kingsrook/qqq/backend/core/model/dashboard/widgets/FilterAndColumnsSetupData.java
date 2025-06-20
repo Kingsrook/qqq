@@ -35,7 +35,14 @@ public class FilterAndColumnsSetupData extends QWidgetData
    private Boolean      allowVariables = false;
    private Boolean      hideColumns    = false;
    private Boolean      hidePreview    = false;
+   private Boolean      hideSortBy     = false;
+   private Boolean      overrideIsEditable;
    private List<String> filterDefaultFieldNames;
+
+   private Boolean isApiVersioned = false;
+   private String  apiName;
+   private String  apiPath;
+   private String  apiVersion;
 
    private String filterFieldName = "queryFilterJson";
    private String columnFieldName = "columnsJson";
@@ -289,5 +296,191 @@ public class FilterAndColumnsSetupData extends QWidgetData
       this.columnFieldName = columnFieldName;
       return (this);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for overrideIsEditable
+    *******************************************************************************/
+   public Boolean getOverrideIsEditable()
+   {
+      return (this.overrideIsEditable);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for overrideIsEditable
+    *******************************************************************************/
+   public void setOverrideIsEditable(Boolean overrideIsEditable)
+   {
+      this.overrideIsEditable = overrideIsEditable;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for overrideIsEditable
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withOverrideIsEditable(Boolean overrideIsEditable)
+   {
+      this.overrideIsEditable = overrideIsEditable;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for hideSortBy
+    *******************************************************************************/
+   public Boolean getHideSortBy()
+   {
+      return (this.hideSortBy);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for hideSortBy
+    *******************************************************************************/
+   public void setHideSortBy(Boolean hideSortBy)
+   {
+      this.hideSortBy = hideSortBy;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for hideSortBy
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withHideSortBy(Boolean hideSortBy)
+   {
+      this.hideSortBy = hideSortBy;
+      return (this);
+   }
+
+
+   /*******************************************************************************
+    ** Getter for isApiVersioned
+    *******************************************************************************/
+   public Boolean getIsApiVersioned()
+   {
+      return (this.isApiVersioned);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isApiVersioned
+    *******************************************************************************/
+   public void setIsApiVersioned(Boolean isApiVersioned)
+   {
+      this.isApiVersioned = isApiVersioned;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isApiVersioned
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withIsApiVersioned(Boolean isApiVersioned)
+   {
+      this.isApiVersioned = isApiVersioned;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiName
+    *******************************************************************************/
+   public String getApiName()
+   {
+      return (this.apiName);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiName
+    *******************************************************************************/
+   public void setApiName(String apiName)
+   {
+      this.apiName = apiName;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiName
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withApiName(String apiName)
+   {
+      this.apiName = apiName;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiPath
+    *******************************************************************************/
+   public String getApiPath()
+   {
+      return (this.apiPath);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiPath
+    *******************************************************************************/
+   public void setApiPath(String apiPath)
+   {
+      this.apiPath = apiPath;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiPath
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withApiPath(String apiPath)
+   {
+      this.apiPath = apiPath;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for apiVersion
+    *******************************************************************************/
+   public String getApiVersion()
+   {
+      return (this.apiVersion);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for apiVersion
+    *******************************************************************************/
+   public void setApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for apiVersion
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withApiVersion(String apiVersion)
+   {
+      this.apiVersion = apiVersion;
+      return (this);
+   }
+
 
 }

@@ -34,6 +34,8 @@ import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModu
 import com.kingsrook.qqq.backend.core.modules.authentication.QAuthenticationModuleInterface;
 import com.kingsrook.qqq.backend.core.modules.authentication.implementations.Auth0AuthenticationModule;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
+import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components.TableVariant;
 import io.javalin.http.Context;
 
 
@@ -131,15 +133,10 @@ public class ExecutorSessionUtils
          QSession session = authenticationModule.createSession(qInstance, authenticationContext);
          QContext.init(qInstance, session, null, null);
 
-         ///////////////////////////////////////////////////////////////////////////////
-         // todo - this must be moved ... not exactly sure where, but into some spec. //
-         ///////////////////////////////////////////////////////////////////////////////
-         // String tableVariant = QJavalinUtils.getFormParamOrQueryParam(context, "tableVariant");
-         // if(StringUtils.hasContent(tableVariant))
-         // {
-         //    JSONObject variant = new JSONObject(tableVariant);
-         //    QContext.getQSession().setBackendVariants(MapBuilder.of(variant.getString("type"), variant.getInt("id")));
-         // }
+         //////////////////////////////////////////////////////////////////////////////////////////////
+         // note - QJavalinImplementation did table variants here - but we have a method             //
+         // that each executor must call instead, with wherever the tableVariant was in its input... //
+         //////////////////////////////////////////////////////////////////////////////////////////////
 
          /////////////////////////////////////////////////////////////////////////////////
          // if we got a session id cookie in, then send it back with updated cookie age //
@@ -231,4 +228,16 @@ public class ExecutorSessionUtils
       }
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void setTableVariantInSession(TableVariant tableVariant)
+   {
+      if(tableVariant != null && StringUtils.hasContent(tableVariant.getType()) && StringUtils.hasContent(tableVariant.getId()))
+      {
+         QContext.getQSession().setBackendVariants(MapBuilder.of(tableVariant.getType(), tableVariant.getId()));
+      }
+   }
 }
