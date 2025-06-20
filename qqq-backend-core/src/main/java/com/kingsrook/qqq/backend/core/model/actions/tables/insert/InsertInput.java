@@ -23,9 +23,12 @@ package com.kingsrook.qqq.backend.core.model.actions.tables.insert;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractTableActionInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
@@ -47,6 +50,8 @@ public class InsertInput extends AbstractTableActionInput
 
    private boolean omitDmlAudit = false;
    private String  auditContext = null;
+
+   private Set<ActionFlag> flags;
 
 
 
@@ -314,6 +319,67 @@ public class InsertInput extends AbstractTableActionInput
    {
       this.auditContext = auditContext;
       return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for flags
+    *******************************************************************************/
+   public Set<ActionFlag> getFlags()
+   {
+      return (this.flags);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for flags
+    *******************************************************************************/
+   public void setFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for flags
+    *******************************************************************************/
+   public InsertInput withFlags(Set<ActionFlag> flags)
+   {
+      this.flags = flags;
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public InsertInput withFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         this.flags = new HashSet<>();
+      }
+      this.flags.add(flag);
+      return (this);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public boolean hasFlag(ActionFlag flag)
+   {
+      if(this.flags == null)
+      {
+         return (false);
+      }
+
+      return (this.flags.contains(flag));
    }
 
 }

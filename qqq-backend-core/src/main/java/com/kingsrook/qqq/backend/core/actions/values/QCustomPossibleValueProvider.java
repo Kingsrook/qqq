@@ -45,7 +45,7 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
    /*******************************************************************************
     **
     *******************************************************************************/
-   QPossibleValue<T> getPossibleValue(Serializable idValue);
+   QPossibleValue<T> getPossibleValue(Serializable idValue) throws QException;
 
    /*******************************************************************************
     **

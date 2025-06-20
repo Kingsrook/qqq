@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.kingsrook.qqq.backend.core.actions.AbstractQActionFunction;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
-import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.actions.automation.RecordAutomationStatusUpdater;
@@ -54,6 +53,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
@@ -157,7 +157,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
       //////////////////////////////////////////////////
       // insert any associations in the input records //
       //////////////////////////////////////////////////
-      manageAssociations(table, insertOutput.getRecords(), insertInput.getTransaction());
+      manageAssociations(table, insertOutput.getRecords(), insertInput);
 
       //////////////////
       // do the audit //
@@ -174,9 +174,21 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             .withRecordList(insertOutput.getRecords()));
       }
 
-      //////////////////////////////////////////////////////////////
-      // finally, run the post-insert customizer, if there is one //
-      //////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      // finally, run the post-insert customizers, if there are any //
+      ////////////////////////////////////////////////////////////////
+      runPostInsertCustomizers(insertInput, table, insertOutput);
+
+      return insertOutput;
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static void runPostInsertCustomizers(InsertInput insertInput, QTableMetaData table, InsertOutput insertOutput)
+   {
       Optional<TableCustomizerInterface> postInsertCustomizer = QCodeLoader.getTableCustomizer(table, TableCustomizers.POST_INSERT_RECORD.getRole());
       if(postInsertCustomizer.isPresent())
       {
@@ -193,7 +205,25 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          }
       }
 
-      return insertOutput;
+      ///////////////////////////////////////////////
+      // run all of the instance-level customizers //
+      ///////////////////////////////////////////////
+      List<QCodeReference> tableCustomizerCodes = QContext.getQInstance().getTableCustomizers(TableCustomizers.POST_INSERT_RECORD);
+      for(QCodeReference tableCustomizerCode : tableCustomizerCodes)
+      {
+         try
+         {
+            TableCustomizerInterface tableCustomizer = QCodeLoader.getAdHoc(TableCustomizerInterface.class, tableCustomizerCode);
+            insertOutput.setRecords(tableCustomizer.postInsert(insertInput, insertOutput.getRecords()));
+         }
+         catch(Exception e)
+         {
+            for(QRecord record : insertOutput.getRecords())
+            {
+               record.addWarning(new QWarningMessage("An error occurred after the insert: " + e.getMessage()));
+            }
+         }
+      }
    }
 
 
@@ -308,6 +338,19 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
             insertInput.setRecords(preInsertCustomizer.get().preInsert(insertInput, insertInput.getRecords(), isPreview));
          }
       }
+
+      ///////////////////////////////////////////////
+      // run all of the instance-level customizers //
+      ///////////////////////////////////////////////
+      List<QCodeReference> tableCustomizerCodes = QContext.getQInstance().getTableCustomizers(TableCustomizers.PRE_INSERT_RECORD);
+      for(QCodeReference tableCustomizerCode : tableCustomizerCodes)
+      {
+         TableCustomizerInterface tableCustomizer = QCodeLoader.getAdHoc(TableCustomizerInterface.class, tableCustomizerCode);
+         if(whenToRun.equals(tableCustomizer.whenToRunPreInsert(insertInput, isPreview)))
+         {
+            insertInput.setRecords(tableCustomizer.preInsert(insertInput, insertInput.getRecords(), isPreview));
+         }
+      }
    }
 
 
@@ -342,7 +385,7 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
    /*******************************************************************************
     **
     *******************************************************************************/
-   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords, QBackendTransaction transaction) throws QException
+   private void manageAssociations(QTableMetaData table, List<QRecord> insertedRecords, InsertInput insertInput) throws QException
    {
       for(Association association : CollectionUtils.nonNullList(table.getAssociations()))
       {
@@ -375,7 +418,8 @@ public class InsertAction extends AbstractQActionFunction<InsertInput, InsertOut
          if(CollectionUtils.nullSafeHasContents(nextLevelInserts))
          {
             InsertInput nextLevelInsertInput = new InsertInput();
-            nextLevelInsertInput.setTransaction(transaction);
+            nextLevelInsertInput.withFlags(insertInput.getFlags());
+            nextLevelInsertInput.setTransaction(insertInput.getTransaction());
             nextLevelInsertInput.setTableName(association.getAssociatedTableName());
             nextLevelInsertInput.setRecords(nextLevelInserts);
             InsertOutput nextLevelInsertOutput = new InsertAction().execute(nextLevelInsertInput);

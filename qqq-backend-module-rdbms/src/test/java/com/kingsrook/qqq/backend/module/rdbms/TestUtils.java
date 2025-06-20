@@ -153,12 +153,22 @@ public class TestUtils
     *******************************************************************************/
    public static RDBMSBackendMetaData defineBackend()
    {
-      return (new RDBMSBackendMetaData()
+      RDBMSBackendMetaData rdbmsBackendMetaData = new RDBMSBackendMetaData()
          .withName(DEFAULT_BACKEND_NAME)
          .withVendor("h2")
          .withHostName("mem")
          .withDatabaseName("test_database")
-         .withUsername("sa"));
+         .withUsername("sa");
+
+      ////////////////////////////////////////////////////////////////////
+      // by default h2 up-shifts all names, which isn't how we expected //
+      // things to be, so, tell it not to do that.                      //
+      ////////////////////////////////////////////////////////////////////
+      String jdbcUrl = ConnectionManager.getJdbcUrl(rdbmsBackendMetaData);
+      jdbcUrl += ";DATABASE_TO_UPPER=FALSE";
+      rdbmsBackendMetaData.setJdbcUrl(jdbcUrl);
+
+      return rdbmsBackendMetaData;
    }
 
 
