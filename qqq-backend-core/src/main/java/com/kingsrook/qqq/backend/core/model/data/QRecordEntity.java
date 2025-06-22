@@ -594,6 +594,7 @@ public abstract class QRecordEntity
       {
          Field  tableNameField = entityClass.getDeclaredField("TABLE_NAME");
          String tableNameValue = (String) tableNameField.get(null);
+
          return (tableNameValue);
       }
       catch(Exception e)

@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import com.kingsrook.qqq.api.javalin.QJavalinApiHandler;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.exceptions.QInstanceValidationException;
 import com.kingsrook.qqq.backend.core.instances.AbstractQQQApplication;
@@ -74,11 +75,12 @@ public class QApplicationJavalinServer
 
    private Integer                              port                                = 8000;
    private boolean                              serveFrontendMaterialDashboard      = true;
-   private String                               frontendMaterialDashboardHostedPath = "/";  // TODO - Things like this should be moved into a central configuration file system, so that it can be changed in userspace without code changes.
+   private String                               frontendMaterialDashboardHostedPath = "/";                                    // TODO - Things like this should be moved into a central configuration file system, so that it can be changed in userspace without code changes.
    private boolean                              serveLegacyUnversionedMiddlewareAPI = true;
-   private List<AbstractMiddlewareVersion> middlewareVersionList          = List.of(new MiddlewareVersionV1());
-   private List<QJavalinRouteProvider>     additionalRouteProviders       = null;
-   private Consumer<Javalin>               javalinConfigurationCustomizer = null;
+   private boolean                              serveApplicationApi                 = true;
+   private List<AbstractMiddlewareVersion>      middlewareVersionList               = List.of(new MiddlewareVersionV1());     // TODO - Seems like this should be null by default, and only set if the application developer wants to serve versioned middleware APIs. @DK
+   private List<QJavalinRouteProvider>          additionalRouteProviders            = null;
+   private Consumer<Javalin>                    javalinConfigurationCustomizer      = null;
    private QJavalinMetaData                     javalinMetaData                     = null;
 
    private long                lastQInstanceHotSwapMillis;
@@ -166,6 +168,20 @@ public class QApplicationJavalinServer
                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
                // we should be pretty comfortable that this won't happen, because we've pre-validated the instance above... //
                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               throw new RuntimeException(e);
+            }
+         }
+
+         if(serveApplicationApi)
+         {
+            try
+            {
+               QJavalinApiHandler qJavalinApiHandler = new QJavalinApiHandler(qInstance);
+               config.router.apiBuilder(qJavalinApiHandler.getRoutes());
+            }
+            catch(Exception e)
+            {
+               LOG.error("Unable to add application API routes to Javalin service.", e);
                throw new RuntimeException(e);
             }
          }
@@ -738,4 +754,35 @@ public class QApplicationJavalinServer
    {
       this.frontendMaterialDashboardHostedPath = frontendMaterialDashboardHostedPath;
    }
+
+   /*******************************************************************************
+    ** Getter for serveApplicationApi
+    *******************************************************************************/
+   public boolean getServeApplicationApi()
+   {
+      return (this.serveApplicationApi);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for serveApplicationApi
+    *******************************************************************************/
+   public void setServeApplicationApi(boolean serveApplicationApi)
+   {
+      this.serveApplicationApi = serveApplicationApi;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for serveApplicationApi
+    *******************************************************************************/
+   public QApplicationJavalinServer withServeApplicationApi(boolean serveApplicationApi)
+   {
+      this.serveApplicationApi = serveApplicationApi;
+      return (this);
+   }
+
+
 }
