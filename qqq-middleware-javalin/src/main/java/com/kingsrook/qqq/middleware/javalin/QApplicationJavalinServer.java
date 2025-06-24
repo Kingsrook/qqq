@@ -135,14 +135,16 @@ public class QApplicationJavalinServer
             {
                if(resource != null)
                {
-                  config.staticFiles.add(staticFileConfig -> {
+                  config.staticFiles.add(staticFileConfig ->
+                  {
                      staticFileConfig.hostedPath = this.frontendMaterialDashboardHostedPath;
                      staticFileConfig.directory = "/material-dashboard-overlay";
                   });
                }
             }
 
-            config.staticFiles.add(staticFileConfig -> {
+            config.staticFiles.add(staticFileConfig ->
+            {
                staticFileConfig.hostedPath = this.frontendMaterialDashboardHostedPath;
                staticFileConfig.directory = "/material-dashboard";
             });
@@ -211,10 +213,6 @@ public class QApplicationJavalinServer
             {
                config.router.apiBuilder(javalinEndpointGroup);
             }
-
-            /////////////////////////////////////////////////////////////////////////////////////////////
-            // If the additional route provider has an SPA root defined, add it to the Javalin config. //
-            /////////////////////////////////////////////////////////////////////////////////////////////
 
             routeProvider.acceptJavalinConfig(config);
          }

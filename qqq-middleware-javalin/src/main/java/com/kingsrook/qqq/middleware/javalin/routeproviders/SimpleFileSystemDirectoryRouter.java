@@ -48,15 +48,17 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
 {
-   private QCodeReference routeAuthenticator;
-   private QInstance qInstance;
-   private final String fileSystemPath;
-   private final String hostedPath;
-
+   public static final String  LOAD_STATIC_FILES_FROM_JAR_PROPERTY = "qqq.javalin.enableStaticFilesFromJar";
    private static final QLogger LOG = QLogger.getLogger(SimpleFileSystemDirectoryRouter.class);
+   public static       boolean loadStaticFilesFromJar              = false;
+   private final String         fileSystemPath;
+   private final String         hostedPath;
+   private       QCodeReference routeAuthenticator;
+   private       QInstance      qInstance;
+   private       String         spaRootPath;
+   private       String         spaRootFile;
 
-   public static final String LOAD_STATIC_FILES_FROM_JAR_PROPERTY = "qqq.javalin.enableStaticFilesFromJar";
-   public static boolean loadStaticFilesFromJar = false;
+
 
    /*******************************************************************************
     ** Constructor
@@ -94,6 +96,8 @@ public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
    public SimpleFileSystemDirectoryRouter(JavalinRouteProviderMetaData routeProvider)
    {
       this(routeProvider.getHostedPath(), routeProvider.getFileSystemPath());
+      setSpaRootPath(routeProvider.getSpaRootPath());
+      setSpaRootFile(routeProvider.getSpaRootFile());
       setRouteAuthenticator(routeProvider.getRouteAuthenticator());
    }
 
@@ -200,6 +204,10 @@ public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
    @Override
    public void acceptJavalinConfig(JavalinConfig config)
    {
+      if(this.getSpaRootPath() != null && !this.getSpaRootPath().isEmpty())
+      {
+         config.spaRoot.addFile(this.spaRootPath, this.spaRootFile);
+      }
       config.staticFiles.add(this::handleJavalinStaticFileConfig);
    }
 
@@ -250,6 +258,76 @@ public class SimpleFileSystemDirectoryRouter extends QJavalinRouteProvider
    public SimpleFileSystemDirectoryRouter withRouteAuthenticator(QCodeReference routeAuthenticator)
    {
       this.routeAuthenticator = routeAuthenticator;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for spaRootPath
+    * @see #withSpaRootPath(String)
+    *******************************************************************************/
+   public String getSpaRootPath()
+   {
+      return (this.spaRootPath);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for spaRootPath
+    * @see #withSpaRootPath(String)
+    *******************************************************************************/
+   public void setSpaRootPath(String spaRootPath)
+   {
+      this.spaRootPath = spaRootPath;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for spaRootPath
+    * @param spaRootPath TODO document this property
+    * @return this
+    *******************************************************************************/
+   public SimpleFileSystemDirectoryRouter withSpaRootPath(String spaRootPath)
+   {
+      this.spaRootPath = spaRootPath;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for spaRootFile
+    * @see #withSpaRootFile(String)
+    *******************************************************************************/
+   public String getSpaRootFile()
+   {
+      return (this.spaRootFile);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for spaRootFile
+    * @see #withSpaRootFile(String)
+    *******************************************************************************/
+   public void setSpaRootFile(String spaRootFile)
+   {
+      this.spaRootFile = spaRootFile;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for spaRootFile
+    * @param spaRootFile TODO document this property
+    * @return this
+    *******************************************************************************/
+   public SimpleFileSystemDirectoryRouter withSpaRootFile(String spaRootFile)
+   {
+      this.spaRootFile = spaRootFile;
       return (this);
    }
 

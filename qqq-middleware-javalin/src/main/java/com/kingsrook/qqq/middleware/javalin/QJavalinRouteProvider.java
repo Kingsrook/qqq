@@ -34,8 +34,6 @@ import io.javalin.config.JavalinConfig;
  *******************************************************************************/
 public abstract class QJavalinRouteProvider
 {
-   private String spaRootPath = null;
-
    /***************************************************************************
     ** For initial setup when server boots, set the qInstance - but also,
     ** e.g., for development, to do a hot-swap.
@@ -73,11 +71,10 @@ public abstract class QJavalinRouteProvider
     ** accept the Javalin service object, to perform whatever setup you need,
     ** such as setting up before/after handlers.
     ***************************************************************************/
-    public void acceptJavalinService(Javalin service)
+   public void acceptJavalinService(Javalin service)
    {
       /////////////////////
       // noop at default //
       /////////////////////
    }
-
 }
