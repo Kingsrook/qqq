@@ -249,25 +249,25 @@ echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
 
-if which xpath > /dev/null 2>&1; then
+# Parse Jacoco HTML coverage summary using grep and sed
+if [ -f target/site/jacoco/index.html ]; then
    echo "Element\nInstructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
-   xpath -n -q -e '/html/body/table/tfoot/tr[1]/td/text()' target/site/jacoco/index.html > /tmp/$$.values
+   # Extract values from the footer row of the coverage table
+   grep -A 12 '<tfoot>' target/site/jacoco/index.html | grep '<td>' | sed 's/<td>\([^<]*\)<\/td>/\1/' | tr '\n' '\t' | sed 's/\t$/\n/' > /tmp/$$.values
    paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
    rm /tmp/$$.headers /tmp/$$.values
 else
-   echo "xpath is not installed.  Jacoco coverage summary will not be produced here...";
+   echo "Jacoco coverage summary could not be parsed...";
 fi
 
-if which html2text > /dev/null 2>&1; then
-   echo "Untested classes, per Jacoco:"
-   echo "-----------------------------"
-   for i in target/site/jacoco/*/index.html; do
-      html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1;
-   done;
-   echo
-else
-   echo "html2text is not installed.  Untested classes from Jacoco will not be printed here...";
-fi
+echo "Untested classes, per Jacoco:"
+echo "-----------------------------"
+# Parse Jacoco XML reports directly to find classes with 0% coverage
+find target/site/jacoco -name "jacoco.xml" -exec grep -l '<counter type="LINE" missed="[1-9]' {} \; | while read xmlfile; do
+   # Extract class names from XML files that have missed lines
+   grep -A 1 '<class name=' "$xmlfile" | grep -B 1 '<counter type="LINE" missed="[1-9]' | grep '<class name=' | sed 's/.*name="\([^"]*\)".*/\1/' | sort -u
+done | sort -u
+echo
 
                            ]]>
                         </argument>

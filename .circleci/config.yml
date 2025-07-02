@@ -17,21 +17,13 @@ commands:
           path: << parameters.module >>/target/site/jacoco/jacoco-resources
           when: always
 
-  install_java17:
+  check_java_version:
     steps:
       - run:
-          name: Install Java 17
+          name: Check Java Version
           command: |
-            sudo apt-get update
-            sudo apt install -y openjdk-17-jdk
-            sudo rm /etc/alternatives/java
-            sudo ln -s /usr/lib/jvm/java-17-openjdk-amd64/bin/java /etc/alternatives/java
-      - run:
-          ## used by jacoco uncovered class reporting in pom.xml
-          name: Install html2text
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y html2text
+            java -version
+            echo "Java version check completed"
 
   mvn_verify:
     steps:
@@ -139,7 +131,7 @@ jobs:
     executor: localstack/default
     steps:
       ## - localstack/startup
-      - install_java17
+      - check_java_version
       - mvn_verify
       - check_middleware_api_versions
 
@@ -147,7 +139,7 @@ jobs:
     executor: localstack/default
     steps:
       ## - localstack/startup
-      - install_java17
+      - check_java_version
       - mvn_verify
       - check_middleware_api_versions
       - mvn_jar_deploy
