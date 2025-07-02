@@ -5,18 +5,6 @@ orbs:
   browser-tools: circleci/browser-tools@1.4.7
 
 commands:
-  store_jacoco_site:
-    parameters:
-      module:
-        type: string
-    steps:
-      - store_artifacts:
-          path: << parameters.module >>/target/site/jacoco/index.html
-          when: always
-      - store_artifacts:
-          path: << parameters.module >>/target/site/jacoco/jacoco-resources
-          when: always
-
   check_java_version:
     steps:
       - run:
@@ -41,26 +29,9 @@ commands:
           name: Run Maven Verify
           command: |
             mvn -s .circleci/mvn-settings.xml -T4 verify
-      - store_jacoco_site:
-          module: qqq-backend-core
-      - store_jacoco_site:
-          module: qqq-backend-module-filesystem
-      - store_jacoco_site:
-          module: qqq-backend-module-rdbms
-      - store_jacoco_site:
-          module: qqq-backend-module-api
-      - store_jacoco_site:
-          module: qqq-middleware-api
-      - store_jacoco_site:
-          module: qqq-middleware-javalin
-      - store_jacoco_site:
-          module: qqq-middleware-picocli
-      - store_jacoco_site:
-          module: qqq-middleware-slack
-      - store_jacoco_site:
-          module: qqq-language-support-javascript
-      - store_jacoco_site:
-          module: qqq-sample-project
+      - store_artifacts:
+          path: "*/target/site/jacoco/"
+          when: always
       - run:
           name: Save test results
           command: |
