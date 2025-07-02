@@ -21,7 +21,10 @@ public class CreateNewQBit
 
    private static ExecutorService executorService = null;
 
-   private static String SED = "/opt/homebrew/bin/gsed";
+   private static String SED = "/opt/homebrew/bin/gsed"; // needs to be a version that supports -i (in-place edit)
+   private static String GIT = "/usr/bin/git";
+   private static String CP  = "/bin/cp";
+   private static String MV  = "/bin/mv";
 
 
 
@@ -87,7 +90,7 @@ public class CreateNewQBit
          System.out.println();
 
          System.out.println("Copying template...");
-         ProcessResult cpResult = run(new ProcessBuilder("cp", "-rv", template.getAbsolutePath(), dir.getAbsolutePath()));
+         ProcessResult cpResult = run(new ProcessBuilder(CP, "-rv", template.getAbsolutePath(), dir.getAbsolutePath()));
          System.out.print(cpResult.stdout());
          System.out.println();
 
@@ -100,7 +103,7 @@ public class CreateNewQBit
          System.out.println();
 
          System.out.println("Init'ing git repo...");
-         run(new ProcessBuilder("git", "init").directory(dir));
+         run(new ProcessBuilder(GIT, "init").directory(dir));
          System.out.println();
 
          // git remote add origin https://github.com/Kingsrook/${name}.git ?
@@ -123,9 +126,9 @@ public class CreateNewQBit
    {
       String srcPath     = dir.getAbsolutePath() + "/src/main/java/com/kingsrook/qbits";
       String packagePath = packageName.replace('.', '/');
-      System.out.print(run(new ProcessBuilder("mv", "-v", srcPath + "/todo/TodoQBitConfig.java", srcPath + "/todo/" + className + "QBitConfig.java")).stdout());
-      System.out.print(run(new ProcessBuilder("mv", "-v", srcPath + "/todo/TodoQBitProducer.java", srcPath + "/todo/" + className + "QBitProducer.java")).stdout());
-      System.out.print(run(new ProcessBuilder("mv", "-v", srcPath + "/todo", srcPath + "/" + packagePath)).stdout());
+      System.out.print(run(new ProcessBuilder(MV, "-v", srcPath + "/todo/TodoQBitConfig.java", srcPath + "/todo/" + className + "QBitConfig.java")).stdout());
+      System.out.print(run(new ProcessBuilder(MV, "-v", srcPath + "/todo/TodoQBitProducer.java", srcPath + "/todo/" + className + "QBitProducer.java")).stdout());
+      System.out.print(run(new ProcessBuilder(MV, "-v", srcPath + "/todo", srcPath + "/" + packagePath)).stdout());
    }
 
 

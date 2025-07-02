@@ -106,7 +106,7 @@ public class ApiAwareTableQueryExecutor extends TableQueryExecutor implements Ap
       // take care of managing order-by fields and criteria, which may not be in this version, etc //
       ///////////////////////////////////////////////////////////////////////////////////////////////
       manageOrderByFields(filter, tableApiFields, badRequestMessages, apiName, queryInput);
-      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, queryInput);
+      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, apiVersion, queryInput);
 
       //////////////////////////////////////////
       // no more badRequest checks below here //
