@@ -23,11 +23,15 @@ package com.kingsrook.qqq.api.middleware.specs.v1;
 
 
 import java.util.Map;
+import java.util.function.BiConsumer;
 import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.middleware.specs.ApiAwareSpecTestBase;
+import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
 import io.javalin.http.ContentType;
@@ -268,6 +272,90 @@ class ApiAwareTableQuerySpecV1Test extends ApiAwareSpecTestBase
       assertEquals(404, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Could not find a table named no-such-table in this api.", jsonObject.getString("error"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoin() throws QException
+   {
+      /////////////////////////
+      // insert a test order //
+      /////////////////////////
+      QContext.init(TestUtils.defineInstance(), new QSystemUserSession());
+      TestUtils.insert1Order3Lines4LineExtrinsicsAnd1OrderExtrinsic();
+
+      /////////////////////////////
+      // assert success function //
+      /////////////////////////////
+      BiConsumer<HttpResponse<String>, Integer> assertOrderCount = (response, expectedCount) ->
+      {
+         assertEquals(200, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         JSONArray  records    = jsonObject.getJSONArray("records");
+         assertThat(records.length()).isEqualTo(expectedCount);
+      };
+
+      /////////////////////////
+      // assert 400 function //
+      /////////////////////////
+      BiConsumer<HttpResponse<String>, String> assert400 = (response, expectedMessage) ->
+      {
+         assertEquals(400, response.getStatus());
+         JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+         assertEquals(expectedMessage, jsonObject.getString("error"));
+      };
+
+      ////////////////////////////////////////////////////////////
+      // basic query (with no join filter) should find 1 record //
+      ////////////////////////////////////////////////////////////
+      HttpResponse<String> response;
+      response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
+         .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("orderNo", QCriteriaOperator.EQUALS, "ORD123")))))
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .asString();
+      assertOrderCount.accept(response, 1);
+
+      //////////////////////////////////////////////////////////////////
+      // basic query (with no join filter) that should find 0 records //
+      //////////////////////////////////////////////////////////////////
+      response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
+         .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("orderNo", QCriteriaOperator.EQUALS, "not-found")))))
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .asString();
+      assertOrderCount.accept(response, 0);
+
+      ///////////////////////////////////////////////////////////
+      // try to filter by unknown join-table name - should 400 //
+      ///////////////////////////////////////////////////////////
+      response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
+         .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria("noSuchTable.sku", QCriteriaOperator.EQUALS, "BASIC1")))))
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .asString();
+      assert400.accept(response, "Error processing criteria field: noSuchTable.sku: Unrecognized table name: noSuchTable");
+
+      ///////////////////////////////////////////////////////////
+      // try to filter by unknown join field name - should 400 //
+      ///////////////////////////////////////////////////////////
+      response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
+         .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".noSuchField", QCriteriaOperator.EQUALS, "BASIC1")))))
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .asString();
+      assert400.accept(response, "Unrecognized criteria field name: orderLine.noSuchField.");
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      // join for sku - should find (but... memory backend isn't joining correctly at this time... //
+      // so we'll ensure at least http 200, and trust that other backends join correctly...        //
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      response = Unirest.post(getBaseUrlAndPath(TestUtils.API_PATH, TestUtils.V2023_Q1) + "/table/order/query")
+         .body(JsonUtils.toJson(Map.of("filter", new QQueryFilter(new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".sku", QCriteriaOperator.EQUALS, "BASIC1")))))
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .asString();
+      assertOrderCount.accept(response, 0); // todo - ideally 1, but memory backend joining...
+
    }
 
 }

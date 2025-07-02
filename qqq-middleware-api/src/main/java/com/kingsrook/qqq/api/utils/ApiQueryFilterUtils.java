@@ -24,11 +24,14 @@ package com.kingsrook.qqq.api.utils;
 
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.api.actions.GetTableApiFieldsAction;
 import com.kingsrook.qqq.api.model.actions.ApiFieldCustomValueMapper;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaData;
 import com.kingsrook.qqq.api.model.metadata.fields.ApiFieldMetaDataContainer;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.exceptions.QBadRequestException;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrCountInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
@@ -36,6 +39,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ObjectUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -43,16 +47,57 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class ApiQueryFilterUtils
 {
+   private static final QLogger LOG = QLogger.getLogger(ApiQueryFilterUtils.class);
+
+
 
    /***************************************************************************
     **
     ***************************************************************************/
-   public static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, QueryOrCountInputInterface input)
+   @Deprecated(since = "version was added that took apiVerison")
+   public static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, QueryOrCountInputInterface input) throws QException
+   {
+      manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, null, input);
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   public static void manageCriteriaFields(QQueryFilter filter, Map<String, QFieldMetaData> tableApiFields, List<String> badRequestMessages, String apiName, String apiVersion, QueryOrCountInputInterface input) throws QException
    {
       for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
       {
          String         apiFieldName = criteria.getFieldName();
          QFieldMetaData field        = tableApiFields.get(apiFieldName);
+
+         String joinTableName = null;
+         if(apiFieldName.contains("."))
+         {
+            if(apiVersion == null)
+            {
+               LOG.warn("No apiVersion provided for manageCriteriaFields.  Cannot process join criteria field", logPair("fieldName", apiFieldName));
+               badRequestMessages.add("Cannot process joined criteria field: " + apiFieldName);
+               continue;
+            }
+
+            try
+            {
+               String[] split = apiFieldName.split("\\.", 2);
+               joinTableName = split[0];
+               String joinFieldName = split[1];
+
+               Map<String, QFieldMetaData> joinTableApiFields = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(apiName, apiVersion, joinTableName));
+               field = joinTableApiFields.get(joinFieldName);
+            }
+            catch(Exception e)
+            {
+               badRequestMessages.add("Error processing criteria field: " + apiFieldName + ": " + e.getMessage());
+               continue;
+            }
+         }
+
          if(field == null)
          {
             badRequestMessages.add("Unrecognized criteria field name: " + apiFieldName + ".");
@@ -61,10 +106,12 @@ public class ApiQueryFilterUtils
          {
             try
             {
-               ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
+               QFieldMetaData   finalField       = field;
+               ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(finalField).getApiFieldMetaData(apiName), new ApiFieldMetaData());
                if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
                {
-                  criteria.setFieldName(apiFieldMetaData.getReplacedByFieldName());
+                  String joinTablePrefix = joinTableName == null ? "" : (joinTableName + ".");
+                  criteria.setFieldName(joinTablePrefix + apiFieldMetaData.getReplacedByFieldName());
                }
                else if(apiFieldMetaData.getCustomValueMapper() != null)
                {

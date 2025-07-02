@@ -82,7 +82,7 @@ public class ApiAwareTableCountExecutor extends TableCountExecutor implements Ap
       // take care of managing criteria, which may not be in this version, etc //
       ///////////////////////////////////////////////////////////////////////////
       QQueryFilter filter = Objects.requireNonNullElseGet(input.getFilter(), () -> new QQueryFilter());
-      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, countInput);
+      ApiQueryFilterUtils.manageCriteriaFields(filter, tableApiFields, badRequestMessages, apiName, apiVersion, countInput);
 
       //////////////////////////////////////////
       // no more badRequest checks below here //
