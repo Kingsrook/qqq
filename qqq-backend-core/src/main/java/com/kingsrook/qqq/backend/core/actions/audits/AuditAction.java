@@ -291,6 +291,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             /////////////////////////////
             InsertInput insertInput = new InsertInput();
             insertInput.setTableName("audit");
+            insertInput.setTransaction(input.getTransaction());
             insertInput.setRecords(auditRecords);
             InsertOutput insertOutput = new InsertAction().execute(insertInput);
 
@@ -318,6 +319,7 @@ public class AuditAction extends AbstractQActionFunction<AuditInput, AuditOutput
             {
                insertInput = new InsertInput();
                insertInput.setTableName("auditDetail");
+               insertInput.setTransaction(input.getTransaction());
                insertInput.setRecords(auditDetailRecords);
                new InsertAction().execute(insertInput);
             }

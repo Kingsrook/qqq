@@ -190,6 +190,7 @@ public class UpdateAction
       else
       {
          DMLAuditInput dmlAuditInput = new DMLAuditInput()
+            .withTransaction(updateInput.getTransaction())
             .withTableActionInput(updateInput)
             .withRecordList(updateOutput.getRecords())
             .withAuditContext(updateInput.getAuditContext());

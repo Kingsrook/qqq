@@ -124,6 +124,7 @@ public class DMLAuditAction extends AbstractQActionFunction<DMLAuditInput, DMLAu
          String contextSuffix = getContentSuffix(input);
 
          AuditInput auditInput = new AuditInput();
+         auditInput.setTransaction(input.getTransaction());
          if(auditLevel.equals(AuditLevel.RECORD) || (auditLevel.equals(AuditLevel.FIELD) && !dmlType.supportsFields))
          {
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
