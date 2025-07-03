@@ -31,7 +31,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +45,7 @@ import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.permissions.BulkTableActionProcessPermissionChecker;
 import com.kingsrook.qqq.backend.core.actions.values.QCustomPossibleValueProvider;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.exceptions.QRuntimeException;
 import com.kingsrook.qqq.backend.core.instances.enrichment.plugins.QInstanceEnricherPluginInterface;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
@@ -212,9 +215,35 @@ public class QInstanceEnricher
     ***************************************************************************/
    private void enrichInstance()
    {
-      for(QSupplementalInstanceMetaData supplementalInstanceMetaData : qInstance.getSupplementalMetaData().values())
+      ////////////////////////////////////////////////////////////////////////////////////
+      // enriching some objects may cause additional ones to be added to the qInstance! //
+      // this caused concurrent modification exceptions, when we just iterated.         //
+      // we could make a copy of the map and just process that, but then we wouldn't    //
+      // enrich any new objects that do get added, so, use this technique instead.      //
+      ////////////////////////////////////////////////////////////////////////////////////
+      Set<QSupplementalInstanceMetaData> toEnrich = new LinkedHashSet<>(qInstance.getSupplementalMetaData().values());
+      Set<QSupplementalInstanceMetaData> enriched = new HashSet<>();
+      int count = 0;
+      while(!toEnrich.isEmpty())
       {
+         Iterator<QSupplementalInstanceMetaData> iterator                     = toEnrich.iterator();
+         QSupplementalInstanceMetaData           supplementalInstanceMetaData = iterator.next();
+         iterator.remove();
+
          supplementalInstanceMetaData.enrich(qInstance);
+         enriched.add(supplementalInstanceMetaData);
+
+         for(QSupplementalInstanceMetaData possiblyNew : qInstance.getSupplementalMetaData().values())
+         {
+            if(!toEnrich.contains(possiblyNew) && !enriched.contains(possiblyNew))
+            {
+               if(count++ > 100)
+               {
+                  throw (new QRuntimeException("Too many new QSupplementalInstanceMetaData objects were added while enriching others.  This probably indicates a bug in enrichment code.  Throwing to prevent infinite loop."));
+               }
+               toEnrich.add(possiblyNew);
+            }
+         }
       }
 
       runPlugins(QInstance.class, qInstance, qInstance);

@@ -33,11 +33,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import com.google.gson.reflect.TypeToken;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -637,6 +640,37 @@ class CollectionUtilsTest extends BaseTest
 
       CollectionUtils.addIfNotNull(s, "1");
       assertEquals(Set.of("", "1"), s);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testAddAllIfNotNull()
+   {
+      BiFunction<Collection<Integer>, Collection<Integer>, Collection<Integer>> doAddAllIfNotNull = (Collection<Integer> destination, Collection<Integer> source) ->
+      {
+         CollectionUtils.addAllIfNotNull(destination, source);
+         return (destination);
+      };
+
+      assertThatThrownBy(() -> doAddAllIfNotNull.apply(null, null)).hasMessage("destination may not be null");
+      assertThatThrownBy(() -> doAddAllIfNotNull.apply(null, Collections.emptyList())).hasMessage("destination may not be null");
+      assertThatThrownBy(() -> doAddAllIfNotNull.apply(null, List.of(1))).hasMessage("destination may not be null");
+
+      assertEquals(List.of(), doAddAllIfNotNull.apply(new ArrayList<>(), null));
+      assertEquals(List.of(), doAddAllIfNotNull.apply(new ArrayList<>(), Collections.emptyList()));
+      assertEquals(List.of(1), doAddAllIfNotNull.apply(new ArrayList<>(), List.of(1)));
+
+      assertEquals(List.of(1), doAddAllIfNotNull.apply(ListBuilder.of(1), null));
+      assertEquals(List.of(1, 2), doAddAllIfNotNull.apply(ListBuilder.of(1), ListBuilder.of(2)));
+      assertEquals(List.of(1, 2, 3), doAddAllIfNotNull.apply(ListBuilder.of(1), ListBuilder.of(2, 3)));
+
+      assertEquals(Set.of(1), doAddAllIfNotNull.apply(new HashSet<>(List.of(1)), null));
+      assertEquals(Set.of(1, 2), doAddAllIfNotNull.apply(new HashSet<>(List.of(1)), List.of(2)));
+      assertEquals(Set.of(1, 2, 3), doAddAllIfNotNull.apply(new HashSet<>(List.of(1)), List.of(2, 3)));
    }
 
 }

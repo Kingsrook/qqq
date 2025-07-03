@@ -50,7 +50,7 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  ** can pre-load entire tables or subsets of tables.
  **
  *******************************************************************************/
-public class RecordLookupHelper
+public class RecordLookupHelper implements Serializable
 {
    private Map<String, Map<Serializable, QRecord>> recordMaps;
 

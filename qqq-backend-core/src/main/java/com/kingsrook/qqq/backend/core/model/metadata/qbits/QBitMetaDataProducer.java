@@ -68,7 +68,7 @@ public interface QBitMetaDataProducer<C extends QBitConfig> extends MetaDataProd
    /***************************************************************************
     **
     ***************************************************************************/
-   default void postProduceActions(MetaDataProducerMultiOutput metaDataProducerMultiOutput, QInstance qinstance)
+   default void postProduceActions(MetaDataProducerMultiOutput metaDataProducerMultiOutput, QInstance qinstance) throws QException
    {
       /////////////////////
       // noop by default //
@@ -137,9 +137,9 @@ public interface QBitMetaDataProducer<C extends QBitConfig> extends MetaDataProd
             ////////////////////////////////////////////////////////////////////////////
             // todo is this deprecated in favor of QBitProductionContext's stack... ? //
             ////////////////////////////////////////////////////////////////////////////
-            if(producer instanceof QBitComponentMetaDataProducer<?, ?>)
+            if(producer instanceof QBitComponentMetaDataProducerInterface<?, ?>)
             {
-               QBitComponentMetaDataProducer<?, C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducer<?, C>) producer;
+               QBitComponentMetaDataProducerInterface<?, C> qBitComponentMetaDataProducer = (QBitComponentMetaDataProducerInterface<?, C>) producer;
                qBitComponentMetaDataProducer.setQBitConfig(qBitConfig);
             }
 
