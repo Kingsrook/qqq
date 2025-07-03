@@ -36,9 +36,13 @@ commands:
           name: Run Maven Verify
           command: |
             mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress verify
+      - run:
+          name: Collect JaCoCo reports
+          command: .circleci/collect-jacoco-reports.sh
+          when: always
       - store_artifacts:
-          name: Store Jacoco reports
-          path: "*/target/site/jacoco/"
+          path: /home/circleci/jacoco-reports
+          destination: jacoco-reports
           when: always
       - run:
           name: Concatenate test output files
