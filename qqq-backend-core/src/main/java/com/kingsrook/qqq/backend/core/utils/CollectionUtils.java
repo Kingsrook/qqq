@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -710,6 +711,28 @@ public class CollectionUtils
       if(element != null)
       {
          c.add(element);
+      }
+   }
+
+
+
+   /***************************************************************************
+    * add all objects in a source collection to a destination collection, in a
+    * null-safe manner with regard to the source.
+    *
+    * @param destination collection to put objects into.  May NOT be null.
+    *                    if it's immutable, and source is not null, that will
+    *                    fail (as you'd expect) too.
+    * @param source collection to get objects from.  if null, is ignored.
+    * @throws NullPointerException if destination is null.
+    ***************************************************************************/
+   public static <T> void addAllIfNotNull(Collection<T> destination, Collection<T> source)
+   {
+      Objects.requireNonNull(destination, "destination may not be null");
+
+      if(source != null)
+      {
+         destination.addAll(source);
       }
    }
 }
