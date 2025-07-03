@@ -247,7 +247,7 @@ if [ ! -e target/site/jacoco/index.html ]; then
 fi
 
 echo
-echo "Jacoco coverage summary report:"
+echo "Jacoco coverage summary report for module: ${project.artifactId}"
 echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
@@ -261,11 +261,14 @@ if [ -f target/site/jacoco/index.html ]; then
 else
    echo "Jacoco coverage summary was not found.";
 fi
+echo "-----------------------------"
+echo
 
-echo "Untested classes, per Jacoco:"
+echo "Untested classes, per Jacoco for module: ${project.artifactId}"
 echo "-----------------------------"
 # Parse Jacoco XML reports directly to find classes with 0% coverage
 sed 's/<classs .*\?>/&\n/g;s/<\/class>/&\n/g' target/site/jacoco/jacoco.xml | grep -v 'counter type="CLASS" missed="0"' | sed 's/>.*//;s/.*\///;s/".*//'
+echo "-----------------------------"
 echo
 
                            ]]>
