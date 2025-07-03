@@ -5,14 +5,6 @@ orbs:
   browser-tools: circleci/browser-tools@1.4.7
 
 commands:
-  check_java_version:
-    steps:
-      - run:
-          name: Check Java Version
-          command: |
-            java -version
-            echo "Java version check completed"
-
   mvn_build:
     steps:
       - checkout
@@ -43,12 +35,9 @@ commands:
       - run:
           name: Run Maven Test
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode test
+            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode test jacoco:report
       - store_artifacts:
           path: "*/target/site/jacoco/"
-          when: always
-      - store_artifacts:
-          path: "*/target/test-logs/"
           when: always
       - run:
           name: Concatenate test output files
@@ -156,20 +145,24 @@ commands:
           when: always
 
 jobs:
-  mvn_test:
+  build:
     executor: localstack/default
     steps:
-      ## - localstack/startup
-      - check_java_version
       - mvn_build
+
+  test:
+    executor: localstack/default
+    steps:
       - mvn_test
+
+  api_version_check:
+    executor: localstack/default
+    steps:
       - check_middleware_api_versions
 
   mvn_deploy:
     executor: localstack/default
     steps:
-      ## - localstack/startup
-      - check_java_version
       - mvn_build
       - mvn_test
       - check_middleware_api_versions
@@ -184,8 +177,26 @@ jobs:
 workflows:
   test_only:
     jobs:
-      - mvn_test:
+      - build:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              ignore: /(dev|integration.*)/
+            tags:
+              ignore: /(version|snapshot)-.*/
+      - test:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /(dev|integration.*)/
+            tags:
+              ignore: /(version|snapshot)-.*/
+      - api_version_check:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          requires:
+            - build
           filters:
             branches:
               ignore: /(dev|integration.*)/
