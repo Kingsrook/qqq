@@ -39,13 +39,13 @@ commands:
           name: Concatenate test output files
           command: |
             # Create artifacts directory
-            mkdir -p ~/test-output-artifacts/
+            mkdir -p /home/circleci/test-output-artifacts/
             
             # Find all module directories that have target/surefire-reports
             for module_dir in */; do
               if [ -d "${module_dir}target/surefire-reports" ]; then
                 module_name=$(basename "${module_dir%/}")
-                output_file="~/test-output-artifacts/${module_name}-test-output.txt"
+                output_file="/home/circleci/test-output-artifacts/${module_name}-test-output.txt"
                 
                 echo "Processing module: ${module_name}"
                 echo "Output file: ${output_file}"
@@ -74,7 +74,7 @@ commands:
             done
           when: always
       - store_artifacts:
-          path: ~/test-output-artifacts
+          path: /home/circleci/test-output-artifacts
           destination: test-output
           when: always
       - run:
