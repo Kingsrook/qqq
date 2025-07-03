@@ -59,6 +59,7 @@
       <coverage.instructionCoveredRatioMinimum>0.80</coverage.instructionCoveredRatioMinimum>
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
       <plugin.shade.phase>none</plugin.shade.phase>
+      <testOutputToFile>true</testOutputToFile>
    </properties>
 
    <profiles>
@@ -141,6 +142,8 @@
             <configuration>
                <!-- Sets the VM argument line used when integration tests are run. -->
                <argLine>@{jaCoCoArgLine}</argLine>
+               <!-- Reduce console output for cleaner JUnit output -->
+               <redirectTestOutputToFile>${testOutputToFile}</redirectTestOutputToFile>
             </configuration>
          </plugin>
          <plugin>
@@ -249,10 +252,9 @@ echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
 
-# Parse Jacoco HTML coverage summary using grep and sed
+# Parse Jacoco HTML coverage summary 
 if [ -f target/site/jacoco/index.html ]; then
-   echo -e "Instructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$headers
-   # Extract values from the footer row of the coverage table
+   echo -e "Instructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
    sed 's/<\/\w\+>/&\n/g' target/site/jacoco/index.html | grep -A 12 '<tfoot>' | grep '<td' | sed 's/<td class="\w\+\d*">\([^<]*\)<\/td>/\1/' | grep -v Total > /tmp/$$.values
    paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
    rm /tmp/$$.headers /tmp/$$.values

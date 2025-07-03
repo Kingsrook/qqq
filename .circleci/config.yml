@@ -28,9 +28,54 @@ commands:
       - run:
           name: Run Maven Verify
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 verify
+            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode verify
       - store_artifacts:
           path: "*/target/site/jacoco/"
+          when: always
+      - store_artifacts:
+          path: "*/target/test-logs/"
+          when: always
+      - run:
+          name: Concatenate test output files
+          command: |
+            # Create artifacts directory
+            mkdir -p ~/test-output-artifacts/
+            
+            # Find all module directories that have target/surefire-reports
+            for module_dir in */; do
+              if [ -d "${module_dir}target/surefire-reports" ]; then
+                module_name=$(basename "${module_dir%/}")
+                output_file="~/test-output-artifacts/${module_name}-test-output.txt"
+                
+                echo "Processing module: ${module_name}"
+                echo "Output file: ${output_file}"
+                
+                # Concatenate all .txt files in the surefire-reports directory
+                if [ -n "$(find "${module_dir}target/surefire-reports" -name "*.txt" -type f)" ]; then
+                  echo "=== Test Output for ${module_name} ===" > "${output_file}"
+                  echo "Generated at: $(date)" >> "${output_file}"
+                  echo "==========================================" >> "${output_file}"
+                  echo "" >> "${output_file}"
+                  
+                  # Sort files to ensure consistent ordering
+                  find "${module_dir}target/surefire-reports" -name "*.txt" -type f | sort | while read -r txt_file; do
+                    echo "--- File: $(basename "${txt_file}") ---" >> "${output_file}"
+                    cat "${txt_file}" >> "${output_file}"
+                    echo "" >> "${output_file}"
+                    echo "--- End of $(basename "${txt_file}") ---" >> "${output_file}"
+                    echo "" >> "${output_file}"
+                  done
+                  
+                  echo "Concatenated test output for ${module_name} to ${output_file}"
+                else
+                  echo "No .txt files found in ${module_dir}target/surefire-reports"
+                fi
+              fi
+            done
+          when: always
+      - store_artifacts:
+          path: ~/test-output-artifacts
+          destination: test-output
           when: always
       - run:
           name: Save test results
@@ -54,8 +99,8 @@ commands:
         - run:
             name: Build and Run ValidateApiVersions
             command: |
-              mvn -s .circleci/mvn-settings.xml -T4 install -DskipTests
-              mvn -s .circleci/mvn-settings.xml -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
+              mvn -s .circleci/mvn-settings.xml -T4 --batch-mode install -DskipTests
+              mvn -s .circleci/mvn-settings.xml -T4 --batch-mode -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
               qqq-middleware-javalin/target/appassembler/bin/ValidateApiVersions -r $(pwd)
 
   mvn_jar_deploy:
@@ -71,7 +116,7 @@ commands:
       - run:
           name: Run Maven Jar Deploy
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 flatten:flatten jar:jar deploy:deploy
+            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode flatten:flatten jar:jar deploy:deploy
       - save_cache:
           paths:
             - ~/.m2
