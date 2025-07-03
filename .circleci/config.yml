@@ -13,7 +13,7 @@ commands:
             java -version
             echo "Java version check completed"
 
-  mvn_verify:
+  mvn_build:
     steps:
       - checkout
       - restore_cache:
@@ -26,9 +26,24 @@ commands:
           command: |
             echo "RDBMS_PASSWORD=$RDBMS_PASSWORD" >> qqq-sample-project/.env
       - run:
-          name: Run Maven Verify
+          name: Run Maven Compile
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode verify
+            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode compile
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+  mvn_test:
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Maven Test
+          command: |
+            mvn -s .circleci/mvn-settings.xml -T4 --batch-mode test
       - store_artifacts:
           path: "*/target/site/jacoco/"
           when: always
@@ -64,6 +79,8 @@ commands:
                     echo "" >> "${output_file}"
                     echo "--- End of $(basename "${txt_file}") ---" >> "${output_file}"
                     echo "" >> "${output_file}"
+                    echo "" >> "${output_file}"
+                    echo "" >> "${output_file}"
                   done
                   
                   echo "Concatenated test output for ${module_name} to ${output_file}"
@@ -85,10 +102,6 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
 
   check_middleware_api_versions:
       steps:
@@ -148,7 +161,8 @@ jobs:
     steps:
       ## - localstack/startup
       - check_java_version
-      - mvn_verify
+      - mvn_build
+      - mvn_test
       - check_middleware_api_versions
 
   mvn_deploy:
@@ -156,7 +170,8 @@ jobs:
     steps:
       ## - localstack/startup
       - check_java_version
-      - mvn_verify
+      - mvn_build
+      - mvn_test
       - check_middleware_api_versions
       - mvn_jar_deploy
 
