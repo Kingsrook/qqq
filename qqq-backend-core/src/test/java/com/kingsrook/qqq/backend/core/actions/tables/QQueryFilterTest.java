@@ -77,6 +77,27 @@ class QQueryFilterTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testInterpretValuesSubFilter() throws QException
+   {
+      Map<String, Serializable> inputValues = new HashMap<>();
+      inputValues.put("clientIdEquals1", "value");
+
+      AbstractFilterExpression<Serializable> expression = new FilterVariableExpression()
+         .withVariableName("clientIdEquals1");
+
+      QQueryFilter qQueryFilter = new QQueryFilter()
+         .withSubFilter(new QQueryFilter(new QFilterCriteria("id", EQUALS, expression)));
+      qQueryFilter.interpretValues(inputValues);
+
+      assertEquals("value", qQueryFilter.getSubFilters().get(0).getCriteria().get(0).getValues().get(0));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    public void testInterpretValuesNotInMap() throws QException
    {
       AbstractFilterExpression<Serializable> expression = new FilterVariableExpression()
