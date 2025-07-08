@@ -238,7 +238,7 @@
       <module name="MissingOverride"/>
 
    </module>
-   <module name="HeaderCard">
+   <module name="Header">
      <property name="headerFile" value="checkstyle/license.txt"/>
      <property name="fileExtensions" value="java"/>
      <property name="ignoreLines" value="3"/>
