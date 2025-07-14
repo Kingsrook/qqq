@@ -129,9 +129,12 @@ jobs:
     steps:
       - check_middleware_api_versions
 
-  deploy:
+  mvn_deploy:
     executor: localstack/default
     steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
       - mvn_jar_deploy
 
   publish_asciidoc:
@@ -171,36 +174,8 @@ workflows:
 
   deploy:
     jobs:
-      - build:
+      - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/
-      - test:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          requires:
-            - build
-          filters:
-            branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/
-      - api_version_check:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          requires:
-            - build
-          filters:
-            branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/
-      - deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          requires:
-            - test
-            - api_version_check
           filters:
             branches:
               only: /(dev|integration.*)/
