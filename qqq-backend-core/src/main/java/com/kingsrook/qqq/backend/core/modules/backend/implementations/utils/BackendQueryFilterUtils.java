@@ -27,11 +27,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
@@ -41,9 +44,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.apache.commons.lang.NotImplementedException;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
@@ -719,6 +725,52 @@ public class BackendQueryFilterUtils
 
       regex.append("$");
       return regex.toString();
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static Set<String> identifyJoinTablesInFilter(String mainTableName, QQueryFilter filter) throws QException
+   {
+      Set<String> rs = new HashSet<>();
+
+      QTableMetaData mainTable = QContext.getQInstance().getTable(mainTableName);
+
+      for(QFilterCriteria criteria : CollectionUtils.nonNullList(filter.getCriteria()))
+      {
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getFieldName());
+         if(!fieldAndJoinTable.joinTable().getName().equals(mainTableName))
+         {
+            rs.add(fieldAndJoinTable.joinTable().getName());
+         }
+
+         if(StringUtils.hasContent(criteria.getOtherFieldName()))
+         {
+            FieldAndJoinTable otherFieldAndJoinTable = FieldAndJoinTable.get(mainTable, criteria.getOtherFieldName());
+            if(!otherFieldAndJoinTable.joinTable().getName().equals(mainTableName))
+            {
+               rs.add(otherFieldAndJoinTable.joinTable().getName());
+            }
+         }
+      }
+
+      for(QFilterOrderBy orderBy : CollectionUtils.nonNullList(filter.getOrderBys()))
+      {
+         FieldAndJoinTable fieldAndJoinTable = FieldAndJoinTable.get(mainTable, orderBy.getFieldName());
+         if(!fieldAndJoinTable.joinTable().getName().equals(mainTableName))
+         {
+            rs.add(fieldAndJoinTable.joinTable().getName());
+         }
+      }
+
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(filter.getSubFilters()))
+      {
+         rs.addAll(identifyJoinTablesInFilter(mainTableName, subFilter));
+      }
+
+      return (rs);
    }
 
 }

@@ -24,12 +24,17 @@ package com.kingsrook.qqq.backend.core.modules.backend.implementations.utils;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.CriteriaOption;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import com.kingsrook.qqq.backend.core.utils.collections.ListBuilder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /*******************************************************************************
  ** Unit test for BackendQueryFilterUtils
  *******************************************************************************/
-class BackendQueryFilterUtilsTest
+class BackendQueryFilterUtilsTest extends BaseTest
 {
 
    /*******************************************************************************
@@ -522,6 +527,42 @@ class BackendQueryFilterUtilsTest
          assertNull(BackendQueryFilterUtils.applyBooleanOperator(accumulator, false, QQueryFilter.BooleanOperator.OR));
          assertFalse(accumulator.getPlain());
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIdentifyJoinTablesInFilter() throws QException
+   {
+      QFilterCriteria lineItemCriteria               = new QFilterCriteria(TestUtils.TABLE_NAME_LINE_ITEM + ".sku", QCriteriaOperator.EQUALS, "BASIC1");
+      QFilterCriteria lineItemCriteriaOtherFieldName = new QFilterCriteria("orderNo", QCriteriaOperator.EQUALS).withOtherFieldName(TestUtils.TABLE_NAME_LINE_ITEM + ".sku");
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter()));
+
+      assertEquals(Set.of(), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter(new QFilterCriteria("id", QCriteriaOperator.IS_NOT_BLANK))));
+
+      assertEquals(Set.of(TestUtils.TABLE_NAME_LINE_ITEM), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter().withCriteria(lineItemCriteria)));
+
+      assertEquals(Set.of(TestUtils.TABLE_NAME_LINE_ITEM), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter().withCriteria(lineItemCriteriaOtherFieldName)));
+
+      assertEquals(Set.of(TestUtils.TABLE_NAME_LINE_ITEM), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter().withSubFilter(new QQueryFilter().withCriteria(lineItemCriteria))));
+
+      assertEquals(Set.of(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter().withOrderBy(new QFilterOrderBy(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC + ".id"))));
+
+      assertEquals(Set.of(TestUtils.TABLE_NAME_LINE_ITEM, TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC), BackendQueryFilterUtils.identifyJoinTablesInFilter(TestUtils.TABLE_NAME_ORDER,
+         new QQueryFilter()
+            .withCriteria(lineItemCriteria)
+            .withOrderBy(new QFilterOrderBy(TestUtils.TABLE_NAME_LINE_ITEM_EXTRINSIC + ".id"))));
+
    }
 
 }
