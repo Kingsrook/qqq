@@ -38,6 +38,7 @@ public class FilterAndColumnsSetupData extends QWidgetData
    private Boolean      hideSortBy     = false;
    private Boolean      overrideIsEditable;
    private List<String> filterDefaultFieldNames;
+   private List<String> omitExposedJoins;
 
    private Boolean isApiVersioned = false;
    private String  apiName;
@@ -479,6 +480,43 @@ public class FilterAndColumnsSetupData extends QWidgetData
    public FilterAndColumnsSetupData withApiVersion(String apiVersion)
    {
       this.apiVersion = apiVersion;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Getter for omitExposedJoins
+    * @see #withOmitExposedJoins(List)
+    *******************************************************************************/
+   public List<String> getOmitExposedJoins()
+   {
+      return (this.omitExposedJoins);
+   }
+
+
+
+   /*******************************************************************************
+    * Setter for omitExposedJoins
+    * @see #withOmitExposedJoins(List)
+    *******************************************************************************/
+   public void setOmitExposedJoins(List<String> omitExposedJoins)
+   {
+      this.omitExposedJoins = omitExposedJoins;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for omitExposedJoins
+    *
+    * @param omitExposedJoins
+    * list of tableNames of exposed joins that shouldn't be available in the filter.
+    * @return this
+    *******************************************************************************/
+   public FilterAndColumnsSetupData withOmitExposedJoins(List<String> omitExposedJoins)
+   {
+      this.omitExposedJoins = omitExposedJoins;
       return (this);
    }
 
