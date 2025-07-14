@@ -1856,7 +1856,23 @@ public class QJavalinImplementation
             throw (new QNotFoundException("Could not find possible value source " + possibleValueSourceName + " in this instance."));
          }
 
-         finishPossibleValuesRequest(context, possibleValueSourceName, null, otherValues);
+         //////////////////////////////////////////////////
+         // allow a filter to be passed in from frontend //
+         //////////////////////////////////////////////////
+         QQueryFilter defaultQueryFilter = null;
+         List<String> filterParam        = context.formParamMap().get("filter");
+         if(CollectionUtils.nullSafeHasContents(filterParam))
+         {
+            String possibleValueSourceFilterJSON = filterParam.get(0);
+            defaultQueryFilter = JsonUtils.toObject(possibleValueSourceFilterJSON, QQueryFilter.class);
+
+            String                           useCaseParam = QJavalinUtils.getQueryParamOrFormParam(context, "useCase");
+            PossibleValueSearchFilterUseCase useCase      = ObjectUtils.tryElse(() -> PossibleValueSearchFilterUseCase.valueOf(useCaseParam.toUpperCase()), PossibleValueSearchFilterUseCase.FORM);
+
+            defaultQueryFilter.interpretValues(otherValues, useCase);
+         }
+
+         finishPossibleValuesRequest(context, possibleValueSourceName, defaultQueryFilter, otherValues);
       }
       catch(Exception e)
       {
@@ -1871,8 +1887,8 @@ public class QJavalinImplementation
     *******************************************************************************/
    static void finishPossibleValuesRequest(Context context, QFieldMetaData field) throws IOException, QException
    {
-      QQueryFilter defaultQueryFilter = null;
-      Map<String, Serializable> otherValues = getOtherValueForPossibleValueRequest(context);
+      QQueryFilter              defaultQueryFilter = null;
+      Map<String, Serializable> otherValues        = getOtherValueForPossibleValueRequest(context);
 
       if(field.getPossibleValueSourceFilter() != null)
       {
