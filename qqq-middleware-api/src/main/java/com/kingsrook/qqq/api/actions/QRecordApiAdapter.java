@@ -294,44 +294,7 @@ public class QRecordApiAdapter
          ////////////////////////////////////////////////
          if(apiFieldsMap.containsKey(jsonKey))
          {
-            QFieldMetaData field = apiFieldsMap.get(jsonKey);
-            Object         value = jsonObject.isNull(jsonKey) ? null : jsonObject.get(jsonKey);
-
-            if(field.getType().equals(QFieldType.BLOB) && value instanceof String s)
-            {
-               value = Base64.getDecoder().decode(s);
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // generally, omit non-editable fields -                                                              //
-            // however - if we're asked to include the primary key (and this is the primary key), then include it //
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////
-            if(!field.getIsEditable())
-            {
-               if(includeNonEditableFields)
-               {
-                  LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because we've been asked to include non-editable fields");
-               }
-               else
-               {
-                  continue;
-               }
-            }
-
-            ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
-            if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
-            {
-               qRecord.setValue(apiFieldMetaData.getReplacedByFieldName(), value);
-            }
-            else if(apiFieldMetaData.getCustomValueMapper() != null)
-            {
-               ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
-               customValueMapper.consumeApiValue(qRecord, value, jsonObject, jsonKey);
-            }
-            else
-            {
-               qRecord.setValue(field.getName(), value);
-            }
+            setValueFromApiFieldInQRecord(jsonObject, jsonKey, apiName, apiFieldsMap, qRecord, includeNonEditableFields);
          }
          else if(associationMap.containsKey(jsonKey))
          {
@@ -400,6 +363,68 @@ public class QRecordApiAdapter
       }
 
       return (qRecord);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static void setValueFromApiFieldInQRecord(JSONObject apiObject, String apiFieldName, String apiName, Map<String, QFieldMetaData> apiFieldsMap, QRecord qRecord, boolean includeNonEditableFields) throws QException
+   {
+      QFieldMetaData field = apiFieldsMap.get(apiFieldName);
+      if(field == null)
+      {
+         throw (new QException("Unrecognized apiFieldName: " + apiFieldName));
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // generally, omit non-editable fields, unless the param to include them is given. //
+      /////////////////////////////////////////////////////////////////////////////////////
+      if(!field.getIsEditable())
+      {
+         if(includeNonEditableFields)
+         {
+            LOG.trace("Even though field [" + field.getName() + "] is not editable, we'll use it, because we've been asked to include non-editable fields");
+         }
+         else
+         {
+            return;
+         }
+      }
+
+      ///////////////////////////////////////
+      // get the value from the api object //
+      ///////////////////////////////////////
+      Object value = apiObject.isNull(apiFieldName) ? null : apiObject.get(apiFieldName);
+      if(field.getType().equals(QFieldType.BLOB) && value instanceof String s)
+      {
+         value = Base64.getDecoder().decode(s);
+      }
+
+      ApiFieldMetaData apiFieldMetaData = ObjectUtils.tryAndRequireNonNullElse(() -> ApiFieldMetaDataContainer.of(field).getApiFieldMetaData(apiName), new ApiFieldMetaData());
+      if(StringUtils.hasContent(apiFieldMetaData.getReplacedByFieldName()))
+      {
+         ///////////////////////////////////////////////////////////////
+         // if field was replaced, then set OLD field name in QRecord //
+         ///////////////////////////////////////////////////////////////
+         qRecord.setValue(apiFieldMetaData.getReplacedByFieldName(), value);
+      }
+      else if(apiFieldMetaData.getCustomValueMapper() != null)
+      {
+         ///////////////////////////////////////////////////////////
+         // if a custom value mapper is to be used, then do so... //
+         ///////////////////////////////////////////////////////////
+         ApiFieldCustomValueMapper customValueMapper = QCodeLoader.getAdHoc(ApiFieldCustomValueMapper.class, apiFieldMetaData.getCustomValueMapper());
+         customValueMapper.consumeApiValue(qRecord, value, apiObject, apiFieldName);
+      }
+      else
+      {
+         //////////////////////////////////////////////////////
+         // else, default case, set the value in the qrecord //
+         //////////////////////////////////////////////////////
+         qRecord.setValue(field.getName(), value);
+      }
    }
 
 
