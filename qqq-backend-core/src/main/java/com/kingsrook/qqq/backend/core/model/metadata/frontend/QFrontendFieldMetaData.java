@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAdornment;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehavior;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldBehaviorForFrontend;
@@ -64,6 +65,7 @@ public class QFrontendFieldMetaData implements Serializable
    private List<FieldAdornment> adornments;
    private List<QHelpContent>   helpContents;
    private QPossibleValueSource inlinePossibleValueSource;
+   private QQueryFilter         possibleValueSourceFilter;
 
    private List<FieldBehaviorForFrontend>          behaviors;
    private Map<String, QSupplementalFieldMetaData> supplementalFieldMetaData;
@@ -93,6 +95,7 @@ public class QFrontendFieldMetaData implements Serializable
       this.helpContents = fieldMetaData.getHelpContents();
       this.inlinePossibleValueSource = fieldMetaData.getInlinePossibleValueSource();
       this.maxLength = fieldMetaData.getMaxLength();
+      this.possibleValueSourceFilter = fieldMetaData.getPossibleValueSourceFilter();
 
       for(FieldBehavior<?> behavior : CollectionUtils.nonNullCollection(fieldMetaData.getBehaviors()))
       {
@@ -305,5 +308,16 @@ public class QFrontendFieldMetaData implements Serializable
    public Integer getMaxLength()
    {
       return maxLength;
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleValueSourceFilter
+    **
+    *******************************************************************************/
+   public QQueryFilter getPossibleValueSourceFilter()
+   {
+      return possibleValueSourceFilter;
    }
 }
