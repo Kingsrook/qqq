@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.openapi.model.Content;
 import com.kingsrook.qqq.openapi.model.Response;
 import com.kingsrook.qqq.openapi.model.Schema;
+import com.kingsrook.qqq.openapi.model.Type;
 import io.javalin.http.ContentType;
 import org.apache.commons.lang.NotImplementedException;
 import org.eclipse.jetty.http.HttpStatus;
@@ -89,10 +90,10 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
    public Map<Integer, Response> getSpecResponses(String apiName)
    {
       Map<String, Schema> propertiesFor207Object = new LinkedHashMap<>();
-      propertiesFor207Object.put("id", new Schema().withType("integer").withDescription("Id of the record whose status is being described in the object"));
-      propertiesFor207Object.put("statusCode", new Schema().withType("integer").withDescription("HTTP Status code indicating the success or failure of the process on this record"));
-      propertiesFor207Object.put("statusText", new Schema().withType("string").withDescription("HTTP Status text indicating the success or failure of the process on this record"));
-      propertiesFor207Object.put("message", new Schema().withType("string").withDescription("Additional descriptive information about the result of the process on this record."));
+      propertiesFor207Object.put("id", new Schema().withType(Type.INTEGER).withDescription("Id of the record whose status is being described in the object"));
+      propertiesFor207Object.put("statusCode", new Schema().withType(Type.INTEGER).withDescription("HTTP Status code indicating the success or failure of the process on this record"));
+      propertiesFor207Object.put("statusText", new Schema().withType(Type.STRING).withDescription("HTTP Status text indicating the success or failure of the process on this record"));
+      propertiesFor207Object.put("message", new Schema().withType(Type.STRING).withDescription("Additional descriptive information about the result of the process on this record."));
 
       List<Object> exampleFor207Object = ListBuilder.of(MapBuilder.of(LinkedHashMap::new)
             .with("id", 42)
@@ -112,9 +113,9 @@ public class ApiProcessSummaryListOutput implements ApiProcessOutputInterface
             .withDescription("For each input record, an object describing its status may be returned.")
             .withContent(MapBuilder.of(ContentType.JSON, new Content()
                .withSchema(new Schema()
-                  .withType("array")
+                  .withType(Type.ARRAY)
                   .withItems(new Schema()
-                     .withType("object")
+                     .withType(Type.OBJECT)
                      .withProperties(propertiesFor207Object))
                   .withExample(exampleFor207Object)
                )

@@ -43,6 +43,7 @@ import com.kingsrook.qqq.openapi.model.ExampleWithListValue;
 import com.kingsrook.qqq.openapi.model.ExampleWithSingleValue;
 import com.kingsrook.qqq.openapi.model.Response;
 import com.kingsrook.qqq.openapi.model.Schema;
+import com.kingsrook.qqq.openapi.model.Type;
 import io.javalin.http.ContentType;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -109,7 +110,7 @@ public class ApiProcessObjectOutput implements ApiProcessOutputInterface
             .withDescription(ObjectUtils.requireConditionElse(responseDescription, StringUtils::hasContent, "Process has been successfully executed."))
             .withContent(MapBuilder.of(ContentType.JSON, new Content()
                .withSchema(new Schema()
-                  .withType("object")
+                  .withType(Type.OBJECT)
                   .withProperties(properties))))
       ));
    }
