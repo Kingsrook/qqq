@@ -49,7 +49,7 @@ public class FilesystemImporterProcessMetaDataBuilder extends AbstractProcessMet
    public FilesystemImporterProcessMetaDataBuilder()
    {
       super(new QProcessMetaData()
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("sync")
             .withCode(new QCodeReference(FilesystemImporterStep.class))
             .withInputData(new QFunctionInputMetaData()

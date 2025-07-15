@@ -204,7 +204,7 @@ public class TestUtils
          .withName(PROCESS_NAME_GET_PERSON_INFO)
          .withLabel("Get Person Info")
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("enterInputs")
             .withLabel("Person Info Input")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
@@ -230,11 +230,11 @@ public class TestUtils
                      """))
             ))
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("execute")
             .withCode(new QCodeReference(GetPersonInfoStep.class)))
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("dummyStep")
          );
 

@@ -576,7 +576,7 @@ class QInstanceEnricherTest extends BaseTest
       QProcessMetaData process   = new QProcessMetaData();
       process.setName("test");
       process.withStepList(List.of(new QBackendStepMetaData().withName("execute").withCode(new QCodeReference(TestUtils.IncreaseBirthdateStep.class))));
-      process.addOptionalStep(new QFrontendStepMetaData()
+      process.withOptionalStep(new QFrontendStepMetaData()
          .withName("screen")
          .withViewField(new QFieldMetaData("myField", QFieldType.STRING)));
       qInstance.addProcess(process);

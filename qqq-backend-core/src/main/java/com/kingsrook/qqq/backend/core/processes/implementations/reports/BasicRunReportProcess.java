@@ -81,10 +81,10 @@ public class BasicRunReportProcess
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
          .withIsHidden(true)
-         .addStep(prepareStep)
-         .addStep(inputStep)
-         .addStep(executeStep)
-         .addStep(accessStep);
+         .withStep(prepareStep)
+         .withStep(inputStep)
+         .withStep(executeStep)
+         .withStep(accessStep);
    }
 
 }
