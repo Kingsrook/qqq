@@ -174,7 +174,7 @@ public class ScriptsMetaDataProvider
          .withLoadStepClass(RunRecordScriptLoadStep.class)
          .getProcessMetaData();
 
-      processMetaData.addStep(0, new QFrontendStepMetaData()
+      processMetaData.withStep(0, new QFrontendStepMetaData()
          .withName("input")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
          .withFormField(new QFieldMetaData("scriptId", QFieldType.INTEGER).withPossibleValueSourceName(Script.TABLE_NAME)

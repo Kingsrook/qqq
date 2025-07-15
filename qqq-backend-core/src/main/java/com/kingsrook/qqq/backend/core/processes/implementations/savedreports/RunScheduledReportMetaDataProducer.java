@@ -59,13 +59,13 @@ public class RunScheduledReportMetaDataProducer implements MetaDataProducerInter
          .withTableName(ScheduledReport.TABLE_NAME)
          .withIcon(new QIcon().withName("print"))
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("execute")
             .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()
                .withTableName(ScheduledReport.TABLE_NAME)))
             .withCode(new QCodeReference(RunScheduledReportExecuteStep.class)))
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withComponent(new NoCodeWidgetFrontendComponentMetaData()
                .withOutput(new WidgetHtmlLine().withVelocityTemplate("Success")))); // todo!!!

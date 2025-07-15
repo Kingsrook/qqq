@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
@@ -84,6 +85,7 @@ public class JsonUtils
     ** Internally using jackson - so jackson annotations apply!
     **
     *******************************************************************************/
+   @Deprecated(since = "since toJsonCustomized was added, which uses jackson's newer builder object for customization")
    public static String toJson(Object object, Consumer<ObjectMapper> objectMapperCustomizer)
    {
       try
@@ -94,6 +96,34 @@ public class JsonUtils
             objectMapperCustomizer.accept(mapper);
          }
          String jsonResult = mapper.writeValueAsString(object);
+         return (jsonResult);
+      }
+      catch(JsonProcessingException e)
+      {
+         LOG.error("Error serializing object of type [" + object.getClass().getSimpleName() + "] to json", e);
+         throw new IllegalArgumentException("Error in JSON Serialization", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    ** Serialize any object into a JSON String - with customizations on the Jackson
+    ** ObjectMapper.
+    **
+    ** Internally using jackson - so jackson annotations apply!
+    **
+    *******************************************************************************/
+   public static String toJsonCustomized(Object object, Consumer<JsonMapper.Builder> jsonMapperCustomizer)
+   {
+      try
+      {
+         JsonMapper.Builder jsonMapperBuilder = newJsonMapperBuilder();
+         if(jsonMapperCustomizer != null)
+         {
+            jsonMapperCustomizer.accept(jsonMapperBuilder);
+         }
+         String jsonResult = jsonMapperBuilder.build().writeValueAsString(object);
          return (jsonResult);
       }
       catch(JsonProcessingException e)
@@ -168,7 +198,6 @@ public class JsonUtils
    /*******************************************************************************
     ** De-serialize a json string into an object of the specified class - with
     ** customizations on the Jackson ObjectMapper.
-    **.
     **
     ** Internally using jackson - so jackson annotations apply!
     **
@@ -240,6 +269,23 @@ public class JsonUtils
       return (jsonArray);
    }
 
+
+
+   /*******************************************************************************
+    ** Standard private method to build jackson JsonMapperBuilder with standard features.
+    **
+    *******************************************************************************/
+   private static JsonMapper.Builder newJsonMapperBuilder()
+   {
+      JsonMapper.Builder jsonMapperBuilder = JsonMapper.builder();
+      jsonMapperBuilder.addModule(new JavaTimeModule());
+      jsonMapperBuilder.serializationInclusion(JsonInclude.Include.NON_NULL);
+      jsonMapperBuilder.serializationInclusion(JsonInclude.Include.NON_EMPTY);
+      jsonMapperBuilder.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+      jsonMapperBuilder.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+      return (jsonMapperBuilder);
+   }
 
 
    /*******************************************************************************

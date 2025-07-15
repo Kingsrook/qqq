@@ -183,7 +183,7 @@ public class BasicETLCleanupSourceFilesStepTest extends BaseTest
    private RunBackendStepOutput runFunction(QInstance qInstance, List<String> filePaths, Map<String, String> values) throws Exception
    {
       QBackendStepMetaData backendStepMetaData = new BasicETLCleanupSourceFilesStep().defineStepMetaData();
-      QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
+      QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").withStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
 
       HashSet<String> filePathsSet = new HashSet<>(filePaths);

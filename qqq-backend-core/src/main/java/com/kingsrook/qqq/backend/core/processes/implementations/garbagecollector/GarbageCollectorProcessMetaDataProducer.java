@@ -91,7 +91,7 @@ public class GarbageCollectorProcessMetaDataProducer
          .withInputData(new QFunctionInputMetaData()
             .withField(new QFieldMetaData("joinedTablesToAlsoDelete", QFieldType.STRING).withDefaultValue(joinedTablesToAlsoDelete)));
 
-      processMetaData.addStep(0, new QFrontendStepMetaData()
+      processMetaData.withStep(0, new QFrontendStepMetaData()
          .withName("input")
          .withLabel("Input")
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.HELP_TEXT).withValue("text", """

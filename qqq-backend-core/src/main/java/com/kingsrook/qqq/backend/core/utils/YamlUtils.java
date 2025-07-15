@@ -26,9 +26,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 
 
@@ -62,7 +64,7 @@ public class YamlUtils
     *******************************************************************************/
    public static String toYaml(Object object)
    {
-      return toYaml(object, null);
+      return toYamlCustomized(object, null);
    }
 
 
@@ -70,6 +72,7 @@ public class YamlUtils
    /*******************************************************************************
     **
     *******************************************************************************/
+   @Deprecated(since = "since toYamlCustomized was added, which uses jackson's newer builder object for customization")
    public static String toYaml(Object object, Consumer<ObjectMapper> objectMapperCustomizer)
    {
       try
@@ -88,6 +91,38 @@ public class YamlUtils
 
          objectMapper.findAndRegisterModules();
          return (objectMapper.writeValueAsString(object));
+      }
+      catch(Exception e)
+      {
+         LOG.error("Error serializing object of type [" + object.getClass().getSimpleName() + "] to yaml", e);
+         throw new IllegalArgumentException("Error in YAML Serialization", e);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static String toYamlCustomized(Object object, Consumer<YAMLMapper.Builder> yamlMapperCustomizer)
+   {
+      try
+      {
+         YAMLFactory yamlFactory = new YAMLFactory()
+            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+
+         YAMLMapper.Builder yamlMapperBuilder = YAMLMapper.builder(yamlFactory);
+         yamlMapperBuilder.serializationInclusion(JsonInclude.Include.NON_NULL);
+         yamlMapperBuilder.serializationInclusion(JsonInclude.Include.NON_EMPTY);
+
+         if(yamlMapperCustomizer != null)
+         {
+            yamlMapperCustomizer.accept(yamlMapperBuilder);
+         }
+
+         YAMLMapper yamlMapper = yamlMapperBuilder.build();
+         yamlMapper.findAndRegisterModules();
+         return (yamlMapper.writeValueAsString(object));
       }
       catch(Exception e)
       {

@@ -83,8 +83,8 @@ public class BasicETLProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addStep(extractFunction)
-         .addStep(transformFunction)
-         .addStep(loadFunction);
+         .withStep(extractFunction)
+         .withStep(transformFunction)
+         .withStep(loadFunction);
    }
 }
