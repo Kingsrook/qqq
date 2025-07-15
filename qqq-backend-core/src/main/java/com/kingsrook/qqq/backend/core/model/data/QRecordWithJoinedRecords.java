@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.data;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -257,4 +258,39 @@ public class QRecordWithJoinedRecords extends QRecord
       return (this);
    }
 
+
+
+   /***************************************************************************
+    * Given an object of this type (`this`), add a list of join-records to it,
+    * producing a new list, which is `this` × joinRecordList.
+    * One may want to use this in a loop to build a larger cross product - more
+    * to come here in that spirit.
+    * @param joinTable name of the join table (e.g., to prefix the join fields)
+    * @param joinRecordList list of join records.  may not be null.  may be 0+ size.
+    * @return list of new QRecordWithJoinedRecords, based on `this` with each
+    * joinRecord added (e.g., output list is same size as joinRecordList).
+    * Note that does imply an 'inner' style join - where - if the joinRecordList
+    * is empty, you'll get back an empty list!
+    ***************************************************************************/
+   public List<QRecordWithJoinedRecords> buildCrossProduct(String joinTable, List<QRecord> joinRecordList)
+   {
+      List<QRecordWithJoinedRecords> rs = new ArrayList<>();
+
+      for(QRecord joinRecord : joinRecordList)
+      {
+         /////////////////////////////////////////////////////////////
+         // essentially clone the existing QRecordWithJoinedRecords //
+         /////////////////////////////////////////////////////////////
+         QRecordWithJoinedRecords newRecord = new QRecordWithJoinedRecords(mainRecord);
+         components.forEach((k, v) -> newRecord.addJoinedRecordValues(k, v));
+
+         ///////////////////////////////////////////
+         // now add the new join record to it too //
+         ///////////////////////////////////////////
+         newRecord.addJoinedRecordValues(joinTable, joinRecord);
+         rs.add(newRecord);
+      }
+
+      return (rs);
+   }
 }

@@ -659,6 +659,21 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
          }
       }
 
+      //////////////////////////////////////
+      // recursively process sub filters! //
+      //////////////////////////////////////
+      for(QQueryFilter subFilter : CollectionUtils.nonNullList(getSubFilters()))
+      {
+         try
+         {
+            subFilter.interpretValues(inputValues, useCase);
+         }
+         catch(Exception e)
+         {
+            caughtExceptions.add(e);
+         }
+      }
+
       if(!caughtExceptions.isEmpty())
       {
          String  message       = "Error interpreting filter values: " + StringUtils.joinWithCommasAndAnd(caughtExceptions.stream().map(e -> e.getMessage()).toList());
@@ -824,6 +839,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
    }
 
 
+
    /*******************************************************************************
     ** Getter for subFilterSetOperator
     *******************************************************************************/
@@ -852,6 +868,7 @@ public class QQueryFilter implements Serializable, Cloneable, QMetaDataObject
       this.subFilterSetOperator = subFilterSetOperator;
       return (this);
    }
+
 
 
    /***************************************************************************

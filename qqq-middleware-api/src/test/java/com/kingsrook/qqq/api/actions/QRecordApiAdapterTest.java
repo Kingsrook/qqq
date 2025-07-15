@@ -32,6 +32,7 @@ import com.kingsrook.qqq.api.TestUtils;
 import com.kingsrook.qqq.api.javalin.QBadRequestException;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -206,7 +207,6 @@ class QRecordApiAdapterTest extends BaseTest
          """), TestUtils.TABLE_NAME_PERSON, TestUtils.API_NAME, TestUtils.V2023_Q1, true);
       assertTrue(recordWithoutNonEditablePrimaryKeyFields.getValues().containsKey("createDate"));
       assertEquals(256, recordWithoutNonEditablePrimaryKeyFields.getValues().get("id"));
-
    }
 
 
@@ -263,6 +263,23 @@ class QRecordApiAdapterTest extends BaseTest
             assertEquals(person.getValueString(key), ValueUtils.getValueAsString(alternativeQRecord.getValueString(key)));
          }
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testSetValueFromApiFieldInQRecord() throws QException
+   {
+      QRecord                     record       = new QRecord();
+      Map<String, QFieldMetaData> apiFieldsMap = GetTableApiFieldsAction.getTableApiFieldMap(new GetTableApiFieldsAction.ApiNameVersionAndTableName(TestUtils.API_NAME, TestUtils.V2022_Q4, TestUtils.TABLE_NAME_PERSON));
+      JSONObject                  apiObject    = new JSONObject(Map.of("shoeCount", 2, "firstName", "Tim"));
+      QRecordApiAdapter.setValueFromApiFieldInQRecord(apiObject, "firstName", TestUtils.API_NAME, apiFieldsMap, record, false);
+      QRecordApiAdapter.setValueFromApiFieldInQRecord(apiObject, "shoeCount", TestUtils.API_NAME, apiFieldsMap, record, false);
+      assertEquals("Tim", record.getValueString("firstName"));
+      assertEquals(2, record.getValueInteger("noOfShoes"));
    }
 
 }
