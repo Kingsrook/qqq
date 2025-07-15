@@ -30,6 +30,20 @@ There are a few useful IntelliJ settings files, under `qqq-dev-tools/intellij`:
 One will likely also want the [Kingsrook Commentator
 Plugin](https://plugins.jetbrains.com/plugin/19325-kingsrook-commentator).
 
+## Test Logging
+By default, when ran from the command line, mvn surefire will make each test's
+output (e.g., System.out, err, printStackTrace, and all logger calls) go into a 
+file under target/surefire-reports/${className}.txt. 
+
+The system property `-DtestOutputToFile=false` can be given on the command line
+to get all of this output on the console.
+
+In the IDE (e.g,. IntelliJ), output goes to the Console.
+
+In CircleCI, output goes to files, and those files are concatenated together and 
+stored as artifacts.
+
+
 ## License
 QQQ - Low-code Application Framework for Engineers. \
 Copyright (C) 2020-2024.  Kingsrook, LLC \

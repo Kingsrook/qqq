@@ -59,6 +59,7 @@
       <coverage.instructionCoveredRatioMinimum>0.80</coverage.instructionCoveredRatioMinimum>
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
       <plugin.shade.phase>none</plugin.shade.phase>
+      <testOutputToFile>true</testOutputToFile>
    </properties>
 
    <profiles>
@@ -141,6 +142,8 @@
             <configuration>
                <!-- Sets the VM argument line used when integration tests are run. -->
                <argLine>@{jaCoCoArgLine}</argLine>
+               <!-- Reduce console output for cleaner JUnit output -->
+               <redirectTestOutputToFile>${testOutputToFile}</redirectTestOutputToFile>
             </configuration>
          </plugin>
          <plugin>
@@ -244,30 +247,29 @@ if [ ! -e target/site/jacoco/index.html ]; then
 fi
 
 echo
-echo "Jacoco coverage summary report:"
+echo "Jacoco coverage summary report for module: ${project.artifactId}"
 echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
 
-if which xpath > /dev/null 2>&1; then
-   echo "Element\nInstructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
-   xpath -n -q -e '/html/body/table/tfoot/tr[1]/td/text()' target/site/jacoco/index.html > /tmp/$$.values
+# Parse Jacoco HTML coverage summary 
+if [ -f target/site/jacoco/index.html ]; then
+   echo -e "Instructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
+   sed 's/<\/\w\+>/&\n/g' target/site/jacoco/index.html | grep -A 12 '<tfoot>' | grep '<td' | sed 's/<td class="\w\+\d*">\([^<]*\)<\/td>/\1/' | grep -v Total > /tmp/$$.values
    paste /tmp/$$.headers /tmp/$$.values | tail +2 | awk -v FS='\t' '{printf("%-20s %s\n",$1,$2)}'
    rm /tmp/$$.headers /tmp/$$.values
 else
-   echo "xpath is not installed.  Jacoco coverage summary will not be produced here...";
+   echo "Jacoco coverage summary was not found.";
 fi
+echo "-----------------------------"
+echo
 
-if which html2text > /dev/null 2>&1; then
-   echo "Untested classes, per Jacoco:"
-   echo "-----------------------------"
-   for i in target/site/jacoco/*/index.html; do
-      html2text -width 500 -nobs $i | sed '1,/^Total/d;' | grep -v Created | sed 's/ \+/ /g' | sed 's/ [[:digit:]]$//' | grep -v 0$ | cut -d' ' -f1;
-   done;
-   echo
-else
-   echo "html2text is not installed.  Untested classes from Jacoco will not be printed here...";
-fi
+echo "Untested classes, per Jacoco for module: ${project.artifactId}"
+echo "-----------------------------"
+# Parse Jacoco XML reports directly to find classes with 0% coverage
+sed 's/<classs .*\?>/&\n/g;s/<\/class>/&\n/g' target/site/jacoco/jacoco.xml | grep -v 'counter type="CLASS" missed="0"' | sed 's/>.*//;s/.*\///;s/".*//'
+echo "-----------------------------"
+echo
 
                            ]]>
                         </argument>

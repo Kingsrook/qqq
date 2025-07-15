@@ -1932,6 +1932,7 @@ public class QJavalinImplementation
    {
       String searchTerm = context.queryParam("searchTerm");
       String ids        = context.queryParam("ids");
+      String labels     = context.queryParam("labels");
 
       SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput();
       setupSession(context, input);
@@ -1944,6 +1945,11 @@ public class QJavalinImplementation
       {
          List<Serializable> idList = new ArrayList<>(Arrays.asList(ids.split(",")));
          input.setIdList(idList);
+      }
+      else if(StringUtils.hasContent(labels))
+      {
+         List<String> labelList = new ArrayList<>(Arrays.asList(labels.split(",")));
+         input.setLabelList(labelList);
       }
 
       SearchPossibleValueSourceOutput output = new SearchPossibleValueSourceAction().execute(input);
