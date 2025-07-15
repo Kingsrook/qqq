@@ -628,11 +628,11 @@ public class GenerateOpenApiSpecAction extends AbstractQActionFunction<GenerateO
             .withResponse(HttpStatus.CREATED.getCode(), new Response()
                .withDescription("Successfully created the requested " + tableLabel)
                .withContent(MapBuilder.of("application/json", new Content()
-                                 .withSchema(new Schema()
-                  .withType(Type.OBJECT)
-                  .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
-                     .withType(getFieldType(primaryKeyField))
-                     .withExample("47")))))))
+                  .withSchema(new Schema()
+                     .withType(Type.OBJECT)
+                     .withProperties(MapBuilder.of(primaryKeyApiName, new Schema()
+                        .withType(getFieldType(primaryKeyField))
+                        .withExample("47")))))))
             .withTags(ListBuilder.of(tableLabel))
             .withSecurity(getSecurity(apiInstanceMetaData, tableInsertPermissionName));
 
