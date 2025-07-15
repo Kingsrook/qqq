@@ -239,8 +239,10 @@ public class QInstanceValidator
 
 
    /***************************************************************************
-    **
+    * this method still supports the deprecated MetaDataFilter (plus its
+    * replacement, MetaDataActionCustomizer
     ***************************************************************************/
+   @SuppressWarnings("deprecation")
    private void validateInstanceAttributes(QInstance qInstance)
    {
       if(qInstance.getMetaDataFilter() != null)

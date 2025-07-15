@@ -329,23 +329,25 @@ public class MetaDataAction
          if(metaDataActionCustomizerReference != null)
          {
             actionCustomizer = QCodeLoader.getAdHoc(MetaDataActionCustomizerInterface.class, metaDataActionCustomizerReference);
-            LOG.debug("Using new meta-data actionCustomizer of type: " + actionCustomizer.getClass().getSimpleName());
          }
 
          if(actionCustomizer == null)
          {
+            /////////////////////////////////////////////////////////////////////////////////////
+            // check if QInstance is still using the now-deprecated getMetaDataFilter approach //
+            /////////////////////////////////////////////////////////////////////////////////////
+            @SuppressWarnings("deprecation")
             QCodeReference metaDataFilterReference = QContext.getQInstance().getMetaDataFilter();
             if(metaDataFilterReference != null)
             {
+               LOG.warn("QInstance.metaDataFilter is deprecated in favor of metaDataActionCustomizer.");
                actionCustomizer = QCodeLoader.getAdHoc(MetaDataActionCustomizerInterface.class, metaDataFilterReference);
-               LOG.debug("Using new meta-data actionCustomizer (via metaDataFilter reference) of type: " + actionCustomizer.getClass().getSimpleName());
             }
          }
 
          if(actionCustomizer == null)
          {
             actionCustomizer = new DefaultNoopMetaDataActionCustomizer();
-            LOG.debug("Using new default (allow-all) meta-data actionCustomizer");
          }
 
          return (actionCustomizer);

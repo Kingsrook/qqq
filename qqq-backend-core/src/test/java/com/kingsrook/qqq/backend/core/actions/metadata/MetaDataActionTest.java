@@ -470,6 +470,7 @@ class MetaDataActionTest extends BaseTest
    /***************************************************************************
     **
     ***************************************************************************/
+   @SuppressWarnings("deprecation") // the point of this test is to use the deprecated thing.
    public static class DenyAllFilter implements MetaDataFilterInterface
    {
       /***************************************************************************
