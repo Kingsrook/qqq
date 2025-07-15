@@ -59,6 +59,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
+import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.SleepUtils;
 import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeConsumer;
@@ -71,6 +72,7 @@ import com.kingsrook.qqq.backend.module.api.model.AuthorizationType;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILog;
 import com.kingsrook.qqq.backend.module.api.model.OutboundAPILogMetaDataProvider;
 import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendMetaData;
+import com.kingsrook.qqq.backend.module.api.model.metadata.APIBackendVariantSetting;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -684,10 +686,11 @@ class BaseAPIActionUtilTest extends BaseTest
       APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
       backend.setAuthorizationType(AuthorizationType.API_KEY_HEADER);
       backend.setUsesVariants(true);
-      backend.setVariantOptionsTableName("variant");
-      backend.setVariantOptionsTableIdField("id");
-      backend.setVariantOptionsTableApiKeyField("apiKey");
-      backend.setVariantOptionsTableTypeValue("API_KEY_TYPE");
+      backend.setBackendVariantsConfig(new BackendVariantsConfig()
+         .withOptionsTableName("variant")
+         .withVariantTypeKey("API_KEY_TYPE")
+         .withBackendSettingSourceFieldName(APIBackendVariantSetting.API_KEY, "apiKey")
+      );
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName("variant");
@@ -716,11 +719,12 @@ class BaseAPIActionUtilTest extends BaseTest
       APIBackendMetaData backend = (APIBackendMetaData) QContext.getQInstance().getBackend(TestUtils.MOCK_BACKEND_NAME);
       backend.setAuthorizationType(AuthorizationType.BASIC_AUTH_USERNAME_PASSWORD);
       backend.setUsesVariants(true);
-      backend.setVariantOptionsTableName("variant");
-      backend.setVariantOptionsTableIdField("id");
-      backend.setVariantOptionsTableUsernameField("username");
-      backend.setVariantOptionsTablePasswordField("password");
-      backend.setVariantOptionsTableTypeValue("USER_PASS");
+      backend.setBackendVariantsConfig(new BackendVariantsConfig()
+         .withOptionsTableName("variant")
+         .withVariantTypeKey("USER_PASS")
+         .withBackendSettingSourceFieldName(APIBackendVariantSetting.USERNAME, "username")
+         .withBackendSettingSourceFieldName(APIBackendVariantSetting.PASSWORD, "password")
+      );
 
       InsertInput insertInput = new InsertInput();
       insertInput.setTableName("variant");
@@ -736,7 +740,7 @@ class BaseAPIActionUtilTest extends BaseTest
       util.setBackendMetaData(backend);
       util.setupAuthorizationInRequest(httpGet);
       Header authHeader = httpGet.getFirstHeader("Authorization");
-      assertTrue(authHeader.getValue().equals(util.getBasicAuthenticationHeader("user", "pass")));
+      assertEquals(authHeader.getValue(), util.getBasicAuthenticationHeader("user", "pass"));
    }
 
 
