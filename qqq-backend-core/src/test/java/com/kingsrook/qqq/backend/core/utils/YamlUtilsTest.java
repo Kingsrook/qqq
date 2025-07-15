@@ -24,9 +24,11 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /*******************************************************************************
@@ -56,6 +58,47 @@ class YamlUtilsTest extends BaseTest
 
       Map<String, Object> map = YamlUtils.toMap(yaml);
       System.out.println(map);
+   }
+
+
+
+   /***************************************************************************
+    * simple bean to use in customObjectMapper test
+    * we'd use a map, but SORT_PROPERTIES_ALPHABETICALLY doesn't apply to maps...
+    ***************************************************************************/
+   private record SomeBean(String foo, Integer bar) {}
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCustomObjectMapper() throws JsonProcessingException
+   {
+      SomeBean someBean = new SomeBean("Hi", 47);
+
+      ///////////////////////////////////////////////////////////////////
+      // by default, the fields come out in the order they're declared //
+      ///////////////////////////////////////////////////////////////////
+      assertEquals("""
+         foo: "Hi"
+         bar: 47
+         """, YamlUtils.toYaml(someBean));
+
+      /////////////////////////////////////////////////////////////
+      // customize the builder to sort properties alphabetically //
+      // (to assert that doing a customization works)            //
+      /////////////////////////////////////////////////////////////
+      String outputYaml = YamlUtils.toYamlCustomized(someBean, yamlMapperBuilder ->
+      {
+         yamlMapperBuilder.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+      });
+
+      assertEquals("""
+         bar: 47
+         foo: "Hi"
+         """, outputYaml);
    }
 
 

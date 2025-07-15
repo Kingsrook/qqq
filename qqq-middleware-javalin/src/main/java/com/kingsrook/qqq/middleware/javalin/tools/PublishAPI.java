@@ -104,7 +104,7 @@ public class PublishAPI implements Callable<Integer>
       // subsets of it (e.g., grouped by table mostly) - then we'll write out each such file         //
       /////////////////////////////////////////////////////////////////////////////////////////////////
       OpenAPI openAPI = middlewareVersion.generateOpenAPIModel("qqq");
-      String yaml = YamlUtils.toYaml(openAPI, mapper ->
+      String yaml = YamlUtils.toYamlCustomized(openAPI, mapperBuilder ->
       {
          if(sortFileContentsForHuman)
          {
@@ -114,7 +114,7 @@ public class PublishAPI implements Callable<Integer>
          }
          else
          {
-            mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+            mapperBuilder.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
          }
       });
 
