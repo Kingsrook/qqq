@@ -1035,7 +1035,7 @@ public class QInstanceEnricher
       values.put(StreamedETLWithFrontendProcess.FIELD_PREVIEW_MESSAGE, StreamedETLWithFrontendProcess.DEFAULT_PREVIEW_MESSAGE_FOR_UPDATE);
 
       QProcessMetaData process = StreamedETLWithFrontendProcess.defineProcessMetaData(
-            BulkInsertExtractStep.class,
+            ExtractViaQueryStep.class,
             BulkEditTransformStep.class,
             BulkEditLoadStep.class,
             values
