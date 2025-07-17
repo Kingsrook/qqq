@@ -173,7 +173,7 @@ public class GetTableApiFieldsAction extends AbstractQActionFunction<GetTableApi
          }
       }
 
-      fields.sort(Comparator.comparing(QFieldMetaData::getLabel));
+      fields.sort(Comparator.comparing(QFieldMetaData::getLabel).thenComparing(QFieldMetaData::getName));
 
       return (new GetTableApiFieldsOutput().withFields(fields));
    }
