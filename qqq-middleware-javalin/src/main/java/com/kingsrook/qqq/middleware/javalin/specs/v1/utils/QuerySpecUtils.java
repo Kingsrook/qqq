@@ -30,7 +30,6 @@ import java.util.Map;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
-import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.v1.responses.components.TableVariant;
 import com.kingsrook.qqq.openapi.model.Content;
@@ -101,7 +100,7 @@ public class QuerySpecUtils
     ***************************************************************************/
    public static List<QueryJoin> getJoinsFromRequestBody(JSONObject requestBody) throws IOException
    {
-      if(requestBody.has("joins"))
+      if(requestBody.has("joins") && !requestBody.isNull("joins"))
       {
          Object joinsFromJson = requestBody.get("joins");
          if(joinsFromJson instanceof JSONArray joinsJsonArray)
@@ -109,19 +108,33 @@ public class QuerySpecUtils
             List<QueryJoin> joins = new ArrayList<>();
             for(int i = 0; i < joinsJsonArray.length(); i++)
             {
-               JSONObject    joinJsonObject = joinsJsonArray.getJSONObject(i);
-               QJoinMetaData joinMetaData   = null;
-               if(joinJsonObject.has("joinName"))
+               JSONObject joinJsonObject = joinsJsonArray.getJSONObject(i);
+               QueryJoin queryJoin = new QueryJoin();
+               joins.add(queryJoin);
+
+               queryJoin.setJoinTable(joinJsonObject.optString("joinTable"));
+
+               if(joinJsonObject.has("baseTableOrAlias") && !joinJsonObject.isNull("baseTableOrAlias"))
                {
-                  String joinName = joinJsonObject.getString("joinName");
-                  joinMetaData = QContext.getQInstance().getJoin(joinName);
-                  joinJsonObject.remove("joinName");
+                  queryJoin.setBaseTableOrAlias(joinJsonObject.optString("baseTableOrAlias"));
                }
 
-               QueryJoin queryJoin = JsonUtils.toObject(joinJsonObject.toString(), QueryJoin.class);
-               queryJoin.setJoinMetaData(joinMetaData);
+               if(joinJsonObject.has("alias") && !joinJsonObject.isNull("alias"))
+               {
+                  queryJoin.setAlias(joinJsonObject.optString("alias"));
+               }
 
-               joins.add(queryJoin);
+               queryJoin.setSelect(joinJsonObject.optBoolean("select"));
+
+               if(joinJsonObject.has("type") && !joinJsonObject.isNull("type"))
+               {
+                  queryJoin.setType(QueryJoin.Type.valueOf(joinJsonObject.getString("type")));
+               }
+
+               if(joinJsonObject.has("joinName") && !joinJsonObject.isNull("joinName"))
+               {
+                  queryJoin.setJoinMetaData(QContext.getQInstance().getJoin(joinJsonObject.getString("joinName")));
+               }
             }
             return (joins);
          }

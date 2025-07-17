@@ -86,6 +86,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.ReportType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.variants.BackendVariantsConfig;
 import com.kingsrook.qqq.backend.core.model.savedviews.SavedViewsMetaDataProvider;
@@ -119,6 +120,9 @@ public class TestUtils
    public static final String MEMORY_BACKEND_WITH_VARIANTS_NAME = "memoryWithVariants";
    public static final String TABLE_NAME_MEMORY_VARIANT_OPTIONS = "memoryVariantOptions";
    public static final String TABLE_NAME_MEMORY_VARIANT_DATA    = "memoryVariantData";
+
+   private static final String PERSON_JOIN_PET            = "personJoinPet";
+   private static final String PERSON_JOIN_PARTNER_PERSON = "PersonJoinPartnerPerson";
 
    public static final String PROCESS_NAME_GREET_PEOPLE_INTERACTIVE = "greetInteractive";
    public static final String PROCESS_NAME_SIMPLE_SLEEP             = "simpleSleep";
@@ -401,7 +405,9 @@ public class TestUtils
          .withField(new QFieldMetaData("photoFileName", QFieldType.STRING).withBackendName("photo_file_name"))
          .withField(new QFieldMetaData("licenseScanPdfUrl", QFieldType.STRING).withBackendName("license_scan_pdf_url"))
 
-         .withAssociation(new Association().withName("pets").withJoinName("personJoinPet").withAssociatedTableName(TABLE_NAME_PET))
+         .withExposedJoin(new ExposedJoin().withJoinTable(TABLE_NAME_PET).withLabel("Pets").withJoinPath(List.of(PERSON_JOIN_PET)))
+
+         .withAssociation(new Association().withName("pets").withJoinName(PERSON_JOIN_PET).withAssociatedTableName(TABLE_NAME_PET))
          .withAssociatedScript(new AssociatedScript()
             .withFieldName("testScriptId")
             .withScriptTypeId(1)
@@ -509,7 +515,7 @@ public class TestUtils
          .withLeftTable(TABLE_NAME_PERSON)
          .withRightTable(TABLE_NAME_PERSON)
          .withType(JoinType.MANY_TO_ONE)
-         .withName("PersonJoinPartnerPerson")
+         .withName(PERSON_JOIN_PARTNER_PERSON)
          .withJoinOn(new JoinOn("partnerPersonId", "id")));
    }
 
@@ -524,7 +530,7 @@ public class TestUtils
          .withLeftTable(TABLE_NAME_PERSON)
          .withRightTable(TABLE_NAME_PET)
          .withType(JoinType.ONE_TO_MANY)
-         .withName("personJoinPet")
+         .withName(PERSON_JOIN_PET)
          .withJoinOn(new JoinOn("id", "ownerPersonId")));
    }
 

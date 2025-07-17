@@ -34,6 +34,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
+import com.kingsrook.qqq.backend.core.utils.collections.MapBuilder;
 import com.kingsrook.qqq.backend.javalin.TestUtils;
 import com.kingsrook.qqq.middleware.javalin.specs.AbstractEndpointSpec;
 import com.kingsrook.qqq.middleware.javalin.specs.SpecTestBase;
@@ -98,6 +99,42 @@ class TableQuerySpecV1Test extends SpecTestBase
       assertThat(record.getString("tableName")).isEqualTo("person");
       assertThat(record.getJSONObject("values").getString("lastName")).isEqualTo("Kelkhoff");
       assertThat(record.getJSONObject("displayValues").getString("lastName")).isEqualTo("Kelkhoff");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testJoin()
+   {
+      HttpResponse<String> response = Unirest.post(getBaseUrlAndPath() + "/table/person/query")
+         .contentType(ContentType.APPLICATION_JSON.getMimeType())
+         .body(JsonUtils.toJson(Map.of(
+            "filter", new QQueryFilter(new QFilterCriteria("lastName", QCriteriaOperator.EQUALS, "Kelkhoff")),
+            "joins", List.of(MapBuilder.of(
+               "joinTable", TestUtils.TABLE_NAME_PET,
+               "select", true,
+               "type", "LEFT",
+               "alias", null,
+               "joinName", null,
+               "baseTableOrAlias", null
+            ))
+         )))
+         .asString();
+
+      assertEquals(200, response.getStatus());
+      JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
+      JSONArray  records    = jsonObject.getJSONArray("records");
+      assertThat(records.length()).isGreaterThanOrEqualTo(3);
+
+      JSONObject record = records.getJSONObject(0);
+      assertThat(record.getString("recordLabel")).contains("Kelkhoff");
+      assertThat(record.getString("tableName")).isEqualTo("person");
+      assertThat(record.getJSONObject("values").getString("lastName")).isEqualTo("Kelkhoff");
+      assertThat(record.getJSONObject("displayValues").getString("lastName")).isEqualTo("Kelkhoff");
+      assertThat(record.getJSONObject("displayValues").getString("pet.name")).isIn(List.of("Chester", "Lucy"));
    }
 
 
@@ -226,7 +263,6 @@ class TableQuerySpecV1Test extends SpecTestBase
       assertEquals(500, response.getStatus());
       jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertEquals("Could not find Backend Variant in table memoryVariantOptions with id '3'", jsonObject.getString("error"));
-
    }
 
 }
