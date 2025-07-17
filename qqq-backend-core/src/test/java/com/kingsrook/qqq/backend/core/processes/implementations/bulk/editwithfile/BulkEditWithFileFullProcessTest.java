@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.editWithFile;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.editwithfile;
 
 
 import java.io.OutputStream;
