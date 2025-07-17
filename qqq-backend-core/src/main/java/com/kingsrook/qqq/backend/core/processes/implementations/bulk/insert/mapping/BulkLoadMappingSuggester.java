@@ -54,7 +54,7 @@ public class BulkLoadMappingSuggester
    /***************************************************************************
     **
     ***************************************************************************/
-   public BulkLoadProfile suggestBulkLoadMappingProfile(BulkLoadTableStructure tableStructure, List<String> headerRow)
+   public BulkLoadProfile suggestBulkLoadMappingProfile(BulkLoadTableStructure tableStructure, List<String> headerRow, boolean isBulkEdit)
    {
       massagedHeadersWithoutNumbersToIndexMap = new LinkedHashMap<>();
       for(int i = 0; i < headerRow.size(); i++)
@@ -90,6 +90,7 @@ public class BulkLoadMappingSuggester
          .withVersion("v1")
          .withLayout(layout)
          .withHasHeaderRow(true)
+         .withIsBulkEdit(isBulkEdit)
          .withFieldList(fieldList);
 
       return (bulkLoadProfile);

@@ -25,12 +25,19 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.map
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import com.kingsrook.qqq.backend.core.context.QContext;
+import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.values.SearchPossibleValueSourceInput;
+import com.kingsrook.qqq.backend.core.model.bulk.TableKeyFieldsPossibleValueSource;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinOn;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.JoinType;
 import com.kingsrook.qqq.backend.core.model.metadata.joins.QJoinMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.possiblevalues.QPossibleValue;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.Association;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadTableStructure;
@@ -44,12 +51,16 @@ import com.kingsrook.qqq.backend.core.utils.StringUtils;
  *******************************************************************************/
 public class BulkLoadTableStructureBuilder
 {
+   private static final QLogger LOG = QLogger.getLogger(BulkLoadTableStructureBuilder.class);
+
+
+
    /***************************************************************************
     **
     ***************************************************************************/
    public static BulkLoadTableStructure buildTableStructure(String tableName)
    {
-      return (buildTableStructure(tableName, null, null));
+      return (buildTableStructure(tableName, null, null, false));
    }
 
 
@@ -57,13 +68,24 @@ public class BulkLoadTableStructureBuilder
    /***************************************************************************
     **
     ***************************************************************************/
-   private static BulkLoadTableStructure buildTableStructure(String tableName, Association association, String parentAssociationPath)
+   public static BulkLoadTableStructure buildTableStructure(String tableName, Boolean isBulkEdit)
+   {
+      return (buildTableStructure(tableName, null, null, isBulkEdit));
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private static BulkLoadTableStructure buildTableStructure(String tableName, Association association, String parentAssociationPath, Boolean isBulkEdit)
    {
       QTableMetaData table = QContext.getQInstance().getTable(tableName);
 
       BulkLoadTableStructure tableStructure = new BulkLoadTableStructure();
       tableStructure.setTableName(tableName);
       tableStructure.setLabel(table.getLabel());
+      tableStructure.setIsBulkEdit(isBulkEdit);
 
       Set<String> associationJoinFieldNamesToExclude = new HashSet<>();
 
@@ -119,6 +141,30 @@ public class BulkLoadTableStructureBuilder
          }
       }
 
+      ////////////////////////////////////////////////////////
+      // for bulk edit, users can use the primary key field //
+      ////////////////////////////////////////////////////////
+      if(isBulkEdit)
+      {
+         fields.add(table.getField(table.getPrimaryKeyField()));
+
+         //////////////////////////////////////////////////////////////////////
+         // also make available what key fields are available for this table //
+         //////////////////////////////////////////////////////////////////////
+         try
+         {
+            SearchPossibleValueSourceInput input = new SearchPossibleValueSourceInput()
+               .withPossibleValueSourceName("tableKeyFields")
+               .withPathParamMap(Map.of("processName", tableName + ".bulkEditWithFile"));
+            List<QPossibleValue<String>> search = new TableKeyFieldsPossibleValueSource().search(input);
+            tableStructure.setPossibleKeyFields(new ArrayList<>(search.stream().map(QPossibleValue::getId).toList()));
+         }
+         catch(QException qe)
+         {
+            LOG.warn("Unable to retrieve possible key fields for table [" + tableName + "]", qe);
+         }
+      }
+
       fields.sort(Comparator.comparing(f -> ObjectUtils.requireNonNullElse(f.getLabel(), f.getName(), "")));
 
       for(Association childAssociation : CollectionUtils.nonNullList(table.getAssociations()))
@@ -131,8 +177,8 @@ public class BulkLoadTableStructureBuilder
          {
             String nextLevelPath =
                (StringUtils.hasContent(parentAssociationPath) ? parentAssociationPath + "." : "")
-               + (association != null ? association.getName() : "");
-            BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, nextLevelPath);
+                  + (association != null ? association.getName() : "");
+            BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, nextLevelPath, isBulkEdit);
             tableStructure.addAssociation(associatedStructure);
          }
       }

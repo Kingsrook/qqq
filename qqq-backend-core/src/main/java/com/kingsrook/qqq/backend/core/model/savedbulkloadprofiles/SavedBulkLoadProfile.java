@@ -60,6 +60,9 @@ public class SavedBulkLoadProfile extends QRecordEntity
    @QField(label = "Mapping JSON")
    private String mappingJson;
 
+   @QField()
+   private Boolean isBulkEdit;
+
 
 
    /*******************************************************************************
@@ -251,7 +254,6 @@ public class SavedBulkLoadProfile extends QRecordEntity
 
 
 
-
    /*******************************************************************************
     ** Getter for mappingJson
     *******************************************************************************/
@@ -281,5 +283,35 @@ public class SavedBulkLoadProfile extends QRecordEntity
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for isBulkEdit
+    *******************************************************************************/
+   public Boolean getIsBulkEdit()
+   {
+      return (this.isBulkEdit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isBulkEdit
+    *******************************************************************************/
+   public void setIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isBulkEdit
+    *******************************************************************************/
+   public SavedBulkLoadProfile withIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+      return (this);
+   }
 
 }

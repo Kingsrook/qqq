@@ -1932,6 +1932,8 @@ public class QJavalinImplementation
       input.setPossibleValueSourceName(possibleValueSourceName);
       input.setSearchTerm(searchTerm);
       input.setDefaultQueryFilter(defaultFilter);
+      input.setPathParamMap(context.pathParamMap());
+      input.setQueryParamMap(context.queryParamMap());
 
       if(StringUtils.hasContent(ids))
       {

@@ -45,6 +45,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
+import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
@@ -102,13 +103,29 @@ public class QuerySavedBulkLoadProfileProcess implements BackendStep
          }
          else
          {
-            String tableName = runBackendStepInput.getValueString("tableName");
+            String  tableName  = runBackendStepInput.getValueString("tableName");
+            boolean isBulkEdit = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean("isBulkEdit"));
 
             QueryInput input = new QueryInput();
             input.setTableName(SavedBulkLoadProfile.TABLE_NAME);
-            input.setFilter(new QQueryFilter()
+
+            QQueryFilter filter = new QQueryFilter()
                .withCriteria(new QFilterCriteria("tableName", QCriteriaOperator.EQUALS, tableName))
-               .withOrderBy(new QFilterOrderBy("label")));
+               .withOrderBy(new QFilterOrderBy("label"));
+
+            /////////////////////////////////////////////////////////////////////
+            // account for nulls here, so if is bulk edit, only look for true, //
+            // otherwise look for nulls or not equal to true                   //
+            /////////////////////////////////////////////////////////////////////
+            if(isBulkEdit)
+            {
+               filter.withCriteria(new QFilterCriteria("isBulkEdit", QCriteriaOperator.EQUALS, true));
+            }
+            else
+            {
+               filter.withCriteria(new QFilterCriteria("isBulkEdit", QCriteriaOperator.NOT_EQUALS_OR_IS_NULL, true));
+            }
+            input.setFilter(filter);
 
             QueryOutput output = new QueryAction().execute(input);
             runBackendStepOutput.setRecords(output.getRecords());

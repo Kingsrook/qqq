@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -32,12 +33,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer;
 import com.kingsrook.qqq.backend.core.actions.customizers.AbstractPreInsertCustomizer.WhenToRun;
 import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.tables.InsertAction;
+import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
+import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.actions.tables.helpers.UniqueKeyHelper;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
@@ -48,6 +50,11 @@ import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepOutp
 import com.kingsrook.qqq.backend.core.model.actions.processes.Status;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
+import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.dashboard.widgets.WidgetType;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.dashboard.QWidgetMetaDataInterface;
@@ -68,6 +75,9 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 
 /*******************************************************************************
@@ -75,9 +85,9 @@ import com.kingsrook.qqq.backend.core.utils.ValueUtils;
  *******************************************************************************/
 public class BulkInsertTransformStep extends AbstractTransformStep
 {
-   ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
+   public ProcessSummaryLine okSummary = new ProcessSummaryLine(Status.OK);
 
-   ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted")
+   public ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("inserted")
       .withDoReplaceSingletonCountLinesWithSuffixOnly(false);
 
    private ListingHash<String, RowValue> errorToExampleRowValueMap = new ListingHash<>();
@@ -190,6 +200,252 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       QTableMetaData table   = QContext.getQInstance().getTable(runBackendStepInput.getTableName());
       List<QRecord>  records = runBackendStepInput.getRecords();
 
+      if(BooleanUtils.isTrue(runBackendStepInput.getValueBoolean("isBulkEdit")))
+      {
+         handleBulkEdit(runBackendStepInput, runBackendStepOutput, records, table);
+         runBackendStepOutput.addValue("isBulkEdit", true);
+      }
+      else
+      {
+         handleBulkLoad(runBackendStepInput, runBackendStepOutput, records, table);
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void handleBulkEdit(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> records, QTableMetaData table) throws QException
+   {
+      ///////////////////////////////////////////
+      // get the key fields for this bulk edit //
+      ///////////////////////////////////////////
+      String       keyFieldsString = runBackendStepInput.getValueString("keyFields");
+      List<String> keyFields       = Arrays.asList(keyFieldsString.split("\\|"));
+
+      //////////////////////////////////////////////////////////////////////////
+      // if the key field is the primary key, then just look up those records //
+      //////////////////////////////////////////////////////////////////////////
+      List<QRecord> nonMatchingRecords = new ArrayList<>();
+      List<QRecord> oldRecords         = new ArrayList<>();
+      List<QRecord> recordsToUpdate    = new ArrayList<>();
+      if(keyFields.size() == 1 && table.getPrimaryKeyField().equals(keyFields.get(0)))
+      {
+         recordsToUpdate = records;
+         String             primaryKeyName = table.getPrimaryKeyField();
+         List<Serializable> primaryKeys    = records.stream().map(record -> record.getValue(primaryKeyName)).toList();
+         oldRecords = new QueryAction().execute(new QueryInput(table.getName()).withFilter(new QQueryFilter(new QFilterCriteria(table.getPrimaryKeyField(), QCriteriaOperator.IN, primaryKeys)))).getRecords();
+
+         ///////////////////////////////////////////
+         // get a set of old records primary keys //
+         ///////////////////////////////////////////
+         Set<Serializable> matchedPrimaryKeys = oldRecords.stream()
+            .map(r -> r.getValue(table.getPrimaryKeyField()))
+            .collect(java.util.stream.Collectors.toSet());
+
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         // iterate over file records and if primary keys dont match, add to the non matchin records list //
+         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         for(QRecord record : records)
+         {
+            Serializable recordKey = record.getValue(table.getPrimaryKeyField());
+            if(!matchedPrimaryKeys.contains(recordKey))
+            {
+               nonMatchingRecords.add(record);
+            }
+         }
+      }
+      else
+      {
+         Set<Serializable> uniqueIds        = new HashSet<>();
+         List<QRecord>     potentialRecords = new ArrayList<>();
+
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // if not using the primary key, then we will look up all records for each part of the unique key //
+         // and for each found, if all unique parts match we will add to our list of database records      //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         for(String uniqueKeyPart : keyFields)
+         {
+            List<Serializable> values = records.stream().map(record -> record.getValue(uniqueKeyPart)).toList();
+            for(QRecord databaseRecord : new QueryAction().execute(new QueryInput(table.getName()).withFilter(new QQueryFilter(new QFilterCriteria(uniqueKeyPart, QCriteriaOperator.IN, values)))).getRecords())
+            {
+               if(!uniqueIds.contains(databaseRecord.getValue(table.getPrimaryKeyField())))
+               {
+                  potentialRecords.add(databaseRecord);
+                  uniqueIds.add(databaseRecord.getValue(table.getPrimaryKeyField()));
+               }
+            }
+         }
+
+         ///////////////////////////////////////////////////////////////////////////////
+         // now iterate over all of the potential records checking each unique fields //
+         ///////////////////////////////////////////////////////////////////////////////
+         fileRecordLoop:
+         for(QRecord fileRecord : records)
+         {
+            for(QRecord databaseRecord : potentialRecords)
+            {
+               boolean allMatch = true;
+
+               for(String uniqueKeyPart : keyFields)
+               {
+                  if(!Objects.equals(fileRecord.getValue(uniqueKeyPart), databaseRecord.getValue(uniqueKeyPart)))
+                  {
+                     allMatch = false;
+                  }
+               }
+
+               //////////////////////////////////////////////////////////////////////////////////////
+               // if we get here with all matching, update the record from the file's primary key, //
+               // add it to the list to update, and continue looping over file records             //
+               //////////////////////////////////////////////////////////////////////////////////////
+               if(allMatch)
+               {
+                  oldRecords.add(databaseRecord);
+                  fileRecord.setValue(table.getPrimaryKeyField(), databaseRecord.getValue(table.getPrimaryKeyField()));
+
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // iterate over the fields in the bulk load profile, if the value for that field is empty and the value //
+                  // of 'clear if empty' is set to true, then update the record to update with the old record's value     //
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                  JSONArray array = new JSONArray(runBackendStepInput.getValueString("fieldListJSON"));
+                  for(int i = 0; i < array.length(); i++)
+                  {
+                     JSONObject jsonObject   = array.getJSONObject(i);
+                     String     fieldName    = jsonObject.optString("fieldName");
+                     boolean    clearIfEmpty = jsonObject.optBoolean("clearIfEmpty");
+
+                     if(fileRecord.getValue(fieldName) == null)
+                     {
+                        if(clearIfEmpty)
+                        {
+                           fileRecord.setValue(fieldName, null);
+                        }
+                        else
+                        {
+                           fileRecord.setValue(fieldName, databaseRecord.getValue(fieldName));
+                        }
+                     }
+                  }
+
+                  recordsToUpdate.add(fileRecord);
+                  continue fileRecordLoop;
+               }
+            }
+
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // if we make it here, that means the record was not found, keep for logging warning //
+            ///////////////////////////////////////////////////////////////////////////////////////
+            nonMatchingRecords.add(fileRecord);
+         }
+      }
+
+      for(QRecord missingRecord : CollectionUtils.nonNullList(nonMatchingRecords))
+      {
+         String message = "Did not have a matching existing record.";
+         processSummaryWarningsAndErrorsRollup.addError(message, null);
+         addToErrorToExampleRowMap(message, missingRecord);
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      UpdateInput updateInput = new UpdateInput(table.getName());
+      updateInput.setInputSource(QInputSource.USER);
+      updateInput.setRecords(recordsToUpdate);
+
+      //////////////////////////////////////////////////////////////////////
+      // load the pre-insert customizer and set it up, if there is one    //
+      // then we'll run it based on its WhenToRun value                   //
+      // we do this, in case it needs to, for example, adjust values that //
+      // are part of a unique key                                         //
+      //////////////////////////////////////////////////////////////////////
+      boolean                            didAlreadyRunCustomizer = false;
+      Optional<TableCustomizerInterface> preUpdateCustomizer     = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_UPDATE_RECORD.getRole());
+      if(preUpdateCustomizer.isPresent())
+      {
+         List<QRecord> recordsAfterCustomizer = preUpdateCustomizer.get().preUpdate(updateInput, records, true, Optional.of(oldRecords));
+         runBackendStepInput.setRecords(recordsAfterCustomizer);
+
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // so we used to have a comment here asking "do we care if the customizer runs both now, and in the validation below?" //
+         // when implementing Bulk Load V2, we were seeing that some customizers were adding errors to records, both now, and   //
+         // when they ran below.  so, at that time, we added this boolean, to track and avoid the double-run...                 //
+         // we could also imagine this being a setting on the pre-insert customizer, similar to its whenToRun attribute...      //
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         didAlreadyRunCustomizer = true;
+      }
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // run all validation from the insert action - in Preview mode (boolean param) //
+      /////////////////////////////////////////////////////////////////////////////////
+      updateInput.setRecords(recordsToUpdate);
+      UpdateAction updateAction = new UpdateAction();
+      updateAction.performValidations(updateInput, Optional.of(recordsToUpdate), didAlreadyRunCustomizer);
+      List<QRecord> validationResultRecords = updateInput.getRecords();
+
+      /////////////////////////////////////////////////////////////////
+      // look at validation results to build process summary results //
+      /////////////////////////////////////////////////////////////////
+      List<QRecord> outputRecords = new ArrayList<>();
+      for(QRecord record : validationResultRecords)
+      {
+         List<QErrorMessage> errorsFromAssociations = getErrorsFromAssociations(record);
+         if(CollectionUtils.nullSafeHasContents(errorsFromAssociations))
+         {
+            List<QErrorMessage> recordErrors = Objects.requireNonNullElseGet(record.getErrors(), () -> new ArrayList<>());
+            recordErrors.addAll(errorsFromAssociations);
+            record.setErrors(recordErrors);
+         }
+
+         if(CollectionUtils.nullSafeHasContents(record.getErrors()))
+         {
+            for(QErrorMessage error : record.getErrors())
+            {
+               if(error instanceof AbstractBulkLoadRollableValueError rollableValueError)
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(rollableValueError.getMessageToUseAsProcessSummaryRollupKey(), null);
+                  addToErrorToExampleRowValueMap(rollableValueError, record);
+               }
+               else
+               {
+                  processSummaryWarningsAndErrorsRollup.addError(error.getMessage(), null);
+                  addToErrorToExampleRowMap(error.getMessage(), record);
+               }
+            }
+         }
+         else if(CollectionUtils.nullSafeHasContents(record.getWarnings()))
+         {
+            String message = record.getWarnings().get(0).getMessage();
+            processSummaryWarningsAndErrorsRollup.addWarning(message, null);
+            outputRecords.add(record);
+         }
+         else
+         {
+            okSummary.incrementCountAndAddPrimaryKey(null);
+            outputRecords.add(record);
+
+            for(Map.Entry<String, List<QRecord>> entry : CollectionUtils.nonNullMap(record.getAssociatedRecords()).entrySet())
+            {
+               String             associationName         = entry.getKey();
+               ProcessSummaryLine associationToInsertLine = associationsToInsertSummaries.computeIfAbsent(associationName, x -> new ProcessSummaryLine(Status.OK));
+               associationToInsertLine.incrementCount(CollectionUtils.nonNullList(entry.getValue()).size());
+            }
+         }
+      }
+
+      runBackendStepOutput.setRecords(outputRecords);
+      this.rowsProcessed += records.size();
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void handleBulkLoad(RunBackendStepInput runBackendStepInput, RunBackendStepOutput runBackendStepOutput, List<QRecord> records, QTableMetaData table) throws QException
+   {
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // set up an insert-input, which will be used as input to the pre-customizer as well as for additional validations //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +465,7 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       Optional<TableCustomizerInterface> preInsertCustomizer     = QCodeLoader.getTableCustomizer(table, TableCustomizers.PRE_INSERT_RECORD.getRole());
       if(preInsertCustomizer.isPresent())
       {
-         AbstractPreInsertCustomizer.WhenToRun whenToRun = preInsertCustomizer.get().whenToRunPreInsert(insertInput, true);
+         WhenToRun whenToRun = preInsertCustomizer.get().whenToRunPreInsert(insertInput, true);
          if(WhenToRun.BEFORE_ALL_VALIDATIONS.equals(whenToRun) || WhenToRun.BEFORE_UNIQUE_KEY_CHECKS.equals(whenToRun))
          {
             List<QRecord> recordsAfterCustomizer = preInsertCustomizer.get().preInsert(insertInput, records, true);
@@ -485,11 +741,13 @@ public class BulkInsertTransformStep extends AbstractTransformStep
       recordsProcessedLine.withPluralFutureMessage("records were");
       recordsProcessedLine.withPluralPastMessage("records were");
 
-      String noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
-      okSummary.setSingularFutureMessage(tableLabel + " record will be inserted" + noWarningsSuffix + ".");
-      okSummary.setPluralFutureMessage(tableLabel + " records will be inserted" + noWarningsSuffix + ".");
-      okSummary.setSingularPastMessage(tableLabel + " record was inserted" + noWarningsSuffix + ".");
-      okSummary.setPluralPastMessage(tableLabel + " records were inserted" + noWarningsSuffix + ".");
+      boolean isBulkEdit       = BooleanUtils.isTrue(runBackendStepOutput.getValueBoolean("isBulkEdit"));
+      String  action           = isBulkEdit ? "updated" : "inserted";
+      String  noWarningsSuffix = processSummaryWarningsAndErrorsRollup.countWarnings() == 0 ? "" : " with no warnings";
+      okSummary.setSingularFutureMessage(tableLabel + " record will be " + action + noWarningsSuffix + ".");
+      okSummary.setPluralFutureMessage(tableLabel + " records will be " + action + noWarningsSuffix + ".");
+      okSummary.setSingularPastMessage(tableLabel + " record was " + action + noWarningsSuffix + ".");
+      okSummary.setPluralPastMessage(tableLabel + " records were " + action + noWarningsSuffix + ".");
       okSummary.pickMessage(isForResultScreen);
       okSummary.addSelfToListIfAnyCount(rs);
 
@@ -502,10 +760,10 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             String         associationLabel = associationTable.getLabel();
 
             ProcessSummaryLine line = entry.getValue();
-            line.setSingularFutureMessage(associationLabel + " record will be inserted.");
-            line.setPluralFutureMessage(associationLabel + " records will be inserted.");
-            line.setSingularPastMessage(associationLabel + " record was inserted.");
-            line.setPluralPastMessage(associationLabel + " records were inserted.");
+            line.setSingularFutureMessage(associationLabel + " record will be " + action + ".");
+            line.setPluralFutureMessage(associationLabel + " records will be " + action + ".");
+            line.setSingularPastMessage(associationLabel + " record was " + action + ".");
+            line.setPluralPastMessage(associationLabel + " records were " + action + ".");
             line.pickMessage(isForResultScreen);
             line.addSelfToListIfAnyCount(rs);
          }
@@ -518,8 +776,8 @@ public class BulkInsertTransformStep extends AbstractTransformStep
 
          ukErrorSummary
             .withMessageSuffix(" inserted, because of duplicate values in a unique key on the fields (" + uniqueKey.getDescription(table) + "), with values"
-                               + (ukErrorSummary.areThereMoreSampleValues ? " such as: " : ": ")
-                               + StringUtils.joinWithCommasAndAnd(new ArrayList<>(ukErrorSummary.sampleValues)))
+               + (ukErrorSummary.areThereMoreSampleValues ? " such as: " : ": ")
+               + StringUtils.joinWithCommasAndAnd(new ArrayList<>(ukErrorSummary.sampleValues)))
 
             .withSingularFutureMessage(" record will not be")
             .withPluralFutureMessage(" records will not be")

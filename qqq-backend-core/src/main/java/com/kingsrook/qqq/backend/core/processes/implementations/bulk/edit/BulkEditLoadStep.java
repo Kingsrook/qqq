@@ -36,10 +36,12 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.InputSource;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QInputSource;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertTransformStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.LoadViaUpdateStep;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.ProcessSummaryProviderInterface;
 import com.kingsrook.qqq.backend.core.processes.implementations.general.ProcessSummaryWarningsAndErrorsRollup;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.commons.lang.BooleanUtils;
 import static com.kingsrook.qqq.backend.core.processes.implementations.bulk.edit.BulkEditTransformStep.buildInfoSummaryLines;
 
 
@@ -52,6 +54,9 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
 
    private ProcessSummaryLine       okSummary     = new ProcessSummaryLine(Status.OK);
    private List<ProcessSummaryLine> infoSummaries = new ArrayList<>();
+
+   private Serializable firstInsertedPrimaryKey = null;
+   private Serializable lastInsertedPrimaryKey  = null;
 
    private ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = ProcessSummaryWarningsAndErrorsRollup.build("edited");
 
@@ -106,7 +111,15 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
          tableLabel = table.getLabel();
       }
 
-      buildInfoSummaryLines(runBackendStepInput, table, infoSummaries, true);
+      boolean isBulkEdit = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean("isBulkEdit"));
+      if(isBulkEdit)
+      {
+         buildBulkUpdateWithFileInfoSummaryLines(runBackendStepOutput, table);
+      }
+      else
+      {
+         buildInfoSummaryLines(runBackendStepInput, table, infoSummaries, true);
+      }
    }
 
 
@@ -146,4 +159,83 @@ public class BulkEditLoadStep extends LoadViaUpdateStep implements ProcessSummar
       }
    }
 
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   private void buildBulkUpdateWithFileInfoSummaryLines(RunBackendStepOutput runBackendStepOutput, QTableMetaData table)
+   {
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // the transform step builds summary lines that it predicts will update successfully.      //
+      // but those lines don't have ids, which we'd like to have (e.g., for a process trace that //
+      // might link to the built record).  also, it's possible that there was a fail that only   //
+      // happened in the actual update, so, basically, re-do the summary here                    //
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      BulkInsertTransformStep transformStep = (BulkInsertTransformStep) getTransformStep();
+      ProcessSummaryLine      okSummary     = transformStep.okSummary;
+      okSummary.setCount(0);
+      okSummary.setPrimaryKeys(new ArrayList<>());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // but - since errors from the transform step don't even make it through to us here in the load step,   //
+      // do re-use the ProcessSummaryWarningsAndErrorsRollup from transform step as follows:                  //
+      // clear out its warnings - we'll completely rebuild them here (with primary keys)                      //
+      // and add new error lines, e.g., in case of errors that only happened past the validation if possible. //
+      //////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ProcessSummaryWarningsAndErrorsRollup processSummaryWarningsAndErrorsRollup = transformStep.processSummaryWarningsAndErrorsRollup;
+      processSummaryWarningsAndErrorsRollup.resetWarnings();
+
+      List<QRecord> updatedRecords = runBackendStepOutput.getRecords();
+      for(QRecord updatedRecord : updatedRecords)
+      {
+         Serializable primaryKey = updatedRecord.getValue(table.getPrimaryKeyField());
+         if(CollectionUtils.nullSafeIsEmpty(updatedRecord.getErrors()) && primaryKey != null)
+         {
+            /////////////////////////////////////////////////////////////////////////
+            // if the record had no errors, and we have a primary key for it, then //
+            // keep track of the range of primary keys (first and last)            //
+            /////////////////////////////////////////////////////////////////////////
+            if(firstInsertedPrimaryKey == null)
+            {
+               firstInsertedPrimaryKey = primaryKey;
+            }
+
+            lastInsertedPrimaryKey = primaryKey;
+
+            if(!CollectionUtils.nullSafeIsEmpty(updatedRecord.getWarnings()))
+            {
+               ////////////////////////////////////////////////////////////////////////////
+               // if there were warnings on the updated record, put it in a warning line //
+               ////////////////////////////////////////////////////////////////////////////
+               String message = updatedRecord.getWarnings().get(0).getMessage();
+               processSummaryWarningsAndErrorsRollup.addWarning(message, primaryKey);
+            }
+            else
+            {
+               ///////////////////////////////////////////////////////////////////////
+               // if no warnings for the updated record, then put it in the OK line //
+               ///////////////////////////////////////////////////////////////////////
+               okSummary.incrementCountAndAddPrimaryKey(primaryKey);
+            }
+         }
+         else
+         {
+            //////////////////////////////////////////////////////////////////////
+            // else if there were errors or no primary key, build an error line //
+            //////////////////////////////////////////////////////////////////////
+            String message = "Failed to update";
+            if(!CollectionUtils.nullSafeIsEmpty(updatedRecord.getErrors()))
+            {
+               //////////////////////////////////////////////////////////
+               // use the error message from the record if we have one //
+               //////////////////////////////////////////////////////////
+               message = updatedRecord.getErrors().get(0).getMessage();
+            }
+            processSummaryWarningsAndErrorsRollup.addError(message, primaryKey);
+         }
+      }
+
+      okSummary.pickMessage(true);
+   }
 }
