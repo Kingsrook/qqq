@@ -244,9 +244,9 @@ public class BulkInsertTransformStep extends AbstractTransformStep
             .map(r -> r.getValue(table.getPrimaryKeyField()))
             .collect(java.util.stream.Collectors.toSet());
 
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
-         // iterate over file records and if primary keys dont match, add to the non matchin records list //
-         ///////////////////////////////////////////////////////////////////////////////////////////////////
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
+         // iterate over file records and if primary keys dont match, add to the non matching records list //
+         ////////////////////////////////////////////////////////////////////////////////////////////////////
          for(QRecord record : records)
          {
             Serializable recordKey = record.getValue(table.getPrimaryKeyField());
