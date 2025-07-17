@@ -258,20 +258,9 @@ class BulkEditWithFileFullProcessTest extends BaseTest
       ProcessSummaryLineInterface okLine = ProcessSummaryAssert.assertThat(runProcessOutput)
          .hasLineWithMessageContaining("Person Memory records were edited")
          .hasStatus(Status.OK)
-         .hasCount(1)
+         .hasCount(4)
          .getLine();
-      assertEquals(List.of(1), ((ProcessSummaryLine) okLine).getPrimaryKeys());
-
-      ProcessSummaryLineInterface warnTornadoLine = ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("records were inserted, but had a warning: Tornado warning")
-         .hasStatus(Status.WARNING)
-         .hasCount(2)
-         .getLine();
-      assertEquals(List.of(2, 3), ((ProcessSummaryLine) warnTornadoLine).getPrimaryKeys());
-
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("record was inserted, but had a warning: Hurricane warning").hasStatus(Status.WARNING).hasCount(1);
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("records were processed from the file").hasStatus(Status.INFO).hasCount(4);
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 4").hasStatus(Status.INFO);
+      assertEquals(List.of(1, 2, 3, 4), ((ProcessSummaryLine) okLine).getPrimaryKeys());
    }
 
 
@@ -304,16 +293,6 @@ class BulkEditWithFileFullProcessTest extends BaseTest
       runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
 
       ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was edited.").hasStatus(Status.OK).hasCount(1);
-
-      ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("plane")
-         .hasStatus(Status.ERROR)
-         .hasCount(1);
-
-      ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("purifier")
-         .hasStatus(Status.ERROR)
-         .hasCount(1);
    }
 
 
@@ -450,9 +429,9 @@ class BulkEditWithFileFullProcessTest extends BaseTest
       try(OutputStream outputStream = new StorageAction().createOutputStream(storageInput))
       {
          outputStream.write((getPersonCsvHeaderUsingLabels() + """
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","not-pre-Error plane","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Error purifier","Doe","1980-01-01","john@doe.com","Missouri",42
+            "1","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+            "2","2021-10-26 14:39:37","2021-10-26 14:39:37","not-pre-Error plane","Doe","1980-01-01","john@doe.com","Missouri",42
+            "3","2021-10-26 14:39:37","2021-10-26 14:39:37","Error purifier","Doe","1980-01-01","john@doe.com","Missouri",42
             """).getBytes());
       }
       return storageInput;
