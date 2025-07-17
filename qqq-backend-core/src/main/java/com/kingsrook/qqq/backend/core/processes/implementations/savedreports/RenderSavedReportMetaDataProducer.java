@@ -75,7 +75,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
          .withTableName(SavedReport.TABLE_NAME)
          .withIcon(new QIcon().withName("print"))
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("pre")
             .withInputData(new QFunctionInputMetaData()
                .withField(new QFieldMetaData(SES_PROVIDER_NAME, QFieldType.STRING))
@@ -86,7 +86,7 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
                .withRecordListMetaData(new QRecordListMetaData().withTableName(SavedReport.TABLE_NAME)))
             .withCode(new QCodeReference(RenderSavedReportPreStep.class)))
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("input")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.EDIT_FORM))
             .withFormField(new QFieldMetaData(FIELD_NAME_REPORT_FORMAT, QFieldType.STRING)
@@ -97,13 +97,13 @@ public class RenderSavedReportMetaDataProducer implements MetaDataProducerInterf
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.WIDGET)
                .withValue("widgetName", SavedReportsMetaDataProvider.RENDER_REPORT_PROCESS_VALUES_WIDGET)))
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("execute")
             .withInputData(new QFunctionInputMetaData().withRecordListMetaData(new QRecordListMetaData()
                .withTableName(SavedReport.TABLE_NAME)))
             .withCode(new QCodeReference(RenderSavedReportExecuteStep.class)))
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("output")
             .withComponent(new QFrontendComponentMetaData().withType(QComponentType.DOWNLOAD_FORM))
             .withComponent(new NoCodeWidgetFrontendComponentMetaData()

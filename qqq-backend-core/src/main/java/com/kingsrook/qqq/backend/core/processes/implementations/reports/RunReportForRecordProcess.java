@@ -109,10 +109,10 @@ public class RunReportForRecordProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addStep(prepareStep)
-         .addStep(inputStep)
-         .addStep(executeStep)
-         .addStep(accessStep);
+         .withStep(prepareStep)
+         .withStep(inputStep)
+         .withStep(executeStep)
+         .withStep(accessStep);
    }
 
 

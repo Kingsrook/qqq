@@ -96,7 +96,7 @@ class BasicETLCollectSourceFileNamesStepTest extends BaseTest
    {
       QInstance            qInstance           = TestUtils.defineInstance();
       QBackendStepMetaData backendStepMetaData = new BasicETLCollectSourceFileNamesStep().defineStepMetaData();
-      QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").addStep(backendStepMetaData);
+      QProcessMetaData     qProcessMetaData    = new QProcessMetaData().withName("testScaffold").withStep(backendStepMetaData);
       qInstance.addProcess(qProcessMetaData);
       reInitInstanceInContext(qInstance);
 

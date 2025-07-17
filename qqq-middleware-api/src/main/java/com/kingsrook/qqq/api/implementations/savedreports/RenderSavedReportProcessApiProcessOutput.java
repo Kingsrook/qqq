@@ -36,6 +36,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.storage.StorageInput;
 import com.kingsrook.qqq.openapi.model.Content;
 import com.kingsrook.qqq.openapi.model.Response;
 import com.kingsrook.qqq.openapi.model.Schema;
+import com.kingsrook.qqq.openapi.model.Type;
 import org.eclipse.jetty.http.HttpStatus;
 
 
@@ -113,7 +114,7 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
                   {"id": 2, "name": "Jean-Luc"}
                ]
                """)
-            .withType("string")
+            .withType(Type.STRING)
             .withFormat("text")));
 
       contentMap.put(ReportFormat.CSV.getMimeType(), new Content()
@@ -124,13 +125,13 @@ public class RenderSavedReportProcessApiProcessOutput implements ApiProcessOutpu
                1,"James"
                2,"Jean-Luc"
                """)
-            .withType("string")
+            .withType(Type.STRING)
             .withFormat("text")));
 
       contentMap.put(ReportFormat.XLSX.getMimeType(), new Content()
          .withSchema(new Schema()
             .withDescription("Excel Report contents")
-            .withType("string")
+            .withType(Type.STRING)
             .withFormat("binary")));
 
       return Map.of(HttpStatus.Code.OK.getCode(), new Response()

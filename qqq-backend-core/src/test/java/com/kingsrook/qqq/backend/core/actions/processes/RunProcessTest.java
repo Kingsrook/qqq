@@ -366,7 +366,7 @@ public class RunProcessTest extends BaseTest
             // only put back1 in the step list. //
             //////////////////////////////////////
          ))
-         .addOptionalStep(front1)
+         .withOptionalStep(front1)
       );
 
       ////////////////////////////////////////////////////////////
