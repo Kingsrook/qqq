@@ -858,7 +858,10 @@ public class QInstanceEnricher
     *******************************************************************************/
    private void defineTableBulkProcesses(QInstance qInstance)
    {
-      qInstance.addPossibleValueSource(defineTableKeyFieldsPossibleValueSource());
+      if(qInstance.getPossibleValueSource(TableKeyFieldsPossibleValueSource.NAME) == null)
+      {
+         qInstance.addPossibleValueSource(defineTableKeyFieldsPossibleValueSource());
+      }
 
       for(QTableMetaData table : qInstance.getTables().values())
       {

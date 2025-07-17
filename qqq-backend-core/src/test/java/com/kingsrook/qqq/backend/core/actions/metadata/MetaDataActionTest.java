@@ -252,7 +252,7 @@ class MetaDataActionTest extends BaseTest
       // with several permissions set, we should see some things, and they should have permissions turned on //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////
       assertEquals(Set.of("person"), result.getTables().keySet());
-      assertEquals(Set.of("increaseBirthdate", "runShapesPersonReport", "person.bulkInsert", "person.bulkEdit", "person.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "runShapesPersonReport", "person.bulkInsert", "person.bulkEdit", "person.bulkEditWithFile", "person.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of("shapesPersonReport", "personJoinShapeReport", "simplePersonReport"), result.getReports().keySet());
       assertEquals(Set.of("PersonsByCreateDateBarChart"), result.getWidgets().keySet());
 
@@ -288,7 +288,7 @@ class MetaDataActionTest extends BaseTest
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
 
-      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkDelete", "personMemory.bulkInsert", "personMemory.bulkEdit", "personMemory.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkEditWithFile", "personFile.bulkDelete", "personMemory.bulkInsert", "personMemory.bulkEdit", "personMemory.bulkEditWithFile", "personMemory.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of(), result.getReports().keySet());
       assertEquals(Set.of(), result.getWidgets().keySet());
 
@@ -335,7 +335,7 @@ class MetaDataActionTest extends BaseTest
       MetaDataOutput result = new MetaDataAction().execute(new MetaDataInput());
 
       assertEquals(Set.of("person", "personFile", "personMemory"), result.getTables().keySet());
-      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personMemory.bulkDelete"), result.getProcesses().keySet());
+      assertEquals(Set.of("increaseBirthdate", "personFile.bulkInsert", "personFile.bulkEdit", "personFile.bulkEditWithFile", "personMemory.bulkDelete"), result.getProcesses().keySet());
       assertEquals(Set.of(), result.getReports().keySet());
       assertEquals(Set.of(), result.getWidgets().keySet());
 
