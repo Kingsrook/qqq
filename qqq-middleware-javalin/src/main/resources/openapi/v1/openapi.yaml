@@ -1488,6 +1488,13 @@ paths:
                         name: "person.bulkEdit"
                         stepFlow: "LINEAR"
                         tableName: "person"
+                      person.bulkEditWithFile:
+                        hasPermission: true
+                        isHidden: true
+                        label: "Person Bulk Edit With File"
+                        name: "person.bulkEditWithFile"
+                        stepFlow: "LINEAR"
+                        tableName: "person"
                       samplePersonProcess:
                         hasPermission: true
                         icon:
