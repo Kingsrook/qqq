@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert;
+package com.kingsrook.qqq.backend.core.processes.implementations.bulk.editwithfile;
 
 
 import java.io.OutputStream;
@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.frontend.QFrontendFieldMeta
 import com.kingsrook.qqq.backend.core.model.statusmessages.BadInputStatusMessage;
 import com.kingsrook.qqq.backend.core.model.statusmessages.QWarningMessage;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
+import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.BulkInsertFullProcessTest;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfile;
 import com.kingsrook.qqq.backend.core.processes.implementations.bulk.insert.model.BulkLoadProfileField;
 import com.kingsrook.qqq.backend.core.processes.implementations.etl.streamedwithfrontend.StreamedETLWithFrontendProcess;
@@ -67,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*******************************************************************************
  ** Unit test for full bulk insert process
  *******************************************************************************/
-public class BulkInsertFullProcessTest extends BaseTest
+class BulkEditWithFileFullProcessTest extends BaseTest
 {
    private static final String defaultEmail = "noone@kingsrook.com";
 
@@ -91,7 +92,7 @@ public class BulkInsertFullProcessTest extends BaseTest
    public static String getPersonCsvRow1()
    {
       return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+         "1","2021-10-26 14:39:37","2021-10-26 14:39:37","Jehn","Doe","1980-01-01","john@doe.com","Missouri",24
          """);
    }
 
@@ -103,7 +104,7 @@ public class BulkInsertFullProcessTest extends BaseTest
    public static String getPersonCsvRow2()
    {
       return ("""
-         "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Jane","Doe","1981-01-01","john@doe.com","Illinois",
+         "2","2021-10-26 14:39:37","2021-10-26 14:39:37","Jyne","Doe","1981-01-01","john@doe.com","Illinois",
          """);
    }
 
@@ -127,12 +128,18 @@ public class BulkInsertFullProcessTest extends BaseTest
    @Test
    public void test() throws Exception
    {
-      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      /////////////////////////////////////////////
+      // use the bulk insert test to insert data //
+      /////////////////////////////////////////////
+      new BulkInsertFullProcessTest().test();
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isNotEmpty();
 
       /////////////////////////////////////////////////////////
       // start the process - expect to go to the upload step //
       /////////////////////////////////////////////////////////
-      RunProcessInput  runProcessInput  = new RunProcessInput();
+      RunProcessInput runProcessInput = new RunProcessInput();
+      runProcessInput.addValue("keyFields", "id");
+      runProcessInput.addValue("isBulkEdit", "true");
       RunProcessOutput runProcessOutput = startProcess(runProcessInput);
       String           processUUID      = runProcessOutput.getProcessUUID();
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("upload");
@@ -150,12 +157,14 @@ public class BulkInsertFullProcessTest extends BaseTest
       Serializable bulkLoadProfile = runProcessOutput.getValue("bulkLoadProfile");
       assertThat(bulkLoadProfile).isInstanceOf(BulkLoadProfile.class);
       assertThat(((BulkLoadProfile) bulkLoadProfile).getFieldList()).hasSizeGreaterThan(5);
-      assertEquals("firstName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getFieldName());
-      assertEquals(3, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getColumnIndex());
-      assertEquals("lastName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getFieldName());
-      assertEquals(4, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getColumnIndex());
-      assertEquals("birthDate", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getFieldName());
-      assertEquals(5, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getColumnIndex());
+      assertEquals("id", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getFieldName());
+      assertEquals(0, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(0).getColumnIndex());
+      assertEquals("firstName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getFieldName());
+      assertEquals(3, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(1).getColumnIndex());
+      assertEquals("lastName", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getFieldName());
+      assertEquals(4, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(2).getColumnIndex());
+      assertEquals("birthDate", ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(3).getFieldName());
+      assertEquals(5, ((BulkLoadProfile) bulkLoadProfile).getFieldList().get(3).getColumnIndex());
 
       assertThat(runProcessOutput.getProcessState().getNextStepName()).isPresent().get().isEqualTo("fileMapping");
 
@@ -188,25 +197,24 @@ public class BulkInsertFullProcessTest extends BaseTest
       assertThat(runProcessOutput.getException()).isEmpty();
 
       ProcessSummaryLineInterface okLine = ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("Person Memory records were inserted")
+         .hasLineWithMessageContaining("Person Memory records were edited")
          .hasStatus(Status.OK)
          .hasCount(2)
          .getLine();
       assertEquals(List.of(1, 2), ((ProcessSummaryLine) okLine).getPrimaryKeys());
-
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("records were processed from the file").hasStatus(Status.INFO);
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 2").hasStatus(Status.INFO);
 
       ////////////////////////////////////
       // query for the inserted records //
       ////////////////////////////////////
       List<QRecord> records = TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY);
 
-      assertEquals("John", records.get(0).getValueString("firstName"));
-      assertEquals("Jane", records.get(1).getValueString("firstName"));
+      assertEquals("Jehn", records.get(0).getValueString("firstName"));
+      assertEquals("Jyne", records.get(1).getValueString("firstName"));
 
       assertNotNull(records.get(0).getValue("id"));
       assertNotNull(records.get(1).getValue("id"));
+      assertEquals(1, records.get(0).getValue("id"));
+      assertEquals(2, records.get(1).getValue("id"));
 
       assertEquals(2, records.get(0).getValueInteger("homeStateId"));
       assertEquals(1, records.get(1).getValueInteger("homeStateId"));
@@ -214,7 +222,7 @@ public class BulkInsertFullProcessTest extends BaseTest
       assertEquals(defaultEmail, records.get(0).getValueString("email"));
       assertEquals(defaultEmail, records.get(1).getValueString("email"));
 
-      assertEquals(42, records.get(0).getValueInteger("noOfShoes"));
+      assertEquals(24, records.get(0).getValueInteger("noOfShoes"));
       assertNull(records.get(1).getValue("noOfShoes"));
    }
 
@@ -224,11 +232,16 @@ public class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void testSummaryLinePrimaryKeys() throws Exception
+   void testSummaryLinePrimaryKeys() throws Exception
    {
-      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      /////////////////////////////////////////////
+      // use the bulk insert test to insert data //
+      /////////////////////////////////////////////
+      new BulkInsertFullProcessTest().testSummaryLinePrimaryKeys();
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isNotEmpty();
+
       QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
+         .withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
 
       /////////////////////////////////////////////////////////
       // start the process - expect to go to the upload step //
@@ -243,22 +256,11 @@ public class BulkInsertFullProcessTest extends BaseTest
       runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
 
       ProcessSummaryLineInterface okLine = ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("Person Memory record was inserted")
+         .hasLineWithMessageContaining("Person Memory records were edited")
          .hasStatus(Status.OK)
-         .hasCount(1)
+         .hasCount(4)
          .getLine();
-      assertEquals(List.of(1), ((ProcessSummaryLine) okLine).getPrimaryKeys());
-
-      ProcessSummaryLineInterface warnTornadoLine = ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("records were inserted, but had a warning: Tornado warning")
-         .hasStatus(Status.WARNING)
-         .hasCount(2)
-         .getLine();
-      assertEquals(List.of(2, 3), ((ProcessSummaryLine) warnTornadoLine).getPrimaryKeys());
-
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("record was inserted, but had a warning: Hurricane warning").hasStatus(Status.WARNING).hasCount(1);
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("records were processed from the file").hasStatus(Status.INFO).hasCount(4);
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id values between 1 and 4").hasStatus(Status.INFO);
+      assertEquals(List.of(1, 2, 3, 4), ((ProcessSummaryLine) okLine).getPrimaryKeys());
    }
 
 
@@ -267,11 +269,16 @@ public class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void testSummaryLineErrors() throws Exception
+   void testSummaryLineErrors() throws Exception
    {
-      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      /////////////////////////////////////////////
+      // use the bulk insert test to insert data //
+      /////////////////////////////////////////////
+      new BulkInsertFullProcessTest().testSummaryLineErrors();
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isNotEmpty();
+
       QContext.getQInstance().getTable(TestUtils.TABLE_NAME_PERSON_MEMORY)
-         .withCustomizer(TableCustomizers.PRE_INSERT_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
+         .withCustomizer(TableCustomizers.PRE_UPDATE_RECORD, new QCodeReference(PersonWarnOrErrorCustomizer.class));
 
       /////////////////////////////////////////////////////////
       // start the process - expect to go to the upload step //
@@ -285,17 +292,7 @@ public class BulkInsertFullProcessTest extends BaseTest
       continueProcessPostValueMapping(runProcessInput);
       runProcessOutput = continueProcessPostReviewScreen(runProcessInput);
 
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was inserted.").hasStatus(Status.OK).hasCount(1);
-
-      ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("plane")
-         .hasStatus(Status.ERROR)
-         .hasCount(1);
-
-      ProcessSummaryAssert.assertThat(runProcessOutput)
-         .hasLineWithMessageContaining("purifier")
-         .hasStatus(Status.ERROR)
-         .hasCount(1);
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was edited.").hasStatus(Status.OK).hasCount(1);
    }
 
 
@@ -304,12 +301,13 @@ public class BulkInsertFullProcessTest extends BaseTest
     **
     *******************************************************************************/
    @Test
-   public void testOneRow() throws Exception
+   void testOneRow() throws Exception
    {
-      ///////////////////////////////////////
-      // make sure table is empty to start //
-      ///////////////////////////////////////
-      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isEmpty();
+      /////////////////////////////////////////////
+      // use the bulk insert test to insert data //
+      /////////////////////////////////////////////
+      new BulkInsertFullProcessTest().testSummaryLineErrors();
+      assertThat(TestUtils.queryTable(TestUtils.TABLE_NAME_PERSON_MEMORY)).isNotEmpty();
 
       RunProcessInput  runProcessInput  = new RunProcessInput();
       RunProcessOutput runProcessOutput = startProcess(runProcessInput);
@@ -323,7 +321,7 @@ public class BulkInsertFullProcessTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // all that just so we can make sure this message is right (because it was wrong when we first wrote it, lol) //
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Inserted Id 1");
+      ProcessSummaryAssert.assertThat(runProcessOutput).hasLineWithMessageContaining("Person Memory record was edited.").hasStatus(Status.OK).hasCount(1);
    }
 
 
@@ -410,10 +408,10 @@ public class BulkInsertFullProcessTest extends BaseTest
       try(OutputStream outputStream = new StorageAction().createOutputStream(storageInput))
       {
          outputStream.write((getPersonCsvHeaderUsingLabels() + """
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doey","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Hurricane warning","Doe","1980-01-01","john@doe.com","Missouri",42
+            "1","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+            "2","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doe","1980-01-01","john@doe.com","Missouri",42
+            "3","2021-10-26 14:39:37","2021-10-26 14:39:37","Tornado warning","Doey","1980-01-01","john@doe.com","Missouri",42
+            "4","2021-10-26 14:39:37","2021-10-26 14:39:37","Hurricane warning","Doe","1980-01-01","john@doe.com","Missouri",42
             """).getBytes());
       }
       return storageInput;
@@ -431,9 +429,9 @@ public class BulkInsertFullProcessTest extends BaseTest
       try(OutputStream outputStream = new StorageAction().createOutputStream(storageInput))
       {
          outputStream.write((getPersonCsvHeaderUsingLabels() + """
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","not-pre-Error plane","Doe","1980-01-01","john@doe.com","Missouri",42
-            "0","2021-10-26 14:39:37","2021-10-26 14:39:37","Error purifier","Doe","1980-01-01","john@doe.com","Missouri",42
+            "1","2021-10-26 14:39:37","2021-10-26 14:39:37","John","Doe","1980-01-01","john@doe.com","Missouri",42
+            "2","2021-10-26 14:39:37","2021-10-26 14:39:37","not-pre-Error plane","Doe","1980-01-01","john@doe.com","Missouri",42
+            "3","2021-10-26 14:39:37","2021-10-26 14:39:37","Error purifier","Doe","1980-01-01","john@doe.com","Missouri",42
             """).getBytes());
       }
       return storageInput;
@@ -446,8 +444,9 @@ public class BulkInsertFullProcessTest extends BaseTest
     ***************************************************************************/
    private static RunProcessOutput startProcess(RunProcessInput runProcessInput) throws QException
    {
-      runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkInsert");
+      runProcessInput.setProcessName(TestUtils.TABLE_NAME_PERSON_MEMORY + ".bulkEditWithFile");
       runProcessInput.addValue("tableName", TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runProcessInput.addValue("isBulkEdit", "true");
       RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
       return runProcessOutput;
    }
@@ -461,8 +460,11 @@ public class BulkInsertFullProcessTest extends BaseTest
    {
       input.addValue("version", "v1");
       input.addValue("layout", "FLAT");
+      input.addValue("isBulkEdit", "true");
+      input.addValue("keyFields", "id");
       input.addValue("hasHeaderRow", "true");
       input.addValue("fieldListJSON", JsonUtils.toJson(List.of(
+         new BulkLoadProfileField().withFieldName("id").withColumnIndex(0),
          new BulkLoadProfileField().withFieldName("firstName").withColumnIndex(3),
          new BulkLoadProfileField().withFieldName("lastName").withColumnIndex(4),
          new BulkLoadProfileField().withFieldName("email").withDefaultValue(defaultEmail),

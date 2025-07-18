@@ -35,9 +35,12 @@ public class BulkLoadTableStructure implements Serializable
    private boolean isMain;
    private boolean isMany;
 
-   private String tableName;
-   private String label;
-   private String associationPath; // null/empty for main table, then associationName for a child, associationName.associationName for a grandchild
+   private String            tableName;
+   private String            label;
+   private String            associationPath; // null/empty for main table, then associationName for a child, associationName.associationName for a grandchild
+   private Boolean           isBulkEdit;
+   private String            keyFields;
+   private ArrayList<String> possibleKeyFields;
 
    private ArrayList<QFieldMetaData>         fields; // mmm, not marked as serializable (at this time) - is okay?
    private ArrayList<BulkLoadTableStructure> associations;
@@ -272,4 +275,98 @@ public class BulkLoadTableStructure implements Serializable
       }
       this.associations.add(association);
    }
+
+
+
+   /*******************************************************************************
+    ** Getter for isBulkEdit
+    *******************************************************************************/
+   public Boolean getIsBulkEdit()
+   {
+      return (this.isBulkEdit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isBulkEdit
+    *******************************************************************************/
+   public void setIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isBulkEdit
+    *******************************************************************************/
+   public BulkLoadTableStructure withIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for keyFields
+    *******************************************************************************/
+   public String getKeyFields()
+   {
+      return (this.keyFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for keyFields
+    *******************************************************************************/
+   public void setKeyFields(String keyFields)
+   {
+      this.keyFields = keyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for keyFields
+    *******************************************************************************/
+   public BulkLoadTableStructure withKeyFields(String keyFields)
+   {
+      this.keyFields = keyFields;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for possibleKeyFields
+    *******************************************************************************/
+   public ArrayList<String> getPossibleKeyFields()
+   {
+      return (this.possibleKeyFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for possibleKeyFields
+    *******************************************************************************/
+   public void setPossibleKeyFields(ArrayList<String> possibleKeyFields)
+   {
+      this.possibleKeyFields = possibleKeyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for possibleKeyFields
+    *******************************************************************************/
+   public BulkLoadTableStructure withPossibleKeyFields(ArrayList<String> possibleKeyFields)
+   {
+      this.possibleKeyFields = possibleKeyFields;
+      return (this);
+   }
+
 }

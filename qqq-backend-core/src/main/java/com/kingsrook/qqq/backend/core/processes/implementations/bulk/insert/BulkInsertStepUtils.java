@@ -113,6 +113,8 @@ public class BulkInsertStepUtils
       {
          String  layout       = runBackendStepInput.getValueString("layout");
          Boolean hasHeaderRow = runBackendStepInput.getValueBoolean("hasHeaderRow");
+         String  keyFields    = runBackendStepInput.getValueString("keyFields");
+         Boolean isBulkEdit   = runBackendStepInput.getValueBoolean("isBulkEdit");
 
          ArrayList<BulkLoadProfileField> fieldList = new ArrayList<>();
 
@@ -127,6 +129,7 @@ public class BulkInsertStepUtils
             bulkLoadProfileField.setColumnIndex(jsonObject.has("columnIndex") ? jsonObject.getInt("columnIndex") : null);
             bulkLoadProfileField.setDefaultValue((Serializable) jsonObject.opt("defaultValue"));
             bulkLoadProfileField.setDoValueMapping(jsonObject.optBoolean("doValueMapping"));
+            bulkLoadProfileField.setClearIfEmpty(jsonObject.optBoolean("clearIfEmpty"));
 
             if(BooleanUtils.isTrue(bulkLoadProfileField.getDoValueMapping()) && jsonObject.has("valueMappings"))
             {
@@ -140,6 +143,8 @@ public class BulkInsertStepUtils
          }
 
          BulkLoadProfile bulkLoadProfile = new BulkLoadProfile()
+            .withIsBulkEdit(isBulkEdit)
+            .withKeyFields(keyFields)
             .withVersion(version)
             .withFieldList(fieldList)
             .withHasHeaderRow(hasHeaderRow)
@@ -213,7 +218,7 @@ public class BulkInsertStepUtils
       {
          return (processTracerKeyRecordMessage);
       }
-      
+
       return (null);
    }
 }

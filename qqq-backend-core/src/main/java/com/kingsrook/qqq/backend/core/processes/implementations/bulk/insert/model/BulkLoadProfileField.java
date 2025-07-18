@@ -35,6 +35,7 @@ public class BulkLoadProfileField
    private Integer                   columnIndex;
    private String                    headerName;
    private Serializable              defaultValue;
+   private Boolean                   clearIfEmpty;
    private Boolean                   doValueMapping;
    private Map<String, Serializable> valueMappings;
 
@@ -194,6 +195,7 @@ public class BulkLoadProfileField
    }
 
 
+
    /*******************************************************************************
     ** Getter for headerName
     *******************************************************************************/
@@ -223,5 +225,35 @@ public class BulkLoadProfileField
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for clearIfEmpty
+    *******************************************************************************/
+   public Boolean getClearIfEmpty()
+   {
+      return (this.clearIfEmpty);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for clearIfEmpty
+    *******************************************************************************/
+   public void setClearIfEmpty(Boolean clearIfEmpty)
+   {
+      this.clearIfEmpty = clearIfEmpty;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for clearIfEmpty
+    *******************************************************************************/
+   public BulkLoadProfileField withClearIfEmpty(Boolean clearIfEmpty)
+   {
+      this.clearIfEmpty = clearIfEmpty;
+      return (this);
+   }
 
 }

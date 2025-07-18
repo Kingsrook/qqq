@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QBackendStepMetaD
 import com.kingsrook.qqq.backend.core.model.metadata.processes.QProcessMetaData;
 import com.kingsrook.qqq.backend.core.model.savedbulkloadprofiles.SavedBulkLoadProfile;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
+import org.apache.commons.lang.BooleanUtils;
 
 
 /*******************************************************************************
@@ -87,9 +88,10 @@ public class StoreSavedBulkLoadProfileProcess implements BackendStep
 
       try
       {
-         String userId    = QContext.getQSession().getUser().getIdReference();
-         String tableName = runBackendStepInput.getValueString("tableName");
-         String label     = runBackendStepInput.getValueString("label");
+         String  userId     = QContext.getQSession().getUser().getIdReference();
+         String  tableName  = runBackendStepInput.getValueString("tableName");
+         String  label      = runBackendStepInput.getValueString("label");
+         Boolean isBulkEdit = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean("isBulkEdit"));
 
          String mappingJson = processMappingJson(runBackendStepInput.getValueString("mappingJson"));
 
@@ -98,6 +100,7 @@ public class StoreSavedBulkLoadProfileProcess implements BackendStep
             .withValue("mappingJson", mappingJson)
             .withValue("label", label)
             .withValue("tableName", tableName)
+            .withValue("isBulkEdit", isBulkEdit)
             .withValue("userId", userId);
 
          List<QRecord> savedBulkLoadProfileList;

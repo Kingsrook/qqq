@@ -1940,6 +1940,8 @@ public class QJavalinImplementation
       input.setSearchTerm(searchTerm);
       input.setDefaultQueryFilter(defaultFilter);
       input.setOtherValues(otherValues);
+      input.setPathParamMap(context.pathParamMap());
+      input.setQueryParamMap(context.queryParamMap());
 
       if(StringUtils.hasContent(ids))
       {

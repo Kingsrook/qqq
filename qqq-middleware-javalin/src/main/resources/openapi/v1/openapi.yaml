@@ -1909,6 +1909,13 @@ paths:
                         name: "person.bulkDelete"
                         stepFlow: "LINEAR"
                         tableName: "person"
+                      person.bulkEditWithFile:
+                        hasPermission: true
+                        isHidden: true
+                        label: "Person Bulk Edit With File"
+                        name: "person.bulkEditWithFile"
+                        stepFlow: "LINEAR"
+                        tableName: "person"
                     tables:
                       person:
                         capabilities:
