@@ -213,7 +213,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
    {
       if(stepList != null)
       {
-         stepList.forEach(this::addStep);
+         stepList.forEach(this::withStep);
       }
 
       return (this);
@@ -231,7 +231,7 @@ public class QProcessMetaData implements QAppChildMetaData, MetaDataWithPermissi
       {
          index = this.stepList.size();
       }
-      addStep(index, step);
+      withStep(index, step);
 
       return (this);
    }

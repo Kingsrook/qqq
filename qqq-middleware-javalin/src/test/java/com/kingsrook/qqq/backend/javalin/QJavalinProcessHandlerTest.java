@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.javalin;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import com.kingsrook.qqq.backend.core.actions.async.AsyncJobState;
@@ -123,7 +124,7 @@ class QJavalinProcessHandlerTest extends QJavalinTestBase
             .withValues(List.of(3, 4, 5)));
       String filterJSON = JsonUtils.toJson(queryFilter);
 
-      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init?recordsParam=filterJSON&filterJSON=" + URLEncoder.encode(filterJSON, Charset.defaultCharset())).asString();
+      HttpResponse<String> response = Unirest.get(BASE_URL + "/processes/greet/init?recordsParam=filterJSON&filterJSON=" + URLEncoder.encode(filterJSON, StandardCharsets.UTF_8)).asString();
       assertEquals(200, response.getStatus());
       JSONObject jsonObject = JsonUtils.toJSONObject(response.getBody());
       assertNotNull(jsonObject);

@@ -112,9 +112,9 @@ public class ValidateAPIVersions implements Callable<Integer>
             // generate a new spec based on current code in codebase //
             ///////////////////////////////////////////////////////////
             OpenAPI openAPI = middlewareVersion.generateOpenAPIModel("qqq");
-            String yaml = YamlUtils.toYaml(openAPI, mapper ->
+            String yaml = YamlUtils.toYamlCustomized(openAPI, mapperBuilder ->
             {
-               mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+               mapperBuilder.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
             });
 
             /////////////////////////////////////////////////////////////////////

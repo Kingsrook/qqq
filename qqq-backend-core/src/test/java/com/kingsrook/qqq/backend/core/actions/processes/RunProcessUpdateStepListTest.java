@@ -164,13 +164,13 @@ public class RunProcessUpdateStepListTest extends BaseTest
                .withName(STEP_END)
          ));
 
-      process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_A));
-      process.addOptionalStep(new QBackendStepMetaData().withName(STEP_B).withCode(new QCodeReference(NoopBackendStep.class)));
-      process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_C));
+      process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_A));
+      process.withOptionalStep(new QBackendStepMetaData().withName(STEP_B).withCode(new QCodeReference(NoopBackendStep.class)));
+      process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_C));
 
-      process.addOptionalStep(new QBackendStepMetaData().withName(STEP_1).withCode(new QCodeReference(NoopBackendStep.class)));
-      process.addOptionalStep(new QFrontendStepMetaData().withName(STEP_2));
-      process.addOptionalStep(new QBackendStepMetaData().withName(STEP_3).withCode(new QCodeReference(NoopBackendStep.class)));
+      process.withOptionalStep(new QBackendStepMetaData().withName(STEP_1).withCode(new QCodeReference(NoopBackendStep.class)));
+      process.withOptionalStep(new QFrontendStepMetaData().withName(STEP_2));
+      process.withOptionalStep(new QBackendStepMetaData().withName(STEP_3).withCode(new QCodeReference(NoopBackendStep.class)));
 
       return (process);
    }

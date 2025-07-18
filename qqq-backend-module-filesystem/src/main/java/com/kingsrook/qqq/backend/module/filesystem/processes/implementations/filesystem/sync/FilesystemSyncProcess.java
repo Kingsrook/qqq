@@ -76,6 +76,6 @@ public class FilesystemSyncProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addStep(syncStep);
+         .withStep(syncStep);
    }
 }

@@ -1028,16 +1028,16 @@ public class QInstanceEnricher
          .withCode(new QCodeReference(BulkInsertReceiveValueMappingStep.class));
 
       int i = 0;
-      process.addStep(i++, prepareFileUploadStep);
-      process.addStep(i++, uploadScreen);
+      process.withStep(i++, prepareFileUploadStep);
+      process.withStep(i++, uploadScreen);
 
-      process.addStep(i++, prepareFileMappingStep);
-      process.addStep(i++, fileMappingScreen);
-      process.addStep(i++, receiveFileMappingStep);
+      process.withStep(i++, prepareFileMappingStep);
+      process.withStep(i++, fileMappingScreen);
+      process.withStep(i++, receiveFileMappingStep);
 
-      process.addStep(i++, prepareValueMappingStep);
-      process.addStep(i++, valueMappingScreen);
-      process.addStep(i++, receiveValueMappingStep);
+      process.withStep(i++, prepareValueMappingStep);
+      process.withStep(i++, valueMappingScreen);
+      process.withStep(i++, receiveValueMappingStep);
 
       process.getFrontendStep(StreamedETLWithFrontendProcess.STEP_NAME_REVIEW).setRecordListFields(editableFields);
 
@@ -1097,7 +1097,7 @@ public class QInstanceEnricher
                Fields whose switches are off will not be updated."""))
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.BULK_EDIT_FORM));
 
-      process.addStep(0, editScreen);
+      process.withStep(0, editScreen);
       process.getFrontendStep("review").setRecordListFields(editableFields);
       qInstance.addProcess(process);
    }

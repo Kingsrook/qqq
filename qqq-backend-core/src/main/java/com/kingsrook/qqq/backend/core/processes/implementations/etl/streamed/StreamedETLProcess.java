@@ -68,6 +68,6 @@ public class StreamedETLProcess
 
       return new QProcessMetaData()
          .withName(PROCESS_NAME)
-         .addStep(etlFunction);
+         .withStep(etlFunction);
    }
 }

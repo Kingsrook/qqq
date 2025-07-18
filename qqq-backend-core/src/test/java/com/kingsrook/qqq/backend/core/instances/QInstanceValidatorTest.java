@@ -148,8 +148,10 @@ public class QInstanceValidatorTest extends BaseTest
 
 
    /*******************************************************************************
-    **
+    * the point of this method is to test the deprecated member, so, don't need to
+    * get a compiler warning about usage of deprecated member.
     *******************************************************************************/
+   @SuppressWarnings("deprecation")
    @Test
    void testMetaDataFilter()
    {

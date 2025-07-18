@@ -191,11 +191,11 @@ public class StreamedETLWithFrontendProcess
          .withComponent(new QFrontendComponentMetaData().withType(QComponentType.PROCESS_SUMMARY_RESULTS));
 
       return new QProcessMetaData()
-         .addStep(previewStep)
-         .addStep(reviewStep)
-         .addStep(validateStep)
-         .addStep(executeStep)
-         .addStep(resultStep);
+         .withStep(previewStep)
+         .withStep(reviewStep)
+         .withStep(validateStep)
+         .withStep(executeStep)
+         .withStep(resultStep);
    }
 
 

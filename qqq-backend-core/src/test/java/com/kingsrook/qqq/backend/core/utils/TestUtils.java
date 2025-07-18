@@ -370,11 +370,11 @@ public class TestUtils
          .withName(PROCESS_NAME_INCREASE_BIRTHDATE)
          .withTableName(TABLE_NAME_PERSON_MEMORY)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("preview")
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference(IncreaseBirthdateStep.class))
             .withInputData(new QFunctionInputMetaData()
@@ -383,7 +383,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING).withDefaultValue("Success!"))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -1187,7 +1187,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_GREET_PEOPLE)
          .withTableName(TABLE_NAME_PERSON_MEMORY)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -1218,13 +1218,13 @@ public class TestUtils
          .withName(PROCESS_NAME_GREET_PEOPLE_INTERACTIVE)
          .withTableName(TABLE_NAME_PERSON)
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("setup")
             .withFormField(new QFieldMetaData("greetingPrefix", QFieldType.STRING))
             .withFormField(new QFieldMetaData("greetingSuffix", QFieldType.STRING))
          )
 
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("doWork")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
@@ -1243,7 +1243,7 @@ public class TestUtils
                .withFieldList(List.of(new QFieldMetaData("outputMessage", QFieldType.STRING))))
          )
 
-         .addStep(new QFrontendStepMetaData()
+         .withStep(new QFrontendStepMetaData()
             .withName("results")
             .withFormField(new QFieldMetaData("outputMessage", QFieldType.STRING))
          );
@@ -1264,7 +1264,7 @@ public class TestUtils
       return new QProcessMetaData()
          .withName(PROCESS_NAME_ADD_TO_PEOPLES_AGE)
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("getAgeStatistics")
             .withCode(new QCodeReference()
                .withName(GetAgeStatistics.class.getName())
@@ -1278,7 +1278,7 @@ public class TestUtils
                .withFieldList(List.of(
                   new QFieldMetaData("minAge", QFieldType.INTEGER),
                   new QFieldMetaData("maxAge", QFieldType.INTEGER)))))
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("addAge")
             .withCode(new QCodeReference()
                .withName(AddAge.class.getName())
@@ -1308,7 +1308,7 @@ public class TestUtils
             .withTableName(defineTableBasepull().getName()))
          .withName(PROCESS_NAME_BASEPULL)
          .withTableName(TABLE_NAME_PERSON)
-         .addStep(new QBackendStepMetaData()
+         .withStep(new QBackendStepMetaData()
             .withName("prepare")
             .withCode(new QCodeReference()
                .withName(MockBackendStep.class.getName())
