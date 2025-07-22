@@ -24,6 +24,7 @@ package com.kingsrook.qqq.backend.core.utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -35,6 +36,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.actions.automation.AutomationStatus;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -81,6 +84,7 @@ class ValueUtilsTest extends BaseTest
    /*******************************************************************************
     **
     *******************************************************************************/
+   @SuppressWarnings("UnnecessaryBoxing")
    @Test
    void testGetValueAsBoolean() throws QValueException
    {
@@ -89,6 +93,11 @@ class ValueUtilsTest extends BaseTest
       assertTrue(ValueUtils.getValueAsBoolean("True"));
       assertTrue(ValueUtils.getValueAsBoolean("TRUE"));
       assertFalse(ValueUtils.getValueAsBoolean("false"));
+
+      assertFalse(ValueUtils.getValueAsBoolean(false));
+      assertTrue(ValueUtils.getValueAsBoolean(true));
+      assertFalse(ValueUtils.getValueAsBoolean(Boolean.valueOf(false)));
+      assertTrue(ValueUtils.getValueAsBoolean(Boolean.valueOf(true)));
 
       ///////////////////////////////////////////////////////////////////////
       // time used to be, that "yes" was false... changing that 2023-10-20 //
@@ -128,6 +137,7 @@ class ValueUtilsTest extends BaseTest
       assertEquals(1_000_000, ValueUtils.getValueAsInteger("1,000,000"));
       assertEquals(1, ValueUtils.getValueAsInteger(new BigDecimal(1)));
       assertEquals(1, ValueUtils.getValueAsInteger(new BigDecimal("1.00")));
+      assertEquals(1, ValueUtils.getValueAsInteger(new BigInteger("1")));
       assertEquals(-1, ValueUtils.getValueAsInteger("-1.00"));
       assertEquals(1_000, ValueUtils.getValueAsInteger("1,000.00"));
       assertEquals(1_000, ValueUtils.getValueAsInteger(1000L));
@@ -142,6 +152,39 @@ class ValueUtilsTest extends BaseTest
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1_000_000_000_000L));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1.1F));
       assertThrows(QValueException.class, () -> ValueUtils.getValueAsInteger(1.1D));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsLong() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsLong(null));
+      assertNull(ValueUtils.getValueAsLong(""));
+      assertNull(ValueUtils.getValueAsLong(" "));
+      assertEquals(1L, ValueUtils.getValueAsLong(1));
+      assertEquals(1L, ValueUtils.getValueAsLong("1"));
+      assertEquals(1_000L, ValueUtils.getValueAsLong("1,000"));
+      assertEquals(1_000_000L, ValueUtils.getValueAsLong("1,000,000"));
+      assertEquals(1L, ValueUtils.getValueAsLong(new BigDecimal(1)));
+      assertEquals(1L, ValueUtils.getValueAsLong(new BigDecimal("1.00")));
+      assertEquals(1L, ValueUtils.getValueAsLong(new BigInteger("1")));
+      assertEquals(-1L, ValueUtils.getValueAsLong("-1.00"));
+      assertEquals(1_000L, ValueUtils.getValueAsLong("1,000.00"));
+      assertEquals(1_000L, ValueUtils.getValueAsLong(1000L));
+      assertEquals(1L, ValueUtils.getValueAsLong(1.0F));
+      assertEquals(1L, ValueUtils.getValueAsLong(1.0D));
+
+      assertEquals(AutomationStatus.PENDING_INSERT_AUTOMATIONS.getId().longValue(), ValueUtils.getValueAsLong(AutomationStatus.PENDING_INSERT_AUTOMATIONS));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLong("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLong("a,b"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLong(new Object()));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLong(1.1F));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLong(1.1D));
    }
 
 
@@ -262,6 +305,26 @@ class ValueUtilsTest extends BaseTest
     **
     *******************************************************************************/
    @Test
+   void testGetValueAsLocalDateTime() throws QValueException
+   {
+      assertNull(ValueUtils.getValueAsLocalDateTime(null));
+      assertNull(ValueUtils.getValueAsLocalDateTime(""));
+      assertNull(ValueUtils.getValueAsLocalDateTime(" "));
+      assertEquals(LocalDateTime.of(2025, Month.JANUARY, 2, 10, 42), ValueUtils.getValueAsLocalDateTime(LocalDateTime.of(2025, Month.JANUARY, 2, 10, 42)));
+      assertEquals(LocalDateTime.of(2025, Month.JANUARY, 2, 10, 42), ValueUtils.getValueAsLocalDateTime("2025-01-02T10:42"));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDateTime("a"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDateTime("a,b"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDateTime("1980/05/31"));
+      assertThat(assertThrows(QValueException.class, () -> ValueUtils.getValueAsLocalDateTime(new Object())).getMessage()).contains("Unsupported class");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
    void testGetValueAsLocalTime() throws QValueException
    {
       assertNull(ValueUtils.getValueAsInstant(null));
@@ -360,6 +423,102 @@ class ValueUtilsTest extends BaseTest
       assertEquals(QFieldType.DATE_TIME, ValueUtils.inferQFieldTypeFromValue(Instant.now(), null));
       assertEquals(QFieldType.DATE, ValueUtils.inferQFieldTypeFromValue(LocalDate.now(), null));
       assertEquals(QFieldType.TIME, ValueUtils.inferQFieldTypeFromValue(LocalTime.now(), null));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsByteArray()
+   {
+      assertNull(ValueUtils.getValueAsByteArray(null));
+      assertArrayEquals(new byte[] { 0x01, 0x02, 0x03 }, ValueUtils.getValueAsByteArray(new byte[] { 0x01, 0x02, 0x03 }));
+      assertArrayEquals(new byte[] { 104, 105 }, ValueUtils.getValueAsByteArray("hi"));
+
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsByteArray(1));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsByteArray(new Object()));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsFieldType()
+   {
+      assertEquals("Hello", ValueUtils.getValueAsFieldType(QFieldType.STRING, "Hello"));
+      assertEquals("Hello", ValueUtils.getValueAsFieldType(QFieldType.PASSWORD, "Hello"));
+      assertEquals("Hello", ValueUtils.getValueAsFieldType(QFieldType.TEXT, "Hello"));
+      assertEquals("Hello", ValueUtils.getValueAsFieldType(QFieldType.HTML, "Hello"));
+      assertEquals("1", ValueUtils.getValueAsFieldType(QFieldType.TEXT, 1));
+      assertEquals(1, ValueUtils.getValueAsFieldType(QFieldType.INTEGER, 1));
+      assertEquals(1, ValueUtils.getValueAsFieldType(QFieldType.INTEGER, "1"));
+      assertEquals(BigDecimal.ONE, ValueUtils.getValueAsFieldType(QFieldType.DECIMAL, "1"));
+      assertEquals(1L, ValueUtils.getValueAsFieldType(QFieldType.LONG, "1"));
+      assertEquals(false, ValueUtils.getValueAsFieldType(QFieldType.BOOLEAN, "false"));
+      assertEquals(LocalDate.of(1980, Month.MAY, 31), ValueUtils.getValueAsFieldType(QFieldType.DATE, "1980-05-31"));
+      assertEquals(Instant.parse("2025-07-21T19:50:00Z"), ValueUtils.getValueAsFieldType(QFieldType.DATE_TIME, "2025-07-21T19:50"));
+      assertEquals(LocalTime.of(10, 24), ValueUtils.getValueAsFieldType(QFieldType.TIME, "10:24"));
+      assertArrayEquals(new byte[] { 104, 105 }, (byte[]) ValueUtils.getValueAsFieldType(QFieldType.BLOB, "hi"));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetValueAsMap()
+   {
+      assertNull(ValueUtils.getValueAsMap(null));
+      assertEquals(Map.of("one", 1), ValueUtils.getValueAsMap(new HashMap<>(Map.of("one", 1))));
+      assertEquals(Map.of("two", 2, "three", 3), ValueUtils.getValueAsMap("""
+         {"two":2, "three": 3}"""));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsMap("{{}"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsMap("?"));
+      assertThrows(QValueException.class, () -> ValueUtils.getValueAsMap(1));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetStartOfDayInZoneId()
+   {
+      assertEquals(Instant.parse("2025-07-21T00:00:00Z"), ValueUtils.getStartOfDayInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "UTC"));
+      assertEquals(Instant.parse("2025-07-20T05:00:00Z"), ValueUtils.getStartOfDayInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "US/Central"));
+      assertEquals(Instant.parse("2025-07-21T05:00:00Z"), ValueUtils.getStartOfDayInZoneId(Instant.parse("2025-07-21T05:30:00Z"), "US/Central"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetStartOfMonthInZoneId()
+   {
+      assertEquals(Instant.parse("2025-07-01T00:00:00Z"), ValueUtils.getStartOfMonthInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "UTC"));
+      assertEquals(Instant.parse("2025-07-01T05:00:00Z"), ValueUtils.getStartOfMonthInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "US/Central"));
+      assertEquals(Instant.parse("2025-07-01T05:00:00Z"), ValueUtils.getStartOfMonthInZoneId(Instant.parse("2025-07-21T05:30:00Z"), "US/Central"));
+      assertEquals(Instant.parse("2025-06-01T05:00:00Z"), ValueUtils.getStartOfMonthInZoneId(Instant.parse("2025-07-01T04:30:00Z"), "US/Central"));
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetStartOfYearInZoneId()
+   {
+      assertEquals(Instant.parse("2025-01-01T00:00:00Z"), ValueUtils.getStartOfYearInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "UTC"));
+      assertEquals(Instant.parse("2025-01-01T06:00:00Z"), ValueUtils.getStartOfYearInZoneId(Instant.parse("2025-07-21T04:30:00Z"), "US/Central"));
+      assertEquals(Instant.parse("2025-01-01T06:00:00Z"), ValueUtils.getStartOfYearInZoneId(Instant.parse("2025-07-21T05:30:00Z"), "US/Central"));
+      assertEquals(Instant.parse("2024-01-01T06:00:00Z"), ValueUtils.getStartOfYearInZoneId(Instant.parse("2025-01-01T04:30:00Z"), "US/Central"));
    }
 
 }
