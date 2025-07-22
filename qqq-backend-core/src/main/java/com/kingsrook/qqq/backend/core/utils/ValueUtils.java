@@ -362,6 +362,11 @@ public class ValueUtils
          }
          else if(value instanceof String s)
          {
+            if(!StringUtils.hasContent(s))
+            {
+               return (null);
+            }
+
             return LocalDateTime.parse(s);
          }
          else
@@ -855,16 +860,22 @@ public class ValueUtils
     *******************************************************************************/
    public static Instant getStartOfTodayInZoneId(String zoneId)
    {
-      ///////////////////////////
-      // get the instant 'now' //
-      ///////////////////////////
-      ZoneId  zone         = ZoneId.of(zoneId);
-      Instant computerTime = Instant.now();
+      return (getStartOfDayInZoneId(Instant.now(), zoneId));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfDayInZoneId(Instant when, String zoneId)
+   {
+      ZoneId zone = ZoneId.of(zoneId);
 
       //////////////////////////////////////////////////////////////////////////////
       // get date time for now in given zone, truncate it and add offset from utc //
       //////////////////////////////////////////////////////////////////////////////
-      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(when, zone);
       LocalDateTime startOfDay    = givenZonesNow.truncatedTo(ChronoUnit.DAYS);
       return (startOfDay.toInstant(zone.getRules().getOffset(startOfDay)));
    }
@@ -876,16 +887,22 @@ public class ValueUtils
     *******************************************************************************/
    public static Instant getStartOfMonthInZoneId(String zoneId)
    {
-      ///////////////////////////
-      // get the instant 'now' //
-      ///////////////////////////
-      ZoneId  zone         = ZoneId.of(zoneId);
-      Instant computerTime = Instant.now();
+      return (getStartOfMonthInZoneId(Instant.now(), zoneId));
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfMonthInZoneId(Instant when, String zoneId)
+   {
+      ZoneId zone = ZoneId.of(zoneId);
 
       //////////////////////////////////////////////////////////////////////////////
       // get date time for now in given zone, truncate it and add offset from utc //
       //////////////////////////////////////////////////////////////////////////////
-      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(when, zone);
       LocalDateTime startOfMonth = givenZonesNow
          .withDayOfMonth(1)
          .with(ChronoField.HOUR_OF_DAY, 0)
@@ -902,16 +919,21 @@ public class ValueUtils
     *******************************************************************************/
    public static Instant getStartOfYearInZoneId(String zoneId)
    {
-      ///////////////////////////
-      // get the instant 'now' //
-      ///////////////////////////
-      ZoneId  zone         = ZoneId.of(zoneId);
-      Instant computerTime = Instant.now();
+      return getStartOfYearInZoneId(Instant.now(), zoneId);
+   }
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static Instant getStartOfYearInZoneId(Instant when, String zoneId)
+   {
+      ZoneId zone = ZoneId.of(zoneId);
 
       //////////////////////////////////////////////////////////////////////////////
       // get date time for now in given zone, truncate it and add offset from utc //
       //////////////////////////////////////////////////////////////////////////////
-      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(Instant.now(), zone);
+      LocalDateTime givenZonesNow = LocalDateTime.ofInstant(when, zone);
       LocalDateTime startOfYear = givenZonesNow
          .withDayOfYear(1)
          .with(ChronoField.HOUR_OF_DAY, 0)
