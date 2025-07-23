@@ -52,8 +52,9 @@ public class ScheduledJobParameter extends QRecordEntity
    @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR, isRequired = true)
    private String key;
 
-   @QField(maxLength = 250, valueTooLongBehavior = ValueTooLongBehavior.ERROR)
+   @QField()
    private String value;
+
 
 
    /*******************************************************************************
@@ -74,7 +75,6 @@ public class ScheduledJobParameter extends QRecordEntity
    {
       populateFromQRecord(qRecord);
    }
-
 
 
 
@@ -261,6 +261,5 @@ public class ScheduledJobParameter extends QRecordEntity
       this.value = value;
       return (this);
    }
-
 
 }
