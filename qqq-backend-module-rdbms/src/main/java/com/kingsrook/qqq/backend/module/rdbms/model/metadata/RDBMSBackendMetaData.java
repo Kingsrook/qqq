@@ -30,6 +30,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.QBackendMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.module.rdbms.RDBMSBackendModule;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.BaseRDBMSActionStrategy;
+import com.kingsrook.qqq.backend.module.rdbms.strategy.PostgreSQLRDBMSActionStrategy;
 import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterface;
 
 
@@ -38,33 +39,27 @@ import com.kingsrook.qqq.backend.module.rdbms.strategy.RDBMSActionStrategyInterf
  *******************************************************************************/
 public class RDBMSBackendMetaData extends QBackendMetaData
 {
+   public static final String VENDOR_MYSQL        = "mysql";
+   public static final String VENDOR_H2           = "h2";
+   public static final String VENDOR_AURORA_MYSQL = "aurora-mysql";
+   public static final String VENDOR_POSTGRESQL   = "postgresql";
+
+
    private String  vendor;
    private String  hostName;
    private Integer port;
    private String  databaseName;
    private String  username;
    private String  password;
+   private String  jdbcUrl;
+   private String  jdbcDriverClassName;
 
-   private String jdbcUrl;
-   private String jdbcDriverClassName;
-
-   private QCodeReference connectionProvider;
-
-   private ConnectionPoolSettings connectionPoolSettings;
-
-   private RDBMSBackendMetaData readOnlyBackendMetaData;
-
+   private QCodeReference               connectionProvider;
+   private ConnectionPoolSettings       connectionPoolSettings;
+   private RDBMSBackendMetaData         readOnlyBackendMetaData;
    private QCodeReference               actionStrategyCodeReference;
    private RDBMSActionStrategyInterface actionStrategy;
-
-   private List<String> queriesForNewConnections = null;
-
-   ///////////////////////////////////////////////////////////
-   // define well-known (and fully supported) vendor values //
-   ///////////////////////////////////////////////////////////
-   public static final String VENDOR_MYSQL        = "mysql";
-   public static final String VENDOR_H2           = "h2";
-   public static final String VENDOR_AURORA_MYSQL = "aurora-mysql";
+   private List<String>                 queriesForNewConnections = null;
 
 
 
@@ -466,7 +461,14 @@ public class RDBMSBackendMetaData extends QBackendMetaData
 
 
    /***************************************************************************
-    **
+    ** Hook method for subclasses to override for custom connection string building.
+    ** 
+    ** <p>This method provides a hook for subclasses to implement vendor-specific
+    ** connection string building logic. The default implementation returns null,
+    ** allowing the ConnectionManager to handle connection string generation via
+    ** its switch statement for known vendors.</p>
+    ** 
+    ** @return The custom connection string, or null to use default handling
     ***************************************************************************/
    public String buildConnectionString()
    {
@@ -518,6 +520,10 @@ public class RDBMSBackendMetaData extends QBackendMetaData
          {
             actionStrategy = QCodeLoader.getAdHoc(RDBMSActionStrategyInterface.class, actionStrategyCodeReference);
          }
+         else if(VENDOR_POSTGRESQL.equals(vendor))
+         {
+            actionStrategy = new PostgreSQLRDBMSActionStrategy();
+         }
          else
          {
             actionStrategy = new BaseRDBMSActionStrategy();
@@ -550,6 +556,7 @@ public class RDBMSBackendMetaData extends QBackendMetaData
    }
 
 
+
    /*******************************************************************************
     ** Getter for queriesForNewConnections
     *******************************************************************************/
@@ -578,6 +585,5 @@ public class RDBMSBackendMetaData extends QBackendMetaData
       this.queriesForNewConnections = queriesForNewConnections;
       return (this);
    }
-
 
 }

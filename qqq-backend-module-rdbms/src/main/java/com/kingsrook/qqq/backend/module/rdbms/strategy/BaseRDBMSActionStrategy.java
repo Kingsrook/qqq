@@ -65,18 +65,14 @@ import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
  *******************************************************************************/
 public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
 {
-   private static final QLogger LOG = QLogger.getLogger(BaseRDBMSActionStrategy.class);
-
-   private static final int MILLIS_PER_SECOND = 1000;
-
    public static final int DEFAULT_PAGE_SIZE = 2000;
-   public static       int PAGE_SIZE         = DEFAULT_PAGE_SIZE;
-
-   private       boolean              collectStatistics = false;
-   private final Map<String, Integer> statistics        = Collections.synchronizedMap(new HashMap<>());
-
    public static final String STAT_QUERIES_RAN = "queriesRan";
    public static final String STAT_BATCHES_RAN = "batchesRan";
+   private static final QLogger LOG = QLogger.getLogger(BaseRDBMSActionStrategy.class);
+   private static final int MILLIS_PER_SECOND = 1000;
+   public static       int PAGE_SIZE         = DEFAULT_PAGE_SIZE;
+   private final Map<String, Integer> statistics        = Collections.synchronizedMap(new HashMap<>());
+   private       boolean              collectStatistics = false;
 
 
 
@@ -268,6 +264,21 @@ public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
     **
     ***************************************************************************/
    @Override
+   public String escapeIdentifier(final String id)
+   {
+      if(id == null)
+      {
+         throw new NullPointerException("Identifier cannot be null");
+      }
+      return ("`" + id + "`");
+   }
+
+
+
+   /***************************************************************************
+    **
+    ***************************************************************************/
+   @Override
    public Serializable getFieldValueFromResultSet(QFieldType type, ResultSet resultSet, int i) throws SQLException
    {
       return switch(type)
@@ -397,7 +408,7 @@ public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
 
          if(processor != null)
          {
-            processor.processResultSet(resultSet);
+            processor.process(resultSet);
          }
       }
       catch(SQLException e)
@@ -855,6 +866,8 @@ public class BaseRDBMSActionStrategy implements RDBMSActionStrategyInterface
    {
       BaseRDBMSActionStrategy.PAGE_SIZE = pageSize;
    }
+
+
 
    /*******************************************************************************
     ** Get the column name to use for a field in the RDBMS, from the fieldMetaData.

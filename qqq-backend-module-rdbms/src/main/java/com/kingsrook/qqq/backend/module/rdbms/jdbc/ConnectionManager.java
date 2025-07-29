@@ -178,6 +178,7 @@ public class ConnectionManager
          case RDBMSBackendMetaData.VENDOR_AURORA_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull&useSSL=false";
          case RDBMSBackendMetaData.VENDOR_MYSQL -> "jdbc:mysql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName() + "?rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull";
          case RDBMSBackendMetaData.VENDOR_H2 -> "jdbc:h2:" + backend.getHostName() + ":" + backend.getDatabaseName() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
+         case RDBMSBackendMetaData.VENDOR_POSTGRESQL -> "jdbc:postgresql://" + backend.getHostName() + ":" + backend.getPort() + "/" + backend.getDatabaseName();
          default ->
          {
             String connectionString = backend.buildConnectionString();

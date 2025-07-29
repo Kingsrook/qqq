@@ -641,9 +641,9 @@ public abstract class AbstractRDBMSAction
    /*******************************************************************************
     **
     *******************************************************************************/
-   protected String escapeIdentifier(String id)
+   protected String escapeIdentifier(final String id)
    {
-      return ("`" + id + "`");
+      return (actionStrategy.escapeIdentifier(id));
    }
 
 

@@ -42,6 +42,15 @@ public interface RDBMSActionStrategyInterface
 {
 
    /***************************************************************************
+    * Escapes an identifier according to the database-specific rules.
+    * For example, MySQL uses backticks (`), PostgreSQL uses double quotes (").
+    * 
+    * @param id The identifier to escape
+    * @return The escaped identifier
+    ***************************************************************************/
+   String escapeIdentifier(String id);
+
+   /***************************************************************************
     * modifies the clause StringBuilder (appending to it)
     * returning the number of expected number of params to bind
     ***************************************************************************/
@@ -98,6 +107,6 @@ public interface RDBMSActionStrategyInterface
       /*******************************************************************************
        **
        *******************************************************************************/
-      void processResultSet(ResultSet rs) throws SQLException, QException;
+      void process(ResultSet resultSet) throws SQLException, QException;
    }
 }
