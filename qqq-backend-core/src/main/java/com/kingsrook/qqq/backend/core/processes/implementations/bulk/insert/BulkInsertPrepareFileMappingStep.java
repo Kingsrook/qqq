@@ -48,6 +48,7 @@ import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.JsonUtils;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import com.kingsrook.qqq.backend.core.utils.ValueUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.json.JSONObject;
 
 
@@ -65,9 +66,11 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
    {
       buildFileDetailsForMappingStep(runBackendStepInput, runBackendStepOutput);
 
+      boolean                isBulkEdit     = BooleanUtils.isTrue(runBackendStepInput.getValueBoolean("isBulkEdit"));
       String                 tableName      = runBackendStepInput.getValueString("tableName");
-      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName);
+      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(tableName, isBulkEdit);
       runBackendStepOutput.addValue("tableStructure", tableStructure);
+      runBackendStepOutput.addValue("isBulkEdit", isBulkEdit);
 
       boolean needSuggestedMapping = true;
       if(runBackendStepOutput.getProcessState().getIsStepBack())
@@ -81,7 +84,7 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       {
          @SuppressWarnings("unchecked")
          List<String> headerValues = (List<String>) runBackendStepOutput.getValue("headerValues");
-         buildSuggestedMapping(headerValues, getPrepopulatedValues(runBackendStepInput), tableStructure, runBackendStepOutput);
+         buildSuggestedMapping(isBulkEdit, headerValues, getPrepopulatedValues(runBackendStepInput), tableStructure, runBackendStepOutput);
       }
    }
 
@@ -95,8 +98,8 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
       String prepopulatedValuesJson = runBackendStepInput.getValueString("prepopulatedValues");
       if(StringUtils.hasContent(prepopulatedValuesJson))
       {
-         Map<String, Serializable> rs = new LinkedHashMap<>();
-         JSONObject jsonObject = JsonUtils.toJSONObject(prepopulatedValuesJson);
+         Map<String, Serializable> rs         = new LinkedHashMap<>();
+         JSONObject                jsonObject = JsonUtils.toJSONObject(prepopulatedValuesJson);
          for(String key : jsonObject.keySet())
          {
             rs.put(key, jsonObject.optString(key, null));
@@ -112,16 +115,16 @@ public class BulkInsertPrepareFileMappingStep implements BackendStep
    /***************************************************************************
     **
     ***************************************************************************/
-   private void buildSuggestedMapping(List<String> headerValues, Map<String, Serializable> prepopulatedValues, BulkLoadTableStructure tableStructure, RunBackendStepOutput runBackendStepOutput)
+   private void buildSuggestedMapping(boolean isBulkEdit, List<String> headerValues, Map<String, Serializable> prepopulatedValues, BulkLoadTableStructure tableStructure, RunBackendStepOutput runBackendStepOutput)
    {
       BulkLoadMappingSuggester bulkLoadMappingSuggester = new BulkLoadMappingSuggester();
-      BulkLoadProfile          bulkLoadProfile          = bulkLoadMappingSuggester.suggestBulkLoadMappingProfile(tableStructure, headerValues);
+      BulkLoadProfile          bulkLoadProfile          = bulkLoadMappingSuggester.suggestBulkLoadMappingProfile(tableStructure, headerValues, isBulkEdit);
 
       if(CollectionUtils.nullSafeHasContents(prepopulatedValues))
       {
          for(Map.Entry<String, Serializable> entry : prepopulatedValues.entrySet())
          {
-            String fieldName = entry.getKey();
+            String  fieldName           = entry.getKey();
             boolean foundFieldInProfile = false;
 
             for(BulkLoadProfileField bulkLoadProfileField : bulkLoadProfile.getFieldList())

@@ -113,7 +113,7 @@ public class SavedBulkLoadProfileMetaDataProvider
          .withFieldsFromEntity(SavedBulkLoadProfile.class)
          .withAuditRules(new QAuditRules().withAuditLevel(AuditLevel.FIELD))
          .withSection(new QFieldSection("identity", new QIcon().withName("badge"), Tier.T1, List.of("id", "label", "tableName")))
-         .withSection(new QFieldSection("details", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId", "mappingJson")))
+         .withSection(new QFieldSection("details", new QIcon().withName("text_snippet"), Tier.T2, List.of("userId", "mappingJson", "isBulkEdit")))
          .withSection(new QFieldSection("dates", new QIcon().withName("calendar_month"), Tier.T3, List.of("createDate", "modifyDate")));
 
       table.getField("mappingJson").withBehavior(SavedBulkLoadProfileJsonFieldDisplayValueFormatter.getInstance());

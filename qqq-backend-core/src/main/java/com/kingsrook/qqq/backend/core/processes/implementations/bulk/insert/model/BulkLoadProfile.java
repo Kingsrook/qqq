@@ -37,6 +37,8 @@ public class BulkLoadProfile implements Serializable
    private Boolean hasHeaderRow;
    private String  layout;
    private String  version;
+   private Boolean isBulkEdit;
+   private String  keyFields;
 
 
 
@@ -132,6 +134,7 @@ public class BulkLoadProfile implements Serializable
    }
 
 
+
    /*******************************************************************************
     ** Getter for version
     *******************************************************************************/
@@ -161,5 +164,66 @@ public class BulkLoadProfile implements Serializable
       return (this);
    }
 
+
+
+   /*******************************************************************************
+    ** Getter for isBulkEdit
+    *******************************************************************************/
+   public Boolean getIsBulkEdit()
+   {
+      return (this.isBulkEdit);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for isBulkEdit
+    *******************************************************************************/
+   public void setIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for isBulkEdit
+    *******************************************************************************/
+   public BulkLoadProfile withIsBulkEdit(Boolean isBulkEdit)
+   {
+      this.isBulkEdit = isBulkEdit;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for keyFields
+    *******************************************************************************/
+   public String getKeyFields()
+   {
+      return (this.keyFields);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for keyFields
+    *******************************************************************************/
+   public void setKeyFields(String keyFields)
+   {
+      this.keyFields = keyFields;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for keyFields
+    *******************************************************************************/
+   public BulkLoadProfile withKeyFields(String keyFields)
+   {
+      this.keyFields = keyFields;
+      return (this);
+   }
 
 }

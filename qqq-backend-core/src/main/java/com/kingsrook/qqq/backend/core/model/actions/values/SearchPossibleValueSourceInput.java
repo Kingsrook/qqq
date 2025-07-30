@@ -35,11 +35,13 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
  *******************************************************************************/
 public class SearchPossibleValueSourceInput extends AbstractActionInput implements Cloneable
 {
-   private String             possibleValueSourceName;
-   private QQueryFilter       defaultQueryFilter;
-   private String             searchTerm;
-   private List<Serializable> idList;
-   private List<String>       labelList;
+   private String                    possibleValueSourceName;
+   private QQueryFilter              defaultQueryFilter;
+   private String                    searchTerm;
+   private List<Serializable>        idList;
+   private List<String>              labelList;
+   private Map<String, String>       pathParamMap;
+   private Map<String, List<String>> queryParamMap;
 
    private Map<String, Serializable> otherValues;
 
@@ -314,6 +316,68 @@ public class SearchPossibleValueSourceInput extends AbstractActionInput implemen
    public SearchPossibleValueSourceInput withLabelList(List<String> labelList)
    {
       this.labelList = labelList;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for pathParamMap
+    *******************************************************************************/
+   public Map<String, String> getPathParamMap()
+   {
+      return (this.pathParamMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for pathParamMap
+    *******************************************************************************/
+   public void setPathParamMap(Map<String, String> pathParamMap)
+   {
+      this.pathParamMap = pathParamMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for pathParamMap
+    *******************************************************************************/
+   public SearchPossibleValueSourceInput withPathParamMap(Map<String, String> pathParamMap)
+   {
+      this.pathParamMap = pathParamMap;
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for queryParamMap
+    *******************************************************************************/
+   public Map<String, List<String>> getQueryParamMap()
+   {
+      return (this.queryParamMap);
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for queryParamMap
+    *******************************************************************************/
+   public void setQueryParamMap(Map<String, List<String>> queryParamMap)
+   {
+      this.queryParamMap = queryParamMap;
+   }
+
+
+
+   /*******************************************************************************
+    ** Fluent setter for queryParamMap
+    *******************************************************************************/
+   public SearchPossibleValueSourceInput withQueryParamMap(Map<String, List<String>> queryParamMap)
+   {
+      this.queryParamMap = queryParamMap;
       return (this);
    }
 
