@@ -23,6 +23,7 @@ package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
 import java.io.Serializable;
+import java.util.Objects;
 import com.kingsrook.qqq.backend.core.model.metadata.QMetaDataObject;
 
 
@@ -85,6 +86,33 @@ public class QCodeReference implements Serializable, Cloneable, QMetaDataObject
    public String toString()
    {
       return "QCodeReference{name='" + name + "'}";
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      QCodeReference that = (QCodeReference) o;
+      return Objects.equals(name, that.name) && codeType == that.codeType && Objects.equals(inlineCode, that.inlineCode);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(name, codeType, inlineCode);
    }
 
 

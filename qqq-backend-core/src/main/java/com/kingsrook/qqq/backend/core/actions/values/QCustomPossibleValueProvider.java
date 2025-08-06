@@ -82,6 +82,19 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
     ***************************************************************************/
    default List<QPossibleValue<T>> completeCustomPVSSearch(SearchPossibleValueSourceInput input, List<QPossibleValue<T>> possibleValues)
    {
+      List<QPossibleValue<T>> rs = filterPossibleValuesForSearch(input, possibleValues);
+
+      rs.sort(Comparator.nullsLast(Comparator.comparing((QPossibleValue<T> pv) -> pv.getLabel())));
+
+      return (rs);
+   }
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   static <T extends Serializable> List<QPossibleValue<T>> filterPossibleValuesForSearch(SearchPossibleValueSourceInput input, List<QPossibleValue<T>> possibleValues)
+   {
       SearchPossibleValueSourceAction.PreparedSearchPossibleValueSourceInput preparedInput = SearchPossibleValueSourceAction.prepareSearchPossibleValueSourceInput(input);
 
       List<QPossibleValue<T>> rs = new ArrayList<>();
@@ -93,10 +106,7 @@ public interface QCustomPossibleValueProvider<T extends Serializable>
             rs.add(possibleValue);
          }
       }
-
-      rs.sort(Comparator.nullsLast(Comparator.comparing((QPossibleValue<T> pv) -> pv.getLabel())));
-
-      return (rs);
+      return rs;
    }
 
 

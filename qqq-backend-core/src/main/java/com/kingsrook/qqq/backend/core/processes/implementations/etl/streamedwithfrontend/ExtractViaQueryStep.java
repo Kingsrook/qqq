@@ -229,7 +229,7 @@ public class ExtractViaQueryStep extends AbstractExtractStep
       //////////////////////////////////////////////////////////////////////////////////////
       // if the queryFilterJson field is populated, read the filter from it and return it //
       //////////////////////////////////////////////////////////////////////////////////////
-      if(queryFilterJson != null)
+      if(StringUtils.hasContent(queryFilterJson))
       {
          return getQueryFilterFromJson(queryFilterJson, "Error loading query filter from json field");
       }
