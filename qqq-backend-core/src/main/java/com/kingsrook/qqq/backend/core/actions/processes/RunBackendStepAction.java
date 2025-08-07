@@ -240,6 +240,14 @@ public class RunBackendStepAction
                queryInput.getFilter().setLimit(process.getMaxInputRecords() + 1);
             }
 
+            /////////////////////////////////////////////////////////////////////////////////
+            // allow callback to customize the query input just here before the query runs //
+            /////////////////////////////////////////////////////////////////////////////////
+            if(runBackendStepInput.getCallback() != null)
+            {
+               runBackendStepInput.getCallback().customizeInputPreQuery(runBackendStepInput, queryInput);
+            }
+
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
             runBackendStepInput.setRecords(queryOutput.getRecords());
 

@@ -27,9 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import com.kingsrook.qqq.backend.core.actions.QBackendTransaction;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizerInterface;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
-import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackFactory;
+import com.kingsrook.qqq.backend.core.actions.processes.QProcessCallbackBuilder;
 import com.kingsrook.qqq.backend.core.actions.processes.RunProcessAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -168,17 +169,26 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
    @Override
    public List<QRecord> postInsertOrUpdate(AbstractActionInput input, List<QRecord> records, Optional<List<QRecord>> oldRecordList) throws QException
    {
-      if(input instanceof UpdateInput updateInput && updateInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+      QBackendTransaction transaction = null;
+      if(input instanceof UpdateInput updateInput)
       {
-         return records;
+         if(updateInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+         {
+            return records;
+         }
+         transaction = updateInput.getTransaction();
       }
 
-      if(input instanceof InsertInput insertInput && insertInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+      if(input instanceof InsertInput insertInput)
       {
-         return records;
+         if(insertInput.hasFlag(AbstractRecordSyncToScheduledJobProcess.ActionFlags.DO_NOT_SYNC))
+         {
+            return records;
+         }
+         transaction = insertInput.getTransaction();
       }
 
-      runSyncProcessForRecordList(records, syncProcessName);
+      runSyncProcessForRecordList(records, transaction, syncProcessName);
       return records;
    }
 
@@ -204,12 +214,14 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
     *
     * Note that if the {@link ScheduledJob} table isn't defined in the QInstance,
     * that the process will not be called.
-    *
     * @param records list of records to use as source records in the table-sync
     *                to the scheduledJob table.
+    * @param transaction that the insert or update is happening on - which the
+    *                    process we run might need to peek in to for seeing the
+    *                    records.
     * @param processName name of the sync-process to run.
     ***************************************************************************/
-   public void runSyncProcessForRecordList(List<QRecord> records, String processName)
+   public void runSyncProcessForRecordList(List<QRecord> records, QBackendTransaction transaction, String processName)
    {
       if(QContext.getQInstance().getTable(ScheduledJob.TABLE_NAME) == null)
       {
@@ -233,7 +245,10 @@ public class BaseSyncToScheduledJobTableCustomizer implements TableCustomizerInt
       {
          RunProcessInput runProcessInput = new RunProcessInput();
          runProcessInput.setProcessName(processName);
-         runProcessInput.setCallback(QProcessCallbackFactory.forPrimaryKeys("id", sourceRecordIds));
+         runProcessInput.setCallback(new QProcessCallbackBuilder()
+            .withPrimaryKeys("id", sourceRecordIds)
+            .withQueryInputCustomizer((runBackendStepInput, queryInput) -> queryInput.setTransaction(transaction))
+            .build());
          runProcessInput.setFrontendStepBehavior(RunProcessInput.FrontendStepBehavior.SKIP);
          RunProcessOutput runProcessOutput = new RunProcessAction().execute(runProcessInput);
 

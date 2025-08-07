@@ -25,7 +25,9 @@ package com.kingsrook.qqq.backend.core.actions.processes;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import com.kingsrook.qqq.backend.core.model.actions.processes.RunBackendStepInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 
 
@@ -50,5 +52,16 @@ public interface QProcessCallback
    default Map<String, Serializable> getFieldValues(List<QFieldMetaData> fields)
    {
       return (null);
+   }
+
+   /***************************************************************************
+    * Allow a callback to modify the query input that a process uses to find its
+    * initial records (e.g., to add a transaction or turn on heavy fields).
+    ***************************************************************************/
+   default void customizeInputPreQuery(RunBackendStepInput runBackendStepInput, QueryInput queryInput)
+   {
+      /////////////////////
+      // noop by default //
+      /////////////////////
    }
 }
