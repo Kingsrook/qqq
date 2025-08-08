@@ -89,14 +89,9 @@ public class ApiAwareTableCountExecutor extends TableCountExecutor implements Ap
       //////////////////////////////////////////
       ApiQueryFilterUtils.throwIfBadRequestMessages(badRequestMessages);
 
-      //
       CountAction countAction = new CountAction();
       countInput.setFilter(filter);
       CountOutput countOutput = countAction.execute(countInput);
-
-      // todo - removed field handling...
-
-      // todo display values...
 
       output.setCount(ValueUtils.getValueAsLong(countOutput.getCount()));
       output.setDistinctCount(ValueUtils.getValueAsLong(countOutput.getDistinctCount()));

@@ -68,11 +68,12 @@ public class TableCountExecutor extends AbstractMiddlewareExecutor<TableCountInp
          countInput.setFilter(input.getFilter());
          countInput.setQueryJoins(input.getJoins());
          countInput.setIncludeDistinctCount(input.getIncludeDistinct());
+         countInput.setTimeoutSeconds(DEFAULT_QUERY_TIMEOUT_SECONDS); // todo param
          countInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
          if(countInput.getFilter() != null)
          {
-            // todo
+            // todo - where should values come from?
             countInput.getFilter().interpretValues(Collections.emptyMap());
          }
 
