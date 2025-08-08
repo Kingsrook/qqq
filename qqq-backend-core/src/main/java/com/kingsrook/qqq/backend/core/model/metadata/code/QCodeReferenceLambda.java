@@ -22,6 +22,9 @@
 package com.kingsrook.qqq.backend.core.model.metadata.code;
 
 
+import java.util.Objects;
+
+
 /*******************************************************************************
  ** Specialized type of QCodeReference that takes a lambda function object.
  **
@@ -55,4 +58,34 @@ public class QCodeReferenceLambda<T> extends QCodeReference
       return lambda;
    }
 
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public boolean equals(Object o)
+   {
+      if(o == null || getClass() != o.getClass())
+      {
+         return false;
+      }
+      if(!super.equals(o))
+      {
+         return false;
+      }
+      QCodeReferenceLambda<?> that = (QCodeReferenceLambda<?>) o;
+      return Objects.equals(lambda, that.lambda);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   @Override
+   public int hashCode()
+   {
+      return Objects.hash(super.hashCode(), lambda);
+   }
 }

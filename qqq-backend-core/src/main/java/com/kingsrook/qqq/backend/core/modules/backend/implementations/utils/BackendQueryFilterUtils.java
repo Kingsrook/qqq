@@ -42,6 +42,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.JoinsContext;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterOrderBy;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QQueryFilter;
+import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.expressions.AbstractFilterExpression;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.FieldAndJoinTable;
@@ -771,6 +772,17 @@ public class BackendQueryFilterUtils
       }
 
       return (rs);
+   }
+
+
+
+   /***************************************************************************
+    *
+    ***************************************************************************/
+   public static List<QueryJoin> identifyJoinsInFilter(String mainTableName, QQueryFilter filter) throws QException
+   {
+      JoinsContext joinsContext = new JoinsContext(mainTableName, filter, true);
+      return (joinsContext.getQueryJoins());
    }
 
 }
