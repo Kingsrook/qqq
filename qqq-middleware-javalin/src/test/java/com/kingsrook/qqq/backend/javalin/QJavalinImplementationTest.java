@@ -1056,6 +1056,21 @@ class QJavalinImplementationTest extends QJavalinTestBase
    }
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testExportOmitHeader()
+   {
+      String               filterJson = getFirstNameEqualsFilterJSON("Tim");
+      HttpResponse<String> response   = Unirest.get(BASE_URL + "/data/person/export/Favorite People.csv?omitHeaderRow=true&filter=" + URLEncoder.encode(filterJson, StandardCharsets.UTF_8)).asString();
+      assertEquals("filename=Favorite People.csv", response.getHeaders().get("Content-Disposition").get(0));
+      String[] csvLines = response.getBody().split("\n");
+      assertEquals(1, csvLines.length);
+      assertThat(csvLines[0]).contains("Tim");
+   }
+
+
 
    /*******************************************************************************
     **
