@@ -220,6 +220,11 @@ public class ExportAction
       queryInput.withQueryHint(QueryHint.POTENTIALLY_LARGE_NUMBER_OF_RESULTS);
       queryInput.withQueryHint(QueryHint.MAY_USE_READ_ONLY_BACKEND);
 
+      if(CollectionUtils.nullSafeHasContents(exportInput.getFieldNames()))
+      {
+         queryInput.withFieldNamesToInclude(new HashSet<>(exportInput.getFieldNames()));
+      }
+
       /////////////////////////////////////////////////////////////////
       // tell this query that it needs to put its output into a pipe //
       /////////////////////////////////////////////////////////////////
