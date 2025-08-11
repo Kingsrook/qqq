@@ -28,6 +28,7 @@ import com.kingsrook.qqq.backend.core.actions.reporting.CsvExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ExportStreamerInterface;
 import com.kingsrook.qqq.backend.core.actions.reporting.JsonExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.ListOfMapsExportStreamer;
+import com.kingsrook.qqq.backend.core.actions.reporting.TsvExportStreamer;
 import com.kingsrook.qqq.backend.core.actions.reporting.excel.poi.ExcelPoiBasedStreamingExportStreamer;
 import com.kingsrook.qqq.backend.core.exceptions.QUserFacingException;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
@@ -47,6 +48,7 @@ public enum ReportFormat
    XLSX(SpreadsheetVersion.EXCEL2007.getMaxRows(), SpreadsheetVersion.EXCEL2007.getMaxColumns(), ExcelPoiBasedStreamingExportStreamer::new, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", true, true, true),
    JSON(null, null, JsonExportStreamer::new, "application/json", "json", false, false, true),
    CSV(null, null, CsvExportStreamer::new, "text/csv", "csv", false, false, false),
+   TSV(null, null, TsvExportStreamer::new, "text/tab-separated-values", "tsv", false, false, false),
    LIST_OF_MAPS(null, null, ListOfMapsExportStreamer::new, null, null, false, false, true);
 
 
