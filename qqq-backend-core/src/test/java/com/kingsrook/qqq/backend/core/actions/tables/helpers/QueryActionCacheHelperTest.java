@@ -26,11 +26,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 import com.kingsrook.qqq.backend.core.BaseTest;
+import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.DeleteAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
+import com.kingsrook.qqq.backend.core.model.actions.tables.count.CountInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QCriteriaOperator;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QFilterCriteria;
@@ -219,6 +221,55 @@ class QueryActionCacheHelperTest extends BaseTest
          assertEquals(0, queryOutput.getRecords().size());
          assertEquals(0, countCachedRecordsDirectlyInBackend(cacheTableName, new QQueryFilter()));
       }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testDoNotQuerySourceTableFlag() throws QException
+   {
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      // start out here like a copy of testUniqueKeyCacheSingleFieldUniqueKeySingleRecordUseCases //
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      QInstance qInstance = QContext.getQInstance();
+
+      String sourceTableName = TestUtils.TABLE_NAME_SHAPE;
+      String cacheTableName  = TestUtils.TABLE_NAME_SHAPE_CACHE;
+
+      /////////////////////////////////////
+      // insert rows in the source table //
+      /////////////////////////////////////
+      TestUtils.insertRecords(qInstance.getTable(sourceTableName), List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Triangle").withValue("noOfSides", 3)
+      ));
+
+      assertEquals(0, new CountAction().execute(new CountInput(cacheTableName)).getCount());
+
+      /////////////////////////////////////////////////////////////////////////////////
+      // get from the table which caches it - normally it would (magically) be found //
+      // and inserted - but with the DO_NOT_QUERY flag, it won't be                  //
+      /////////////////////////////////////////////////////////////////////////////////
+      assertEquals(0, new QueryAction().execute(new QueryInput(cacheTableName).withFilter(new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle")))
+         .withFlag(QueryActionCacheHelper.CacheActionFlags.DO_NOT_QUERY_SOURCE_TABLE)).getRecords().size());
+      assertEquals(0, new CountAction().execute(new CountInput(cacheTableName)).getCount());
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      // query again, w/o the flag - the row should get inserted (as it is found in the source table) //
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+      assertEquals(1, new QueryAction().execute(new QueryInput(cacheTableName).withFilter(new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle"))))
+         .getRecords().size());
+      assertEquals(1, new CountAction().execute(new CountInput(cacheTableName)).getCount());
+
+      ///////////////////////////////////////////////////////////////////////////////////
+      // and query again w/ the flag - now that cache record exists, it'll be returned //
+      ///////////////////////////////////////////////////////////////////////////////////
+      assertEquals(1, new QueryAction().execute(new QueryInput(cacheTableName).withFilter(new QQueryFilter(new QFilterCriteria("name", QCriteriaOperator.EQUALS, "Triangle")))
+         .withFlag(QueryActionCacheHelper.CacheActionFlags.DO_NOT_QUERY_SOURCE_TABLE)).getRecords().size());
+      assertEquals(1, new CountAction().execute(new CountInput(cacheTableName)).getCount());
+
    }
 
 

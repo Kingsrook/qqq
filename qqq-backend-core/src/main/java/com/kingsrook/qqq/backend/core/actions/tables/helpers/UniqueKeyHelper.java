@@ -118,6 +118,14 @@ public class UniqueKeyHelper
             }
 
             queryInput.setFilter(filter);
+
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // in case the table we're working with is a CacheOf - tell the QueryActionCacheHelper //
+            // not to do queries on the table behind the cache table (e.g., for cache misses or    //
+            // expired records).  we just want to look at the cache table itself.                  //
+            /////////////////////////////////////////////////////////////////////////////////////////
+            queryInput.withFlag(QueryActionCacheHelper.CacheActionFlags.DO_NOT_QUERY_SOURCE_TABLE);
+
             QueryOutput queryOutput = new QueryAction().execute(queryInput);
             for(QRecord record : queryOutput.getRecords())
             {

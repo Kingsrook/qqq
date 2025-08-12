@@ -41,6 +41,7 @@ import com.kingsrook.qqq.backend.core.actions.tables.UpdateAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
+import com.kingsrook.qqq.backend.core.model.actions.tables.ActionFlag;
 import com.kingsrook.qqq.backend.core.model.actions.tables.QueryOrGetInputInterface;
 import com.kingsrook.qqq.backend.core.model.actions.tables.delete.DeleteInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
@@ -89,11 +90,35 @@ public class QueryActionCacheHelper
 
 
 
+   /***************************************************************************
+    * action flags that can be put in a query request to control behavior in
+    * this class.
+    ***************************************************************************/
+   public enum CacheActionFlags implements ActionFlag
+   {
+      /***************************************************************************
+       * Cause the handleCaching method to basically noop - but the intent is, that
+       * it doesn't every query the source table (the one behind the cache).
+       ***************************************************************************/
+      DO_NOT_QUERY_SOURCE_TABLE
+   }
+
+
+
    /*******************************************************************************
     **
     *******************************************************************************/
    public void handleCaching(QueryInput queryInput, QueryOutput queryOutput) throws QException
    {
+      if(queryInput.hasFlag(CacheActionFlags.DO_NOT_QUERY_SOURCE_TABLE))
+      {
+         //////////////////////////////////////////////////////////////////////////////////////////
+         // if the caller is requesting that we not query the source table under any conditions, //
+         // (e.g., unique key checks) then there's nothing to do in this method, so return early //
+         //////////////////////////////////////////////////////////////////////////////////////////
+         return;
+      }
+
       analyzeInput(queryInput);
       if(!isQueryInputCacheable)
       {
