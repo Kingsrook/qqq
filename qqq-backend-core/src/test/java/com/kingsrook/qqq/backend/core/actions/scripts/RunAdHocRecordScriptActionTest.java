@@ -38,6 +38,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.AssociatedScript;
@@ -85,6 +86,51 @@ class RunAdHocRecordScriptActionTest extends BaseTest
     *******************************************************************************/
    @Test
    @Disabled("Doesn't work, because javascript module not available to backend-core")
+   public void testCustomizer() throws QException
+   {
+      setupInstance();
+
+      ////////////////////////////
+      // insert script revision //
+      ////////////////////////////
+      Integer scriptRevisionId = insertScriptRevision("""
+         return "Hello";
+         """);
+
+      /////////////////
+      // setup input //
+      /////////////////
+      RunAdHocRecordScriptInput runAdHocRecordScriptInput = new RunAdHocRecordScriptInput();
+      runAdHocRecordScriptInput.setRecordPrimaryKeyList(List.of(1));
+      runAdHocRecordScriptInput.setTableName(TestUtils.TABLE_NAME_PERSON_MEMORY);
+      runAdHocRecordScriptInput.setCodeReference(new AdHocScriptCodeReference().withScriptRevisionId(scriptRevisionId));
+      runAdHocRecordScriptInput.setLogger(new Log4jCodeExecutionLogger());
+
+      ////////////////////////////
+      // ensure no script utils //
+      ////////////////////////////
+      assertThat(runAdHocRecordScriptInput.getScriptUtils()).isNull();
+
+      ///////////////////////////////////
+      // set customizer and run action //
+      ///////////////////////////////////
+      RunAdHocRecordScriptAction.setRunAdHocRecordScriptCustomizer(new QCodeReference(TestCustomizer.class));
+      RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
+      new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
+
+      ////////////////////////////////
+      // assert customizer was used //
+      ////////////////////////////////
+      assertThat(runAdHocRecordScriptInput.getScriptUtils()).isEqualTo("test");
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   @Disabled("Doesn't work, because javascript module not available to backend-core")
    void test() throws QException
    {
       setupInstance();
@@ -101,6 +147,20 @@ class RunAdHocRecordScriptActionTest extends BaseTest
 
       RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
       new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public static class TestCustomizer implements RunAdHocRecordScriptCustomizerInterface
+   {
+      @Override
+      public void preExecuteCode(RunAdHocRecordScriptInput input)
+      {
+         input.setScriptUtils("test");
+      }
    }
 
 
