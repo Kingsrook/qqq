@@ -23,9 +23,9 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractHTMLWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.actions.values.QValueFormatter;
@@ -195,6 +195,10 @@ public class RecordListWidgetRenderer extends AbstractWidgetRenderer
          }
 
          String tablePath   = QContext.getQInstance().getTablePath(tableName);
+         if(!AbstractHTMLWidgetRenderer.doesHaveTablePermission(tableName))
+         {
+            tablePath = null;
+         }
          String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
 
          ChildRecordListData widgetData = new ChildRecordListData(input.getQueryParams().get("widgetLabel"), queryOutput, table, tablePath, viewAllLink, totalRows);
