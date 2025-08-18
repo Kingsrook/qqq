@@ -1134,8 +1134,9 @@ public class QTableMetaData implements QAppChildMetaData, Serializable, MetaData
 
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       // if the table's backend says the capability is disabled, then by default, then the capability is disabled... //
+      // (or if the backend isn't given, then it doesn't say one way or the other, so just check the table)          //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      if(backend.getDisabledCapabilities().contains(capability))
+      if(backend != null && backend.getDisabledCapabilities().contains(capability))
       {
          hasCapability = false;
 
