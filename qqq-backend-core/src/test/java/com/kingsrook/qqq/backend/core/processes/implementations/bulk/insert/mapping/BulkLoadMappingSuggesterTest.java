@@ -196,6 +196,31 @@ class BulkLoadMappingSuggesterTest extends BaseTest
 
 
 
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testIdMatchedChildrenForBulkEditOriginally()
+   {
+      BulkLoadTableStructure tableStructure = BulkLoadTableStructureBuilder.buildTableStructure(TestUtils.TABLE_NAME_ORDER, true);
+      List<String>           headerRow      = List.of("id", "ship to name");
+
+      BulkLoadProfile bulkLoadProfile = new BulkLoadMappingSuggester().suggestBulkLoadMappingProfile(tableStructure, headerRow, true);
+      assertEquals("v1", bulkLoadProfile.getVersion());
+      assertEquals("FLAT", bulkLoadProfile.getLayout());
+      assertEquals(2, bulkLoadProfile.getFieldList().size());
+      assertEquals(0, getFieldByName(bulkLoadProfile, "id").getColumnIndex());
+      assertEquals(1, getFieldByName(bulkLoadProfile, "shipToName").getColumnIndex());
+
+      /////////////////////////////////////////////////////////////////
+      // assert that the order of fields matches the file's ordering //
+      /////////////////////////////////////////////////////////////////
+      assertEquals(List.of("id", "shipToName"),
+         bulkLoadProfile.getFieldList().stream().map(f -> f.getFieldName()).toList());
+   }
+
+
+
    /***************************************************************************
     **
     ***************************************************************************/

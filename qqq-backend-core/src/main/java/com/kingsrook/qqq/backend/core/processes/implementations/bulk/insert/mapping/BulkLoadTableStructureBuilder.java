@@ -167,19 +167,25 @@ public class BulkLoadTableStructureBuilder
 
       fields.sort(Comparator.comparing(f -> ObjectUtils.requireNonNullElse(f.getLabel(), f.getName(), "")));
 
-      for(Association childAssociation : CollectionUtils.nonNullList(table.getAssociations()))
+      //////////////////////////////////////////////////
+      // we do not support associations for bulk edit //
+      //////////////////////////////////////////////////
+      if(!isBulkEdit)
       {
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         // at this time, we are not prepared to handle 3-level deep associations, so, only process them from the top level... //
-         // main challenge being, wide-mode.  so, maybe we should just only support 3-level+ associations for tall?            //
-         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-         if(association == null)
+         for(Association childAssociation : CollectionUtils.nonNullList(table.getAssociations()))
          {
-            String nextLevelPath =
-               (StringUtils.hasContent(parentAssociationPath) ? parentAssociationPath + "." : "")
-                  + (association != null ? association.getName() : "");
-            BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, nextLevelPath, isBulkEdit);
-            tableStructure.addAssociation(associatedStructure);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // at this time, we are not prepared to handle 3-level deep associations, so, only process them from the top level... //
+            // main challenge being, wide-mode.  so, maybe we should just only support 3-level+ associations for tall?            //
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(association == null)
+            {
+               String nextLevelPath =
+                  (StringUtils.hasContent(parentAssociationPath) ? parentAssociationPath + "." : "")
+                     + (association != null ? association.getName() : "");
+               BulkLoadTableStructure associatedStructure = buildTableStructure(childAssociation.getAssociatedTableName(), childAssociation, nextLevelPath, isBulkEdit);
+               tableStructure.addAssociation(associatedStructure);
+            }
          }
       }
 

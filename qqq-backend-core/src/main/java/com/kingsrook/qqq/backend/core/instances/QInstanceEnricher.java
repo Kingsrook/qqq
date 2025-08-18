@@ -81,6 +81,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.processes.QSupplementalProc
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportDataSource;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportView;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.Capability;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.ExposedJoin;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QFieldSection;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QSupplementalTableMetaData;
@@ -917,27 +918,29 @@ public class QInstanceEnricher
             continue;
          }
 
-         // todo - add idea of 'supportsBulkX'
+         QBackendMetaData backend = qInstance.getBackend(table.getBackendName());
+
+         // todo - add idea of 'supportsBulkX'?
          String bulkInsertProcessName = table.getName() + ".bulkInsert";
-         if(qInstance.getProcess(bulkInsertProcessName) == null)
+         if(qInstance.getProcess(bulkInsertProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_INSERT))
          {
             defineTableBulkInsert(qInstance, table, bulkInsertProcessName);
          }
 
          String bulkEditProcessName = table.getName() + ".bulkEdit";
-         if(qInstance.getProcess(bulkEditProcessName) == null)
+         if(qInstance.getProcess(bulkEditProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_UPDATE))
          {
             defineTableBulkEdit(qInstance, table, bulkEditProcessName);
          }
 
          String bulkEditWithFileProcessName = table.getName() + ".bulkEditWithFile";
-         if(qInstance.getProcess(bulkEditWithFileProcessName) == null)
+         if(qInstance.getProcess(bulkEditWithFileProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_UPDATE))
          {
             defineTableBulkEditWithFile(qInstance, table, bulkEditWithFileProcessName);
          }
 
          String bulkDeleteProcessName = table.getName() + ".bulkDelete";
-         if(qInstance.getProcess(bulkDeleteProcessName) == null)
+         if(qInstance.getProcess(bulkDeleteProcessName) == null && table.isCapabilityEnabled(backend, Capability.TABLE_DELETE))
          {
             defineTableBulkDelete(qInstance, table, bulkDeleteProcessName);
          }
