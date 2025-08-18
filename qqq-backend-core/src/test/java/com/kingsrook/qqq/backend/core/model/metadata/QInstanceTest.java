@@ -26,7 +26,13 @@ import com.kingsrook.qqq.backend.core.BaseTest;
 import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.get.GetInput;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.DenyBehavior;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.PermissionLevel;
+import com.kingsrook.qqq.backend.core.model.metadata.permissions.QPermissionRules;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSession;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
+import com.kingsrook.qqq.backend.core.utils.lambdas.UnsafeVoidVoidMethod;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -56,6 +62,61 @@ class QInstanceTest extends BaseTest
       ////////////////////////////////////////////////////////////////////////////////////////
       tablePath = qInstance.getTablePath(TestUtils.TABLE_NAME_PERSON);
       assertEquals("/peopleApp/person", tablePath);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testGetTablePathPermissionsAndMemoization() throws QException
+   {
+      String expectedPath = "/peopleApp/person";
+
+      UnsafeVoidVoidMethod<QException> setupInstance = () ->
+      {
+         QInstance qInstance = TestUtils.defineInstance();
+         for(QTableMetaData table : qInstance.getTables().values())
+         {
+            table.withPermissionRules(new QPermissionRules().withLevel(PermissionLevel.HAS_ACCESS_PERMISSION).withDenyBehavior(DenyBehavior.HIDDEN));
+         }
+         QContext.setQInstance(qInstance);
+      };
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // make a new instance - call the method as a user with permissions, then as one without - and should get the result either way. //
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      setupInstance.run();
+
+      ///////////////////////////////////////
+      // with permissions, should get path //
+      ///////////////////////////////////////
+      QContext.setQSession(new QSession().withPermission(TestUtils.TABLE_NAME_PERSON + ".hasAccess"));
+      assertEquals(expectedPath, QContext.getQInstance().getTablePath(TestUtils.TABLE_NAME_PERSON));
+
+      ///////////////////////////////////////////////
+      // with no permissions, should still get it! //
+      ///////////////////////////////////////////////
+      QContext.setQSession(new QSession());
+      assertEquals(expectedPath, QContext.getQInstance().getTablePath(TestUtils.TABLE_NAME_PERSON));
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // now re-set the instance, and this time run in the opposite order - this is where we used to memoize a null because of a non-permission //
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      setupInstance.run();
+
+      ///////////////////////////////////////////////
+      // with no permissions, should still get it! //
+      ///////////////////////////////////////////////
+      QContext.setQSession(new QSession());
+      assertEquals(expectedPath, QContext.getQInstance().getTablePath(TestUtils.TABLE_NAME_PERSON));
+
+      ///////////////////////////////////////
+      // with permissions, should get path //
+      ///////////////////////////////////////
+      QContext.setQSession(new QSession().withPermission(TestUtils.TABLE_NAME_PERSON + ".hasAccess"));
+      assertEquals(expectedPath, QContext.getQInstance().getTablePath(TestUtils.TABLE_NAME_PERSON));
    }
 
 

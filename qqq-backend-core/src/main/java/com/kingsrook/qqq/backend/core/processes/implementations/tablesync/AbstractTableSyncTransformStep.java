@@ -104,7 +104,7 @@ public abstract class AbstractTableSyncTransformStep extends AbstractTransformSt
       .withPluralPastMessage("were not synced, because they are ");
 
    protected ProcessSummaryLine unspecifiedError = new ProcessSummaryLine(Status.ERROR)
-      .withMessageSuffix("of an unexpected error: ")
+      .withMessageSuffix("because of an unexpected error: ")
       .withSingularFutureMessage("will not be synced, ")
       .withPluralFutureMessage("will not be synced, ")
       .withSingularPastMessage("was not synced, ")

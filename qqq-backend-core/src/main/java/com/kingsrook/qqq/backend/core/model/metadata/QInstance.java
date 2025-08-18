@@ -34,11 +34,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kingsrook.qqq.backend.core.actions.customizers.TableCustomizers;
 import com.kingsrook.qqq.backend.core.actions.metadata.JoinGraph;
 import com.kingsrook.qqq.backend.core.actions.metadata.MetaDataAction;
+import com.kingsrook.qqq.backend.core.context.CapturedContext;
+import com.kingsrook.qqq.backend.core.context.QContext;
 import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
-import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
 import com.kingsrook.qqq.backend.core.model.metadata.audits.QAuditRules;
@@ -65,6 +66,7 @@ import com.kingsrook.qqq.backend.core.model.metadata.reporting.QReportMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.scheduleing.QSchedulerMetaData;
 import com.kingsrook.qqq.backend.core.model.metadata.security.QSecurityKeyType;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.session.QSystemUserSession;
 import com.kingsrook.qqq.backend.core.scheduler.schedulable.SchedulableType;
 import com.kingsrook.qqq.backend.core.utils.CollectionUtils;
 import com.kingsrook.qqq.backend.core.utils.ListingHash;
@@ -224,31 +226,42 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Get the full path to a table
+    * Get the full path to a table - note - this will be regardless of whether or
+    * not the active session/user has access to the table.  You may want to also call
+    * PermissionsHelper.getPermissionCheckResult to confirm if user has permission.
     *******************************************************************************/
    public String getTablePath(String tableName) throws QException
    {
       if(!memoizedTablePaths.containsKey(tableName))
       {
-         MetaDataInput  input  = new MetaDataInput();
-         MetaDataOutput output = new MetaDataAction().execute(input);
-         memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
+         QContext.withTemporaryContext(new CapturedContext(QContext.getQInstance(), new QSystemUserSession()), () ->
+         {
+            MetaDataInput  input  = new MetaDataInput();
+            MetaDataOutput output = new MetaDataAction().execute(input);
+            memoizedTablePaths.put(tableName, searchAppTree(output.getAppTree(), tableName, AppTreeNodeType.TABLE, ""));
+         });
       }
+
       return (memoizedTablePaths.get(tableName));
    }
 
 
 
    /*******************************************************************************
-    ** Get the full path to a process
+    * Get the full path to a process - note - this will be regardless of whether or
+    * not the active session/user has access to the process.  You may want to also call
+    * PermissionsHelper.getPermissionCheckResult to confirm if user has permission.
     *******************************************************************************/
-   public String getProcessPath(AbstractActionInput actionInput, String processName) throws QException
+   public String getProcessPath(String processName) throws QException
    {
       if(!memoizedProcessPaths.containsKey(processName))
       {
-         MetaDataInput  input  = new MetaDataInput();
-         MetaDataOutput output = new MetaDataAction().execute(input);
-         return searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, "");
+         QContext.withTemporaryContext(new CapturedContext(QContext.getQInstance(), new QSystemUserSession()), () ->
+         {
+            MetaDataInput  input  = new MetaDataInput();
+            MetaDataOutput output = new MetaDataAction().execute(input);
+            memoizedProcessPaths.put(processName, searchAppTree(output.getAppTree(), processName, AppTreeNodeType.PROCESS, ""));
+         });
       }
       return (memoizedProcessPaths.get(processName));
    }

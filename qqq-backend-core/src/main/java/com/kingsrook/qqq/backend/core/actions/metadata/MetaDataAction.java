@@ -192,7 +192,8 @@ public class MetaDataAction
       ///////////////////////////////////////////////////////
       List<QAppMetaData> sortedApps = QContext.getQInstance().getApps().values().stream()
          .sorted(Comparator.comparing((QAppMetaData a) -> a.getSortOrder())
-            .thenComparing((QAppMetaData a) -> a.getLabel()))
+            .thenComparing((QAppMetaData a) -> Objects.requireNonNullElse(a.getLabel(), ""))
+            .thenComparing((QAppMetaData a) -> Objects.requireNonNullElse(a.getName(), "")))
          .toList();
 
       ///////////////////////////////////
