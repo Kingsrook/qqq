@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.kingsrook.qqq.backend.core.actions.ActionHelper;
 import com.kingsrook.qqq.backend.core.actions.audits.DMLAuditAction;
+import com.kingsrook.qqq.backend.core.actions.customizers.QCodeLoader;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
 import com.kingsrook.qqq.backend.core.context.QContext;
@@ -49,7 +50,9 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.RunAdHocScriptCustomizers;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
+import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
 import com.kingsrook.qqq.backend.core.model.scripts.Script;
 import com.kingsrook.qqq.backend.core.model.scripts.ScriptRevision;
@@ -117,6 +120,16 @@ public class RunAdHocRecordScriptAction
             ////////////////////////////////////////
             LOG.info("No records supplied as input (or found via primary keys); exiting with noop");
             return;
+         }
+
+         ////////////////////////////////////////////////////
+         // if a customizer was provided, handle that here //
+         ////////////////////////////////////////////////////
+         QCodeReference customizerReference = QContext.getQInstance().getSupplementalCustomizer(RunAdHocScriptCustomizers.PRE_EXECUTE);
+         if(customizerReference != null)
+         {
+            RunAdHocRecordScriptCustomizerInterface customizer = QCodeLoader.getAdHoc(RunAdHocRecordScriptCustomizerInterface.class, customizerReference);
+            customizer.preExecuteCode(input);
          }
 
          /////////////
@@ -272,5 +285,4 @@ public class RunAdHocRecordScriptAction
          return (Optional.empty());
       }
    }
-
 }
