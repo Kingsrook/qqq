@@ -105,6 +105,8 @@ public class QInstance
    private Map<String, QQueueProviderMetaData>   queueProviders       = new LinkedHashMap<>();
    private Map<String, QQueueMetaData>           queues               = new LinkedHashMap<>();
 
+   private Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers = new LinkedHashMap<>();
+
    private Map<String, QSchedulerMetaData> schedulers       = new LinkedHashMap<>();
    private Map<String, SchedulableType>    schedulableTypes = new LinkedHashMap<>();
 
@@ -665,6 +667,48 @@ public class QInstance
    public void setReports(Map<String, QReportMetaData> reports)
    {
       this.reports = reports;
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public void addSupplementalCustomizer(SupplementalCustomizerType type, QCodeReference customizer)
+   {
+      this.supplementalCustomizers.put(type, customizer);
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   public QCodeReference getSupplementalCustomizer(SupplementalCustomizerType type)
+   {
+      return (this.supplementalCustomizers.get(type));
+   }
+
+
+
+   /*******************************************************************************
+    ** Getter for supplementalCustomizers
+    **
+    *******************************************************************************/
+   public Map<SupplementalCustomizerType, QCodeReference> getSupplementalCustomizers()
+   {
+      return supplementalCustomizers;
+   }
+
+
+
+   /*******************************************************************************
+    ** Setter for supplementalCustomizers
+    **
+    *******************************************************************************/
+   public void setSupplementalCustomizers(Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers)
+   {
+      this.supplementalCustomizers = supplementalCustomizers;
    }
 
 

@@ -37,6 +37,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.update.UpdateOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
 import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
+import com.kingsrook.qqq.backend.core.model.metadata.RunAdHocScriptCustomizers;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.fields.QFieldMetaData;
@@ -89,6 +90,7 @@ class RunAdHocRecordScriptActionTest extends BaseTest
    public void testCustomizer() throws QException
    {
       setupInstance();
+      QContext.getQInstance().addSupplementalCustomizer(RunAdHocScriptCustomizers.PRE_EXECUTE, new QCodeReference(TestCustomizer.class));
 
       ////////////////////////////
       // insert script revision //
@@ -114,7 +116,6 @@ class RunAdHocRecordScriptActionTest extends BaseTest
       ///////////////////////////////////
       // set customizer and run action //
       ///////////////////////////////////
-      RunAdHocRecordScriptAction.setRunAdHocRecordScriptCustomizer(new QCodeReference(TestCustomizer.class));
       RunAdHocRecordScriptOutput runAdHocRecordScriptOutput = new RunAdHocRecordScriptOutput();
       new RunAdHocRecordScriptAction().run(runAdHocRecordScriptInput, runAdHocRecordScriptOutput);
 

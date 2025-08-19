@@ -50,6 +50,7 @@ import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryJoin;
 import com.kingsrook.qqq.backend.core.model.actions.tables.query.QueryOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.RunAdHocScriptCustomizers;
 import com.kingsrook.qqq.backend.core.model.metadata.code.AdHocScriptCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.code.QCodeReference;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
@@ -71,8 +72,6 @@ public class RunAdHocRecordScriptAction
    private Map<Integer, ScriptRevision> scriptRevisionCacheByScriptId         = new HashMap<>();
 
    private static Memoization<Integer, Script> scriptMemoizationById = new Memoization<>();
-
-   private static QCodeReference runAdHocRecordScriptCustomizer;
 
 
 
@@ -126,9 +125,10 @@ public class RunAdHocRecordScriptAction
          ////////////////////////////////////////////////////
          // if a customizer was provided, handle that here //
          ////////////////////////////////////////////////////
-         if(runAdHocRecordScriptCustomizer != null)
+         QCodeReference customizerReference = QContext.getQInstance().getSupplementalCustomizer(RunAdHocScriptCustomizers.PRE_EXECUTE);
+         if(customizerReference != null)
          {
-            RunAdHocRecordScriptCustomizerInterface customizer = QCodeLoader.getAdHoc(RunAdHocRecordScriptCustomizerInterface.class, runAdHocRecordScriptCustomizer);
+            RunAdHocRecordScriptCustomizerInterface customizer = QCodeLoader.getAdHoc(RunAdHocRecordScriptCustomizerInterface.class, customizerReference);
             customizer.preExecuteCode(input);
          }
 
@@ -284,15 +284,5 @@ public class RunAdHocRecordScriptAction
       {
          return (Optional.empty());
       }
-   }
-
-
-
-   /*******************************************************************************
-    ** Setter for runAdHocRecordScriptCustomizer
-    *******************************************************************************/
-   public static void setRunAdHocRecordScriptCustomizer(QCodeReference customizer)
-   {
-      runAdHocRecordScriptCustomizer = customizer;
    }
 }
