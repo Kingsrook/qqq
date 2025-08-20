@@ -329,6 +329,17 @@ echo
                </execution>
             </executions>
          </plugin>
+        <!-- Sonatype Central publishing plugin for releases and SNAPSHOTs -->
+        <plugin>
+           <groupId>org.sonatype.central</groupId>
+           <artifactId>central-publishing-maven-plugin</artifactId>
+           <version>0.8.0</version>
+           <extensions>true</extensions>
+           <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+           </configuration>
+        </plugin>
       </plugins>
    </build>
 
@@ -358,20 +369,6 @@ echo
       </plugins>
    </reporting>
 
-   <repositories>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </repositories>
-
-   <distributionManagement>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </distributionManagement>
+   <!-- No explicit repositories/distributionManagement; Central plugin handles release and snapshot deployment -->
 
 </project>
