@@ -44,7 +44,6 @@
       <module>qqq-middleware-slack</module>
       <module>qqq-middleware-api</module>
       <module>qqq-utility-lambdas</module>
-      <module>qqq-sample-project</module>
    </modules>
 
    <properties>
@@ -70,6 +69,13 @@
          <properties>
             <plugin.shade.phase>package</plugin.shade.phase>
          </properties>
+      </profile>
+      <profile>
+         <!-- Optional sample app module: activate with -P withSample -->
+         <id>withSample</id>
+         <modules>
+            <module>qqq-sample-project</module>
+         </modules>
       </profile>
    </profiles>
 
