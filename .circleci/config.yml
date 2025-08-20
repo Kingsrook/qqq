@@ -97,7 +97,7 @@ commands:
             export GPG_TTY=$(tty || true)
             # Import key from base64 or raw (\n-escaped) secret
             if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
+              echo "$GPG_PRIVATE_KEY_B64" | tr -d ' \r\n\t' | base64 -d > /tmp/priv.asc
             elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
               printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
             else
