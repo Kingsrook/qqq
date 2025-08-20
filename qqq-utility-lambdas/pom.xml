@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-utility-lambdas</artifactId>
+   <name>QQQ Utility Lambdas</name>
+   <description>Utility AWS Lambda functions for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
@@ -267,20 +269,6 @@ fi
       </plugins>
    </build>
 
-   <repositories>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </repositories>
-
-   <distributionManagement>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </distributionManagement>
+   <!-- No repositories/distributionManagement: publishing handled at root via Sonatype Central plugin -->
 
 </project>

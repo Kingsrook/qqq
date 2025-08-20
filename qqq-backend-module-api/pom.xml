@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-backend-module-api</artifactId>
+   <name>QQQ Backend Module - API</name>
+   <description>API backend module for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>

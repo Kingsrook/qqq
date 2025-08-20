@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-bom-pom</artifactId>
+   <name>QQQ Bill of Materials</name>
+   <description>Bill of Materials for aligning QQQ module versions.</description>
    <packaging>pom</packaging>
 
    <parent>
@@ -92,12 +94,6 @@
       </dependencies>
    </dependencyManagement>
 
-   <distributionManagement>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </distributionManagement>
+   <!-- No distributionManagement: publishing handled at root via Sonatype Central plugin -->
 
 </project>

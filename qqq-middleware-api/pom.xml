@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-middleware-api</artifactId>
+   <name>QQQ Middleware - API</name>
+   <description>HTTP API middleware for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
