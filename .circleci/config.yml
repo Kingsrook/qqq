@@ -87,17 +87,30 @@ commands:
       - run:
           name: Setup GPG for signing
           command: |
+            set -eo pipefail
             mkdir -p ~/.gnupg
-            echo 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
-            chmod 600 ~/.gnupg/gpg.conf
-            if [ -n "${GPG_PRIVATE_KEY:-}" ]; then
-              echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+            # Force non-interactive loopback for pinentry
+            printf '%s\n' 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+            printf '%s\n' 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf || true
+            chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf 2>/dev/null || true
+            gpgconf --kill gpg-agent || true
+            export GPG_TTY=$(tty || true)
+            # Import key from base64 or raw (\n-escaped) secret
+            if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
+              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
+            elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
+            else
+              echo "GPG key env var not set (GPG_PRIVATE_KEY_B64 or GPG_PRIVATE_KEY)" >&2
+              exit 1
             fi
+            gpg --batch --yes --pinentry-mode loopback --import /tmp/priv.asc
+            gpg --list-secret-keys --keyid-format=long || true
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
             mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
-              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
+              -Dgpg.executable=gpg -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
       - save_cache:
           paths:
             - ~/.m2
