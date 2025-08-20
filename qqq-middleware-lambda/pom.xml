@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-middleware-lambda</artifactId>
+   <name>QQQ Middleware - AWS Lambda</name>
+   <description>AWS Lambda middleware for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>

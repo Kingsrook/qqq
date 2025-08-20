@@ -12,8 +12,22 @@ runs:
       key: v1-dependencies-{{ checksum "pom.xml" }}
       path: UPDATE_ME
       restore-keys: v1-dependencies-{{ checksum "pom.xml" }}
-  - name: Run Maven Jar Deploy
-    run: mvn -s .circleci/mvn-settings.xml -T4 flatten:flatten jar:jar deploy:deploy
+  - name: Setup GPG for signing
+    env:
+      GPG_PRIVATE_KEY: ${{ env.GPG_PRIVATE_KEY }}
+    shell: bash
+    run: |
+      mkdir -p ~/.gnupg
+      echo 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+      chmod 600 ~/.gnupg/gpg.conf
+      echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+  - name: Run Maven Central Deploy
+    env:
+      CENTRAL_USERNAME: ${{ env.CENTRAL_USERNAME }}
+      CENTRAL_PASSWORD: ${{ env.CENTRAL_PASSWORD }}
+      GPG_PASSPHRASE: ${{ env.GPG_PASSPHRASE }}
+      GPG_KEYNAME: ${{ env.GPG_KEYNAME }}
+    run: mvn -s .github/mvn-settings-central.xml -P release -B -T4 -DskipTests -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
     shell: bash
   - name: save_cache
     uses: actions/cache@v3.3.2
