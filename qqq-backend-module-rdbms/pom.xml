@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-backend-module-rdbms</artifactId>
+   <name>QQQ Backend Module - RDBMS</name>
+   <description>Relational database backend module for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
