@@ -85,9 +85,19 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
-          name: Run Maven Jar Deploy
+          name: Setup GPG for signing
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress flatten:flatten jar:jar deploy:deploy
+            mkdir -p ~/.gnupg
+            echo 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+            chmod 600 ~/.gnupg/gpg.conf
+            if [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+            fi
+      - run:
+          name: Publish to Sonatype Central (releases and SNAPSHOTs)
+          command: |
+            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
+              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
       - save_cache:
           paths:
             - ~/.m2
