@@ -6,11 +6,8 @@
 ## <revision> value such that:
 ## - feature-branch builds, tagged as snapshot-*, deploy with a version
 ##   number that includes that tag's name (minus the snapshot- part)
-## - integration-branch builds deploy with a version number that includes
-##   the branch name slugified
-## - we never deploy -SNAPSHOT versions any more - because we don't believe
-##   it is ever valid to not know exactly what versions you are getting
-##   (perhaps because we are too loose with our versioning?)
+## - integration-branch builds: KEEP -SNAPSHOT as-is (Central supports snapshots)
+## - snapshot-* tag builds: deploy with a version number that includes the tag
 ############################################################################
 
 POM=$(dirname $0)/../pom.xml
@@ -35,8 +32,8 @@ if [ $(echo "$CIRCLE_TAG" | grep ^snapshot-) ]; then
    echo "Using slug [$SLUG] from tag [$CIRCLE_TAG]"
 
 elif [ $(echo "$CIRCLE_BRANCH" |  grep ^integration) ]; then
-   SLUG=$(echo "$CIRCLE_BRANCH" | sed "s,/,-,g")-
-   echo "Using slug [$SLUG] from branch [$CIRCLE_BRANCH]"
+   echo "On integration branch; keeping -SNAPSHOT unchanged."
+   exit 0;
 fi
 
 ################################################################
