@@ -28,6 +28,32 @@
    <version>${revision}</version>
    <packaging>pom</packaging>
 
+   <name>QQQ - Low-code Application Framework</name>
+   <description>QQQ is a low-code application framework for engineers, providing backend modules, middleware, and tooling.</description>
+   <url>https://github.com/Kingsrook/qqq</url>
+   <licenses>
+      <license>
+         <name>GNU Affero General Public License v3.0</name>
+         <url>https://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+         <distribution>repo</distribution>
+      </license>
+   </licenses>
+   <scm>
+      <connection>scm:git:https://github.com/Kingsrook/qqq.git</connection>
+      <developerConnection>scm:git:ssh://git@github.com/Kingsrook/qqq.git</developerConnection>
+      <url>https://github.com/Kingsrook/qqq</url>
+      <tag>HEAD</tag>
+   </scm>
+   <developers>
+      <developer>
+         <id>kingsrook</id>
+         <name>Kingsrook, LLC</name>
+         <email>pub@qrun.io</email>
+         <organization>Kingsrook, LLC</organization>
+         <organizationUrl>https://qrun.io</organizationUrl>
+      </developer>
+   </developers>
+
    <modules>
       <module>qqq-bom</module>
       <module>qqq-backend-core</module>
@@ -47,7 +73,7 @@
    </modules>
 
    <properties>
-      <revision>0.26.0-SNAPSHOT</revision>
+      <revision>0.26.1-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -335,6 +361,18 @@ echo
                </execution>
             </executions>
          </plugin>
+         <!-- Sonatype Central publishing (replaces deploy to distributionManagement) -->
+         <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.5.0</version>
+            <extensions>true</extensions>
+            <configuration>
+               <!-- Server credentials with this ID must be provided in settings.xml -->
+               <publishingServerId>central</publishingServerId>
+               <autoPublish>true</autoPublish>
+            </configuration>
+         </plugin>
       </plugins>
    </build>
 
@@ -364,20 +402,6 @@ echo
       </plugins>
    </reporting>
 
-   <repositories>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </repositories>
-
-   <distributionManagement>
-      <repository>
-         <id>github-qqq-maven-registry</id>
-         <name>GitHub QQQ Maven Registry</name>
-         <url>https://maven.pkg.github.com/Kingsrook/qqq-maven-registry</url>
-      </repository>
-   </distributionManagement>
+   <!-- No repositories/distributionManagement: releases go via Sonatype Central plugin; snapshots configured in CI if needed -->
 
 </project>
