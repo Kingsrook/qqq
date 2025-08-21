@@ -38,6 +38,8 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
+import com.kingsrook.qqq.backend.core.logging.LogPair;
+import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataOutput;
@@ -71,6 +73,7 @@ import com.kingsrook.qqq.backend.core.utils.ListingHash;
 import com.kingsrook.qqq.backend.core.utils.StringUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;
+import static com.kingsrook.qqq.backend.core.logging.LogUtils.logPair;
 
 
 /*******************************************************************************
@@ -79,6 +82,8 @@ import io.github.cdimascio.dotenv.DotenvEntry;
  *******************************************************************************/
 public class QInstance
 {
+   private static final QLogger LOG = QLogger.getLogger(QInstance.class);
+
    ///////////////////////////////////////////////////////////////////////////////
    // Do not let the backend data be serialized - e.g., sent to a frontend user //
    ///////////////////////////////////////////////////////////////////////////////
@@ -672,17 +677,8 @@ public class QInstance
 
 
    /*******************************************************************************
-    **
-    *******************************************************************************/
-   public void addSupplementalCustomizer(SupplementalCustomizerType type, QCodeReference customizer)
-   {
-      this.supplementalCustomizers.put(type, customizer);
-   }
-
-
-
-   /*******************************************************************************
-    **
+    * Getter for a supplemental customizer based on type
+    * @see #withSupplementalCustomizers(Map)
     *******************************************************************************/
    public QCodeReference getSupplementalCustomizer(SupplementalCustomizerType type)
    {
@@ -692,23 +688,61 @@ public class QInstance
 
 
    /*******************************************************************************
-    ** Getter for supplementalCustomizers
-    **
+    * Getter for supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
     *******************************************************************************/
    public Map<SupplementalCustomizerType, QCodeReference> getSupplementalCustomizers()
    {
-      return supplementalCustomizers;
+      return (this.supplementalCustomizers);
    }
 
 
 
    /*******************************************************************************
-    ** Setter for supplementalCustomizers
-    **
+    * Setter for supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
     *******************************************************************************/
    public void setSupplementalCustomizers(Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers)
    {
       this.supplementalCustomizers = supplementalCustomizers;
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent adder to supplementalCustomizers
+    * @see #withSupplementalCustomizers(Map)
+    *******************************************************************************/
+   public QInstance addSupplementalCustomizer(SupplementalCustomizerType type, QCodeReference customizer)
+   {
+      if(this.supplementalCustomizers == null)
+      {
+         this.supplementalCustomizers = new LinkedHashMap<>();
+      }
+      if(this.supplementalCustomizers.containsKey(type) && !this.supplementalCustomizers.get(type).equals(customizer))
+      {
+         LOG.info("Replacing QInstance supplemental customizer.", logPair("oldCustomizer", this.supplementalCustomizers.get(type).getName()), logPair("newCustomizer", customizer.getName());
+      }
+
+      this.supplementalCustomizers.put(type, customizer);
+      return (this);
+   }
+
+
+
+   /*******************************************************************************
+    * Fluent setter for supplementalCustomizers
+    *
+    * @param supplementalCustomizers
+    * Map of supplemental customizer types to QCodeReference instances, allowing
+    * customizers to be applied to various QQQ components, e.g. RunAdHocScriptCustomizers
+    *
+    * @return this
+    *******************************************************************************/
+   public QInstance withSupplementalCustomizers(Map<SupplementalCustomizerType, QCodeReference> supplementalCustomizers)
+   {
+      this.supplementalCustomizers = supplementalCustomizers;
+      return (this);
    }
 
 

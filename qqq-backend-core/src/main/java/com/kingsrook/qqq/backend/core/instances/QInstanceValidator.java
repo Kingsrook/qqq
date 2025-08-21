@@ -2213,7 +2213,7 @@ public class QInstanceValidator
     *******************************************************************************/
    private void validateSupplementalCustomizers(QInstance qInstance)
    {
-      if(CollectionUtils.nullSafeHasContents(qInstance.getPossibleValueSources()))
+      if(CollectionUtils.nullSafeHasContents(qInstance.getSupplementalCustomizers()))
       {
          qInstance.getSupplementalCustomizers().forEach((customizerType, codeReference) ->
          {
