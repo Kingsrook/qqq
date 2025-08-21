@@ -38,7 +38,6 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.instances.QInstanceHelpContentManager;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationKey;
 import com.kingsrook.qqq.backend.core.instances.QInstanceValidationState;
-import com.kingsrook.qqq.backend.core.logging.LogPair;
 import com.kingsrook.qqq.backend.core.logging.QLogger;
 import com.kingsrook.qqq.backend.core.model.actions.AbstractActionInput;
 import com.kingsrook.qqq.backend.core.model.actions.metadata.MetaDataInput;
@@ -721,7 +720,7 @@ public class QInstance
       }
       if(this.supplementalCustomizers.containsKey(type) && !this.supplementalCustomizers.get(type).equals(customizer))
       {
-         LOG.info("Replacing QInstance supplemental customizer.", logPair("oldCustomizer", this.supplementalCustomizers.get(type).getName()), logPair("newCustomizer", customizer.getName());
+         LOG.info("Replacing QInstance supplemental customizer.", logPair("oldCustomizer", this.supplementalCustomizers.get(type).getName()), logPair("newCustomizer", customizer.getName()));
       }
 
       this.supplementalCustomizers.put(type, customizer);
