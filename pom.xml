@@ -27,34 +27,6 @@
    <artifactId>qqq-parent-project</artifactId>
    <version>${revision}</version>
    <packaging>pom</packaging>
-   
-   <name>QQQ - Low-code Application Framework</name>
-   <description>QQQ is a Low-code Application Framework for Engineers. It provides a comprehensive set of tools and modules for building data-driven applications quickly and efficiently.</description>
-   <url>https://github.com/Kingsrook/qqq</url>
-   
-   <licenses>
-      <license>
-         <name>GNU Affero General Public License v3.0</name>
-         <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
-         <distribution>repo</distribution>
-      </license>
-   </licenses>
-   
-   <developers>
-      <developer>
-         <id>kingsrook</id>
-         <name>Kingsrook, LLC</name>
-         <email>contact@kingsrook.com</email>
-         <organization>Kingsrook, LLC</organization>
-         <organizationUrl>https://github.com/Kingsrook/</organizationUrl>
-      </developer>
-   </developers>
-   
-   <scm>
-      <connection>scm:git:git://github.com/Kingsrook/qqq.git</connection>
-      <developerConnection>scm:git:ssh://github.com:Kingsrook/qqq.git</developerConnection>
-      <url>https://github.com/Kingsrook/qqq/tree/main</url>
-   </scm>
 
    <modules>
       <module>qqq-bom</module>
@@ -72,11 +44,11 @@
       <module>qqq-middleware-slack</module>
       <module>qqq-middleware-api</module>
       <module>qqq-utility-lambdas</module>
-      <!-- qqq-sample-project excluded: depends on qqq-frontend-material-dashboard not available in Maven Central -->
+      <module>qqq-sample-project</module>
    </modules>
 
    <properties>
-      <revision>0.27.0-SNAPSHOT</revision>
+      <revision>0.26.0-SNAPSHOT</revision>
 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -98,44 +70,6 @@
          <properties>
             <plugin.shade.phase>package</plugin.shade.phase>
          </properties>
-      </profile>
-      
-      <profile>
-         <!-- Release profile for Maven Central publishing -->
-         <id>release</id>
-
-         <build>
-            <plugins>
-               <!-- GPG Signing for Maven Central -->
-               <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-gpg-plugin</artifactId>
-                  <version>3.1.0</version>
-                  <executions>
-                     <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                           <goal>sign</goal>
-                        </goals>
-                     </execution>
-                  </executions>
-               </plugin>
-               
-               <!-- Central Publishing Plugin for releases only -->
-               <plugin>
-                  <groupId>org.sonatype.central</groupId>
-                  <artifactId>central-publishing-maven-plugin</artifactId>
-                  <version>0.8.0</version>
-                  <extensions>true</extensions>
-                  <configuration>
-                     <publishingServerId>central</publishingServerId>
-                     <autoPublish>true</autoPublish>
-                     <waitUntil>validated</waitUntil>
-                  </configuration>
-               </plugin>
-            </plugins>
-         </build>
       </profile>
    </profiles>
 
@@ -395,22 +329,19 @@ echo
                </execution>
             </executions>
          </plugin>
-        <!-- Standard Maven Deploy Plugin for SNAPSHOTs -->
+        <!-- Sonatype Central publishing plugin for releases and SNAPSHOTs -->
         <plugin>
-           <groupId>org.apache.maven.plugins</groupId>
-           <artifactId>maven-deploy-plugin</artifactId>
-           <version>3.0.0</version>
+           <groupId>org.sonatype.central</groupId>
+           <artifactId>central-publishing-maven-plugin</artifactId>
+           <version>0.8.0</version>
+           <extensions>true</extensions>
+           <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+           </configuration>
         </plugin>
       </plugins>
    </build>
-
-   <!-- Distribution management for SNAPSHOTs (releases handled by Central Plugin) -->
-   <distributionManagement>
-      <snapshotRepository>
-         <id>central-snapshots</id>
-         <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-      </snapshotRepository>
-   </distributionManagement>
 
    <!-- mvn javadoc:aggregate -->
    <reporting>
