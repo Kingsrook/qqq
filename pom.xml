@@ -27,6 +27,34 @@
    <artifactId>qqq-parent-project</artifactId>
    <version>${revision}</version>
    <packaging>pom</packaging>
+   
+   <name>QQQ - Low-code Application Framework</name>
+   <description>QQQ is a Low-code Application Framework for Engineers. It provides a comprehensive set of tools and modules for building data-driven applications quickly and efficiently.</description>
+   <url>https://github.com/Kingsrook/qqq</url>
+   
+   <licenses>
+      <license>
+         <name>GNU Affero General Public License v3.0</name>
+         <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+         <distribution>repo</distribution>
+      </license>
+   </licenses>
+   
+   <developers>
+      <developer>
+         <id>kingsrook</id>
+         <name>Kingsrook, LLC</name>
+         <email>contact@kingsrook.com</email>
+         <organization>Kingsrook, LLC</organization>
+         <organizationUrl>https://github.com/Kingsrook/</organizationUrl>
+      </developer>
+   </developers>
+   
+   <scm>
+      <connection>scm:git:git://github.com/Kingsrook/qqq.git</connection>
+      <developerConnection>scm:git:ssh://github.com:Kingsrook/qqq.git</developerConnection>
+      <url>https://github.com/Kingsrook/qqq/tree/main</url>
+   </scm>
 
    <modules>
       <module>qqq-bom</module>
@@ -70,6 +98,60 @@
          <properties>
             <plugin.shade.phase>package</plugin.shade.phase>
          </properties>
+      </profile>
+      
+      <profile>
+         <!-- Release profile for Maven Central publishing -->
+         <id>release</id>
+         <build>
+            <plugins>
+               <!-- GPG Signing for Maven Central -->
+               <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-gpg-plugin</artifactId>
+                  <version>3.1.0</version>
+                  <executions>
+                     <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                           <goal>sign</goal>
+                        </goals>
+                     </execution>
+                  </executions>
+               </plugin>
+               
+               <!-- Source JAR (required for Maven Central) -->
+               <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-source-plugin</artifactId>
+                  <version>3.3.0</version>
+                  <executions>
+                     <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                           <goal>jar-no-fork</goal>
+                        </goals>
+                     </execution>
+                  </executions>
+               </plugin>
+               
+               <!-- Javadoc JAR (required for Maven Central) -->
+               <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-javadoc-plugin</artifactId>
+                  <version>3.6.2</version>
+                  <executions>
+                     <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                           <goal>jar</goal>
+                        </goals>
+                     </execution>
+                  </executions>
+               </plugin>
+            </plugins>
+         </build>
       </profile>
    </profiles>
 
@@ -252,7 +334,7 @@ echo "   See also target/site/jacoco/index.html"
 echo "   and https://www.jacoco.org/jacoco/trunk/doc/counters.html"
 echo "------------------------------------------------------------"
 
-# Parse Jacoco HTML coverage summary 
+# Parse Jacoco HTML coverage summary
 if [ -f target/site/jacoco/index.html ]; then
    echo -e "Instructions Missed\nInstruction Coverage\nBranches Missed\nBranch Coverage\nComplexity Missed\nComplexity Hit\nLines Missed\nLines Hit\nMethods Missed\nMethods Hit\nClasses Missed\nClasses Hit\n" > /tmp/$$.headers
    sed 's/<\/\w\+>/&\n/g' target/site/jacoco/index.html | grep -A 12 '<tfoot>' | grep '<td' | sed 's/<td class="\w\+\d*">\([^<]*\)<\/td>/\1/' | grep -v Total > /tmp/$$.values
