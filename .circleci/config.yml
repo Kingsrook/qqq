@@ -102,6 +102,21 @@ commands:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
+  mvn_build_rc:
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Run Maven Package (Release Candidate)
+          command: |
+            mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress package
+      - store_artifacts:
+          path: */target/*.jar
+          destination: rc-artifacts
+          when: always
+
   install_asciidoctor:
     steps:
       - checkout
@@ -139,6 +154,30 @@ jobs:
       - check_middleware_api_versions
 
   mvn_deploy:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+
+  publish_rc:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_build_rc
+
+  publish_release:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+
+  publish_hotfix:
     executor: localstack/default
     steps:
       - mvn_build
@@ -187,8 +226,34 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /develop/
+              only: develop
       - publish_asciidoc:
           filters:
             branches:
-              only: /develop/
+              only: develop
+
+  release_candidate:
+    jobs:
+      - publish_rc:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /release\/.*/
+
+  production_release:
+    jobs:
+      - publish_release:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: main
+            tags:
+              only: /v.*/
+
+  hotfix_release:
+    jobs:
+      - publish_hotfix:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /hotfix\/.*/
