@@ -7,9 +7,16 @@
             <password>${env.QQQ_MAVEN_REGISTRY_PASSWORD}</password>
         </server>
         
-        <!-- Sonatype Central Portal credentials -->
+        <!-- Sonatype Central Portal credentials (for releases) -->
         <server>
             <id>central</id>
+            <username>${env.CENTRAL_USERNAME}</username>
+            <password>${env.CENTRAL_PASSWORD}</password>
+        </server>
+        
+        <!-- OSSRH credentials (for SNAPSHOTs) -->
+        <server>
+            <id>ossrh</id>
             <username>${env.CENTRAL_USERNAME}</username>
             <password>${env.CENTRAL_PASSWORD}</password>
         </server>

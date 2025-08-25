@@ -381,7 +381,7 @@ echo
                </execution>
             </executions>
          </plugin>
-        <!-- Sonatype Central publishing plugin for releases and SNAPSHOTs -->
+        <!-- Sonatype Central publishing plugin for releases only -->
         <plugin>
            <groupId>org.sonatype.central</groupId>
            <artifactId>central-publishing-maven-plugin</artifactId>
@@ -395,6 +395,14 @@ echo
         </plugin>
       </plugins>
    </build>
+
+   <!-- Distribution management for SNAPSHOTs (releases handled by Central Plugin) -->
+   <distributionManagement>
+      <snapshotRepository>
+         <id>ossrh</id>
+         <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+   </distributionManagement>
 
    <!-- mvn javadoc:aggregate -->
    <reporting>
