@@ -85,6 +85,25 @@ commands:
           command: |
             echo "Deploying version: $(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//;')"
       - run:
+          name: Setup GPG for signing
+          command: |
+            set -eo pipefail
+            mkdir -p ~/.gnupg
+            printf '%s\n' 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+            chmod 600 ~/.gnupg/gpg.conf
+            # Support either base64-encoded or raw (possibly \n-escaped) armored keys
+            if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
+              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
+            elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              # Interpret \n escapes as real newlines
+              printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
+            else
+              echo "GPG key env var not set (GPG_PRIVATE_KEY[_B64])" >&2
+              exit 1
+            fi
+            gpg --batch --yes --import /tmp/priv.asc
+            gpg --list-secret-keys --keyid-format=long || true
+      - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
             mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
