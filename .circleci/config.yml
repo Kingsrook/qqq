@@ -93,8 +93,13 @@ commands:
             chmod 600 ~/.gnupg/gpg.conf
             # Support either base64-encoded or raw (possibly \n-escaped) armored keys
             if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
+              echo "Using base64-encoded GPG key..."
+              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc 2>/dev/null || {
+                echo "Base64 decode failed, trying direct use..." >&2
+                echo "$GPG_PRIVATE_KEY_B64" > /tmp/priv.asc
+              }
             elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              echo "Using raw GPG key..."
               # Interpret \n escapes as real newlines
               printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
             else
