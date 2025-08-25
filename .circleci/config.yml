@@ -96,7 +96,7 @@ commands:
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B --no-transfer-progress -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
+            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
       - save_cache:
           paths:
             - ~/.m2
@@ -141,9 +141,9 @@ jobs:
   mvn_deploy:
     executor: localstack/default
     steps:
-      # - mvn_build
-      # - mvn_verify
-      # - check_middleware_api_versions
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
       - mvn_jar_deploy
 
   publish_asciidoc:
