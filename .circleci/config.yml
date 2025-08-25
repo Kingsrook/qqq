@@ -85,9 +85,10 @@ commands:
           command: |
             echo "Deploying version: $(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//;')"
       - run:
-          name: Run Maven Jar Deploy
+          name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress flatten:flatten jar:jar deploy:deploy
+            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
+              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
       - save_cache:
           paths:
             - ~/.m2
