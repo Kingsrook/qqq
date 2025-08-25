@@ -109,10 +109,12 @@ commands:
             gpg --batch --yes --import /tmp/priv.asc
             gpg --list-secret-keys --keyid-format=long || true
       - run:
-          name: Publish to Sonatype Central (releases and SNAPSHOTs)
+          name: Package and Publish to Sonatype Central (skip tests - already ran)
           command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
-              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
+            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress \
+              -DskipTests -Dmaven.test.skip=true -Dcheckstyle.skip=true \
+              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" \
+              package deploy
       - save_cache:
           paths:
             - ~/.m2
