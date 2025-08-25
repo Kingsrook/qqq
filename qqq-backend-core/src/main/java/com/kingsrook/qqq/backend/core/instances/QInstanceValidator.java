@@ -213,6 +213,7 @@ public class QInstanceValidator
          validateJoins(qInstance);
          validateSecurityKeyTypes(qInstance);
          validateSupplementalMetaData(qInstance);
+         validateSupplementalCustomizers(qInstance);
 
          validateUniqueTopLevelNames(qInstance);
 
@@ -2201,6 +2202,23 @@ public class QInstanceValidator
          {
             assertCondition(Objects.equals(pvsName, possibleValueSource.getName()), "Inconsistent naming for possibleValueSource: " + pvsName + "/" + possibleValueSource.getName() + ".");
             validatePossibleValueSource(qInstance, pvsName, possibleValueSource);
+         });
+      }
+   }
+
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   private void validateSupplementalCustomizers(QInstance qInstance)
+   {
+      if(CollectionUtils.nullSafeHasContents(qInstance.getSupplementalCustomizers()))
+      {
+         qInstance.getSupplementalCustomizers().forEach((customizerType, codeReference) ->
+         {
+            Class<?> requiredType = customizerType.getCodeReferenceType();
+            validateSimpleCodeReference("Supplemental Customizer class mismatch: ", codeReference, requiredType);
          });
       }
    }
