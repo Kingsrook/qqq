@@ -81,41 +81,37 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
-          name: Show current version
+          name: Debug effective settings 
           command: |
-            echo "Deploying version: $(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//;')"
+            mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
+            grep -n "<id>central</id>" effective-settings.xml || true
+            gpg --batch --list-secret-keys --keyid-format=long
       - run:
           name: Setup GPG for signing
           command: |
-            set -eo pipefail
             mkdir -p ~/.gnupg
-            printf '%s\n' 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+            echo 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
             chmod 600 ~/.gnupg/gpg.conf
-            # Support either base64-encoded or raw (possibly \n-escaped) armored keys
-            if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "Using GPG_PRIVATE_KEY_B64..."
-              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
-            elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
-              echo "Using GPG_PRIVATE_KEY..."
-              # Interpret \n escapes as real newlines
-              printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
-            else
-              echo "GPG key env var not set (GPG_PRIVATE_KEY[_B64])" >&2
-              exit 1
-            fi
-            echo "GPG key file size: $(wc -c < /tmp/priv.asc) bytes"
-            echo "First line of GPG key: $(head -1 /tmp/priv.asc)"
-            gpg --batch --yes --import /tmp/priv.asc
-            gpg --list-secret-keys --keyid-format=long || true
+            echo $GPG_PRIVATE_KEY_B64| tr -d ' \r\n\t' | base64 -d | gpg --batch --import 
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
-              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
+            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
+
+  mvn_build_rc:
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Publish Release Candidate to Maven Central
+          command: |
+            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
 
   install_asciidoctor:
     steps:
@@ -161,6 +157,30 @@ jobs:
       - check_middleware_api_versions
       - mvn_jar_deploy
 
+  publish_rc:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_build_rc
+
+  publish_release:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+
+  publish_hotfix:
+    executor: localstack/default
+    steps:
+      - mvn_build
+      - mvn_verify
+      - check_middleware_api_versions
+      - mvn_jar_deploy
+
   publish_asciidoc:
     executor: localstack/default
     steps:
@@ -168,84 +188,68 @@ jobs:
       - run_asciidoctor
 
 workflows:
-  # Run tests on feature branches and PRs
   test_only:
     jobs:
       - build:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
       - test:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
       - api_version_check:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
 
-  # Deploy SNAPSHOTs from develop branch
   deploy_snapshot:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /develop/
+              only: develop
       - publish_asciidoc:
           filters:
             branches:
-              only: /develop/
+              only: develop
 
-  # Deploy release candidates from release branches
-  deploy_release_candidate:
+  release_candidate:
     jobs:
-      - mvn_deploy:
+      - publish_rc:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               only: /release\/.*/
 
-  # Deploy stable releases from main branch (tagged releases)
-  deploy_release:
+  production_release:
     jobs:
-      - mvn_deploy:
+      - publish_release:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /.*/
+              only: main
             tags:
               only: /v.*/
 
-  # Deploy hotfix releases
-  deploy_hotfix:
+  hotfix_release:
     jobs:
-      - mvn_deploy:
+      - publish_hotfix:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
               only: /hotfix\/.*/
-
-  # Keep integration branch support during transition (temporary)
-  legacy_integration_deploy:
-    jobs:
-      - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/

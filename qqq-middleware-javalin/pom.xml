@@ -24,6 +24,8 @@
    <modelVersion>4.0.0</modelVersion>
 
    <artifactId>qqq-middleware-javalin</artifactId>
+   <name>QQQ Middleware - Javalin</name>
+   <description>Javalin middleware for the QQQ framework.</description>
 
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
