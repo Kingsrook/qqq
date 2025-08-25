@@ -77,13 +77,13 @@ commands:
   mvn_jar_deploy:
     steps:
       - checkout
-      - run:
-          name: Adjust pom version
-          command: |
-            .circleci/adjust-pom-version.sh
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Show current version
+          command: |
+            echo "Deploying version: $(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//;')"
       - run:
           name: Run Maven Jar Deploy
           command: |
@@ -144,35 +144,79 @@ jobs:
       - run_asciidoctor
 
 workflows:
+  # Run tests on feature branches and PRs
   test_only:
     jobs:
       - build:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
             tags:
-              ignore: /(version|snapshot)-.*/
+              ignore: /v.*/
       - test:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
             tags:
-              ignore: /(version|snapshot)-.*/
+              ignore: /v.*/
       - api_version_check:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
             tags:
-              ignore: /(version|snapshot)-.*/
+              ignore: /v.*/
 
-  deploy:
+  # Deploy SNAPSHOTs from develop branch
+  deploy_snapshot:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /develop/
+      - publish_asciidoc:
+          filters:
+            branches:
+              only: /develop/
+
+  # Deploy release candidates from release branches
+  deploy_release_candidate:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /release\/.*/
+
+  # Deploy stable releases from main branch (tagged releases)
+  deploy_release:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v.*/
+
+  # Deploy hotfix releases
+  deploy_hotfix:
+    jobs:
+      - mvn_deploy:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /hotfix\/.*/
+
+  # Keep integration branch support during transition (temporary)
+  legacy_integration_deploy:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
@@ -181,7 +225,3 @@ workflows:
               only: /(dev|integration.*)/
             tags:
               only: /(version|snapshot)-.*/
-      - publish_asciidoc:
-          filters:
-            branches:
-              only: /dev/
