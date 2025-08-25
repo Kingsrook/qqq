@@ -32,7 +32,9 @@ import com.kingsrook.qqq.backend.core.exceptions.QException;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertInput;
 import com.kingsrook.qqq.backend.core.model.actions.tables.insert.InsertOutput;
 import com.kingsrook.qqq.backend.core.model.data.QRecord;
+import com.kingsrook.qqq.backend.core.model.metadata.QInstance;
 import com.kingsrook.qqq.backend.core.model.metadata.tables.QTableMetaData;
+import com.kingsrook.qqq.backend.core.model.metadata.tables.UniqueKey;
 import com.kingsrook.qqq.backend.core.modules.backend.implementations.memory.MemoryRecordStore;
 import com.kingsrook.qqq.backend.core.utils.TestUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -119,5 +121,33 @@ class UniqueKeyHelperTest extends BaseTest
       assertEquals(2, MemoryRecordStore.getStatistics().get(MemoryRecordStore.STAT_QUERIES_RAN));
    }
 
+
+
+   /*******************************************************************************
+    **
+    *******************************************************************************/
+   @Test
+   void testCacheSourceTableNotQueried() throws QException
+   {
+      QInstance qInstance = QContext.getQInstance();
+
+      String sourceTableName = TestUtils.TABLE_NAME_SHAPE;
+      String cacheTableName  = TestUtils.TABLE_NAME_SHAPE_CACHE;
+
+      ///////////////////////////////////////////////////////////////////
+      // insert rows in the source table - but none in the cache table //
+      ///////////////////////////////////////////////////////////////////
+      TestUtils.insertRecords(qInstance.getTable(sourceTableName), List.of(
+         new QRecord().withValue("id", 1).withValue("name", "Triangle").withValue("noOfSides", 3)
+      ));
+
+      //////////////////////////////////////////////////////////////////////////////
+      // look for existing keys in the cache table - there should be none found.  //
+      // (before CacheActionFlags.DO_NOT_QUERY_SOURCE_TABLE was added, this query //
+      // would have passed through to the source table, which isn't what we want) //
+      //////////////////////////////////////////////////////////////////////////////
+      Map<List<Serializable>, Serializable> existingKeys = UniqueKeyHelper.getExistingKeys(null, qInstance.getTable(cacheTableName), List.of(new QRecord().withValue("name", "Triangle")), new UniqueKey("name"));
+      assertEquals(0, existingKeys.size());
+   }
 
 }
