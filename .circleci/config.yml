@@ -188,7 +188,7 @@ workflows:
             tags:
               ignore: /(version|snapshot)-.*/
 
-deploy_snapshot:
+  deploy_snapshot:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
