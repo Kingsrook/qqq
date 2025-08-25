@@ -88,6 +88,9 @@
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
       <plugin.shade.phase>none</plugin.shade.phase>
       <testOutputToFile>true</testOutputToFile>
+      
+      <!-- Central Publishing Plugin control: skip for SNAPSHOTs, enable for releases -->
+      <skipCentralPublishing>true</skipCentralPublishing>
    </properties>
 
    <profiles>
@@ -103,6 +106,10 @@
       <profile>
          <!-- Release profile for Maven Central publishing -->
          <id>release</id>
+         <properties>
+            <!-- Enable Central Publishing Plugin for releases -->
+            <skipCentralPublishing>false</skipCentralPublishing>
+         </properties>
          <build>
             <plugins>
                <!-- GPG Signing for Maven Central -->
@@ -381,6 +388,13 @@ echo
                </execution>
             </executions>
          </plugin>
+        <!-- Standard Maven Deploy Plugin for SNAPSHOTs -->
+        <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-deploy-plugin</artifactId>
+           <version>3.0.0</version>
+        </plugin>
+        
         <!-- Sonatype Central publishing plugin for releases only -->
         <plugin>
            <groupId>org.sonatype.central</groupId>
@@ -391,6 +405,8 @@ echo
               <publishingServerId>central</publishingServerId>
               <autoPublish>true</autoPublish>
               <waitUntil>validated</waitUntil>
+              <!-- Skip for SNAPSHOT versions - use standard maven-deploy-plugin instead -->
+              <skipPublishing>${skipCentralPublishing}</skipPublishing>
            </configuration>
         </plugin>
       </plugins>
