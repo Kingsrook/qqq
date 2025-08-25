@@ -119,7 +119,7 @@ commands:
               -DskipTests -Dmaven.test.skip=true -Dcheckstyle.skip=true \
               -Dmaven.javadoc.failOnError=false -Dmaven.javadoc.failOnWarnings=false \
               -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" \
-              deploy org.sonatype.central:central-publishing-maven-plugin:0.8.0:publish
+              deploy central-publishing:publish
             echo "=== Maven Central deployment completed ==="
       - save_cache:
           paths:
