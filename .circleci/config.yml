@@ -166,7 +166,7 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
               ignore: /(version|snapshot)-.*/
       - test:
@@ -175,7 +175,7 @@ workflows:
             - build
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
               ignore: /(version|snapshot)-.*/
       - api_version_check:
@@ -184,20 +184,18 @@ workflows:
             - build
           filters:
             branches:
-              ignore: /(dev|integration.*)/
+              ignore: /(develop|main|release/.*|hotfix/.*|integration.*)/
             tags:
               ignore: /(version|snapshot)-.*/
 
-  deploy:
+deploy_snapshot:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /(dev|integration.*)/
-            tags:
-              only: /(version|snapshot)-.*/
+              only: /develop/
       - publish_asciidoc:
           filters:
             branches:
-              only: /dev/
+              only: /develop/
