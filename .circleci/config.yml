@@ -74,6 +74,50 @@ commands:
               mvn -s .circleci/mvn-settings.xml -T4 --no-transfer-progress -pl qqq-middleware-javalin package appassembler:assemble -DskipTests
               qqq-middleware-javalin/target/appassembler/bin/ValidateApiVersions -r $(pwd)
 
+  test_gpg_setup:
+    steps:
+      - checkout
+      - run:
+          name: Test GPG Setup Early
+          command: |
+            set -eo pipefail
+            echo "=== Testing GPG Setup ==="
+            mkdir -p ~/.gnupg
+            printf '%s\n' 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
+            chmod 600 ~/.gnupg/gpg.conf
+            
+            # Test GPG key import
+            if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
+              echo "✓ GPG_PRIVATE_KEY_B64 found (length: ${#GPG_PRIVATE_KEY_B64})"
+              echo "$GPG_PRIVATE_KEY_B64" | tr -d '\n\r\t ' | base64 -d > /tmp/test_priv.asc
+              echo "✓ Base64 decode successful"
+            elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              echo "✓ GPG_PRIVATE_KEY found (length: ${#GPG_PRIVATE_KEY})"
+              printf '%b' "$GPG_PRIVATE_KEY" > /tmp/test_priv.asc
+            else
+              echo "❌ No GPG key environment variable found"
+              exit 1
+            fi
+            
+            echo "✓ GPG key file created ($(wc -c < /tmp/test_priv.asc) bytes)"
+            echo "✓ First line: $(head -1 /tmp/test_priv.asc)"
+            
+            # Test GPG import
+            gpg --batch --yes --import /tmp/test_priv.asc
+            echo "✓ GPG key imported successfully"
+            
+            # List keys
+            gpg --list-secret-keys --keyid-format=long
+            echo "✓ GPG setup test complete"
+            
+            # Test environment variables
+            echo "=== Environment Variables Check ==="
+            echo "✓ CENTRAL_USERNAME: ${CENTRAL_USERNAME:0:5}..."
+            echo "✓ CENTRAL_PASSWORD: [${#CENTRAL_PASSWORD} chars]"
+            echo "✓ GPG_KEYNAME: $GPG_KEYNAME"
+            echo "✓ GPG_PASSPHRASE: [${#GPG_PASSPHRASE} chars]"
+            echo "=== All checks passed! ==="
+
   mvn_jar_deploy:
     steps:
       - checkout
@@ -201,8 +245,15 @@ workflows:
   # Deploy SNAPSHOTs from develop branch
   deploy_snapshot:
     jobs:
+      - test_gpg_setup:
+          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          filters:
+            branches:
+              only: /develop/
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
+          requires:
+            - test_gpg_setup
           filters:
             branches:
               only: /develop/
