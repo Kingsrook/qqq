@@ -81,10 +81,6 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
-          name: Show current version
-          command: |
-            echo "Deploying version: $(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//;')"
-      - run:
           name: Setup GPG for signing
           command: |
             set -eo pipefail
@@ -93,34 +89,21 @@ commands:
             chmod 600 ~/.gnupg/gpg.conf
             # Support either base64-encoded or raw (possibly \n-escaped) armored keys
             if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "Using GPG_PRIVATE_KEY_B64..."
-              # More robust base64 decode - handle potential whitespace/formatting issues
-              echo "$GPG_PRIVATE_KEY_B64" | tr -d '\n\r\t ' | base64 -d > /tmp/priv.asc
+              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
             elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
-              echo "Using GPG_PRIVATE_KEY..."
               # Interpret \n escapes as real newlines
               printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
             else
               echo "GPG key env var not set (GPG_PRIVATE_KEY[_B64])" >&2
               exit 1
             fi
-            echo "GPG key file size: $(wc -c < /tmp/priv.asc) bytes"
-            echo "First line of GPG key: $(head -1 /tmp/priv.asc)"
             gpg --batch --yes --import /tmp/priv.asc
             gpg --list-secret-keys --keyid-format=long || true
       - run:
-          name: Package and Publish to Sonatype Central (skip tests - already ran)
-          no_output_timeout: 20m
+          name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            echo "=== Starting Maven Central deployment ==="
-            echo "Modules to build: 16"
-            echo "Build mode: Single-threaded (avoid parallel deadlocks)"
-            mvn -s .circleci/mvn-settings.xml -P release -B --no-transfer-progress \
-              -DskipTests -Dmaven.test.skip=true -Dcheckstyle.skip=true \
-              -Dmaven.javadoc.failOnError=false -Dmaven.javadoc.failOnWarnings=false \
-              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" \
-              deploy
-            echo "=== Maven Central deployment completed ==="
+            mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests \
+              -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" deploy
       - save_cache:
           paths:
             - ~/.m2
@@ -162,51 +145,6 @@ jobs:
     steps:
       - check_middleware_api_versions
 
-  test_gpg_setup:
-    executor: localstack/default
-    steps:
-      - checkout
-      - run:
-          name: Test GPG Setup Early
-          command: |
-            set -eo pipefail
-            echo "=== Testing GPG Setup ==="
-            mkdir -p ~/.gnupg
-            printf '%s\n' 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
-            chmod 600 ~/.gnupg/gpg.conf
-            
-            # Test GPG key import
-            if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "✓ GPG_PRIVATE_KEY_B64 found (length: ${#GPG_PRIVATE_KEY_B64})"
-              echo "$GPG_PRIVATE_KEY_B64" | tr -d '\n\r\t ' | base64 -d > /tmp/test_priv.asc
-              echo "✓ Base64 decode successful"
-            elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
-              echo "✓ GPG_PRIVATE_KEY found (length: ${#GPG_PRIVATE_KEY})"
-              printf '%b' "$GPG_PRIVATE_KEY" > /tmp/test_priv.asc
-            else
-              echo "❌ No GPG key environment variable found"
-              exit 1
-            fi
-            
-            echo "✓ GPG key file created ($(wc -c < /tmp/test_priv.asc) bytes)"
-            echo "✓ First line: $(head -1 /tmp/test_priv.asc)"
-            
-            # Test GPG import
-            gpg --batch --yes --import /tmp/test_priv.asc
-            echo "✓ GPG key imported successfully"
-            
-            # List keys
-            gpg --list-secret-keys --keyid-format=long
-            echo "✓ GPG setup test complete"
-            
-            # Test environment variables
-            echo "=== Environment Variables Check ==="
-            echo "✓ CENTRAL_USERNAME: ${CENTRAL_USERNAME:0:5}..."
-            echo "✓ CENTRAL_PASSWORD: [${#CENTRAL_PASSWORD} chars]"
-            echo "✓ GPG_KEYNAME: $GPG_KEYNAME"
-            echo "✓ GPG_PASSPHRASE: [${#GPG_PASSPHRASE} chars]"
-            echo "=== All checks passed! ==="
-
   mvn_deploy:
     executor: localstack/default
     steps:
@@ -222,79 +160,35 @@ jobs:
       - run_asciidoctor
 
 workflows:
-  # Run tests on feature branches and PRs
   test_only:
     jobs:
       - build:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(dev|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
       - test:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(dev|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
       - api_version_check:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           requires:
             - build
           filters:
             branches:
-              ignore: /(develop|main|release\/.*|hotfix\/.*|integration.*)/
+              ignore: /(dev|integration.*)/
             tags:
-              ignore: /v.*/
+              ignore: /(version|snapshot)-.*/
 
-  # Deploy SNAPSHOTs from develop branch
-  deploy_snapshot:
-    jobs:
-      - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /develop/
-      - publish_asciidoc:
-          filters:
-            branches:
-              only: /develop/
-
-  # Deploy release candidates from release branches
-  deploy_release_candidate:
-    jobs:
-      - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /release\/.*/
-
-  # Deploy stable releases from main branch (tagged releases)
-  deploy_release:
-    jobs:
-      - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /v.*/
-
-  # Deploy hotfix releases
-  deploy_hotfix:
-    jobs:
-      - mvn_deploy:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /hotfix\/.*/
-
-  # Keep integration branch support during transition (temporary)
-  legacy_integration_deploy:
+  deploy:
     jobs:
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
@@ -303,3 +197,7 @@ workflows:
               only: /(dev|integration.*)/
             tags:
               only: /(version|snapshot)-.*/
+      - publish_asciidoc:
+          filters:
+            branches:
+              only: /dev/
