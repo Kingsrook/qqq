@@ -91,9 +91,7 @@ commands:
             mkdir -p ~/.gnupg
             echo 'pinentry-mode loopback' > ~/.gnupg/gpg.conf
             chmod 600 ~/.gnupg/gpg.conf
-            if [ -n "${GPG_PRIVATE_KEY:-}" ]; then
-              echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-            fi
+            echo $GPG_PRIVATE_KEY_B64| tr -d ' \r\n\t' | base64 -d | gpg --batch --import 
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
