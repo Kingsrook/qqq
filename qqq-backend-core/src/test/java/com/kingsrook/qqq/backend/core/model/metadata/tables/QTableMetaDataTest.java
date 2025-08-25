@@ -45,6 +45,7 @@ class QTableMetaDataTest extends BaseTest
 
       // table:null & backend:null = true
       assertTrue(new QTableMetaData().isCapabilityEnabled(new QBackendMetaData(), capability));
+      assertTrue(new QTableMetaData().isCapabilityEnabled(null, capability));
 
       // table:null & backend:true = true
       assertTrue(new QTableMetaData().isCapabilityEnabled(new QBackendMetaData().withCapability(capability), capability));
@@ -54,9 +55,11 @@ class QTableMetaDataTest extends BaseTest
 
       // table:true & backend:null = true
       assertTrue(new QTableMetaData().withCapability(capability).isCapabilityEnabled(new QBackendMetaData(), capability));
+      assertTrue(new QTableMetaData().withCapability(capability).isCapabilityEnabled(null, capability));
 
       // table:false & backend:null = false
       assertFalse(new QTableMetaData().withoutCapability(capability).isCapabilityEnabled(new QBackendMetaData(), capability));
+      assertFalse(new QTableMetaData().withoutCapability(capability).isCapabilityEnabled(null, capability));
 
       // table:true & backend:true = true
       assertTrue(new QTableMetaData().withCapability(capability).isCapabilityEnabled(new QBackendMetaData().withCapability(capability), capability));

@@ -316,6 +316,10 @@ public class QInstance
     *******************************************************************************/
    public QBackendMetaData getBackend(String name)
    {
+      if(this.backends == null)
+      {
+         return (null);
+      }
       return (this.backends.get(name));
    }
 
