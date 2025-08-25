@@ -1641,6 +1641,12 @@ public class QJavalinImplementation
             exportInput.setQueryFilter(JsonUtils.toObject(filter, QQueryFilter.class));
          }
 
+         String omitHeaderRow = QJavalinUtils.getQueryParamOrFormParam(context, "omitHeaderRow");
+         if("true".equals(omitHeaderRow))
+         {
+            exportInput.setIncludeHeaderRow(false);
+         }
+
          UnsafeFunction<PipedOutputStream, ExportAction, Exception> preAction = (PipedOutputStream pos) ->
          {
             exportInput.getReportDestination().setReportOutputStream(pos);
