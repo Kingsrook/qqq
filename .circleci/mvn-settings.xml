@@ -14,9 +14,9 @@
             <password>${env.CENTRAL_PASSWORD}</password>
         </server>
         
-        <!-- OSSRH credentials (for SNAPSHOTs) -->
+        <!-- Central Portal Snapshots credentials -->
         <server>
-            <id>ossrh</id>
+            <id>central-snapshots</id>
             <username>${env.CENTRAL_USERNAME}</username>
             <password>${env.CENTRAL_PASSWORD}</password>
         </server>
