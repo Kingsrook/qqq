@@ -81,10 +81,10 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
-        name: Debug effective settings 
-        command: |
-          mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
-          grep -n "<id>central</id>" effective-settings.xml || true
+          name: Debug effective settings 
+          command: |
+            mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
+            grep -n "<id>central</id>" effective-settings.xml || true
       - run:
           name: Setup GPG for signing
           command: |
