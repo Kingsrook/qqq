@@ -88,9 +88,6 @@
       <coverage.classCoveredRatioMinimum>0.95</coverage.classCoveredRatioMinimum>
       <plugin.shade.phase>none</plugin.shade.phase>
       <testOutputToFile>true</testOutputToFile>
-      
-      <!-- Central Publishing Plugin control: skip for SNAPSHOTs, enable for releases -->
-      <skipCentralPublishing>true</skipCentralPublishing>
    </properties>
 
    <profiles>
@@ -106,10 +103,7 @@
       <profile>
          <!-- Release profile for Maven Central publishing -->
          <id>release</id>
-         <properties>
-            <!-- Enable Central Publishing Plugin for releases -->
-            <skipCentralPublishing>false</skipCentralPublishing>
-         </properties>
+
          <build>
             <plugins>
                <!-- GPG Signing for Maven Central -->
@@ -126,6 +120,19 @@
                         </goals>
                      </execution>
                   </executions>
+               </plugin>
+               
+               <!-- Central Publishing Plugin for releases only -->
+               <plugin>
+                  <groupId>org.sonatype.central</groupId>
+                  <artifactId>central-publishing-maven-plugin</artifactId>
+                  <version>0.8.0</version>
+                  <extensions>true</extensions>
+                  <configuration>
+                     <publishingServerId>central</publishingServerId>
+                     <autoPublish>true</autoPublish>
+                     <waitUntil>validated</waitUntil>
+                  </configuration>
                </plugin>
             </plugins>
          </build>
@@ -393,21 +400,6 @@ echo
            <groupId>org.apache.maven.plugins</groupId>
            <artifactId>maven-deploy-plugin</artifactId>
            <version>3.0.0</version>
-        </plugin>
-        
-        <!-- Sonatype Central publishing plugin for releases only -->
-        <plugin>
-           <groupId>org.sonatype.central</groupId>
-           <artifactId>central-publishing-maven-plugin</artifactId>
-           <version>0.8.0</version>
-           <extensions>true</extensions>
-           <configuration>
-              <publishingServerId>central</publishingServerId>
-              <autoPublish>true</autoPublish>
-              <waitUntil>validated</waitUntil>
-              <!-- Skip for SNAPSHOT versions - use standard maven-deploy-plugin instead -->
-              <skipPublishing>${skipCentralPublishing}</skipPublishing>
-           </configuration>
         </plugin>
       </plugins>
    </build>
