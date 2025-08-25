@@ -44,7 +44,6 @@
       <module>qqq-middleware-slack</module>
       <module>qqq-middleware-api</module>
       <module>qqq-utility-lambdas</module>
-      <module>qqq-sample-project</module>
    </modules>
 
    <properties>
