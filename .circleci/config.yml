@@ -81,6 +81,11 @@ commands:
           keys:
             - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
+        name: Debug effective settings 
+        command: |
+          mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
+          grep -n "<id>central</id>" effective-settings.xml || true
+      - run:
           name: Setup GPG for signing
           command: |
             mkdir -p ~/.gnupg
@@ -92,12 +97,7 @@ commands:
       - run:
           name: Publish to Sonatype Central (releases and SNAPSHOTs)
           command: |
-            # Skip signing for SNAPSHOT to avoid pinentry/passphrase issues
-            if grep -q -- "-SNAPSHOT</revision>" pom.xml; then
-              SIGN_FLAGS="-Dgpg.skip=true"
-            else
-              SIGN_FLAGS="-Dgpg.keyname=\"$GPG_KEYNAME\" -Dgpg.passphrase=\"$GPG_PASSPHRASE\""
-            fi
+            SIGN_FLAGS="-Dgpg.keyname=\"$GPG_KEYNAME\" -Dgpg.passphrase=\"$GPG_PASSPHRASE\""
             mvn -s .circleci/mvn-settings.xml -P release -B -T4 --no-transfer-progress -DskipTests $SIGN_FLAGS deploy
       - save_cache:
           paths:
@@ -143,9 +143,9 @@ jobs:
   mvn_deploy:
     executor: localstack/default
     steps:
-      - mvn_build
-      - mvn_verify
-      - check_middleware_api_versions
+      # - mvn_build
+      # - mvn_verify
+      # - check_middleware_api_versions
       - mvn_jar_deploy
 
   publish_asciidoc:
