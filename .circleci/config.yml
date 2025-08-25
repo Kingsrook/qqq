@@ -94,7 +94,8 @@ commands:
             # Support either base64-encoded or raw (possibly \n-escaped) armored keys
             if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
               echo "Using GPG_PRIVATE_KEY_B64..."
-              echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
+              # More robust base64 decode - handle potential whitespace/formatting issues
+              echo "$GPG_PRIVATE_KEY_B64" | tr -d '\n\r\t ' | base64 -d > /tmp/priv.asc
             elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
               echo "Using GPG_PRIVATE_KEY..."
               # Interpret \n escapes as real newlines
