@@ -93,16 +93,18 @@ commands:
             chmod 600 ~/.gnupg/gpg.conf
             # Support either base64-encoded or raw (possibly \n-escaped) armored keys
             if [ -n "${GPG_PRIVATE_KEY_B64:-}" ]; then
-              echo "GPG_PRIVATE_KEY_B64 length: ${#GPG_PRIVATE_KEY_B64}"
-              echo "First 100 chars: ${GPG_PRIVATE_KEY_B64:0:100}"
+              echo "Using GPG_PRIVATE_KEY_B64..."
               echo "$GPG_PRIVATE_KEY_B64" | base64 -d > /tmp/priv.asc
             elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+              echo "Using GPG_PRIVATE_KEY..."
               # Interpret \n escapes as real newlines
               printf '%b' "$GPG_PRIVATE_KEY" > /tmp/priv.asc
             else
               echo "GPG key env var not set (GPG_PRIVATE_KEY[_B64])" >&2
               exit 1
             fi
+            echo "GPG key file size: $(wc -c < /tmp/priv.asc) bytes"
+            echo "First line of GPG key: $(head -1 /tmp/priv.asc)"
             gpg --batch --yes --import /tmp/priv.asc
             gpg --list-secret-keys --keyid-format=long || true
       - run:
