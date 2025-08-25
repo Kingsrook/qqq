@@ -72,7 +72,7 @@
       <module>qqq-middleware-slack</module>
       <module>qqq-middleware-api</module>
       <module>qqq-utility-lambdas</module>
-      <module>qqq-sample-project</module>
+      <!-- qqq-sample-project excluded: depends on qqq-frontend-material-dashboard not available in Maven Central -->
    </modules>
 
    <properties>
