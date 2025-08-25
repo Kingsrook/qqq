@@ -248,15 +248,8 @@ workflows:
   # Deploy SNAPSHOTs from develop branch
   deploy_snapshot:
     jobs:
-      - test_gpg_setup:
-          context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          filters:
-            branches:
-              only: /develop/
       - mvn_deploy:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
-          requires:
-            - test_gpg_setup
           filters:
             branches:
               only: /develop/
