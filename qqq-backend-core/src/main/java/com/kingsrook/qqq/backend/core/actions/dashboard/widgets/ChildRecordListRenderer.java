@@ -24,7 +24,6 @@ package com.kingsrook.qqq.backend.core.actions.dashboard.widgets;
 
 import java.io.Serializable;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.google.gson.reflect.TypeToken;
+import com.kingsrook.qqq.backend.core.actions.dashboard.AbstractHTMLWidgetRenderer;
 import com.kingsrook.qqq.backend.core.actions.tables.CountAction;
 import com.kingsrook.qqq.backend.core.actions.tables.GetAction;
 import com.kingsrook.qqq.backend.core.actions.tables.QueryAction;
@@ -213,7 +213,7 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
          QTableMetaData rightTable  = QContext.getQInstance().getTable(join.getRightTable());
 
          Map<String, Serializable> widgetMetaDataDefaultValues = input.getWidgetMetaData().getDefaultValues();
-         List<String> omitFieldNames = (List<String>) widgetMetaDataDefaultValues.get("omitFieldNames");
+         List<String>              omitFieldNames              = (List<String>) widgetMetaDataDefaultValues.get("omitFieldNames");
          if(omitFieldNames == null)
          {
             omitFieldNames = new ArrayList<>();
@@ -300,12 +300,23 @@ public class ChildRecordListRenderer extends AbstractWidgetRenderer
             }
          }
 
-         String tablePath   = QContext.getQInstance().getTablePath(rightTable.getName());
+         String tablePath = QContext.getQInstance().getTablePath(rightTable.getName());
+         if(!AbstractHTMLWidgetRenderer.doesHaveTablePermission(rightTable.getName()))
+         {
+            tablePath = null;
+         }
          String viewAllLink = tablePath == null ? null : (tablePath + "?filter=" + URLEncoder.encode(JsonUtils.toJson(filter), StandardCharsets.UTF_8));
 
          ChildRecordListData widgetData = new ChildRecordListData(widgetLabel, queryOutput, rightTable, tablePath, viewAllLink, totalRows);
          widgetData.setOmitFieldNames(omitFieldNames);
 
+         //////////////////////////////////////////////////////////////////////////////////////////////////////
+         // todo - think about - should we check if user has permission on the child table here?             //
+         // at first it seems like an obvious "yes" - but - for cases where the child is a managed           //
+         // association (e.g., you're adding children on the parent record's insert/edit screen - in that    //
+         // case would we want to allow adding children even if the child table wasn't directly available?   //
+         // PermissionsHelper.hasTablePermission(input, rightTable.getName(), TablePermissionSubType.INSERT) //
+         //////////////////////////////////////////////////////////////////////////////////////////////////////
          if(BooleanUtils.isTrue(ValueUtils.getValueAsBoolean(input.getQueryParams().get("canAddChildRecord"))))
          {
             widgetData.setCanAddChildRecord(true);
