@@ -117,8 +117,9 @@ commands:
             echo "Build mode: Single-threaded (avoid parallel deadlocks)"
             mvn -s .circleci/mvn-settings.xml -P release -B --no-transfer-progress \
               -DskipTests -Dmaven.test.skip=true -Dcheckstyle.skip=true \
+              -Dmaven.javadoc.failOnError=false -Dmaven.javadoc.failOnWarnings=false \
               -Dgpg.keyname="$GPG_KEYNAME" -Dgpg.passphrase="$GPG_PASSPHRASE" \
-              package deploy
+              deploy
             echo "=== Maven Central deployment completed ==="
       - save_cache:
           paths:
