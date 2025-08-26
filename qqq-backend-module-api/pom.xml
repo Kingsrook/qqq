@@ -30,7 +30,7 @@
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
       <artifactId>qqq-parent-project</artifactId>
-      <version>${revision}</version>
+      <version>0.27.0-SNAPSHOT</version>
    </parent>
 
    <properties>
@@ -43,7 +43,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
       </dependency>
 
       <!-- Common deps for all qqq modules -->

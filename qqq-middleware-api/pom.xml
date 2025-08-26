@@ -30,7 +30,7 @@
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
       <artifactId>qqq-parent-project</artifactId>
-      <version>${revision}</version>
+      <version>0.27.0-SNAPSHOT</version>
    </parent>
 
    <properties>
@@ -43,24 +43,24 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-core</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-javalin</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
       </dependency>
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-openapi</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
       </dependency>
 
       <!-- qqq modules for tests only -->
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-middleware-javalin</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
          <classifier>tests</classifier>
          <type>test-jar</type>
          <scope>test</scope>
@@ -68,7 +68,7 @@
       <dependency>
          <groupId>com.kingsrook.qqq</groupId>
          <artifactId>qqq-backend-module-rdbms</artifactId>
-         <version>${revision}</version>
+         <version>0.27.0-SNAPSHOT</version>
          <scope>test</scope>
       </dependency>
       <dependency>
