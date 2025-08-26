@@ -102,17 +102,6 @@ commands:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
-  mvn_build_rc:
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Publish Release Candidate to Maven Central
-          command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
-
   install_asciidoctor:
     steps:
       - checkout
@@ -163,7 +152,7 @@ jobs:
       - mvn_build
       - mvn_verify
       - check_middleware_api_versions
-      - mvn_build_rc
+      - mvn_jar_deploy 
 
   publish_release:
     executor: localstack/default
