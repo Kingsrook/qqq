@@ -132,7 +132,7 @@ set_version() {
     mvn versions:set -DnewVersion="$new_version" -DgenerateBackupPoms=false
     
     # Verify the change
-    ACTUAL_VERSION=$(grep '<revision>' $POM_FILE | sed 's/.*<revision>//;s/<.*//')
+    ACTUAL_VERSION=$(grep "<version>${new_version}" $POM_FILE | sed 's/.*<version>//;s/<.*//')
     if [[ "$ACTUAL_VERSION" == "$new_version" ]]; then
         echo "✅ Version successfully updated to: $ACTUAL_VERSION"
     else
