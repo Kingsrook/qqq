@@ -479,11 +479,13 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: develop
+              only: 
+                - develop
       - publish_asciidoc:
           filters:
             branches:
-              only: develop
+              only: 
+                - develop
 
   ###############################################################################
   ## Runs on release/* branches to publish release candidates
@@ -498,7 +500,8 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: release/.*
+              only:
+                - /release\/.*/
 
   ###############################################################################
   ## Runs on main branch to publish production releases
@@ -514,9 +517,11 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: main
+              only: 
+                - main
             tags:
-              only: /v.*/
+              only: 
+                - /v.*/
 
   ###############################################################################
   ## Runs on hotfix/* branches to publish urgent production fixes
@@ -532,4 +537,5 @@ workflows:
           context: [ qqq-maven-registry-credentials, build-qqq-sample-app ]
           filters:
             branches:
-              only: /hotfix\/.*/
+              only: 
+                - /hotfix\/.*/
