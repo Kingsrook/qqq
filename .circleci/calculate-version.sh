@@ -122,17 +122,19 @@ set_version() {
     
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "DRY RUN: Would set version to: $new_version"
-        echo "Command: mvn versions:set -DnewVersion=$new_version -DgenerateBackupPoms=false"
+        echo "Command: mvn versions:set-property -Dproperty=revision -DnewVersion=$new_version -DgenerateBackupPoms=false"
+
         return
     fi
     
     echo "Setting version to: $new_version"
     
     # Use Maven versions plugin to set version
-    mvn versions:set -DnewVersion="$new_version" -DgenerateBackupPoms=false
+    mvn versions:set-property -Dproperty=revision -DnewVersion="$new_version" -DgenerateBackupPoms=false
+
     
     # Verify the change
-    ACTUAL_VERSION=$(grep "<version>${new_version}" $POM_FILE | sed 's/.*<version>//;s/<.*//')
+    ACTUAL_VERSION=$(grep "<revision>" $POM_FILE | sed 's/.*<revision>//;s/<.*//')
     if [[ "$ACTUAL_VERSION" == "$new_version" ]]; then
         echo "✅ Version successfully updated to: $ACTUAL_VERSION"
     else

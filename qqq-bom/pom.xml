@@ -31,7 +31,7 @@
    <parent>
       <groupId>com.kingsrook.qqq</groupId>
       <artifactId>qqq-parent-project</artifactId>
-      <version>0.27.0-SNAPSHOT</version>
+      <version>${revision}</version>
    </parent>
 
    <dependencyManagement>
@@ -39,57 +39,57 @@
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-backend-core</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-backend-module-rdbms</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-backend-module-mongodb</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-backend-module-api</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-backend-module-filesystem</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-middleware-javalin</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-middleware-slack</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-middleware-api</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-openapi</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-middleware-picocli</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
          <dependency>
             <groupId>com.kingsrook.qqq</groupId>
             <artifactId>qqq-language-support-javascript</artifactId>
-            <version>0.27.0-SNAPSHOT</version>
+            <version>${revision}</version>
          </dependency>
       </dependencies>
    </dependencyManagement>
