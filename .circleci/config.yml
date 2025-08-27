@@ -105,10 +105,6 @@ commands:
   ###############################################################################
   mvn_verify:
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
       - run:
           name: Run Maven Verify
           command: |
@@ -147,10 +143,6 @@ commands:
   ###############################################################################
   check_middleware_api_versions:
       steps:
-        - checkout
-        - restore_cache:
-            keys:
-              - v1-dependencies-{{ checksum "pom.xml" }}
         - run:
             name: Build and Run ValidateApiVersions
             command: |
@@ -168,16 +160,6 @@ commands:
   ###############################################################################
   mvn_jar_deploy:
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Debug effective settings 
-          command: |
-            mvn -s .circleci/mvn-settings.xml -B help:effective-settings -Doutput=effective-settings.xml
-            grep -n "<id>central</id>" effective-settings.xml || true
-            gpg --batch --list-secret-keys --keyid-format=long
       - run:
           name: Setup GPG for signing
           command: |
@@ -193,24 +175,6 @@ commands:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
-
-  ###############################################################################
-  ## Builds release candidate artifacts for QA testing
-  ## - Restores Maven dependency cache
-  ## - Packages the project without deploying to Maven Central
-  ## - Stores JAR artifacts for QA team access
-  ## - Used by release_candidate workflow for RC builds
-  ###############################################################################
-  mvn_build_rc:
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Publish Release Candidate to Maven Central
-          command: |
-            mvn -s .circleci/mvn-settings.xml -P release -B -DskipTests -Dgpg.keyname=$GPG_KEYNAME -Dgpg.passphrase=$GPG_PASSPHRASE deploy
 
   ###############################################################################
   ## Installs AsciiDoc processor for generating HTML documentation
@@ -365,9 +329,9 @@ jobs:
     executor: localstack/default
     steps:
       - mvn_build
-      - manage_version
       - mvn_verify
       - check_middleware_api_versions
+      - manage_version
       - mvn_jar_deploy 
 
   ###############################################################################
