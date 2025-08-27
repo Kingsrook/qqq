@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 QQQ Documentation Wiki
+    url: https://github.com/Kingsrook/qqq/wiki
+    about: Complete documentation, guides, and tutorials for QQQ
+  - name: 🔧 Developer Onboarding
+    url: https://github.com/Kingsrook/qqq/wiki/Developer-Onboarding
+    about: Get started with QQQ development and setup
+  - name: 🤝 Contribution Guidelines
+    url: https://github.com/Kingsrook/qqq/wiki/Contribution-Guidelines
+    about: How to contribute code, documentation, and improvements
+  - name: 💬 GitHub Discussions
+    url: https://github.com/Kingsrook/qqq/discussions
+    about: Ask questions and discuss QQQ with the community
