@@ -233,7 +233,8 @@ commands:
               NEW_VERSION=$(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//')
               git add pom.xml
               git commit -m "Bump version to $NEW_VERSION [skip ci]"
-              echo "Version updated to: $NEW_VERSION"
+              git push origin "$CIRCLE_BRANCH"
+              echo "Version updated to: $NEW_VERSION and pushed"
             else
               echo "No version change needed"
             fi
