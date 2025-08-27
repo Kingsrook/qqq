@@ -54,6 +54,7 @@ version: 2.1
 orbs:
   localstack: localstack/platform@2.1
   browser-tools: circleci/browser-tools@1.4.7
+  slack: circleci/slack@5.2.1
 
 
 
@@ -216,6 +217,7 @@ commands:
   ###############################################################################
   manage_version:
     steps:
+      - add_ssh_keys   # injects the CircleCI User Key (write-capable)
       - run:
           name: Set up Git identity for version commits
           command: |
@@ -233,7 +235,7 @@ commands:
               NEW_VERSION=$(grep '<revision>' pom.xml | sed 's/.*<revision>//;s/<.*//')
               git add pom.xml
               git commit -m "Bump version to $NEW_VERSION [skip ci]"
-              git push origin "$CIRCLE_BRANCH"
+              git push origin "HEAD:${CIRCLE_BRANCH}"
               echo "Version updated to: $NEW_VERSION and pushed"
             else
               echo "No version change needed"
