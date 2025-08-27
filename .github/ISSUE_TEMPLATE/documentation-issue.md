@@ -1,9 +1,10 @@
 ---
-name: 📚 Documentation Issue
+name: Documentation Issue
 about: Report documentation problems or suggest improvements
-title: '[DOCS] '
-labels: ['documentation', 'needs-triage']
+title: "[DOCS] "
+labels: documentation
 assignees: ''
+
 ---
 
 ## 📚 Documentation Issue

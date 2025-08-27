@@ -1,9 +1,10 @@
 ---
-name: ✨ Feature Request
+name: Feature Request
 about: Suggest an idea for QQQ
-title: '[FEATURE] '
-labels: ['enhancement', 'needs-triage']
+title: "[FEATURE] "
+labels: enhancement
 assignees: ''
+
 ---
 
 ## 🚀 Feature Description
